@@ -3,16 +3,18 @@
   "ticket-id": "06EXB7H6KV753KM125XN3VDRTM",
   "ticket-type": "task",
   "title": "Task: Design SaveChanges integration or explicit DVault save service",
-  "revision": "06EXB7HCQG5W8FJNYG03Q9HJ5M",
+  "revision": "06EXBF726ARHQFRCFN6MN4Q0T0",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
     "type/task",
-    "area/persistence"
+    "area/persistence",
+    "needs-po",
+    "automation/bot-ready"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
   "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
   "created-at": "2026-04-28T19:43:24.9494880Z",
-  "updated-at": "2026-04-28T19:43:26.3969339Z"
+  "updated-at": "2026-04-28T20:16:58.9303886Z"
 }

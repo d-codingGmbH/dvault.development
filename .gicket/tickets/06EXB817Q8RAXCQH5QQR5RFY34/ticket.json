@@ -3,16 +3,18 @@
   "ticket-id": "06EXB817Q8RAXCQH5QQR5RFY34",
   "ticket-type": "task",
   "title": "Task: Enable XML docs warnings for public and protected API",
-  "revision": "06EXB81DWSPR3DVP92X2T0ZCRR",
+  "revision": "06EXBF6DG3HE5MT5D9D4EZ9K0G",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
     "type/task",
-    "area/quality"
+    "area/quality",
+    "needs-po",
+    "automation/bot-ready"
   ],
   "assignees": [],
   "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "created-at": "2026-04-28T19:45:36.3031847Z",
-  "updated-at": "2026-04-28T19:45:37.7663352Z"
+  "updated-at": "2026-04-28T20:16:53.6326873Z"
 }

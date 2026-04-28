@@ -3,16 +3,18 @@
   "ticket-id": "06EXB6Q57D5CRQVGB0ZS29DCSW",
   "ticket-type": "task",
   "title": "Task: Document deferred Data Vault capabilities",
-  "revision": "06EXB6QBA8JJ4VCA0RNXEA3Y4G",
+  "revision": "06EXBF7XMVYZ99XRTPKYQJ6N2M",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
     "type/task",
-    "area/architecture"
+    "area/architecture",
+    "needs-po",
+    "automation/bot-ready"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:39:51.6086185Z",
-  "updated-at": "2026-04-28T19:39:53.0421445Z"
+  "updated-at": "2026-04-28T20:17:05.9582095Z"
 }

@@ -3,16 +3,18 @@
   "ticket-id": "06EXB765S2X2MR2K18ZBV8RC38",
   "ticket-type": "story",
   "title": "Story: Implement hash key and hash diff services",
-  "revision": "06EXB8G7Q5BJYF2K4W97Q445GM",
+  "revision": "06EXBF57RWTCJCKTJWP0VTNKCG",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
     "type/story",
-    "area/modeling"
+    "area/modeling",
+    "needs-po",
+    "automation/bot-ready"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:41:54.6211833Z",
-  "updated-at": "2026-04-28T19:47:39.0654955Z"
+  "updated-at": "2026-04-28T20:16:43.9754375Z"
 }

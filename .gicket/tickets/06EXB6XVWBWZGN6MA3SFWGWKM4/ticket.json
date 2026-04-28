@@ -3,16 +3,18 @@
   "ticket-id": "06EXB6XVWBWZGN6MA3SFWGWKM4",
   "ticket-type": "task",
   "title": "Task: Add DConding.Data.DVault library project targeting net10.0",
-  "revision": "06EXB6Y22JS0VAXWGN9HBVBCA0",
+  "revision": "06EXBF7R4NNT1ESC8FQHJDR4NW",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
     "type/task",
-    "area/foundation"
+    "area/foundation",
+    "needs-po",
+    "automation/bot-ready"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:40:46.5632902Z",
-  "updated-at": "2026-04-28T19:40:48.0205480Z"
+  "updated-at": "2026-04-28T20:17:04.5491177Z"
 }

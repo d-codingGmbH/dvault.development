@@ -3,16 +3,18 @@
   "ticket-id": "06EXB807MN08HABHTHVPKKNFMG",
   "ticket-type": "story",
   "title": "Story: Establish automated test strategy",
-  "revision": "06EXB8GK873NH5KVRHRDNNZXFM",
+  "revision": "06EXBF50VQZZA9SVRRNJS1MPC0",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
     "type/story",
-    "area/testing"
+    "area/testing",
+    "needs-po",
+    "automation/bot-ready"
   ],
   "assignees": [],
   "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "created-at": "2026-04-28T19:45:28.0890835Z",
-  "updated-at": "2026-04-28T19:47:42.0176331Z"
+  "updated-at": "2026-04-28T20:16:42.2053526Z"
 }

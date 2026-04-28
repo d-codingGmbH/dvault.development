@@ -3,16 +3,18 @@
   "ticket-id": "06EXB7F6WNWSJJV14EXTPSFDRG",
   "ticket-type": "epic",
   "title": "Epic: Entity Framework integration and persistence",
-  "revision": "06EXB8DQ87NFM38KH8MWWQSFY4",
+  "revision": "06EXBF5VH183JVWR3CXDC65EY4",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
     "type/epic",
-    "area/ef-integration"
+    "area/ef-integration",
+    "needs-po",
+    "automation/bot-ready"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
   "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
   "created-at": "2026-04-28T19:43:08.6491633Z",
-  "updated-at": "2026-04-28T19:47:18.4654942Z"
+  "updated-at": "2026-04-28T20:16:49.0323396Z"
 }

@@ -3,16 +3,18 @@
   "ticket-id": "06EXB6P4ZNYA46MSYRGAJ9ZEPM",
   "ticket-type": "task",
   "title": "Task: Maintain central guidelines attachment",
-  "revision": "06EXB6PBMK3XVJS45MYG34XV3G",
+  "revision": "06EXBF828KQD3B9ZEKYFHTQJ8C",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
     "type/task",
-    "area/governance"
+    "area/governance",
+    "needs-po",
+    "automation/bot-ready"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:39:43.3388040Z",
-  "updated-at": "2026-04-28T19:39:44.9325010Z"
+  "updated-at": "2026-04-28T20:17:07.1409567Z"
 }

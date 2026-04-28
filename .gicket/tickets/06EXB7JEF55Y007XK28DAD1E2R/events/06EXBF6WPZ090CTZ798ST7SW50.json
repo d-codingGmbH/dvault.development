@@ -1,0 +1,17 @@
+{
+  "event-id": "06EXBF6WPZ090CTZ798ST7SW50",
+  "occurred-at": "2026-04-28T20:16:57.5279564Z",
+  "event-type": "TicketEdited",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "changes": [
+      {
+        "field": "labels",
+        "op": "set"
+      }
+    ]
+  }
+}

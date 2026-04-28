@@ -3,17 +3,19 @@
   "ticket-id": "06EXB4MDREV2T51VJNJEP6R0WR",
   "ticket-type": "epic",
   "title": "Epic: Project charter and shared requirements",
-  "revision": "06EXB8FVZK5X8700T4395HH9BM",
+  "revision": "06EXBF5F394QMS421QSKWKF7VR",
   "status": "todo",
   "labels": [
     "type/epic",
     "area/governance",
-    "backlog/initial-dvault"
+    "backlog/initial-dvault",
+    "needs-po",
+    "automation/bot-ready"
   ],
   "assignees": [],
   "has-attachments": true,
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:30:44.9996191Z",
-  "updated-at": "2026-04-28T19:47:36.0602951Z"
+  "updated-at": "2026-04-28T20:16:45.8509687Z"
 }

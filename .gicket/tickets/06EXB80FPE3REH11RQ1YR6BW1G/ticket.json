@@ -3,16 +3,18 @@
   "ticket-id": "06EXB80FPE3REH11RQ1YR6BW1G",
   "ticket-type": "task",
   "title": "Task: Add unit test categories for metadata and hashing",
-  "revision": "06EXB80NTH8SYP6MSWQ01SFMWM",
+  "revision": "06EXBF6G7DZ305AAEPCK2C5J30",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
     "type/task",
-    "area/testing"
+    "area/testing",
+    "needs-po",
+    "automation/bot-ready"
   ],
   "assignees": [],
   "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "created-at": "2026-04-28T19:45:30.1547839Z",
-  "updated-at": "2026-04-28T19:45:31.6049967Z"
+  "updated-at": "2026-04-28T20:16:54.3312410Z"
 }

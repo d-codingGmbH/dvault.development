@@ -3,16 +3,18 @@
   "ticket-id": "06EXB6ZMBB97J1Z5TBS29QMGPR",
   "ticket-type": "task",
   "title": "Task: Add smoke tests for minimal startup",
-  "revision": "06EXB6ZTPC2CQJS37DTW9B1K3M",
+  "revision": "06EXBF7HAFNDM0N2SXVR1DFCJ8",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
     "type/task",
-    "area/testing"
+    "area/testing",
+    "needs-po",
+    "automation/bot-ready"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:41:01.0253518Z",
-  "updated-at": "2026-04-28T19:41:02.5152963Z"
+  "updated-at": "2026-04-28T20:17:02.8032723Z"
 }

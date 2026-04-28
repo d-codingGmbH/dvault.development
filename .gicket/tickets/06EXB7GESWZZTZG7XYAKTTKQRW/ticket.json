@@ -3,16 +3,18 @@
   "ticket-id": "06EXB7GESWZZTZG7XYAKTTKQRW",
   "ticket-type": "task",
   "title": "Task: Map hubs, links, and satellites to Sqlite tables",
-  "revision": "06EXB7GMXFK5SV1S8S5B1KFCCG",
+  "revision": "06EXBF74XCFKMJJYGBBTXKHTAR",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
     "type/task",
-    "area/ef-integration"
+    "area/ef-integration",
+    "needs-po",
+    "automation/bot-ready"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
   "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
   "created-at": "2026-04-28T19:43:18.8618511Z",
-  "updated-at": "2026-04-28T19:43:20.2995701Z"
+  "updated-at": "2026-04-28T20:16:59.6270718Z"
 }

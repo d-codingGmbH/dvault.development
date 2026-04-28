@@ -3,16 +3,18 @@
   "ticket-id": "06EXB6XKXCG27GYB88KKZVBR3G",
   "ticket-type": "task",
   "title": "Task: Create DVault.slnx and source/test folders",
-  "revision": "06EXB6XT0Z7EDPVW2G4NZVYQX0",
+  "revision": "06EXBF7SGEY2RRFK78865XSSMR",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
     "type/task",
-    "area/foundation"
+    "area/foundation",
+    "needs-po",
+    "automation/bot-ready"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:40:44.5116900Z",
-  "updated-at": "2026-04-28T19:40:45.9595369Z"
+  "updated-at": "2026-04-28T20:17:04.8993370Z"
 }
