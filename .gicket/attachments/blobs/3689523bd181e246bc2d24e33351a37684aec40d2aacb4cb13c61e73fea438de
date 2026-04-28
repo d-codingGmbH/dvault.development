@@ -1,10 +1,10 @@
 # DVault Library Implementation Guidelines
 
 ## Product Goal
-Build DConding.Data.DVault as a .NET 10 library that extends Entity Framework so applications can persist data according to Data Vault 2.x-oriented principles. The default path must stay simple and convention-first.
+Build DCoding.Data.DVault as a .NET 10 library that extends Entity Framework so applications can persist data according to Data Vault 2.x-oriented principles. The default path must stay simple and convention-first.
 
 ## Required Identity
-- Default namespace: DConding.Data.DVault
+- Default namespace: DCoding.Data.DVault
 - Solution format: .slnx
 - Main target: .NET 10
 - NuGet publication: prepare for it, but publish only after quality and feature coverage are sufficient.

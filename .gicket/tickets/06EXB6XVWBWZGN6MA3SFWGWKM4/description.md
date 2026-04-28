@@ -1,8 +1,8 @@
-﻿## Summary
+## Summary
 Create the main class library project for the DVault package.
 
 ## Scope
-- Use default namespace DConding.Data.DVault.
+- Use default namespace DCoding.Data.DVault.
 - Enable nullable reference types and XML docs.
 
 ## Acceptance Criteria

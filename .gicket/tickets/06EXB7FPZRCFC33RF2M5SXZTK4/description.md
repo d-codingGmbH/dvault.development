@@ -1,8 +1,8 @@
-﻿## Summary
+## Summary
 Implement the primary EF model-building entry point.
 
 ## Scope
-- Expose a simple extension method from DConding.Data.DVault.
+- Expose a simple extension method from DCoding.Data.DVault.
 
 ## Acceptance Criteria
 - The extension applies default conventions.

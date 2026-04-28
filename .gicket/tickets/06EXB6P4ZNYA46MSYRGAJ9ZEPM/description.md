@@ -1,4 +1,4 @@
-﻿## Summary
+## Summary
 Keep the shared DVault library guidelines attached to the charter epic.
 
 ## Scope
@@ -6,7 +6,7 @@ Keep the shared DVault library guidelines attached to the charter epic.
 
 ## Acceptance Criteria
 - Attachment name is dvault-library-guidelines.md.
-- Content includes DConding.Data.DVault and .slnx requirements.
+- Content includes DCoding.Data.DVault and .slnx requirements.
 
 ## Definition of Done
 - The work satisfies the acceptance criteria.

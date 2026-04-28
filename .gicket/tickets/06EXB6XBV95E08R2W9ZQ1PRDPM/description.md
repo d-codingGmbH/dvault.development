@@ -1,4 +1,4 @@
-﻿## Summary
+## Summary
 Set up the repository with the intended solution and project structure.
 
 ## Scope
@@ -7,7 +7,7 @@ Set up the repository with the intended solution and project structure.
 
 ## Acceptance Criteria
 - The solution opens and builds with dotnet tooling that supports .slnx.
-- Project names and namespaces match DConding.Data.DVault.
+- Project names and namespaces match DCoding.Data.DVault.
 
 ## Definition of Done
 - The work satisfies the acceptance criteria.

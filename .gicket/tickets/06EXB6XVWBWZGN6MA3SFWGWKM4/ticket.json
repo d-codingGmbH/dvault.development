@@ -1,8 +1,8 @@
-﻿{
+{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06EXB6XVWBWZGN6MA3SFWGWKM4",
   "ticket-type": "task",
-  "title": "Task: Add DConding.Data.DVault library project targeting net10.0",
+  "title": "Task: Add DCoding.Data.DVault library project targeting net10.0",
   "revision": "06EXBF7R4NNT1ESC8FQHJDR4NW",
   "status": "todo",
   "labels": [

@@ -1,5 +1,5 @@
-﻿## Summary
-This charter anchors the initial backlog for DConding.Data.DVault, a .NET 10 library that extends Entity Framework for Data Vault 2.x-oriented persistence.
+## Summary
+This charter anchors the initial backlog for DCoding.Data.DVault, a .NET 10 library that extends Entity Framework for Data Vault 2.x-oriented persistence.
 
 ## Scope
 - Keep the default developer experience simple and convention-first.

@@ -1,12 +1,12 @@
-﻿{
+{
   "$schema": "https://schemas.d-coding.de/gicket/attachment-manifest/v1",
   "attachments": [
     {
       "attachmentId": "06EXB6NTAJVRZB13TS9FFTD2AM",
-      "sha256": "84f65135546ecbe7adcf15f918d2b06de125791236dc06172de5934195c4aec5",
+      "sha256": "3689523bd181e246bc2d24e33351a37684aec40d2aacb4cb13c61e73fea438de",
       "fileName": "dvault-library-guidelines.md",
       "contentType": "text/markdown",
-      "size": 1688,
+      "size": 1714,
       "addedAt": "2026-04-28T19:39:40.5000000Z"
     }
   ]
