@@ -1,0 +1,20 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/types/v1",
+  "ticket-types": {
+    "epic": {
+      "name": "Epic",
+      "color": "orange",
+      "icon": "layers"
+    },
+    "story": {
+      "name": "Story",
+      "color": "green",
+      "icon": "journal-text"
+    },
+    "task": {
+      "name": "Task",
+      "color": "blue",
+      "icon": "check2-square"
+    }
+  }
+}

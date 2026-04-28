@@ -1,0 +1,27 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/workflow/v1",
+  "defaults": {
+    "rules": [
+      {
+        "effect": "allow",
+        "from": "todo",
+        "to": "doing"
+      },
+      {
+        "effect": "allow",
+        "from": "doing",
+        "to": "done"
+      },
+      {
+        "effect": "allow",
+        "from": "done",
+        "to": "doing"
+      },
+      {
+        "effect": "allow",
+        "from": "doing",
+        "to": "todo"
+      }
+    ]
+  }
+}

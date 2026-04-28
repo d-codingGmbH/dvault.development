@@ -1,0 +1,19 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/board/v1",
+  "columns": [
+    {
+      "column-id": "todo",
+      "name": "Todo"
+    },
+    {
+      "column-id": "doing",
+      "name": "Doing"
+    },
+    {
+      "column-id": "done",
+      "name": "Done"
+    }
+  ],
+  "default-column-id": "todo",
+  "enforce-wip-limits": false
+}

@@ -1,0 +1,7 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/project/v1",
+  "event-log": {
+    "payload-mode": "simple"
+  },
+  "name": "DVault"
+}
