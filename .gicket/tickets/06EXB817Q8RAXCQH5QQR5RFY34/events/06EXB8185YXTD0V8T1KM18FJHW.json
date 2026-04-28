@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB8185YXTD0V8T1KM18FJHW",
+  "occurred-at": "2026-04-28T19:45:36.3031847Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Enable XML docs warnings for public and protected API",
+    "status": "todo"
+  }
+}

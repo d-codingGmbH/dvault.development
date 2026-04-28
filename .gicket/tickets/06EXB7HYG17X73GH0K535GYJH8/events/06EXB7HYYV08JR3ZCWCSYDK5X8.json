@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB7HYYV08JR3ZCWCSYDK5X8",
+  "occurred-at": "2026-04-28T19:43:31.0620086Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Support provider readiness for Postgres without implementing Docker setup",
+    "status": "todo"
+  }
+}

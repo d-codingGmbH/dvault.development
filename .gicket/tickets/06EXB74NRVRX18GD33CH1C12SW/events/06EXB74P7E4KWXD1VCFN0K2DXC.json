@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB74P7E4KWXD1VCFN0K2DXC",
+  "occurred-at": "2026-04-28T19:41:42.3310088Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Model Data Vault building blocks",
+    "status": "todo"
+  }
+}

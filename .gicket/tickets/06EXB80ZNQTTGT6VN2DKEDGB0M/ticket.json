@@ -1,0 +1,18 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EXB80ZNQTTGT6VN2DKEDGB0M",
+  "ticket-type": "story",
+  "title": "Story: Enforce public API quality",
+  "revision": "06EXB8F75A8KK2PA80G2W8F9FG",
+  "status": "todo",
+  "labels": [
+    "backlog/initial-dvault",
+    "type/story",
+    "area/quality"
+  ],
+  "assignees": [],
+  "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
+  "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
+  "created-at": "2026-04-28T19:45:34.2368109Z",
+  "updated-at": "2026-04-28T19:47:30.7301630Z"
+}

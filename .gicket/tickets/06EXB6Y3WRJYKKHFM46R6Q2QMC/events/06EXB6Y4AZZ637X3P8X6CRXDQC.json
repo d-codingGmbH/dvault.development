@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB6Y4AZZ637X3P8X6CRXDQC",
+  "occurred-at": "2026-04-28T19:40:48.5994342Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add test projects and shared test utilities",
+    "status": "todo"
+  }
+}

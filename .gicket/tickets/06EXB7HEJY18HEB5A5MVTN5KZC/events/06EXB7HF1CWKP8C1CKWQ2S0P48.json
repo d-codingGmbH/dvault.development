@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB7HF1CWKP8C1CKWQ2S0P48",
+  "occurred-at": "2026-04-28T19:43:26.9874625Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Persist hubs and links idempotently",
+    "status": "todo"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB6PDX36EG06PFEX2254B5R",
+  "occurred-at": "2026-04-28T19:39:45.5125883Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Define repository formatting enforcement",
+    "status": "todo"
+  }
+}

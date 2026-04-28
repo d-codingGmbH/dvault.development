@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB76E5S1JJ36YCE99Z04W1G",
+  "occurred-at": "2026-04-28T19:41:56.6540186Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Design stable hashing contract",
+    "status": "todo"
+  }
+}

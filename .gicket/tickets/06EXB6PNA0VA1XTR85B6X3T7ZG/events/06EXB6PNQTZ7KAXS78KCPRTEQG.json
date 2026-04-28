@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB6PNQTZ7KAXS78KCPRTEQG",
+  "occurred-at": "2026-04-28T19:39:47.5188313Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Establish Data Vault scope boundaries",
+    "status": "todo"
+  }
+}

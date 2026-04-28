@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
+  "name": "Foundation and architecture",
+  "description": "Project setup, shared standards, and core architecture decisions.",
+  "status": "planned",
+  "createdAt": "2026-04-28T19:38:46.3940332Z"
+}

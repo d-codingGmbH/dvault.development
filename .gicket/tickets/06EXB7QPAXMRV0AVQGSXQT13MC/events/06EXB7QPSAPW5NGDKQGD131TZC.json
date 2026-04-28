@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB7QPSAPW5NGDKQGD131TZC",
+  "occurred-at": "2026-04-28T19:44:18.1224077Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Epic: Examples, documentation, and benchmarks",
+    "status": "todo"
+  }
+}

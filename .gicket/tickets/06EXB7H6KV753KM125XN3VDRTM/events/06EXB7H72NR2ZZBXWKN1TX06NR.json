@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB7H72NR2ZZBXWKN1TX06NR",
+  "occurred-at": "2026-04-28T19:43:24.9494880Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Design SaveChanges integration or explicit DVault save service",
+    "status": "todo"
+  }
+}

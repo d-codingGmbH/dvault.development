@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB7T6GDDW6S1F7ZZ6Z03S90",
+  "occurred-at": "2026-04-28T19:44:38.5313682Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Build benchmark harness for normal EF versus DVault",
+    "status": "todo"
+  }
+}

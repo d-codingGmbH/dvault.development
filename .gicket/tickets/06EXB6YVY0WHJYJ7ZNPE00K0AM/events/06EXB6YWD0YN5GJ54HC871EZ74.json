@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB6YWD0YN5GJ54HC871EZ74",
+  "occurred-at": "2026-04-28T19:40:54.7608647Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Configure XML documentation and deterministic builds",
+    "status": "todo"
+  }
+}

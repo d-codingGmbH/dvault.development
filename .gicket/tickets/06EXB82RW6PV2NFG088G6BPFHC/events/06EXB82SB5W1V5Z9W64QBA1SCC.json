@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB82SB5W1V5Z9W64QBA1SCC",
+  "occurred-at": "2026-04-28T19:45:48.8890061Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add CI workflow for build, tests, formatting, and docs validation",
+    "status": "todo"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB6QNRYBSNZRTZDC4S8SJB0",
+  "occurred-at": "2026-04-28T19:39:55.7198558Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Draft default convention policy",
+    "status": "todo"
+  }
+}

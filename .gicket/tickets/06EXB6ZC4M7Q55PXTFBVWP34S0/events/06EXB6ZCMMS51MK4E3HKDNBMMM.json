@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB6ZCMMS51MK4E3HKDNBMMM",
+  "occurred-at": "2026-04-28T19:40:58.9172029Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Design AddDVault and UseDataVault extension method shape",
+    "status": "todo"
+  }
+}

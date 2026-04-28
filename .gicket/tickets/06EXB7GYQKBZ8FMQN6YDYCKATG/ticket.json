@@ -1,0 +1,18 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EXB7GYQKBZ8FMQN6YDYCKATG",
+  "ticket-type": "story",
+  "title": "Story: Implement write pipeline for Data Vault persistence",
+  "revision": "06EXB8GEKWBA273MB7D4N3WDD0",
+  "status": "todo",
+  "labels": [
+    "backlog/initial-dvault",
+    "type/story",
+    "area/persistence"
+  ],
+  "assignees": [],
+  "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
+  "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
+  "created-at": "2026-04-28T19:43:22.9301815Z",
+  "updated-at": "2026-04-28T19:47:40.8315256Z"
+}

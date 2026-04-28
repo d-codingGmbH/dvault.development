@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB74Y5YXM3W9JN38AZYWFDW",
+  "occurred-at": "2026-04-28T19:41:44.3673358Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Define hub, link, and satellite metadata abstractions",
+    "status": "todo"
+  }
+}

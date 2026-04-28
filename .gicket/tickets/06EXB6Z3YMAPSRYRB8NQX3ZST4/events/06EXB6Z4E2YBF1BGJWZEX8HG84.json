@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB6Z4E2YBF1BGJWZEX8HG84",
+  "occurred-at": "2026-04-28T19:40:56.8167356Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Provide convention-first public entry points",
+    "status": "todo"
+  }
+}

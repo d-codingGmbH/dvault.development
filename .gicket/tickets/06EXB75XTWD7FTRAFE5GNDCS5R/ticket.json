@@ -1,0 +1,18 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EXB75XTWD7FTRAFE5GNDCS5R",
+  "ticket-type": "task",
+  "title": "Task: Provide override points for naming policies",
+  "revision": "06EXB763XZEKNAAZD5SA1MB07M",
+  "status": "todo",
+  "labels": [
+    "backlog/initial-dvault",
+    "type/task",
+    "area/modeling"
+  ],
+  "assignees": [],
+  "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
+  "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
+  "created-at": "2026-04-28T19:41:52.5857411Z",
+  "updated-at": "2026-04-28T19:41:54.0313258Z"
+}

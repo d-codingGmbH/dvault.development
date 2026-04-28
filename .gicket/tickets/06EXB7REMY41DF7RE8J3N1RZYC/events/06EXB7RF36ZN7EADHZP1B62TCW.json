@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB7RF36ZN7EADHZP1B62TCW",
+  "occurred-at": "2026-04-28T19:44:24.3450458Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Document project-reference usage and future NuGet installation",
+    "status": "todo"
+  }
+}

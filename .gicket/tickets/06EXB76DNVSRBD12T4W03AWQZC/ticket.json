@@ -1,0 +1,18 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EXB76DNVSRBD12T4W03AWQZC",
+  "ticket-type": "task",
+  "title": "Task: Design stable hashing contract",
+  "revision": "06EXB76KTCFNTWEXES8NS9B154",
+  "status": "todo",
+  "labels": [
+    "backlog/initial-dvault",
+    "type/task",
+    "area/modeling"
+  ],
+  "assignees": [],
+  "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
+  "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
+  "created-at": "2026-04-28T19:41:56.6540186Z",
+  "updated-at": "2026-04-28T19:41:58.0992816Z"
+}

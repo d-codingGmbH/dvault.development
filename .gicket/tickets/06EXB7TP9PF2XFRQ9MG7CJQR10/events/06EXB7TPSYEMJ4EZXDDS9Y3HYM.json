@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB7TPSYEMJ4EZXDDS9Y3HYM",
+  "occurred-at": "2026-04-28T19:44:42.7031018Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Emit benchmark artifacts suitable for documentation",
+    "status": "todo"
+  }
+}

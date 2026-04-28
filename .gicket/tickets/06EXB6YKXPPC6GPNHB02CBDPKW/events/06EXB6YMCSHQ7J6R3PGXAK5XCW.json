@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB6YMCSHQ7J6R3PGXAK5XCW",
+  "occurred-at": "2026-04-28T19:40:52.7100596Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Define NuGet package metadata without publishing",
+    "status": "todo"
+  }
+}

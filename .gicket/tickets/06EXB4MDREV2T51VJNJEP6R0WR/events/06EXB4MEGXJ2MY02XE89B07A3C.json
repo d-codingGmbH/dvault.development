@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB4MEGXJ2MY02XE89B07A3C",
+  "occurred-at": "2026-04-28T19:30:44.9996191Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Epic: Project charter and shared requirements",
+    "status": "todo"
+  }
+}

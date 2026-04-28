@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB82H6P00SK2N49G48TY5CW",
+  "occurred-at": "2026-04-28T19:45:46.8053861Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Document publication criteria and manual release steps",
+    "status": "todo"
+  }
+}

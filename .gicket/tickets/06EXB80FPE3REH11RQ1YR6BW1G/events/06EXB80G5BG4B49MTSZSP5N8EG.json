@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB80G5BG4B49MTSZSP5N8EG",
+  "occurred-at": "2026-04-28T19:45:30.1547839Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add unit test categories for metadata and hashing",
+    "status": "todo"
+  }
+}

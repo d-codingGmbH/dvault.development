@@ -1,0 +1,18 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EXB7HEJY18HEB5A5MVTN5KZC",
+  "ticket-type": "task",
+  "title": "Task: Persist hubs and links idempotently",
+  "revision": "06EXB7HMPBZSEAX2KTC82TKMTM",
+  "status": "todo",
+  "labels": [
+    "backlog/initial-dvault",
+    "type/task",
+    "area/persistence"
+  ],
+  "assignees": [],
+  "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
+  "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
+  "created-at": "2026-04-28T19:43:26.9874625Z",
+  "updated-at": "2026-04-28T19:43:28.4345475Z"
+}

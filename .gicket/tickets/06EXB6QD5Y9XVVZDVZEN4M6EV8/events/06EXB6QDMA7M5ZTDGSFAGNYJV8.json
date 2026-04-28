@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB6QDMA7M5ZTDGSFAGNYJV8",
+  "occurred-at": "2026-04-28T19:39:53.6341390Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define the minimal-configuration product principle",
+    "status": "todo"
+  }
+}

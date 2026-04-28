@@ -1,0 +1,18 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EXB7R6MTJW1PYRN172MW34DM",
+  "ticket-type": "task",
+  "title": "Task: Create README quickstart with minimal configuration",
+  "revision": "06EXB7RCS8B4VYVPJ6FN9Y9BT8",
+  "status": "todo",
+  "labels": [
+    "backlog/initial-dvault",
+    "type/task",
+    "area/documentation"
+  ],
+  "assignees": [],
+  "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
+  "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
+  "created-at": "2026-04-28T19:44:22.2957305Z",
+  "updated-at": "2026-04-28T19:44:23.7540013Z"
+}

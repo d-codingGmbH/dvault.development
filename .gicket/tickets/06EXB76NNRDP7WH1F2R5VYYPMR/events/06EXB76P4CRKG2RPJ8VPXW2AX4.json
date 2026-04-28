@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB76P4CRKG2RPJ8VPXW2AX4",
+  "occurred-at": "2026-04-28T19:41:58.6917225Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Test null, culture, ordering, and binary normalization",
+    "status": "todo"
+  }
+}

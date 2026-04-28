@@ -1,0 +1,18 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EXB6QX6JJX9H7CZT3YAXSAD4",
+  "ticket-type": "task",
+  "title": "Task: Define optional advanced configuration hooks",
+  "revision": "06EXB6R3E0PHYHSGSJ8TTQNE8R",
+  "status": "todo",
+  "labels": [
+    "backlog/initial-dvault",
+    "type/task",
+    "area/developer-experience"
+  ],
+  "assignees": [],
+  "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
+  "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
+  "created-at": "2026-04-28T19:39:57.7376410Z",
+  "updated-at": "2026-04-28T19:39:59.2164475Z"
+}

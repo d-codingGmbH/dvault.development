@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB7RYYDE95AEXWMVY67YA9R",
+  "occurred-at": "2026-04-28T19:44:28.4036056Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Implement normal EF baseline for customer profile",
+    "status": "todo"
+  }
+}

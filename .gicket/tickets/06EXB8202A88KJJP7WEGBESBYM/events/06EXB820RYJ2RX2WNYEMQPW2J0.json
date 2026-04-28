@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB820RYJ2RX2WNYEMQPW2J0",
+  "occurred-at": "2026-04-28T19:45:42.5990775Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Prepare NuGet release gate",
+    "status": "todo"
+  }
+}

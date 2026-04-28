@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB8103HJAHVETTD64QJGFY0",
+  "occurred-at": "2026-04-28T19:45:34.2368109Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Enforce public API quality",
+    "status": "todo"
+  }
+}

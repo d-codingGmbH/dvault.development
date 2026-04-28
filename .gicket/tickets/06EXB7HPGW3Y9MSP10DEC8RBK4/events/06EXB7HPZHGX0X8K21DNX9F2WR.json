@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB7HPZHGX0X8K21DNX9F2WR",
+  "occurred-at": "2026-04-28T19:43:29.0203229Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Persist satellite rows only when hash diff changes",
+    "status": "todo"
+  }
+}

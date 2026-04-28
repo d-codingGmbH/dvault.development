@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB81G7VH28HG5M91W8NH0P0",
+  "occurred-at": "2026-04-28T19:45:38.3661517Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add API approval or compatibility snapshot tests",
+    "status": "todo"
+  }
+}

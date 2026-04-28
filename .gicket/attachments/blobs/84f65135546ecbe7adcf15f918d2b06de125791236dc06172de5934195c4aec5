@@ -1,0 +1,29 @@
+# DVault Library Implementation Guidelines
+
+## Product Goal
+Build DConding.Data.DVault as a .NET 10 library that extends Entity Framework so applications can persist data according to Data Vault 2.x-oriented principles. The default path must stay simple and convention-first.
+
+## Required Identity
+- Default namespace: DConding.Data.DVault
+- Solution format: .slnx
+- Main target: .NET 10
+- NuGet publication: prepare for it, but publish only after quality and feature coverage are sufficient.
+
+## Initial Data Vault Scope
+Focus on hubs, links, satellites, hash keys, hash diffs, load timestamps, record source, deterministic naming, idempotent hub/link writes, and satellite change detection. Advanced automation such as PIT table generation, bridge table generation, multi-active satellites, and provider-specific optimizations can be planned later.
+
+## Developer Experience
+Prefer convention-first behavior. Provide optional hooks for naming, hashing, record source, timestamps, and provider behavior, but do not require them for the first useful scenario.
+
+## Code Standards
+- Indentation width: 2 spaces
+- Tabs: replace with spaces
+- Encoding: UTF-8
+- Line endings: LF
+- Opening braces: same line
+- Public and protected APIs: documented
+- Files: keep one public/protected member per file where practical
+- Namespaces: file-scoped namespaces
+
+## Documentation And Examples
+All documentation and sample text must be in English. Examples and tests should use Sqlite by default. Some scenarios should include normal Entity Framework implementations without DVault for benchmark comparisons. Optional local Postgres tests may exist, but Docker provisioning is outside implementation scope.

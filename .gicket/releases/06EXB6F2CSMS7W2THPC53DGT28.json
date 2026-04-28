@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
+  "name": "v0.2.0-ef-mvp",
+  "description": "EF Core integration, relational mapping, Sqlite persistence MVP, and provider readiness.",
+  "status": "planned",
+  "createdAt": "2026-04-28T19:38:45.2225647Z"
+}

@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB80835H2E0EF7HYCW9659C",
+  "occurred-at": "2026-04-28T19:45:28.0890835Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Establish automated test strategy",
+    "status": "todo"
+  }
+}

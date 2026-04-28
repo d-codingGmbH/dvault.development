@@ -1,0 +1,18 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EXB7ZZDZH7ADQ12R2MGY60A0",
+  "ticket-type": "epic",
+  "title": "Epic: Quality gates and NuGet readiness",
+  "revision": "06EXB8F9EB7DQCA2RP5B4CQJ58",
+  "status": "todo",
+  "labels": [
+    "backlog/initial-dvault",
+    "type/epic",
+    "area/quality"
+  ],
+  "assignees": [],
+  "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
+  "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
+  "created-at": "2026-04-28T19:45:25.9869629Z",
+  "updated-at": "2026-04-28T19:47:31.3140286Z"
+}

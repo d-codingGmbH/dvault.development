@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB80R51GASWS6JHEKS0KJ3R",
+  "occurred-at": "2026-04-28T19:45:32.2006557Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add Sqlite and optional Postgres integration test categories",
+    "status": "todo"
+  }
+}

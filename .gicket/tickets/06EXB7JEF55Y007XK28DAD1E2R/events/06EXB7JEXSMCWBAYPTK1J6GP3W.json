@@ -1,0 +1,13 @@
+{
+  "event-id": "06EXB7JEXSMCWBAYPTK1J6GP3W",
+  "occurred-at": "2026-04-28T19:43:35.1501845Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add optional Postgres integration test switch",
+    "status": "todo"
+  }
+}

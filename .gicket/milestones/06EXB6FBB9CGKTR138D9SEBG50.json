@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
+  "name": "NuGet readiness gate",
+  "description": "Quality, compatibility, packaging, and manual release criteria.",
+  "status": "planned",
+  "createdAt": "2026-04-28T19:38:47.5147254Z"
+}

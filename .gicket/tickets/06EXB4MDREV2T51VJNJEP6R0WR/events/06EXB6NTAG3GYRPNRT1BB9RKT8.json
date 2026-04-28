@@ -1,0 +1,16 @@
+{
+  "event-id": "06EXB6NTAG3GYRPNRT1BB9RKT8",
+  "occurred-at": "2026-04-28T19:39:40.5000000Z",
+  "event-type": "TicketAttachmentAdded",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "attachment-id": "06EXB6NTAJVRZB13TS9FFTD2AM",
+    "sha256": "84f65135546ecbe7adcf15f918d2b06de125791236dc06172de5934195c4aec5",
+    "file-name": "dvault-library-guidelines.md",
+    "content-type": "text/markdown",
+    "size": 1688
+  }
+}
