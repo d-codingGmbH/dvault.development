@@ -3,18 +3,17 @@
   "ticket-id": "06EXB6YVY0WHJYJ7ZNPE00K0AM",
   "ticket-type": "task",
   "title": "Task: Configure XML documentation and deterministic builds",
-  "revision": "06EXBF7M1QRCJH9HQ9JQMPQ1T8",
-  "status": "todo",
+  "revision": "06EXN24PKGSW6K4FZDC0HM4VD0",
+  "status": "done",
   "labels": [
-    "backlog/initial-dvault",
-    "type/task",
     "area/packaging",
-    "needs-po",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "backlog/initial-dvault",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:40:54.7608647Z",
-  "updated-at": "2026-04-28T20:17:03.5017016Z"
+  "updated-at": "2026-04-29T18:37:57.7884687Z"
 }

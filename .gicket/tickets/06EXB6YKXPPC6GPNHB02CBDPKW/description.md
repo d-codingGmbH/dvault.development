@@ -1,4 +1,4 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
+<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
 ## Delivery Contract
 
 ### PO Summary
