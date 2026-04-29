@@ -4,7 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <DVaultBuildProject Include="tests\DVault.Tests\DVault.Tests.csproj" />
+    <DVaultBuildProject Include="DVault.Tests.csproj" />
   </ItemGroup>
 
   <Target Name="Restore">

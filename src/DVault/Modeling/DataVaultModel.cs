@@ -42,7 +42,7 @@ public sealed class DataVaultModel
 /// <summary>
 /// Builds Data Vault model declarations and applies naming conventions.
 /// </summary>
-public sealed class DataVaultModelBuilder
+public sealed partial class DataVaultModelBuilder
 {
     private readonly List<HubDeclaration> _hubs = [];
     private readonly List<LinkDeclaration> _links = [];
