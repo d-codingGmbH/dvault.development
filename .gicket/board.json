@@ -10,6 +10,10 @@
       "name": "Doing"
     },
     {
+      "column-id": "ready-for-integration",
+      "name": "Ready For Integration"
+    },
+    {
       "column-id": "done",
       "name": "Done"
     }

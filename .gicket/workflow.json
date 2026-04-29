@@ -14,6 +14,21 @@
       },
       {
         "effect": "allow",
+        "from": "todo",
+        "to": "ready-for-integration"
+      },
+      {
+        "effect": "allow",
+        "from": "ready-for-integration",
+        "to": "done"
+      },
+      {
+        "effect": "allow",
+        "from": "ready-for-integration",
+        "to": "todo"
+      },
+      {
+        "effect": "allow",
         "from": "done",
         "to": "doing"
       },
