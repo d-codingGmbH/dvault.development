@@ -3,7 +3,7 @@
   "ticket-id": "06EXB6XBV95E08R2W9ZQ1PRDPM",
   "ticket-type": "story",
   "title": "Story: Create .NET 10 solution skeleton using .slnx",
-  "revision": "06EXBF5AGPZ85SD0E9VHEZEKVW",
+  "revision": "06EXKK1P84XT1HFYQ73KJPFQC0",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:40:42.4483884Z",
-  "updated-at": "2026-04-28T20:16:44.6771187Z"
+  "updated-at": "2026-04-29T15:12:12.3530000Z"
 }

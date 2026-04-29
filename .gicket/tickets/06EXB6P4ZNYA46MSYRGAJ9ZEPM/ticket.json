@@ -3,7 +3,7 @@
   "ticket-id": "06EXB6P4ZNYA46MSYRGAJ9ZEPM",
   "ticket-type": "task",
   "title": "Task: Maintain central guidelines attachment",
-  "revision": "06EXE0Z0ZRW4EGF2KHZHJY0ZJW",
+  "revision": "06EXKK1SQ3C8PFVM5Y1SY4M4K0",
   "status": "done",
   "labels": [
     "area/governance",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:39:43.3388040Z",
-  "updated-at": "2026-04-29T02:14:08.8949911Z"
+  "updated-at": "2026-04-29T15:12:13.2400000Z"
 }

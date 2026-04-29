@@ -3,7 +3,7 @@
   "ticket-id": "06EXB6PDF0DSHE68B3V0656DJM",
   "ticket-type": "task",
   "title": "Task: Define repository formatting enforcement",
-  "revision": "06EXE4N7YBST7N8WDW1EYH6KV0",
+  "revision": "06EXKK1XYKD1QTTBX3DH1FJNA4",
   "status": "done",
   "labels": [
     "area/governance",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:39:45.5125883Z",
-  "updated-at": "2026-04-29T02:30:17.3308137Z"
+  "updated-at": "2026-04-29T15:12:14.3240000Z"
 }
