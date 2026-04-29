@@ -1,4 +1,4 @@
-namespace DVault.Modeling;
+namespace DCoding.Data.DVault.Modeling;
 
 /// <summary>
 /// Builds Data Vault model declarations and applies naming conventions.

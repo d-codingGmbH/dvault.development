@@ -2,11 +2,11 @@
 
 Ticket: 06EXB755X9TGQW2EG1G30GJG28
 
-This artifact records the reusable Data Vault technical metadata column contract implemented by this ticket. The contract is implemented in `src/DVault` and covered by executable acceptance tests in `tests/DVault.Tests`.
+This artifact records the reusable Data Vault technical metadata column contract implemented by this ticket. The contract is implemented in `src/DCoding.Data.DVault` and covered by executable acceptance tests in `tests/DCoding.Data.DVault.Tests`.
 
 This branch intentionally leaves generated `bin` and `obj` output out of the deliverable. The source and test project files are included only to host the concrete contract implementation and its acceptance tests now that the foundation scaffold is available.
 
-The repository root contains `DVault.Build.proj` as the automation entrypoint for the policy `dotnet build` and `dotnet test` commands.
+The repository root contains `DVault.slnx` as the automation entrypoint for the policy `dotnet build` and `dotnet test` commands.
 
 ## Contract Shape
 
@@ -40,7 +40,7 @@ The same representation is intended for downstream hub, link, and satellite mode
 
 ## Acceptance Cases For Automated Tests
 
-The executable tests in `tests/DVault.Tests` cover these cases:
+The executable tests in `tests/DCoding.Data.DVault.Tests` cover these cases:
 
 - The default contract set contains exactly four contracts.
 - The default contract set contains one `HashKey` contract, one `HashDiff` contract, one `LoadTimestamp` contract, and one `RecordSource` contract.
@@ -58,4 +58,4 @@ The executable tests in `tests/DVault.Tests` cover these cases:
 
 This artifact does not create a solution file, database DDL, migration script, provider-specific casing policy, or full hub/link/satellite modeling behavior.
 
-The shared contract is implemented in namespace `DCoding.Data.DVault` under `src/DVault`, with focused automated tests under `tests/DVault.Tests`.
+The shared contract is implemented in namespace `DCoding.Data.DVault` under `src/DCoding.Data.DVault`, with focused automated tests under `tests/DCoding.Data.DVault.Tests`.

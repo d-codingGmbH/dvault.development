@@ -1,4 +1,4 @@
-namespace DVault.Modeling;
+namespace DCoding.Data.DVault.Modeling;
 
 /// <summary>
 /// Represents Data Vault names produced by the modeling flow.

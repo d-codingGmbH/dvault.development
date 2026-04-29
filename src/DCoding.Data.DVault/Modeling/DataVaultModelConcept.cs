@@ -1,4 +1,4 @@
-namespace DVault.Modeling;
+namespace DCoding.Data.DVault.Modeling;
 
 /// <summary>
 /// Identifies the MVP Data Vault concepts represented by the default model configuration path.

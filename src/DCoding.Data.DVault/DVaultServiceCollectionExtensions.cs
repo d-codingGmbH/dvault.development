@@ -1,7 +1,7 @@
-using DVault.Modeling;
+using DCoding.Data.DVault.Modeling;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DVault;
+namespace DCoding.Data.DVault;
 
 /// <summary>
 /// Provides startup registration extensions for DVault services and conventions.

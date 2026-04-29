@@ -1,7 +1,7 @@
-using DVault.Tests.Modeling;
+using DCoding.Data.DVault.Tests.Modeling;
 using Xunit;
 
-namespace DVault.Tests.Unit;
+namespace DCoding.Data.DVault.Tests.Unit;
 
 public sealed class ConventionFirstEntryPointCoverageTests
 {

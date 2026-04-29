@@ -1,16 +1,16 @@
 <Solution>
   <Folder Name="/src/">
-    <Project Path="src/DVault/DVault.csproj" />
+    <Project Path="src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
   </Folder>
   <Folder Name="/tests/" />
-  <Folder Name="/tests/DVault.Tests/" />
-  <Folder Name="/tests/DVault.Tests/Integration/">
-    <Project Path="tests/DVault.Tests/Integration/DVault.Tests.Integration.csproj" />
+  <Folder Name="/tests/DCoding.Data.DVault.Tests/" />
+  <Folder Name="/tests/DCoding.Data.DVault.Tests/Integration/">
+    <Project Path="tests/DCoding.Data.DVault.Tests/Integration/DCoding.Data.DVault.Tests.Integration.csproj" />
   </Folder>
-  <Folder Name="/tests/DVault.Tests/Shared/">
-    <Project Path="tests/DVault.Tests/Shared/DVault.Tests.Shared.csproj" />
+  <Folder Name="/tests/DCoding.Data.DVault.Tests/Shared/">
+    <Project Path="tests/DCoding.Data.DVault.Tests/Shared/DCoding.Data.DVault.Tests.Shared.csproj" />
   </Folder>
-  <Folder Name="/tests/DVault.Tests/Unit/">
-    <Project Path="tests/DVault.Tests/Unit/DVault.Tests.Unit.csproj" />
+  <Folder Name="/tests/DCoding.Data.DVault.Tests/Unit/">
+    <Project Path="tests/DCoding.Data.DVault.Tests/Unit/DCoding.Data.DVault.Tests.Unit.csproj" />
   </Folder>
 </Solution>

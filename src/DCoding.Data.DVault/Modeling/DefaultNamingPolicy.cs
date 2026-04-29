@@ -1,7 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Text;
 
-namespace DVault.Modeling;
+namespace DCoding.Data.DVault.Modeling;
 
 /// <summary>
 /// Provides the convention-first v1 table and column names used when no custom naming configuration is supplied.

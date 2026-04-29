@@ -24,7 +24,7 @@ Use these documents as the authoritative sources for their covered decisions:
 | --- | --- |
 | Formatting and encoding | `docs/formatting.md`, `.editorconfig`, `.gitattributes`, `tools/check-format.sh` |
 | Repository layout | `README.md` |
-| Current .NET baseline | `DVault.slnx`, `src/DVault/DVault.csproj` |
+| Current .NET baseline | `DVault.slnx`, `src/DCoding.Data.DVault/DCoding.Data.DVault.csproj` |
 | Data Vault MVP concepts | `docs/architecture/mvp-data-vault-concepts.md` |
 | Default table and column naming | `docs/naming/default-naming-policy.md` |
 | Stable hashing | `docs/plans/stable-hashing-contract.md` |
@@ -62,19 +62,19 @@ V1 layout defaults:
 
 - `DVault.slnx` is the root solution file and the repository-level .NET entry point for `dotnet build` and `dotnet test`.
 - The repository root should keep a single dotnet-discoverable project or solution entry point so no-argument build and test automation stays deterministic.
-- `src/DVault/` contains the main library project. The package id and root namespace are `DCoding.Data.DVault`.
-- `tests/DVault.Tests/` contains unit, integration, and shared test projects.
+- `src/DCoding.Data.DVault/` contains the main library project. The package id and root namespace are `DCoding.Data.DVault`.
+- `tests/DCoding.Data.DVault.Tests/` contains unit, integration, and shared test projects.
 - `docs/` contains documentation, architecture notes, naming policies, and governed planning artifacts.
 - `examples/` is reserved for future runnable DVault API examples.
 - `benchmarks/` is reserved for future performance benchmark projects.
 - Empty scaffold folders use `.gitkeep` files so the intended layout exists in clean checkouts.
 - New project files should be added to `DVault.slnx` when those projects are created unless a later governance ticket documents an exception.
 
-The active v1 repository layout uses `src/DVault/` and `tests/DVault.Tests/` as project paths while preserving `DCoding.Data.DVault` as the package and root namespace identity.
+The active v1 repository layout uses `src/DCoding.Data.DVault/` and `tests/DCoding.Data.DVault.Tests/` as project paths while preserving `DCoding.Data.DVault` as the package and root namespace identity.
 
 ## .NET Project Baseline
 
-The current .NET implementation baseline is visible in `DVault.slnx` and `src/DVault/DVault.csproj`.
+The current .NET implementation baseline is visible in `DVault.slnx` and `src/DCoding.Data.DVault/DCoding.Data.DVault.csproj`.
 
 New DVault .NET projects should use these defaults unless a later ticket documents a specific exception:
 
@@ -88,7 +88,7 @@ Public API source should include generated XML documentation coverage where the 
 
 ## Namespaces And Naming
 
-The visible modeling namespace evidence is `DVault.Modeling` in `src/DVault/Modeling/DefaultNamingPolicy.cs`. Downstream tickets should follow nearby namespace and folder patterns unless their contract explicitly owns namespace changes.
+The visible modeling namespace evidence is `DCoding.Data.DVault.Modeling` in `src/DCoding.Data.DVault/Modeling/DefaultNamingPolicy.cs`. Downstream tickets should follow nearby namespace and folder patterns unless their contract explicitly owns namespace changes.
 
 Default model table and column naming is governed by `docs/naming/default-naming-policy.md`. Downstream implementations must reference that document for:
 
@@ -153,10 +153,10 @@ These decisions are current v1 defaults:
 
 - Repository text formatting and encoding follow `docs/formatting.md`.
 - Local formatting validation runs with `bash tools/check-format.sh`.
-- Layout follows the README baseline for `DVault.slnx`, `src/DVault/`, `tests/DVault.Tests/`, `docs/`, `examples/`, `benchmarks/`, and tracked placeholder folders.
+- Layout follows the README baseline for `DVault.slnx`, `src/DCoding.Data.DVault/`, `tests/DCoding.Data.DVault.Tests/`, `docs/`, `examples/`, `benchmarks/`, and tracked placeholder folders.
 - Current .NET projects target `net10.0` with nullable enabled, implicit usings enabled, and generated XML documentation enabled.
 - C# and other brace-based source files use same-line opening braces.
-- Current modeling namespace evidence is `DVault.Modeling`.
+- Current modeling namespace evidence is `DCoding.Data.DVault.Modeling`.
 - Model table and column naming follows `docs/naming/default-naming-policy.md`.
 - Stable hashing follows `docs/plans/stable-hashing-contract.md`.
 - Provider-neutral persistence conventions follow `docs/plans/dvault-v1-default-persistence-convention-policy.md`.

@@ -1,6 +1,6 @@
 using DCoding.Data.DVault;
 
-namespace DVault.Tests;
+namespace DCoding.Data.DVault.Tests;
 
 internal static class TechnicalMetadataColumnContractTests
 {

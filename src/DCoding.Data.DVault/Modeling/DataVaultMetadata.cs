@@ -1,4 +1,4 @@
-namespace DVault.Modeling;
+namespace DCoding.Data.DVault.Modeling;
 
 /// <summary>
 /// Identifies the Data Vault metadata structures that can be referenced by another metadata declaration.

@@ -67,7 +67,7 @@ Duplicate column identifiers in the same scope receive deterministic numeric suf
 
 ## Public API
 
-The default policy is exposed by `DVault.Modeling.DefaultNamingPolicy`. The shared stateless instance is `DefaultNamingPolicy.Instance`.
+The default policy is exposed by `DCoding.Data.DVault.Modeling.DefaultNamingPolicy`. The shared stateless instance is `DefaultNamingPolicy.Instance`.
 
 The public methods are:
 

@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-namespace DVault.Tests.Shared;
+namespace DCoding.Data.DVault.Tests.Shared;
 
 public sealed class SqliteTestDatabase : IDisposable, IAsyncDisposable
 {

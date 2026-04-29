@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 
-namespace DVault.Modeling;
+namespace DCoding.Data.DVault.Modeling;
 
 /// <summary>
 /// Captures the provider-neutral v1 Data Vault defaults used when callers do not supply model configuration.

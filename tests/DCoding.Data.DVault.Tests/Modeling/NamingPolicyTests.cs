@@ -1,6 +1,6 @@
-using DVault.Modeling;
+using DCoding.Data.DVault.Modeling;
 
-namespace DVault.Tests.Modeling;
+namespace DCoding.Data.DVault.Tests.Modeling;
 
 internal static class NamingPolicyTests
 {

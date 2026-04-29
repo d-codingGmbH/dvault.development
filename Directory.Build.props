@@ -13,7 +13,7 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);$(MSBuildProjectDirectory)/bin/**;$(MSBuildProjectDirectory)/obj/**</DefaultItemExcludes>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'DVault.Tests.Shared' or '$(MSBuildProjectName)' == 'DVault.Tests.Unit' or '$(MSBuildProjectName)' == 'DVault.Tests.Integration'">
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'DCoding.Data.DVault.Tests.Shared' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Tests.Unit' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Tests.Integration'">
     <BaseOutputPath>$(MSBuildThisFileDirectory)bin/$(MSBuildProjectName)/</BaseOutputPath>
     <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
   </PropertyGroup>

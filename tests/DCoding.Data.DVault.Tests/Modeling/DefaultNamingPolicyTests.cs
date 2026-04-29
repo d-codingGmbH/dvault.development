@@ -1,10 +1,10 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using DVault;
-using DVault.Modeling;
+using DCoding.Data.DVault;
+using DCoding.Data.DVault.Modeling;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace DVault.Tests.Modeling;
+namespace DCoding.Data.DVault.Tests.Modeling;
 
 internal static class DefaultNamingPolicyTests
 {
@@ -22,7 +22,7 @@ internal static class DefaultNamingPolicyTests
             new("technical column collisions append Value", TechnicalColumnCollisionsAppendValue),
             new("duplicate normalized column names receive numeric suffixes", DuplicateNormalizedColumnNamesReceiveNumericSuffixes),
             new("repeat calls return identical names", RepeatCallsReturnIdenticalNames),
-            new("AddDVault no-option overload is discoverable from DVault namespace", AddDVaultNoOptionOverloadIsDiscoverable),
+            new("AddDVault no-option overload is discoverable from DCoding.Data.DVault namespace", AddDVaultNoOptionOverloadIsDiscoverable),
             new("AddDVault optionless startup path builds a service provider", AddDVaultOptionlessStartupPathBuildsServiceProvider),
             new("UseDataVault no-option overload applies default conventions", UseDataVaultNoOptionOverloadAppliesDefaultConventions),
             new("default conventions expose MVP vocabulary and hash defaults", DefaultConventionsExposeMvpVocabularyAndHashDefaults),
@@ -156,7 +156,7 @@ internal static class DefaultNamingPolicyTests
                 methodInfo.GetParameters().Length == 1);
         var parameter = method.GetParameters()[0];
 
-        Equal("DVault", method.DeclaringType?.Namespace);
+        Equal("DCoding.Data.DVault", method.DeclaringType?.Namespace);
         Equal(typeof(IServiceCollection), parameter.ParameterType);
         Equal(typeof(IServiceCollection), method.ReturnType);
         True(method.IsDefined(typeof(ExtensionAttribute), inherit: false), "AddDVault must be an extension method.");

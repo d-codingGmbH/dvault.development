@@ -1,7 +1,7 @@
-using DVault.Modeling;
+using DCoding.Data.DVault.Modeling;
 using Xunit;
 
-namespace DVault.Tests.Unit;
+namespace DCoding.Data.DVault.Tests.Unit;
 
 public sealed class DataVaultMetadataTests
 {

@@ -1,7 +1,7 @@
-using DVault.Tests.Shared;
+using DCoding.Data.DVault.Tests.Shared;
 using Xunit;
 
-namespace DVault.Tests.Unit;
+namespace DCoding.Data.DVault.Tests.Unit;
 
 public sealed class TestDiscoverySmokeTests
 {

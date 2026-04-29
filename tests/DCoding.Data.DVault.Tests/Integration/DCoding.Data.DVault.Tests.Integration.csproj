@@ -17,6 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Shared/DVault.Tests.Shared.csproj" />
+    <ProjectReference Include="../Shared/DCoding.Data.DVault.Tests.Shared.csproj" />
   </ItemGroup>
 </Project>

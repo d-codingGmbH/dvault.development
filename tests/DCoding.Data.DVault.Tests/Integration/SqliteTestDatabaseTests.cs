@@ -1,7 +1,7 @@
-using DVault.Tests.Shared;
+using DCoding.Data.DVault.Tests.Shared;
 using Xunit;
 
-namespace DVault.Tests.Integration;
+namespace DCoding.Data.DVault.Tests.Integration;
 
 public sealed class SqliteTestDatabaseTests
 {
