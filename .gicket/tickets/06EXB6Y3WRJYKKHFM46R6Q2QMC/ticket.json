@@ -3,7 +3,7 @@
   "ticket-id": "06EXB6Y3WRJYKKHFM46R6Q2QMC",
   "ticket-type": "task",
   "title": "Task: Add test projects and shared test utilities",
-  "revision": "06EXPR46M27FPE93HGKE0VWFJ4",
+  "revision": "06EXQ1B7BS72C374VFTASJQRYG",
   "status": "done",
   "labels": [
     "area/testing",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:40:48.5994342Z",
-  "updated-at": "2026-04-29T22:33:49.4720000Z"
+  "updated-at": "2026-04-29T23:14:06.3020000Z"
 }

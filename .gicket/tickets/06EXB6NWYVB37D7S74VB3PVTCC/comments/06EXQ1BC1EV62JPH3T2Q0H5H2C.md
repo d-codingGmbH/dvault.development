@@ -1,0 +1,3 @@
+﻿Post-cleanup status note after commit `ae81a4e`:
+
+The shared implementation standards and README now describe the cleaned v1 layout rather than the earlier transitional state: `DVault.slnx` is the root solution, `src/DCoding.Data.DVault/` is the library path, `tests/DCoding.Data.DVault.Tests/` is the test path, and the public namespaces are `DCoding.Data.DVault` and `DCoding.Data.DVault.Modeling`. `bash tools/check-format.sh` passed after the update.

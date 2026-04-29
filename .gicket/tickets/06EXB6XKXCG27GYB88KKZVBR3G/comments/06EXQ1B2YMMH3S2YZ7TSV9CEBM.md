@@ -1,0 +1,3 @@
+﻿Post-cleanup status note after commit `ae81a4e`:
+
+The scaffold has been reconciled with the final v1 naming decision. The active source path is `src/DCoding.Data.DVault/`, the active test path is `tests/DCoding.Data.DVault.Tests/`, and all current .NET projects are included in `DVault.slnx`. Earlier placeholder-only DCoding paths and legacy DVault path references have been replaced by the concrete project layout.

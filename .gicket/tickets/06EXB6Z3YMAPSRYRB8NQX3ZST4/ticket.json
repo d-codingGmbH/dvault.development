@@ -3,7 +3,7 @@
   "ticket-id": "06EXB6Z3YMAPSRYRB8NQX3ZST4",
   "ticket-type": "story",
   "title": "Story: Provide convention-first public entry points",
-  "revision": "06EXN9F5KWDX97WJZ5HEQ8DFZC",
+  "revision": "06EXQ1BDM055CVMNEHAXD86NHC",
   "status": "done",
   "labels": [
     "area/developer-experience",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:40:56.8167356Z",
-  "updated-at": "2026-04-29T19:09:58.5599863Z"
+  "updated-at": "2026-04-29T23:14:07.9040000Z"
 }

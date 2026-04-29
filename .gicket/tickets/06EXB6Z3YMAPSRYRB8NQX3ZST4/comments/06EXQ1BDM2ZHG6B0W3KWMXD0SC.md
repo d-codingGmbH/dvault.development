@@ -1,0 +1,3 @@
+﻿Post-cleanup status note after commit `ae81a4e`:
+
+The convention-first public entry points now live under the package-aligned namespace. `AddDVault` is declared in `DCoding.Data.DVault`, modeling APIs live under `DCoding.Data.DVault.Modeling`, and tests assert this namespace shape directly. The zero-configuration startup and model-building test coverage passed through both root and solution-level `dotnet test`.

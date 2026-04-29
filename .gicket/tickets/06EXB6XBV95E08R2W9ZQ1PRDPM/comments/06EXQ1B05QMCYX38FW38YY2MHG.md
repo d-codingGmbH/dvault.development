@@ -1,0 +1,3 @@
+﻿Post-cleanup status note after commit `ae81a4e`:
+
+The repository foundation has been normalized to the intended DCoding.Data.DVault layout. `DVault.slnx` is the only root solution entry point and now references the real library and test projects. There is no tracked legacy `DVault.sln`, root wrapper project, or `Directory.Build.rsp` discovery workaround. Current validation passed with `dotnet build --nologo`, `dotnet build DVault.slnx --nologo`, `dotnet test --nologo`, `dotnet test DVault.slnx --nologo`, `dotnet pack src/DCoding.Data.DVault/DCoding.Data.DVault.csproj --configuration Release --nologo`, and `bash tools/check-format.sh`.

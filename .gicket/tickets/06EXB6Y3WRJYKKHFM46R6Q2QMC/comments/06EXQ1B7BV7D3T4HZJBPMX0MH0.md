@@ -1,0 +1,3 @@
+﻿Post-cleanup status note after commit `ae81a4e`:
+
+The test infrastructure has been normalized from the transitional `tests/DVault.Tests` layout to `tests/DCoding.Data.DVault.Tests`. The current unit, integration, and shared test projects are included in `DVault.slnx`, use `DCoding.Data.DVault.Tests*` namespaces, and are discovered by both `dotnet test --nologo` and `dotnet test DVault.slnx --nologo`.

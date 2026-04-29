@@ -1,0 +1,3 @@
+﻿Post-cleanup status note after commit `ae81a4e`:
+
+The package identity is now aligned across repository layout, project file, namespaces, and package metadata. The package project is `src/DCoding.Data.DVault/DCoding.Data.DVault.csproj`; `PackageId` and `RootNamespace` remain `DCoding.Data.DVault`; local `dotnet pack src/DCoding.Data.DVault/DCoding.Data.DVault.csproj --configuration Release --nologo` produced both `.nupkg` and `.snupkg` artifacts under `bin/packages` without publishing.
