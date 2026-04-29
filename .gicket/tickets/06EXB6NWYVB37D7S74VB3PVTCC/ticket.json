@@ -3,7 +3,7 @@
   "ticket-id": "06EXB6NWYVB37D7S74VB3PVTCC",
   "ticket-type": "story",
   "title": "Story: Capture shared implementation standards",
-  "revision": "06EXKK325H1QA80R800ZGDRJBW",
+  "revision": "06EXNBRGR4WAJ1W06RVS3GGGRG",
   "status": "done",
   "labels": [
     "area/governance",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:39:41.2942102Z",
-  "updated-at": "2026-04-29T15:12:23.5969702Z"
+  "updated-at": "2026-04-29T19:19:59.4250000Z"
 }

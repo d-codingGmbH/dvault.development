@@ -3,7 +3,7 @@
   "ticket-id": "06EXB6PNA0VA1XTR85B6X3T7ZG",
   "ticket-type": "story",
   "title": "Story: Establish Data Vault scope boundaries",
-  "revision": "06EXJZQJQW0NNMFMPXMWZYE7D4",
+  "revision": "06EXNBRM5SMAPMJ8Y87191TEK8",
   "status": "done",
   "labels": [
     "area/architecture",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:39:47.5188313Z",
-  "updated-at": "2026-04-29T13:47:48.7999546Z"
+  "updated-at": "2026-04-29T19:20:00.3020000Z"
 }
