@@ -1,14 +1,18 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Revised the PO contract to address the critic finding by grounding the MVP concept boundary in visible planning documents and naming policy evidence, while removing any claim that DataVaultModelConcept or DataVaultConventions.ModelConcepts already exist in source. No new child tickets, relations, attachments, or planning documents are needed.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+PO-critic checklist responses
+- critic-item-1: `answered` - The contract is restated so the authoritative baseline comes from docs/architecture/mvp-data-vault-concepts.md, docs/plans/deferred-data-vault-capabilities.md, docs/naming/default-naming-policy.md, docs/plans/stable-hashing-contract.md, and docs/plans/dvault-v1-default-persistence-convention-policy.md. DataVaultModelConcept and DataVaultConventions.ModelConcepts are not required as pre-existing source evidence; if a later implementation chooses those names, it may create or adjust them within this documented scope.
+- critic-item-2: `answered` - The refined contract no longer presents DataVaultConventions.ModelConcepts or DataVaultModelConcept as existing implementation evidence. It treats them only as permissible downstream implementation names if source work needs a finite concept vocabulary, and it keeps the current story's evidence anchored in documentation and visible tests/source layout.
+- critic-item-3: `answered` - The blocking finding is resolved by replacing the prior source-API claim with a documentation-grounded scope statement. The story ratifies the finite MVP concept list from the concept document and naming policy, and explicitly avoids claiming DataVaultModelConcept or DataVaultConventions.ModelConcepts are already implemented unless a later source inspection in a downstream ticket proves that separately.
+
+Clarifications
 - The v1 MVP scope is limited to hubs, links, satellites, hash keys, hash diffs, load timestamps, and record sources.
 - The authoritative evidence for this story is the visible planning and architecture documentation, not an assumed existing source API for DataVaultModelConcept or DataVaultConventions.ModelConcepts.
 - Existing documentation covers the two sides of this story: docs/architecture/mvp-data-vault-concepts.md defines the MVP concepts and docs/plans/deferred-data-vault-capabilities.md names deferred capabilities.
@@ -16,7 +20,7 @@
 - SQLite-oriented examples are the v1 baseline for concept documentation and tests; provider-specific behavior remains deferred.
 - No new child tickets, relations, attachments, or planning documents are required for this refinement pass.
 
-### Scope In
+Scope In
 - Ratify the first useful library scope as Data Vault 2.x hubs, links, satellites, hash keys, hash diffs, load timestamps, and record sources.
 - Keep MVP scope documentation aligned with docs/architecture/mvp-data-vault-concepts.md and the naming expectations in docs/naming/default-naming-policy.md.
 - Confirm that hubs store stable business identities with business key values, one stable hash key, load timestamp, and record source metadata.
@@ -24,7 +28,7 @@
 - Confirm that satellites store descriptive or contextual history for a hub or link with parent hash key, payload columns, hash diff, load timestamp, and record source metadata.
 - Name deferred capabilities explicitly so they do not become hidden MVP requirements.
 
-### Scope Out
+Scope Out
 - PIT table generation, bridge table generation, multi-active satellites, and provider-specific optimizations.
 - Schema generation, loading automation, migrations, validation tooling, and provider adapters unless a later implementation ticket explicitly scopes them.
 - Final hash-key or hash-diff algorithm selection, normalization rules, delimiter/casing/null-handling rules, and domain field participation beyond the already documented stable hashing contract boundaries.
@@ -32,66 +36,35 @@
 - Non-SQLite dialect commitments and database-specific physical tuning.
 - Any claim that DataVaultModelConcept or DataVaultConventions.ModelConcepts already exists in source for this ticket unless a later implementation ticket verifies that source evidence directly.
 
-## Acceptance Criteria
-- The story identifies hubs, links, satellites, hash keys, hash diffs, load timestamps, and record sources as the complete MVP Data Vault concept set.
-- The story documents that the MVP is small enough to implement and test using SQLite-oriented examples without requiring advanced Data Vault automation.
-- The story clearly states that PIT table generation, bridge table generation, multi-active satellites, and provider-specific optimizations are deferred from MVP scope.
-- The story aligns with the existing MVP concept document, deferred-capabilities document, stable hashing contract, default naming policy, and v1 default persistence convention policy.
-- The story avoids promising schema generation, loading automation, hash computation, migrations, provider tuning, or full enterprise Data Vault coverage as part of the MVP.
-- The story does not depend on DataVaultModelConcept or DataVaultConventions.ModelConcepts being present before downstream implementation begins.
-
-## Definition of Done
-- The parent story has a PO refinement contract that ratifies the MVP concept boundary and deferred-capability boundary.
-- The contract references the completed child documentation work and does not require further ticket splitting for this story.
-- The resulting scope is actionable for downstream architecture or development tickets without a separate PO decision about which Data Vault concepts are in v1.
-- Shared documentation standards from the charter context are followed, with English planning text and clear separation between MVP commitments and future work.
-- No product code or arbitrary repository files are changed as part of this PO refinement.
-- The contract answers the PO-critic finding by removing unsupported source-API evidence claims.
-
-## Implementation Notes
-- Treat docs/architecture/mvp-data-vault-concepts.md as the source of truth for the MVP concept explanation.
-- Treat docs/plans/deferred-data-vault-capabilities.md as the source of truth for post-MVP Data Vault capabilities named by this story.
-- Use docs/naming/default-naming-policy.md for default table and technical column naming expectations where naming is relevant, including Hub, Link, Sat prefixes and HashKey, HashDiff, LoadTimestamp, and RecordSource columns.
-- Use docs/plans/stable-hashing-contract.md only for shared stable hashing boundaries; this story does not decide Data Vault-specific business-key or payload normalization inputs.
-- Use docs/plans/dvault-v1-default-persistence-convention-policy.md as provider-neutral persistence context, while keeping Data Vault MVP examples portable and SQLite-oriented.
-- If downstream implementation needs a finite source representation of the concept vocabulary, developers may create or adjust names such as DataVaultModelConcept or DataVaultConventions.ModelConcepts, but those names are not required by this story and are not treated here as existing evidence.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should PIT, bridge, multi-active satellite, and provider optimization work become separate epics or smaller capability stories when post-MVP planning starts?
 - Should a later implementation ticket bind Data Vault hash-key and hash-diff generation to the stable hashing contract with explicit domain field normalization rules?
 - Should non-SQLite providers receive separate acceptance criteria after the MVP SQLite validation path is complete?
 - Should later API design expose link satellites directly, since the current modeling builder evidence shows hub satellites and links but not a visible link-satellite declaration surface?
 - Should a downstream source ticket introduce an explicit finite model concept enum or convention surface, and if so should it use the names DataVaultModelConcept and DataVaultConventions.ModelConcepts?
 
-## Risks
+Risks
 - If downstream tickets treat deferred capabilities as implicit MVP requirements, the first package can become too large to implement and test cleanly.
 - Hash-key and hash-diff wording can overconstrain future implementation if it drifts from planned persistence conventions into algorithm commitments before the dedicated hashing work owns those decisions.
 - The README still references older DCoding.Data.DVault scaffold paths while the current branch also contains src/DVault and tests/DVault.Tests; downstream implementation tickets should follow the active project evidence on their branch rather than relying on stale layout text alone.
 - If future source work assumes DataVaultModelConcept or DataVaultConventions.ModelConcepts already exists without verifying source, it may repeat the evidence gap identified by PO-critic.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended for this story. The already completed child tickets for MVP concepts (06EXB6PX7ZGYNR2SXF44C5VPJM) and deferred capabilities (06EXB6Q57D5CRQVGB0ZS29DCSW) cover the bounded planning work needed for PO-critic review.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 6
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Summary
-Define which Data Vault 2.x concepts are in the first useful library scope.
-
-## Scope
-- Clarify MVP support for hubs, links, satellites, hash keys, hash diffs, load timestamps, and record source.
-- List advanced capabilities that are intentionally deferred.
-
-## Acceptance Criteria
-- MVP scope is small enough to implement and test.
-- Deferred topics are named so they do not become hidden requirements.
-
-## Definition of Done
-- The work satisfies the acceptance criteria.
-- Shared standards from the charter attachment are followed.
+Run mode
+- apply: planned updates are applied after this comment
