@@ -88,9 +88,9 @@ public sealed partial class DataVaultModelBuilder
         ArgumentNullException.ThrowIfNull(participantNames);
 
         var participants = participantNames.ToArray();
-        if (participants.Length == 0)
+        if (participants.Length < 2)
         {
-            throw new ArgumentException("A link requires at least one participant.", nameof(participantNames));
+            throw new ArgumentException("A link requires at least two participants.", nameof(participantNames));
         }
 
         foreach (var participantName in participants)
