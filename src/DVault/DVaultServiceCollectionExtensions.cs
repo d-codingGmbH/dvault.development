@@ -10,6 +10,7 @@ public static class DVaultServiceCollectionExtensions
 {
     /// <summary>
     /// Adds the provider-neutral DVault defaults used by the optionless v1 startup path.
+    /// This convention-first entry point requires no DVault options object; advanced configuration remains optional.
     /// </summary>
     /// <param name="services">The service collection used by the application startup pipeline.</param>
     /// <returns>The same service collection so startup configuration can continue fluently.</returns>

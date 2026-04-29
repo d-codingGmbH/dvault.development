@@ -3,7 +3,7 @@
   "ticket-id": "06EXB6ZMBB97J1Z5TBS29QMGPR",
   "ticket-type": "task",
   "title": "Task: Add smoke tests for minimal startup",
-  "revision": "06EXM3CJ9RRGDP4RRW0KVRWN8G",
+  "revision": "06EXN9E1315X209CYJMHD2G29G",
   "status": "done",
   "labels": [
     "area/testing",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:41:01.0253518Z",
-  "updated-at": "2026-04-29T16:23:35.7586490Z"
+  "updated-at": "2026-04-29T19:09:49.2080000Z"
 }
