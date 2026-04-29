@@ -3,18 +3,17 @@
   "ticket-id": "06EXB6QD5Y9XVVZDVZEN4M6EV8",
   "ticket-type": "story",
   "title": "Story: Define the minimal-configuration product principle",
-  "revision": "06EXBF5CAJQ2NX9SGN0JA142S0",
-  "status": "todo",
+  "revision": "06EXK9A6Q2Q7H8CRY0REQAV5E8",
+  "status": "done",
   "labels": [
-    "backlog/initial-dvault",
-    "type/story",
     "area/developer-experience",
-    "needs-po",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "backlog/initial-dvault",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:39:53.6341390Z",
-  "updated-at": "2026-04-28T20:16:45.1405183Z"
+  "updated-at": "2026-04-29T14:29:40.6640934Z"
 }

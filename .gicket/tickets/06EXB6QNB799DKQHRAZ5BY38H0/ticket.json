@@ -3,7 +3,7 @@
   "ticket-id": "06EXB6QNB799DKQHRAZ5BY38H0",
   "ticket-type": "task",
   "title": "Task: Draft default convention policy",
-  "revision": "06EXE0ZDYR058VWC4WRRBWYGR4",
+  "revision": "06EXK98ZW5KE6T24KM4BKJW2DC",
   "status": "done",
   "labels": [
     "area/developer-experience",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:39:55.7198558Z",
-  "updated-at": "2026-04-29T02:14:12.2148993Z"
+  "updated-at": "2026-04-29T14:29:30.7210000Z"
 }

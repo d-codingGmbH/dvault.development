@@ -1,89 +1,58 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the story as a product-level minimal-configuration principle using repository and relation evidence. Completed child work already defines the default convention policy (06EXB6QNB799DKQHRAZ5BY38H0) and optional advanced configuration hooks (06EXB6QX6JJX9H7CZT3YAXSAD4), so this ticket can ratify the convention-first baseline for downstream entry-point work.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
-- The v1 product principle is convention-first: ordinary DVault usage must work without custom configuration, and configuration exists to override or extend defaults only when users need advanced behavior.
+Clarifications
+- The v1 product principle is convention-first: <redacted> DVault usage must work without custom configuration, and configuration exists to override or extend defaults only when users need advanced behavior.
 - Existing repository evidence already fixes the bounded baseline: AddDVault registers provider-neutral defaults, DataVaultConventions.Default exposes default concepts and logical object names, DataVaultModel.Create accepts optional options, and the planning docs define deterministic naming, persistence, hashing, timestamps, record source, and provider behavior defaults.
 - Completed child ticket 06EXB6QNB799DKQHRAZ5BY38H0 produced the default convention policy, and completed child ticket 06EXB6QX6JJX9H7CZT3YAXSAD4 produced the optional advanced configuration hook plan; this story should consolidate those outcomes rather than reopen them.
 - Downstream story 06EXB6Z3YMAPSRYRB8NQX3ZST4 should use this principle when refining public entry points, but implementation API shape belongs there rather than in this product-principle ticket.
 
-### Scope In
+Scope In
 - Define the minimal-configuration principle as a first-class product constraint for DVault v1 developer experience.
 - Ratify the zero-configuration default path: users should be able to register DVault defaults and build a simple model without selecting providers, naming policies, hash services, timestamp behavior, or configuration files up front.
 - Require defaults to be deterministic across machines, processes, cultures, time zones, providers, and repeated runs unless a later versioned contract explicitly changes them.
 - Preserve advanced configuration hooks as optional additive overrides for naming, hashing, record source resolution, timestamp sourcing and formatting, and provider behavior.
 - Tie the principle to quickstart expectations: the first-use path should be short, convention-led, and focused on the user's model rather than framework setup.
 
-### Scope Out
+Scope Out
 - Implementing new runtime APIs, persistence providers, schema generation, migrations, hashing code, or provider-specific configuration behavior.
 - Renaming established default policy artifacts or reopening completed decisions from the default convention policy, optional hook plan, naming policy, or stable hashing contract.
 - Choosing exact method names, parameter names, helper class names, or file layout details for downstream implementation tickets.
 - Adding PIT tables, bridge tables, multi-active satellites, provider-specific optimizations, or other deferred Data Vault capabilities to the MVP default path.
 - Workflow metadata changes, status transitions, labels, board configuration, or runtime handoff mechanics.
 
-## Acceptance Criteria
-- The refined product principle states that the ordinary DVault v1 path is convention-first and requires no custom configuration before first use.
-- The principle explicitly identifies advanced configuration as optional and additive, with unset hooks inheriting documented v1 defaults.
-- The first-use expectation is concrete enough that a quickstart can show a small number of DVault-specific calls without requiring provider tuning, configuration files, custom naming, custom hashing, or timestamp setup.
-- The principle references the established v1 defaults from the default naming policy, default persistence convention policy, stable hashing contract, MVP Data Vault concept document, and optional advanced hooks plan without duplicating all low-level rules.
-- The principle keeps future provider-specific and advanced Data Vault capabilities outside the MVP default path while allowing separate follow-up tickets to expand them.
-- No unresolved PO-level blockers remain for PO-critic review.
-
-## Definition of Done
-- The ticket contract captures the minimal-configuration principle, its defaults-first implications, and its non-goals clearly enough for downstream PO, critic, and developer roles to apply it.
-- Completed child planning outcomes for default conventions and optional advanced hooks are acknowledged as authoritative inputs to this story.
-- Downstream implementation tickets can use the principle to evaluate whether public entry points and examples remain simple enough for first use.
-- Any future expansion decisions are recorded as non-blocking follow-up questions rather than current-ticket blockers.
-- No product code changes are required to satisfy this PO refinement.
-
-## Implementation Notes
-- Use src/DVault as the visible owning implementation project for current evidence, with tests under tests/DVault.Tests when implementation tickets need to verify this principle.
-- The current AddDVault optionless registration and DataVaultModel.Create optional configureOptions shape are consistent with the principle and should be preserved unless a later accepted ticket deliberately changes the public entry-point design.
-- DataVaultConventions.Default already anchors v1 defaults: MVP concepts are Hub, Link, Satellite, HashKey, HashDiff, LoadTimestamp, and RecordSource; stable hashing uses sha256-v1; logical persistence objects are dvault_records, dvault_record_payloads, and dvault_record_metadata.
-- Default model naming follows docs/naming/default-naming-policy.md, while logical persistence names and metadata follow docs/plans/dvault-v1-default-persistence-convention-policy.md; do not reopen those naming baselines in this story.
-- Advanced hooks should remain grouped by responsibility and independently overridable so configuring one category does not force users to restate defaults for unrelated categories.
-- Quickstart and example work should be judged against the principle: the normal path should explain the model and outcome first, then surface options only after the default path is understandable.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - When downstream public entry-point story 06EXB6Z3YMAPSRYRB8NQX3ZST4 is refined, what exact quickstart example should become the canonical minimal path?
 - After provider priorities are known, which provider-specific options deserve separate tickets without weakening the provider-neutral default path?
 - Should a later documentation ticket create a dedicated user-facing quickstart page that demonstrates AddDVault and optionless model creation against the accepted v1 defaults?
 
-## Risks
+Risks
 - If downstream API work adds required setup before users can build a basic vault model, it will violate this principle even if the underlying configuration hooks remain technically optional.
 - If examples lead with advanced options, users may perceive configuration as required; quickstart material should keep options after the default path.
 - The repository currently contains both reserved DCoding.Data.DVault layout references and visible src/DVault implementation files; downstream implementation tickets should follow the current branch evidence while avoiding unrelated layout churn.
 
-## Split Recommendations
+Split recommendations
 - No new split is recommended for this story. The already-completed child tickets for default conventions and optional advanced hooks cover the major planning subdivisions, and the remaining public entry-point work is already represented by downstream story 06EXB6Z3YMAPSRYRB8NQX3ZST4.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 5
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Summary
-Make simple usage a primary product constraint for the library.
-
-## Scope
-- Define convention-first defaults and optional advanced configuration hooks.
-- Avoid requiring many setup steps before first use.
-
-## Acceptance Criteria
-- The expected first-use path fits in a short quickstart.
-- Advanced options remain optional.
-
-## Definition of Done
-- The work satisfies the acceptance criteria.
-- Shared standards from the charter attachment are followed.
+Run mode
+- apply: planned updates are applied after this comment

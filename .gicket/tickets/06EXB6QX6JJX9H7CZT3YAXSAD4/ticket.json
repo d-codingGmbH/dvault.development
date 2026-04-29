@@ -3,7 +3,7 @@
   "ticket-id": "06EXB6QX6JJX9H7CZT3YAXSAD4",
   "ticket-type": "task",
   "title": "Task: Define optional advanced configuration hooks",
-  "revision": "06EXK2EX4MET9Y6T298YKEHBF8",
+  "revision": "06EXK993HX2VVTEEZJV9R47SE8",
   "status": "done",
   "labels": [
     "area/developer-experience",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:39:57.7376410Z",
-  "updated-at": "2026-04-29T13:59:44.1655571Z"
+  "updated-at": "2026-04-29T14:29:31.6630000Z"
 }
