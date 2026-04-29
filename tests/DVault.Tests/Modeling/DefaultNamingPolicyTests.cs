@@ -23,7 +23,7 @@ internal static class DefaultNamingPolicyTests
             new("duplicate normalized column names receive numeric suffixes", DuplicateNormalizedColumnNamesReceiveNumericSuffixes),
             new("repeat calls return identical names", RepeatCallsReturnIdenticalNames),
             new("AddDVault no-option overload is discoverable from DVault namespace", AddDVaultNoOptionOverloadIsDiscoverable),
-            new("AddDVault registers provider-neutral defaults", AddDVaultRegistersProviderNeutralDefaults),
+            new("AddDVault optionless startup path builds a service provider", AddDVaultOptionlessStartupPathBuildsServiceProvider),
             new("UseDataVault no-option overload applies default conventions", UseDataVaultNoOptionOverloadAppliesDefaultConventions),
             new("default conventions expose MVP vocabulary and hash defaults", DefaultConventionsExposeMvpVocabularyAndHashDefaults),
         };
@@ -162,24 +162,23 @@ internal static class DefaultNamingPolicyTests
         True(method.IsDefined(typeof(ExtensionAttribute), inherit: false), "AddDVault must be an extension method.");
     }
 
-    private static void AddDVaultRegistersProviderNeutralDefaults()
+    private static void AddDVaultOptionlessStartupPathBuildsServiceProvider()
     {
         var services = new ServiceCollection();
 
         var result = services.AddDVault();
-        var namingDescriptor = SingleService(services, typeof(DefaultNamingPolicy));
-        var conventionsDescriptor = SingleService(services, typeof(DataVaultConventions));
 
         Same(services, result);
-        Equal(ServiceLifetime.Singleton, namingDescriptor.Lifetime);
-        Same(DefaultNamingPolicy.Instance, namingDescriptor.ImplementationInstance);
-        Equal(ServiceLifetime.Singleton, conventionsDescriptor.Lifetime);
-        Same(DataVaultConventions.Default, conventionsDescriptor.ImplementationInstance);
 
-        services.AddDVault();
+        using var provider = services.BuildServiceProvider(validateScopes: true);
 
-        Equal(1, services.Count(descriptor => descriptor.ServiceType == typeof(DefaultNamingPolicy)));
-        Equal(1, services.Count(descriptor => descriptor.ServiceType == typeof(DataVaultConventions)));
+        var namingPolicy = provider.GetRequiredService<DefaultNamingPolicy>();
+        var conventions = provider.GetRequiredService<DataVaultConventions>();
+
+        Same(DefaultNamingPolicy.Instance, namingPolicy);
+        Same(DataVaultConventions.Default, conventions);
+        Same(DefaultNamingPolicy.Instance, conventions.NamingPolicy);
+        Equal("HubCustomer", conventions.NamingPolicy.GetHubTableName("Customers"));
     }
 
     private static void UseDataVaultNoOptionOverloadAppliesDefaultConventions()
@@ -245,11 +244,6 @@ internal static class DefaultNamingPolicyTests
                     "At index " + index + " expected " + expectedArray[index] + " but got " + actualArray[index] + ".");
             }
         }
-    }
-
-    private static ServiceDescriptor SingleService(IServiceCollection services, Type serviceType)
-    {
-        return services.Single(descriptor => descriptor.ServiceType == serviceType);
     }
 
     private static void Same(object? expected, object? actual)

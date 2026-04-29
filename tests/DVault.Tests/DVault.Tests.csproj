@@ -10,6 +10,7 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
+    <StartupObject>DVault.Tests.Modeling.DefaultNamingPolicyTests</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,6 +18,12 @@
     <DVaultTestProject Include="Integration/DVault.Tests.Integration.csproj" />
     <DVaultTestAssembly Include="$(MSBuildThisFileDirectory)../../bin/DVault.Tests.Unit/$(Configuration)/$(TargetFramework)/DVault.Tests.Unit.dll" />
     <DVaultTestAssembly Include="$(MSBuildThisFileDirectory)../../bin/DVault.Tests.Integration/$(Configuration)/$(TargetFramework)/DVault.Tests.Integration.dll" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Integration\**\*.cs" />
+    <Compile Remove="Shared\**\*.cs" />
+    <Compile Remove="Unit\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
