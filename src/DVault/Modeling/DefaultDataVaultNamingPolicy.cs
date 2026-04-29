@@ -1,11 +1,11 @@
 namespace DVault.Modeling;
 
 /// <summary>
-/// Provides deterministic built-in names when no custom naming policy is configured.
+/// Adapts the provider-neutral v1 default naming policy to the model-building override surface.
 /// </summary>
 public sealed class DefaultDataVaultNamingPolicy : IDataVaultNamingPolicy
 {
-    private const string EmptyValueFallback = "Unnamed";
+    private static readonly DefaultNamingPolicy DefaultPolicy = DefaultNamingPolicy.Instance;
 
     /// <summary>
     /// Gets the shared stateless default naming policy instance.
@@ -20,71 +20,91 @@ public sealed class DefaultDataVaultNamingPolicy : IDataVaultNamingPolicy
     public string GetHubTableName(DataVaultHubNameContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return ComposeName("Hub", context.EntityName);
+        return DefaultPolicy.GetHubTableName(context.EntityName);
     }
 
     /// <inheritdoc />
     public string GetLinkTableName(DataVaultLinkNameContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return ComposeName("Link", context.RelationshipName);
+        return DefaultPolicy.GetLinkTableName(context.RelationshipName, context.ParticipantNames);
     }
 
     /// <inheritdoc />
     public string GetSatelliteTableName(DataVaultSatelliteNameContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return ComposeName("Satellite", context.ParentEntityName, context.SatelliteName);
+        return DefaultPolicy.GetSatelliteTableName(context.ParentEntityName, context.SatelliteName);
     }
 
     /// <inheritdoc />
     public string GetTechnicalColumnName(DataVaultTechnicalColumnNameContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return ComposeName("TechnicalColumn", context.Kind.ToString(), context.BaseName);
+        return context.Kind switch
+        {
+            DataVaultTechnicalColumnKind.HashKey => DefaultPolicy.GetHashKeyColumnName(context.BaseName),
+            DataVaultTechnicalColumnKind.HashDiff => DefaultPolicy.GetHashDiffColumnName(),
+            DataVaultTechnicalColumnKind.LoadTimestamp => DefaultPolicy.GetLoadTimestampColumnName(),
+            DataVaultTechnicalColumnKind.RecordSource => DefaultPolicy.GetRecordSourceColumnName(),
+            _ => throw new ArgumentOutOfRangeException(nameof(context), context.Kind, "Unsupported technical column kind."),
+        };
     }
 
     /// <inheritdoc />
     public string GetIndexName(DataVaultIndexNameContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return ComposeName(
-            "Index",
-            context.Kind.ToString(),
-            context.TableName,
-            context.IsUnique ? "Unique" : "NonUnique",
-            JoinNameParts(context.ColumnNames));
+        return "Ix" + NormalizeProducedName(context.TableName) + GetIndexKindToken(context.Kind) + JoinProducedNames(context.ColumnNames);
     }
 
     /// <inheritdoc />
     public string GetConstraintName(DataVaultConstraintNameContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return ComposeName(
-            "Constraint",
-            context.Kind.ToString(),
-            context.TableName,
-            JoinNameParts(context.ColumnNames));
+        return GetConstraintKindToken(context.Kind) + NormalizeProducedName(context.TableName) + JoinProducedNames(context.ColumnNames);
     }
 
     internal static string NormalizeColumnName(string? value)
     {
-        return NormalizeNamePart(value);
+        return DefaultPolicy.NormalizeColumnName(value);
     }
 
-    private static string ComposeName(string family, params string?[] parts)
+    internal static IReadOnlyList<string> GetColumnNames(
+        IEnumerable<string?> propertyNames,
+        IEnumerable<string>? additionalUnsafeColumnNames = null)
     {
-        return family + "__" + JoinNameParts(parts);
+        return DefaultPolicy.GetColumnNames(propertyNames, additionalUnsafeColumnNames);
     }
 
-    private static string JoinNameParts(IReadOnlyList<string?> parts)
+    private static string GetIndexKindToken(DataVaultIndexKind kind)
     {
-        return string.Join("__", parts.Select(NormalizeNamePart));
+        return kind switch
+        {
+            DataVaultIndexKind.BusinessKey => "BusinessKey",
+            DataVaultIndexKind.Relationship => "Relationship",
+            DataVaultIndexKind.SatelliteParent => "SatelliteParent",
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported index kind."),
+        };
     }
 
-    private static string NormalizeNamePart(string? value)
+    private static string GetConstraintKindToken(DataVaultConstraintKind kind)
     {
-        var trimmed = value?.Trim();
-        return string.IsNullOrEmpty(trimmed) ? EmptyValueFallback : trimmed;
+        return kind switch
+        {
+            DataVaultConstraintKind.PrimaryKey => "Pk",
+            DataVaultConstraintKind.ForeignKey => "Fk",
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported constraint kind."),
+        };
+    }
+
+    private static string JoinProducedNames(IEnumerable<string> names)
+    {
+        return string.Concat(names.Select(NormalizeProducedName));
+    }
+
+    private static string NormalizeProducedName(string? value)
+    {
+        return DefaultPolicy.NormalizeProducedIdentifier(value);
     }
 }

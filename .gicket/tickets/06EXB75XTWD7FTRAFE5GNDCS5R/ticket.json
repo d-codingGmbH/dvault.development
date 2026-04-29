@@ -3,7 +3,7 @@
   "ticket-id": "06EXB75XTWD7FTRAFE5GNDCS5R",
   "ticket-type": "task",
   "title": "Task: Provide override points for naming policies",
-  "revision": "06EXHANTYPKRAHEKQJAKD5Y0R0",
+  "revision": "06EXKMAA2HS16RNDJPPW9XQ3DR",
   "status": "done",
   "labels": [
     "area/modeling",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:41:52.5857411Z",
-  "updated-at": "2026-04-29T09:56:00.8859846Z"
+  "updated-at": "2026-04-29T15:17:45.1080000Z"
 }

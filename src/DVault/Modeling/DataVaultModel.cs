@@ -73,11 +73,18 @@ public sealed partial class DataVaultModelBuilder
     }
 
     /// <summary>
-    /// Adds a link declaration to the model.
+    /// Adds a link declaration whose table name is based on participant names in declaration order.
     /// </summary>
-    public DataVaultModelBuilder Link(string relationshipName, IEnumerable<string> participantNames)
+    public DataVaultModelBuilder Link(IEnumerable<string> participantNames)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(relationshipName);
+        return Link(null, participantNames);
+    }
+
+    /// <summary>
+    /// Adds a link declaration to the model, using the relationship name when one is supplied.
+    /// </summary>
+    public DataVaultModelBuilder Link(string? relationshipName, IEnumerable<string> participantNames)
+    {
         ArgumentNullException.ThrowIfNull(participantNames);
 
         var participants = participantNames.ToArray();
@@ -91,7 +98,7 @@ public sealed partial class DataVaultModelBuilder
             ArgumentException.ThrowIfNullOrWhiteSpace(participantName);
         }
 
-        _links.Add(new LinkDeclaration(relationshipName, participants));
+        _links.Add(new LinkDeclaration(NormalizeOptionalRelationshipName(relationshipName), participants));
         return this;
     }
 
@@ -138,8 +145,10 @@ public sealed partial class DataVaultModelBuilder
             new(recordSourceColumnName, DataVaultColumnKind.Technical),
         };
 
-        var businessKeyColumns = hub.BusinessKeyProperties
-            .Select(propertyName => DefaultDataVaultNamingPolicy.NormalizeColumnName(propertyName))
+        var businessKeyColumns = DefaultDataVaultNamingPolicy
+            .GetColumnNames(
+                hub.BusinessKeyProperties,
+                [hashKeyColumnName, loadTimestampColumnName, recordSourceColumnName])
             .ToArray();
 
         foreach (var businessKeyColumn in businessKeyColumns)
@@ -194,11 +203,13 @@ public sealed partial class DataVaultModelBuilder
             new(recordSourceColumnName, DataVaultColumnKind.Technical),
         };
 
-        foreach (var payloadProperty in satellite.PayloadProperties)
+        var payloadColumns = DefaultDataVaultNamingPolicy.GetColumnNames(
+            satellite.PayloadProperties,
+            [parentHashKeyColumnName, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);
+
+        foreach (var payloadColumn in payloadColumns)
         {
-            columns.Add(new DataVaultColumn(
-                DefaultDataVaultNamingPolicy.NormalizeColumnName(payloadProperty),
-                DataVaultColumnKind.Payload));
+            columns.Add(new DataVaultColumn(payloadColumn, DataVaultColumnKind.Payload));
         }
 
         var indexes = new[]
@@ -230,12 +241,13 @@ public sealed partial class DataVaultModelBuilder
     {
         var tableName = namingPolicy.GetLinkTableName(
             new DataVaultLinkNameContext(link.RelationshipName, link.ParticipantNames));
+        var linkHashKeyBaseName = GetLinkHashKeyBaseName(link);
         var linkHashKeyColumnName = namingPolicy.GetTechnicalColumnName(
-            new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, link.RelationshipName, tableName));
+            new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, linkHashKeyBaseName, tableName));
         var loadTimestampColumnName = namingPolicy.GetTechnicalColumnName(
-            new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, link.RelationshipName, tableName));
+            new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, linkHashKeyBaseName, tableName));
         var recordSourceColumnName = namingPolicy.GetTechnicalColumnName(
-            new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.RecordSource, link.RelationshipName, tableName));
+            new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.RecordSource, linkHashKeyBaseName, tableName));
 
         var participantHashKeyColumnNames = link.ParticipantNames
             .Select(participantName => namingPolicy.GetTechnicalColumnName(
@@ -275,6 +287,16 @@ public sealed partial class DataVaultModelBuilder
         return new DataVaultTable(tableName, DataVaultTableKind.Link, columns, indexes, constraints);
     }
 
+    private static string? NormalizeOptionalRelationshipName(string? relationshipName)
+    {
+        return string.IsNullOrWhiteSpace(relationshipName) ? null : relationshipName;
+    }
+
+    private static string GetLinkHashKeyBaseName(LinkDeclaration link)
+    {
+        return link.RelationshipName ?? string.Join(" ", link.ParticipantNames);
+    }
+
     internal sealed class HubDeclaration(string entityName)
     {
         public string EntityName { get; } = entityName;
@@ -291,9 +313,9 @@ public sealed partial class DataVaultModelBuilder
         public List<string> PayloadProperties { get; } = [];
     }
 
-    internal sealed class LinkDeclaration(string relationshipName, IReadOnlyList<string> participantNames)
+    internal sealed class LinkDeclaration(string? relationshipName, IReadOnlyList<string> participantNames)
     {
-        public string RelationshipName { get; } = relationshipName;
+        public string? RelationshipName { get; } = relationshipName;
 
         public IReadOnlyList<string> ParticipantNames { get; } = participantNames;
     }

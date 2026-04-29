@@ -19,6 +19,12 @@
     <DVaultTestAssembly Include="$(MSBuildThisFileDirectory)../../bin/DVault.Tests.Integration/$(Configuration)/$(TargetFramework)/DVault.Tests.Integration.dll" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="Integration\**\*.cs" />
+    <Compile Remove="Shared\**\*.cs" />
+    <Compile Remove="Unit\**\*.cs" />
+  </ItemGroup>
+
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
   <Target Name="BuildDVaultTestProjects" AfterTargets="Build">

@@ -44,7 +44,7 @@ public sealed record DataVaultHubNameContext(string EntityName);
 /// <summary>
 /// Describes a link table name request.
 /// </summary>
-public sealed record DataVaultLinkNameContext(string RelationshipName, IReadOnlyList<string> ParticipantNames);
+public sealed record DataVaultLinkNameContext(string? RelationshipName, IReadOnlyList<string> ParticipantNames);
 
 /// <summary>
 /// Describes a satellite table name request.

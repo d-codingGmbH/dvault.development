@@ -1,7 +1,7 @@
 namespace DVault.Modeling;
 
 /// <summary>
-/// Provides provider-neutral configuration state for a DVault model.
+/// Provides provider-neutral convention state for a Data Vault model builder.
 /// </summary>
 public sealed partial class DataVaultModelBuilder
 {

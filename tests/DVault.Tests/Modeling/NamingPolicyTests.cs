@@ -4,11 +4,14 @@ namespace DVault.Tests.Modeling;
 
 internal static class NamingPolicyTests
 {
-    private static int Main()
+    internal static int Run()
     {
         var tests = new TestCase[]
         {
             new("default naming policy path builds deterministic names", DefaultNamingPolicyPathBuildsDeterministicNames),
+            new("default naming policy path applies normalization and column collision rules", DefaultNamingPolicyPathAppliesNormalizationAndColumnCollisionRules),
+            new("index and constraint names keep produced technical column names", IndexAndConstraintNamesKeepProducedTechnicalColumnNames),
+            new("link declarations can fall back to participant order", LinkDeclarationsCanFallBackToParticipantOrder),
             new("custom naming policy overrides each v1 name family", CustomNamingPolicyOverridesEachV1NameFamily),
             new("options can be configured fluently", OptionsCanBeConfiguredFluently),
         };
@@ -49,12 +52,106 @@ internal static class NamingPolicyTests
 
         var producedNames = ProducedNames(model);
         Equal(string.Join("\n", producedNames), string.Join("\n", ProducedNames(repeatedModel)));
-        Contains(producedNames, name => name.StartsWith("table:Hub:", StringComparison.Ordinal));
-        Contains(producedNames, name => name.StartsWith("table:Satellite:", StringComparison.Ordinal));
-        Contains(producedNames, name => name.StartsWith("table:Link:", StringComparison.Ordinal));
-        Contains(producedNames, name => name.StartsWith("column:Technical:", StringComparison.Ordinal));
-        Contains(producedNames, name => name.StartsWith("index:", StringComparison.Ordinal));
-        Contains(producedNames, name => name.StartsWith("constraint:", StringComparison.Ordinal));
+        Equal("HubCustomer", hub.Name);
+        SequenceEqual(["CustomerHashKey", "LoadTimestamp", "RecordSource", "CustomerId"], hub.Columns.Select(column => column.Name));
+        SequenceEqual(["IxHubCustomerBusinessKeyCustomerId"], hub.Indexes.Select(index => index.Name));
+        SequenceEqual(["PkHubCustomerCustomerHashKey"], hub.Constraints.Select(constraint => constraint.Name));
+
+        Equal("SatCustomerContact", satellite.Name);
+        SequenceEqual(
+            ["CustomerHashKey", "HashDiff", "LoadTimestamp", "RecordSource", "EmailAddress"],
+            satellite.Columns.Select(column => column.Name));
+        SequenceEqual(["IxSatCustomerContactSatelliteParentCustomerHashKey"], satellite.Indexes.Select(index => index.Name));
+        SequenceEqual(["PkSatCustomerContactCustomerHashKey"], satellite.Constraints.Select(constraint => constraint.Name));
+
+        Equal("LinkCustomerOrder", link.Name);
+        SequenceEqual(
+            ["CustomerOrderHashKey", "LoadTimestamp", "RecordSource", "CustomerHashKey", "OrderHashKey"],
+            link.Columns.Select(column => column.Name));
+        SequenceEqual(["IxLinkCustomerOrderRelationshipCustomerHashKeyOrderHashKey"], link.Indexes.Select(index => index.Name));
+        SequenceEqual(["PkLinkCustomerOrderCustomerOrderHashKey"], link.Constraints.Select(constraint => constraint.Name));
+    }
+
+    private static void DefaultNamingPolicyPathAppliesNormalizationAndColumnCollisionRules()
+    {
+        var model = DataVaultModel.Create(modelBuilder =>
+        {
+            modelBuilder.Hub("Customers", hub =>
+            {
+                hub.BusinessKey("hash diff");
+                hub.BusinessKey("customer hash key");
+                hub.BusinessKey("customer id");
+                hub.BusinessKey("customer-id");
+                hub.Satellite("Contact", satellite =>
+                {
+                    satellite.Payload("load_timestamp");
+                    satellite.Payload("record-source");
+                    satellite.Payload("email address");
+                    satellite.Payload("email-address");
+                });
+            });
+        });
+
+        var hub = Single(model.Tables, table => table.Kind == DataVaultTableKind.Hub);
+        var satellite = Single(model.Tables, table => table.Kind == DataVaultTableKind.Satellite);
+
+        Equal("HubCustomer", hub.Name);
+        SequenceEqual(
+            [
+                "CustomerHashKey",
+                "LoadTimestamp",
+                "RecordSource",
+                "HashDiffValue",
+                "CustomerHashKeyValue",
+                "CustomerId",
+                "CustomerId2",
+            ],
+            hub.Columns.Select(column => column.Name));
+        SequenceEqual(
+            [
+                "CustomerHashKey",
+                "HashDiff",
+                "LoadTimestamp",
+                "RecordSource",
+                "LoadTimestampValue",
+                "RecordSourceValue",
+                "EmailAddress",
+                "EmailAddress2",
+            ],
+            satellite.Columns.Select(column => column.Name));
+    }
+
+    private static void IndexAndConstraintNamesKeepProducedTechnicalColumnNames()
+    {
+        var policy = DefaultDataVaultNamingPolicy.Instance;
+
+        Equal(
+            "IxSatCustomerContactSatelliteParentHashDiff",
+            policy.GetIndexName(
+                new DataVaultIndexNameContext(
+                    DataVaultIndexKind.SatelliteParent,
+                    "SatCustomerContact",
+                    ["HashDiff"],
+                    IsUnique: false)));
+        Equal(
+            "PkSatCustomerContactHashDiff",
+            policy.GetConstraintName(
+                new DataVaultConstraintNameContext(
+                    DataVaultConstraintKind.PrimaryKey,
+                    "SatCustomerContact",
+                    ["HashDiff"])));
+    }
+
+    private static void LinkDeclarationsCanFallBackToParticipantOrder()
+    {
+        var model = DataVaultModel.Create(modelBuilder =>
+        {
+            modelBuilder.Link(["Customers", "Orders"]);
+        });
+
+        var link = Single(model.Tables, table => table.Kind == DataVaultTableKind.Link);
+
+        Equal("LinkCustomerOrder", link.Name);
     }
 
     private static void CustomNamingPolicyOverridesEachV1NameFamily()
@@ -171,6 +268,27 @@ internal static class NamingPolicyTests
         if (!EqualityComparer<T>.Default.Equals(expected, actual))
         {
             throw new InvalidOperationException("Expected " + expected + " but got " + actual + ".");
+        }
+    }
+
+    private static void SequenceEqual<T>(IEnumerable<T> expected, IEnumerable<T> actual)
+    {
+        var expectedArray = expected.ToArray();
+        var actualArray = actual.ToArray();
+
+        if (expectedArray.Length != actualArray.Length)
+        {
+            throw new InvalidOperationException(
+                "Expected " + expectedArray.Length + " values but got " + actualArray.Length + ".");
+        }
+
+        for (var index = 0; index < expectedArray.Length; index++)
+        {
+            if (!EqualityComparer<T>.Default.Equals(expectedArray[index], actualArray[index]))
+            {
+                throw new InvalidOperationException(
+                    "At index " + index + " expected " + expectedArray[index] + " but got " + actualArray[index] + ".");
+            }
         }
     }
 

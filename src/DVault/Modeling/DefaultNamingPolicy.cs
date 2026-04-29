@@ -86,6 +86,11 @@ public sealed class DefaultNamingPolicy
             return "Link" + normalizedRelationshipName;
         }
 
+        if (!string.IsNullOrWhiteSpace(relationshipName))
+        {
+            return "Link" + NormalizeObjectName(relationshipName);
+        }
+
         ArgumentNullException.ThrowIfNull(participantNames);
 
         var nameBuilder = new StringBuilder();
@@ -187,6 +192,12 @@ public sealed class DefaultNamingPolicy
     public string NormalizeColumnName(string? value)
     {
         return NormalizeColumnNameCore(value, CreateUnsafeColumnSet(null));
+    }
+
+    internal string NormalizeProducedIdentifier(string? value)
+    {
+        var normalized = NormalizePascalCase(value, singularizeWords: false);
+        return normalized.Length == 0 ? EmptyColumnFallback : normalized;
     }
 
     private static HashSet<string> CreateUnsafeColumnSet(IEnumerable<string>? additionalUnsafeColumnNames)

@@ -8,7 +8,7 @@ namespace DVault.Tests.Modeling;
 
 internal static class DefaultNamingPolicyTests
 {
-    private static int Main()
+    internal static int Run()
     {
         var tests = new TestCase[]
         {
@@ -60,6 +60,7 @@ internal static class DefaultNamingPolicyTests
         var policy = DefaultNamingPolicy.Instance;
 
         Equal("LinkPurchaseEvent", policy.GetLinkTableName("purchase event", ["Customer", "Order"]));
+        Equal("LinkEntity", policy.GetLinkTableName("@@@", ["Customer", "Order"]));
     }
 
     private static void NormalizationHandlesCommonInputForms()
