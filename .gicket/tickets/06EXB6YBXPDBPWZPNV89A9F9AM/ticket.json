@@ -3,18 +3,17 @@
   "ticket-id": "06EXB6YBXPDBPWZPNV89A9F9AM",
   "ticket-type": "story",
   "title": "Story: Establish package identity and project metadata",
-  "revision": "06EXBF63RM6JZ3GDH1Q3AM04W8",
-  "status": "todo",
+  "revision": "06EXNS2CZHNQEF9RC493B3T49W",
+  "status": "done",
   "labels": [
-    "backlog/initial-dvault",
-    "type/story",
     "area/packaging",
-    "needs-po",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "backlog/initial-dvault",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:40:50.6664938Z",
-  "updated-at": "2026-04-28T20:16:51.1416776Z"
+  "updated-at": "2026-04-29T20:18:08.2520613Z"
 }

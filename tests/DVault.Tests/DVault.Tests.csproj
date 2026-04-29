@@ -14,7 +14,6 @@
     <IsPackable>false</IsPackable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <StartupObject>DVault.Tests.Modeling.DefaultNamingPolicyTests</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>

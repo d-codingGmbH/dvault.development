@@ -8,7 +8,7 @@
     <Title>DVault</Title>
     <Authors>d-coding GmbH</Authors>
     <Description>Convention-first .NET 10 library extending Entity Framework for Data Vault 2.x-oriented persistence.</Description>
-    <PackageTags>dvault;data-vault;data-modeling;dotnet;entity-framework;ef-core;data-vault;data-vault-2;persistence</PackageTags>
+    <PackageTags>dvault;data-vault;data-modeling;dotnet;entity-framework;ef-core;data-vault-2;persistence</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/d-codingGmbH/dvault.development.git</RepositoryUrl>

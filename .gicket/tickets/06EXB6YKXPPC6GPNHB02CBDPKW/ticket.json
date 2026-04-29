@@ -1,9 +1,9 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06EXB6YKXPPC6GPNHB02CBDPKW",
   "ticket-type": "task",
   "title": "Task: Define NuGet package metadata without publishing",
-  "revision": "06EXKBF4HVGTAM983F7C7CH7TG",
+  "revision": "06EXNS13914Z14K7Z8MVTFG18W",
   "status": "done",
   "labels": [
     "area/packaging",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:40:52.7100596Z",
-  "updated-at": "2026-04-29T14:39:05.3589045Z"
+  "updated-at": "2026-04-29T20:17:57.5760000Z"
 }
