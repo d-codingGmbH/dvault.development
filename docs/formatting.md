@@ -1,6 +1,6 @@
 # Formatting Enforcement
 
-DVault uses a repository-level formatting gate before an application stack or CI workflow exists. The root `DVault.slnx` is the repository-level .NET entry point so `dotnet build` and `dotnet test` automation have a stable target as projects are added.
+DVault uses a repository-level formatting gate alongside the root `DVault.slnx` solution. `DVault.slnx` is the repository-level .NET entry point for `dotnet build` and `dotnet test` automation.
 
 ## Canonical Policy
 

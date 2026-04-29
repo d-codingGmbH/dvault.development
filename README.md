@@ -4,11 +4,24 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 
 ## Layout
 
-- `DVault.slnx`: Root solution file. It is intentionally projectless until sibling tickets add project files.
-- `src/`: Source projects. The first library project is reserved for `src/DCoding.Data.DVault/`. `src/DCoding.Data/` is a tracked placeholder for the initial source scaffold.
-- `tests/`: Test projects. Unit and integration projects are reserved for `tests/DCoding.Data.DVault.Tests/` and `tests/DCoding.Data.DVault.IntegrationTests/`. `tests/DCoding.Data.DVault/` is a tracked placeholder for the initial test scaffold.
+- `DVault.slnx`: Canonical root solution file for build and test automation.
+- `src/DVault/`: Main library project. The NuGet package id and root namespace are `DCoding.Data.DVault`.
+- `tests/DVault.Tests/`: Unit, integration, and shared test projects for DVault.
 - `examples/`: Future runnable examples for DVault APIs.
 - `benchmarks/`: Future performance benchmark projects.
 - `docs/`: Documentation and design notes.
 
-Empty scaffold folders contain `.gitkeep` files so the layout is present in clean checkouts. Project files should be added to `DVault.slnx` when those projects are created.
+All current .NET projects are included in `DVault.slnx`. Empty future-use folders contain `.gitkeep` files so the layout is present in clean checkouts.
+
+## Local Validation
+
+```sh
+dotnet build
+dotnet test
+dotnet pack src/DVault/DVault.csproj --configuration Release --nologo
+bash tools/check-format.sh
+```
+
+## License
+
+DVault uses the Apache License 2.0. See `LICENSE`.
