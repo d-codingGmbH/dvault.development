@@ -3,18 +3,17 @@
   "ticket-id": "06EXB6PX7ZGYNR2SXF44C5VPJM",
   "ticket-type": "task",
   "title": "Task: Document MVP Data Vault concepts",
-  "revision": "06EXBF7ZFH9N4P9XR23MGD3QPM",
-  "status": "todo",
+  "revision": "06EXE0Z86YMYBX42F0Q46E3DDW",
+  "status": "done",
   "labels": [
-    "backlog/initial-dvault",
-    "type/task",
     "area/architecture",
-    "needs-po",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "backlog/initial-dvault",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:39:49.5489909Z",
-  "updated-at": "2026-04-28T20:17:06.4285345Z"
+  "updated-at": "2026-04-29T02:14:10.7434151Z"
 }
