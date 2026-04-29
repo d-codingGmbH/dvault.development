@@ -3,18 +3,17 @@
   "ticket-id": "06EXB6YKXPPC6GPNHB02CBDPKW",
   "ticket-type": "task",
   "title": "Task: Define NuGet package metadata without publishing",
-  "revision": "06EXBF7NCST174GC9V8T8YRRXG",
-  "status": "todo",
+  "revision": "06EXKBF4HVGTAM983F7C7CH7TG",
+  "status": "done",
   "labels": [
-    "backlog/initial-dvault",
-    "type/task",
     "area/packaging",
-    "needs-po",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "backlog/initial-dvault",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:40:52.7100596Z",
-  "updated-at": "2026-04-28T20:17:03.8462504Z"
+  "updated-at": "2026-04-29T14:39:05.3589045Z"
 }
