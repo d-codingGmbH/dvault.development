@@ -1,0 +1,36 @@
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
+    <EnableDefaultNoneItems>false</EnableDefaultNoneItems>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <DVaultTestProject Include="tests/DVault.Tests/Unit/DVault.Tests.Unit.csproj" />
+    <DVaultTestProject Include="tests/DVault.Tests/Integration/DVault.Tests.Integration.csproj" />
+    <DVaultTestAssembly Include="bin/DVault.Tests.Unit/$(Configuration)/$(TargetFramework)/DVault.Tests.Unit.dll" />
+    <DVaultTestAssembly Include="bin/DVault.Tests.Integration/$(Configuration)/$(TargetFramework)/DVault.Tests.Integration.dll" />
+  </ItemGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+  <Target Name="BuildDVaultTestProjects" AfterTargets="Build">
+    <Exec
+      Command="dotnet restore &quot;%(DVaultTestProject.Identity)&quot; --nologo"
+      EnvironmentVariables="DOTNET_CLI_TELEMETRY_OPTOUT=1;TESTINGPLATFORM_TELEMETRY_OPTOUT=1" />
+    <Exec
+      Command="dotnet build &quot;%(DVaultTestProject.Identity)&quot; --configuration &quot;$(Configuration)&quot; --no-restore --nologo"
+      EnvironmentVariables="DOTNET_CLI_TELEMETRY_OPTOUT=1;TESTINGPLATFORM_TELEMETRY_OPTOUT=1" />
+  </Target>
+
+  <Target Name="VSTest" DependsOnTargets="Build">
+    <Exec
+      Command="dotnet &quot;%(DVaultTestAssembly.Identity)&quot;"
+      EnvironmentVariables="DOTNET_CLI_TELEMETRY_OPTOUT=1;TESTINGPLATFORM_TELEMETRY_OPTOUT=1" />
+  </Target>
+</Project>
