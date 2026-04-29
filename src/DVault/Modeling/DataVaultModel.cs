@@ -57,6 +57,16 @@ public sealed partial class DataVaultModelBuilder
     }
 
     /// <summary>
+    /// Gets the active Data Vault conventions after UseDataVault has been applied.
+    /// </summary>
+    public DataVaultConventions? Conventions { get; private set; }
+
+    /// <summary>
+    /// Gets a value indicating whether Data Vault conventions are enabled for this model builder.
+    /// </summary>
+    public bool IsDataVaultEnabled => Conventions is not null;
+
+    /// <summary>
     /// Adds a hub declaration to the model.
     /// </summary>
     public DataVaultHubBuilder Hub(string entityName, Action<DataVaultHubBuilder>? configure = null)
@@ -126,6 +136,13 @@ public sealed partial class DataVaultModelBuilder
         }
 
         return DataVaultModel.FromTables(tables);
+    }
+
+    internal void UseConventions(DataVaultConventions conventions)
+    {
+        ArgumentNullException.ThrowIfNull(conventions);
+
+        Conventions = conventions;
     }
 
     private static DataVaultTable BuildHubTable(HubDeclaration hub, IDataVaultNamingPolicy namingPolicy)

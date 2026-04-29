@@ -1,0 +1,7 @@
+﻿[gicket-bot] claim write-group template
+
+- template: `claim`
+- transaction-point: `TP0-PO-CRITIC`
+- write-group: `wg-claim`
+- ticket-id: `06EXB755X9TGQW2EG1G30GJG28`
+- role: `po-critic`

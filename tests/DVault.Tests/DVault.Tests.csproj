@@ -18,6 +18,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Integration\**\*.cs;Modeling\**\*.cs;Shared\**\*.cs;Unit\**\*.cs" />
     <DVaultTestProject Include="Unit/DVault.Tests.Unit.csproj" />
     <DVaultTestProject Include="Integration/DVault.Tests.Integration.csproj" />
     <DVaultTestAssembly Include="$(MSBuildThisFileDirectory)../../bin/DVault.Tests.Unit/$(Configuration)/$(TargetFramework)/DVault.Tests.Unit.dll" />
