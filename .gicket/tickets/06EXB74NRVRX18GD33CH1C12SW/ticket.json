@@ -3,7 +3,7 @@
   "ticket-id": "06EXB74NRVRX18GD33CH1C12SW",
   "ticket-type": "story",
   "title": "Story: Model Data Vault building blocks",
-  "revision": "06EXBF5950W6W1QJ54G1PESXGR",
+  "revision": "06EXPR3WBC28MDBGX8KFHRAG24",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:41:42.3310088Z",
-  "updated-at": "2026-04-28T20:16:44.3285680Z"
+  "updated-at": "2026-04-29T22:33:46.8430000Z"
 }
