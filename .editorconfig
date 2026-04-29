@@ -1,0 +1,24 @@
+# Root formatting policy for DVault product files.
+root = true
+
+[*]
+indent_style = space
+indent_size = 2
+tab_width = 2
+end_of_line = lf
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Make recipes require tabs; tools/check-format.sh allows tabs only for these files.
+[{Makefile,makefile,*.mk}]
+indent_style = tab
+
+# C# formatters must keep opening braces on the same line and fail formatting drift.
+[*.{cs,csx}]
+csharp_new_line_before_open_brace = none
+dotnet_diagnostic.IDE0055.severity = error
+
+# Common brace-based source formats must use one true brace style until replaced by a language-specific formatter.
+[*.{js,jsx,ts,tsx,mjs,cjs,java,kt,kts,c,cc,cpp,cxx,h,hpp,hxx,go,rs,php,swift,css,scss,less}]
+brace_style = 1tbs

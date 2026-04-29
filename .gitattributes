@@ -1,0 +1,66 @@
+# Keep governed repository text normalized to LF in every checkout.
+* text=auto eol=lf
+
+# Repository operational metadata is outside the product formatting surface.
+.gicket/** -text
+.gicket-bot/** -text
+
+# Tool-owned or generated content is excluded from the formatting gate.
+vendor/** -text
+third_party/** -text
+node_modules/** -text
+dist/** -text
+build/** -text
+out/** -text
+coverage/** -text
+bin/** -text
+obj/** -text
+generated/** -text
+*.generated.* -text
+*.g.cs -text
+*.designer.cs -text
+
+# Lock files are tool-owned snapshots and are excluded from formatting enforcement.
+*.lock -text
+package-lock.json -text
+npm-shrinkwrap.json -text
+pnpm-lock.yaml -text
+yarn.lock -text
+Pipfile.lock -text
+poetry.lock -text
+Cargo.lock -text
+composer.lock -text
+Gemfile.lock -text
+
+# Binary assets and build artifacts are not text-normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.bmp binary
+*.tif binary
+*.tiff binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.tgz binary
+*.xz binary
+*.7z binary
+*.rar binary
+*.tar binary
+*.jar binary
+*.war binary
+*.dll binary
+*.exe binary
+*.so binary
+*.dylib binary
+*.a binary
+*.lib binary
+*.pdb binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.otf binary
