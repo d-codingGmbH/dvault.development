@@ -1,21 +1,20 @@
-<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the project-setup task using persisted ticket state, comments, relations, attachments, and repository evidence. No child tickets or planning documents were created because the scope is already bounded to creating the initial class library project.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The current ticket is a child of 06EXB6XBV95E08R2W9ZQ1PRDPM via an existing parentOf relation; no additional relation work is needed.
 - The current ticket has no product-relevant human comments and no persisted attachments; referenced repository documents are sufficient context for this refinement.
 - Although the branch snapshot named src/DVault and tests/DVault.Tests as intended roots, direct repository reads show those directories and project files do not yet exist. This ticket should create the source project rather than modify an existing one.
 - The v1 default project path is src/DVault/DVault.csproj, matching the visible branch planning snapshot and the package/library naming convention in the ticket title.
 - No repository-level Directory.Build.props exists yet, so nullable reference types, XML docs, target framework, and documentation warning behavior should be set in the new project file unless a later standards ticket introduces shared build props.
 
-### Scope In
+Scope In
 - Create the main DVault class library project at src/DVault/DVault.csproj.
 - Configure the project to target net10.0.
 - Set RootNamespace to DCoding.Data.DVault.
@@ -24,67 +23,38 @@
 - Configure public and protected API documentation enforcement for the project, including treating missing XML documentation warnings as errors for the relevant compiler warning IDs.
 - Add only minimal source needed for a valid class library if the SDK template or build requires it.
 
-### Scope Out
+Scope Out
 - Creating the tests/DVault.Tests project or any test framework setup.
 - Adding DVault domain behavior, storage abstractions, serialization, encryption, or data model APIs.
 - Creating NuGet packaging metadata beyond what is required for the basic class library project.
 - Creating or refactoring repository-wide build files such as Directory.Build.props.
 - Changing workflow metadata, labels, status, or runtime handoff fields.
 
-## Acceptance Criteria
-- The repository contains a .NET class library project at src/DVault/DVault.csproj.
-- The project targets net10.0.
-- The project uses RootNamespace DCoding.Data.DVault.
-- Nullable reference types are enabled for the project.
-- XML documentation file generation is enabled for the project.
-- The project build fails on undocumented public or protected APIs by elevating the applicable XML documentation warnings to errors.
-- The project can be restored and built with the expected .NET SDK for net10.0 when that SDK is available in the development environment.
-
-## Definition of Done
-- The implemented project file and any minimal source files satisfy the acceptance criteria.
-- The implementation follows the existing visible repository layout decision to use src/DVault for the library project.
-- No unrelated product code, test project scaffolding, or repository-wide build standard changes are included in this ticket.
-- Build or restore verification is run when the net10.0-capable SDK is available; if unavailable, the developer records the environment limitation and verifies the project file statically.
-
-## Implementation Notes
-- Use the Microsoft.NET.Sdk class library style project format unless existing repository standards discovered during implementation require a narrower choice.
-- Place project-level properties directly in src/DVault/DVault.csproj because repository evidence shows no Directory.Build.props baseline exists yet.
-- Recommended project properties include TargetFramework net10.0, Nullable enable, GenerateDocumentationFile true, RootNamespace DCoding.Data.DVault, and warnings-as-errors coverage for missing XML docs such as CS1591.
-- Keep the initial source surface intentionally small so the ticket remains a foundation task and does not preempt later DVault API design tickets.
-- Do not create a child ticket split for this work; the remaining work is a single bounded project scaffolding change.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should a later foundation ticket introduce shared Directory.Build.props settings once multiple projects exist?
 - Should a later test-foundation ticket create tests/DVault.Tests and choose the test framework baseline?
 - Should package metadata, analyzers, strong naming, SourceLink, and publish settings be handled in a separate packaging or release-readiness ticket?
 
-## Risks
+Risks
 - The net10.0 SDK may not be installed in all local environments yet, so build verification may be environment-limited even when the project file is correct.
 - Documentation enforcement choices should stay narrowly tied to public/protected API XML documentation so this setup ticket does not unexpectedly enforce unrelated analyzer policy.
 
-## Split Recommendations
+Split recommendations
 - none
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 7
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Summary
-Create the main class library project for the DVault package.
-
-## Scope
-- Use default namespace DCoding.Data.DVault.
-- Enable nullable reference types and XML docs.
-
-## Acceptance Criteria
-- The project targets net10.0.
-- Public and protected APIs require documentation.
-
-## Definition of Done
-- The work satisfies the acceptance criteria.
-- Shared standards from the charter attachment are followed.
+Run mode
+- apply: planned updates are applied after this comment
