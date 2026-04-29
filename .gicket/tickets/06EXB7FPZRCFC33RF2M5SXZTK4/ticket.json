@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7FPZRCFC33RF2M5SXZTK4",
   "ticket-type": "task",
   "title": "Task: Add ModelBuilder extension for DVault conventions",
-  "revision": "06EXBF77RT7PKSPR1EA2YHX1R0",
+  "revision": "06EXNNNMNYVPBN0KAF8R3Q89B4",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
   "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
   "created-at": "2026-04-28T19:43:12.7553092Z",
-  "updated-at": "2026-04-28T20:17:00.3585270Z"
+  "updated-at": "2026-04-29T20:03:17.2952120Z"
 }

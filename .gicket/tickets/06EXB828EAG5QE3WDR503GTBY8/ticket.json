@@ -3,7 +3,7 @@
   "ticket-id": "06EXB828EAG5QE3WDR503GTBY8",
   "ticket-type": "task",
   "title": "Task: Add local pack command and package verification tests",
-  "revision": "06EXBF69BTY6FZWVYXD5W2AH3M",
+  "revision": "06EXNNQ2PNCGKYRWY24587XG34",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "created-at": "2026-04-28T19:45:44.6920597Z",
-  "updated-at": "2026-04-28T20:16:52.5746595Z"
+  "updated-at": "2026-04-29T20:03:29.0777482Z"
 }

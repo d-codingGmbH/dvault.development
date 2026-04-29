@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7J6HCA9QZ3DPP5Z03YGJ0",
   "ticket-type": "task",
   "title": "Task: Define provider capability abstraction",
-  "revision": "06EXBF6Y2JXG5T7ZNNJB331VFW",
+  "revision": "06EXNNPT8BY36ZRYZ7EG9HTVFM",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
   "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
   "created-at": "2026-04-28T19:43:33.1197865Z",
-  "updated-at": "2026-04-28T20:16:57.8769913Z"
+  "updated-at": "2026-04-29T20:03:26.9142574Z"
 }

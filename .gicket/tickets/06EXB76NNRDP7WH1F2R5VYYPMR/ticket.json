@@ -3,7 +3,7 @@
   "ticket-id": "06EXB76NNRDP7WH1F2R5VYYPMR",
   "ticket-type": "task",
   "title": "Task: Test null, culture, ordering, and binary normalization",
-  "revision": "06EXBF794PCQ6RV2C82KQ49SM0",
+  "revision": "06EXNNPJJCSHRTWMARMMKZ0XKR",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:41:58.6917225Z",
-  "updated-at": "2026-04-28T20:17:00.7094657Z"
+  "updated-at": "2026-04-29T20:03:24.9472332Z"
 }

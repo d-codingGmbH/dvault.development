@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7JEF55Y007XK28DAD1E2R",
   "ticket-type": "task",
   "title": "Task: Add optional Postgres integration test switch",
-  "revision": "06EXBF6WPZ090CTZ798ST7SW50",
+  "revision": "06EXNNPNM7ACG9P6K55NWJQYEM",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
   "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
   "created-at": "2026-04-28T19:43:35.1501845Z",
-  "updated-at": "2026-04-28T20:16:57.5279564Z"
+  "updated-at": "2026-04-29T20:03:25.7293554Z"
 }

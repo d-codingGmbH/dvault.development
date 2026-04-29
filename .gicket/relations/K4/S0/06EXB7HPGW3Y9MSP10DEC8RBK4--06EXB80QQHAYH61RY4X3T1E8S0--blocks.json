@@ -1,0 +1,11 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/relation/v1",
+  "type": "blocks",
+  "source-ticket-id": "06EXB7HPGW3Y9MSP10DEC8RBK4",
+  "target-ticket-id": "06EXB80QQHAYH61RY4X3T1E8S0",
+  "created-at": "2026-04-29T20:03:25.3484903Z",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  }
+}

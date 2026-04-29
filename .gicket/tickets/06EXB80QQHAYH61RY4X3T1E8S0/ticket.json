@@ -3,7 +3,7 @@
   "ticket-id": "06EXB80QQHAYH61RY4X3T1E8S0",
   "ticket-type": "task",
   "title": "Task: Add Sqlite and optional Postgres integration test categories",
-  "revision": "06EXBF6EVWVDWCHMNH733WEA54",
+  "revision": "06EXNNQ13RQ1KX4X70HJ845WSW",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "created-at": "2026-04-28T19:45:32.2006557Z",
-  "updated-at": "2026-04-28T20:16:53.9830465Z"
+  "updated-at": "2026-04-29T20:03:28.6704595Z"
 }

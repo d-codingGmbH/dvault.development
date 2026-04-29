@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7TE0806E7EY5ZBATHQNK8",
   "ticket-type": "task",
   "title": "Task: Add benchmark project for scenario comparisons",
-  "revision": "06EXBF6JZBXFD1P260Y9N6MV4C",
+  "revision": "06EXNNPH3DFXYTXFAW6TGXWA8C",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:40.5602986Z",
-  "updated-at": "2026-04-28T20:16:55.0343574Z"
+  "updated-at": "2026-04-29T20:03:24.5718165Z"
 }

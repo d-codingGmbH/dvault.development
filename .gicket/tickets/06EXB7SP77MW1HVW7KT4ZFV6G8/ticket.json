@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7SP77MW1HVW7KT4ZFV6G8",
   "ticket-type": "task",
   "title": "Task: Implement normal EF baseline for order-product relationships",
-  "revision": "06EXBF6NPPGE5ZE8WS3763MQ9R",
+  "revision": "06EXNNP7PEGCHH1P4AYG58RMB0",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:34.4714018Z",
-  "updated-at": "2026-04-28T20:16:55.7335696Z"
+  "updated-at": "2026-04-29T20:03:22.1630451Z"
 }

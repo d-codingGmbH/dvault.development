@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7TP9PF2XFRQ9MG7CJQR10",
   "ticket-type": "task",
   "title": "Task: Emit benchmark artifacts suitable for documentation",
-  "revision": "06EXBF6HKDF9ZY0DBDRJYZDXJ0",
+  "revision": "06EXNNQ7D2FVHNSR7W4YWS18S4",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:42.7031018Z",
-  "updated-at": "2026-04-28T20:16:54.6833404Z"
+  "updated-at": "2026-04-29T20:03:30.2801383Z"
 }
