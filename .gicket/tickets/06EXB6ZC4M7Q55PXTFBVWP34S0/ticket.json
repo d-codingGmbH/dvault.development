@@ -3,18 +3,17 @@
   "ticket-id": "06EXB6ZC4M7Q55PXTFBVWP34S0",
   "ticket-type": "task",
   "title": "Task: Design AddDVault and UseDataVault extension method shape",
-  "revision": "06EXBF7JP18CVHP2BYVNCXAHC0",
-  "status": "todo",
+  "revision": "06EXH3WMEMNSTSN85FSCNMDACW",
+  "status": "done",
   "labels": [
-    "backlog/initial-dvault",
-    "type/task",
     "area/developer-experience",
-    "needs-po",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "backlog/initial-dvault",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:40:58.9172029Z",
-  "updated-at": "2026-04-28T20:17:03.1522527Z"
+  "updated-at": "2026-04-29T09:26:21.5573910Z"
 }

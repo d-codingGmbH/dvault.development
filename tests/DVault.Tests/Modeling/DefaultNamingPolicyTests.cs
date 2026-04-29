@@ -1,4 +1,8 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using DVault;
 using DVault.Modeling;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DVault.Tests.Modeling;
 
@@ -18,6 +22,10 @@ internal static class DefaultNamingPolicyTests
             new("technical column collisions append Value", TechnicalColumnCollisionsAppendValue),
             new("duplicate normalized column names receive numeric suffixes", DuplicateNormalizedColumnNamesReceiveNumericSuffixes),
             new("repeat calls return identical names", RepeatCallsReturnIdenticalNames),
+            new("AddDVault no-option overload is discoverable from DVault namespace", AddDVaultNoOptionOverloadIsDiscoverable),
+            new("AddDVault registers provider-neutral defaults", AddDVaultRegistersProviderNeutralDefaults),
+            new("UseDataVault no-option overload applies default conventions", UseDataVaultNoOptionOverloadAppliesDefaultConventions),
+            new("default conventions expose MVP vocabulary and hash defaults", DefaultConventionsExposeMvpVocabularyAndHashDefaults),
         };
 
         var failures = 0;
@@ -138,6 +146,77 @@ internal static class DefaultNamingPolicyTests
         Equal(policy.GetLinkTableName(null, ["Customers", "Orders"]), policy.GetLinkTableName(null, ["Customer", "Order"]));
     }
 
+    private static void AddDVaultNoOptionOverloadIsDiscoverable()
+    {
+        var method = typeof(DVaultServiceCollectionExtensions)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(methodInfo =>
+                methodInfo.Name == "AddDVault" &&
+                methodInfo.GetParameters().Length == 1);
+        var parameter = method.GetParameters()[0];
+
+        Equal("DVault", method.DeclaringType?.Namespace);
+        Equal(typeof(IServiceCollection), parameter.ParameterType);
+        Equal(typeof(IServiceCollection), method.ReturnType);
+        True(method.IsDefined(typeof(ExtensionAttribute), inherit: false), "AddDVault must be an extension method.");
+    }
+
+    private static void AddDVaultRegistersProviderNeutralDefaults()
+    {
+        var services = new ServiceCollection();
+
+        var result = services.AddDVault();
+        var namingDescriptor = SingleService(services, typeof(DefaultNamingPolicy));
+        var conventionsDescriptor = SingleService(services, typeof(DataVaultConventions));
+
+        Same(services, result);
+        Equal(ServiceLifetime.Singleton, namingDescriptor.Lifetime);
+        Same(DefaultNamingPolicy.Instance, namingDescriptor.ImplementationInstance);
+        Equal(ServiceLifetime.Singleton, conventionsDescriptor.Lifetime);
+        Same(DataVaultConventions.Default, conventionsDescriptor.ImplementationInstance);
+
+        services.AddDVault();
+
+        Equal(1, services.Count(descriptor => descriptor.ServiceType == typeof(DefaultNamingPolicy)));
+        Equal(1, services.Count(descriptor => descriptor.ServiceType == typeof(DataVaultConventions)));
+    }
+
+    private static void UseDataVaultNoOptionOverloadAppliesDefaultConventions()
+    {
+        var modelBuilder = new DataVaultModelBuilder();
+
+        var result = modelBuilder.UseDataVault();
+
+        Same(modelBuilder, result);
+        True(modelBuilder.IsDataVaultEnabled, "UseDataVault must enable Data Vault conventions.");
+        Same(DataVaultConventions.Default, modelBuilder.Conventions);
+        Same(DefaultNamingPolicy.Instance, modelBuilder.Conventions?.NamingPolicy);
+        Equal("HubCustomer", modelBuilder.Conventions?.NamingPolicy.GetHubTableName("Customers"));
+    }
+
+    private static void DefaultConventionsExposeMvpVocabularyAndHashDefaults()
+    {
+        var conventions = DataVaultConventions.Default;
+
+        SequenceEqual(
+            [
+                DataVaultModelConcept.Hub,
+                DataVaultModelConcept.Link,
+                DataVaultModelConcept.Satellite,
+                DataVaultModelConcept.HashKey,
+                DataVaultModelConcept.HashDiff,
+                DataVaultModelConcept.LoadTimestamp,
+                DataVaultModelConcept.RecordSource,
+            ],
+            conventions.ModelConcepts);
+        SequenceEqual(
+            ["dvault_records", "dvault_record_payloads", "dvault_record_metadata"],
+            conventions.LogicalObjectNames);
+        Equal("sha256-v1", conventions.StableHashAlgorithmId);
+        Equal("sha-256", conventions.PersistenceContentHashAlgorithm);
+        Equal("dvault.persistence-conventions.v1", conventions.PersistenceConventionVersion);
+    }
+
     private static void Equal<T>(T expected, T actual)
     {
         if (!EqualityComparer<T>.Default.Equals(expected, actual))
@@ -164,6 +243,27 @@ internal static class DefaultNamingPolicyTests
                 throw new InvalidOperationException(
                     "At index " + index + " expected " + expectedArray[index] + " but got " + actualArray[index] + ".");
             }
+        }
+    }
+
+    private static ServiceDescriptor SingleService(IServiceCollection services, Type serviceType)
+    {
+        return services.Single(descriptor => descriptor.ServiceType == serviceType);
+    }
+
+    private static void Same(object? expected, object? actual)
+    {
+        if (!ReferenceEquals(expected, actual))
+        {
+            throw new InvalidOperationException("Expected matching object references.");
+        }
+    }
+
+    private static void True(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException(message);
         }
     }
 
