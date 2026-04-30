@@ -3,7 +3,7 @@
   "ticket-id": "06EXB76DNVSRBD12T4W03AWQZC",
   "ticket-type": "task",
   "title": "Task: Design stable hashing contract",
-  "revision": "06EXE14NP38K5ESGDRKAS88928",
+  "revision": "06EXWHQ55H4GNT4ZJN5R1YXST0",
   "status": "done",
   "labels": [
     "area/modeling",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:41:56.6540186Z",
-  "updated-at": "2026-04-29T02:14:55.1521470Z"
+  "updated-at": "2026-04-30T12:04:41.3880000Z"
 }

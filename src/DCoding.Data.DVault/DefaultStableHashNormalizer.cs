@@ -64,16 +64,16 @@ internal sealed class DefaultStableHashNormalizer : IStableHashNormalizer
 
     private static string NormalizeString(string value, string? fieldPath)
     {
-        var normalizedText = value
-            .Replace("\r\n", "\n", StringComparison.Ordinal)
-            .Replace('\r', '\n')
-            .Normalize(NormalizationForm.FormC);
-
         try
         {
+            var normalizedText = value
+                .Replace("\r\n", "\n", StringComparison.Ordinal)
+                .Replace('\r', '\n')
+                .Normalize(NormalizationForm.FormC);
+
             return "s:" + Utf8NoBom.GetByteCount(normalizedText).ToString(CultureInfo.InvariantCulture) + ":" + normalizedText;
         }
-        catch (EncoderFallbackException exception)
+        catch (Exception exception) when (exception is ArgumentException or EncoderFallbackException)
         {
             throw InvalidValue("Stable hash string values must contain valid Unicode scalar text.", fieldPath, exception);
         }

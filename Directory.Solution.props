@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Keep solution restore inside one MSBuild node for restricted automation sandboxes. -->
+    <RestoreBuildInParallel>false</RestoreBuildInParallel>
+  </PropertyGroup>
+</Project>

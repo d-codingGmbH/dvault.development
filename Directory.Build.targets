@@ -1,0 +1,6 @@
+<Project>
+  <!-- Run Microsoft Testing Platform executables directly so dotnet test works in sandboxes without named-pipe IPC. -->
+  <Target Name="InvokeTestingPlatform" DependsOnTargets="_ValidateVSTestProperties" Condition="'$(IsTestProject)' == 'true' and '$(TargetPath)' != ''">
+    <Exec Command="dotnet &quot;$(TargetPath)&quot; --no-progress --no-ansi $(TestingPlatformCommandLineArguments)" />
+  </Target>
+</Project>

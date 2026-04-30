@@ -1,0 +1,26 @@
+<Project>
+  <!-- The .NET solution targets build project lists in parallel, which requires named-pipe MSBuild nodes that are unavailable in restricted automation sandboxes. -->
+  <Target Name="BuildSolutionProjectsSequentially" BeforeTargets="Build">
+    <MSBuild
+      Projects="@(ProjectReference)"
+      Properties="BuildingSolutionFile=true;CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents);SolutionDir=$(SolutionDir);SolutionExt=$(SolutionExt);SolutionFileName=$(SolutionFileName);SolutionName=$(SolutionName);SolutionPath=$(SolutionPath)"
+      BuildInParallel="false" />
+    <ItemGroup>
+      <ProjectReference Remove="@(ProjectReference)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="TestSolutionProjectsSequentially" BeforeTargets="VSTest">
+    <ItemGroup>
+      <DVaultSolutionTestProject Include="@(ProjectReference)" Condition="'%(Filename)' == 'DCoding.Data.DVault.Tests.Integration' or '%(Filename)' == 'DCoding.Data.DVault.Tests.Unit'" />
+    </ItemGroup>
+    <MSBuild
+      Projects="@(DVaultSolutionTestProject)"
+      Targets="VSTest"
+      Properties="BuildingSolutionFile=true;CurrentSolutionConfigurationContents=$(CurrentSolutionConfigurationContents);SolutionDir=$(SolutionDir);SolutionExt=$(SolutionExt);SolutionFileName=$(SolutionFileName);SolutionName=$(SolutionName);SolutionPath=$(SolutionPath)"
+      BuildInParallel="false" />
+    <ItemGroup>
+      <ProjectReference Remove="@(ProjectReference)" />
+    </ItemGroup>
+  </Target>
+</Project>

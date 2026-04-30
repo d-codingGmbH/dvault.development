@@ -49,6 +49,38 @@ public sealed class StableHashNormalizerTests
     }
 
     [Fact]
+    public void StructuredNormalizationRejectsDuplicateFieldPaths()
+    {
+        var normalizer = CreateDefaultNormalizer();
+
+        var exception = Assert.Throws<ArgumentException>(() => normalizer.NormalizeFields(
+            [
+                new KeyValuePair<string, object?>("name", "Alice"),
+                new KeyValuePair<string, object?>("name", "Bob"),
+            ]));
+
+        Assert.Equal("fields", exception.ParamName);
+        Assert.Contains("duplicate", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData("name=value")]
+    [InlineData("name\nvalue")]
+    [InlineData("name\rvalue")]
+    public void StructuredNormalizationRejectsInvalidFieldPaths(string? fieldPath)
+    {
+        var normalizer = CreateDefaultNormalizer();
+
+        var exception = Assert.ThrowsAny<ArgumentException>(() => normalizer.NormalizeFields(
+            [new KeyValuePair<string, object?>(fieldPath!, "value")]));
+
+        Assert.Contains("field", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void StructuredNormalizationIsIndependentOfSourceFieldOrder()
     {
         var normalizer = CreateDefaultNormalizer();
@@ -119,6 +151,16 @@ public sealed class StableHashNormalizerTests
     }
 
     [Fact]
+    public void UnsupportedScalarValuesIdentifyTheValueType()
+    {
+        var normalizer = CreateDefaultNormalizer();
+
+        var exception = Assert.Throws<NotSupportedException>(() => normalizer.NormalizeValue(new byte[] { 1, 2, 3 }));
+
+        Assert.Contains("System.Byte[]", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void InvalidSupportedValuesFailBeforeHashing()
     {
         var normalizer = CreateDefaultNormalizer();
@@ -135,6 +177,37 @@ public sealed class StableHashNormalizerTests
 
         Assert.Contains("timestamp", exception.Message, StringComparison.Ordinal);
         Assert.Equal(0, hashService.CallCount);
+    }
+
+    [Fact]
+    public void InvalidStringValuesFailBeforeHashing()
+    {
+        var normalizer = CreateDefaultNormalizer();
+        var hashService = new CountingHashService();
+
+        var exception = Assert.Throws<ArgumentException>(() => NormalizeAndHash(
+            normalizer,
+            hashService,
+            [new KeyValuePair<string, object?>("name", "\ud800")]));
+
+        Assert.Contains("name", exception.Message, StringComparison.Ordinal);
+        Assert.Equal(0, hashService.CallCount);
+    }
+
+    [Fact]
+    public void AddDVaultPreservesCallerStableHashNormalizerOverride()
+    {
+        var replacement = new ReplacementStableHashNormalizer();
+        var services = new ServiceCollection();
+        services.AddSingleton<IStableHashNormalizer>(replacement);
+
+        services.AddDVault();
+
+        using var provider = services.BuildServiceProvider(validateScopes: true);
+        var resolved = provider.GetRequiredService<IStableHashNormalizer>();
+
+        Assert.Same(replacement, resolved);
+        Assert.Equal("replacement", resolved.NormalizeValue("ignored"));
     }
 
     private static IStableHashNormalizer CreateDefaultNormalizer()
@@ -174,6 +247,19 @@ public sealed class StableHashNormalizerTests
             return new StableHashDigest(
                 AlgorithmId,
                 "0000000000000000000000000000000000000000000000000000000000000000");
+        }
+    }
+
+    private sealed class ReplacementStableHashNormalizer : IStableHashNormalizer
+    {
+        public string NormalizeValue(object? value)
+        {
+            return "replacement";
+        }
+
+        public string NormalizeFields(IEnumerable<KeyValuePair<string, object?>> fields)
+        {
+            return "replacement";
         }
     }
 
