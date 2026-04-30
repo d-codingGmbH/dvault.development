@@ -1,0 +1,3 @@
+﻿﻿[gicket-bot] manual integration decision
+
+The ticket was integrated manually because the current bot has no standalone integrator runner and this ready-for-integration state was created outside the tester deferred auto-integration path. To respect gicket issues #1024 and #1025, only the owner ticket plus repository implementation/test files are included; relation follow-up artifacts for downstream tickets are intentionally not copied from the feature branch. Build, test, and format checks are re-run before closing.

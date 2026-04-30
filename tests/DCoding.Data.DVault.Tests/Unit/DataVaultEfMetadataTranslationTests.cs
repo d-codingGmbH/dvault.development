@@ -1,0 +1,294 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using DCoding.Data.DVault.Modeling;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
+using Xunit;
+
+namespace DCoding.Data.DVault.Tests.Unit;
+
+public sealed class DataVaultEfMetadataTranslationTests {
+  [Fact]
+  public void ApplyDataVaultMetadataIsExplicitRootNamespaceTranslationExtension() {
+    var method = typeof(DCoding.Data.DVault.DataVaultModelBuilderExtensions)
+        .GetMethods(BindingFlags.Public | BindingFlags.Static)
+        .Single(methodInfo =>
+            methodInfo.Name == "ApplyDataVaultMetadata" &&
+            methodInfo.GetParameters().Length == 2);
+    var parameters = method.GetParameters();
+
+    Assert.Equal("DCoding.Data.DVault", method.DeclaringType?.Namespace);
+    Assert.Equal(typeof(ModelBuilder), parameters[0].ParameterType);
+    Assert.Equal(typeof(DataVaultMetadataModel), parameters[1].ParameterType);
+    Assert.Equal(typeof(ModelBuilder), method.ReturnType);
+    Assert.True(method.IsDefined(typeof(ExtensionAttribute), inherit: false));
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataRejectsNullArguments() {
+    var metadataModel = CreateMetadataModel();
+    ModelBuilder? modelBuilder = null;
+
+    var modelBuilderException = Assert.Throws<ArgumentNullException>(() => modelBuilder!.ApplyDataVaultMetadata(metadataModel));
+    var metadataException = Assert.Throws<ArgumentNullException>(() => CreateModelBuilder().ApplyDataVaultMetadata(null!));
+
+    Assert.Equal("modelBuilder", modelBuilderException.ParamName);
+    Assert.Equal("metadataModel", metadataException.ParamName);
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataCreatesProviderNeutralHubLinkAndSatelliteMetadata() {
+    var model = CreateTranslatedModel();
+
+    Assert.Equal(3, model.GetEntityTypes().Count());
+
+    AssertHub(FindEntity(model, "HubCustomer"));
+    AssertLink(FindEntity(model, "LinkCustomerOrder"));
+    AssertSatellite(FindEntity(model, "SatCustomerContact"));
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataKeepsEquivalentInputDeterministic() {
+    var first = CreateTranslatedModel();
+    var second = CreateTranslatedModel();
+
+    Assert.Equal(ModelShape(first), ModelShape(second));
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataPreservesDeclaredBusinessKeyOrder() {
+    var modelBuilder = CreateModelBuilder();
+    var metadataModel = new DataVaultMetadataModel(
+        [new DataVaultHubMetadata("Customer", ["Customer Id", "Source System"])],
+        [],
+        []);
+
+    modelBuilder.ApplyDataVaultMetadata(metadataModel);
+
+    var hub = FindEntity(modelBuilder.Model, "HubCustomer");
+
+    Assert.Equal(
+        ["CustomerHashKey", "LoadTimestamp", "RecordSource", "CustomerId", "SourceSystem"],
+        PropertyNamesInOrdinalOrder(hub));
+    AssertPrimaryKey(hub, "PkHubCustomerCustomerHashKey", ["CustomerHashKey"]);
+    AssertIndex(hub, "IxHubCustomerBusinessKeyCustomerIdSourceSystem", ["CustomerId", "SourceSystem"], isUnique: true);
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataTranslatesLinkParentSatellites() {
+    var modelBuilder = CreateModelBuilder();
+    var metadataModel = new DataVaultMetadataModel(
+        [],
+        [],
+        [
+            new DataVaultSatelliteMetadata(
+                "State",
+                DataVaultMetadataReference.Link("CustomerOrder"),
+                ["State Code"]),
+        ]);
+
+    modelBuilder.ApplyDataVaultMetadata(metadataModel);
+
+    var satellite = FindEntity(modelBuilder.Model, "SatCustomerOrderState");
+
+    Assert.Equal(DataVaultTableKind.Satellite, AnnotationValue<DataVaultTableKind>(satellite, DataVaultAnnotationNames.EntityKind));
+    Assert.Equal("State", AnnotationValue<string>(satellite, DataVaultAnnotationNames.MetadataName));
+    Assert.Equal(
+        DataVaultMetadataReferenceKind.Link,
+        AnnotationValue<DataVaultMetadataReferenceKind>(satellite, DataVaultAnnotationNames.ParentReferenceKind));
+    Assert.Equal("CustomerOrder", AnnotationValue<string>(satellite, DataVaultAnnotationNames.ParentReferenceName));
+    Assert.Equal(
+        ["CustomerOrderHashKey", "HashDiff", "LoadTimestamp", "RecordSource", "StateCode"],
+        PropertyNamesInOrdinalOrder(satellite));
+    AssertPrimaryKey(satellite, "PkSatCustomerOrderStateCustomerOrderHashKeyLoadTimestamp", ["CustomerOrderHashKey", "LoadTimestamp"]);
+    AssertIndex(satellite, "IxSatCustomerOrderStateSatelliteParentCustomerOrderHashKey", ["CustomerOrderHashKey"], isUnique: false);
+  }
+
+  [Fact]
+  public void DataVaultMetadataModelRejectsNullCollectionsAndItems() {
+    Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel(null!, [], []));
+    Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel([], null!, []));
+    Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel([], [], null!));
+    Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel([null!], [], []));
+    Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel([], [null!], []));
+    Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel([], [], [null!]));
+  }
+
+  private static IMutableModel CreateTranslatedModel() {
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.ApplyDataVaultMetadata(CreateMetadataModel());
+
+    return modelBuilder.Model;
+  }
+
+  private static DataVaultMetadataModel CreateMetadataModel() {
+    return new DataVaultMetadataModel(
+        [new DataVaultHubMetadata("Customer", ["Customer Id"])],
+        [
+            new DataVaultLinkMetadata(
+                "CustomerOrder",
+                [DataVaultMetadataReference.Hub("Customer"), DataVaultMetadataReference.Hub("Order")]),
+        ],
+        [
+            new DataVaultSatelliteMetadata(
+                "Contact",
+                DataVaultMetadataReference.Hub("Customer"),
+                ["Email Address"]),
+        ]);
+  }
+
+  private static ModelBuilder CreateModelBuilder() {
+    return new ModelBuilder(new ConventionSet());
+  }
+
+  private static void AssertHub(IMutableEntityType hub) {
+    Assert.Equal(DataVaultTableKind.Hub, AnnotationValue<DataVaultTableKind>(hub, DataVaultAnnotationNames.EntityKind));
+    Assert.Equal("Customer", AnnotationValue<string>(hub, DataVaultAnnotationNames.MetadataName));
+    Assert.Equal(["CustomerHashKey", "LoadTimestamp", "RecordSource", "CustomerId"], PropertyNamesInOrdinalOrder(hub));
+    AssertProperty(hub, "CustomerHashKey", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.HashKey);
+    AssertProperty(hub, "LoadTimestamp", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.LoadTimestamp);
+    AssertProperty(hub, "RecordSource", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.RecordSource);
+    AssertProperty(hub, "CustomerId", DataVaultPropertyRole.BusinessKey, expectedTechnicalRole: null);
+    AssertPrimaryKey(hub, "PkHubCustomerCustomerHashKey", ["CustomerHashKey"]);
+    AssertIndex(hub, "IxHubCustomerBusinessKeyCustomerId", ["CustomerId"], isUnique: true);
+    AssertNoRelationships(hub);
+  }
+
+  private static void AssertLink(IMutableEntityType link) {
+    Assert.Equal(DataVaultTableKind.Link, AnnotationValue<DataVaultTableKind>(link, DataVaultAnnotationNames.EntityKind));
+    Assert.Equal("CustomerOrder", AnnotationValue<string>(link, DataVaultAnnotationNames.MetadataName));
+    Assert.Equal(
+        ["CustomerOrderHashKey", "LoadTimestamp", "RecordSource", "CustomerHashKey", "OrderHashKey"],
+        PropertyNamesInOrdinalOrder(link));
+    AssertProperty(link, "CustomerOrderHashKey", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.HashKey);
+    AssertProperty(link, "LoadTimestamp", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.LoadTimestamp);
+    AssertProperty(link, "RecordSource", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.RecordSource);
+    AssertProperty(link, "CustomerHashKey", DataVaultPropertyRole.ParticipantReference, TechnicalMetadataColumnRole.HashKey);
+    AssertProperty(link, "OrderHashKey", DataVaultPropertyRole.ParticipantReference, TechnicalMetadataColumnRole.HashKey);
+    AssertPrimaryKey(link, "PkLinkCustomerOrderCustomerOrderHashKey", ["CustomerOrderHashKey"]);
+    AssertIndex(link, "IxLinkCustomerOrderRelationshipCustomerHashKeyOrderHashKey", ["CustomerHashKey", "OrderHashKey"], isUnique: false);
+    AssertNoRelationships(link);
+  }
+
+  private static void AssertSatellite(IMutableEntityType satellite) {
+    Assert.Equal(DataVaultTableKind.Satellite, AnnotationValue<DataVaultTableKind>(satellite, DataVaultAnnotationNames.EntityKind));
+    Assert.Equal("Contact", AnnotationValue<string>(satellite, DataVaultAnnotationNames.MetadataName));
+    Assert.Equal(
+        DataVaultMetadataReferenceKind.Hub,
+        AnnotationValue<DataVaultMetadataReferenceKind>(satellite, DataVaultAnnotationNames.ParentReferenceKind));
+    Assert.Equal("Customer", AnnotationValue<string>(satellite, DataVaultAnnotationNames.ParentReferenceName));
+    Assert.Equal(
+        ["CustomerHashKey", "HashDiff", "LoadTimestamp", "RecordSource", "EmailAddress"],
+        PropertyNamesInOrdinalOrder(satellite));
+    AssertProperty(satellite, "CustomerHashKey", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.HashKey);
+    AssertProperty(satellite, "HashDiff", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.HashDiff);
+    AssertProperty(satellite, "LoadTimestamp", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.LoadTimestamp);
+    AssertProperty(satellite, "RecordSource", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.RecordSource);
+    AssertProperty(satellite, "EmailAddress", DataVaultPropertyRole.Payload, expectedTechnicalRole: null);
+    AssertPrimaryKey(satellite, "PkSatCustomerContactCustomerHashKeyLoadTimestamp", ["CustomerHashKey", "LoadTimestamp"]);
+    AssertIndex(satellite, "IxSatCustomerContactSatelliteParentCustomerHashKey", ["CustomerHashKey"], isUnique: false);
+    AssertNoRelationships(satellite);
+  }
+
+  private static void AssertProperty(
+      IMutableEntityType entityType,
+      string propertyName,
+      DataVaultPropertyRole expectedRole,
+      TechnicalMetadataColumnRole? expectedTechnicalRole) {
+    var property = entityType.FindProperty(propertyName);
+
+    Assert.NotNull(property);
+    Assert.Equal(propertyName, AnnotationValue<string>(property!, DataVaultAnnotationNames.ProducedName));
+    Assert.Equal(expectedRole, AnnotationValue<DataVaultPropertyRole>(property!, DataVaultAnnotationNames.PropertyRole));
+
+    if (expectedTechnicalRole is null) {
+      Assert.Null(property!.FindAnnotation(DataVaultAnnotationNames.TechnicalColumnRole));
+      return;
+    }
+
+    Assert.Equal(expectedTechnicalRole, AnnotationValue<TechnicalMetadataColumnRole>(property!, DataVaultAnnotationNames.TechnicalColumnRole));
+  }
+
+  private static void AssertPrimaryKey(IMutableEntityType entityType, string expectedName, string[] expectedProperties) {
+    var primaryKey = entityType.FindPrimaryKey();
+
+    Assert.NotNull(primaryKey);
+    Assert.Equal(expectedName, AnnotationValue<string>(primaryKey!, DataVaultAnnotationNames.ProducedName));
+    Assert.Equal(expectedProperties, primaryKey!.Properties.Select(property => property.Name));
+  }
+
+  private static void AssertIndex(IMutableEntityType entityType, string expectedName, string[] expectedProperties, bool isUnique) {
+    var index = Assert.Single(entityType.GetIndexes());
+
+    Assert.Equal(expectedName, AnnotationValue<string>(index, DataVaultAnnotationNames.ProducedName));
+    Assert.Equal(expectedProperties, index.Properties.Select(property => property.Name));
+    Assert.Equal(isUnique, index.IsUnique);
+  }
+
+  private static void AssertNoRelationships(IMutableEntityType entityType) {
+    Assert.Empty(entityType.GetForeignKeys());
+    Assert.Empty(entityType.GetNavigations());
+    Assert.Empty(entityType.GetSkipNavigations());
+  }
+
+  private static IMutableEntityType FindEntity(IMutableModel model, string producedName) {
+    var matches = model.GetEntityTypes()
+        .Where(entityType => string.Equals(
+            entityType.FindAnnotation(DataVaultAnnotationNames.ProducedName)?.Value as string,
+            producedName,
+            StringComparison.Ordinal))
+        .ToArray();
+
+    Assert.Single(matches);
+    return matches[0];
+  }
+
+  private static string[] PropertyNamesInOrdinalOrder(IMutableEntityType entityType) {
+    return entityType.GetProperties()
+        .OrderBy(property => AnnotationValue<int>(property, DataVaultAnnotationNames.Ordinal))
+        .Select(property => property.Name)
+        .ToArray();
+  }
+
+  private static string[] ModelShape(IMutableModel model) {
+    return model.GetEntityTypes()
+        .Select(entityType => string.Join(
+            "|",
+            AnnotationValue<string>(entityType, DataVaultAnnotationNames.ProducedName),
+            AnnotationValue<DataVaultTableKind>(entityType, DataVaultAnnotationNames.EntityKind).ToString(),
+            string.Join(",", PropertyNamesInOrdinalOrder(entityType)),
+            string.Join(",", entityType.FindPrimaryKey()!.Properties.Select(property => property.Name)),
+            string.Join(
+                ";",
+                entityType.GetIndexes()
+                    .OrderBy(index => AnnotationValue<int>(index, DataVaultAnnotationNames.Ordinal))
+                    .Select(index => string.Join(",", index.Properties.Select(property => property.Name)) + ":" + index.IsUnique))))
+        .Order(StringComparer.Ordinal)
+        .ToArray();
+  }
+
+  private static T AnnotationValue<T>(IMutableEntityType entityType, string name) {
+    return Assert.IsType<T>(RequiredAnnotation(entityType.FindAnnotation(name)).Value);
+  }
+
+  private static T AnnotationValue<T>(IMutableProperty property, string name) {
+    return Assert.IsType<T>(RequiredAnnotation(property.FindAnnotation(name)).Value);
+  }
+
+  private static T AnnotationValue<T>(IMutableKey key, string name) {
+    return Assert.IsType<T>(RequiredAnnotation(key.FindAnnotation(name)).Value);
+  }
+
+  private static T AnnotationValue<T>(IMutableIndex index, string name) {
+    return Assert.IsType<T>(RequiredAnnotation(index.FindAnnotation(name)).Value);
+  }
+
+  private static IAnnotation RequiredAnnotation(IAnnotation? annotation) {
+    Assert.NotNull(annotation);
+
+    return annotation!;
+  }
+}
