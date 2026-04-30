@@ -1,90 +1,66 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the ticket to a model-level EF contract: ModelBuilder.UseDataVault() must record DataVaultConventions.Default on the EF model through the DVault-owned annotation DCoding.Data.DVault:Conventions, must not translate hubs, links, satellites, keys, indexes, or technical columns, and must update tests around that exact inspection surface. No child tickets, relations, attachments, or planning documents were created.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+PO-critic checklist responses
+- critic-item-1: `answered` - The contract is amended to require one exact observable EF-model artifact: ModelBuilder.UseDataVault() must set model annotation DCoding.Data.DVault:Conventions on modelBuilder.Model, and its value must be the same DataVaultConventions.Default instance. Tests must inspect that annotation directly and assert same-instance wiring.
+- critic-item-2: `answered` - This ticket does not perform EF metadata translation for hubs, links, satellites, keys, indexes, or technical columns. Its EF responsibility stops at adding the optionless ModelBuilder entry point and recording the model-level conventions marker. Per-structure EF translation remains owned by blocked ticket 06EXB7FYXNBPMH8VGQCGP2R41R.
+- critic-item-3: `answered` - The acceptance criteria and test expectations are updated to match that contract: the EF extension must be discoverable, null-safe, fluent, must set annotation DCoding.Data.DVault:Conventions to DataVaultConventions.Default, and must not materialize per-entity EF metadata from a bare UseDataVault() call.
+- critic-item-4: `answered` - The minimal observable EF-model effect is now explicit and bounded: a provider-neutral model annotation on modelBuilder.Model with key DCoding.Data.DVault:Conventions and value DataVaultConventions.Default. That gives dev and test a concrete EF inspection surface without pulling this ticket into downstream metadata translation.
+
+Clarifications
 - Repository evidence shows the current non-EF path already defines the default-convention singleton in src/DCoding.Data.DVault/Modeling/DataVaultConventions.cs and applies it by reference in src/DCoding.Data.DVault/Modeling/DataVaultModelBuilderExtensions.cs plus src/DCoding.Data.DVault/Modeling/DataVaultModel.cs.
 - The refined contract uses the existing public DataVaultConventions.Default object as the exact EF-facing payload, so the EF entry point mirrors the current internal builder behavior instead of inventing a second defaults object or options surface.
 - The required EF inspection surface for this ticket is the provider-neutral modelBuilder.Model annotation surface; no relational or provider-specific annotations, migrations, or schema objects are part of this ticket.
 - Blocked ticket 06EXB7FYXNBPMH8VGQCGP2R41R remains the owner of translating hubs, links, satellites, keys, indexes, and technical columns into EF metadata.
 - Recent comments contain only bot orchestration metadata; no human clarification comment changed scope, and no child tickets, relations, attachments, or planning documents were materialized in this refinement pass.
 
-### Scope In
+Scope In
 - Add a public optionless extension method in the DCoding.Data.DVault namespace for Microsoft.EntityFrameworkCore.ModelBuilder, intended for DbContext.OnModelCreating.
 - Introduce the minimal provider-neutral EF model mutation required by this ticket: set model annotation DCoding.Data.DVault:Conventions on modelBuilder.Model with value DataVaultConventions.Default.
 - Keep the path convention-first and zero-configuration; the EF entry point reuses existing DVault defaults rather than introducing custom options, naming overrides, or provider hooks.
 - Add XML documentation for every new public API so GenerateDocumentationFile and CS1591 warnings-as-errors remain satisfied.
 - Add focused tests that inspect the EF model annotation surface for null-guard behavior, fluent return behavior, and same-instance wiring to DataVaultConventions.Default.
 
-### Scope Out
+Scope Out
 - Translating hubs, links, satellites, business keys, indexes, or technical metadata columns into EF entity, property, key, or index metadata.
 - Provider-specific relational annotations, migrations, generated schemas, SQL dialect behavior, physical column types, or database-specific indexes.
 - Advanced configuration overloads or hook surfaces for naming, hashing, record-source, timestamp, or provider behavior.
 - Changes to the existing AddDVault() service-registration contract or to the non-EF DCoding.Data.DVault.Modeling.DataVaultModelBuilder API.
 - Load automation, ingestion pipelines, runtime record-source resolution, or other downstream Data Vault runtime behavior.
 
-## Acceptance Criteria
-- A public ModelBuilder.UseDataVault() extension is available from the DCoding.Data.DVault namespace and can be called without options from DbContext.OnModelCreating.
-- Calling ModelBuilder.UseDataVault() with a non-null builder returns the same ModelBuilder instance and records model annotation DCoding.Data.DVault:Conventions on modelBuilder.Model with value equal to the same DataVaultConventions.Default instance.
-- This ticket's EF behavior stops at that model-level conventions marker and does not translate hubs, links, satellites, keys, indexes, or technical columns into EF entity, property, key, or index metadata.
-- All new public APIs have XML documentation that satisfies the library's documentation-file and CS1591 build policy.
-- Tests inspect the EF model directly and prove null guarding, fluent return, presence of annotation DCoding.Data.DVault:Conventions, same-instance reference to DataVaultConventions.Default, and absence of per-entity metadata translation from a bare UseDataVault() call.
-
-## Definition of Done
-- Implementation is limited to the main library project under src/DCoding.Data.DVault and focused EF coverage under tests/DCoding.Data.DVault.Tests using the existing repository layout.
-- A compatible EF Core package reference is added for the repository's net10.0 baseline only as needed to compile and test the new ModelBuilder extension.
-- The solution builds and the relevant test project or projects pass with the new EF model-annotation coverage included.
-- The shared formatting gate bash tools/check-format.sh passes.
-- No provider-specific persistence behavior, migrations, relational metadata translation, or advanced configuration surface is introduced as part of this ticket.
-
-## Implementation Notes
-- Mirror the existing non-EF convention wiring pattern: the internal builder path already calls UseConventions(DataVaultConventions.Default), so the EF entry point should reuse the same singleton instead of cloning or re-expressing its values.
-- Use the provider-neutral EF model annotation surface on modelBuilder.Model; avoid relational-provider annotations because provider mapping is explicitly deferred.
-- Treat annotation key DCoding.Data.DVault:Conventions as the contractually required EF inspection key for this ticket, and store the public DataVaultConventions.Default instance as the annotation value.
-- Do not create EF entity types, properties, keys, indexes, or technical-column annotations in this ticket; that boundary belongs to blocked ticket 06EXB7FYXNBPMH8VGQCGP2R41R.
-- Keep the extension class in the root DCoding.Data.DVault namespace so consumers importing that namespace can call modelBuilder.UseDataVault() without reaching into Modeling internals.
-- Reuse existing defaults already exposed by DataVaultConventions.Default, including DefaultNamingPolicy.Instance, the finite MVP concept set, sha256-v1, sha-256, dvault.persistence-conventions.v1, and logical object names dvault_records, dvault_record_payloads, and dvault_record_metadata.
-- No child tickets, relations, attachments, or planning documents were created in this pass.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - When ticket 06EXB7FYXNBPMH8VGQCGP2R41R resumes, should its EF translation layer consume the DCoding.Data.DVault:Conventions annotation directly as its upstream guardrail, or only treat it as a verification marker?
 - A later provider-specific ticket should decide how provider-neutral DVault metadata maps to relational schema objects, migrations, and database-specific indexes.
 - A later advanced-configuration ticket should decide whether an overload accepting naming, hashing, record-source, timestamp, or provider hooks is needed after those hooks exist.
 - A downstream documentation ticket may add DbContext.OnModelCreating usage examples once the EF entry point ships.
 
-## Risks
+Risks
 - The new EF Core package reference must stay aligned with the repository's net10.0 baseline to avoid restore or build drift.
 - Once shipped, annotation key DCoding.Data.DVault:Conventions becomes a public contract and should not be renamed casually because tests and downstream EF work may rely on it.
 - There is still a namespace and overload-resolution risk alongside the existing Modeling.DataVaultModelBuilderExtensions.UseDataVault, so the EF extension must remain typed specifically for Microsoft.EntityFrameworkCore.ModelBuilder in the root namespace.
 
-## Split Recommendations
+Split recommendations
 - none
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 5
+- implementation-notes items: 7
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Summary
-Implement the primary EF model-building entry point.
-
-## Scope
-- Expose a simple extension method from DCoding.Data.DVault.
-
-## Acceptance Criteria
-- The extension applies default conventions.
-- The extension has XML documentation.
-
-## Definition of Done
-- The work satisfies the acceptance criteria.
-- Shared standards from the charter attachment are followed.
+Run mode
+- apply: planned updates are applied after this comment

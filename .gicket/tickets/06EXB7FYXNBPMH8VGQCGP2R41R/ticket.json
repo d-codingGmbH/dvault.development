@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7FYXNBPMH8VGQCGP2R41R",
   "ticket-type": "task",
   "title": "Task: Translate DVault metadata into EF model metadata",
-  "revision": "06EXNNP2XA5FRDQ4GP6E3CYSN0",
+  "revision": "06EXYTJ8C6SD5CV4BSDYFQQTB4",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
   "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
   "created-at": "2026-04-28T19:43:14.7853553Z",
-  "updated-at": "2026-04-29T20:03:20.9385373Z"
+  "updated-at": "2026-04-30T17:22:57.7610000Z"
 }
