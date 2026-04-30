@@ -1,10 +1,21 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
-if [ -z "${repo_root:-}" ]; then
-  echo "format check error: run from inside a git repository" >&2
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+if [ -z "${script_dir:-}" ]; then
+  echo "format check error: cannot resolve script directory" >&2
   exit 2
+fi
+
+script_repo_root=$(cd "$script_dir/.." && pwd -P)
+if [ -z "${script_repo_root:-}" ]; then
+  echo "format check error: cannot resolve repository root" >&2
+  exit 2
+fi
+
+repo_root=$(git -C "$script_repo_root" rev-parse --show-toplevel 2>/dev/null)
+if [ -z "${repo_root:-}" ]; then
+  repo_root=$script_repo_root
 fi
 
 cd "$repo_root" || exit 2
@@ -98,6 +109,18 @@ check_no_tabs() {
   fi
 }
 
+list_governed_paths() {
+  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git ls-files -z --cached --others --exclude-standard -- .
+    return
+  fi
+
+  while IFS= read -r -d '' path; do
+    path=${path#./}
+    printf '%s\0' "$path"
+  done < <(find . -type f -print0)
+}
+
 check_policy_sources
 
 while IFS= read -r -d '' path; do
@@ -129,7 +152,7 @@ while IFS= read -r -d '' path; do
   if [ -s "$path" ] && [ "$(tail -c 1 "$path" | od -An -t x1 | tr -d ' \n')" != "0a" ]; then
     report "$path" "must end with a final newline"
   fi
-done < <(git ls-files -z --cached --others --exclude-standard -- .)
+done < <(list_governed_paths)
 
 if [ "$status" -eq 0 ]; then
   echo "Formatting check passed."

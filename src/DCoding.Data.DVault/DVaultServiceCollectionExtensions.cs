@@ -20,6 +20,8 @@ public static class DVaultServiceCollectionExtensions
 
         TryAddSingleton(services, typeof(DefaultNamingPolicy), DefaultNamingPolicy.Instance);
         TryAddSingleton(services, typeof(DataVaultConventions), DataVaultConventions.Default);
+        TryAddSingleton(services, typeof(IStableHashService), DefaultStableHashService.Instance);
+        TryAddSingleton(services, typeof(IStableHashNormalizer), DefaultStableHashNormalizer.Instance);
 
         return services;
     }
