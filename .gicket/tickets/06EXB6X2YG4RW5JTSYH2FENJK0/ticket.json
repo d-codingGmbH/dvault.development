@@ -3,18 +3,17 @@
   "ticket-id": "06EXB6X2YG4RW5JTSYH2FENJK0",
   "ticket-type": "epic",
   "title": "Epic: Solution foundation and developer experience",
-  "revision": "06EXBF62CGA3R5WNQF4N1E1VMG",
-  "status": "todo",
+  "revision": "06EXQR72RF0Q41K9XN1ACAZPRR",
+  "status": "done",
   "labels": [
-    "backlog/initial-dvault",
-    "type/epic",
     "area/foundation",
-    "needs-po",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "backlog/initial-dvault",
+    "type/epic"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:40:40.1768206Z",
-  "updated-at": "2026-04-28T20:16:50.7881645Z"
+  "updated-at": "2026-04-30T00:54:01.6677869Z"
 }
