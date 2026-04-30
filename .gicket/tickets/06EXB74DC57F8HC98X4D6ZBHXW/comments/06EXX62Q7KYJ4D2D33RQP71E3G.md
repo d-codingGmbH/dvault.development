@@ -1,0 +1,5 @@
+﻿[gicket-bot] lease-state-v1 (event: released)
+
+```json
+{"owner":"hp-ai-2026-001.1","role":"test","acquired":"2026-04-30T11:33:36.9270852\u002B00:00","expires":"2026-04-30T13:33:36.9270852\u002B00:00","version":12,"state":"released"}
+```

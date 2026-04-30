@@ -3,7 +3,7 @@
   "ticket-id": "06EXB75DX3YAJFMJ6TNHVPAWYG",
   "ticket-type": "story",
   "title": "Story: Implement deterministic naming conventions",
-  "revision": "06EXKMBFAR23Z2Z3B1HRQJS1QC",
+  "revision": "06EXXG5YZDNBK336F2G4RDSCP8",
   "status": "done",
   "labels": [
     "area/modeling",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:41:48.5078758Z",
-  "updated-at": "2026-04-29T15:17:54.6461362Z"
+  "updated-at": "2026-04-30T14:17:47.0030000Z"
 }
