@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
-if [ -z "${repo_root:-}" ]; then
-  script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
-  repo_root=$(CDPATH= cd -- "$script_dir/.." && pwd -P)
-fi
-
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+script_repo_root=$(CDPATH= cd -- "$script_dir/.." && pwd -P)
 repo_root=$(git -C "$script_repo_root" rev-parse --show-toplevel 2>/dev/null)
 if [ -z "${repo_root:-}" ]; then
   repo_root=$script_repo_root
