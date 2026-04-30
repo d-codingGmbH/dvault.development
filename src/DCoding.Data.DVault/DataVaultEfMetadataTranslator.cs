@@ -224,6 +224,7 @@ internal static class DataVaultEfMetadataTranslator {
 
   private static void ApplyEntity(ModelBuilder modelBuilder, EntityProjection entity) {
     modelBuilder.SharedTypeEntity<Dictionary<string, object>>(entity.Name, entityBuilder => {
+      entityBuilder.ToTable(entity.Name);
       entityBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProducedName, entity.Name);
       entityBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.EntityKind, entity.Kind);
       entityBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.MetadataName, entity.MetadataName);
@@ -238,12 +239,14 @@ internal static class DataVaultEfMetadataTranslator {
       }
 
       var keyBuilder = entityBuilder.HasKey(entity.PrimaryKey.PropertyNames.ToArray());
+      keyBuilder.HasName(entity.PrimaryKey.Name);
       keyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProducedName, entity.PrimaryKey.Name);
 
       for (var ordinal = 0; ordinal < entity.Indexes.Count; ordinal++) {
         var index = entity.Indexes[ordinal];
         var indexBuilder = entityBuilder.HasIndex(index.PropertyNames.ToArray());
         indexBuilder.IsUnique(index.IsUnique);
+        indexBuilder.HasDatabaseName(index.Name);
         indexBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProducedName, index.Name);
         indexBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.Ordinal, ordinal);
       }
@@ -258,6 +261,8 @@ internal static class DataVaultEfMetadataTranslator {
         ? entityBuilder.IndexerProperty<DateTimeOffset>(property.Name)
         : entityBuilder.IndexerProperty<string>(property.Name);
 
+    propertyBuilder.HasColumnName(property.Name);
+    propertyBuilder.HasColumnOrder(ordinal);
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProducedName, property.Name);
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.PropertyRole, property.Role);
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.MetadataName, property.MetadataName);

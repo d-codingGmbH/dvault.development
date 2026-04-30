@@ -50,6 +50,30 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataMapsProducedNamesToRelationalMetadata() {
+    var model = CreateTranslatedModel();
+
+    AssertRelationalEntity(
+        FindEntity(model, "HubCustomer"),
+        "HubCustomer",
+        ["CustomerHashKey", "LoadTimestamp", "RecordSource", "CustomerId"],
+        "PkHubCustomerCustomerHashKey",
+        "IxHubCustomerBusinessKeyCustomerId");
+    AssertRelationalEntity(
+        FindEntity(model, "LinkCustomerOrder"),
+        "LinkCustomerOrder",
+        ["CustomerOrderHashKey", "LoadTimestamp", "RecordSource", "CustomerHashKey", "OrderHashKey"],
+        "PkLinkCustomerOrderCustomerOrderHashKey",
+        "IxLinkCustomerOrderRelationshipCustomerHashKeyOrderHashKey");
+    AssertRelationalEntity(
+        FindEntity(model, "SatCustomerContact"),
+        "SatCustomerContact",
+        ["CustomerHashKey", "HashDiff", "LoadTimestamp", "RecordSource", "EmailAddress"],
+        "PkSatCustomerContactCustomerHashKeyLoadTimestamp",
+        "IxSatCustomerContactSatelliteParentCustomerHashKey");
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataKeepsEquivalentInputDeterministic() {
     var first = CreateTranslatedModel();
     var second = CreateTranslatedModel();
@@ -226,6 +250,30 @@ public sealed class DataVaultEfMetadataTranslationTests {
     Assert.Equal(expectedName, AnnotationValue<string>(index, DataVaultAnnotationNames.ProducedName));
     Assert.Equal(expectedProperties, index.Properties.Select(property => property.Name));
     Assert.Equal(isUnique, index.IsUnique);
+  }
+
+  private static void AssertRelationalEntity(
+      IMutableEntityType entityType,
+      string expectedTableName,
+      string[] expectedColumnNames,
+      string expectedPrimaryKeyName,
+      string expectedIndexName) {
+    var table = StoreObjectIdentifier.Table(expectedTableName, schema: null);
+
+    Assert.Equal(expectedTableName, entityType.GetTableName());
+    Assert.Equal(expectedColumnNames, PropertyNamesInOrdinalOrder(entityType));
+    Assert.Equal(
+        expectedColumnNames,
+        entityType.GetProperties()
+            .OrderBy(property => AnnotationValue<int>(property, DataVaultAnnotationNames.Ordinal))
+            .Select(property => property.GetColumnName(table)));
+    Assert.Equal(
+        Enumerable.Range(0, expectedColumnNames.Length).Select(order => (int?)order),
+        entityType.GetProperties()
+            .OrderBy(property => AnnotationValue<int>(property, DataVaultAnnotationNames.Ordinal))
+            .Select(property => property.GetColumnOrder()));
+    Assert.Equal(expectedPrimaryKeyName, entityType.FindPrimaryKey()!.GetName());
+    Assert.Equal(expectedIndexName, Assert.Single(entityType.GetIndexes()).GetDatabaseName());
   }
 
   private static void AssertNoRelationships(IMutableEntityType entityType) {
