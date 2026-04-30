@@ -3,18 +3,17 @@
   "ticket-id": "06EXB7GPRGEJHKFMJ8MVAVF8ZG",
   "ticket-type": "task",
   "title": "Task: Add schema and migration snapshot tests",
-  "revision": "06EY11D9PM217D5D8F5B39CXSR",
-  "status": "todo",
+  "revision": "06EY1BC3G1YVJ9A4MEANPTFXPG",
+  "status": "done",
   "labels": [
-    "backlog/initial-dvault",
-    "type/task",
     "area/testing",
-    "needs-po",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "backlog/initial-dvault",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
   "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
   "created-at": "2026-04-28T19:43:20.8877430Z",
-  "updated-at": "2026-04-30T22:32:29.3650000Z"
+  "updated-at": "2026-04-30T23:16:01.0242282Z"
 }

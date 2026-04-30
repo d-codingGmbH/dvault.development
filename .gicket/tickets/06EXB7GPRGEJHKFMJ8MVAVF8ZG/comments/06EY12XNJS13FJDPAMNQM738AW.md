@@ -1,82 +1,55 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the ticket to deliver reviewable SQLite schema snapshot regression coverage against the current DVault metadata-translation baseline and to defer migration-specific snapshot coverage to later scoped work.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - For this ticket, the bounded v1 provider baseline is the existing SQLite integration test path under tests/DCoding.Data.DVault.Tests/Integration using the current EF Core 10 SQLite dependency.
 - "Representative models" means the currently visible metadata surface: hubs, links, hub satellites, link satellites, deterministic table and column naming, primary keys, and indexes.
 - The current repository does not yet carry a migration framework or design-time migration baseline, so the required deliverable for this ticket is schema snapshot coverage, not migration snapshot coverage.
 
-### Scope In
+Scope In
 - Add repeatable regression tests that compare canonical generated SQLite schema output for representative DVault metadata models against committed expected baselines.
 - Cover the schema elements currently produced by ApplyDataVaultMetadata, including table names, column names and order, primary key names and columns, and index names, columns, and uniqueness.
 - Include representative fixtures that exercise at least one hub, one multi-participant link, one hub satellite, one link satellite, and a business-key ordering case that can detect unintended naming or ordering drift.
 - Keep the work inside the existing DVault test layout and repository standards so it runs through DVault.slnx and the shared formatting gate.
 
-### Scope Out
+Scope Out
 - Migration-script or EF migration snapshot coverage for providers that do not already have an approved migration baseline on this branch.
 - New provider support beyond the existing SQLite test baseline.
 - A public migration framework, committed EF migration artifacts, design-time tooling, or broader provider-specific migration contracts.
 - Broader schema-generation features, runtime configuration APIs, or advanced customization hooks not already present on the branch.
 
-## Acceptance Criteria
-- The repository contains snapshot-style integration coverage that generates a canonical SQLite schema representation for representative DVault metadata models and compares it to committed expected output.
-- The expected output is deterministic and reviewable in source control, and an unintended schema change causes a failing test with a diff or baseline mismatch that is easy to inspect.
-- The covered schema includes current DVault hub, link, and satellite translations plus deterministic primary key and index naming and ordering behavior.
-- The existing negative baseline remains covered: UseDataVault() alone does not create DVault tables in the SQLite integration path.
-- The new coverage runs under dotnet test from the repository solution without external services or manual setup.
-
-## Definition of Done
-- The ticket description and implementation notes reflect that SQLite schema snapshot regression coverage is the v1 deliverable for this ticket.
-- Tests and any committed baseline artifacts live under the existing tests/DCoding.Data.DVault.Tests tree and follow repository formatting and encoding standards.
-- Relevant automated validation for the touched test projects passes, including dotnet test and the shared formatting gate for changed files.
-- The refined ticket leaves no unresolved PO-level questions about provider choice, repository location, or the representative model baseline for this work.
-
-## Implementation Notes
-- Reuse the existing SQLite integration harness, especially SqliteDataVaultSchemaTests and SqliteTestDatabase, instead of introducing a second database test stack.
-- Canonicalize generated schema before comparison by ordering tables, columns, keys, and indexes explicitly so snapshot output stays stable across machines and runs.
-- Prefer plain committed text baselines or another equally reviewable source-controlled format inside the integration test area; keep artifacts UTF-8, LF, and easy to diff.
-- Retain the current repository baseline: DVault.slnx as the test entry point, tests under tests/DCoding.Data.DVault.Tests, and the existing .NET 10 / EF Core 10 package family.
-- Do not add Microsoft.EntityFrameworkCore.Design, committed migration files, or new public migration APIs as part of this ticket.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Once DVault intentionally scopes migration behavior or adds EF design-time support, should provider-specific migration-script snapshots be tracked in a separate follow-up ticket?
 - If future naming or provider override hooks land, should additional snapshot fixtures be added to cover customized conventions separately from the default baseline?
 
-## Risks
+Risks
 - Snapshot coverage that stores raw provider DDL without enough canonicalization may become brittle across EF Core or SQLite version changes.
 - The ticket title mentions migrations, so an implementer could accidentally expand scope into deferred provider-specific migration infrastructure unless the refined scope is followed.
 - Replacing all structural assertions with a single opaque blob snapshot could make failures harder to diagnose if the canonical output is not kept focused and readable.
 
-## Split Recommendations
+Split recommendations
 - If migration-specific output requires Microsoft.EntityFrameworkCore.Design, committed model snapshots, or design-time services, split that work into a separate ticket after migration behavior is intentionally scoped.
 - If additional database providers need equivalent coverage later, create provider-specific snapshot tickets rather than widening this ticket beyond the current SQLite baseline.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Summary
-Protect generated schema behavior with repeatable tests.
-
-## Scope
-- Compare generated schema or migration output for representative models.
-
-## Acceptance Criteria
-- Tests fail on unintended schema changes.
-- Expected changes are easy to review.
-
-## Definition of Done
-- The work satisfies the acceptance criteria.
-- Shared standards from the charter attachment are followed.
+Run mode
+- apply: planned updates are applied after this comment
