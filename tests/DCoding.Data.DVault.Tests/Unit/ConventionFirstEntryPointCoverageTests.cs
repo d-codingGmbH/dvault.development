@@ -3,12 +3,10 @@ using Xunit;
 
 namespace DCoding.Data.DVault.Tests.Unit;
 
-public sealed class ConventionFirstEntryPointCoverageTests
-{
-    [Fact]
-    public void ModelingCoverageExercisesConventionFirstPublicEntryPoints()
-    {
-        Assert.Equal(0, DefaultNamingPolicyTests.Run());
-        Assert.Equal(0, NamingPolicyTests.Run());
-    }
+public sealed class ConventionFirstEntryPointCoverageTests {
+  [Fact]
+  public void ModelingCoverageExercisesConventionFirstPublicEntryPoints() {
+    Assert.Equal(0, DefaultNamingPolicyTests.Run());
+    Assert.Equal(0, NamingPolicyTests.Run());
+  }
 }

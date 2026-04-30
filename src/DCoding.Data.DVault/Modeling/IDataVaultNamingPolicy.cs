@@ -3,37 +3,36 @@ namespace DCoding.Data.DVault.Modeling;
 /// <summary>
 /// Provides override points for Data Vault names produced by the modeling flow.
 /// </summary>
-public interface IDataVaultNamingPolicy
-{
-    /// <summary>
-    /// Returns the table name for a hub.
-    /// </summary>
-    string GetHubTableName(DataVaultHubNameContext context);
+public interface IDataVaultNamingPolicy {
+  /// <summary>
+  /// Returns the table name for a hub.
+  /// </summary>
+  string GetHubTableName(DataVaultHubNameContext context);
 
-    /// <summary>
-    /// Returns the table name for a link.
-    /// </summary>
-    string GetLinkTableName(DataVaultLinkNameContext context);
+  /// <summary>
+  /// Returns the table name for a link.
+  /// </summary>
+  string GetLinkTableName(DataVaultLinkNameContext context);
 
-    /// <summary>
-    /// Returns the table name for a satellite.
-    /// </summary>
-    string GetSatelliteTableName(DataVaultSatelliteNameContext context);
+  /// <summary>
+  /// Returns the table name for a satellite.
+  /// </summary>
+  string GetSatelliteTableName(DataVaultSatelliteNameContext context);
 
-    /// <summary>
-    /// Returns the name for a Data Vault technical column.
-    /// </summary>
-    string GetTechnicalColumnName(DataVaultTechnicalColumnNameContext context);
+  /// <summary>
+  /// Returns the name for a Data Vault technical column.
+  /// </summary>
+  string GetTechnicalColumnName(DataVaultTechnicalColumnNameContext context);
 
-    /// <summary>
-    /// Returns the name for an index produced by the modeling flow.
-    /// </summary>
-    string GetIndexName(DataVaultIndexNameContext context);
+  /// <summary>
+  /// Returns the name for an index produced by the modeling flow.
+  /// </summary>
+  string GetIndexName(DataVaultIndexNameContext context);
 
-    /// <summary>
-    /// Returns the name for a constraint produced by the modeling flow.
-    /// </summary>
-    string GetConstraintName(DataVaultConstraintNameContext context);
+  /// <summary>
+  /// Returns the name for a constraint produced by the modeling flow.
+  /// </summary>
+  string GetConstraintName(DataVaultConstraintNameContext context);
 }
 
 /// <summary>
@@ -79,62 +78,59 @@ public sealed record DataVaultConstraintNameContext(
 /// <summary>
 /// Identifies Data Vault technical column families.
 /// </summary>
-public enum DataVaultTechnicalColumnKind
-{
-    /// <summary>
-    /// Hash key column.
-    /// </summary>
-    HashKey,
+public enum DataVaultTechnicalColumnKind {
+  /// <summary>
+  /// Hash key column.
+  /// </summary>
+  HashKey,
 
-    /// <summary>
-    /// Hash diff column.
-    /// </summary>
-    HashDiff,
+  /// <summary>
+  /// Hash diff column.
+  /// </summary>
+  HashDiff,
 
-    /// <summary>
-    /// Load timestamp column.
-    /// </summary>
-    LoadTimestamp,
+  /// <summary>
+  /// Load timestamp column.
+  /// </summary>
+  LoadTimestamp,
 
-    /// <summary>
-    /// Record source column.
-    /// </summary>
-    RecordSource,
+  /// <summary>
+  /// Record source column.
+  /// </summary>
+  RecordSource,
 }
 
 /// <summary>
 /// Identifies index name families produced by the modeling flow.
 /// </summary>
-public enum DataVaultIndexKind
-{
-    /// <summary>
-    /// Index over business-key columns.
-    /// </summary>
-    BusinessKey,
+public enum DataVaultIndexKind {
+  /// <summary>
+  /// Index over business-key columns.
+  /// </summary>
+  BusinessKey,
 
-    /// <summary>
-    /// Index over relationship columns.
-    /// </summary>
-    Relationship,
+  /// <summary>
+  /// Index over relationship columns.
+  /// </summary>
+  Relationship,
 
-    /// <summary>
-    /// Index over satellite parent columns.
-    /// </summary>
-    SatelliteParent,
+  /// <summary>
+  /// Index over satellite parent columns.
+  /// </summary>
+  SatelliteParent,
 }
 
 /// <summary>
 /// Identifies constraint name families produced by the modeling flow.
 /// </summary>
-public enum DataVaultConstraintKind
-{
-    /// <summary>
-    /// Primary key constraint.
-    /// </summary>
-    PrimaryKey,
+public enum DataVaultConstraintKind {
+  /// <summary>
+  /// Primary key constraint.
+  /// </summary>
+  PrimaryKey,
 
-    /// <summary>
-    /// Foreign key constraint.
-    /// </summary>
-    ForeignKey,
+  /// <summary>
+  /// Foreign key constraint.
+  /// </summary>
+  ForeignKey,
 }

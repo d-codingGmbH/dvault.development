@@ -49,6 +49,21 @@ check_policy_sources() {
   require_file_line ".gitattributes" "* text=auto eol=lf"
 }
 
+check_dotnet_format() {
+  if [ ! -f "DVault.slnx" ]; then
+    return
+  fi
+
+  if ! command -v dotnet >/dev/null 2>&1; then
+    report "DVault.slnx" "dotnet is required to verify C# formatting for this repository"
+    return
+  fi
+
+  if ! dotnet format DVault.slnx --verify-no-changes --no-restore --verbosity minimal; then
+    report "DVault.slnx" "dotnet format must pass without rewriting C# files"
+  fi
+}
+
 is_excluded() {
   case "$1" in
     .git/*|.gicket/*|.gicket-bot/*)
@@ -141,6 +156,8 @@ while IFS= read -r -d '' path; do
     report "$path" "must end with a final newline"
   fi
 done < <(list_governed_files)
+
+check_dotnet_format
 
 if [ "$status" -eq 0 ]; then
   echo "Formatting check passed."

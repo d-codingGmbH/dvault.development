@@ -6,12 +6,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DCoding.Data.DVault.Tests.Modeling;
 
-internal static class DefaultNamingPolicyTests
-{
-    internal static int Run()
+internal static class DefaultNamingPolicyTests {
+  internal static int Run() {
+    var tests = new TestCase[]
     {
-        var tests = new TestCase[]
-        {
             new("table names use Data Vault prefixes", TableNamesUseDataVaultPrefixes),
             new("explicit link names take precedence", ExplicitLinkNamesTakePrecedence),
             new("normalization handles whitespace punctuation snake kebab and Pascal input", NormalizationHandlesCommonInputForms),
@@ -26,181 +24,164 @@ internal static class DefaultNamingPolicyTests
             new("AddDVault optionless startup path builds a service provider", AddDVaultOptionlessStartupPathBuildsServiceProvider),
             new("UseDataVault no-option overload applies default conventions", UseDataVaultNoOptionOverloadAppliesDefaultConventions),
             new("default conventions expose MVP vocabulary and hash defaults", DefaultConventionsExposeMvpVocabularyAndHashDefaults),
-        };
+    };
 
-        var failures = 0;
-        foreach (var test in tests)
-        {
-            try
-            {
-                test.Run();
-                Console.WriteLine("PASS " + test.Name);
-            }
-            catch (Exception exception)
-            {
-                failures++;
-                Console.Error.WriteLine("FAIL " + test.Name + ": " + exception.Message);
-            }
-        }
-
-        return failures == 0 ? 0 : 1;
+    var failures = 0;
+    foreach (var test in tests) {
+      try {
+        test.Run();
+        Console.WriteLine("PASS " + test.Name);
+      }
+      catch (Exception exception) {
+        failures++;
+        Console.Error.WriteLine("FAIL " + test.Name + ": " + exception.Message);
+      }
     }
 
-    private static void TableNamesUseDataVaultPrefixes()
-    {
-        var policy = DefaultNamingPolicy.Instance;
+    return failures == 0 ? 0 : 1;
+  }
 
-        Equal("HubCustomer", policy.GetHubTableName("Customer"));
-        Equal("LinkCustomerOrder", policy.GetLinkTableName(null, ["Customer", "Order"]));
-        Equal("SatCustomerContact", policy.GetSatelliteTableName("Customer", "Contact"));
-    }
+  private static void TableNamesUseDataVaultPrefixes() {
+    var policy = DefaultNamingPolicy.Instance;
 
-    private static void ExplicitLinkNamesTakePrecedence()
-    {
-        var policy = DefaultNamingPolicy.Instance;
+    Equal("HubCustomer", policy.GetHubTableName("Customer"));
+    Equal("LinkCustomerOrder", policy.GetLinkTableName(null, ["Customer", "Order"]));
+    Equal("SatCustomerContact", policy.GetSatelliteTableName("Customer", "Contact"));
+  }
 
-        Equal("LinkPurchaseEvent", policy.GetLinkTableName("purchase event", ["Customer", "Order"]));
-        Equal("LinkEntity", policy.GetLinkTableName("@@@", ["Customer", "Order"]));
-    }
+  private static void ExplicitLinkNamesTakePrecedence() {
+    var policy = DefaultNamingPolicy.Instance;
 
-    private static void NormalizationHandlesCommonInputForms()
-    {
-        var policy = DefaultNamingPolicy.Instance;
+    Equal("LinkPurchaseEvent", policy.GetLinkTableName("purchase event", ["Customer", "Order"]));
+    Equal("LinkEntity", policy.GetLinkTableName("@@@", ["Customer", "Order"]));
+  }
 
-        Equal("CustomerAccount", policy.NormalizeObjectName(" customer account "));
-        Equal("CustomerAccount", policy.NormalizeObjectName("customer_account"));
-        Equal("CustomerAccount", policy.NormalizeObjectName("customer-account"));
-        Equal("CustomerAccount", policy.NormalizeObjectName("CustomerAccount"));
-        Equal("EmailAddress2", policy.NormalizeColumnName("email_address2"));
-    }
+  private static void NormalizationHandlesCommonInputForms() {
+    var policy = DefaultNamingPolicy.Instance;
 
-    private static void CommonSingularAndPluralObjectInputsAreStable()
-    {
-        var policy = DefaultNamingPolicy.Instance;
+    Equal("CustomerAccount", policy.NormalizeObjectName(" customer account "));
+    Equal("CustomerAccount", policy.NormalizeObjectName("customer_account"));
+    Equal("CustomerAccount", policy.NormalizeObjectName("customer-account"));
+    Equal("CustomerAccount", policy.NormalizeObjectName("CustomerAccount"));
+    Equal("EmailAddress2", policy.NormalizeColumnName("email_address2"));
+  }
 
-        Equal(policy.GetHubTableName("Customer"), policy.GetHubTableName("Customers"));
-        Equal("HubCustomer", policy.GetHubTableName("Customers"));
-    }
+  private static void CommonSingularAndPluralObjectInputsAreStable() {
+    var policy = DefaultNamingPolicy.Instance;
 
-    private static void FiniteSingularizationRulesAreDeterministic()
-    {
-        var policy = DefaultNamingPolicy.Instance;
+    Equal(policy.GetHubTableName("Customer"), policy.GetHubTableName("Customers"));
+    Equal("HubCustomer", policy.GetHubTableName("Customers"));
+  }
 
-        Equal("Company", policy.NormalizeObjectName("companies"));
-        Equal("Box", policy.NormalizeObjectName("boxes"));
-        Equal("Address", policy.NormalizeObjectName("addresses"));
-        Equal("Business", policy.NormalizeObjectName("business"));
-    }
+  private static void FiniteSingularizationRulesAreDeterministic() {
+    var policy = DefaultNamingPolicy.Instance;
 
-    private static void ReservedWordsAndInvalidNamesUseFallbackSuffixes()
-    {
-        var policy = DefaultNamingPolicy.Instance;
+    Equal("Company", policy.NormalizeObjectName("companies"));
+    Equal("Box", policy.NormalizeObjectName("boxes"));
+    Equal("Address", policy.NormalizeObjectName("addresses"));
+    Equal("Business", policy.NormalizeObjectName("business"));
+  }
 
-        Equal("HubSelectEntity", policy.GetHubTableName("Select"));
-        Equal("OrderValue", policy.GetColumnName("Order"));
-        Equal("HubEntity", policy.GetHubTableName("@@@"));
-        Equal("Value", policy.GetColumnName("$%^"));
-    }
+  private static void ReservedWordsAndInvalidNamesUseFallbackSuffixes() {
+    var policy = DefaultNamingPolicy.Instance;
 
-    private static void TechnicalColumnNamesAreDeterministic()
-    {
-        var policy = DefaultNamingPolicy.Instance;
+    Equal("HubSelectEntity", policy.GetHubTableName("Select"));
+    Equal("OrderValue", policy.GetColumnName("Order"));
+    Equal("HubEntity", policy.GetHubTableName("@@@"));
+    Equal("Value", policy.GetColumnName("$%^"));
+  }
 
-        Equal("CustomerHashKey", policy.GetHashKeyColumnName("Customers"));
-        Equal("HashDiff", policy.GetHashDiffColumnName());
-        Equal("LoadTimestamp", policy.GetLoadTimestampColumnName());
-        Equal("RecordSource", policy.GetRecordSourceColumnName());
-    }
+  private static void TechnicalColumnNamesAreDeterministic() {
+    var policy = DefaultNamingPolicy.Instance;
 
-    private static void TechnicalColumnCollisionsAppendValue()
-    {
-        var policy = DefaultNamingPolicy.Instance;
-        var hashKeyName = policy.GetHashKeyColumnName("Customer");
+    Equal("CustomerHashKey", policy.GetHashKeyColumnName("Customers"));
+    Equal("HashDiff", policy.GetHashDiffColumnName());
+    Equal("LoadTimestamp", policy.GetLoadTimestampColumnName());
+    Equal("RecordSource", policy.GetRecordSourceColumnName());
+  }
 
-        var columnNames = policy.GetColumnNames(
-            ["hash diff", "load_timestamp", "record-source", "customer hash key"],
-            [hashKeyName]);
+  private static void TechnicalColumnCollisionsAppendValue() {
+    var policy = DefaultNamingPolicy.Instance;
+    var hashKeyName = policy.GetHashKeyColumnName("Customer");
 
-        SequenceEqual(
-            ["HashDiffValue", "LoadTimestampValue", "RecordSourceValue", "CustomerHashKeyValue"],
-            columnNames);
-    }
+    var columnNames = policy.GetColumnNames(
+        ["hash diff", "load_timestamp", "record-source", "customer hash key"],
+        [hashKeyName]);
 
-    private static void DuplicateNormalizedColumnNamesReceiveNumericSuffixes()
-    {
-        var policy = DefaultNamingPolicy.Instance;
+    SequenceEqual(
+        ["HashDiffValue", "LoadTimestampValue", "RecordSourceValue", "CustomerHashKeyValue"],
+        columnNames);
+  }
 
-        var columnNames = policy.GetColumnNames(["customer id", "customer-id", "CustomerId", "Order", "order"]);
+  private static void DuplicateNormalizedColumnNamesReceiveNumericSuffixes() {
+    var policy = DefaultNamingPolicy.Instance;
 
-        SequenceEqual(["CustomerId", "CustomerId2", "CustomerId3", "OrderValue", "OrderValue2"], columnNames);
-    }
+    var columnNames = policy.GetColumnNames(["customer id", "customer-id", "CustomerId", "Order", "order"]);
 
-    private static void RepeatCallsReturnIdenticalNames()
-    {
-        var policy = DefaultNamingPolicy.Instance;
-        var properties = new[] { "customer id", "hash diff", "Order", "customer-id" };
+    SequenceEqual(["CustomerId", "CustomerId2", "CustomerId3", "OrderValue", "OrderValue2"], columnNames);
+  }
 
-        var first = policy.GetColumnNames(properties);
-        var second = policy.GetColumnNames(properties);
+  private static void RepeatCallsReturnIdenticalNames() {
+    var policy = DefaultNamingPolicy.Instance;
+    var properties = new[] { "customer id", "hash diff", "Order", "customer-id" };
 
-        SequenceEqual(first, second);
-        Equal(policy.GetLinkTableName(null, ["Customers", "Orders"]), policy.GetLinkTableName(null, ["Customer", "Order"]));
-    }
+    var first = policy.GetColumnNames(properties);
+    var second = policy.GetColumnNames(properties);
 
-    private static void AddDVaultNoOptionOverloadIsDiscoverable()
-    {
-        var method = typeof(DVaultServiceCollectionExtensions)
-            .GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Single(methodInfo =>
-                methodInfo.Name == "AddDVault" &&
-                methodInfo.GetParameters().Length == 1);
-        var parameter = method.GetParameters()[0];
+    SequenceEqual(first, second);
+    Equal(policy.GetLinkTableName(null, ["Customers", "Orders"]), policy.GetLinkTableName(null, ["Customer", "Order"]));
+  }
 
-        Equal("DCoding.Data.DVault", method.DeclaringType?.Namespace);
-        Equal(typeof(IServiceCollection), parameter.ParameterType);
-        Equal(typeof(IServiceCollection), method.ReturnType);
-        True(method.IsDefined(typeof(ExtensionAttribute), inherit: false), "AddDVault must be an extension method.");
-    }
+  private static void AddDVaultNoOptionOverloadIsDiscoverable() {
+    var method = typeof(DVaultServiceCollectionExtensions)
+        .GetMethods(BindingFlags.Public | BindingFlags.Static)
+        .Single(methodInfo =>
+            methodInfo.Name == "AddDVault" &&
+            methodInfo.GetParameters().Length == 1);
+    var parameter = method.GetParameters()[0];
 
-    private static void AddDVaultOptionlessStartupPathBuildsServiceProvider()
-    {
-        var services = new ServiceCollection();
+    Equal("DCoding.Data.DVault", method.DeclaringType?.Namespace);
+    Equal(typeof(IServiceCollection), parameter.ParameterType);
+    Equal(typeof(IServiceCollection), method.ReturnType);
+    True(method.IsDefined(typeof(ExtensionAttribute), inherit: false), "AddDVault must be an extension method.");
+  }
 
-        var result = services.AddDVault();
+  private static void AddDVaultOptionlessStartupPathBuildsServiceProvider() {
+    var services = new ServiceCollection();
 
-        Same(services, result);
+    var result = services.AddDVault();
 
-        using var provider = services.BuildServiceProvider(validateScopes: true);
+    Same(services, result);
 
-        var namingPolicy = provider.GetRequiredService<DefaultNamingPolicy>();
-        var conventions = provider.GetRequiredService<DataVaultConventions>();
+    using var provider = services.BuildServiceProvider(validateScopes: true);
 
-        Same(DefaultNamingPolicy.Instance, namingPolicy);
-        Same(DataVaultConventions.Default, conventions);
-        Same(DefaultNamingPolicy.Instance, conventions.NamingPolicy);
-        Equal("HubCustomer", conventions.NamingPolicy.GetHubTableName("Customers"));
-    }
+    var namingPolicy = provider.GetRequiredService<DefaultNamingPolicy>();
+    var conventions = provider.GetRequiredService<DataVaultConventions>();
 
-    private static void UseDataVaultNoOptionOverloadAppliesDefaultConventions()
-    {
-        var modelBuilder = new DataVaultModelBuilder();
+    Same(DefaultNamingPolicy.Instance, namingPolicy);
+    Same(DataVaultConventions.Default, conventions);
+    Same(DefaultNamingPolicy.Instance, conventions.NamingPolicy);
+    Equal("HubCustomer", conventions.NamingPolicy.GetHubTableName("Customers"));
+  }
 
-        var result = modelBuilder.UseDataVault();
+  private static void UseDataVaultNoOptionOverloadAppliesDefaultConventions() {
+    var modelBuilder = new DataVaultModelBuilder();
 
-        Same(modelBuilder, result);
-        True(modelBuilder.IsDataVaultEnabled, "UseDataVault must enable Data Vault conventions.");
-        Same(DataVaultConventions.Default, modelBuilder.Conventions);
-        Same(DefaultNamingPolicy.Instance, modelBuilder.Conventions?.NamingPolicy);
-        Equal("HubCustomer", modelBuilder.Conventions?.NamingPolicy.GetHubTableName("Customers"));
-    }
+    var result = modelBuilder.UseDataVault();
 
-    private static void DefaultConventionsExposeMvpVocabularyAndHashDefaults()
-    {
-        var conventions = DataVaultConventions.Default;
+    Same(modelBuilder, result);
+    True(modelBuilder.IsDataVaultEnabled, "UseDataVault must enable Data Vault conventions.");
+    Same(DataVaultConventions.Default, modelBuilder.Conventions);
+    Same(DefaultNamingPolicy.Instance, modelBuilder.Conventions?.NamingPolicy);
+    Equal("HubCustomer", modelBuilder.Conventions?.NamingPolicy.GetHubTableName("Customers"));
+  }
 
-        SequenceEqual(
-            [
-                DataVaultModelConcept.Hub,
+  private static void DefaultConventionsExposeMvpVocabularyAndHashDefaults() {
+    var conventions = DataVaultConventions.Default;
+
+    SequenceEqual(
+        [
+            DataVaultModelConcept.Hub,
                 DataVaultModelConcept.Link,
                 DataVaultModelConcept.Satellite,
                 DataVaultModelConcept.HashKey,
@@ -208,59 +189,49 @@ internal static class DefaultNamingPolicyTests
                 DataVaultModelConcept.LoadTimestamp,
                 DataVaultModelConcept.RecordSource,
             ],
-            conventions.ModelConcepts);
-        SequenceEqual(
-            ["dvault_records", "dvault_record_payloads", "dvault_record_metadata"],
-            conventions.LogicalObjectNames);
-        Equal("sha256-v1", conventions.StableHashAlgorithmId);
-        Equal("sha-256", conventions.PersistenceContentHashAlgorithm);
-        Equal("dvault.persistence-conventions.v1", conventions.PersistenceConventionVersion);
+        conventions.ModelConcepts);
+    SequenceEqual(
+        ["dvault_records", "dvault_record_payloads", "dvault_record_metadata"],
+        conventions.LogicalObjectNames);
+    Equal("sha256-v1", conventions.StableHashAlgorithmId);
+    Equal("sha-256", conventions.PersistenceContentHashAlgorithm);
+    Equal("dvault.persistence-conventions.v1", conventions.PersistenceConventionVersion);
+  }
+
+  private static void Equal<T>(T expected, T actual) {
+    if (!EqualityComparer<T>.Default.Equals(expected, actual)) {
+      throw new InvalidOperationException("Expected " + expected + " but got " + actual + ".");
+    }
+  }
+
+  private static void SequenceEqual<T>(IEnumerable<T> expected, IEnumerable<T> actual) {
+    var expectedArray = expected.ToArray();
+    var actualArray = actual.ToArray();
+
+    if (expectedArray.Length != actualArray.Length) {
+      throw new InvalidOperationException(
+          "Expected " + expectedArray.Length + " values but got " + actualArray.Length + ".");
     }
 
-    private static void Equal<T>(T expected, T actual)
-    {
-        if (!EqualityComparer<T>.Default.Equals(expected, actual))
-        {
-            throw new InvalidOperationException("Expected " + expected + " but got " + actual + ".");
-        }
+    for (var index = 0; index < expectedArray.Length; index++) {
+      if (!EqualityComparer<T>.Default.Equals(expectedArray[index], actualArray[index])) {
+        throw new InvalidOperationException(
+            "At index " + index + " expected " + expectedArray[index] + " but got " + actualArray[index] + ".");
+      }
     }
+  }
 
-    private static void SequenceEqual<T>(IEnumerable<T> expected, IEnumerable<T> actual)
-    {
-        var expectedArray = expected.ToArray();
-        var actualArray = actual.ToArray();
-
-        if (expectedArray.Length != actualArray.Length)
-        {
-            throw new InvalidOperationException(
-                "Expected " + expectedArray.Length + " values but got " + actualArray.Length + ".");
-        }
-
-        for (var index = 0; index < expectedArray.Length; index++)
-        {
-            if (!EqualityComparer<T>.Default.Equals(expectedArray[index], actualArray[index]))
-            {
-                throw new InvalidOperationException(
-                    "At index " + index + " expected " + expectedArray[index] + " but got " + actualArray[index] + ".");
-            }
-        }
+  private static void Same(object? expected, object? actual) {
+    if (!ReferenceEquals(expected, actual)) {
+      throw new InvalidOperationException("Expected matching object references.");
     }
+  }
 
-    private static void Same(object? expected, object? actual)
-    {
-        if (!ReferenceEquals(expected, actual))
-        {
-            throw new InvalidOperationException("Expected matching object references.");
-        }
+  private static void True(bool condition, string message) {
+    if (!condition) {
+      throw new InvalidOperationException(message);
     }
+  }
 
-    private static void True(bool condition, string message)
-    {
-        if (!condition)
-        {
-            throw new InvalidOperationException(message);
-        }
-    }
-
-    private sealed record TestCase(string Name, Action Run);
+  private sealed record TestCase(string Name, Action Run);
 }
