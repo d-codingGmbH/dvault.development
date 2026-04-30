@@ -48,6 +48,26 @@ public static class DataVaultAnnotationNames {
   /// Identifies the annotation that stores the reusable Data Vault technical metadata role for a property.
   /// </summary>
   public const string TechnicalColumnRole = "DCoding.Data.DVault:TechnicalColumnRole";
+
+  /// <summary>
+  /// Identifies the annotation that stores the provider capability profile used to project an Entity Framework property.
+  /// </summary>
+  public const string ProviderProfile = "DCoding.Data.DVault:ProviderProfile";
+
+  /// <summary>
+  /// Identifies the annotation that stores the provider-aware logical property kind.
+  /// </summary>
+  public const string ProviderLogicalPropertyKind = "DCoding.Data.DVault:ProviderLogicalPropertyKind";
+
+  /// <summary>
+  /// Identifies the annotation that stores the native provider storage type declared by the capability profile.
+  /// </summary>
+  public const string ProviderStorageType = "DCoding.Data.DVault:ProviderStorageType";
+
+  /// <summary>
+  /// Identifies the annotation that stores the provider value format declared by the capability profile.
+  /// </summary>
+  public const string ProviderValueFormat = "DCoding.Data.DVault:ProviderValueFormat";
 }
 
 /// <summary>

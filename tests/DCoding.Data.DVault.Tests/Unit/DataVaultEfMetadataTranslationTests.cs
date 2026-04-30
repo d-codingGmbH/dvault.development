@@ -131,6 +131,28 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataFailsDeterministicallyWhenProviderProfileOmitsRequiredMapping() {
+    var providerCapabilities = new DataVaultProviderCapabilityProfile(
+        "broken-test-profile",
+        DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported,
+        DataVaultProviderConcurrencySupport.NoneInV1Unsupported,
+        [
+            new(
+                DataVaultLogicalPropertyKind.HashKey,
+                typeof(string),
+                "TEXT",
+                DataVaultProviderValueFormat.Text),
+        ]);
+
+    var exception = Assert.Throws<TargetInvocationException>(() =>
+        InvokeTranslatorApply(CreateModelBuilder(), CreateMetadataModel(), providerCapabilities));
+    var notSupportedException = Assert.IsType<NotSupportedException>(exception.InnerException);
+
+    Assert.Contains("broken-test-profile", notSupportedException.Message, StringComparison.Ordinal);
+    Assert.Contains("type mapping for LoadTimestamp", notSupportedException.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
   public void DataVaultMetadataModelRejectsNullCollectionsAndItems() {
     Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel(null!, [], []));
     Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel([], null!, []));
@@ -223,17 +245,75 @@ public sealed class DataVaultEfMetadataTranslationTests {
       DataVaultPropertyRole expectedRole,
       TechnicalMetadataColumnRole? expectedTechnicalRole) {
     var property = entityType.FindProperty(propertyName);
+    var expectedLogicalPropertyKind = GetExpectedLogicalPropertyKind(expectedRole, expectedTechnicalRole);
 
     Assert.NotNull(property);
     Assert.Equal(propertyName, AnnotationValue<string>(property!, DataVaultAnnotationNames.ProducedName));
     Assert.Equal(expectedRole, AnnotationValue<DataVaultPropertyRole>(property!, DataVaultAnnotationNames.PropertyRole));
+    Assert.Equal(ExpectedClrType(expectedLogicalPropertyKind), property!.ClrType);
+    Assert.Equal("sqlite-v1", AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderProfile));
+    Assert.Equal(expectedLogicalPropertyKind, AnnotationValue<DataVaultLogicalPropertyKind>(
+        property,
+        DataVaultAnnotationNames.ProviderLogicalPropertyKind));
+    Assert.Equal("TEXT", AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderStorageType));
+    Assert.Equal(ExpectedValueFormat(expectedLogicalPropertyKind), AnnotationValue<DataVaultProviderValueFormat>(
+        property,
+        DataVaultAnnotationNames.ProviderValueFormat));
 
     if (expectedTechnicalRole is null) {
-      Assert.Null(property!.FindAnnotation(DataVaultAnnotationNames.TechnicalColumnRole));
+      Assert.Null(property.FindAnnotation(DataVaultAnnotationNames.TechnicalColumnRole));
       return;
     }
 
-    Assert.Equal(expectedTechnicalRole, AnnotationValue<TechnicalMetadataColumnRole>(property!, DataVaultAnnotationNames.TechnicalColumnRole));
+    Assert.Equal(expectedTechnicalRole, AnnotationValue<TechnicalMetadataColumnRole>(property, DataVaultAnnotationNames.TechnicalColumnRole));
+  }
+
+  private static void InvokeTranslatorApply(
+      ModelBuilder modelBuilder,
+      DataVaultMetadataModel metadataModel,
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    var translatorType = typeof(DCoding.Data.DVault.DataVaultModelBuilderExtensions).Assembly
+        .GetType("DCoding.Data.DVault.DataVaultEfMetadataTranslator");
+
+    Assert.NotNull(translatorType);
+
+    var applyMethod = translatorType!
+        .GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
+        .Single(methodInfo =>
+            methodInfo.Name == "Apply" &&
+            methodInfo.GetParameters().Length == 3);
+
+    applyMethod.Invoke(null, [modelBuilder, metadataModel, providerCapabilities]);
+  }
+
+  private static DataVaultLogicalPropertyKind GetExpectedLogicalPropertyKind(
+      DataVaultPropertyRole role,
+      TechnicalMetadataColumnRole? technicalRole) {
+    return role switch {
+      DataVaultPropertyRole.BusinessKey => DataVaultLogicalPropertyKind.BusinessKey,
+      DataVaultPropertyRole.ParticipantReference => DataVaultLogicalPropertyKind.ParticipantReference,
+      DataVaultPropertyRole.Payload => DataVaultLogicalPropertyKind.PayloadText,
+      DataVaultPropertyRole.Technical => technicalRole switch {
+        TechnicalMetadataColumnRole.HashKey => DataVaultLogicalPropertyKind.HashKey,
+        TechnicalMetadataColumnRole.HashDiff => DataVaultLogicalPropertyKind.HashDiff,
+        TechnicalMetadataColumnRole.LoadTimestamp => DataVaultLogicalPropertyKind.LoadTimestamp,
+        TechnicalMetadataColumnRole.RecordSource => DataVaultLogicalPropertyKind.RecordSource,
+        _ => throw new InvalidOperationException("Expected a technical metadata role."),
+      },
+      _ => throw new ArgumentOutOfRangeException(nameof(role), role, "Unsupported Data Vault property role."),
+    };
+  }
+
+  private static Type ExpectedClrType(DataVaultLogicalPropertyKind logicalPropertyKind) {
+    return logicalPropertyKind == DataVaultLogicalPropertyKind.LoadTimestamp
+        ? typeof(DateTimeOffset)
+        : typeof(string);
+  }
+
+  private static DataVaultProviderValueFormat ExpectedValueFormat(DataVaultLogicalPropertyKind logicalPropertyKind) {
+    return logicalPropertyKind == DataVaultLogicalPropertyKind.LoadTimestamp
+        ? DataVaultProviderValueFormat.Iso8601UtcText
+        : DataVaultProviderValueFormat.Text;
   }
 
   private static void AssertPrimaryKey(IMutableEntityType entityType, string expectedName, string[] expectedProperties) {

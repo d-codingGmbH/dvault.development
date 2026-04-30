@@ -6,10 +6,22 @@ namespace DCoding.Data.DVault;
 
 internal static class DataVaultEfMetadataTranslator {
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
+  private static readonly DataVaultProviderCapabilityProfile ProviderCapabilities = DataVaultProviderCapabilityProfiles.Sqlite;
 
   public static void Apply(ModelBuilder modelBuilder, DataVaultMetadataModel metadataModel) {
+    Apply(modelBuilder, metadataModel, ProviderCapabilities);
+  }
+
+  internal static void Apply(
+      ModelBuilder modelBuilder,
+      DataVaultMetadataModel metadataModel,
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    ArgumentNullException.ThrowIfNull(modelBuilder);
+    ArgumentNullException.ThrowIfNull(metadataModel);
+    ArgumentNullException.ThrowIfNull(providerCapabilities);
+
     foreach (var entity in CreateEntities(metadataModel)) {
-      ApplyEntity(modelBuilder, entity);
+      ApplyEntity(modelBuilder, entity, providerCapabilities);
     }
   }
 
@@ -222,7 +234,10 @@ internal static class DataVaultEfMetadataTranslator {
     return new PropertyProjection(name, DataVaultPropertyRole.Technical, technicalRole, metadataName);
   }
 
-  private static void ApplyEntity(ModelBuilder modelBuilder, EntityProjection entity) {
+  private static void ApplyEntity(
+      ModelBuilder modelBuilder,
+      EntityProjection entity,
+      DataVaultProviderCapabilityProfile providerCapabilities) {
     modelBuilder.SharedTypeEntity<Dictionary<string, object>>(entity.Name, entityBuilder => {
       entityBuilder.ToTable(entity.Name);
       entityBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProducedName, entity.Name);
@@ -235,7 +250,7 @@ internal static class DataVaultEfMetadataTranslator {
       }
 
       for (var ordinal = 0; ordinal < entity.Properties.Count; ordinal++) {
-        ApplyProperty(entityBuilder, entity.Properties[ordinal], ordinal);
+        ApplyProperty(entityBuilder, entity.Properties[ordinal], ordinal, providerCapabilities);
       }
 
       var keyBuilder = entityBuilder.HasKey(entity.PrimaryKey.PropertyNames.ToArray());
@@ -256,10 +271,11 @@ internal static class DataVaultEfMetadataTranslator {
   private static void ApplyProperty(
       EntityTypeBuilder<Dictionary<string, object>> entityBuilder,
       PropertyProjection property,
-      int ordinal) {
-    PropertyBuilder propertyBuilder = property.TechnicalRole == TechnicalMetadataColumnRole.LoadTimestamp
-        ? entityBuilder.IndexerProperty<DateTimeOffset>(property.Name)
-        : entityBuilder.IndexerProperty<string>(property.Name);
+      int ordinal,
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    var logicalPropertyKind = GetLogicalPropertyKind(property);
+    var typeMapping = providerCapabilities.GetRequiredTypeMapping(logicalPropertyKind);
+    var propertyBuilder = CreateIndexerProperty(entityBuilder, property, providerCapabilities, typeMapping);
 
     propertyBuilder.HasColumnName(property.Name);
     propertyBuilder.HasColumnOrder(ordinal);
@@ -267,10 +283,61 @@ internal static class DataVaultEfMetadataTranslator {
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.PropertyRole, property.Role);
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.MetadataName, property.MetadataName);
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.Ordinal, ordinal);
+    propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProviderProfile, providerCapabilities.ProfileName);
+    propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProviderLogicalPropertyKind, logicalPropertyKind);
+    propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProviderStorageType, typeMapping.NativeStoreType);
+    propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProviderValueFormat, typeMapping.ValueFormat);
 
     if (property.TechnicalRole is not null) {
       propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.TechnicalColumnRole, property.TechnicalRole);
     }
+  }
+
+  private static PropertyBuilder CreateIndexerProperty(
+      EntityTypeBuilder<Dictionary<string, object>> entityBuilder,
+      PropertyProjection property,
+      DataVaultProviderCapabilityProfile providerCapabilities,
+      DataVaultProviderTypeMapping typeMapping) {
+    if (typeMapping.ModelClrType == typeof(DateTimeOffset)) {
+      return entityBuilder.IndexerProperty<DateTimeOffset>(property.Name);
+    }
+
+    if (typeMapping.ModelClrType == typeof(string)) {
+      return entityBuilder.IndexerProperty<string>(property.Name);
+    }
+
+    throw new NotSupportedException(
+        "Provider capability profile '" +
+        providerCapabilities.ProfileName +
+        "' declares unsupported CLR type '" +
+        typeMapping.ModelClrType.FullName +
+        "' for required capability 'type mapping for " +
+        typeMapping.LogicalPropertyKind +
+        "'.");
+  }
+
+  private static DataVaultLogicalPropertyKind GetLogicalPropertyKind(PropertyProjection property) {
+    return property.Role switch {
+      DataVaultPropertyRole.BusinessKey => DataVaultLogicalPropertyKind.BusinessKey,
+      DataVaultPropertyRole.ParticipantReference => DataVaultLogicalPropertyKind.ParticipantReference,
+      DataVaultPropertyRole.Payload => DataVaultLogicalPropertyKind.PayloadText,
+      DataVaultPropertyRole.Technical => GetTechnicalLogicalPropertyKind(property),
+      _ => throw new ArgumentOutOfRangeException(nameof(property), property.Role, "Unsupported Data Vault property role."),
+    };
+  }
+
+  private static DataVaultLogicalPropertyKind GetTechnicalLogicalPropertyKind(PropertyProjection property) {
+    if (property.TechnicalRole is null) {
+      throw new InvalidOperationException("Technical Data Vault properties must declare a technical metadata role.");
+    }
+
+    return property.TechnicalRole.Value switch {
+      TechnicalMetadataColumnRole.HashKey => DataVaultLogicalPropertyKind.HashKey,
+      TechnicalMetadataColumnRole.HashDiff => DataVaultLogicalPropertyKind.HashDiff,
+      TechnicalMetadataColumnRole.LoadTimestamp => DataVaultLogicalPropertyKind.LoadTimestamp,
+      TechnicalMetadataColumnRole.RecordSource => DataVaultLogicalPropertyKind.RecordSource,
+      _ => throw new ArgumentOutOfRangeException(nameof(property), property.TechnicalRole, "Unsupported technical metadata role."),
+    };
   }
 
   private sealed record EntityProjection(
