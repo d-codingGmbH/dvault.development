@@ -3,7 +3,7 @@
   "ticket-id": "06EXB74XQJFKGSKVJ6THQWJY8W",
   "ticket-type": "task",
   "title": "Task: Define hub, link, and satellite metadata abstractions",
-  "revision": "06EXM17SV55921TZ14QTBJ5TFR",
+  "revision": "06EXW5MQAV7Q0AG7SM317EB6Q4",
   "status": "done",
   "labels": [
     "area/modeling",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:41:44.3673358Z",
-  "updated-at": "2026-04-29T16:14:12.4412807Z"
+  "updated-at": "2026-04-30T11:11:55.7340000Z"
 }

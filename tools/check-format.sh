@@ -1,16 +1,10 @@
 #!/usr/bin/env bash
 set -uo pipefail
 
-script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
-if [ -z "${script_dir:-}" ]; then
-  echo "format check error: cannot resolve script directory" >&2
-  exit 2
-fi
-
-script_repo_root=$(cd "$script_dir/.." && pwd -P)
-if [ -z "${script_repo_root:-}" ]; then
-  echo "format check error: cannot resolve repository root" >&2
-  exit 2
+repo_root=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -z "${repo_root:-}" ]; then
+  script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+  repo_root=$(CDPATH= cd -- "$script_dir/.." && pwd -P)
 fi
 
 repo_root=$(git -C "$script_repo_root" rev-parse --show-toplevel 2>/dev/null)
@@ -109,21 +103,19 @@ check_no_tabs() {
   fi
 }
 
-list_governed_paths() {
+list_governed_files() {
   if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     git ls-files -z --cached --others --exclude-standard -- .
     return
   fi
 
-  while IFS= read -r -d '' path; do
-    path=${path#./}
-    printf '%s\0' "$path"
-  done < <(find . -type f -print0)
+  find . -type f -print0
 }
 
 check_policy_sources
 
 while IFS= read -r -d '' path; do
+  path=${path#./}
   [ -f "$path" ] || continue
   is_excluded "$path" && continue
 
@@ -152,7 +144,7 @@ while IFS= read -r -d '' path; do
   if [ -s "$path" ] && [ "$(tail -c 1 "$path" | od -An -t x1 | tr -d ' \n')" != "0a" ]; then
     report "$path" "must end with a final newline"
   fi
-done < <(list_governed_paths)
+done < <(list_governed_files)
 
 if [ "$status" -eq 0 ]; then
   echo "Formatting check passed."

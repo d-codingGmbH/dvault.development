@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/DCoding.Data/DCoding.Data.csproj" />
     <Project Path="src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
   </Folder>
   <Folder Name="/tests/" />

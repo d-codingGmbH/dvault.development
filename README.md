@@ -5,6 +5,7 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 ## Layout
 
 - `DVault.slnx`: Canonical root solution file for build and test automation.
+- `src/DCoding.Data/`: Non-packable build anchor for the `DCoding.Data` source-root namespace family.
 - `src/DCoding.Data.DVault/`: Main library project. The NuGet package id and root namespace are `DCoding.Data.DVault`.
 - `tests/DCoding.Data.DVault.Tests/`: Unit, integration, and shared test projects for DVault.
 - `examples/`: Future runnable examples for DVault APIs.

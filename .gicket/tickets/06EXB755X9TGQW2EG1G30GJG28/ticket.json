@@ -3,7 +3,7 @@
   "ticket-id": "06EXB755X9TGQW2EG1G30GJG28",
   "ticket-type": "task",
   "title": "Task: Define technical metadata column contracts",
-  "revision": "06EXQ1BGMNYQ43M7M092M805DC",
+  "revision": "06EXW5MV2GMQT9K75QMFNTZ2FR",
   "status": "done",
   "labels": [
     "area/modeling",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F6Z8HMH2BQKDY1ZKQCPC",
   "releaseId": "06EXB6EZX48WRVBB12Q97F65DM",
   "created-at": "2026-04-28T19:41:46.4687415Z",
-  "updated-at": "2026-04-29T23:14:08.6770000Z"
+  "updated-at": "2026-04-30T11:11:56.6920000Z"
 }

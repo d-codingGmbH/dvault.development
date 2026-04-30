@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../../src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" SetTargetFramework="TargetFramework=net10.0" SkipGetTargetFrameworkProperties="true" />
+    <ProjectReference Include="../../../src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
     <ProjectReference Include="../Shared/DCoding.Data.DVault.Tests.Shared.csproj" />
   </ItemGroup>
 </Project>
