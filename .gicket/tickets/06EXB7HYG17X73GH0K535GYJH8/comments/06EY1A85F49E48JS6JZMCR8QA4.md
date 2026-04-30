@@ -1,0 +1,11 @@
+﻿[gicket-bot] relation follow-up
+
+Summary
+- Source ticket `06EXB7FF1J9NR2849WKDR8DKPG` completed a bot run for role `dev` with outcome `dev-workflow-apply`.
+- Source run summary: Developer workflow verified that branch 'ticket/06EXB7FF1J9NR2849WKDR8DKPG-story-integrate-with-ef-core-model-building' at commit 'b805da602019' already satisfies ticket '06EXB7FF1J9NR2849WKDR8DKPG' without a new repository implementation commit.
+- Selected flow `blocked-follow-up-comment` reached this ticket via `blocks` path `06EXB7FF1J9NR2849WKDR8DKPG -> 06EXB7HYG17X73GH0K535GYJH8`.
+
+Run metadata
+- run-id: `c050826c681e4a298acabc11b7d5debd`
+- source-ticket: `06EXB7FF1J9NR2849WKDR8DKPG`
+- flow-id: `blocked-follow-up-comment`

@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7FPZRCFC33RF2M5SXZTK4",
   "ticket-type": "task",
   "title": "Task: Add ModelBuilder extension for DVault conventions",
-  "revision": "06EXYTKDPEABSP3N13GD16HJA4",
+  "revision": "06EY1CX5K5NSGFJ2X4TJ1M7H58",
   "status": "done",
   "labels": [
     "area/ef-integration",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
   "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
   "created-at": "2026-04-28T19:43:12.7553092Z",
-  "updated-at": "2026-04-30T17:23:07.3152923Z"
+  "updated-at": "2026-04-30T23:22:42.9690000Z"
 }

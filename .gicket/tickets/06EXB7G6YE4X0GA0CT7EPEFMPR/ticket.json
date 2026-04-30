@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7G6YE4X0GA0CT7EPEFMPR",
   "ticket-type": "story",
   "title": "Story: Generate relational schema for Sqlite MVP",
-  "revision": "06EXBF56DCVCAHQD7W4SFGMT84",
+  "revision": "06EY1CWYB3EHMYMN6ENGPJJQ6G",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
   "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
   "created-at": "2026-04-28T19:43:16.8380964Z",
-  "updated-at": "2026-04-28T20:16:43.6278696Z"
+  "updated-at": "2026-04-30T23:22:41.1120000Z"
 }

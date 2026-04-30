@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7HYG17X73GH0K535GYJH8",
   "ticket-type": "story",
   "title": "Story: Support provider readiness for Postgres without implementing Docker setup",
-  "revision": "06EXBF5T63ED01H4MBDDER1AHW",
+  "revision": "06EY1CX254R89V10BPV9CWY28R",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
   "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
   "created-at": "2026-04-28T19:43:31.0620086Z",
-  "updated-at": "2026-04-28T20:16:48.6884588Z"
+  "updated-at": "2026-04-30T23:22:42.0890000Z"
 }
