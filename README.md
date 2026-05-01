@@ -23,6 +23,18 @@ dotnet pack src/DCoding.Data.DVault/DCoding.Data.DVault.csproj --configuration R
 bash tools/check-format.sh
 ```
 
+## Optional Local Postgres Integration Tests
+
+Postgres integration tests are opt-in and are skipped by default. Normal `dotnet test` execution does not require Postgres, Docker, or checked-in machine-specific configuration.
+
+To run the Postgres-backed integration tests, provide a developer-managed PostgreSQL database connection string in `DVAULT_TEST_POSTGRES_CONNECTION_STRING`:
+
+```sh
+DVAULT_TEST_POSTGRES_CONNECTION_STRING='Host=localhost;Port=5432;Database=dvault_tests;Username=dvault;Password=local-secret' dotnet test DVault.slnx --nologo
+```
+
+DVault does not provision Docker containers or databases for these tests. The configured database must already exist, and the configured user must be allowed to create and drop temporary schemas. Keep credentials in local environment variables or another untracked secret store, not in repository files.
+
 ## License
 
 DVault uses the Apache License 2.0. See `LICENSE`.
