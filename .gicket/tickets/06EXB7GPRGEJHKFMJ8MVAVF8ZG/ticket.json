@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7GPRGEJHKFMJ8MVAVF8ZG",
   "ticket-type": "task",
   "title": "Task: Add schema and migration snapshot tests",
-  "revision": "06EY1BC3G1YVJ9A4MEANPTFXPG",
+  "revision": "06EY1SKXSVTH59SBD7GWG7RZDM",
   "status": "done",
   "labels": [
     "area/testing",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
   "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
   "created-at": "2026-04-28T19:43:20.8877430Z",
-  "updated-at": "2026-04-30T23:16:01.0242282Z"
+  "updated-at": "2026-05-01T00:18:15.1180000Z"
 }

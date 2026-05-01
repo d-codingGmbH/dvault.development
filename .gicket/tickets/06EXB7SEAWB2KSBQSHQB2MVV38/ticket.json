@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7SEAWB2KSBQSHQB2MVV38",
   "ticket-type": "story",
   "title": "Story: Build example scenario for orders and product relationships",
-  "revision": "06EXBF5QDY67NWN6N4KVKFPF3R",
+  "revision": "06EY1SKP9NH7VA0A5E7N160998",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:32.4533646Z",
-  "updated-at": "2026-04-28T20:16:47.9833437Z"
+  "updated-at": "2026-05-01T00:18:13.1970000Z"
 }

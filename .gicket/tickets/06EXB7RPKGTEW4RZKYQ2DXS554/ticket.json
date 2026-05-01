@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7RPKGTEW4RZKYQ2DXS554",
   "ticket-type": "story",
   "title": "Story: Build example scenario for customer profile history",
-  "revision": "06EXBF5RSFMANMPH5CVA76PBRM",
+  "revision": "06EY1SKJD4HBCY6QE13KCC117W",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:26.3774990Z",
-  "updated-at": "2026-04-28T20:16:48.3310945Z"
+  "updated-at": "2026-05-01T00:18:12.2010000Z"
 }

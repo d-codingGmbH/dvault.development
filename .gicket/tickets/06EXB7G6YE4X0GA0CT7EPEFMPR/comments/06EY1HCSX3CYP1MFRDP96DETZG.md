@@ -1,80 +1,55 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the SQLite relational-schema story as an umbrella over the already-materialized child tasks 06EXB7GESWZZTZG7XYAKTTKQRW and 06EXB7GPRGEJHKFMJ8MVAVF8ZG; repository evidence fixes the v1 baseline to SQLite schema creation via EnsureCreated plus committed schema snapshot coverage, so no new split or planning artifact was needed.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The current split is already materialized: child ticket 06EXB7GESWZZTZG7XYAKTTKQRW ('Task: Map hubs, links, and satellites to Sqlite tables') and child ticket 06EXB7GPRGEJHKFMJ8MVAVF8ZG ('Task: Add schema and migration snapshot tests') are both linked from this story through existing parentOf relations and both are already done.
 - Repository evidence already fixes the bounded v1 provider baseline to the EF Core 10 SQLite path in src/DCoding.Data.DVault and tests/DCoding.Data.DVault.Tests, including ApplyDataVaultMetadata, DataVaultProviderCapabilityProfiles.Sqlite, SqliteDataVaultSchemaTests, and the committed SqliteDataVaultSchemaSnapshot.txt artifact.
 - The story's 'migration or create-database flow' acceptance point resolves to the create-database flow via context.Database.EnsureCreated(); the repository does not yet carry an approved migration framework or design-time migration baseline, so migration artifacts are out of scope for this story.
 - No new child tickets, relations, attachments, or planning documents were created in this refinement pass because the necessary split and repository baseline already exist.
 
-### Scope In
+Scope In
 - Keep this ticket as the story-level umbrella/tracking item for generating usable SQLite relational schema from the existing DVault EF metadata baseline.
 - Treat 06EXB7GESWZZTZG7XYAKTTKQRW as the implementation owner for SQLite table, column, primary-key, and index mapping for hubs, links, and satellites.
 - Treat 06EXB7GPRGEJHKFMJ8MVAVF8ZG as the implementation owner for schema-regression coverage and the reviewable SQLite schema snapshot baseline.
 - Keep the story aligned with the current repository surface in src/DCoding.Data.DVault and tests/DCoding.Data.DVault.Tests, including the deterministic naming and ordering already fixed by source and tests.
 
-### Scope Out
+Scope Out
 - New developer-owned implementation on the parent story beyond the already materialized child tickets.
 - EF migration infrastructure, design-time migration services, committed migration artifacts, or migration-specific snapshot baselines.
 - Non-SQLite providers, provider-specific optimizations, or advanced configuration hooks.
 - Foreign keys, navigations, runtime data-loading behavior, or broader persistence features beyond the current provider-neutral metadata translation and SQLite schema baseline.
 
-## Acceptance Criteria
-- The story contract explicitly states that the concrete implementation for SQLite relational schema generation is already decomposed into child tickets 06EXB7GESWZZTZG7XYAKTTKQRW and 06EXB7GPRGEJHKFMJ8MVAVF8ZG, with no uncaptured developer-owned slice remaining on the parent story.
-- Repository evidence remains aligned with the child-ticket outcome: ApplyDataVaultMetadata and the SQLite provider profile produce deterministic hub, link, and satellite table shapes, keys, indexes, and technical columns that are verified by SQLite integration tests and committed schema snapshot coverage.
-- The bounded v1 persistence path for this story is the SQLite create-database flow using Database.EnsureCreated(), not an EF migration pipeline.
-- Downstream consumers can rely on this story as the umbrella for the current SQLite schema baseline while migrations, non-SQLite providers, and advanced provider behavior remain out of scope.
-
-## Definition of Done
-- The parent story no longer reads as a fresh developer handoff and instead reflects the existing execution boundary already captured by child tickets 06EXB7GESWZZTZG7XYAKTTKQRW and 06EXB7GPRGEJHKFMJ8MVAVF8ZG.
-- The story-level contract stays aligned with the current repository evidence in src/DCoding.Data.DVault, tests/DCoding.Data.DVault.Tests/Integration/SqliteDataVaultSchemaTests.cs, and tests/DCoding.Data.DVault.Tests/Integration/Snapshots/SqliteDataVaultSchemaSnapshot.txt.
-- No new child tickets, relations, attachments, or planning documents are required for this PO refinement pass.
-- Shared standards from the charter attachment remain the governing baseline for any downstream follow-up work.
-
-## Implementation Notes
-- Use the existing child-ticket split as the durable execution boundary: 06EXB7GESWZZTZG7XYAKTTKQRW owns relational mapping work and 06EXB7GPRGEJHKFMJ8MVAVF8ZG owns schema snapshot regression coverage; the existing relation 06EXB7GESWZZTZG7XYAKTTKQRW -> 06EXB7GPRGEJHKFMJ8MVAVF8ZG already captures the sequencing between them.
-- Treat the current repository baseline as authoritative for the v1 shape: DataVaultEfMetadataTranslator projects entities and produced names, DataVaultProviderCapabilityProfiles.Sqlite fixes the provider profile, and SqliteDataVaultSchemaTests plus the committed snapshot verify the concrete SQLite schema outcome.
-- Interpret the documentation expectation in the original draft through the already-visible create-database path in the integration tests rather than reopening the ticket for migration tooling.
-- No approved attachment or planning-document materialization was needed because the referenced repository documents and existing child-ticket contracts already answer the PO-level baseline questions.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - If the project later approves EF migration behavior or design-time services, should migration-specific output move to a separate follow-up ticket rather than reopening this umbrella story?
 - Once this story advances, should the existing blocks relations from 06EXB7G6YE4X0GA0CT7EPEFMPR to downstream example stories 06EXB7RPKGTEW4RZKYQ2DXS554 and 06EXB7SEAWB2KSBQSHQB2MVV38 remain as story-level dependencies or be re-pointed to a more concrete still-open ticket if one exists?
 
-## Risks
+Risks
 - If the parent story drifts back toward executable developer scope, automation can duplicate work that is already completed in child tickets 06EXB7GESWZZTZG7XYAKTTKQRW and 06EXB7GPRGEJHKFMJ8MVAVF8ZG.
 - If later work treats migration support as implied by this story title, scope can leak into design-time or provider-specific infrastructure that the current repository baseline does not support.
 - Downstream example tickets may carry stale blocker relations if relation hygiene is not reviewed after the umbrella story advances.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended; the concrete implementation and regression-coverage slices are already materialized through child tickets 06EXB7GESWZZTZG7XYAKTTKQRW and 06EXB7GPRGEJHKFMJ8MVAVF8ZG and their existing sequencing relation.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 4
+- definition-of-done items: 4
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Summary
-Ensure the generated EF model creates usable Sqlite tables for the MVP.
-
-## Scope
-- Map hubs, links, satellites, keys, indexes, and constraints to Sqlite.
-
-## Acceptance Criteria
-- Sqlite schema tests verify expected table shapes.
-- Migration or create-database flow is documented.
-
-## Definition of Done
-- The work satisfies the acceptance criteria.
-- Shared standards from the charter attachment are followed.
+Run mode
+- apply: planned updates are applied after this comment
