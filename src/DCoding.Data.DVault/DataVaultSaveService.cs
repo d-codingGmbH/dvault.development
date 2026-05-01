@@ -167,7 +167,7 @@ public sealed class DataVaultSaveResult {
   /// <summary>
   /// Initializes a new save result.
   /// </summary>
-  /// <param name="rowsWritten">The row count reported by Entity Framework SaveChanges.</param>
+  /// <param name="rowsWritten">The row count inserted by the explicit service invocation.</param>
   /// <param name="savedRecords">The generated hub and link hash-key summaries.</param>
   public DataVaultSaveResult(int rowsWritten, IEnumerable<DataVaultSavedRecord> savedRecords) {
     ArgumentNullException.ThrowIfNull(savedRecords);
@@ -177,7 +177,7 @@ public sealed class DataVaultSaveResult {
   }
 
   /// <summary>
-  /// Gets the row count reported by Entity Framework SaveChanges for the explicit service invocation.
+  /// Gets the row count inserted by the explicit service invocation.
   /// </summary>
   public int RowsWritten { get; }
 
@@ -252,21 +252,34 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     ArgumentNullException.ThrowIfNull(request);
 
     var savedRecords = new List<DataVaultSavedRecord>();
+    var rowsWritten = 0;
 
     foreach (var operation in request.HubOperations) {
-      savedRecords.Add(AddHub(dbContext, request, operation));
+      var result = await AddHubAsync(dbContext, request, operation, cancellationToken).ConfigureAwait(false);
+      savedRecords.Add(result.SavedRecord);
+      if (result.RowWritten) {
+        rowsWritten++;
+      }
     }
 
     foreach (var operation in request.LinkOperations) {
-      savedRecords.Add(AddLink(dbContext, request, operation));
+      var result = await AddLinkAsync(dbContext, request, operation, cancellationToken).ConfigureAwait(false);
+      savedRecords.Add(result.SavedRecord);
+      if (result.RowWritten) {
+        rowsWritten++;
+      }
     }
 
-    var rowsWritten = await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+    await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
     return new DataVaultSaveResult(rowsWritten, savedRecords);
   }
 
-  private DataVaultSavedRecord AddHub(DbContext dbContext, DataVaultSaveRequest request, DataVaultHubSaveOperation operation) {
+  private async Task<SaveOperationResult> AddHubAsync(
+      DbContext dbContext,
+      DataVaultSaveRequest request,
+      DataVaultHubSaveOperation operation,
+      CancellationToken cancellationToken) {
     var hub = operation.Metadata;
     var tableName = NamingPolicy.GetHubTableName(new DataVaultHubNameContext(hub.Name));
     var hashKeyColumnName = NamingPolicy.GetTechnicalColumnName(
@@ -294,12 +307,24 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       row.Add(businessKeyColumnNames[index], businessKeyFields[index].Value);
     }
 
-    dbContext.Set<Dictionary<string, object>>(tableName).Add(row);
+    var rowWritten = await AddRowIfMissingAsync(
+        dbContext,
+        tableName,
+        hashKeyColumnName,
+        hashKey,
+        row,
+        cancellationToken).ConfigureAwait(false);
 
-    return new DataVaultSavedRecord(DataVaultTableKind.Hub, hub.Name, tableName, hashKey);
+    return new SaveOperationResult(
+        new DataVaultSavedRecord(DataVaultTableKind.Hub, hub.Name, tableName, hashKey),
+        rowWritten);
   }
 
-  private DataVaultSavedRecord AddLink(DbContext dbContext, DataVaultSaveRequest request, DataVaultLinkSaveOperation operation) {
+  private async Task<SaveOperationResult> AddLinkAsync(
+      DbContext dbContext,
+      DataVaultSaveRequest request,
+      DataVaultLinkSaveOperation operation,
+      CancellationToken cancellationToken) {
     var link = operation.Metadata;
     var participantNames = link.Participants
         .Select(participant => participant.HubReference.Name)
@@ -331,9 +356,49 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       row.Add(participantHashKeyColumnNames[index], participantHashKeyFields[index].Value);
     }
 
-    dbContext.Set<Dictionary<string, object>>(tableName).Add(row);
+    var rowWritten = await AddRowIfMissingAsync(
+        dbContext,
+        tableName,
+        linkHashKeyColumnName,
+        linkHashKey,
+        row,
+        cancellationToken).ConfigureAwait(false);
 
-    return new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, tableName, linkHashKey);
+    return new SaveOperationResult(
+        new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, tableName, linkHashKey),
+        rowWritten);
+  }
+
+  private static async Task<bool> AddRowIfMissingAsync(
+      DbContext dbContext,
+      string tableName,
+      string hashKeyColumnName,
+      string hashKey,
+      Dictionary<string, object> row,
+      CancellationToken cancellationToken) {
+    var rows = dbContext.Set<Dictionary<string, object>>(tableName);
+
+    if (rows.Local.Any(existingRow => HasHashKey(existingRow, hashKeyColumnName, hashKey))) {
+      return false;
+    }
+
+    var exists = await rows
+        .AsNoTracking()
+        .AnyAsync(existingRow => EF.Property<string>(existingRow, hashKeyColumnName) == hashKey, cancellationToken)
+        .ConfigureAwait(false);
+
+    if (exists) {
+      return false;
+    }
+
+    rows.Add(row);
+
+    return true;
+  }
+
+  private static bool HasHashKey(Dictionary<string, object> row, string hashKeyColumnName, string hashKey) {
+    return row.TryGetValue(hashKeyColumnName, out var value) &&
+        string.Equals(value as string, hashKey, StringComparison.Ordinal);
   }
 
   private string ComputeHash(IEnumerable<KeyValuePair<string, string>> fields) {
@@ -353,4 +418,6 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
 
     throw new ArgumentException("The Data Vault save operation is missing required value '" + name + "'.", parameterName);
   }
+
+  private sealed record SaveOperationResult(DataVaultSavedRecord SavedRecord, bool RowWritten);
 }

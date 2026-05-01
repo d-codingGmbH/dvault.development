@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7HPGW3Y9MSP10DEC8RBK4",
   "ticket-type": "task",
   "title": "Task: Persist satellite rows only when hash diff changes",
-  "revision": "06EXWHQ1GXPYGXHV6RZR42QGQG",
+  "revision": "06EY2FY4A2WNF45CRE1M8S86TC",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
   "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
   "created-at": "2026-04-28T19:43:29.0203229Z",
-  "updated-at": "2026-04-30T12:04:40.4550000Z"
+  "updated-at": "2026-05-01T01:55:45.8720000Z"
 }
