@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7S6DB97GVVTS2GGZ3CCX8",
   "ticket-type": "task",
   "title": "Task: Implement DVault version for customer profile",
-  "revision": "06EXNNPE290N6BFH2TTKE0SD9W",
+  "revision": "06EY2XQXBH4710MPQ84B6GF4DM",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:30.4260481Z",
-  "updated-at": "2026-04-29T20:03:23.7940059Z"
+  "updated-at": "2026-05-01T02:56:04.9560000Z"
 }

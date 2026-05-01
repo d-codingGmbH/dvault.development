@@ -9,12 +9,12 @@ namespace DCoding.Data.DVault;
 /// </summary>
 public interface IDataVaultSaveService {
   /// <summary>
-  /// Persists the requested Data Vault hub and link rows through the supplied Entity Framework context.
+  /// Persists the requested Data Vault hub, link, and satellite rows through the supplied Entity Framework context.
   /// </summary>
   /// <param name="dbContext">The context whose model has been configured with Data Vault metadata.</param>
   /// <param name="request">The explicit save request containing write metadata and row operations.</param>
   /// <param name="cancellationToken">A token used to observe cancellation while saving changes.</param>
-  /// <returns>The persisted row summary, including generated hash keys.</returns>
+  /// <returns>The persisted row summary, including saved hash-key values.</returns>
   Task<DataVaultSaveResult> SaveAsync(
       DbContext dbContext,
       DataVaultSaveRequest request,
@@ -30,21 +30,40 @@ public sealed class DataVaultSaveRequest {
   /// </summary>
   /// <param name="loadTimestamp">The caller-visible load timestamp to persist as UTC metadata.</param>
   /// <param name="recordSource">The caller-visible record source to persist as lineage metadata.</param>
-  /// <param name="hubOperations">The hub rows to persist before link rows.</param>
-  /// <param name="linkOperations">The link rows to persist after hub rows.</param>
+  /// <param name="hubOperations">The hub rows to persist before link and satellite rows.</param>
+  /// <param name="linkOperations">The link rows to persist after hub rows and before satellite rows.</param>
   public DataVaultSaveRequest(
       DateTimeOffset loadTimestamp,
       string recordSource,
       IEnumerable<DataVaultHubSaveOperation> hubOperations,
-      IEnumerable<DataVaultLinkSaveOperation> linkOperations) {
+      IEnumerable<DataVaultLinkSaveOperation> linkOperations)
+      : this(loadTimestamp, recordSource, hubOperations, linkOperations, []) {
+  }
+
+  /// <summary>
+  /// Initializes a new explicit save request.
+  /// </summary>
+  /// <param name="loadTimestamp">The caller-visible load timestamp to persist as UTC metadata.</param>
+  /// <param name="recordSource">The caller-visible record source to persist as lineage metadata.</param>
+  /// <param name="hubOperations">The hub rows to persist before link and satellite rows.</param>
+  /// <param name="linkOperations">The link rows to persist after hub rows and before satellite rows.</param>
+  /// <param name="satelliteOperations">The satellite rows to persist after hub and link rows.</param>
+  public DataVaultSaveRequest(
+      DateTimeOffset loadTimestamp,
+      string recordSource,
+      IEnumerable<DataVaultHubSaveOperation> hubOperations,
+      IEnumerable<DataVaultLinkSaveOperation> linkOperations,
+      IEnumerable<DataVaultSatelliteSaveOperation> satelliteOperations) {
     ArgumentException.ThrowIfNullOrWhiteSpace(recordSource);
     ArgumentNullException.ThrowIfNull(hubOperations);
     ArgumentNullException.ThrowIfNull(linkOperations);
+    ArgumentNullException.ThrowIfNull(satelliteOperations);
 
     LoadTimestamp = loadTimestamp.ToUniversalTime();
     RecordSource = recordSource;
     HubOperations = RequireOperations(hubOperations, nameof(hubOperations));
     LinkOperations = RequireOperations(linkOperations, nameof(linkOperations));
+    SatelliteOperations = RequireOperations(satelliteOperations, nameof(satelliteOperations));
   }
 
   /// <summary>
@@ -58,14 +77,19 @@ public sealed class DataVaultSaveRequest {
   public string RecordSource { get; }
 
   /// <summary>
-  /// Gets the hub rows to persist before link rows.
+  /// Gets the hub rows to persist before link and satellite rows.
   /// </summary>
   public IReadOnlyList<DataVaultHubSaveOperation> HubOperations { get; }
 
   /// <summary>
-  /// Gets the link rows to persist after hub rows.
+  /// Gets the link rows to persist after hub rows and before satellite rows.
   /// </summary>
   public IReadOnlyList<DataVaultLinkSaveOperation> LinkOperations { get; }
+
+  /// <summary>
+  /// Gets the satellite rows to persist after hub and link rows.
+  /// </summary>
+  public IReadOnlyList<DataVaultSatelliteSaveOperation> SatelliteOperations { get; }
 
   private static IReadOnlyList<T> RequireOperations<T>(IEnumerable<T> operations, string parameterName)
       where T : class {
@@ -161,6 +185,53 @@ public sealed class DataVaultLinkSaveOperation {
 }
 
 /// <summary>
+/// Describes one satellite row to persist through the explicit DVault save service.
+/// </summary>
+public sealed class DataVaultSatelliteSaveOperation {
+  /// <summary>
+  /// Initializes a new satellite save operation.
+  /// </summary>
+  /// <param name="metadata">The satellite metadata declaration that owns the target table and payload shape.</param>
+  /// <param name="parentHashKey">The explicit parent hub or link hash key associated with this satellite row.</param>
+  /// <param name="payloadValues">Payload values keyed by the satellite metadata payload names.</param>
+  /// <param name="hashDiff">The caller-supplied deterministic hash diff for this payload state.</param>
+  public DataVaultSatelliteSaveOperation(
+      DataVaultSatelliteMetadata metadata,
+      string parentHashKey,
+      IEnumerable<KeyValuePair<string, string>> payloadValues,
+      string hashDiff) {
+    ArgumentNullException.ThrowIfNull(metadata);
+    ArgumentException.ThrowIfNullOrWhiteSpace(parentHashKey);
+    ArgumentException.ThrowIfNullOrWhiteSpace(hashDiff);
+
+    Metadata = metadata;
+    ParentHashKey = parentHashKey;
+    PayloadValues = DataVaultHubSaveOperation.RequireValues(payloadValues, nameof(payloadValues));
+    HashDiff = hashDiff;
+  }
+
+  /// <summary>
+  /// Gets the satellite metadata declaration that owns the target table and payload shape.
+  /// </summary>
+  public DataVaultSatelliteMetadata Metadata { get; }
+
+  /// <summary>
+  /// Gets the explicit parent hub or link hash key associated with this satellite row.
+  /// </summary>
+  public string ParentHashKey { get; }
+
+  /// <summary>
+  /// Gets payload values keyed by the satellite metadata payload names.
+  /// </summary>
+  public IReadOnlyDictionary<string, string> PayloadValues { get; }
+
+  /// <summary>
+  /// Gets the caller-supplied deterministic hash diff for this payload state.
+  /// </summary>
+  public string HashDiff { get; }
+}
+
+/// <summary>
 /// Summarizes rows persisted by an explicit DVault save request.
 /// </summary>
 public sealed class DataVaultSaveResult {
@@ -168,7 +239,7 @@ public sealed class DataVaultSaveResult {
   /// Initializes a new save result.
   /// </summary>
   /// <param name="rowsWritten">The row count inserted by the explicit service invocation.</param>
-  /// <param name="savedRecords">The generated hub and link hash-key summaries.</param>
+  /// <param name="savedRecords">The generated hub, link, and satellite hash-key summaries.</param>
   public DataVaultSaveResult(int rowsWritten, IEnumerable<DataVaultSavedRecord> savedRecords) {
     ArgumentNullException.ThrowIfNull(savedRecords);
 
@@ -182,22 +253,22 @@ public sealed class DataVaultSaveResult {
   public int RowsWritten { get; }
 
   /// <summary>
-  /// Gets the generated hub and link hash-key summaries.
+  /// Gets the generated hub, link, and satellite hash-key summaries.
   /// </summary>
   public IReadOnlyList<DataVaultSavedRecord> SavedRecords { get; }
 }
 
 /// <summary>
-/// Summarizes one hub or link row persisted by an explicit DVault save request.
+/// Summarizes one hub, link, or satellite row persisted by an explicit DVault save request.
 /// </summary>
 public sealed class DataVaultSavedRecord {
   /// <summary>
   /// Initializes a new saved row summary.
   /// </summary>
-  /// <param name="kind">Whether the saved row is a hub or link.</param>
+  /// <param name="kind">Whether the saved row is a hub, link, or satellite.</param>
   /// <param name="metadataName">The metadata declaration name that produced the row.</param>
   /// <param name="tableName">The produced table name that received the row.</param>
-  /// <param name="hashKey">The generated Data Vault hash key persisted for the row.</param>
+  /// <param name="hashKey">The generated Data Vault hash key persisted for the row, or parent hash key for satellites.</param>
   public DataVaultSavedRecord(DataVaultTableKind kind, string metadataName, string tableName, string hashKey) {
     ArgumentException.ThrowIfNullOrWhiteSpace(metadataName);
     ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
@@ -210,7 +281,7 @@ public sealed class DataVaultSavedRecord {
   }
 
   /// <summary>
-  /// Gets whether the saved row is a hub or link.
+  /// Gets whether the saved row is a hub, link, or satellite.
   /// </summary>
   public DataVaultTableKind Kind { get; }
 
@@ -225,7 +296,7 @@ public sealed class DataVaultSavedRecord {
   public string TableName { get; }
 
   /// <summary>
-  /// Gets the generated Data Vault hash key persisted for the row.
+  /// Gets the generated Data Vault hash key persisted for the row, or parent hash key for satellites.
   /// </summary>
   public string HashKey { get; }
 }
@@ -264,6 +335,14 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
 
     foreach (var operation in request.LinkOperations) {
       var result = await AddLinkAsync(dbContext, request, operation, cancellationToken).ConfigureAwait(false);
+      savedRecords.Add(result.SavedRecord);
+      if (result.RowWritten) {
+        rowsWritten++;
+      }
+    }
+
+    foreach (var operation in request.SatelliteOperations) {
+      var result = await AddSatelliteAsync(dbContext, request, operation, cancellationToken).ConfigureAwait(false);
       savedRecords.Add(result.SavedRecord);
       if (result.RowWritten) {
         rowsWritten++;
@@ -396,9 +475,96 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     return true;
   }
 
+  private async Task<SaveOperationResult> AddSatelliteAsync(
+      DbContext dbContext,
+      DataVaultSaveRequest request,
+      DataVaultSatelliteSaveOperation operation,
+      CancellationToken cancellationToken) {
+    var satellite = operation.Metadata;
+    var tableName = NamingPolicy.GetSatelliteTableName(
+        new DataVaultSatelliteNameContext(satellite.Parent.Name, satellite.Name));
+    var parentHashKeyColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, satellite.Parent.Name, tableName));
+    var hashDiffColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashDiff, satellite.Name, tableName));
+    var loadTimestampColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, satellite.Name, tableName));
+    var recordSourceColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.RecordSource, satellite.Name, tableName));
+    var payloadColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        satellite.PayloadColumns.Select(column => column.ColumnName),
+        [parentHashKeyColumnName, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);
+    var payloadFields = satellite.PayloadColumns
+        .Select(column => new KeyValuePair<string, string>(
+            column.ColumnName,
+            GetRequiredValue(operation.PayloadValues, column.ColumnName, nameof(operation.PayloadValues))))
+        .ToArray();
+    var row = new Dictionary<string, object> {
+      [parentHashKeyColumnName] = operation.ParentHashKey,
+      [hashDiffColumnName] = operation.HashDiff,
+      [loadTimestampColumnName] = request.LoadTimestamp,
+      [recordSourceColumnName] = request.RecordSource,
+    };
+
+    for (var index = 0; index < payloadFields.Length; index++) {
+      row.Add(payloadColumnNames[index], payloadFields[index].Value);
+    }
+
+    var rowWritten = await AddSatelliteRowIfChangedAsync(
+        dbContext,
+        tableName,
+        parentHashKeyColumnName,
+        operation.ParentHashKey,
+        hashDiffColumnName,
+        operation.HashDiff,
+        loadTimestampColumnName,
+        row,
+        cancellationToken).ConfigureAwait(false);
+
+    return new SaveOperationResult(
+        new DataVaultSavedRecord(DataVaultTableKind.Satellite, satellite.Name, tableName, operation.ParentHashKey),
+        rowWritten);
+  }
+
+  private static async Task<bool> AddSatelliteRowIfChangedAsync(
+      DbContext dbContext,
+      string tableName,
+      string parentHashKeyColumnName,
+      string parentHashKey,
+      string hashDiffColumnName,
+      string hashDiff,
+      string loadTimestampColumnName,
+      Dictionary<string, object> row,
+      CancellationToken cancellationToken) {
+    var rows = dbContext.Set<Dictionary<string, object>>(tableName);
+    var persistedRows = await rows
+        .AsNoTracking()
+        .Where(existingRow => EF.Property<string>(existingRow, parentHashKeyColumnName) == parentHashKey)
+        .ToListAsync(cancellationToken)
+        .ConfigureAwait(false);
+    var latestHashDiff = rows.Local
+        .Concat(persistedRows)
+        .Where(existingRow => HasColumnValue(existingRow, parentHashKeyColumnName, parentHashKey))
+        .OrderByDescending(existingRow => (DateTimeOffset)existingRow[loadTimestampColumnName])
+        .Select(existingRow => existingRow[hashDiffColumnName] as string)
+        .FirstOrDefault();
+
+    if (string.Equals(latestHashDiff, hashDiff, StringComparison.Ordinal)) {
+      return false;
+    }
+
+    rows.Add(row);
+
+    return true;
+  }
+
   private static bool HasHashKey(Dictionary<string, object> row, string hashKeyColumnName, string hashKey) {
-    return row.TryGetValue(hashKeyColumnName, out var value) &&
-        string.Equals(value as string, hashKey, StringComparison.Ordinal);
+    return HasColumnValue(row, hashKeyColumnName, hashKey);
+  }
+
+  private static bool HasColumnValue(Dictionary<string, object> row, string columnName, string value) {
+    return row.TryGetValue(columnName, out var currentValue) &&
+        string.Equals(currentValue as string, value, StringComparison.Ordinal);
   }
 
   private string ComputeHash(IEnumerable<KeyValuePair<string, string>> fields) {
