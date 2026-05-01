@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the ticket to choose an explicit DI-registered DVault save service over SaveChanges interception, keep the work as one bounded ticket with no new child artifacts, and align the write entry point with the current explicit SQLite-first API baseline.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - V1 chooses an explicit DVault save service as the default write entry point; SaveChanges interception is not the selected baseline for this ticket.
 - The current repository already establishes explicit convention-first surfaces through AddDVault(), UseDataVault(), and ApplyDataVaultMetadata(), and no SaveChanges interceptor surface exists on this branch; this ticket should extend that explicit pattern rather than introduce hidden write behavior.
 - The default provider baseline remains the existing SQLite-oriented EF Core 10 path under tests/DCoding.Data.DVault.Tests/Integration.
@@ -17,75 +16,48 @@
 - This ticket defines the write boundary that downstream persistence work, including blocked ticket 06EXB7HEJY18HEB5A5MVTN5KZC, should build on after completed schema-snapshot groundwork from 06EXB7GPRGEJHKFMJ8MVAVF8ZG.
 - No child tickets or planning documents were materialized in this refinement because the current evidence supports a single bounded ticket once the entry-point decision is fixed.
 
-### Scope In
+Scope In
 - Design and implement a public explicit DVault write boundary/service for the v1 EF Core path instead of a SaveChanges interceptor.
 - Register the default implementation through AddDVault() with the same optionless first-use ergonomics and normal caller-override behavior already used elsewhere in the package.
 - Define the service boundary so caller-visible record source and load timestamp semantics remain explicit and deterministic while stable hashing is consumed through IStableHashService.
 - Add unit and SQLite integration coverage proving the explicit service is discoverable, invocable, and functional with minimal configuration in the existing test layout.
 - Document the explicit-service decision and the rejection of SaveChanges interception for the v1 default path.
 
-### Scope Out
+Scope Out
 - Registering or relying on EF Core SaveChanges interceptors as the default v1 persistence entry point.
 - Broad idempotency, duplicate reuse, concurrency, or mutable-record behavior beyond what is necessary to establish the explicit write boundary; those belong to downstream persistence tickets such as 06EXB7HEJY18HEB5A5MVTN5KZC.
 - Complete satellite-specific persistence semantics, hash-diff change rules, or mutable update rules beyond keeping the service boundary extensible to that future work.
 - Additional database providers, provider-specific batching, or migration/design-time infrastructure beyond the current SQLite baseline.
 - Advanced configuration hooks or public options matrices for naming, hashing, provider behavior, record source resolution, or timestamp sourcing beyond existing defaults.
 
-## Acceptance Criteria
-- The deliverable documents that DVault v1 uses an explicit save service rather than SaveChanges interception, and the rationale is consistent with the repository's existing explicit AddDVault()/UseDataVault()/ApplyDataVaultMetadata() pattern.
-- AddDVault() resolves the default save service with no extra configuration, and callers can replace that service through ordinary DI overrides without changing consumer code.
-- The chosen service can persist representative DVault hub and link rows through the current SQLite integration baseline with minimal setup, using the existing solution and test layout.
-- The write path preserves the documented required metadata boundary: record source and load timestamp are explicitly supplied or intentionally resolved at the service boundary, and hashing uses the existing stable-hash abstraction instead of an ad hoc implementation.
-- Tests show the default v1 write path is the explicit service boundary and does not require a registered SaveChanges interceptor.
-
-## Definition of Done
-- Ticket description and implementation notes reflect the explicit-service decision, the SQLite-first baseline, and the downstream dependency on 06EXB7HEJY18HEB5A5MVTN5KZC.
-- Code and tests live under the existing src/DCoding.Data.DVault and tests/DCoding.Data.DVault.Tests layout and run through DVault.slnx.
-- Relevant automated validation passes for touched projects, including dotnet test and the shared formatting gate.
-- The refined ticket leaves no unresolved PO-level question about the selected write entry point, the default provider baseline, or the default service-registration approach.
-
-## Implementation Notes
-- Keep the public boundary small and explicit, for example a DI-resolved service plus a focused request or operation model; detailed method names remain an implementation choice.
-- Do not make EF ChangeTracker events or implicit entity interception the source of truth for DVault write intent; the explicit service should own orchestration of hashing, metadata completion, and persistence sequencing.
-- Reuse the existing AddDVault registration pattern and the current SQLite integration harness rather than introducing a second startup stack.
-- Preserve provider-neutral semantics at the contract boundary even if the first concrete implementation only targets SQLite.
-- Design the request shape so later hub/link idempotency and future satellite work can extend the same service boundary without requiring a second persistence entry path.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the explicit service contract and initial persistence semantics stabilize, should DVault add an optional SaveChanges-based convenience wrapper in a separate ticket?
 - When satellite persistence and mutable/update behavior are scheduled, should they extend the same explicit service boundary through dedicated collaborators rather than a new public entry point?
 - If future providers need batching or bulk-write optimizations, should those be added behind the same explicit service contract as provider-specific follow-up tickets?
 
-## Risks
+Risks
 - If the service boundary is defined too narrowly around today's hub and link proof cases, later satellite or mutable-record work may require breaking API changes.
 - If record source or load timestamp handling becomes implicit or hidden, deterministic tests and replay or import scenarios will be harder to reason about.
 - If implementation quietly reintroduces interceptor-like behavior under the explicit API, the repository will lose the clear explicitness established by its current public surfaces.
 
-## Split Recommendations
+Split recommendations
 - No immediate split is required if this ticket stays focused on the explicit write boundary plus minimal SQLite-backed proof; keep idempotent hub and link semantics in 06EXB7HEJY18HEB5A5MVTN5KZC.
 - If SaveChanges convenience is still desired after the explicit service lands, create a separate follow-up ticket for optional interceptor-based integration.
 - Keep provider-specific optimizations or non-SQLite write implementations in separate follow-up tickets rather than widening this ticket.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Summary
-Choose and implement the persistence entry point for writing DVault data.
-
-## Scope
-- Evaluate SaveChanges interception versus an explicit service.
-- Keep first-use ergonomics simple.
-
-## Acceptance Criteria
-- The chosen path is documented.
-- The path works in tests with minimal configuration.
-
-## Definition of Done
-- The work satisfies the acceptance criteria.
-- Shared standards from the charter attachment are followed.
+Run mode
+- apply: planned updates are applied after this comment

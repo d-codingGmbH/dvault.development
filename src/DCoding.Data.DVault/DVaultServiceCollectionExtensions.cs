@@ -20,6 +20,7 @@ public static class DVaultServiceCollectionExtensions {
     TryAddSingleton(services, typeof(DataVaultConventions), DataVaultConventions.Default);
     TryAddSingleton(services, typeof(IStableHashService), DefaultStableHashService.Instance);
     TryAddSingleton(services, typeof(IStableHashNormalizer), DefaultStableHashNormalizer.Instance);
+    TryAddSingleton(services, typeof(IDataVaultSaveService), typeof(DefaultDataVaultSaveService));
 
     return services;
   }
@@ -32,5 +33,15 @@ public static class DVaultServiceCollectionExtensions {
     }
 
     services.Add(ServiceDescriptor.Singleton(serviceType, implementationInstance));
+  }
+
+  private static void TryAddSingleton(IServiceCollection services, Type serviceType, Type implementationType) {
+    foreach (var descriptor in services) {
+      if (descriptor.ServiceType == serviceType) {
+        return;
+      }
+    }
+
+    services.Add(ServiceDescriptor.Singleton(serviceType, implementationType));
   }
 }
