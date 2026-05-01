@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7T62EMCD7CSHS9PE501SC",
   "ticket-type": "story",
   "title": "Story: Build benchmark harness for normal EF versus DVault",
-  "revision": "06EXBF5MN1DMQX5YRANCR813VM",
+  "revision": "06EY355EJ9S4R3426CRGCXMD2M",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:38.5313682Z",
-  "updated-at": "2026-04-28T20:16:47.2725309Z"
+  "updated-at": "2026-05-01T03:28:30.8660000Z"
 }
