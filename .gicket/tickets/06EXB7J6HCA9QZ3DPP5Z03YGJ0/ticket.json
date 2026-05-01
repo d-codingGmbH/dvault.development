@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7J6HCA9QZ3DPP5Z03YGJ0",
   "ticket-type": "task",
   "title": "Task: Define provider capability abstraction",
-  "revision": "06EY16RGQK0GDVJQEXQEY7N2XR",
+  "revision": "06EY2HHEWVNBYFQXHKYPDW68P8",
   "status": "done",
   "labels": [
     "area/provider-support",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
   "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
   "created-at": "2026-04-28T19:43:33.1197865Z",
-  "updated-at": "2026-04-30T22:55:51.9963250Z"
+  "updated-at": "2026-05-01T02:02:46.3740000Z"
 }
