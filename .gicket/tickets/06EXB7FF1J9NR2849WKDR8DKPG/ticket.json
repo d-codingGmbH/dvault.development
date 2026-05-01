@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7FF1J9NR2849WKDR8DKPG",
   "ticket-type": "story",
   "title": "Story: Integrate with EF Core model building",
-  "revision": "06EY1CYEVECJNX3R2DBNP6RXYM",
+  "revision": "06EY44JG56T29VDMZMVNY36Z48",
   "status": "done",
   "labels": [
     "area/ef-integration",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
   "releaseId": "06EXB6F2CSMS7W2THPC53DGT28",
   "created-at": "2026-04-28T19:43:10.7248983Z",
-  "updated-at": "2026-04-30T23:22:53.5315483Z"
+  "updated-at": "2026-05-01T05:45:44.2330000Z"
 }

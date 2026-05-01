@@ -1,0 +1,11 @@
+﻿[gicket-bot] relation follow-up
+
+Summary
+- Source ticket `06EXB7F6WNWSJJV14EXTPSFDRG` completed a bot run for role `po-critic` with outcome `po-critic-blocking-apply`.
+- Source run summary: PO-critic review completed with a blocking assessment for ticket '06EXB7F6WNWSJJV14EXTPSFDRG'.
+- Selected flow `child-follow-up-comment` reached this ticket via `parentOf` path `06EXB7F6WNWSJJV14EXTPSFDRG -> 06EXB7HYG17X73GH0K535GYJH8`.
+
+Run metadata
+- run-id: `1314cfe95b1c4e6a9f50e82e1d8e0f63`
+- source-ticket: `06EXB7F6WNWSJJV14EXTPSFDRG`
+- flow-id: `child-follow-up-comment`
