@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7R6MTJW1PYRN172MW34DM",
   "ticket-type": "task",
   "title": "Task: Create README quickstart with minimal configuration",
-  "revision": "06EYKPSAPVMCPVBD63FHTBWPM8",
+  "revision": "06EYMNBD7G4AQKQQGRNABZMWWC",
   "status": "done",
   "labels": [
     "area/documentation",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:22.2957305Z",
-  "updated-at": "2026-05-02T18:02:27.8942423Z"
+  "updated-at": "2026-05-02T20:16:00.3160000Z"
 }

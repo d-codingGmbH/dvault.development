@@ -3,18 +3,17 @@
   "ticket-id": "06EXB7QYF1BB1REM7HQZ4WWVMM",
   "ticket-type": "story",
   "title": "Story: Write getting started documentation",
-  "revision": "06EXBF535NAD8M8SYN7S7P4X48",
-  "status": "todo",
+  "revision": "06EYMNCW7PK2W4KXJWEA85262C",
+  "status": "done",
   "labels": [
-    "backlog/initial-dvault",
-    "type/story",
     "area/documentation",
-    "needs-po",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "backlog/initial-dvault",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:20.2051720Z",
-  "updated-at": "2026-04-28T20:16:42.7971514Z"
+  "updated-at": "2026-05-02T20:16:12.3495266Z"
 }

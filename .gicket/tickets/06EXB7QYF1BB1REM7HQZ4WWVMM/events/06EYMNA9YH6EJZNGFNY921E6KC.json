@@ -1,0 +1,13 @@
+{
+  "event-id": "06EYMNA9YH6EJZNGFNY921E6KC",
+  "occurred-at": "2026-05-02T20:15:51.2842014Z",
+  "event-type": "TicketTransitioned",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "from-status": "todo",
+    "to-status": "ready-for-integration"
+  }
+}

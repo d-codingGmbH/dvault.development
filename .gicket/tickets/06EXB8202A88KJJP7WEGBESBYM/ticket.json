@@ -3,7 +3,7 @@
   "ticket-id": "06EXB8202A88KJJP7WEGBESBYM",
   "ticket-type": "story",
   "title": "Story: Prepare NuGet release gate",
-  "revision": "06EXBF5GH31156TBKDVSJRXANR",
+  "revision": "06EYMNB9G2E0B0GPPDQM99KS9C",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "created-at": "2026-04-28T19:45:42.5990775Z",
-  "updated-at": "2026-04-28T20:16:46.2161763Z"
+  "updated-at": "2026-05-02T20:15:59.3600000Z"
 }
