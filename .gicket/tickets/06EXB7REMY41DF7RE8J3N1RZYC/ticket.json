@@ -3,18 +3,17 @@
   "ticket-id": "06EXB7REMY41DF7RE8J3N1RZYC",
   "ticket-type": "task",
   "title": "Task: Document project-reference usage and future NuGet installation",
-  "revision": "06EYKPR2FKSRB732XN1J0QBV74",
-  "status": "todo",
+  "revision": "06EYM2HB88QS6BNB486D8CJVV4",
+  "status": "done",
   "labels": [
-    "backlog/initial-dvault",
-    "type/task",
     "area/documentation",
-    "needs-po",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "backlog/initial-dvault",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:24.3450458Z",
-  "updated-at": "2026-05-02T18:02:17.5960000Z"
+  "updated-at": "2026-05-02T18:53:48.2264992Z"
 }

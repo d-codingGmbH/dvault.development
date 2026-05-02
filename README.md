@@ -2,9 +2,23 @@
 
 DVault is the repository for the `DCoding.Data.DVault` .NET library.
 
+## Installation
+
+DVault is currently consumed from source. Before running the quickstart, add a project reference from your .NET 10 application or library project to the DVault library project in this repository:
+
+```xml
+<ItemGroup>
+  <ProjectReference Include="../DVault2/src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
+</ItemGroup>
+```
+
+Adjust the relative path to match your solution layout; it must point at `src/DCoding.Data.DVault/DCoding.Data.DVault.csproj`. The root `DVault.slnx` already includes this project for repository build and test automation.
+
+NuGet installation is future post-publication guidance. The package id is `DCoding.Data.DVault`, but live `dotnet add package` commands and version examples should wait until the package has been published.
+
 ## Quickstart
 
-Use this flow in a .NET 10 project that already references `DCoding.Data.DVault` and has an Entity Framework Core provider configured. The v1 path is convention-first: register DVault without options, declare Data Vault metadata on the EF model, save explicitly through `IDataVaultSaveService`, and read the generated shared-type tables through EF.
+Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has an Entity Framework Core provider configured. The v1 path is convention-first: register DVault without options, declare Data Vault metadata on the EF model, save explicitly through `IDataVaultSaveService`, and read the generated shared-type tables through EF.
 
 ### Register DVault services
 
