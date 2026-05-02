@@ -135,7 +135,7 @@ The shared-type table names and columns in this quickstart follow DVault's defau
 - `src/DCoding.Data.DVault/`: Main library project. The NuGet package id and root namespace are `DCoding.Data.DVault`.
 - `tests/DCoding.Data.DVault.Tests/`: Unit, integration, and shared test projects for DVault.
 - `examples/`: Future runnable examples for DVault APIs.
-- `benchmarks/`: Future performance benchmark projects.
+- `benchmarks/`: Local performance benchmark projects.
 - `docs/`: Documentation and design notes.
 
 All current .NET projects are included in `DVault.slnx`. Empty future-use folders contain `.gitkeep` files so the layout is present in clean checkouts.
@@ -148,6 +148,17 @@ dotnet test
 dotnet pack src/DCoding.Data.DVault/DCoding.Data.DVault.csproj --configuration Release --nologo
 bash tools/check-format.sh
 ```
+
+## Benchmarks
+
+Run the local SQLite scenario comparison benchmarks from the repository root:
+
+```sh
+dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --iterations 1 --warmup 0
+```
+
+The benchmark executable compares conventional EF and DVault flows for the shared customer profile history contract and the reduced order-product fulfillment history contract. It uses SQLite temporary files by default and does not require Postgres, Docker, or `DVAULT_TEST_POSTGRES_CONNECTION_STRING`.
+Increase `--iterations` and `--warmup` locally when collecting steadier timing numbers.
 
 ## Optional Local Postgres Integration Tests
 
