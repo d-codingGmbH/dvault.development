@@ -3,18 +3,17 @@
   "ticket-id": "06EXB7RYFJ3YQDB1E4QHPP8034",
   "ticket-type": "task",
   "title": "Task: Implement normal EF baseline for customer profile",
-  "revision": "06EXNNP63P6KVMFBTER17GEJYR",
-  "status": "todo",
+  "revision": "06EYKWZE89NT7R1NMGM7G4BC78",
+  "status": "done",
   "labels": [
-    "backlog/initial-dvault",
-    "type/task",
     "area/examples",
-    "needs-po",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "backlog/initial-dvault",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:28.4036056Z",
-  "updated-at": "2026-04-29T20:03:21.7572663Z"
+  "updated-at": "2026-05-02T18:29:30.8184195Z"
 }
