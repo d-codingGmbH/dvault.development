@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Verified the ticket against the current README, public DCoding.Data.DVault API, existing SQLite save-service tests, and the persisted parent/block relations. No new planning writes were needed; the ticket is bounded as a root README quickstart slice and is ready for PO-critic.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The current ticket has no human clarification comments or persisted attachments beyond automation lease comments, so repository evidence is the authoritative refinement input for this run.
 - The quickstart belongs in the root README.md because that is the visible repository documentation baseline on this branch and no separate user-facing quickstart page exists yet.
 - The minimal v1 startup path is already fixed by repository evidence: IServiceCollection.AddDVault() registers DVault defaults without a DVault options object.
@@ -17,7 +16,7 @@
 - Verified relation context: this ticket is a child of story 06EXB7QYF1BB1REM7HQZ4WWVMM and blocks ticket 06EXB7REMY41DF7RE8J3N1RZYC; no new child tickets, relations, attachments, or planning documents were materialized in this refinement.
 - Detailed project-reference and future NuGet installation wording is already split into ticket 06EXB7REMY41DF7RE8J3N1RZYC, so this ticket should focus on the usage quickstart and only include minimal transition text if needed.
 
-### Scope In
+Scope In
 - Add the first minimal-configuration quickstart section to the root README.md.
 - Show optionless DVault service registration through AddDVault().
 - Show bounded EF model configuration through ApplyDataVaultMetadata(...) with a small DataVaultMetadataModel example.
@@ -26,73 +25,41 @@
 - Keep the quickstart text in English and aligned with the current package identity, namespace, and net10.0 repository baseline.
 - Keep documentation snippets aligned with existing tests or add bounded sample-test coverage when a snippet is not already proven by current tests.
 
-### Scope Out
+Scope Out
 - Full project-reference guidance and future NuGet installation guidance beyond the minimal handoff needed for readability; ticket 06EXB7REMY41DF7RE8J3N1RZYC owns that slice.
 - New public runtime APIs, typed query abstractions, SaveChanges interception, or other convenience layers beyond the current documented surfaces.
 - Runnable example projects under examples/ or broader documentation-site work beyond the root README slice.
 - Provider-specific setup, Postgres-specific walkthroughs, migrations, schema generation, or advanced configuration matrices.
 - Advanced or extended Data Vault scenarios such as PIT tables, bridge tables, multi-active satellites, or broader satellite-heavy tutorials that are not required for the first-use flow.
 
-## Acceptance Criteria
-- README.md contains an English quickstart that shows the shortest current path from an already-referenced library to first DVault service registration, model configuration, save, and query.
-- The quickstart uses AddDVault() without a DVault options object or custom naming, hashing, provider, or configuration-file setup.
-- The model-configuration example uses the current public EF surface ApplyDataVaultMetadata(...) with a small DataVaultMetadataModel that follows existing DVault naming and concept conventions.
-- The save example uses IDataVaultSaveService and DataVaultSaveRequest with explicit load timestamp and record source values, matching the current explicit-save-service architecture.
-- The query example stays within the current repository baseline by reading generated shared-type tables through Entity Framework instead of implying a higher-level read API that does not yet exist.
-- Every README code snippet either compiles directly or is mirrored by sample, unit, or integration coverage in tests/DCoding.Data.DVault.Tests.
-- The quickstart does not claim an already-published NuGet package and does not duplicate the detailed installation guidance reserved for ticket 06EXB7REMY41DF7RE8J3N1RZYC.
-
-## Definition of Done
-- Root README.md is updated in English and remains the canonical first quickstart document for this story slice.
-- Touched documentation and any supporting tests follow the shared implementation standards artifact already referenced by the ticket.
-- Example code stays aligned with the current repository layout under src/DCoding.Data.DVault and tests/DCoding.Data.DVault.Tests.
-- Relevant validation for the eventual change set is covered by existing or updated automated tests, with dotnet test and the shared formatting gate used as the normal verification baseline when the implementation role executes the work.
-- The final README wording reflects the convention-first minimal-configuration principle from ticket 06EXB6QD5Y9XVVZDVZEN4M6EV8 and the explicit-save-service decision from ticket 06EXB7H6KV753KM125XN3VDRTM.
-- No additional planning document, attachment, or child-ticket split is required to complete this ticket.
-
-## Implementation Notes
-- Use README.md as the owning document because the repository already treats it as the visible documentation entry point.
-- Mirror the concrete example shape already proven in tests/DCoding.Data.DVault.Tests/Integration/ExplicitDataVaultSaveServiceSqliteTests.cs so the documentation and executable evidence stay aligned.
-- The smallest currently credible quickstart model is the Customer, Order, and CustomerOrder hub/link example already exercised in integration tests; satellite examples are optional and should not be required for this ticket.
-- Frame the read/query step as the current EF shared-type baseline, for example querying HubCustomer or LinkCustomerOrder through context.Set<Dictionary<string, object>>(...) and AsNoTracking(), so the README does not invent a future query abstraction.
-- If installation text is needed for readability, keep it brief and defer the detailed project-reference and future NuGet section to ticket 06EXB7REMY41DF7RE8J3N1RZYC.
-- Preserve the current surface names and package identity already visible in source: DCoding.Data.DVault, AddDVault, ApplyDataVaultMetadata, IDataVaultSaveService, and DataVaultSaveRequest.
-- Keep provider-specific or optional Postgres integration details out of the quickstart; the current README already isolates that material elsewhere.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After ticket 06EXB7REMY41DF7RE8J3N1RZYC lands, should the README quickstart cross-link to a separate installation section or inline only a one-sentence prerequisite?
 - Once a higher-level typed read or query surface exists, should the README quickstart be revised away from shared-type Dictionary<string, object> queries?
 - Should a later documentation or examples ticket promote the README quickstart into a runnable sample under examples/ once that folder becomes active?
 
-## Risks
+Risks
 - If the README example drifts away from the existing tested API shape, the quickstart will become misleading faster than normal code review catches it.
 - If the quickstart expands into installation, provider, or publication detail, it will overlap the sibling install ticket and weaken the minimal-configuration message.
 - If the query example is presented as a polished long-term read API instead of the current shared-type baseline, users may infer capabilities the package does not yet provide.
 
-## Split Recommendations
+Split recommendations
 - No new split is recommended; the existing parent story 06EXB7QYF1BB1REM7HQZ4WWVMM and sibling ticket 06EXB7REMY41DF7RE8J3N1RZYC already cover the main planning boundaries.
 - Keep this ticket focused on the README usage quickstart slice and leave installation and publication wording to ticket 06EXB7REMY41DF7RE8J3N1RZYC.
 - Create a later follow-up only if the team intentionally wants a runnable example project or a new higher-level read API example that no longer fits a README-only change.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 7
+- definition-of-done items: 6
+- implementation-notes items: 7
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Summary
-Write the first README flow for installing and using the library.
-
-## Scope
-- Show service registration, model configuration, and a small save/query example.
-
-## Acceptance Criteria
-- The quickstart fits the minimal-configuration principle.
-- Code snippets compile or are covered by sample tests.
-
-## Definition of Done
-- The work satisfies the acceptance criteria.
-- Shared standards from the charter attachment are followed.
+Run mode
+- apply: planned updates are applied after this comment
