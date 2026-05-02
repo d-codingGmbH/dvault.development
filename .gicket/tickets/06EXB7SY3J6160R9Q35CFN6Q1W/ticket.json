@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7SY3J6160R9Q35CFN6Q1W",
   "ticket-type": "task",
   "title": "Task: Implement DVault link and satellite version for orders",
-  "revision": "06EY2XR14MVVWK43CZC6B6PX00",
+  "revision": "06EYJGH1V2WA2VGXYZ7AKZ9AYG",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:36.4914653Z",
-  "updated-at": "2026-05-01T02:56:05.9250000Z"
+  "updated-at": "2026-05-02T15:15:18.6160000Z"
 }
