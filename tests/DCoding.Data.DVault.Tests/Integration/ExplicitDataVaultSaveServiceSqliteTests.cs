@@ -349,6 +349,134 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     }
   }
 
+  [Fact]
+  public async Task DefaultSaveServicePersistsCustomerProfileSatelliteHistoryThroughSqlite() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["customer_name", "customer_status"]);
+    var firstLoadTimestamp = new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero);
+    var secondLoadTimestamp = new DateTimeOffset(2026, 4, 29, 11, 30, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<ExplicitSaveServiceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVault();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    string customerHashKey;
+    DataVaultSaveResult firstSatelliteResult;
+
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+
+      var firstHubResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              firstLoadTimestamp,
+              "crm-import",
+              [new(customer, [new("Customer Id", "C-100")])],
+              []));
+      customerHashKey = GetHashKey(firstHubResult, DataVaultTableKind.Hub, "Customer");
+
+      firstSatelliteResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              firstLoadTimestamp,
+              "crm-import",
+              [],
+              [],
+              [
+                  new(
+                      profile,
+                      customerHashKey,
+                      [new("customer_name", "Alice Adams"), new("customer_status", "prospect")],
+                      "profile-hash-1"),
+              ]));
+
+      Assert.Equal(1, firstHubResult.RowsWritten);
+      Assert.Equal(1, firstSatelliteResult.RowsWritten);
+    }
+
+    DataVaultSaveResult secondHubResult;
+    DataVaultSaveResult secondSatelliteResult;
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      secondHubResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              secondLoadTimestamp,
+              "crm-change",
+              [new(customer, [new("Customer Id", "C-100")])],
+              []));
+
+      secondSatelliteResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              secondLoadTimestamp,
+              "crm-change",
+              [],
+              [],
+              [
+                  new(
+                      profile,
+                      customerHashKey,
+                      [new("customer_name", "Alice Baker"), new("customer_status", "active")],
+                      "profile-hash-2"),
+              ]));
+    }
+
+    Assert.Equal(0, secondHubResult.RowsWritten);
+    Assert.Equal(1, secondSatelliteResult.RowsWritten);
+    AssertSingleSavedRecord(
+        firstSatelliteResult,
+        DataVaultTableKind.Satellite,
+        "Profile",
+        "SatCustomerProfile",
+        customerHashKey);
+    AssertSingleSavedRecord(
+        secondSatelliteResult,
+        DataVaultTableKind.Satellite,
+        "Profile",
+        "SatCustomerProfile",
+        customerHashKey);
+
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      var customerRows = await context.Set<Dictionary<string, object>>("HubCustomer").AsNoTracking().ToListAsync();
+      var allProfileRows = await context.Set<Dictionary<string, object>>("SatCustomerProfile")
+          .AsNoTracking()
+          .ToListAsync();
+      var profileRows = allProfileRows
+          .Where(row => Assert.IsType<string>(row["CustomerHashKey"]) == customerHashKey)
+          .OrderBy(row => (DateTimeOffset)row["LoadTimestamp"])
+          .ToArray();
+      var customerRow = Assert.Single(customerRows);
+
+      Assert.Equal("C-100", customerRow["CustomerId"]);
+      Assert.Equal(customerHashKey, customerRow["CustomerHashKey"]);
+      Assert.Equal(2, allProfileRows.Count);
+      Assert.Equal(2, profileRows.Length);
+      AssertCustomerProfileSatelliteRow(
+          profileRows[0],
+          customerHashKey,
+          "Alice Adams",
+          "prospect",
+          "profile-hash-1",
+          firstLoadTimestamp,
+          "crm-import");
+      AssertCustomerProfileSatelliteRow(
+          profileRows[1],
+          customerHashKey,
+          "Alice Baker",
+          "active",
+          "profile-hash-2",
+          secondLoadTimestamp,
+          "crm-change");
+    }
+  }
+
   private static string GetHashKey(DataVaultSaveResult result, DataVaultTableKind kind, string metadataName) {
     return result.SavedRecords
         .Single(record => record.Kind == kind && record.MetadataName == metadataName)
@@ -383,6 +511,22 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     Assert.Equal(recordSource, row["RecordSource"]);
   }
 
+  private static void AssertCustomerProfileSatelliteRow(
+      Dictionary<string, object> row,
+      string parentHashKey,
+      string customerName,
+      string customerStatus,
+      string hashDiff,
+      DateTimeOffset loadTimestamp,
+      string recordSource) {
+    Assert.Equal(parentHashKey, row["CustomerHashKey"]);
+    Assert.Equal(customerName, row["CustomerName"]);
+    Assert.Equal(customerStatus, row["CustomerStatus"]);
+    Assert.Equal(hashDiff, row["HashDiff"]);
+    Assert.Equal(loadTimestamp, row["LoadTimestamp"]);
+    Assert.Equal(recordSource, row["RecordSource"]);
+  }
+
   private static void AssertSavedRecordsEqual(
       IReadOnlyList<DataVaultSavedRecord> expected,
       IReadOnlyList<DataVaultSavedRecord> actual) {
@@ -411,6 +555,10 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
                 "Contact",
                 DataVaultMetadataReference.Hub("Customer"),
                 ["Email Address"]),
+            new DataVaultSatelliteMetadata(
+                "Profile",
+                DataVaultMetadataReference.Hub("Customer"),
+                ["customer_name", "customer_status"]),
             new DataVaultSatelliteMetadata(
                 "State",
                 DataVaultMetadataReference.Link("CustomerOrder"),

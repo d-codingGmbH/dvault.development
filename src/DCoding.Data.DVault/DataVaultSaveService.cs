@@ -457,7 +457,8 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       CancellationToken cancellationToken) {
     var rows = dbContext.Set<Dictionary<string, object>>(tableName);
 
-    if (rows.Local.Any(existingRow => HasHashKey(existingRow, hashKeyColumnName, hashKey))) {
+    if (GetTrackedRows(dbContext, tableName)
+        .Any(existingRow => HasHashKey(existingRow, hashKeyColumnName, hashKey))) {
       return false;
     }
 
@@ -542,7 +543,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         .Where(existingRow => EF.Property<string>(existingRow, parentHashKeyColumnName) == parentHashKey)
         .ToListAsync(cancellationToken)
         .ConfigureAwait(false);
-    var latestHashDiff = rows.Local
+    var latestHashDiff = GetTrackedRows(dbContext, tableName)
         .Concat(persistedRows)
         .Where(existingRow => HasColumnValue(existingRow, parentHashKeyColumnName, parentHashKey))
         .OrderByDescending(existingRow => (DateTimeOffset)existingRow[loadTimestampColumnName])
@@ -556,6 +557,19 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     rows.Add(row);
 
     return true;
+  }
+
+  private static IEnumerable<Dictionary<string, object>> GetTrackedRows(DbContext dbContext, string tableName) {
+    foreach (var entry in dbContext.ChangeTracker.Entries<Dictionary<string, object>>()) {
+      if (entry.State == EntityState.Deleted) {
+        continue;
+      }
+
+      var producedName = entry.Metadata.FindAnnotation(DataVaultAnnotationNames.ProducedName)?.Value as string;
+      if (string.Equals(producedName ?? entry.Metadata.Name, tableName, StringComparison.Ordinal)) {
+        yield return entry.Entity;
+      }
+    }
   }
 
   private static bool HasHashKey(Dictionary<string, object> row, string hashKeyColumnName, string hashKey) {
