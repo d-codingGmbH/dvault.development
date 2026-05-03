@@ -160,11 +160,14 @@ All current .NET projects are included in `DVault.slnx`. Empty future-use folder
 ```sh
 dotnet build DVault.slnx --nologo
 dotnet test DVault.slnx --nologo
-dotnet pack src/DCoding.Data.DVault/DCoding.Data.DVault.csproj --configuration Release --nologo
+dotnet pack DVault.slnx --configuration Release --nologo
+bash tools/verify-packages.sh
 bash tools/check-format.sh
 ```
 
 The normal test run includes package-specific public API snapshot checks for `DCoding.Data.DVault` and the five provider packages. See `docs/quality/api-surface-snapshots.md` for the approved baseline location and the explicit update workflow for intentional API changes.
+
+`bash tools/verify-packages.sh` inspects the artifacts created under `bin/packages/` by the solution-level pack command. It expects exactly the six DVault library packages and matching symbol packages, checks README and XML documentation entries, validates declared NuGet metadata, and confirms each provider package depends on the packed `DCoding.Data.DVault` version. The verifier intentionally fails when stale, unexpected, or non-packable package artifacts remain in `bin/packages/`.
 
 Provider integration tests use stable xUnit trait categories so required local coverage and opt-in external database coverage can be selected explicitly:
 

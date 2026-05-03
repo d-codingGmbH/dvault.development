@@ -31,6 +31,7 @@
     <ProjectReference Include="../../../src/DCoding.Data.DVault.Postgres/DCoding.Data.DVault.Postgres.csproj" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.Sqlite/DCoding.Data.DVault.Sqlite.csproj" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.SqlServer/DCoding.Data.DVault.SqlServer.csproj" />
+    <ProjectReference Include="../../../tools/DCoding.Data.DVault.PackageVerification/DCoding.Data.DVault.PackageVerification.csproj" />
     <ProjectReference Include="../Shared/DCoding.Data.DVault.Tests.Shared.csproj" />
   </ItemGroup>
 </Project>

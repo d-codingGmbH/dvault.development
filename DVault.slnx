@@ -22,4 +22,7 @@
   <Folder Name="/tests/DCoding.Data.DVault.Tests/Unit/">
     <Project Path="tests/DCoding.Data.DVault.Tests/Unit/DCoding.Data.DVault.Tests.Unit.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/DCoding.Data.DVault.PackageVerification/DCoding.Data.DVault.PackageVerification.csproj" />
+  </Folder>
 </Solution>
