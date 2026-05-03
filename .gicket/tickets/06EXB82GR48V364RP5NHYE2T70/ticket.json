@@ -3,7 +3,7 @@
   "ticket-id": "06EXB82GR48V364RP5NHYE2T70",
   "ticket-type": "task",
   "title": "Task: Document publication criteria and manual release steps",
-  "revision": "06EYZAQA8NBTNCD9NZY2KCKDRC",
+  "revision": "06EYZHCJ572XT9Z47Z5PYGWRTR",
   "status": "done",
   "labels": [
     "area/packaging",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "created-at": "2026-04-28T19:45:46.8053861Z",
-  "updated-at": "2026-05-03T21:07:28.9651530Z"
+  "updated-at": "2026-05-03T21:36:35.8810000Z"
 }

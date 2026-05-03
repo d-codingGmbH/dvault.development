@@ -3,7 +3,7 @@
   "ticket-id": "06EXB82RW6PV2NFG088G6BPFHC",
   "ticket-type": "task",
   "title": "Task: Add CI workflow for build, tests, formatting, and docs validation",
-  "revision": "06EYZ12KM1PJPJ5BVNAKYMR0Y4",
+  "revision": "06EYZHCNR6ZGPVH50DFKV8N96G",
   "status": "done",
   "labels": [
     "area/quality",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "created-at": "2026-04-28T19:45:48.8890061Z",
-  "updated-at": "2026-05-03T20:25:20.0329790Z"
+  "updated-at": "2026-05-03T21:36:36.8010000Z"
 }
