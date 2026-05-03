@@ -1,0 +1,469 @@
+# DVault public API snapshot
+# Package: DCoding.Data.DVault
+# Assembly: DCoding.Data.DVault
+# Generated from built assembly output.
+# Update intentionally with: DVAULT_UPDATE_API_SNAPSHOTS=1 dotnet test DVault.slnx --nologo --filter FullyQualifiedName~ApiSurfaceSnapshotTests
+
+type public static class DCoding.Data.DVault.DVaultServiceCollectionExtensions
+  method public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddDVault(this Microsoft.Extensions.DependencyInjection.IServiceCollection services)
+
+type public static class DCoding.Data.DVault.DataVaultAnnotationNames
+  field public const string Conventions = "DCoding.Data.DVault:Conventions"
+  field public const string EntityKind = "DCoding.Data.DVault:EntityKind"
+  field public const string MetadataName = "DCoding.Data.DVault:MetadataName"
+  field public const string Ordinal = "DCoding.Data.DVault:Ordinal"
+  field public const string ParentReferenceKind = "DCoding.Data.DVault:ParentReferenceKind"
+  field public const string ParentReferenceName = "DCoding.Data.DVault:ParentReferenceName"
+  field public const string ProducedName = "DCoding.Data.DVault:ProducedName"
+  field public const string PropertyRole = "DCoding.Data.DVault:PropertyRole"
+  field public const string ProviderLogicalPropertyKind = "DCoding.Data.DVault:ProviderLogicalPropertyKind"
+  field public const string ProviderProfile = "DCoding.Data.DVault:ProviderProfile"
+  field public const string ProviderStorageType = "DCoding.Data.DVault:ProviderStorageType"
+  field public const string ProviderValueFormat = "DCoding.Data.DVault:ProviderValueFormat"
+  field public const string TechnicalColumnRole = "DCoding.Data.DVault:TechnicalColumnRole"
+
+type public sealed class DCoding.Data.DVault.DataVaultBulkSaveRequest
+  ctor public DataVaultBulkSaveRequest(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveRequest> requests)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> Requests { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultHubSaveOperation
+  ctor public DataVaultHubSaveOperation(DCoding.Data.DVault.Modeling.DataVaultHubMetadata metadata, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> businessKeyValues)
+  property public DCoding.Data.DVault.Modeling.DataVaultHubMetadata Metadata { get; }
+  property public System.Collections.Generic.IReadOnlyDictionary<string, string> BusinessKeyValues { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultLinkSaveOperation
+  ctor public DataVaultLinkSaveOperation(DCoding.Data.DVault.Modeling.DataVaultLinkMetadata metadata, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> participantHashKeyValues)
+  property public DCoding.Data.DVault.Modeling.DataVaultLinkMetadata Metadata { get; }
+  property public System.Collections.Generic.IReadOnlyDictionary<string, string> ParticipantHashKeyValues { get; }
+
+type public enum DCoding.Data.DVault.DataVaultLogicalPropertyKind
+  value HashKey = 0
+  value HashDiff = 1
+  value LoadTimestamp = 2
+  value RecordSource = 3
+  value ParticipantReference = 4
+  value BusinessKey = 5
+  value PayloadText = 6
+
+type public static class DCoding.Data.DVault.DataVaultModelBuilderExtensions
+  method public static Microsoft.EntityFrameworkCore.ModelBuilder ApplyDataVaultMetadata(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel)
+  method public static Microsoft.EntityFrameworkCore.ModelBuilder UseDataVault(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder)
+
+type public enum DCoding.Data.DVault.DataVaultPropertyRole
+  value Technical = 0
+  value BusinessKey = 1
+  value ParticipantReference = 2
+  value Payload = 3
+
+type public sealed class DCoding.Data.DVault.DataVaultProviderCapabilityProfile
+  ctor public DataVaultProviderCapabilityProfile(string profileName, DCoding.Data.DVault.DataVaultProviderSqlFunctionSupport sqlFunctionSupport, DCoding.Data.DVault.DataVaultProviderConcurrencySupport concurrencySupport, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultProviderTypeMapping> typeMappings)
+  property public DCoding.Data.DVault.DataVaultProviderConcurrencySupport ConcurrencySupport { get; }
+  property public DCoding.Data.DVault.DataVaultProviderSqlFunctionSupport SqlFunctionSupport { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultProviderTypeMapping> TypeMappings { get; }
+  property public string ProfileName { get; }
+  method public DCoding.Data.DVault.DataVaultProviderTypeMapping GetRequiredTypeMapping(DCoding.Data.DVault.DataVaultLogicalPropertyKind logicalPropertyKind)
+  method public void RequireConcurrencySignal(string signalName)
+  method public void RequireSqlFunction(string functionName)
+
+type public static class DCoding.Data.DVault.DataVaultProviderCapabilityProfiles
+  property public static DCoding.Data.DVault.DataVaultProviderCapabilityProfile Sqlite { get; }
+
+type public enum DCoding.Data.DVault.DataVaultProviderConcurrencySupport
+  value NoneInV1Unsupported = 0
+
+type public sealed class DCoding.Data.DVault.DataVaultProviderSaveStrategyContext
+  ctor public DataVaultProviderSaveStrategyContext(Microsoft.EntityFrameworkCore.DbContext dbContext, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> requests, DCoding.Data.DVault.IStableHashService stableHashService, DCoding.Data.DVault.IStableHashNormalizer stableHashNormalizer)
+  property public DCoding.Data.DVault.IStableHashNormalizer StableHashNormalizer { get; }
+  property public DCoding.Data.DVault.IStableHashService StableHashService { get; }
+  property public Microsoft.EntityFrameworkCore.DbContext DbContext { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> Requests { get; }
+
+type public enum DCoding.Data.DVault.DataVaultProviderSqlFunctionSupport
+  value NoneInV1Unsupported = 0
+
+type public sealed class DCoding.Data.DVault.DataVaultProviderTypeMapping : System.IEquatable<DCoding.Data.DVault.DataVaultProviderTypeMapping>
+  ctor public DataVaultProviderTypeMapping(DCoding.Data.DVault.DataVaultLogicalPropertyKind logicalPropertyKind, System.Type modelClrType, string nativeStoreType, DCoding.Data.DVault.DataVaultProviderValueFormat valueFormat)
+  property public DCoding.Data.DVault.DataVaultLogicalPropertyKind LogicalPropertyKind { get; }
+  property public DCoding.Data.DVault.DataVaultProviderValueFormat ValueFormat { get; }
+  property public System.Type ModelClrType { get; }
+  property public string NativeStoreType { get; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultProviderTypeMapping? left, DCoding.Data.DVault.DataVaultProviderTypeMapping? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultProviderTypeMapping? left, DCoding.Data.DVault.DataVaultProviderTypeMapping? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultProviderTypeMapping? other)
+
+type public enum DCoding.Data.DVault.DataVaultProviderValueFormat
+  value Text = 0
+  value Iso8601UtcText = 1
+
+type public sealed class DCoding.Data.DVault.DataVaultSatelliteSaveOperation
+  ctor public DataVaultSatelliteSaveOperation(DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata metadata, string parentHashKey, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> payloadValues, string hashDiff)
+  property public DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata Metadata { get; }
+  property public System.Collections.Generic.IReadOnlyDictionary<string, string> PayloadValues { get; }
+  property public string HashDiff { get; }
+  property public string ParentHashKey { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultSaveRequest
+  ctor public DataVaultSaveRequest(System.DateTimeOffset loadTimestamp, string recordSource, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultHubSaveOperation> hubOperations, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultLinkSaveOperation> linkOperations)
+  ctor public DataVaultSaveRequest(System.DateTimeOffset loadTimestamp, string recordSource, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultHubSaveOperation> hubOperations, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultLinkSaveOperation> linkOperations, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSatelliteSaveOperation> satelliteOperations)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultHubSaveOperation> HubOperations { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultLinkSaveOperation> LinkOperations { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSatelliteSaveOperation> SatelliteOperations { get; }
+  property public System.DateTimeOffset LoadTimestamp { get; }
+  property public string RecordSource { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultSaveResult
+  ctor public DataVaultSaveResult(int rowsWritten, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSavedRecord> savedRecords)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSavedRecord> SavedRecords { get; }
+  property public int RowsWritten { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultSavedRecord
+  ctor public DataVaultSavedRecord(DCoding.Data.DVault.Modeling.DataVaultTableKind kind, string metadataName, string tableName, string hashKey)
+  property public DCoding.Data.DVault.Modeling.DataVaultTableKind Kind { get; }
+  property public string HashKey { get; }
+  property public string MetadataName { get; }
+  property public string TableName { get; }
+
+type public interface DCoding.Data.DVault.IDataVaultProviderSaveStrategy
+  property public int Priority { get; }
+  method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(DCoding.Data.DVault.DataVaultProviderSaveStrategyContext context, System.Threading.CancellationToken cancellationToken = default)
+  method public abstract bool CanSave(Microsoft.EntityFrameworkCore.DbContext dbContext, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> requests)
+
+type public interface DCoding.Data.DVault.IDataVaultSaveService
+  method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultBulkSaveRequest request, System.Threading.CancellationToken cancellationToken = default)
+  method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultSaveRequest request, System.Threading.CancellationToken cancellationToken = default)
+
+type public interface DCoding.Data.DVault.IStableHashNormalizer
+  method public abstract string NormalizeFields(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> fields)
+  method public abstract string NormalizeValue(object? value)
+
+type public interface DCoding.Data.DVault.IStableHashService
+  property public string AlgorithmId { get; }
+  method public abstract DCoding.Data.DVault.StableHashDigest ComputeHash(string normalizedInput)
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultBusinessKeyMetadata
+  ctor public DataVaultBusinessKeyMetadata(string columnName)
+  property public string ColumnName { get; }
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultColumn : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultColumn>
+  ctor public DataVaultColumn(string Name, DCoding.Data.DVault.Modeling.DataVaultColumnKind Kind)
+  property public DCoding.Data.DVault.Modeling.DataVaultColumnKind Kind { get; init; }
+  property public string Name { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.Modeling.DataVaultColumn? left, DCoding.Data.DVault.Modeling.DataVaultColumn? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.Modeling.DataVaultColumn? left, DCoding.Data.DVault.Modeling.DataVaultColumn? right)
+  method public virtual bool Equals(DCoding.Data.DVault.Modeling.DataVaultColumn? other)
+  method public void Deconstruct(out string Name, out DCoding.Data.DVault.Modeling.DataVaultColumnKind Kind)
+
+type public enum DCoding.Data.DVault.Modeling.DataVaultColumnKind
+  value Technical = 0
+  value BusinessKey = 1
+  value Payload = 2
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultConstraint : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultConstraint>
+  ctor public DataVaultConstraint(string Name, DCoding.Data.DVault.Modeling.DataVaultConstraintKind Kind, System.Collections.Generic.IReadOnlyList<string> ColumnNames)
+  property public DCoding.Data.DVault.Modeling.DataVaultConstraintKind Kind { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<string> ColumnNames { get; init; }
+  property public string Name { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.Modeling.DataVaultConstraint? left, DCoding.Data.DVault.Modeling.DataVaultConstraint? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.Modeling.DataVaultConstraint? left, DCoding.Data.DVault.Modeling.DataVaultConstraint? right)
+  method public virtual bool Equals(DCoding.Data.DVault.Modeling.DataVaultConstraint? other)
+  method public void Deconstruct(out string Name, out DCoding.Data.DVault.Modeling.DataVaultConstraintKind Kind, out System.Collections.Generic.IReadOnlyList<string> ColumnNames)
+
+type public enum DCoding.Data.DVault.Modeling.DataVaultConstraintKind
+  value PrimaryKey = 0
+  value ForeignKey = 1
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultConstraintNameContext : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultConstraintNameContext>
+  ctor public DataVaultConstraintNameContext(DCoding.Data.DVault.Modeling.DataVaultConstraintKind Kind, string TableName, System.Collections.Generic.IReadOnlyList<string> ColumnNames)
+  property public DCoding.Data.DVault.Modeling.DataVaultConstraintKind Kind { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<string> ColumnNames { get; init; }
+  property public string TableName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.Modeling.DataVaultConstraintNameContext? left, DCoding.Data.DVault.Modeling.DataVaultConstraintNameContext? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.Modeling.DataVaultConstraintNameContext? left, DCoding.Data.DVault.Modeling.DataVaultConstraintNameContext? right)
+  method public virtual bool Equals(DCoding.Data.DVault.Modeling.DataVaultConstraintNameContext? other)
+  method public void Deconstruct(out DCoding.Data.DVault.Modeling.DataVaultConstraintKind Kind, out string TableName, out System.Collections.Generic.IReadOnlyList<string> ColumnNames)
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultConventions
+  property public DCoding.Data.DVault.Modeling.DefaultNamingPolicy NamingPolicy { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultModelConcept> ModelConcepts { get; }
+  property public System.Collections.Generic.IReadOnlyList<string> LogicalObjectNames { get; }
+  property public static DCoding.Data.DVault.Modeling.DataVaultConventions Default { get; }
+  property public string PersistenceContentHashAlgorithm { get; }
+  property public string PersistenceConventionVersion { get; }
+  property public string StableHashAlgorithmId { get; }
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultHubBuilder
+  method public DCoding.Data.DVault.Modeling.DataVaultHubBuilder BusinessKey(string propertyName)
+  method public DCoding.Data.DVault.Modeling.DataVaultHubBuilder Satellite(string satelliteName, System.Action<DCoding.Data.DVault.Modeling.DataVaultSatelliteBuilder>? configure = null)
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultHubMetadata
+  ctor public DataVaultHubMetadata(string name, System.Collections.Generic.IEnumerable<string> businessKeyNames)
+  property public DCoding.Data.DVault.TechnicalMetadataColumnContract HashKeyMetadata { get; }
+  property public DCoding.Data.DVault.TechnicalMetadataColumnContract LoadTimestampMetadata { get; }
+  property public DCoding.Data.DVault.TechnicalMetadataColumnContract RecordSourceMetadata { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultBusinessKeyMetadata> BusinessKeyColumns { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.TechnicalMetadataColumnContract> TechnicalMetadataColumns { get; }
+  property public System.Collections.Generic.IReadOnlyList<string> BusinessKeyNames { get; }
+  property public string Name { get; }
+  method public DCoding.Data.DVault.Modeling.DataVaultMetadataReference ToReference()
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultHubNameContext : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultHubNameContext>
+  ctor public DataVaultHubNameContext(string EntityName)
+  property public string EntityName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.Modeling.DataVaultHubNameContext? left, DCoding.Data.DVault.Modeling.DataVaultHubNameContext? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.Modeling.DataVaultHubNameContext? left, DCoding.Data.DVault.Modeling.DataVaultHubNameContext? right)
+  method public virtual bool Equals(DCoding.Data.DVault.Modeling.DataVaultHubNameContext? other)
+  method public void Deconstruct(out string EntityName)
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultIndex : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultIndex>
+  ctor public DataVaultIndex(string Name, System.Collections.Generic.IReadOnlyList<string> ColumnNames, bool IsUnique)
+  property public System.Collections.Generic.IReadOnlyList<string> ColumnNames { get; init; }
+  property public bool IsUnique { get; init; }
+  property public string Name { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.Modeling.DataVaultIndex? left, DCoding.Data.DVault.Modeling.DataVaultIndex? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.Modeling.DataVaultIndex? left, DCoding.Data.DVault.Modeling.DataVaultIndex? right)
+  method public virtual bool Equals(DCoding.Data.DVault.Modeling.DataVaultIndex? other)
+  method public void Deconstruct(out string Name, out System.Collections.Generic.IReadOnlyList<string> ColumnNames, out bool IsUnique)
+
+type public enum DCoding.Data.DVault.Modeling.DataVaultIndexKind
+  value BusinessKey = 0
+  value Relationship = 1
+  value SatelliteParent = 2
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultIndexNameContext : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultIndexNameContext>
+  ctor public DataVaultIndexNameContext(DCoding.Data.DVault.Modeling.DataVaultIndexKind Kind, string TableName, System.Collections.Generic.IReadOnlyList<string> ColumnNames, bool IsUnique)
+  property public DCoding.Data.DVault.Modeling.DataVaultIndexKind Kind { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<string> ColumnNames { get; init; }
+  property public bool IsUnique { get; init; }
+  property public string TableName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.Modeling.DataVaultIndexNameContext? left, DCoding.Data.DVault.Modeling.DataVaultIndexNameContext? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.Modeling.DataVaultIndexNameContext? left, DCoding.Data.DVault.Modeling.DataVaultIndexNameContext? right)
+  method public virtual bool Equals(DCoding.Data.DVault.Modeling.DataVaultIndexNameContext? other)
+  method public void Deconstruct(out DCoding.Data.DVault.Modeling.DataVaultIndexKind Kind, out string TableName, out System.Collections.Generic.IReadOnlyList<string> ColumnNames, out bool IsUnique)
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultLinkMetadata
+  ctor public DataVaultLinkMetadata(string name, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultMetadataReference> endpoints)
+  property public DCoding.Data.DVault.TechnicalMetadataColumnContract HashKeyMetadata { get; }
+  property public DCoding.Data.DVault.TechnicalMetadataColumnContract LoadTimestampMetadata { get; }
+  property public DCoding.Data.DVault.TechnicalMetadataColumnContract RecordSourceMetadata { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultLinkParticipantMetadata> Participants { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultMetadataReference> Endpoints { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.TechnicalMetadataColumnContract> TechnicalMetadataColumns { get; }
+  property public string Name { get; }
+  method public DCoding.Data.DVault.Modeling.DataVaultMetadataReference ToReference()
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultLinkNameContext : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultLinkNameContext>
+  ctor public DataVaultLinkNameContext(string? RelationshipName, System.Collections.Generic.IReadOnlyList<string> ParticipantNames)
+  property public System.Collections.Generic.IReadOnlyList<string> ParticipantNames { get; init; }
+  property public string? RelationshipName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.Modeling.DataVaultLinkNameContext? left, DCoding.Data.DVault.Modeling.DataVaultLinkNameContext? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.Modeling.DataVaultLinkNameContext? left, DCoding.Data.DVault.Modeling.DataVaultLinkNameContext? right)
+  method public virtual bool Equals(DCoding.Data.DVault.Modeling.DataVaultLinkNameContext? other)
+  method public void Deconstruct(out string? RelationshipName, out System.Collections.Generic.IReadOnlyList<string> ParticipantNames)
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultLinkParticipantMetadata
+  ctor public DataVaultLinkParticipantMetadata(DCoding.Data.DVault.Modeling.DataVaultMetadataReference hubReference)
+  property public DCoding.Data.DVault.Modeling.DataVaultMetadataReference HubReference { get; }
+  property public DCoding.Data.DVault.TechnicalMetadataColumnContract HashKeyMetadata { get; }
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultMetadataModel
+  ctor public DataVaultMetadataModel(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> hubs, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> links, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> satellites)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> Hubs { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> Links { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> Satellites { get; }
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataModel Create(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> hubs, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> links, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> satellites)
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultMetadataReference
+  property public DCoding.Data.DVault.Modeling.DataVaultMetadataReferenceKind Kind { get; }
+  property public string Name { get; }
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataReference Hub(string name)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataReference Link(string name)
+
+type public enum DCoding.Data.DVault.Modeling.DataVaultMetadataReferenceKind
+  value Hub = 0
+  value Link = 1
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultModel
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultTable> Tables { get; }
+  method public static DCoding.Data.DVault.Modeling.DataVaultModel Create(System.Action<DCoding.Data.DVault.Modeling.DataVaultModelBuilder> configureModel, System.Action<DCoding.Data.DVault.Modeling.DataVaultModelOptions>? configureOptions = null)
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultModelBuilder
+  ctor public DataVaultModelBuilder(DCoding.Data.DVault.Modeling.DataVaultModelOptions? options = null)
+  property public DCoding.Data.DVault.Modeling.DataVaultConventions? Conventions { get; }
+  property public bool IsDataVaultEnabled { get; }
+  method public DCoding.Data.DVault.Modeling.DataVaultHubBuilder Hub(string entityName, System.Action<DCoding.Data.DVault.Modeling.DataVaultHubBuilder>? configure = null)
+  method public DCoding.Data.DVault.Modeling.DataVaultModel Build()
+  method public DCoding.Data.DVault.Modeling.DataVaultModelBuilder Link(System.Collections.Generic.IEnumerable<string> participantNames)
+  method public DCoding.Data.DVault.Modeling.DataVaultModelBuilder Link(string? relationshipName, System.Collections.Generic.IEnumerable<string> participantNames)
+
+type public static class DCoding.Data.DVault.Modeling.DataVaultModelBuilderExtensions
+  method public static DCoding.Data.DVault.Modeling.DataVaultModelBuilder UseDataVault(this DCoding.Data.DVault.Modeling.DataVaultModelBuilder modelBuilder)
+
+type public enum DCoding.Data.DVault.Modeling.DataVaultModelConcept
+  value Hub = 0
+  value Link = 1
+  value Satellite = 2
+  value HashKey = 3
+  value HashDiff = 4
+  value LoadTimestamp = 5
+  value RecordSource = 6
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultModelOptions
+  ctor public DataVaultModelOptions()
+  property public DCoding.Data.DVault.Modeling.IDataVaultNamingPolicy? NamingPolicy { get; set; }
+  method public DCoding.Data.DVault.Modeling.DataVaultModelOptions UseNamingPolicy(DCoding.Data.DVault.Modeling.IDataVaultNamingPolicy? namingPolicy)
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatelliteBuilder
+  method public DCoding.Data.DVault.Modeling.DataVaultSatelliteBuilder Payload(string propertyName)
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata
+  ctor public DataVaultSatelliteMetadata(string name, DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, System.Collections.Generic.IEnumerable<string> descriptiveAttributeNames)
+  property public DCoding.Data.DVault.Modeling.DataVaultMetadataReference Parent { get; }
+  property public DCoding.Data.DVault.TechnicalMetadataColumnContract HashDiffMetadata { get; }
+  property public DCoding.Data.DVault.TechnicalMetadataColumnContract LoadTimestampMetadata { get; }
+  property public DCoding.Data.DVault.TechnicalMetadataColumnContract RecordSourceMetadata { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultSatellitePayloadMetadata> PayloadColumns { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.TechnicalMetadataColumnContract> TechnicalMetadataColumns { get; }
+  property public System.Collections.Generic.IReadOnlyList<string> DescriptiveAttributeNames { get; }
+  property public string Name { get; }
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatelliteNameContext : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultSatelliteNameContext>
+  ctor public DataVaultSatelliteNameContext(string ParentEntityName, string SatelliteName)
+  property public string ParentEntityName { get; init; }
+  property public string SatelliteName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.Modeling.DataVaultSatelliteNameContext? left, DCoding.Data.DVault.Modeling.DataVaultSatelliteNameContext? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.Modeling.DataVaultSatelliteNameContext? left, DCoding.Data.DVault.Modeling.DataVaultSatelliteNameContext? right)
+  method public virtual bool Equals(DCoding.Data.DVault.Modeling.DataVaultSatelliteNameContext? other)
+  method public void Deconstruct(out string ParentEntityName, out string SatelliteName)
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatellitePayloadMetadata
+  ctor public DataVaultSatellitePayloadMetadata(string columnName)
+  property public string ColumnName { get; }
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultTable
+  ctor public DataVaultTable(string name, DCoding.Data.DVault.Modeling.DataVaultTableKind kind, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultColumn> columns, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultIndex> indexes, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultConstraint> constraints)
+  property public DCoding.Data.DVault.Modeling.DataVaultTableKind Kind { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultColumn> Columns { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultConstraint> Constraints { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultIndex> Indexes { get; }
+  property public string Name { get; }
+
+type public enum DCoding.Data.DVault.Modeling.DataVaultTableKind
+  value Hub = 0
+  value Link = 1
+  value Satellite = 2
+
+type public enum DCoding.Data.DVault.Modeling.DataVaultTechnicalColumnKind
+  value HashKey = 0
+  value HashDiff = 1
+  value LoadTimestamp = 2
+  value RecordSource = 3
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultTechnicalColumnNameContext : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultTechnicalColumnNameContext>
+  ctor public DataVaultTechnicalColumnNameContext(DCoding.Data.DVault.Modeling.DataVaultTechnicalColumnKind Kind, string BaseName, string OwnerTableName)
+  property public DCoding.Data.DVault.Modeling.DataVaultTechnicalColumnKind Kind { get; init; }
+  property public string BaseName { get; init; }
+  property public string OwnerTableName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.Modeling.DataVaultTechnicalColumnNameContext? left, DCoding.Data.DVault.Modeling.DataVaultTechnicalColumnNameContext? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.Modeling.DataVaultTechnicalColumnNameContext? left, DCoding.Data.DVault.Modeling.DataVaultTechnicalColumnNameContext? right)
+  method public virtual bool Equals(DCoding.Data.DVault.Modeling.DataVaultTechnicalColumnNameContext? other)
+  method public void Deconstruct(out DCoding.Data.DVault.Modeling.DataVaultTechnicalColumnKind Kind, out string BaseName, out string OwnerTableName)
+
+type public sealed class DCoding.Data.DVault.Modeling.DefaultDataVaultNamingPolicy : DCoding.Data.DVault.Modeling.IDataVaultNamingPolicy
+  property public static DCoding.Data.DVault.Modeling.DefaultDataVaultNamingPolicy Instance { get; }
+  method public static System.Collections.Generic.IReadOnlyList<string> GetColumnNames(System.Collections.Generic.IEnumerable<string?> propertyNames, System.Collections.Generic.IEnumerable<string>? additionalUnsafeColumnNames = null)
+  method public virtual string GetConstraintName(DCoding.Data.DVault.Modeling.DataVaultConstraintNameContext context)
+  method public virtual string GetHubTableName(DCoding.Data.DVault.Modeling.DataVaultHubNameContext context)
+  method public virtual string GetIndexName(DCoding.Data.DVault.Modeling.DataVaultIndexNameContext context)
+  method public virtual string GetLinkTableName(DCoding.Data.DVault.Modeling.DataVaultLinkNameContext context)
+  method public virtual string GetSatelliteTableName(DCoding.Data.DVault.Modeling.DataVaultSatelliteNameContext context)
+  method public virtual string GetTechnicalColumnName(DCoding.Data.DVault.Modeling.DataVaultTechnicalColumnNameContext context)
+
+type public sealed class DCoding.Data.DVault.Modeling.DefaultNamingPolicy
+  ctor public DefaultNamingPolicy()
+  property public static DCoding.Data.DVault.Modeling.DefaultNamingPolicy Instance { get; }
+  property public static System.Collections.Generic.IReadOnlyList<string> FixedTechnicalColumnNames { get; }
+  method public System.Collections.Generic.IReadOnlyList<string> GetColumnNames(System.Collections.Generic.IEnumerable<string?> propertyNames, System.Collections.Generic.IEnumerable<string>? additionalUnsafeColumnNames = null)
+  method public string GetColumnName(string? propertyName, System.Collections.Generic.IEnumerable<string>? additionalUnsafeColumnNames = null)
+  method public string GetHashDiffColumnName()
+  method public string GetHashKeyColumnName(string? baseName)
+  method public string GetHubTableName(string? entityName)
+  method public string GetLinkTableName(string? relationshipName, System.Collections.Generic.IEnumerable<string?> participantNames)
+  method public string GetLoadTimestampColumnName()
+  method public string GetRecordSourceColumnName()
+  method public string GetSatelliteTableName(string? parentName, string? satelliteDescriptor)
+  method public string NormalizeColumnName(string? value)
+  method public string NormalizeObjectName(string? value)
+
+type public interface DCoding.Data.DVault.Modeling.IDataVaultNamingPolicy
+  method public abstract string GetConstraintName(DCoding.Data.DVault.Modeling.DataVaultConstraintNameContext context)
+  method public abstract string GetHubTableName(DCoding.Data.DVault.Modeling.DataVaultHubNameContext context)
+  method public abstract string GetIndexName(DCoding.Data.DVault.Modeling.DataVaultIndexNameContext context)
+  method public abstract string GetLinkTableName(DCoding.Data.DVault.Modeling.DataVaultLinkNameContext context)
+  method public abstract string GetSatelliteTableName(DCoding.Data.DVault.Modeling.DataVaultSatelliteNameContext context)
+  method public abstract string GetTechnicalColumnName(DCoding.Data.DVault.Modeling.DataVaultTechnicalColumnNameContext context)
+
+type public sealed class DCoding.Data.DVault.StableHashDigest : System.IEquatable<DCoding.Data.DVault.StableHashDigest>
+  ctor public StableHashDigest(string algorithmId, string value)
+  property public string AlgorithmId { get; }
+  property public string Value { get; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.StableHashDigest? left, DCoding.Data.DVault.StableHashDigest? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.StableHashDigest? left, DCoding.Data.DVault.StableHashDigest? right)
+  method public virtual bool Equals(DCoding.Data.DVault.StableHashDigest? other)
+
+type public sealed class DCoding.Data.DVault.TechnicalMetadataColumnContract : System.IEquatable<DCoding.Data.DVault.TechnicalMetadataColumnContract>
+  property public DCoding.Data.DVault.TechnicalMetadataColumnRequiredness RequirednessExpectation { get; }
+  property public DCoding.Data.DVault.TechnicalMetadataColumnRole Role { get; }
+  property public static System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.TechnicalMetadataColumnContract> Defaults { get; }
+  property public string DefaultEffectiveColumnName { get; }
+  property public string EffectiveColumnName { get; }
+  property public string SemanticPurpose { get; }
+  method public DCoding.Data.DVault.TechnicalMetadataColumnContract WithEffectiveColumnName(string effectiveColumnName)
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static DCoding.Data.DVault.TechnicalMetadataColumnContract ForRole(DCoding.Data.DVault.TechnicalMetadataColumnRole role)
+  method public static bool op_Equality(DCoding.Data.DVault.TechnicalMetadataColumnContract? left, DCoding.Data.DVault.TechnicalMetadataColumnContract? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.TechnicalMetadataColumnContract? left, DCoding.Data.DVault.TechnicalMetadataColumnContract? right)
+  method public virtual bool Equals(DCoding.Data.DVault.TechnicalMetadataColumnContract? other)
+
+type public enum DCoding.Data.DVault.TechnicalMetadataColumnRequiredness
+  value RequiredWhenDeclared = 0
+
+type public enum DCoding.Data.DVault.TechnicalMetadataColumnRole
+  value HashKey = 0
+  value HashDiff = 1
+  value LoadTimestamp = 2
+  value RecordSource = 3

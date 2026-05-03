@@ -158,11 +158,13 @@ All current .NET projects are included in `DVault.slnx`. Empty future-use folder
 ## Local Validation
 
 ```sh
-dotnet build
-dotnet test
+dotnet build DVault.slnx --nologo
+dotnet test DVault.slnx --nologo
 dotnet pack src/DCoding.Data.DVault/DCoding.Data.DVault.csproj --configuration Release --nologo
 bash tools/check-format.sh
 ```
+
+The normal test run includes package-specific public API snapshot checks for `DCoding.Data.DVault` and the five provider packages. See `docs/quality/api-surface-snapshots.md` for the approved baseline location and the explicit update workflow for intentional API changes.
 
 ## Benchmarks
 

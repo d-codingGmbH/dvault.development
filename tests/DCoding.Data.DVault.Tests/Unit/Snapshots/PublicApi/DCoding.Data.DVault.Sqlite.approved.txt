@@ -1,0 +1,8 @@
+# DVault public API snapshot
+# Package: DCoding.Data.DVault.Sqlite
+# Assembly: DCoding.Data.DVault.Sqlite
+# Generated from built assembly output.
+# Update intentionally with: DVAULT_UPDATE_API_SNAPSHOTS=1 dotnet test DVault.slnx --nologo --filter FullyQualifiedName~ApiSurfaceSnapshotTests
+
+type public static class DCoding.Data.DVault.DVaultSqliteServiceCollectionExtensions
+  method public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddDVaultSqlite(this Microsoft.Extensions.DependencyInjection.IServiceCollection services)
