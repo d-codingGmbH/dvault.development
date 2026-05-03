@@ -17,5 +17,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
+    <ProjectReference Include="../../src/DCoding.Data.DVault.Sqlite/DCoding.Data.DVault.Sqlite.csproj" />
   </ItemGroup>
 </Project>

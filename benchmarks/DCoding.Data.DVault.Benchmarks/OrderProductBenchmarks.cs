@@ -275,7 +275,7 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
         .UseSqlite(database.ConnectionString)
         .Options;
     var services = new ServiceCollection();
-    services.AddDVault();
+    services.AddDVaultSqlite();
 
     using var provider = services.BuildServiceProvider(validateScopes: true);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();

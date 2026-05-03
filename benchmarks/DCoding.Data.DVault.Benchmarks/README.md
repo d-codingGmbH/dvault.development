@@ -6,7 +6,7 @@ Run the local scenario comparison benchmarks from the repository root:
 dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --iterations 1 --warmup 0
 ```
 
-The executable uses SQLite temporary files only. It does not require Postgres, Docker, `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, or checked-in machine-specific secrets.
+The executable uses SQLite temporary files and registers `DCoding.Data.DVault.Sqlite` so DVault timings include the SQLite provider save strategy. It does not require Postgres, Docker, `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, or checked-in machine-specific secrets.
 Increase `--iterations` and `--warmup` locally when collecting steadier timing numbers.
 
 To emit documentation-ready artifacts from the same benchmark execution, pass an output directory:

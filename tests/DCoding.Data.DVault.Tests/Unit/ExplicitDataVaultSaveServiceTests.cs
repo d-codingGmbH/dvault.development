@@ -33,6 +33,19 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   }
 
   [Fact]
+  public void ProviderPackagesRegisterCoreSaveService() {
+    AssertProviderRegistration(services => services.AddDVaultPostgres(), expectProviderStrategy: false);
+    AssertProviderRegistration(services => services.AddDVaultSqlServer(), expectProviderStrategy: false);
+    AssertProviderRegistration(services => services.AddDVaultOracle(), expectProviderStrategy: false);
+    AssertProviderRegistration(services => services.AddDVaultMySql(), expectProviderStrategy: false);
+  }
+
+  [Fact]
+  public void SqliteProviderPackageRegistersOptimizedSaveStrategy() {
+    AssertProviderRegistration(services => services.AddDVaultSqlite(), expectProviderStrategy: true);
+  }
+
+  [Fact]
   public void SaveRequestKeepsExplicitMetadataBoundaryDeterministic() {
     var suppliedTimestamp = new DateTimeOffset(2026, 4, 29, 12, 15, 0, TimeSpan.FromHours(2));
     var hub = new DataVaultHubMetadata("Customer", ["Customer Id"]);
@@ -93,6 +106,24 @@ public sealed class ExplicitDataVaultSaveServiceTests {
         DataVaultBulkSaveRequest request,
         CancellationToken cancellationToken = default) {
       throw new NotSupportedException();
+    }
+  }
+
+  private static void AssertProviderRegistration(
+      Action<IServiceCollection> configure,
+      bool expectProviderStrategy) {
+    var services = new ServiceCollection();
+
+    configure(services);
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+
+    Assert.NotNull(provider.GetRequiredService<IDataVaultSaveService>());
+    if (expectProviderStrategy) {
+      Assert.NotEmpty(provider.GetServices<IDataVaultProviderSaveStrategy>());
+    }
+    else {
+      Assert.Empty(provider.GetServices<IDataVaultProviderSaveStrategy>());
     }
   }
 }

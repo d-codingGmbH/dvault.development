@@ -60,7 +60,13 @@ public sealed class DefaultDataVaultNamingPolicy : IDataVaultNamingPolicy {
     return DefaultPolicy.NormalizeColumnName(value);
   }
 
-  internal static IReadOnlyList<string> GetColumnNames(
+  /// <summary>
+  /// Produces collision-safe default column names for generated Data Vault properties.
+  /// </summary>
+  /// <param name="propertyNames">The logical property names to normalize.</param>
+  /// <param name="additionalUnsafeColumnNames">Additional column names that generated names must not collide with.</param>
+  /// <returns>The normalized, collision-safe column names.</returns>
+  public static IReadOnlyList<string> GetColumnNames(
       IEnumerable<string?> propertyNames,
       IEnumerable<string>? additionalUnsafeColumnNames = null) {
     return DefaultPolicy.GetColumnNames(propertyNames, additionalUnsafeColumnNames);

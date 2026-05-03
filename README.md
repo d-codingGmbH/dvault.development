@@ -109,6 +109,20 @@ public static class SalesVaultWriter {
 
 `DataVaultSaveRequest` keeps the load timestamp and record source explicit. DVault does not intercept `SaveChanges`; callers choose when to write vault rows. For loaders that already have multiple source batches prepared, `DataVaultBulkSaveRequest` processes ordered save requests through the same service and keeps satellite HashDiff state in memory across the batch.
 
+### Provider Packages
+
+`DCoding.Data.DVault` contains the provider-neutral API, metadata model, naming conventions, stable hashing, and EF fallback writer. Provider packages extend that base registration without changing the write API:
+
+```csharp
+services.AddDVaultSqlite();
+services.AddDVaultPostgres();
+services.AddDVaultSqlServer();
+services.AddDVaultOracle();
+services.AddDVaultMySql();
+```
+
+`DCoding.Data.DVault.Sqlite` currently registers the optimized SQLite set-based save strategy. The PostgreSQL, SQL Server, Oracle, and MySQL packages provide stable package and startup boundaries and use the provider-neutral fallback until their dialect-specific writers are implemented.
+
 ### Query generated tables
 
 ```csharp
@@ -133,6 +147,7 @@ The shared-type table names and columns in this quickstart follow DVault's defau
 - `DVault.slnx`: Canonical root solution file for build and test automation.
 - `src/DCoding.Data/`: Non-packable build anchor for the `DCoding.Data` source-root namespace family.
 - `src/DCoding.Data.DVault/`: Main library project. The NuGet package id and root namespace are `DCoding.Data.DVault`.
+- `src/DCoding.Data.DVault.*`: Provider extension packages for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL.
 - `tests/DCoding.Data.DVault.Tests/`: Unit, integration, and shared test projects for DVault.
 - `examples/`: Future runnable examples for DVault APIs.
 - `benchmarks/`: Local performance benchmark projects.
