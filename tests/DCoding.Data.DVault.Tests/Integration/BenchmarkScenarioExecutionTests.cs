@@ -8,21 +8,7 @@ namespace DCoding.Data.DVault.Tests.Integration;
 public sealed class BenchmarkScenarioExecutionTests {
   [Fact]
   public async Task LocalBenchmarkRunnerExecutesCustomerAndOrderComparisonsThroughSqlite() {
-    var originalOutput = Console.Out;
-    using var output = new StringWriter(CultureInfo.InvariantCulture);
-
-    try {
-      Console.SetOut(output);
-
-      await BenchmarkRunner
-          .RunAsync(new BenchmarkOptions(1, 0), CancellationToken.None)
-          .ConfigureAwait(false);
-    }
-    finally {
-      Console.SetOut(originalOutput);
-    }
-
-    var text = output.ToString();
+    var text = await RunBenchmarkAndCaptureOutputAsync(new BenchmarkOptions(1, 0)).ConfigureAwait(false);
 
     Assert.Contains("Provider: SQLite local temporary files", text);
     Assert.Contains("Postgres, Docker, and external services are not required.", text);
@@ -48,9 +34,10 @@ public sealed class BenchmarkScenarioExecutionTests {
         "DVaultBenchmarkArtifacts-" + Guid.NewGuid().ToString("N"));
 
     try {
-      await BenchmarkRunner
-          .RunAsync(new BenchmarkOptions(1, 0, artifactDirectory), CancellationToken.None)
+      var text = await RunBenchmarkAndCaptureOutputAsync(new BenchmarkOptions(1, 0, artifactDirectory))
           .ConfigureAwait(false);
+
+      Assert.Contains("Wrote benchmark artifacts:", text);
 
       var markdownPath = Path.Combine(artifactDirectory, "benchmark-summary.md");
       var csvPath = Path.Combine(artifactDirectory, "benchmark-summary.csv");
@@ -123,5 +110,23 @@ public sealed class BenchmarkScenarioExecutionTests {
         Directory.Delete(artifactDirectory, recursive: true);
       }
     }
+  }
+
+  private static async Task<string> RunBenchmarkAndCaptureOutputAsync(BenchmarkOptions options) {
+    var originalOutput = Console.Out;
+    using var output = new StringWriter(CultureInfo.InvariantCulture);
+
+    try {
+      Console.SetOut(output);
+
+      await BenchmarkRunner
+          .RunAsync(options, CancellationToken.None)
+          .ConfigureAwait(false);
+    }
+    finally {
+      Console.SetOut(originalOutput);
+    }
+
+    return output.ToString();
   }
 }

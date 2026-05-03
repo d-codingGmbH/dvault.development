@@ -4,15 +4,15 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 
 ## Installation
 
-DVault is currently consumed from source. Before running the quickstart, add a project reference from your .NET 10 application or library project to the DVault library project in this repository:
+DVault is currently consumed from source. Before running the quickstart, add a project reference from your .NET 10 application or library project to the DVault library project in your local DVault checkout:
 
 ```xml
 <ItemGroup>
-  <ProjectReference Include="../DVault2/src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
+  <ProjectReference Include="../path-to-dvault/src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
 </ItemGroup>
 ```
 
-Adjust the relative path to match your solution layout; it must point at `src/DCoding.Data.DVault/DCoding.Data.DVault.csproj`. The root `DVault.slnx` already includes this project for repository build and test automation.
+Replace `../path-to-dvault` with the relative path from your project file to the DVault checkout; it must point at `src/DCoding.Data.DVault/DCoding.Data.DVault.csproj`. The root `DVault.slnx` already includes this project for repository build and test automation.
 
 NuGet installation is future post-publication guidance. The package id is `DCoding.Data.DVault`, but live `dotnet add package` commands and version examples should wait until the package has been published.
 

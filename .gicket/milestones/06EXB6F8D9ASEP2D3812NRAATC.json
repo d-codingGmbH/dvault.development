@@ -3,6 +3,6 @@
   "milestoneId": "06EXB6F8D9ASEP2D3812NRAATC",
   "name": "EF integration MVP",
   "description": "Entity Framework integration and first working Data Vault persistence flow.",
-  "status": "planned",
+  "status": "done",
   "createdAt": "2026-04-28T19:38:46.7624539Z"
 }
