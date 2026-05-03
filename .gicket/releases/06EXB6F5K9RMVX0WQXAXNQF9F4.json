@@ -3,6 +3,6 @@
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "name": "v0.4.0-nuget-readiness",
   "description": "Quality gates, CI, package metadata, and NuGet publication readiness without automatic publishing.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-04-28T19:38:46.0424873Z"
 }
