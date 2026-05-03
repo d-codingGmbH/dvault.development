@@ -3,7 +3,7 @@
   "ticket-id": "06EXB80FPE3REH11RQ1YR6BW1G",
   "ticket-type": "task",
   "title": "Task: Add unit test categories for metadata, hashing, and provider registration",
-  "revision": "06EYWSKY3VR2JGR361TVY4Q0DC",
+  "revision": "06EYXGVGKBKQHPYY6RPWRTSJZ0",
   "status": "done",
   "labels": [
     "area/testing",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "created-at": "2026-04-28T19:45:30.1547839Z",
-  "updated-at": "2026-05-03T15:13:07.6142783Z"
+  "updated-at": "2026-05-03T16:54:39.0020000Z"
 }

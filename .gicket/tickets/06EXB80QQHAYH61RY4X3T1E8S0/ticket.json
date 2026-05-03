@@ -3,7 +3,7 @@
   "ticket-id": "06EXB80QQHAYH61RY4X3T1E8S0",
   "ticket-type": "task",
   "title": "Task: Add provider integration test categories",
-  "revision": "06EYX7GFCZSBGQ07JEX0SK4WRW",
+  "revision": "06EYXGVMKP4HDFFYPANS6NZ6FM",
   "status": "done",
   "labels": [
     "area/testing",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "created-at": "2026-04-28T19:45:32.2006557Z",
-  "updated-at": "2026-05-03T16:13:49.2877121Z"
+  "updated-at": "2026-05-03T16:54:40.0290000Z"
 }
