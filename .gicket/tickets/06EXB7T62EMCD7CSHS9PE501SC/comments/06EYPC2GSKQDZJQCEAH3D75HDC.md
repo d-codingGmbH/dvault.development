@@ -1,21 +1,20 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the story around the existing repo-local benchmark harness in `benchmarks/DCoding.Data.DVault.Benchmarks`, ratified the SQLite-only comparable-harness baseline and deterministic artifact contract, and noted the existing child split via `parentOf` relations to 06EXB7TE0806E7EY5ZBATHQNK8 and 06EXB7TP9PF2XFRQ9MG7CJQR10. No new child tickets or planning documents were created in this run.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - V1 does not need BenchmarkDotNet specifically; the accepted baseline is the existing repeatable repo-local executable harness under `benchmarks/DCoding.Data.DVault.Benchmarks`.
 - The benchmark harness scope is SQLite local temporary files only and explicitly excludes Postgres, Docker, external services, and machine-specific secrets.
 - Documentation-ready output is concretized as deterministic `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` artifacts from a single benchmark run.
 - `Results distinguish normal EF and DVault scenarios` means the output must report separate baseline rows for `conventional-ef` and `dvault-explicit-save` for each required scenario and include persisted-outcome summaries that make the storage-shape difference visible.
 - The story already has two bounded child relations (`parentOf` to 06EXB7TE0806E7EY5ZBATHQNK8 and 06EXB7TP9PF2XFRQ9MG7CJQR10); this refinement keeps the parent focused on shared harness and artifact expectations rather than creating more split tickets.
 
-### Scope In
+Scope In
 - A repo-local benchmark executable project under `benchmarks/DCoding.Data.DVault.Benchmarks` that is wired into `DVault.slnx` and runnable from the repository root.
 - SQLite comparison execution for both `conventional-ef` and `dvault-explicit-save` baselines.
 - Customer profile history comparison using the fixed `C-100` two-event contract and DVault persisted-outcome shape.
@@ -23,67 +22,39 @@
 - Deterministic markdown, CSV, and JSON summary artifact generation for documentation use.
 - Automated coverage that proves benchmark execution and artifact emission for the required scenarios.
 
-### Scope Out
+Scope Out
 - Adding Postgres benchmarks or non-SQLite provider comparisons in this ticket.
 - Changing DVault to a `SaveChanges` interception write model or otherwise replacing the explicit save-service benchmark path.
 - Setting absolute performance thresholds, CI perf gates, or pass-fail timing budgets.
 - Publishing or archiving benchmark artifacts outside the produced files themselves.
 - Reworking the v1 harness around BenchmarkDotNet unless a later ticket explicitly requires that change.
 
-## Acceptance Criteria
-- Running `dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --iterations 1 --warmup 0` executes the four required baselines: `customer-profile-history` with `conventional-ef`, `customer-profile-history` with `dvault-explicit-save`, `order-product-fulfillment-history` with `conventional-ef`, and `order-product-fulfillment-history` with `dvault-explicit-save`.
-- The customer profile comparison uses the fixed `C-100` two-event history and reports the persisted-outcome distinction of 2 plain EF history rows versus 1 customer hub and 2 customer profile satellite rows.
-- The order-product comparison uses the reduced `O-1000`/`SKU-COFFEE` contract and reports the persisted-outcome distinction of 1 order, 1 product, 1 relationship, and 2 fulfillment history rows versus 1 order hub, 1 product hub, 1 link, and 2 fulfillment satellite rows.
-- When `--output` is supplied, the run emits deterministic `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` files that include benchmark options plus provider, runtime, and hardware context needed for documentation reuse.
-- The benchmark run is executable without Postgres, Docker, or machine-specific secrets.
-
-## Definition of Done
-- The benchmark project remains in the repository benchmark layout and solution entry rather than as an ad hoc local script.
-- Automated coverage proves both console execution and artifact generation for the required scenarios and baselines.
-- Usage documentation for the benchmark command and artifact behavior is present in the benchmark project README or equivalent repository documentation.
-- Shared implementation standards and repository formatting rules remain satisfied.
-
-## Implementation Notes
-- Use the existing repo-local harness CLI surface with `--iterations`, `--warmup`, and optional `--output`; there is no v1 requirement to switch to BenchmarkDotNet.
-- Keep the provider baseline aligned with the current SQLite-only profile and temporary-file execution model.
-- The DVault side should continue to benchmark the explicit `IDataVaultSaveService` path rather than interception-based writes, matching the current architecture note.
-- Reuse the fixed customer profile comparison contract from `docs/plans/customer-profile-comparison-contract-06EXB7RY-06EXB7S6.md`.
-- Keep the order-product comparison contract aligned with the reduced constants already fixed in `benchmarks/DCoding.Data.DVault.Benchmarks/ScenarioContracts.cs`.
-- Preserve the captured provider and hardware/runtime context with any copied benchmark tables or linked artifacts so documentation does not separate timings from their execution environment.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the SQLite v1 baseline is stable, do we want later tickets for additional providers or environments?
 - Do we want a later documentation or operations ticket to persist selected benchmark summary artifacts under `docs/` or as ticket attachments for long-lived historical comparison?
 - After the blocking dependency from 06EXB7GYQKBZ8FMQN6YDYCKATG is fully integrated, do we want one reference-machine rerun to capture the first publishable benchmark artifact set?
 
-## Risks
+Risks
 - Timing numbers are machine-specific; if benchmark tables are copied without the captured provider, runtime, and hardware context, the documentation can misrepresent the results.
 - The v1 harness intentionally measures SQLite local temporary-file behavior only, so readers may overgeneralize the results to providers or concurrency shapes the current DVault profile does not support.
 
-## Split Recommendations
+Split recommendations
 - No additional split is needed during PO refinement; keep the existing child split to 06EXB7TE0806E7EY5ZBATHQNK8 and 06EXB7TP9PF2XFRQ9MG7CJQR10 and keep this parent story focused on the shared harness and artifact contract.
 - If later expansion is needed, split by new provider or environment coverage and by artifact-publication work rather than reopening the fixed SQLite v1 comparison scenarios.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Summary
-Measure simple workloads for normal EF and DVault variants.
-
-## Scope
-- Use BenchmarkDotNet or a comparable repeatable harness.
-- Include Sqlite write/read scenarios.
-
-## Acceptance Criteria
-- Benchmarks produce artifacts suitable for documentation.
-- Results distinguish normal EF and DVault scenarios.
-
-## Definition of Done
-- The work satisfies the acceptance criteria.
-- Shared standards from the charter attachment are followed.
+Run mode
+- apply: planned updates are applied after this comment

@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7TE0806E7EY5ZBATHQNK8",
   "ticket-type": "task",
   "title": "Task: Add benchmark project for scenario comparisons",
-  "revision": "06EYNZPK8PEJKDYN8RC61AG8WR",
+  "revision": "06EYPM1T071R37AMVWEBD9FV8M",
   "status": "done",
   "labels": [
     "area/benchmarks",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:40.5602986Z",
-  "updated-at": "2026-05-02T23:21:02.0216935Z"
+  "updated-at": "2026-05-03T00:49:56.7370000Z"
 }

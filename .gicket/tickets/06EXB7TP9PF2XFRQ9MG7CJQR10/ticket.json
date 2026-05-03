@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7TP9PF2XFRQ9MG7CJQR10",
   "ticket-type": "task",
   "title": "Task: Emit benchmark artifacts suitable for documentation",
-  "revision": "06EYPB1JEMCYQZ24VKCV5K07XW",
+  "revision": "06EYPM1Y55YEN9K3647JS48PTR",
   "status": "done",
   "labels": [
     "area/benchmarks",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:42.7031018Z",
-  "updated-at": "2026-05-03T00:10:35.5098522Z"
+  "updated-at": "2026-05-03T00:49:57.8010000Z"
 }
