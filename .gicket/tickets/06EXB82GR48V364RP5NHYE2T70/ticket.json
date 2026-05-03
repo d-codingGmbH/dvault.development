@@ -3,7 +3,7 @@
   "ticket-id": "06EXB82GR48V364RP5NHYE2T70",
   "ticket-type": "task",
   "title": "Task: Document publication criteria and manual release steps",
-  "revision": "06EYVXFMHY1H5TSF1NK2P68WVG",
+  "revision": "06EYZ1192BENYKCPK3FWKTN7TR",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "created-at": "2026-04-28T19:45:46.8053861Z",
-  "updated-at": "2026-05-03T13:10:12.3677842Z"
+  "updated-at": "2026-05-03T20:25:09.1380000Z"
 }

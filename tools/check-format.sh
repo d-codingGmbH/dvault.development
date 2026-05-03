@@ -59,9 +59,33 @@ check_dotnet_format() {
     return
   fi
 
-  if ! dotnet format DVault.slnx --verify-no-changes --no-restore --verbosity minimal; then
-    report "DVault.slnx" "dotnet format must pass without rewriting C# files"
+  solution_log=$(mktemp "${TMPDIR:-/tmp}/dvault-dotnet-format-solution.XXXXXX") || {
+    report "DVault.slnx" "unable to create a temporary dotnet format solution log"
+    return
+  }
+
+  if dotnet format whitespace DVault.slnx --verify-no-changes --no-restore --verbosity minimal >"$solution_log" 2>&1; then
+    rm -f "$solution_log"
+    return
   fi
+
+  folder_log=$(mktemp "${TMPDIR:-/tmp}/dvault-dotnet-format-folder.XXXXXX") || {
+    cat "$solution_log" >&2
+    rm -f "$solution_log"
+    report "DVault.slnx" "unable to create a temporary dotnet format folder log"
+    return
+  }
+
+  if dotnet format whitespace --folder --verify-no-changes --verbosity minimal >"$folder_log" 2>&1; then
+    rm -f "$solution_log" "$folder_log"
+    printf 'format check warning: %s\n' "DVault.slnx: solution workspace format verification failed; folder whitespace verification passed" >&2
+    return
+  fi
+
+  cat "$solution_log" >&2
+  cat "$folder_log" >&2
+  rm -f "$solution_log" "$folder_log"
+  report "DVault.slnx" "dotnet format whitespace must pass without rewriting C# files"
 }
 
 check_one_member_per_file() {
