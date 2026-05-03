@@ -204,9 +204,9 @@ internal static class DataVaultEfMetadataTranslator {
             NamingPolicy.GetIndexName(new DataVaultIndexNameContext(
                 DataVaultIndexKind.SatelliteParent,
                 tableName,
-                [parentHashKeyColumnName],
+                [parentHashKeyColumnName, loadTimestampColumnName],
                 IsUnique: false)),
-            [parentHashKeyColumnName],
+            [parentHashKeyColumnName, loadTimestampColumnName],
             IsUnique: false),
     };
     var primaryKey = new KeyProjection(

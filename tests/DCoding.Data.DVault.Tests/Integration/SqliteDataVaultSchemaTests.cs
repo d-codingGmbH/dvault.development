@@ -57,8 +57,8 @@ public sealed class SqliteDataVaultSchemaTests {
         ["CustomerHashKey", "HashDiff", "LoadTimestamp", "RecordSource", "EmailAddress"],
         "PkSatCustomerContactCustomerHashKeyLoadTimestamp",
         ["CustomerHashKey", "LoadTimestamp"],
-        "IxSatCustomerContactSatelliteParentCustomerHashKey",
-        ["CustomerHashKey"],
+        "IxSatCustomerContactSatelliteParentCustomerHashKeyLoadTimestamp",
+        ["CustomerHashKey", "LoadTimestamp"],
         expectedIndexUnique: false);
     AssertTable(
         connection,
@@ -66,8 +66,8 @@ public sealed class SqliteDataVaultSchemaTests {
         ["CustomerOrderHashKey", "HashDiff", "LoadTimestamp", "RecordSource", "StateCode"],
         "PkSatCustomerOrderStateCustomerOrderHashKeyLoadTimestamp",
         ["CustomerOrderHashKey", "LoadTimestamp"],
-        "IxSatCustomerOrderStateSatelliteParentCustomerOrderHashKey",
-        ["CustomerOrderHashKey"],
+        "IxSatCustomerOrderStateSatelliteParentCustomerOrderHashKeyLoadTimestamp",
+        ["CustomerOrderHashKey", "LoadTimestamp"],
         expectedIndexUnique: false);
   }
 

@@ -293,8 +293,8 @@ public sealed class NormalEfOrderProductSqliteTests {
         ["OrderProductHashKey", "HashDiff", "LoadTimestamp", "RecordSource", "AllocationStatus", "WarehouseCode"],
         "PkSatOrderProductFulfillmentOrderProductHashKeyLoadTimestamp",
         ["OrderProductHashKey", "LoadTimestamp"],
-        "IxSatOrderProductFulfillmentSatelliteParentOrderProductHashKey",
-        ["OrderProductHashKey"],
+        "IxSatOrderProductFulfillmentSatelliteParentOrderProductHashKeyLoadTimestamp",
+        ["OrderProductHashKey", "LoadTimestamp"],
         expectedIndexUnique: false);
   }
 

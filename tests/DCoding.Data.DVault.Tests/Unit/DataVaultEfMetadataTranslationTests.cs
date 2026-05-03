@@ -70,7 +70,7 @@ public sealed class DataVaultEfMetadataTranslationTests {
         "SatCustomerContact",
         ["CustomerHashKey", "HashDiff", "LoadTimestamp", "RecordSource", "EmailAddress"],
         "PkSatCustomerContactCustomerHashKeyLoadTimestamp",
-        "IxSatCustomerContactSatelliteParentCustomerHashKey");
+        "IxSatCustomerContactSatelliteParentCustomerHashKeyLoadTimestamp");
   }
 
   [Fact]
@@ -127,7 +127,11 @@ public sealed class DataVaultEfMetadataTranslationTests {
         ["CustomerOrderHashKey", "HashDiff", "LoadTimestamp", "RecordSource", "StateCode"],
         PropertyNamesInOrdinalOrder(satellite));
     AssertPrimaryKey(satellite, "PkSatCustomerOrderStateCustomerOrderHashKeyLoadTimestamp", ["CustomerOrderHashKey", "LoadTimestamp"]);
-    AssertIndex(satellite, "IxSatCustomerOrderStateSatelliteParentCustomerOrderHashKey", ["CustomerOrderHashKey"], isUnique: false);
+    AssertIndex(
+        satellite,
+        "IxSatCustomerOrderStateSatelliteParentCustomerOrderHashKeyLoadTimestamp",
+        ["CustomerOrderHashKey", "LoadTimestamp"],
+        isUnique: false);
   }
 
   [Fact]
@@ -235,7 +239,11 @@ public sealed class DataVaultEfMetadataTranslationTests {
     AssertProperty(satellite, "RecordSource", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.RecordSource);
     AssertProperty(satellite, "EmailAddress", DataVaultPropertyRole.Payload, expectedTechnicalRole: null);
     AssertPrimaryKey(satellite, "PkSatCustomerContactCustomerHashKeyLoadTimestamp", ["CustomerHashKey", "LoadTimestamp"]);
-    AssertIndex(satellite, "IxSatCustomerContactSatelliteParentCustomerHashKey", ["CustomerHashKey"], isUnique: false);
+    AssertIndex(
+        satellite,
+        "IxSatCustomerContactSatelliteParentCustomerHashKeyLoadTimestamp",
+        ["CustomerHashKey", "LoadTimestamp"],
+        isUnique: false);
     AssertNoRelationships(satellite);
   }
 
