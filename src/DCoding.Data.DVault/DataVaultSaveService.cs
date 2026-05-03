@@ -800,7 +800,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       DbContext dbContext,
       IReadOnlyList<SatelliteSavePlan> plans,
       CancellationToken cancellationToken) {
-    var results = new SaveOperationResult[plans.Length];
+    var results = new SaveOperationResult[plans.Count];
     var rowsToWrite = new List<SatelliteSavePlan>();
 
     foreach (var group in plans.GroupBy(plan => plan.Table)) {
@@ -952,25 +952,23 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     return latestRows;
   }
 
-  private static bool AddSatelliteRowIfChanged(
-      DbSet<Dictionary<string, object>> rows,
+  private static bool ShouldWriteSatelliteRow(
       Dictionary<string, LatestSatelliteHashDiff> latestHashDiffs,
       SatelliteSavePlan plan) {
-    if (latestHashDiffs.TryGetValue(plan.ParentHashKey, out var latestHashDiff) &&
-        string.Equals(latestHashDiff.HashDiff, plan.HashDiff, StringComparison.Ordinal)) {
-      return false;
-    }
+    return !latestHashDiffs.TryGetValue(plan.ParentHashKey, out var latestHashDiff) ||
+        !string.Equals(latestHashDiff.HashDiff, plan.HashDiff, StringComparison.Ordinal);
+  }
 
-    rows.Add(plan.Row);
-    if (!latestHashDiffs.TryGetValue(plan.ParentHashKey, out latestHashDiff) ||
+  private static void TrackLatestSatelliteHashDiff(
+      Dictionary<string, LatestSatelliteHashDiff> latestHashDiffs,
+      SatelliteSavePlan plan) {
+    if (!latestHashDiffs.TryGetValue(plan.ParentHashKey, out var latestHashDiff) ||
         plan.LoadTimestamp >= latestHashDiff.LoadTimestamp) {
       latestHashDiffs[plan.ParentHashKey] = new LatestSatelliteHashDiff(
           plan.ParentHashKey,
           plan.HashDiff,
           plan.LoadTimestamp);
     }
-
-    return true;
   }
 
   private static bool TryCreateLatestSatelliteHashDiff(
@@ -1033,6 +1031,15 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
 
   private sealed record SaveOperationResult(DataVaultSavedRecord SavedRecord, bool RowWritten);
 
+  private sealed record UniqueTableProjection(string TableName, string HashKeyColumnName);
+
+  private sealed record UniqueRowSavePlan(
+      UniqueTableProjection Table,
+      string HashKey,
+      Dictionary<string, object> Row,
+      DataVaultSavedRecord SavedRecord,
+      int Ordinal);
+
   private sealed record SatelliteTableProjection(
       string TableName,
       string ParentHashKeyColumnName,
@@ -1048,5 +1055,18 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       Dictionary<string, object> Row,
       DataVaultSavedRecord SavedRecord);
 
+  private sealed record FilteredSatelliteSavePlans(
+      IReadOnlyList<SatelliteSavePlan> RowsToWrite,
+      IReadOnlyList<SaveOperationResult> Results);
+
   private sealed record LatestSatelliteHashDiff(string ParentHashKey, string HashDiff, DateTimeOffset LoadTimestamp);
+
+  private sealed record SqliteInsertRow(string TableName, Dictionary<string, object> Values);
+
+  private sealed record SqliteInsertRowShape(string TableName, string ColumnSignature);
+
+  private enum SqliteInsertConflictBehavior {
+    Fail,
+    Ignore,
+  }
 }
