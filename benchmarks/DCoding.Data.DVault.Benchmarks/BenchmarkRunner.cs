@@ -8,6 +8,8 @@ internal static class BenchmarkRunner {
   [
       new CustomerProfilePlainEfBenchmark(),
       new CustomerProfileDataVaultBenchmark(),
+      new CustomerProfileBulkPlainEfBenchmark(),
+      new CustomerProfileBulkDataVaultBenchmark(),
       new OrderProductPlainEfBenchmark(),
       new OrderProductDataVaultBenchmark(),
   ];

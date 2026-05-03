@@ -1,6 +1,11 @@
 using System.Collections.ObjectModel;
+using System.Data;
+using System.Data.Common;
+using System.Globalization;
+using System.Text;
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DCoding.Data.DVault;
 
@@ -18,6 +23,18 @@ public interface IDataVaultSaveService {
   Task<DataVaultSaveResult> SaveAsync(
       DbContext dbContext,
       DataVaultSaveRequest request,
+      CancellationToken cancellationToken = default);
+
+  /// <summary>
+  /// Persists multiple explicit Data Vault save requests as one ordered batch through the supplied Entity Framework context.
+  /// </summary>
+  /// <param name="dbContext">The context whose model has been configured with Data Vault metadata.</param>
+  /// <param name="request">The explicit bulk save request containing the ordered write requests.</param>
+  /// <param name="cancellationToken">A token used to observe cancellation while saving changes.</param>
+  /// <returns>The persisted row summary, including saved hash-key values.</returns>
+  Task<DataVaultSaveResult> SaveAsync(
+      DbContext dbContext,
+      DataVaultBulkSaveRequest request,
       CancellationToken cancellationToken = default);
 }
 
@@ -97,6 +114,39 @@ public sealed class DataVaultSaveRequest {
     foreach (var value in values) {
       if (value is null) {
         throw new ArgumentException("Data Vault save operation collections must not contain null values.", parameterName);
+      }
+    }
+
+    return values;
+  }
+}
+
+/// <summary>
+/// Groups multiple explicit DVault save requests that should be processed as one ordered batch.
+/// </summary>
+public sealed class DataVaultBulkSaveRequest {
+  /// <summary>
+  /// Initializes a new explicit bulk save request.
+  /// </summary>
+  /// <param name="requests">The save requests to process in caller-supplied order.</param>
+  public DataVaultBulkSaveRequest(IEnumerable<DataVaultSaveRequest> requests) {
+    ArgumentNullException.ThrowIfNull(requests);
+
+    Requests = RequireRequests(requests, nameof(requests));
+  }
+
+  /// <summary>
+  /// Gets the save requests processed in caller-supplied order.
+  /// </summary>
+  public IReadOnlyList<DataVaultSaveRequest> Requests { get; }
+
+  private static IReadOnlyList<DataVaultSaveRequest> RequireRequests(
+      IEnumerable<DataVaultSaveRequest> requests,
+      string parameterName) {
+    var values = requests.ToArray();
+    foreach (var value in values) {
+      if (value is null) {
+        throw new ArgumentException("Data Vault bulk save request collections must not contain null values.", parameterName);
       }
     }
 
@@ -303,6 +353,7 @@ public sealed class DataVaultSavedRecord {
 
 internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
+  private const int SqliteMaxCommandParameterCount = 900;
 
   private readonly IStableHashService _stableHashService;
   private readonly IStableHashNormalizer _stableHashNormalizer;
@@ -322,26 +373,50 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(request);
 
+    return await SaveRequestsAsync(dbContext, [request], cancellationToken).ConfigureAwait(false);
+  }
+
+  public async Task<DataVaultSaveResult> SaveAsync(
+      DbContext dbContext,
+      DataVaultBulkSaveRequest request,
+      CancellationToken cancellationToken = default) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(request);
+
+    return await SaveRequestsAsync(dbContext, request.Requests, cancellationToken).ConfigureAwait(false);
+  }
+
+  private async Task<DataVaultSaveResult> SaveRequestsAsync(
+      DbContext dbContext,
+      IReadOnlyList<DataVaultSaveRequest> requests,
+      CancellationToken cancellationToken) {
+    if (CanUseSqliteSetBasedSave(dbContext)) {
+      return await SaveRequestsWithSqliteSetBasedAsync(dbContext, requests, cancellationToken)
+          .ConfigureAwait(false);
+    }
+
     var savedRecords = new List<DataVaultSavedRecord>();
     var rowsWritten = 0;
 
-    foreach (var operation in request.HubOperations) {
-      var result = await AddHubAsync(dbContext, request, operation, cancellationToken).ConfigureAwait(false);
-      savedRecords.Add(result.SavedRecord);
-      if (result.RowWritten) {
-        rowsWritten++;
+    foreach (var request in requests) {
+      foreach (var operation in request.HubOperations) {
+        var result = await AddHubAsync(dbContext, request, operation, cancellationToken).ConfigureAwait(false);
+        savedRecords.Add(result.SavedRecord);
+        if (result.RowWritten) {
+          rowsWritten++;
+        }
+      }
+
+      foreach (var operation in request.LinkOperations) {
+        var result = await AddLinkAsync(dbContext, request, operation, cancellationToken).ConfigureAwait(false);
+        savedRecords.Add(result.SavedRecord);
+        if (result.RowWritten) {
+          rowsWritten++;
+        }
       }
     }
 
-    foreach (var operation in request.LinkOperations) {
-      var result = await AddLinkAsync(dbContext, request, operation, cancellationToken).ConfigureAwait(false);
-      savedRecords.Add(result.SavedRecord);
-      if (result.RowWritten) {
-        rowsWritten++;
-      }
-    }
-
-    var satelliteResults = await AddSatellitesAsync(dbContext, request, cancellationToken).ConfigureAwait(false);
+    var satelliteResults = await AddSatellitesAsync(dbContext, requests, cancellationToken).ConfigureAwait(false);
     foreach (var result in satelliteResults) {
       savedRecords.Add(result.SavedRecord);
       if (result.RowWritten) {
@@ -354,11 +429,226 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     return new DataVaultSaveResult(rowsWritten, savedRecords);
   }
 
+  private async Task<DataVaultSaveResult> SaveRequestsWithSqliteSetBasedAsync(
+      DbContext dbContext,
+      IReadOnlyList<DataVaultSaveRequest> requests,
+      CancellationToken cancellationToken) {
+    var uniquePlans = CreateUniqueRowSavePlans(requests);
+    var satellitePlans = CreateSatelliteSavePlans(requests);
+    var filteredSatellitePlans = await FilterSatellitePlansAsync(dbContext, satellitePlans, cancellationToken)
+        .ConfigureAwait(false);
+    var savedRecords = uniquePlans
+        .Select(plan => plan.SavedRecord)
+        .Concat(filteredSatellitePlans.Results.Select(result => result.SavedRecord))
+        .ToArray();
+    var rowsWritten = await ExecuteSqliteInsertRowsAsync(
+        dbContext,
+        uniquePlans.Select(plan => new SqliteInsertRow(plan.Table.TableName, plan.Row)),
+        SqliteInsertConflictBehavior.Ignore,
+        cancellationToken).ConfigureAwait(false);
+
+    rowsWritten += await ExecuteSqliteInsertRowsAsync(
+        dbContext,
+        filteredSatellitePlans.RowsToWrite.Select(plan => new SqliteInsertRow(plan.Table.TableName, plan.Row)),
+        SqliteInsertConflictBehavior.Fail,
+        cancellationToken).ConfigureAwait(false);
+
+    return new DataVaultSaveResult(rowsWritten, savedRecords);
+  }
+
+  private IReadOnlyList<UniqueRowSavePlan> CreateUniqueRowSavePlans(IReadOnlyList<DataVaultSaveRequest> requests) {
+    var plans = new List<UniqueRowSavePlan>();
+
+    foreach (var request in requests) {
+      plans.AddRange(request.HubOperations.Select(operation => CreateHubSavePlan(request, operation)));
+      plans.AddRange(request.LinkOperations.Select(operation => CreateLinkSavePlan(request, operation)));
+    }
+
+    return plans
+        .Select((plan, index) => plan with { Ordinal = index })
+        .ToArray();
+  }
+
+  private static bool CanUseSqliteSetBasedSave(DbContext dbContext) {
+    return string.Equals(dbContext.Database.ProviderName, "Microsoft.EntityFrameworkCore.Sqlite", StringComparison.Ordinal) &&
+        !dbContext.ChangeTracker
+            .Entries()
+            .Any(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
+  }
+
+  private static async Task<int> ExecuteSqliteInsertRowsAsync(
+      DbContext dbContext,
+      IEnumerable<SqliteInsertRow> rows,
+      SqliteInsertConflictBehavior conflictBehavior,
+      CancellationToken cancellationToken) {
+    var rowArray = rows.ToArray();
+    if (rowArray.Length == 0) {
+      return 0;
+    }
+
+    var connection = dbContext.Database.GetDbConnection();
+    var shouldCloseConnection = connection.State != ConnectionState.Open;
+    if (shouldCloseConnection) {
+      await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    DbTransaction? localTransaction = null;
+    var transaction = dbContext.Database.CurrentTransaction?.GetDbTransaction();
+    if (transaction is null) {
+      localTransaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+      transaction = localTransaction;
+    }
+
+    try {
+      var rowsWritten = 0;
+
+      foreach (var group in rowArray.GroupBy(row => new SqliteInsertRowShape(
+          row.TableName,
+          CreateColumnSignature(row.Values.Keys)))) {
+        var columns = group.First().Values.Keys.ToArray();
+        var chunkSize = Math.Max(1, SqliteMaxCommandParameterCount / columns.Length);
+
+        foreach (var chunk in group.Chunk(chunkSize)) {
+          rowsWritten += await ExecuteSqliteInsertChunkAsync(
+              connection,
+              transaction,
+              group.Key.TableName,
+              columns,
+              chunk.Select(row => row.Values).ToArray(),
+              conflictBehavior,
+              cancellationToken).ConfigureAwait(false);
+        }
+      }
+
+      if (localTransaction is not null) {
+        await localTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+      }
+
+      return rowsWritten;
+    }
+    catch {
+      if (localTransaction is not null) {
+        await localTransaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+      }
+
+      throw;
+    }
+    finally {
+      if (localTransaction is not null) {
+        await localTransaction.DisposeAsync().ConfigureAwait(false);
+      }
+
+      if (shouldCloseConnection) {
+        await connection.CloseAsync().ConfigureAwait(false);
+      }
+    }
+  }
+
+  private static async Task<int> ExecuteSqliteInsertChunkAsync(
+      DbConnection connection,
+      DbTransaction transaction,
+      string tableName,
+      IReadOnlyList<string> columns,
+      IReadOnlyList<Dictionary<string, object>> rows,
+      SqliteInsertConflictBehavior conflictBehavior,
+      CancellationToken cancellationToken) {
+    await using var command = connection.CreateCommand();
+    command.Transaction = transaction;
+    command.CommandText = CreateSqliteInsertCommandText(tableName, columns, rows.Count, conflictBehavior);
+
+    var parameterIndex = 0;
+    foreach (var row in rows) {
+      foreach (var column in columns) {
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = CreateSqliteParameterName(parameterIndex);
+        parameter.Value = row[column];
+        command.Parameters.Add(parameter);
+        parameterIndex++;
+      }
+    }
+
+    return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+  }
+
+  private static string CreateSqliteInsertCommandText(
+      string tableName,
+      IReadOnlyList<string> columns,
+      int rowCount,
+      SqliteInsertConflictBehavior conflictBehavior) {
+    var builder = new StringBuilder();
+    builder.Append("INSERT ");
+    if (conflictBehavior == SqliteInsertConflictBehavior.Ignore) {
+      builder.Append("OR IGNORE ");
+    }
+
+    builder.Append("INTO ")
+        .Append(QuoteSqliteIdentifier(tableName))
+        .Append(" (");
+
+    for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++) {
+      if (columnIndex > 0) {
+        builder.Append(", ");
+      }
+
+      builder.Append(QuoteSqliteIdentifier(columns[columnIndex]));
+    }
+
+    builder.Append(") VALUES ");
+
+    var parameterIndex = 0;
+    for (var rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+      if (rowIndex > 0) {
+        builder.Append(", ");
+      }
+
+      builder.Append('(');
+      for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++) {
+        if (columnIndex > 0) {
+          builder.Append(", ");
+        }
+
+        builder.Append(CreateSqliteParameterName(parameterIndex));
+        parameterIndex++;
+      }
+
+      builder.Append(')');
+    }
+
+    return builder.ToString();
+  }
+
+  private static string CreateSqliteParameterName(int index) {
+    return "@p" + index.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private static string QuoteSqliteIdentifier(string identifier) {
+    return "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+  }
+
+  private static string CreateColumnSignature(IEnumerable<string> columns) {
+    return string.Join('\u001f', columns);
+  }
+
   private async Task<SaveOperationResult> AddHubAsync(
       DbContext dbContext,
       DataVaultSaveRequest request,
       DataVaultHubSaveOperation operation,
       CancellationToken cancellationToken) {
+    var plan = CreateHubSavePlan(request, operation);
+    var rowWritten = await AddRowIfMissingAsync(
+        dbContext,
+        plan.Table.TableName,
+        plan.Table.HashKeyColumnName,
+        plan.HashKey,
+        plan.Row,
+        cancellationToken).ConfigureAwait(false);
+
+    return new SaveOperationResult(plan.SavedRecord, rowWritten);
+  }
+
+  private UniqueRowSavePlan CreateHubSavePlan(
+      DataVaultSaveRequest request,
+      DataVaultHubSaveOperation operation) {
     var hub = operation.Metadata;
     var tableName = NamingPolicy.GetHubTableName(new DataVaultHubNameContext(hub.Name));
     var hashKeyColumnName = NamingPolicy.GetTechnicalColumnName(
@@ -386,17 +676,12 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       row.Add(businessKeyColumnNames[index], businessKeyFields[index].Value);
     }
 
-    var rowWritten = await AddRowIfMissingAsync(
-        dbContext,
-        tableName,
-        hashKeyColumnName,
+    return new UniqueRowSavePlan(
+        new UniqueTableProjection(tableName, hashKeyColumnName),
         hashKey,
         row,
-        cancellationToken).ConfigureAwait(false);
-
-    return new SaveOperationResult(
         new DataVaultSavedRecord(DataVaultTableKind.Hub, hub.Name, tableName, hashKey),
-        rowWritten);
+        Ordinal: -1);
   }
 
   private async Task<SaveOperationResult> AddLinkAsync(
@@ -404,6 +689,21 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       DataVaultSaveRequest request,
       DataVaultLinkSaveOperation operation,
       CancellationToken cancellationToken) {
+    var plan = CreateLinkSavePlan(request, operation);
+    var rowWritten = await AddRowIfMissingAsync(
+        dbContext,
+        plan.Table.TableName,
+        plan.Table.HashKeyColumnName,
+        plan.HashKey,
+        plan.Row,
+        cancellationToken).ConfigureAwait(false);
+
+    return new SaveOperationResult(plan.SavedRecord, rowWritten);
+  }
+
+  private UniqueRowSavePlan CreateLinkSavePlan(
+      DataVaultSaveRequest request,
+      DataVaultLinkSaveOperation operation) {
     var link = operation.Metadata;
     var participantNames = link.Participants
         .Select(participant => participant.HubReference.Name)
@@ -435,17 +735,12 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       row.Add(participantHashKeyColumnNames[index], participantHashKeyFields[index].Value);
     }
 
-    var rowWritten = await AddRowIfMissingAsync(
-        dbContext,
-        tableName,
-        linkHashKeyColumnName,
+    return new UniqueRowSavePlan(
+        new UniqueTableProjection(tableName, linkHashKeyColumnName),
         linkHashKey,
         row,
-        cancellationToken).ConfigureAwait(false);
-
-    return new SaveOperationResult(
         new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, tableName, linkHashKey),
-        rowWritten);
+        Ordinal: -1);
   }
 
   private static async Task<bool> AddRowIfMissingAsync(
@@ -478,12 +773,35 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
 
   private async Task<IReadOnlyList<SaveOperationResult>> AddSatellitesAsync(
       DbContext dbContext,
-      DataVaultSaveRequest request,
+      IReadOnlyList<DataVaultSaveRequest> requests,
       CancellationToken cancellationToken) {
-    var plans = request.SatelliteOperations
-        .Select(operation => CreateSatelliteSavePlan(request, operation))
+    var plans = CreateSatelliteSavePlans(requests);
+    var filteredPlans = await FilterSatellitePlansAsync(dbContext, plans, cancellationToken).ConfigureAwait(false);
+
+    foreach (var group in filteredPlans.RowsToWrite.GroupBy(plan => plan.Table)) {
+      var rows = dbContext.Set<Dictionary<string, object>>(group.Key.TableName);
+      foreach (var plan in group) {
+        rows.Add(plan.Row);
+      }
+    }
+
+    return filteredPlans.Results;
+  }
+
+  private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(IReadOnlyList<DataVaultSaveRequest> requests) {
+    return requests
+        .SelectMany(request => request.SatelliteOperations
+            .Select(operation => CreateSatelliteSavePlan(request, operation)))
+        .Select((plan, index) => plan with { Ordinal = index })
         .ToArray();
-    var results = new List<SaveOperationResult>(plans.Length);
+  }
+
+  private static async Task<FilteredSatelliteSavePlans> FilterSatellitePlansAsync(
+      DbContext dbContext,
+      IReadOnlyList<SatelliteSavePlan> plans,
+      CancellationToken cancellationToken) {
+    var results = new SaveOperationResult[plans.Length];
+    var rowsToWrite = new List<SatelliteSavePlan>();
 
     foreach (var group in plans.GroupBy(plan => plan.Table)) {
       var latestHashDiffs = await LoadLatestSatelliteHashDiffsAsync(
@@ -491,15 +809,19 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
           group.Key,
           group.Select(plan => plan.ParentHashKey),
           cancellationToken).ConfigureAwait(false);
-      var rows = dbContext.Set<Dictionary<string, object>>(group.Key.TableName);
 
       foreach (var plan in group) {
-        var rowWritten = AddSatelliteRowIfChanged(rows, latestHashDiffs, plan);
-        results.Add(new SaveOperationResult(plan.SavedRecord, rowWritten));
+        var rowWritten = ShouldWriteSatelliteRow(latestHashDiffs, plan);
+        if (rowWritten) {
+          rowsToWrite.Add(plan);
+          TrackLatestSatelliteHashDiff(latestHashDiffs, plan);
+        }
+
+        results[plan.Ordinal] = new SaveOperationResult(plan.SavedRecord, rowWritten);
       }
     }
 
-    return results;
+    return new FilteredSatelliteSavePlans(rowsToWrite, results);
   }
 
   private static SatelliteSavePlan CreateSatelliteSavePlan(
@@ -547,6 +869,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         operation.ParentHashKey);
 
     return new SatelliteSavePlan(
+        -1,
         table,
         operation.ParentHashKey,
         operation.HashDiff,
@@ -639,10 +962,13 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     }
 
     rows.Add(plan.Row);
-    latestHashDiffs[plan.ParentHashKey] = new LatestSatelliteHashDiff(
-        plan.ParentHashKey,
-        plan.HashDiff,
-        plan.LoadTimestamp);
+    if (!latestHashDiffs.TryGetValue(plan.ParentHashKey, out latestHashDiff) ||
+        plan.LoadTimestamp >= latestHashDiff.LoadTimestamp) {
+      latestHashDiffs[plan.ParentHashKey] = new LatestSatelliteHashDiff(
+          plan.ParentHashKey,
+          plan.HashDiff,
+          plan.LoadTimestamp);
+    }
 
     return true;
   }
@@ -714,6 +1040,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       string LoadTimestampColumnName);
 
   private sealed record SatelliteSavePlan(
+      int Ordinal,
       SatelliteTableProjection Table,
       string ParentHashKey,
       string HashDiff,

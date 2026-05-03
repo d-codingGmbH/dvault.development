@@ -23,7 +23,8 @@ The command creates the output directory when needed and writes deterministic fi
 
 The markdown and JSON artifacts include the SQLite provider statement, benchmark options, OS description, OS and process architecture, processor count, and .NET runtime details. Downstream docs that cite benchmark results must preserve that hardware and provider context with the copied table or linked artifact so machine-specific timings are not separated from the run environment.
 
-The benchmark command executes both required comparisons:
+The benchmark command executes the required comparisons:
 
 - customer profile history: conventional EF rows compared with the DVault hub-plus-satellite flow using the shared `C-100` profile contract
+- customer profile bulk history: conventional EF bulk rows compared with the DVault bulk-save hub-plus-satellite flow using 100 customers and 10 profile states each
 - order-product fulfillment history: conventional EF rows compared with the DVault hub-link-satellite flow using the reduced `O-1000` and `SKU-COFFEE` contract

@@ -107,7 +107,7 @@ public static class SalesVaultWriter {
 }
 ```
 
-`DataVaultSaveRequest` keeps the load timestamp and record source explicit. DVault does not intercept `SaveChanges`; callers choose when to write vault rows.
+`DataVaultSaveRequest` keeps the load timestamp and record source explicit. DVault does not intercept `SaveChanges`; callers choose when to write vault rows. For loaders that already have multiple source batches prepared, `DataVaultBulkSaveRequest` processes ordered save requests through the same service and keeps satellite HashDiff state in memory across the batch.
 
 ### Query generated tables
 
@@ -157,7 +157,7 @@ Run the local SQLite scenario comparison benchmarks from the repository root:
 dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --iterations 1 --warmup 0
 ```
 
-The benchmark executable compares conventional EF and DVault flows for the shared customer profile history contract and the reduced order-product fulfillment history contract. It uses SQLite temporary files by default and does not require Postgres, Docker, or `DVAULT_TEST_POSTGRES_CONNECTION_STRING`.
+The benchmark executable compares conventional EF and DVault flows for the shared customer profile history contract, a larger customer profile bulk-history contract, and the reduced order-product fulfillment history contract. It uses SQLite temporary files by default and does not require Postgres, Docker, or `DVAULT_TEST_POSTGRES_CONNECTION_STRING`.
 Increase `--iterations` and `--warmup` locally when collecting steadier timing numbers.
 
 ## Optional Local Postgres Integration Tests

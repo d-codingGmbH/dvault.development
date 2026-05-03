@@ -49,6 +49,29 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   }
 
   [Fact]
+  public void BulkSaveRequestKeepsCallerSuppliedOrder() {
+    var first = new DataVaultSaveRequest(
+        new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero),
+        "first-source",
+        [],
+        []);
+    var second = new DataVaultSaveRequest(
+        new DateTimeOffset(2026, 4, 29, 11, 15, 0, TimeSpan.Zero),
+        "second-source",
+        [],
+        []);
+    var bulkRequest = new DataVaultBulkSaveRequest([first, second]);
+
+    Assert.Equal([first, second], bulkRequest.Requests);
+  }
+
+  [Fact]
+  public void BulkSaveRequestRejectsNullRequests() {
+    Assert.Throws<ArgumentNullException>(() => new DataVaultBulkSaveRequest(null!));
+    Assert.Throws<ArgumentException>(() => new DataVaultBulkSaveRequest([null!]));
+  }
+
+  [Fact]
   public void SaveOperationsRequireNamedValuesWithoutDuplicates() {
     var hub = new DataVaultHubMetadata("Customer", ["Customer Id"]);
 
@@ -61,6 +84,13 @@ public sealed class ExplicitDataVaultSaveServiceTests {
     public Task<DataVaultSaveResult> SaveAsync(
         DbContext dbContext,
         DataVaultSaveRequest request,
+        CancellationToken cancellationToken = default) {
+      throw new NotSupportedException();
+    }
+
+    public Task<DataVaultSaveResult> SaveAsync(
+        DbContext dbContext,
+        DataVaultBulkSaveRequest request,
         CancellationToken cancellationToken = default) {
       throw new NotSupportedException();
     }

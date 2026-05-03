@@ -462,6 +462,207 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
   }
 
   [Fact]
+  public async Task DefaultSaveServiceCarriesSatelliteHashDiffsAcrossBulkRequests() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"]);
+    var hubLoadTimestamp = new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero);
+    var firstSatelliteTimestamp = new DateTimeOffset(2026, 4, 29, 10, 30, 0, TimeSpan.Zero);
+    var secondSatelliteTimestamp = new DateTimeOffset(2026, 4, 29, 11, 0, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<ExplicitSaveServiceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVault();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    string firstCustomerHashKey;
+    string secondCustomerHashKey;
+
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+
+      var hubResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              hubLoadTimestamp,
+              "crm-import",
+              [
+                  new(customer, [new("Customer Id", "C-100")]),
+                  new(customer, [new("Customer Id", "C-200")]),
+              ],
+              []));
+
+      firstCustomerHashKey = hubResult.SavedRecords[0].HashKey;
+      secondCustomerHashKey = hubResult.SavedRecords[1].HashKey;
+    }
+
+    DataVaultSaveResult bulkResult;
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      bulkResult = await saveService.SaveAsync(
+          context,
+          new DataVaultBulkSaveRequest(
+              [
+                  new(
+                      firstSatelliteTimestamp,
+                      "crm-import",
+                      [],
+                      [],
+                      [
+                          new(contact, firstCustomerHashKey, [new("Email Address", "first@example.test")], "contact-hash-1"),
+                          new(contact, secondCustomerHashKey, [new("Email Address", "second@example.test")], "contact-hash-2"),
+                      ]),
+                  new(
+                      secondSatelliteTimestamp,
+                      "crm-import",
+                      [],
+                      [],
+                      [
+                          new(contact, firstCustomerHashKey, [new("Email Address", "first-replay@example.test")], "contact-hash-1"),
+                          new(contact, secondCustomerHashKey, [new("Email Address", "second-changed@example.test")], "contact-hash-3"),
+                      ]),
+              ]));
+    }
+
+    Assert.Equal(3, bulkResult.RowsWritten);
+    Assert.Equal(4, bulkResult.SavedRecords.Count);
+
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      var rows = await context.Set<Dictionary<string, object>>("SatCustomerContact").AsNoTracking().ToListAsync();
+      var firstCustomerRow = Assert.Single(rows
+          .Where(row => Assert.IsType<string>(row["CustomerHashKey"]) == firstCustomerHashKey));
+      var secondCustomerRows = rows
+          .Where(row => Assert.IsType<string>(row["CustomerHashKey"]) == secondCustomerHashKey)
+          .OrderBy(row => (DateTimeOffset)row["LoadTimestamp"])
+          .ToArray();
+
+      Assert.Equal(3, rows.Count);
+      Assert.Equal(2, secondCustomerRows.Length);
+      AssertSatelliteRow(
+          firstCustomerRow,
+          firstCustomerHashKey,
+          "first@example.test",
+          "contact-hash-1",
+          firstSatelliteTimestamp,
+          "crm-import");
+      AssertSatelliteRow(
+          secondCustomerRows[0],
+          secondCustomerHashKey,
+          "second@example.test",
+          "contact-hash-2",
+          firstSatelliteTimestamp,
+          "crm-import");
+      AssertSatelliteRow(
+          secondCustomerRows[1],
+          secondCustomerHashKey,
+          "second-changed@example.test",
+          "contact-hash-3",
+          secondSatelliteTimestamp,
+          "crm-import");
+    }
+  }
+
+  [Fact]
+  public async Task DefaultSaveServiceKeepsBulkSatelliteLatestHashDiffChronological() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"]);
+    var hubLoadTimestamp = new DateTimeOffset(2026, 4, 29, 10, 0, 0, TimeSpan.Zero);
+    var firstSatelliteTimestamp = new DateTimeOffset(2026, 4, 29, 10, 30, 0, TimeSpan.Zero);
+    var secondSatelliteTimestamp = new DateTimeOffset(2026, 4, 29, 11, 0, 0, TimeSpan.Zero);
+    var thirdSatelliteTimestamp = new DateTimeOffset(2026, 4, 29, 11, 30, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<ExplicitSaveServiceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVault();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    string customerHashKey;
+
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+
+      var hubResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              hubLoadTimestamp,
+              "crm-import",
+              [new(customer, [new("Customer Id", "C-100")])],
+              []));
+      customerHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Customer");
+    }
+
+    DataVaultSaveResult bulkResult;
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      bulkResult = await saveService.SaveAsync(
+          context,
+          new DataVaultBulkSaveRequest(
+              [
+                  new(
+                      secondSatelliteTimestamp,
+                      "crm-change",
+                      [],
+                      [],
+                      [new(contact, customerHashKey, [new("Email Address", "changed@example.test")], "contact-hash-2")]),
+                  new(
+                      firstSatelliteTimestamp,
+                      "crm-import",
+                      [],
+                      [],
+                      [new(contact, customerHashKey, [new("Email Address", "first@example.test")], "contact-hash-1")]),
+                  new(
+                      thirdSatelliteTimestamp,
+                      "crm-return",
+                      [],
+                      [],
+                      [new(contact, customerHashKey, [new("Email Address", "first@example.test")], "contact-hash-1")]),
+              ]));
+    }
+
+    Assert.Equal(3, bulkResult.RowsWritten);
+
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      var rows = (await context.Set<Dictionary<string, object>>("SatCustomerContact")
+          .AsNoTracking()
+          .ToListAsync())
+          .OrderBy(row => (DateTimeOffset)row["LoadTimestamp"])
+          .ToArray();
+
+      Assert.Equal(3, rows.Length);
+      AssertSatelliteRow(
+          rows[0],
+          customerHashKey,
+          "first@example.test",
+          "contact-hash-1",
+          firstSatelliteTimestamp,
+          "crm-import");
+      AssertSatelliteRow(
+          rows[1],
+          customerHashKey,
+          "changed@example.test",
+          "contact-hash-2",
+          secondSatelliteTimestamp,
+          "crm-change");
+      AssertSatelliteRow(
+          rows[2],
+          customerHashKey,
+          "first@example.test",
+          "contact-hash-1",
+          thirdSatelliteTimestamp,
+          "crm-return");
+    }
+  }
+
+  [Fact]
   public async Task DefaultSaveServicePersistsCustomerProfileSatelliteHistoryThroughSqlite() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var profile = new DataVaultSatelliteMetadata(
