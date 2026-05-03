@@ -6,6 +6,8 @@ using Xunit;
 
 namespace DCoding.Data.DVault.Tests.Integration;
 
+[Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.RequiredLocalProviderIntegration)]
+[Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqliteProvider)]
 public sealed class NormalEfOrderProductSqliteTests {
   [Fact]
   public async Task ConventionalOrderProductLineModelPersistsRelationshipPayloadThroughSqlite() {

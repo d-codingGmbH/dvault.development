@@ -6,6 +6,8 @@ using Xunit;
 
 namespace DCoding.Data.DVault.Tests.Integration;
 
+[Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.RequiredLocalProviderIntegration)]
+[Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqliteProvider)]
 public sealed class ExplicitDataVaultSaveServiceSqliteTests {
   [Fact]
   public async Task DefaultSaveServicePersistsHubAndLinkRowsThroughSqlite() {
@@ -787,6 +789,51 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
           "profile-hash-2",
           secondLoadTimestamp,
           "crm-change");
+    }
+  }
+
+  [Fact]
+  public async Task AddDVaultSqliteRegistersOptimizedStrategyForCleanSqliteContexts() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var loadTimestamp = new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero);
+    var request = new DataVaultSaveRequest(
+        loadTimestamp,
+        "crm-import",
+        [new(customer, [new("Customer Id", "C-100")])],
+        []);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<ExplicitSaveServiceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var strategy = Assert.Single(provider.GetServices<IDataVaultProviderSaveStrategy>());
+
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+
+      Assert.True(strategy.CanSave(context, [request]));
+
+      var result = await saveService.SaveAsync(context, request);
+
+      Assert.Equal(1, result.RowsWritten);
+      AssertSingleSavedRecord(
+          result,
+          DataVaultTableKind.Hub,
+          "Customer",
+          "HubCustomer",
+          GetHashKey(result, DataVaultTableKind.Hub, "Customer"));
+    }
+
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      var customerRow = await context.Set<Dictionary<string, object>>("HubCustomer").AsNoTracking().SingleAsync();
+
+      Assert.Equal("C-100", customerRow["CustomerId"]);
+      Assert.Equal("crm-import", customerRow["RecordSource"]);
+      Assert.Equal(loadTimestamp, customerRow["LoadTimestamp"]);
     }
   }
 

@@ -166,6 +166,18 @@ bash tools/check-format.sh
 
 The normal test run includes package-specific public API snapshot checks for `DCoding.Data.DVault` and the five provider packages. See `docs/quality/api-surface-snapshots.md` for the approved baseline location and the explicit update workflow for intentional API changes.
 
+Provider integration tests use stable xUnit trait categories so required local coverage and opt-in external database coverage can be selected explicitly:
+
+- `Category=ProviderIntegration.RequiredLocal`: required SQLite-backed integration coverage that does not need external services.
+- `Category=ProviderSmoke.Default`: provider package registration and configuration-contract smoke coverage that runs in the default local path.
+- `Category=ProviderIntegration.ExternalOptIn`: live external database integration coverage, currently Postgres.
+
+To make the default local provider boundary explicit in a focused run, exclude opt-in external database tests:
+
+```sh
+dotnet test DVault.slnx --nologo --filter "Category!=ProviderIntegration.ExternalOptIn"
+```
+
 ## Benchmarks
 
 Run the local SQLite scenario comparison benchmarks from the repository root:
@@ -185,6 +197,12 @@ To run the Postgres-backed integration tests, provide a developer-managed Postgr
 
 ```sh
 DVAULT_TEST_POSTGRES_CONNECTION_STRING='Host=localhost;Port=5432;Database=dvault_tests;Username=dvault;Password=local-secret' dotnet test DVault.slnx --nologo
+```
+
+To select only the live Postgres integration category, use the same configured connection string with the provider category filter:
+
+```sh
+DVAULT_TEST_POSTGRES_CONNECTION_STRING='Host=localhost;Port=5432;Database=dvault_tests;Username=dvault;Password=local-secret' dotnet test DVault.slnx --nologo --filter "Category=ProviderIntegration.ExternalOptIn&Provider=Postgres"
 ```
 
 DVault does not provision Docker containers or databases for these tests. The configured database must already exist, and the configured user must be allowed to create and drop temporary schemas. Keep credentials in local environment variables or another untracked secret store, not in repository files.

@@ -1,3 +1,4 @@
+using System.Reflection;
 using DCoding.Data.DVault.Tests;
 using DCoding.Data.DVault.Tests.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
@@ -36,6 +37,21 @@ public sealed class TestDiscoverySmokeTests {
   }
 
   [Fact]
+  public void UnitProjectMarksProviderPackageChecksAsDefaultSmokeCoverage() {
+    AssertMethodTraits(
+        nameof(ExplicitDataVaultSaveServiceTests.ProviderPackagesRegisterCoreSaveService),
+        [
+            ProviderTestCategories.PostgresProvider,
+            ProviderTestCategories.SqlServerProvider,
+            ProviderTestCategories.OracleProvider,
+            ProviderTestCategories.MySqlProvider,
+        ]);
+    AssertMethodTraits(
+        nameof(ExplicitDataVaultSaveServiceTests.SqliteProviderPackageRegistersOptimizedSaveStrategy),
+        [ProviderTestCategories.SqliteProvider]);
+  }
+
+  [Fact]
   public void UnitProjectRunDoesNotLoadIntegrationTestAssembly() {
     Assert.DoesNotContain(
         AppDomain.CurrentDomain.GetAssemblies(),
@@ -43,5 +59,31 @@ public sealed class TestDiscoverySmokeTests {
             "DCoding.Data.DVault.Tests.Integration",
             assembly.GetName().Name,
             StringComparison.Ordinal));
+  }
+
+  private static void AssertMethodTraits(string methodName, string[] expectedProviderTraits) {
+    var method = typeof(ExplicitDataVaultSaveServiceTests).GetMethod(methodName);
+
+    Assert.NotNull(method);
+    Assert.Contains(
+        method.GetCustomAttributes<TraitAttribute>(inherit: true),
+        trait => string.Equals(
+            trait.Name,
+            ProviderTestCategories.CategoryTraitName,
+            StringComparison.Ordinal) &&
+            string.Equals(
+                trait.Value,
+                ProviderTestCategories.DefaultProviderSmoke,
+                StringComparison.Ordinal));
+
+    foreach (var expectedProviderTrait in expectedProviderTraits) {
+      Assert.Contains(
+          method.GetCustomAttributes<TraitAttribute>(inherit: true),
+          trait => string.Equals(
+              trait.Name,
+              ProviderTestCategories.ProviderTraitName,
+              StringComparison.Ordinal) &&
+              string.Equals(trait.Value, expectedProviderTrait, StringComparison.Ordinal));
+    }
   }
 }

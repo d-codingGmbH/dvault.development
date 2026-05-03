@@ -1,9 +1,12 @@
 using DCoding.Data.DVault.Modeling;
+using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace DCoding.Data.DVault.Tests.Integration;
 
+[Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.ExternalProviderIntegration)]
+[Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.PostgresProvider)]
 public sealed class PostgresDataVaultSchemaTests {
   [Fact]
   public async Task ApplyDataVaultMetadataCreatesExpectedPostgresSchemaWhenConfigured() {

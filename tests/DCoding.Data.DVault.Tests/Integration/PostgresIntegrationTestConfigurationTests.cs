@@ -1,7 +1,10 @@
+using DCoding.Data.DVault.Tests.Shared;
 using Xunit;
 
 namespace DCoding.Data.DVault.Tests.Integration;
 
+[Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+[Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.PostgresProvider)]
 public sealed class PostgresIntegrationTestConfigurationTests {
   [Fact]
   public void ConfigurationIsMissingWhenConnectionStringIsAbsent() {

@@ -1,4 +1,5 @@
 using DCoding.Data.DVault.Modeling;
+using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,6 +34,11 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   }
 
   [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.PostgresProvider)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqlServerProvider)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.OracleProvider)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.MySqlProvider)]
   public void ProviderPackagesRegisterCoreSaveService() {
     AssertProviderRegistration(services => services.AddDVaultPostgres(), expectProviderStrategy: false);
     AssertProviderRegistration(services => services.AddDVaultSqlServer(), expectProviderStrategy: false);
@@ -41,6 +47,8 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   }
 
   [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqliteProvider)]
   public void SqliteProviderPackageRegistersOptimizedSaveStrategy() {
     AssertProviderRegistration(services => services.AddDVaultSqlite(), expectProviderStrategy: true);
   }

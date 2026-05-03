@@ -4,6 +4,8 @@ using Xunit;
 
 namespace DCoding.Data.DVault.Tests.Integration;
 
+[Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.RequiredLocalProviderIntegration)]
+[Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqliteProvider)]
 public sealed class PlainEfCustomerProfileHistorySqliteTests {
   private const string CustomerBusinessKey = "C-100";
 

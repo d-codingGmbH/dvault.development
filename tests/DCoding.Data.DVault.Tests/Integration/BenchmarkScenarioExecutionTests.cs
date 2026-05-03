@@ -1,10 +1,13 @@
 using System.Globalization;
 using System.Text.Json;
 using DCoding.Data.DVault.Benchmarks;
+using DCoding.Data.DVault.Tests.Shared;
 using Xunit;
 
 namespace DCoding.Data.DVault.Tests.Integration;
 
+[Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.RequiredLocalProviderIntegration)]
+[Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqliteProvider)]
 public sealed class BenchmarkScenarioExecutionTests {
   [Fact]
   public async Task LocalBenchmarkRunnerExecutesCustomerAndOrderComparisonsThroughSqlite() {
