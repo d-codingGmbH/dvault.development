@@ -3,7 +3,7 @@
   "ticket-id": "06EXB81FSWAA6N1HMYQ0CM4S8G",
   "ticket-type": "task",
   "title": "Task: Add API approval or compatibility snapshot tests",
-  "revision": "06EYWMHF3586BW2XHSBGQWYVFG",
+  "revision": "06EYXC61EPEYTVY8DC8HPCW66G",
   "status": "done",
   "labels": [
     "area/quality",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "created-at": "2026-04-28T19:45:38.3661517Z",
-  "updated-at": "2026-05-03T14:50:56.6657035Z"
+  "updated-at": "2026-05-03T16:34:14.5170000Z"
 }
