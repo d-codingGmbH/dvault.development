@@ -3,7 +3,7 @@
   "ticket-id": "06EXB80ZNQTTGT6VN2DKEDGB0M",
   "ticket-type": "story",
   "title": "Story: Enforce public API quality",
-  "revision": "06EYXC7GHAZ57N6MNB7HMFM7H4",
+  "revision": "06EYZPA6AHCXYTZ9PBG5ZSCP6G",
   "status": "done",
   "labels": [
     "area/quality",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "created-at": "2026-04-28T19:45:34.2368109Z",
-  "updated-at": "2026-05-03T16:34:26.5709817Z"
+  "updated-at": "2026-05-03T21:58:07.1880000Z"
 }
