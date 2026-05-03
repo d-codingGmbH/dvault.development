@@ -64,6 +64,17 @@ check_dotnet_format() {
   fi
 }
 
+check_one_member_per_file() {
+  if [ ! -f "tools/check-one-member-per-file.sh" ]; then
+    report "tools/check-one-member-per-file.sh" "one-member-per-file source policy check is missing"
+    return
+  fi
+
+  if ! bash tools/check-one-member-per-file.sh; then
+    status=1
+  fi
+}
+
 is_excluded() {
   case "$1" in
     .git/*|.gicket/*|.gicket-bot/*)
@@ -157,6 +168,7 @@ while IFS= read -r -d '' path; do
   fi
 done < <(list_governed_files)
 
+check_one_member_per_file
 check_dotnet_format
 
 if [ "$status" -eq 0 ]; then

@@ -26,6 +26,8 @@ bash tools/check-format.sh
 
 The command fails when governed text files contain invalid UTF-8, UTF-8 BOMs, CRLF line endings, trailing whitespace, missing final newlines, or tabs outside documented tab exceptions. It also fails if `.editorconfig` or `.gitattributes` no longer contain the required repository formatting rules, including LF normalization and same-line brace policy entries. When the repository-level .NET solution is present, the same gate also runs `dotnet format DVault.slnx --verify-no-changes --no-restore` so C# formatter drift is enforced by automation rather than review.
 
+The same gate invokes `tools/check-one-member-per-file.sh` to enforce one public or protected top-level declaration per C# file for the six packable DVault packages. See `docs/quality/one-member-per-file.md` for the source-layout policy, explicit project scope, and documented baseline exceptions.
+
 ## Local Command
 
 Developers should run the shared gate before committing:
