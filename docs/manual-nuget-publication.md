@@ -68,7 +68,7 @@ Do not replace these commands with an undocumented automation path. Later releas
 
 ## Version And Dependency Alignment
 
-Use one aligned release version across all six packages. Before final approval, inspect the package outputs produced by `dotnet pack DVault.slnx --configuration Release --nologo` through the package verification gate:
+Use one aligned release version across all six packages. Package versions are derived from Git tags with the `v` prefix by MinVer. Before final approval, inspect the package outputs produced by `dotnet pack DVault.slnx --configuration Release --nologo` through the package verification gate:
 
 ```sh
 bash tools/verify-packages.sh

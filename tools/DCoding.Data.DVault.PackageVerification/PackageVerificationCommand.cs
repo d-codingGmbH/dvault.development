@@ -71,7 +71,7 @@ public static class PackageVerificationCommand {
   }
 
   private static void WriteUsage(TextWriter writer) {
-    writer.WriteLine("Usage: dotnet run --project tools/DCoding.Data.DVault.PackageVerification/DCoding.Data.DVault.PackageVerification.csproj -- [--package-directory bin/packages]");
-    writer.WriteLine("       dotnet run --project tools/DCoding.Data.DVault.PackageVerification/DCoding.Data.DVault.PackageVerification.csproj -- [bin/packages]");
+    writer.WriteLine("Usage: dotnet run --project tools/DCoding.Data.DVault.PackageVerification/DCoding.Data.DVault.PackageVerification.csproj -- [--package-directory artifacts/packages]");
+    writer.WriteLine("       dotnet run --project tools/DCoding.Data.DVault.PackageVerification/DCoding.Data.DVault.PackageVerification.csproj -- [artifacts/packages]");
   }
 }

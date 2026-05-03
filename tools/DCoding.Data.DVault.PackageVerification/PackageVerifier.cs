@@ -219,7 +219,7 @@ public sealed class PackageVerifier {
       if (matchingArchives.Length == 0) {
         issues.Add(new PackageVerificationIssue(
             expectedPackage.Id,
-            "Missing expected " + extension + " artifact in bin/packages."));
+            "Missing expected " + extension + " artifact in the package directory."));
       }
       else if (matchingArchives.Length > 1) {
         issues.Add(new PackageVerificationIssue(

@@ -13,8 +13,17 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);$(MSBuildProjectDirectory)/bin/**;$(MSBuildProjectDirectory)/obj/**</DefaultItemExcludes>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'DCoding.Data.DVault' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.MySql' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Oracle' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Postgres' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Sqlite' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.SqlServer'">
+    <DVaultPackablePackage>true</DVaultPackablePackage>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(DVaultPackablePackage)' == 'true'">
+    <PackageReference Include="MinVer" Version="7.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(MSBuildProjectName)' == 'DCoding.Data.DVault.Tests.Shared' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Tests.Unit' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Tests.Integration'">
-    <BaseOutputPath>$(MSBuildThisFileDirectory)bin/$(MSBuildProjectName)/</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(MSBuildThisFileDirectory)artifacts/bin/$(MSBuildProjectName)/</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)artifacts/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
   </PropertyGroup>
 </Project>

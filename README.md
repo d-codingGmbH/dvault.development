@@ -167,7 +167,7 @@ bash tools/check-format.sh
 
 The normal test run includes package-specific public API snapshot checks for `DCoding.Data.DVault` and the five provider packages. See `docs/quality/api-surface-snapshots.md` for the approved baseline location and the explicit update workflow for intentional API changes.
 
-`bash tools/verify-packages.sh` inspects the artifacts created under `bin/packages/` by the solution-level pack command. It expects exactly the six DVault library packages and matching symbol packages, checks README and XML documentation entries, validates declared NuGet metadata, and confirms each provider package depends on the packed `DCoding.Data.DVault` version. The verifier intentionally fails when stale, unexpected, or non-packable package artifacts remain in `bin/packages/`.
+`bash tools/verify-packages.sh` inspects the artifacts created under `artifacts/packages/` by the solution-level pack command. It expects exactly the six DVault library packages and matching symbol packages, checks README and XML documentation entries, validates declared NuGet metadata, and confirms each provider package depends on the packed `DCoding.Data.DVault` version. The verifier intentionally fails when stale, unexpected, or non-packable package artifacts remain in `artifacts/packages/`.
 
 Provider integration tests use stable xUnit trait categories so required local coverage and opt-in external database coverage can be selected explicitly:
 

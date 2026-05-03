@@ -14,7 +14,7 @@
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/d-codingGmbH/dvault.development.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageOutputPath>$(MSBuildThisFileDirectory)../../bin/packages/</PackageOutputPath>
+    <PackageOutputPath>$(MSBuildThisFileDirectory)../../artifacts/packages/</PackageOutputPath>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>

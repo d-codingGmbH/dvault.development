@@ -16,7 +16,6 @@
   <ItemGroup>
     <Compile Include="../Modeling/*.cs" Link="Modeling/%(Filename)%(Extension)" />
     <Compile Include="../TechnicalMetadataColumnContractTests.cs" Link="TechnicalMetadataColumnContractTests.cs" />
-    <Compile Include="../../../Modeling/*.cs" Link="Modeling/RepositoryPath/%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
