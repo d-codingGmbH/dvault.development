@@ -1,9 +1,9 @@
-﻿{
+{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06EXB7T62EMCD7CSHS9PE501SC",
   "ticket-type": "story",
   "title": "Story: Build benchmark harness for normal EF versus DVault",
-  "revision": "06EYPM36MST1FX7CENZ2389J48",
+  "revision": "06EYPX1SH6R92KFS7AS1592A0W",
   "status": "done",
   "labels": [
     "area/benchmarks",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:38.5313682Z",
-  "updated-at": "2026-05-03T00:50:08.1669887Z"
+  "updated-at": "2026-05-03T01:29:15.9130000Z"
 }

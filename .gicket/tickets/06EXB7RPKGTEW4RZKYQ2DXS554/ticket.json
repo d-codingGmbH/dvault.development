@@ -1,9 +1,9 @@
-﻿{
+{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06EXB7RPKGTEW4RZKYQ2DXS554",
   "ticket-type": "story",
   "title": "Story: Build example scenario for customer profile history",
-  "revision": "06EYNH6AJP5S8GGHVHV88WHNGR",
+  "revision": "06EYPX1GZ540ZWV4ZGHFA8SKC0",
   "status": "done",
   "labels": [
     "area/examples",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:26.3774990Z",
-  "updated-at": "2026-05-02T22:17:38.7090143Z"
+  "updated-at": "2026-05-03T01:29:13.7210000Z"
 }

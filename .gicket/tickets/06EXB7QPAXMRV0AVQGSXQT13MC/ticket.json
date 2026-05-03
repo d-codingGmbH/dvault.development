@@ -1,20 +1,19 @@
-﻿{
+{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06EXB7QPAXMRV0AVQGSXQT13MC",
   "ticket-type": "epic",
   "title": "Epic: Examples, documentation, and benchmarks",
-  "revision": "06EXBF5P1Y8BZJVDP8QMAYM7NG",
-  "status": "todo",
+  "revision": "06EYTQ9W7WRY0BQSN1GV7J70BW",
+  "status": "done",
   "labels": [
-    "backlog/initial-dvault",
-    "type/epic",
     "area/documentation",
-    "needs-po",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "backlog/initial-dvault",
+    "type/epic"
   ],
   "assignees": [],
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:18.1224077Z",
-  "updated-at": "2026-04-28T20:16:47.6316729Z"
+  "updated-at": "2026-05-03T10:23:23.7115166Z"
 }

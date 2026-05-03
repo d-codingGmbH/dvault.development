@@ -1,9 +1,9 @@
-﻿{
+{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06EXB7QYF1BB1REM7HQZ4WWVMM",
   "ticket-type": "story",
   "title": "Story: Write getting started documentation",
-  "revision": "06EYMNCW7PK2W4KXJWEA85262C",
+  "revision": "06EYPX1CSRVJT14SY9CNFGNTY4",
   "status": "done",
   "labels": [
     "area/documentation",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:20.2051720Z",
-  "updated-at": "2026-05-02T20:16:12.3495266Z"
+  "updated-at": "2026-05-03T01:29:12.6540000Z"
 }

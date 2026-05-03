@@ -1,9 +1,9 @@
-﻿{
+{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06EXB7SEAWB2KSBQSHQB2MVV38",
   "ticket-type": "story",
   "title": "Story: Build example scenario for orders and product relationships",
-  "revision": "06EYM1HV8YCEBM379C6Q2V543M",
+  "revision": "06EYPX1NYMJF8ABN4Q47XGG8S8",
   "status": "done",
   "labels": [
     "area/examples",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6F9W228A0T4QWCGYW2KCR",
   "releaseId": "06EXB6F42X1F5E76YNYBE212KG",
   "created-at": "2026-04-28T19:44:32.4533646Z",
-  "updated-at": "2026-05-02T18:49:30.1831723Z"
+  "updated-at": "2026-05-03T01:29:14.9970000Z"
 }
