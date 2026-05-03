@@ -9,6 +9,20 @@ dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVau
 The executable uses SQLite temporary files only. It does not require Postgres, Docker, `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, or checked-in machine-specific secrets.
 Increase `--iterations` and `--warmup` locally when collecting steadier timing numbers.
 
+To emit documentation-ready artifacts from the same benchmark execution, pass an output directory:
+
+```sh
+dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --iterations 1 --warmup 0 --output artifacts/benchmarks
+```
+
+The command creates the output directory when needed and writes deterministic filenames:
+
+- `benchmark-summary.md`
+- `benchmark-summary.csv`
+- `benchmark-summary.json`
+
+The markdown and JSON artifacts include the SQLite provider statement, benchmark options, OS description, OS and process architecture, processor count, and .NET runtime details. Downstream docs that cite benchmark results must preserve that hardware and provider context with the copied table or linked artifact so machine-specific timings are not separated from the run environment.
+
 The benchmark command executes both required comparisons:
 
 - customer profile history: conventional EF rows compared with the DVault hub-plus-satellite flow using the shared `C-100` profile contract

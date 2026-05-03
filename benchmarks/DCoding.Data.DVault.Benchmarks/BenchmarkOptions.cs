@@ -1,6 +1,6 @@
 namespace DCoding.Data.DVault.Benchmarks;
 
-internal sealed record BenchmarkOptions(int Iterations, int WarmupIterations) {
+internal sealed record BenchmarkOptions(int Iterations, int WarmupIterations, string? ArtifactOutputDirectory = null) {
   private const int DefaultIterations = 5;
   private const int DefaultWarmupIterations = 1;
 
@@ -11,6 +11,7 @@ internal sealed record BenchmarkOptions(int Iterations, int WarmupIterations) {
   public static BenchmarkOptions Parse(IReadOnlyList<string> args) {
     var iterations = DefaultIterations;
     var warmupIterations = DefaultWarmupIterations;
+    string? artifactOutputDirectory = null;
 
     for (var index = 0; index < args.Count; index++) {
       switch (args[index]) {
@@ -20,13 +21,16 @@ internal sealed record BenchmarkOptions(int Iterations, int WarmupIterations) {
         case "--warmup":
           warmupIterations = ReadNonNegativeInt(args, ref index, "--warmup");
           break;
+        case "--output":
+          artifactOutputDirectory = ReadNonEmptyString(args, ref index, "--output");
+          break;
         default:
           throw new ArgumentException(
               "Unsupported benchmark argument '" + args[index] + "'. Run with --help for usage.");
       }
     }
 
-    return new BenchmarkOptions(iterations, warmupIterations);
+    return new BenchmarkOptions(iterations, warmupIterations, artifactOutputDirectory);
   }
 
   private static int ReadPositiveInt(IReadOnlyList<string> args, ref int index, string optionName) {
@@ -58,5 +62,18 @@ internal sealed record BenchmarkOptions(int Iterations, int WarmupIterations) {
     }
 
     return value;
+  }
+
+  private static string ReadNonEmptyString(IReadOnlyList<string> args, ref int index, string optionName) {
+    index++;
+    if (index >= args.Count) {
+      throw new ArgumentException("Missing value for " + optionName + ".");
+    }
+
+    if (string.IsNullOrWhiteSpace(args[index])) {
+      throw new ArgumentException("Value for " + optionName + " must not be empty.");
+    }
+
+    return args[index];
   }
 }

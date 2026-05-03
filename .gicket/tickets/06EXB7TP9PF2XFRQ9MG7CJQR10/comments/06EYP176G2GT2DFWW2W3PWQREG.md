@@ -1,0 +1,10 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `1` selected relation flow(s) for source ticket `06EXB7TP9PF2XFRQ9MG7CJQR10`.
+- Role `po` completed with outcome `po-refinement-ready` under guard profile `community-safe-selected-flows-v1`.
+- Applied `1` follow-up comment(s); blocking diagnostics: `0`; write failures: `0`.
+- run-id: `272ae77de8404f16a7cea5bfd9e55cba`
+
+Action plan
+- [applied] `blocked-follow-up-comment` -> `06EXB82GR48V364RP5NHYE2T70` via `blocks` path `06EXB7TP9PF2XFRQ9MG7CJQR10 -> 06EXB82GR48V364RP5NHYE2T70`

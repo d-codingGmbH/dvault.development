@@ -18,7 +18,7 @@ internal static class BenchmarkRunner {
     var summaries = new List<BenchmarkSummary>();
 
     Console.WriteLine("DVault scenario comparison benchmarks");
-    Console.WriteLine("Provider: SQLite local temporary files");
+    Console.WriteLine("Provider: " + BenchmarkArtifacts.ProviderName);
     Console.WriteLine("Postgres, Docker, and external services are not required.");
     Console.WriteLine();
 
@@ -45,44 +45,33 @@ internal static class BenchmarkRunner {
     WriteSummary(summaries);
     Console.WriteLine();
     Console.WriteLine("Executed " + summaries.Count.ToString(CultureInfo.InvariantCulture) + " benchmark baselines.");
+
+    if (options.ArtifactOutputDirectory is not null) {
+      var context = BenchmarkRunContext.Create(options);
+      var artifactPaths = await BenchmarkArtifacts
+          .WriteAsync(options.ArtifactOutputDirectory, context, summaries, cancellationToken)
+          .ConfigureAwait(false);
+
+      Console.WriteLine("Wrote benchmark artifacts:");
+      Console.WriteLine("  " + artifactPaths.MarkdownPath);
+      Console.WriteLine("  " + artifactPaths.CsvPath);
+      Console.WriteLine("  " + artifactPaths.JsonPath);
+    }
   }
 
   public static void WriteUsage() {
     Console.WriteLine("Usage:");
     Console.WriteLine(
-        "  dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --iterations 1 --warmup 0");
+        "  dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --iterations 1 --warmup 0 --output artifacts/benchmarks");
     Console.WriteLine();
     Console.WriteLine("Options:");
     Console.WriteLine("  --iterations <n>  Number of measured iterations. Default: 5.");
     Console.WriteLine("  --warmup <n>      Number of unreported warmup iterations. Default: 1.");
+    Console.WriteLine("  --output <dir>    Directory for benchmark-summary.md, benchmark-summary.csv, and benchmark-summary.json.");
   }
 
   private static void WriteSummary(IEnumerable<BenchmarkSummary> summaries) {
-    Console.WriteLine("| Scenario | Baseline | Iterations | Mean ms | Min ms | Max ms | Persisted outcome |");
-    Console.WriteLine("| --- | --- | ---: | ---: | ---: | ---: | --- |");
-
-    foreach (var summary in summaries) {
-      Console.WriteLine(
-          "| " +
-          summary.ScenarioName +
-          " | " +
-          summary.BaselineName +
-          " | " +
-          summary.Iterations.ToString(CultureInfo.InvariantCulture) +
-          " | " +
-          FormatMilliseconds(summary.MeanMilliseconds) +
-          " | " +
-          FormatMilliseconds(summary.MinMilliseconds) +
-          " | " +
-          FormatMilliseconds(summary.MaxMilliseconds) +
-          " | " +
-          summary.PersistedOutcome +
-          " |");
-    }
-  }
-
-  private static string FormatMilliseconds(double value) {
-    return value.ToString("F3", CultureInfo.InvariantCulture);
+    Console.Write(BenchmarkArtifacts.CreateMarkdownTable(summaries));
   }
 }
 
