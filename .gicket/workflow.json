@@ -38,5 +38,17 @@
         "to": "todo"
       }
     ]
+  },
+  "ticket-types": {
+    "epic": {
+      "rules": [
+        {
+          "effect": "allow",
+          "from": "todo",
+          "to": "done",
+          "description": "Allow closure-only tracking epics to close after PO-critic audit."
+        }
+      ]
+    }
   }
 }
