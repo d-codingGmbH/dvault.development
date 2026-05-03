@@ -352,11 +352,11 @@ public sealed class PackageVerifier {
     }
 
     if (archive.ReadmeText is null ||
-        !archive.ReadmeText.Contains("DVault is currently consumed from source.", StringComparison.Ordinal) ||
-        !archive.ReadmeText.Contains("NuGet installation is future post-publication guidance.", StringComparison.Ordinal)) {
+        !archive.ReadmeText.Contains("dotnet add package DCoding.Data.DVault --version 0.4.1", StringComparison.Ordinal) ||
+        !archive.ReadmeText.Contains("dotnet add package DCoding.Data.DVault.Sqlite --version 0.4.1", StringComparison.Ordinal)) {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
-          "Packaged README.md does not contain the current pre-publication installation guidance."));
+          "Packaged README.md does not contain the current NuGet installation guidance."));
     }
   }
 

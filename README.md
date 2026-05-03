@@ -4,17 +4,28 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 
 ## Installation
 
-DVault is currently consumed from source. Before running the quickstart, add a project reference from your .NET 10 application or library project to the DVault library project in your local DVault checkout:
+Install the provider-neutral DVault package from NuGet:
 
-```xml
-<ItemGroup>
-  <ProjectReference Include="../path-to-dvault/src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
-</ItemGroup>
+```sh
+dotnet add package DCoding.Data.DVault --version 0.4.1
 ```
 
-Replace `../path-to-dvault` with the relative path from your project file to the DVault checkout; it must point at `src/DCoding.Data.DVault/DCoding.Data.DVault.csproj`. The root `DVault.slnx` already includes this project for repository build and test automation.
+For provider-specific startup extensions, add the matching provider package as well. For example, SQLite users should install:
 
-NuGet installation is future post-publication guidance. The package id is `DCoding.Data.DVault`, but live `dotnet add package` commands and version examples should wait until the package has been published.
+```sh
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.4.1
+```
+
+The provider package family is version-aligned:
+
+```sh
+dotnet add package DCoding.Data.DVault.MySql --version 0.4.1
+dotnet add package DCoding.Data.DVault.Oracle --version 0.4.1
+dotnet add package DCoding.Data.DVault.Postgres --version 0.4.1
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.4.1
+```
+
+Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite or the relevant provider for PostgreSQL, SQL Server, Oracle, or MySQL.
 
 ## Quickstart
 

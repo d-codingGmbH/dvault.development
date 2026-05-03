@@ -1,6 +1,6 @@
 # Manual NuGet Publication Checklist
 
-This checklist governs manual publication for the coordinated DVault NuGet family. It documents release criteria, required evidence, package validation, publish order, stop conditions, and the current source-based consumer baseline.
+This checklist governs manual publication for the coordinated DVault NuGet family. It documents release criteria, required evidence, package validation, publish order, stop conditions, and the current NuGet consumer baseline.
 
 Publishing remains manual. This document does not introduce release credentials, CI/CD automation, package push tooling, product-code behavior changes, package metadata changes, or provider implementation changes.
 
@@ -21,9 +21,9 @@ The `src/DCoding.Data` project is a non-packable source-root build anchor for th
 
 ## Current Consumer Guidance
 
-Until public packages exist, developer and consumer setup remains source/project-reference based. The README source-consumption guidance is the current baseline, and consumers should reference `src/DCoding.Data.DVault/DCoding.Data.DVault.csproj` from a local DVault checkout.
+Developer and consumer setup is NuGet-based for published releases. The README installation guidance is the current baseline and should show `dotnet add package` commands for `DCoding.Data.DVault` plus the optional provider package family.
 
-Live `dotnet add package` commands and concrete package version examples belong only to later post-publication guidance after the public packages exist. Do not add live NuGet installation examples to release guidance before publication has happened.
+Source or project-reference consumption remains useful for repository development, debugging, and unpublished local changes, but it is no longer the primary consumer installation path for released packages.
 
 ## Release Criteria
 

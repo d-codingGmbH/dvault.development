@@ -234,7 +234,8 @@ public sealed class PackageVerifierTests {
       WriteTextEntry(
           archive,
           "README.md",
-          "DVault is currently consumed from source.\n\nNuGet installation is future post-publication guidance.\n");
+          "dotnet add package DCoding.Data.DVault --version 0.4.1\n\n" +
+          "dotnet add package DCoding.Data.DVault.Sqlite --version 0.4.1\n");
     }
 
     if (options.IncludeXmlDocumentation) {
