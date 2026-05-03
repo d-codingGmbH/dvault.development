@@ -3,7 +3,7 @@
   "ticket-id": "06EXB81FSWAA6N1HMYQ0CM4S8G",
   "ticket-type": "task",
   "title": "Task: Add API approval or compatibility snapshot tests",
-  "revision": "06EXNNPY2C44ZS7R29783F4KKW",
+  "revision": "06EYVXF6YH30SKE83FXXQ69PJ8",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "created-at": "2026-04-28T19:45:38.3661517Z",
-  "updated-at": "2026-04-29T20:03:27.8913921Z"
+  "updated-at": "2026-05-03T13:10:08.8842699Z"
 }

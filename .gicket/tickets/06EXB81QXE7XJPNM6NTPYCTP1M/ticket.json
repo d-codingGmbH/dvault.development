@@ -3,7 +3,7 @@
   "ticket-id": "06EXB81QXE7XJPNM6NTPYCTP1M",
   "ticket-type": "task",
   "title": "Task: Add analyzer coverage for one-member-per-file policy",
-  "revision": "06EXNNPZM4XB03R7CKJD4G30HG",
+  "revision": "06EYVXF4G1F2QHSZN5DASYHQFG",
   "status": "todo",
   "labels": [
     "backlog/initial-dvault",
@@ -16,5 +16,5 @@
   "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "created-at": "2026-04-28T19:45:40.4471500Z",
-  "updated-at": "2026-04-29T20:03:28.2897792Z"
+  "updated-at": "2026-05-03T13:10:08.2569366Z"
 }
