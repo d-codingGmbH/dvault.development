@@ -4,10 +4,13 @@ namespace DCoding.Data.DVault;
 
 /// <summary>
 /// Defines an optional provider-specific save strategy that can override the provider-neutral DVault fallback writer.
+/// The core dispatcher evaluates registered strategies by descending priority, preserves registration order for equal
+/// priorities, and selects the first strategy whose compatibility check accepts the current save request batch.
 /// </summary>
 public interface IDataVaultProviderSaveStrategy {
   /// <summary>
   /// Gets the strategy priority used when multiple provider strategies are registered.
+  /// Higher values are evaluated first; equal values use dependency-injection registration order as the tie-break.
   /// </summary>
   int Priority { get; }
 

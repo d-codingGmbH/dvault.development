@@ -3,19 +3,18 @@
   "ticket-id": "06EZ0N8HW9PZAFKMM5WQD564VR",
   "ticket-type": "story",
   "title": "Story: Define provider optimization contract and dispatch semantics",
-  "revision": "06EZ0Y44KW826FN8T6XKSW62TM",
-  "status": "todo",
+  "revision": "06EZ3BZQ4ZMB9EW1H2M4QSMK5C",
+  "status": "done",
   "labels": [
-    "type/story",
-    "automation/bot-ready",
-    "area/provider-support",
     "area/architecture",
     "area/performance",
-    "needs-po"
+    "area/provider-support",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:13:20.6750907Z",
-  "updated-at": "2026-05-04T00:52:03.3593867Z"
+  "updated-at": "2026-05-04T06:32:14.3759606Z"
 }

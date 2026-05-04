@@ -33,6 +33,11 @@ public sealed class DataVaultSaveStrategySelectionTests {
       "Unknown provider dispatch should evaluate but reject incompatible optimized strategies, then select the fallback writer.";
   private const string UnknownProviderSelectedDiagnostic =
       "Unknown provider strategy was selected even though its provider gate did not match the current DbContext provider.";
+  private const string PriorityDispatchDiagnostic =
+      "Provider strategy dispatch must evaluate registrations by descending Priority, skip incompatible strategies, and " +
+          "stop at the first compatible strategy.";
+  private const string EqualPriorityTieDispatchDiagnostic =
+      "Equal-priority provider strategy dispatch must keep dependency-injection registration order as the deterministic tie-break.";
 
   [Fact]
   public async Task ProviderNeutralAddDVaultSelectsFallbackWhenNoProviderStrategyIsRegistered() {
@@ -144,6 +149,90 @@ public sealed class DataVaultSaveStrategySelectionTests {
   }
 
   [Fact]
+  public async Task DispatchEvaluatesStrategiesByDescendingPriorityUntilFirstCompatibleStrategy() {
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateOptions(database);
+    var evaluationOrder = new List<string>();
+    var lowPriorityCompatible = new DispatchProbeSaveStrategy(
+        "low-priority-compatible",
+        priority: 10,
+        canSave: true,
+        evaluationOrder);
+    var selectedCompatible = new DispatchProbeSaveStrategy(
+        "selected-compatible",
+        priority: 100,
+        canSave: true,
+        evaluationOrder);
+    var highPriorityIncompatible = new DispatchProbeSaveStrategy(
+        "high-priority-incompatible",
+        priority: 200,
+        canSave: false,
+        evaluationOrder);
+    var services = new ServiceCollection();
+    services.AddDVault();
+    services.AddSingleton<IDataVaultProviderSaveStrategy>(lowPriorityCompatible);
+    services.AddSingleton<IDataVaultProviderSaveStrategy>(selectedCompatible);
+    services.AddSingleton<IDataVaultProviderSaveStrategy>(highPriorityIncompatible);
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+
+    await using var context = new StrategySelectionContext(options);
+    var result = await saveService.SaveAsync(context, CreateCustomerSaveRequest("priority-dispatch"));
+
+    Assert.Equal(
+        new[] { "high-priority-incompatible", "selected-compatible" },
+        evaluationOrder);
+    Assert.Equal(1, highPriorityIncompatible.CanSaveCallCount);
+    Assert.Equal(0, highPriorityIncompatible.SaveCallCount);
+    Assert.Equal(1, selectedCompatible.CanSaveCallCount);
+    Assert.Equal(1, selectedCompatible.SaveCallCount);
+    Assert.Equal(0, lowPriorityCompatible.CanSaveCallCount);
+    Assert.Equal(0, lowPriorityCompatible.SaveCallCount);
+    AssertDispatchProbeResult(
+        result,
+        "selected-compatible",
+        PriorityDispatchDiagnostic);
+  }
+
+  [Fact]
+  public async Task DispatchKeepsRegistrationOrderWhenCompatibleStrategiesSharePriority() {
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateOptions(database);
+    var evaluationOrder = new List<string>();
+    var firstRegistered = new DispatchProbeSaveStrategy(
+        "first-registered",
+        priority: 100,
+        canSave: true,
+        evaluationOrder);
+    var secondRegistered = new DispatchProbeSaveStrategy(
+        "second-registered",
+        priority: 100,
+        canSave: true,
+        evaluationOrder);
+    var services = new ServiceCollection();
+    services.AddDVault();
+    services.AddSingleton<IDataVaultProviderSaveStrategy>(firstRegistered);
+    services.AddSingleton<IDataVaultProviderSaveStrategy>(secondRegistered);
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+
+    await using var context = new StrategySelectionContext(options);
+    var result = await saveService.SaveAsync(context, CreateCustomerSaveRequest("equal-priority-dispatch"));
+
+    Assert.Equal(new[] { "first-registered" }, evaluationOrder);
+    Assert.Equal(1, firstRegistered.CanSaveCallCount);
+    Assert.Equal(1, firstRegistered.SaveCallCount);
+    Assert.Equal(0, secondRegistered.CanSaveCallCount);
+    Assert.Equal(0, secondRegistered.SaveCallCount);
+    AssertDispatchProbeResult(
+        result,
+        "first-registered",
+        EqualPriorityTieDispatchDiagnostic);
+  }
+
+  [Fact]
   public void StrategySelectionFailureDiagnosticsIdentifyDispatchRegressions() {
     AssertDiagnosticContains(
         nameof(ProviderNeutralAddDVaultSelectsFallbackWhenNoProviderStrategyIsRegistered),
@@ -190,6 +279,18 @@ public sealed class DataVaultSaveStrategySelectionTests {
         UnknownProviderSelectedDiagnostic,
         "Unknown provider strategy was selected",
         "provider gate did not match");
+    AssertDiagnosticContains(
+        nameof(DispatchEvaluatesStrategiesByDescendingPriorityUntilFirstCompatibleStrategy),
+        PriorityDispatchDiagnostic,
+        "descending Priority",
+        "skip incompatible strategies",
+        "first compatible strategy");
+    AssertDiagnosticContains(
+        nameof(DispatchKeepsRegistrationOrderWhenCompatibleStrategiesSharePriority),
+        EqualPriorityTieDispatchDiagnostic,
+        "Equal-priority provider strategy dispatch",
+        "registration order",
+        "deterministic tie-break");
   }
 
   private static DbContextOptions<StrategySelectionContext> CreateOptions(SqliteTestDatabase database) {
@@ -250,6 +351,19 @@ public sealed class DataVaultSaveStrategySelectionTests {
     Assert.True(
         trackedEntries.Length == 0,
         failureMessage + " Actual tracked entries: " + FormatTrackedEntries(trackedEntries));
+  }
+
+  private static void AssertDispatchProbeResult(
+      DataVaultSaveResult result,
+      string expectedStrategyName,
+      string failureMessage) {
+    var record = Assert.Single(result.SavedRecords);
+
+    Assert.True(
+        result.RowsWritten == 0 &&
+            string.Equals(record.MetadataName, expectedStrategyName, StringComparison.Ordinal) &&
+            string.Equals(record.TableName, "StrategyProbe", StringComparison.Ordinal),
+        failureMessage);
   }
 
   private static string FormatTrackedEntries(IReadOnlyList<EntityEntry> trackedEntries) {
@@ -319,6 +433,46 @@ public sealed class DataVaultSaveStrategySelectionTests {
 
       throw new InvalidOperationException(
           UnknownProviderSelectedDiagnostic);
+    }
+  }
+
+  private sealed class DispatchProbeSaveStrategy(
+      string strategyName,
+      int priority,
+      bool canSave,
+      ICollection<string> evaluationOrder) : IDataVaultProviderSaveStrategy {
+    public int CanSaveCallCount { get; private set; }
+
+    public int SaveCallCount { get; private set; }
+
+    public int Priority { get; } = priority;
+
+    public bool CanSave(DbContext dbContext, IReadOnlyList<DataVaultSaveRequest> requests) {
+      ArgumentNullException.ThrowIfNull(dbContext);
+      ArgumentNullException.ThrowIfNull(requests);
+
+      CanSaveCallCount++;
+      evaluationOrder.Add(strategyName);
+
+      return canSave;
+    }
+
+    public Task<DataVaultSaveResult> SaveAsync(
+        DataVaultProviderSaveStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      ArgumentNullException.ThrowIfNull(context);
+
+      SaveCallCount++;
+
+      return Task.FromResult(new DataVaultSaveResult(
+          0,
+          [
+            new DataVaultSavedRecord(
+                DataVaultTableKind.Hub,
+                strategyName,
+                "StrategyProbe",
+                "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"),
+          ]));
     }
   }
 }
