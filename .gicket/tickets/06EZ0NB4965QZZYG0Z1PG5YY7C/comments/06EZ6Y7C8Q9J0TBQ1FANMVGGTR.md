@@ -1,87 +1,61 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the Oracle save-strategy story to a bounded v1 Oracle package scope: explicit `oracle-v1` capability registration, `AddDVaultOracle()` startup wiring, Oracle-only hub/link insert optimization with provider-neutral fallback, and documented opt-in Oracle validation. Existing split remains materialized through `parentOf` links to child tickets `06EZ0NBAP31G489S3YXXYY54WM` and `06EZ0NBH3YWJPF05AQWC0E6GV4`.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The safe v1 Oracle optimization boundary is already bounded in repository architecture and code: `AddDVaultOracle()` is the opt-in registration path, while the provider-neutral `AddDVault()` caller contract remains unchanged.
 - The optimized Oracle path is intentionally limited to clean `Oracle.EntityFrameworkCore` DbContexts with hub/link-only request batches and no satellite operations; unsupported shapes must fall back through the core `IDataVaultSaveService` writer.
 - The Oracle capability baseline is the visible `oracle-v1` profile: hash keys, hash diff, and participant references use `VARCHAR2(64 CHAR)`; business keys and record source use `VARCHAR2(255 CHAR)`; payload text uses `CLOB`; load timestamps use `TIMESTAMP WITH TIME ZONE` with native `DateTimeOffset` mapping.
 - Oracle validation is opt-in, not part of the default local developer path; the documented smoke path uses `DVAULT_TEST_ORACLE_CONNECTION_STRING` and the existing Oracle provider integration filter.
 - This story already has two materialized child tickets linked via `parentOf`: `06EZ0NBAP31G489S3YXXYY54WM` and `06EZ0NBH3YWJPF05AQWC0E6GV4`.
 
-### Scope In
+Scope In
 - Explicit Oracle provider capability registration and Oracle package startup wiring through `DataVaultProviderCapabilityProfiles.Oracle` and `AddDVaultOracle()`.
 - Oracle-compatible optimized save behavior for the first safe batch shape: clean-context hub and link inserts that preserve deterministic hash-key reuse semantics.
 - Provider-strategy selection rules that gate Oracle optimization to the Oracle EF provider and fall back when the context or request shape is incompatible.
 - Unit, local integration, and opt-in external Oracle smoke coverage for capability registration, strategy selection, fallback behavior, and documented validation.
 - Documentation updates that describe Oracle setup, validation commands, and current Oracle limitations.
 
-### Scope Out
+Scope Out
 - Satellite-optimized Oracle saves.
 - Optimized handling for dirty DbContexts that already track added, modified, or deleted entities.
 - Provider-neutral concurrency signals, merge or upsert guarantees, retry semantics, or multi-writer conflict behavior.
 - Automatic Oracle environment provisioning, CI-hosted Oracle infrastructure, or making Oracle part of the default local validation baseline.
 - Changing the public write boundary from explicit `IDataVaultSaveService` calls to `SaveChanges` interception.
 
-## Acceptance Criteria
-- The Oracle package exposes explicit Oracle provider capability registration and `AddDVaultOracle()` wiring without making the core package depend on Oracle-specific registration or SQL syntax.
-- When the EF provider name is `Oracle.EntityFrameworkCore`, the DbContext is clean, and the request batch contains only hub and link operations, the Oracle provider strategy persists rows with Oracle-compatible insert-if-absent SQL and returns deterministic saved-record results.
-- When the provider is not Oracle or the request shape is outside the supported Oracle optimization boundary, DVault declines the Oracle strategy and falls back through the provider-neutral writer without changing the caller contract.
-- Tests cover the Oracle capability profile, Oracle strategy selection and fallback behavior, and an opt-in Oracle smoke path that verifies a real Oracle hub save when `DVAULT_TEST_ORACLE_CONNECTION_STRING` is configured.
-- Repository documentation states how to validate Oracle support locally and states the remaining v1 limitations of the optimized Oracle path.
-
-## Definition of Done
-- Oracle provider capability profile, Oracle startup extension, and Oracle save strategy behavior are implemented or aligned with the documented v1 architecture boundary.
-- Automated tests prove the capability mapping and fallback-selection contract, and the repository contains an opt-in Oracle smoke test for live validation.
-- README or equivalent user-facing docs explain Oracle package installation, `AddDVaultOracle()` usage, the required Oracle environment variable, and the fact that unsupported shapes fall back to the core writer.
-- The refined ticket contract keeps the existing child-ticket split and does not reopen already-bounded defaults that are visible in the repository.
-
-## Implementation Notes
-- The architecture note `docs/architecture/dvault-v1-explicit-save-service.md` already fixes the extension point: the core package owns provider-neutral dispatch and fallback, while provider packages own provider-specific save strategies and SQL.
-- Current repository evidence already ratifies the first Oracle behavior as insert-only hub/link optimization using Oracle SQL shaped like `INSERT ... SELECT ... FROM DUAL WHERE NOT EXISTS (...)`; PO refinement should treat that as the bounded v1 default rather than reopen the save-shape decision.
-- Current test evidence already defines the fallback safety net: Oracle registration must decline SQLite and other incompatible contexts, and unsupported request batches must preserve the existing fallback writer behavior.
-- Current docs already define the validation baseline: default local runs stay SQLite-focused, while Oracle verification is an explicit opt-in smoke path.
-- Relation context is already materialized: this story is a child of `06EZ0MHBC3DGRJCHQ91E89HABM`, is blocked by `06EZ0N8HW9PZAFKMM5WQD564VR` and `06EZ0N9AM9AJ3AB8DQ6Y1JBS28`, and already parents `06EZ0NBAP31G489S3YXXYY54WM` and `06EZ0NBH3YWJPF05AQWC0E6GV4`.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should a later story add Oracle-optimized satellite persistence and latest-state checks, or keep all satellite scenarios on the provider-neutral fallback longer?
 - Should a later story broaden Oracle provider detection beyond the exact `Oracle.EntityFrameworkCore` provider name if additional Oracle EF providers become supported?
 - Should the project later add repeatable CI or containerized Oracle validation, or keep Oracle verification as a developer-managed opt-in smoke path?
 - Do the existing child tickets need narrower acceptance criteria aligned to the now-ratified hub/link-only v1 Oracle optimization boundary?
 
-## Risks
+Risks
 - Oracle is not part of the default local developer environment, so live validation depends on a manually managed Oracle database, credentials, and table-create or table-drop permissions.
 - The optimized Oracle path is intentionally narrow; callers using satellites or dirty DbContexts will still rely on the slower provider-neutral fallback and may perceive uneven performance coverage.
 - Provider selection is gated by exact provider identity, so unexpected Oracle provider naming or configuration changes could silently route requests to fallback instead of the optimized path.
 - The story currently has two incoming `blocks` relations, so delivery timing still depends on upstream tickets even though the PO refinement scope is clear.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended in PO refinement. The story already has two materialized child tickets linked through `parentOf`: `06EZ0NBAP31G489S3YXXYY54WM` and `06EZ0NBH3YWJPF05AQWC0E6GV4`.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Goal: implement an Oracle provider optimization boundary and the first safe optimized save behavior for Oracle.
-
-Scope:
-- Register Oracle provider capabilities explicitly.
-- Use Oracle-compatible SQL patterns where optimized behavior is implemented.
-- Keep fallback behavior available for unsupported patterns.
-- Add opt-in validation guidance because Oracle is not part of the default local developer environment.
-
-Acceptance Criteria:
-- Oracle provider behavior does not depend on SQLite or SQL Server syntax.
-- Tests or smoke scripts verify the capability registration and fallback behavior.
-- Documentation states the supported Oracle validation path and remaining limitations.
+Run mode
+- apply: planned updates are applied after this comment

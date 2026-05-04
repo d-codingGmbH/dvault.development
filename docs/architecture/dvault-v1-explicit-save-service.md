@@ -1,4 +1,4 @@
-﻿# DVault V1 Explicit Save Service
+# DVault V1 Explicit Save Service
 
 Status: v1 implementation note
 Ticket: 06EXB7H6KV753KM125XN3VDRTM

@@ -1,4 +1,4 @@
-﻿# DVault
+# DVault
 
 DVault is the repository for the `DCoding.Data.DVault` .NET library.
 
