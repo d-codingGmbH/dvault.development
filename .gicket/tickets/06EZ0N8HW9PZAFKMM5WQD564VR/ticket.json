@@ -1,0 +1,22 @@
+﻿{
+    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
+    "ticket-id":  "06EZ0N8HW9PZAFKMM5WQD564VR",
+    "ticket-type":  "story",
+    "title":  "Story: Define provider optimization contract and dispatch semantics",
+    "revision":  "06EZ0P8K212BKPV8K4JEB66140",
+    "status":  "todo",
+    "labels":  [
+                   "type/story",
+                   "automation/bot-ready",
+                   "area/provider-support",
+                   "area/architecture",
+                   "area/performance"
+               ],
+    "assignees":  [
+
+                  ],
+    "milestoneId":  "06EZ0MF7MBCHGFFQKYQW6B7RKW",
+    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+    "created-at":  "2026-05-04T00:13:20.6750907Z",
+    "updated-at":  "2026-05-04T00:17:42.6720229Z"
+}

@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NSC44DZ2KZN34J58SADVG",
+  "occurred-at": "2026-05-04T00:15:38.0177481Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define capability extension architecture for deferred Data Vault patterns",
+    "status": "todo"
+  }
+}

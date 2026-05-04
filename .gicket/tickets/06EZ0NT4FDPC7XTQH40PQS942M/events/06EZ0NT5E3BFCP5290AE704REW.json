@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NT5E3BFCP5290AE704REW",
+  "occurred-at": "2026-05-04T00:15:44.4961929Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Define PIT metadata model and builder API",
+    "status": "todo"
+  }
+}

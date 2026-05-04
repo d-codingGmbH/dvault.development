@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NBHM6RW7VF5EH5GNMNQFG",
+  "occurred-at": "2026-05-04T00:13:44.7372312Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add Oracle opt-in integration configuration and smoke tests",
+    "status": "todo"
+  }
+}

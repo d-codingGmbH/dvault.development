@@ -1,0 +1,21 @@
+﻿{
+    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
+    "ticket-id":  "06EZ0NVN71BN0QWJDCWGVZ2PYG",
+    "ticket-type":  "story",
+    "title":  "Story: Add multi-active satellite modeling",
+    "revision":  "06EZ0P8JSEXGJVPGX10VZNDX0R",
+    "status":  "todo",
+    "labels":  [
+                   "type/story",
+                   "automation/bot-ready",
+                   "area/modeling",
+                   "area/multi-active-satellite"
+               ],
+    "assignees":  [
+
+                  ],
+    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
+    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+    "created-at":  "2026-05-04T00:15:56.9716890Z",
+    "updated-at":  "2026-05-04T00:17:42.6036875Z"
+}

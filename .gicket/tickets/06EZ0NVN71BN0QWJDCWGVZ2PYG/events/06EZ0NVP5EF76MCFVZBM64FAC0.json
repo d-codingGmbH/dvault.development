@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NVP5EF76MCFVZBM64FAC0",
+  "occurred-at": "2026-05-04T00:15:56.9716890Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add multi-active satellite modeling",
+    "status": "todo"
+  }
+}

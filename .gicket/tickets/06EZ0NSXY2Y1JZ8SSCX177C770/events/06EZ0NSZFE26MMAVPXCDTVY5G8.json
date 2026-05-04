@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NSZFE26MMAVPXCDTVY5G8",
+  "occurred-at": "2026-05-04T00:15:42.9713173Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add PIT table modeling and generation",
+    "status": "todo"
+  }
+}

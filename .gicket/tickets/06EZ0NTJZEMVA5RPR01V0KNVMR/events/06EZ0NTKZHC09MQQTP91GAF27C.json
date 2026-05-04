@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NTKZHC09MQQTP91GAF27C",
+  "occurred-at": "2026-05-04T00:15:48.2202736Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add PIT documentation and example scenario",
+    "status": "todo"
+  }
+}

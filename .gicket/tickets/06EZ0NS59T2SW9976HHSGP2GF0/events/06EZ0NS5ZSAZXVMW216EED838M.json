@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NS5ZSAZXVMW216EED838M",
+  "occurred-at": "2026-05-04T00:15:36.4463660Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Epic: Deferred Data Vault capabilities",
+    "status": "todo"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NVZ03Y558RSFQWCNH4ZCR",
+  "occurred-at": "2026-05-04T00:15:59.2321041Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Define multi-active satellite driving-key contract",
+    "status": "todo"
+  }
+}

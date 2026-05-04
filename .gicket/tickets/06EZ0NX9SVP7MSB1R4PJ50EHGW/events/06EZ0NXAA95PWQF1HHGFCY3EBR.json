@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NXAA95PWQF1HHGFCY3EBR",
+  "occurred-at": "2026-05-04T00:16:10.3223336Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Document advanced hook validation and failure modes",
+    "status": "todo"
+  }
+}

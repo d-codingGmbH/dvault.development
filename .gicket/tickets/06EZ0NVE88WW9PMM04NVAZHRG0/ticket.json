@@ -1,0 +1,22 @@
+﻿{
+    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
+    "ticket-id":  "06EZ0NVE88WW9PMM04NVAZHRG0",
+    "ticket-type":  "task",
+    "title":  "Task: Add bridge documentation and example scenario",
+    "revision":  "06EZ0P8JXY0NNGP7AND2VXWQYR",
+    "status":  "todo",
+    "labels":  [
+                   "type/task",
+                   "automation/bot-ready",
+                   "area/docs",
+                   "area/bridge",
+                   "area/examples"
+               ],
+    "assignees":  [
+
+                  ],
+    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
+    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+    "created-at":  "2026-05-04T00:15:55.2370312Z",
+    "updated-at":  "2026-05-04T00:17:42.6394115Z"
+}

@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0N9BM0Y3A9D2TV666Y2S2G",
+  "occurred-at": "2026-05-04T00:13:26.8166324Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add strategy-selection tests for fallback versus optimized providers",
+    "status": "todo"
+  }
+}

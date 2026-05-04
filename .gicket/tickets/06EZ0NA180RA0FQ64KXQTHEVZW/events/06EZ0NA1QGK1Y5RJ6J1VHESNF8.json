@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NA1QGK1Y5RJ6J1VHESNF8",
+  "occurred-at": "2026-05-04T00:13:32.4762941Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Implement PostgreSQL optimized hub/link/satellite writes",
+    "status": "todo"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NWM87VW9EARW32Y6NZN6W",
+  "occurred-at": "2026-05-04T00:16:04.6732003Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Expose advanced configuration hooks needed by deferred capabilities",
+    "status": "todo"
+  }
+}

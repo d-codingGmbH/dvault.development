@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NA8AZPD69KDTCGHBJ9VN4",
+  "occurred-at": "2026-05-04T00:13:34.1673758Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add opt-in PostgreSQL integration coverage for optimized strategy",
+    "status": "todo"
+  }
+}

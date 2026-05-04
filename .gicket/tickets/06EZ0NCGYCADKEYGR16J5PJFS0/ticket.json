@@ -1,0 +1,21 @@
+﻿{
+    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
+    "ticket-id":  "06EZ0NCGYCADKEYGR16J5PJFS0",
+    "ticket-type":  "task",
+    "title":  "Task: Emit provider comparison benchmark artifacts",
+    "revision":  "06EZ0P8K4S25P8D9B9SBW77AB4",
+    "status":  "todo",
+    "labels":  [
+                   "type/task",
+                   "automation/bot-ready",
+                   "area/benchmarks",
+                   "area/performance"
+               ],
+    "assignees":  [
+
+                  ],
+    "milestoneId":  "06EZ0MF7MBCHGFFQKYQW6B7RKW",
+    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+    "created-at":  "2026-05-04T00:13:52.8849253Z",
+    "updated-at":  "2026-05-04T00:17:42.6945340Z"
+}

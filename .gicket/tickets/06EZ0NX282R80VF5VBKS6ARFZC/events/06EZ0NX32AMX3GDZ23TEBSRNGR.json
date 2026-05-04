@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NX32AMX3GDZ23TEBSRNGR",
+  "occurred-at": "2026-05-04T00:16:08.4667384Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Implement provider behavior hook surface with default inheritance",
+    "status": "todo"
+  }
+}

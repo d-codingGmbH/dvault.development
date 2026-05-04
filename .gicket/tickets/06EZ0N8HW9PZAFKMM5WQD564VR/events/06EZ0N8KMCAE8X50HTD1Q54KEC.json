@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0N8KMCAE8X50HTD1Q54KEC",
+  "occurred-at": "2026-05-04T00:13:20.6750907Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define provider optimization contract and dispatch semantics",
+    "status": "todo"
+  }
+}

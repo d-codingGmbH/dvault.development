@@ -1,0 +1,21 @@
+﻿{
+    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
+    "ticket-id":  "06EZ0NBX79YQ0J5A9ECJG955TC",
+    "ticket-type":  "task",
+    "title":  "Task: Implement MySQL provider capability profile and optimized writer boundary",
+    "revision":  "06EZ0P8K5RBSXFSZ9SQ6N1YYZ8",
+    "status":  "todo",
+    "labels":  [
+                   "type/task",
+                   "automation/bot-ready",
+                   "area/mysql",
+                   "area/performance"
+               ],
+    "assignees":  [
+
+                  ],
+    "milestoneId":  "06EZ0MF7MBCHGFFQKYQW6B7RKW",
+    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+    "created-at":  "2026-05-04T00:13:47.8371746Z",
+    "updated-at":  "2026-05-04T00:17:42.7024942Z"
+}

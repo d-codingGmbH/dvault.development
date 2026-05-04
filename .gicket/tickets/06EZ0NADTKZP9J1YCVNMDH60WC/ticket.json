@@ -1,0 +1,22 @@
+﻿{
+    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
+    "ticket-id":  "06EZ0NADTKZP9J1YCVNMDH60WC",
+    "ticket-type":  "story",
+    "title":  "Story: Optimize SQL Server provider save strategy",
+    "revision":  "06EZ0P8K3NAB7N41KV5V0PAW9G",
+    "status":  "todo",
+    "labels":  [
+                   "type/story",
+                   "automation/bot-ready",
+                   "area/sql-server",
+                   "area/provider-support",
+                   "area/performance"
+               ],
+    "assignees":  [
+
+                  ],
+    "milestoneId":  "06EZ0MF7MBCHGFFQKYQW6B7RKW",
+    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+    "created-at":  "2026-05-04T00:13:35.8588608Z",
+    "updated-at":  "2026-05-04T00:17:42.6857944Z"
+}

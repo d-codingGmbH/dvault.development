@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NTC5560041NJDB52XVERM",
+  "occurred-at": "2026-05-04T00:15:46.2170124Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Generate provider-neutral PIT EF model mapping",
+    "status": "todo"
+  }
+}

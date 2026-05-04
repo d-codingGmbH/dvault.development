@@ -1,0 +1,21 @@
+﻿{
+    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
+    "ticket-id":  "06EZ0NX282R80VF5VBKS6ARFZC",
+    "ticket-type":  "task",
+    "title":  "Task: Implement provider behavior hook surface with default inheritance",
+    "revision":  "06EZ0P8JVTPZ4PCX1YQKB33C1G",
+    "status":  "todo",
+    "labels":  [
+                   "type/task",
+                   "automation/bot-ready",
+                   "area/configuration",
+                   "area/provider-support"
+               ],
+    "assignees":  [
+
+                  ],
+    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
+    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+    "created-at":  "2026-05-04T00:16:08.4667384Z",
+    "updated-at":  "2026-05-04T00:17:42.6224143Z"
+}

@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NVFCNZNJXPY8AG1XS14W4",
+  "occurred-at": "2026-05-04T00:15:55.2370312Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add bridge documentation and example scenario",
+    "status": "todo"
+  }
+}

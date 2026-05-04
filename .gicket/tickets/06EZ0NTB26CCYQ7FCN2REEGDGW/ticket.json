@@ -1,0 +1,22 @@
+﻿{
+    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
+    "ticket-id":  "06EZ0NTB26CCYQ7FCN2REEGDGW",
+    "ticket-type":  "task",
+    "title":  "Task: Generate provider-neutral PIT EF model mapping",
+    "revision":  "06EZ0P8JZTN9B8M60T2ZPC2GPR",
+    "status":  "todo",
+    "labels":  [
+                   "type/task",
+                   "automation/bot-ready",
+                   "area/modeling",
+                   "area/pit",
+                   "area/ef-core"
+               ],
+    "assignees":  [
+
+                  ],
+    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
+    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+    "created-at":  "2026-05-04T00:15:46.2170124Z",
+    "updated-at":  "2026-05-04T00:17:42.6544795Z"
+}

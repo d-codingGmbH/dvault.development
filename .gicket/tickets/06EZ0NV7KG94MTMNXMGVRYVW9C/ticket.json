@@ -1,0 +1,22 @@
+﻿{
+    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
+    "ticket-id":  "06EZ0NV7KG94MTMNXMGVRYVW9C",
+    "ticket-type":  "task",
+    "title":  "Task: Generate provider-neutral bridge EF model mapping",
+    "revision":  "06EZ0P8JYD42FXNX6NKCA4BKE0",
+    "status":  "todo",
+    "labels":  [
+                   "type/task",
+                   "automation/bot-ready",
+                   "area/modeling",
+                   "area/bridge",
+                   "area/ef-core"
+               ],
+    "assignees":  [
+
+                  ],
+    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
+    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+    "created-at":  "2026-05-04T00:15:53.4829493Z",
+    "updated-at":  "2026-05-04T00:17:42.6434116Z"
+}

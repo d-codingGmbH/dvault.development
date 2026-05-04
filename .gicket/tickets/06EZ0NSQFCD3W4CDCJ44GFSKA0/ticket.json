@@ -1,0 +1,21 @@
+﻿{
+    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
+    "ticket-id":  "06EZ0NSQFCD3W4CDCJ44GFSKA0",
+    "ticket-type":  "task",
+    "title":  "Task: Add API snapshot guardrails for deferred capability contracts",
+    "revision":  "06EZ0P8JQXCAKPSMS4F2H59GJR",
+    "status":  "todo",
+    "labels":  [
+                   "type/task",
+                   "automation/bot-ready",
+                   "area/api",
+                   "area/tests"
+               ],
+    "assignees":  [
+
+                  ],
+    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
+    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+    "created-at":  "2026-05-04T00:15:41.0539561Z",
+    "updated-at":  "2026-05-04T00:17:42.5916857Z"
+}

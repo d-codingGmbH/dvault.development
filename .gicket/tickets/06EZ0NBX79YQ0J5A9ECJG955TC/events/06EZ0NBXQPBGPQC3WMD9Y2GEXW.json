@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NBXQPBGPQC3WMD9Y2GEXW",
+  "occurred-at": "2026-05-04T00:13:47.8371746Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Implement MySQL provider capability profile and optimized writer boundary",
+    "status": "todo"
+  }
+}

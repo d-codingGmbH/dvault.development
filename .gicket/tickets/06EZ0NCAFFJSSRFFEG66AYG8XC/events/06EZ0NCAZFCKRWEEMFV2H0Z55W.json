@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NCAZFCKRWEEMFV2H0Z55W",
+  "occurred-at": "2026-05-04T00:13:51.2275332Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Consolidate provider benchmark reporting",
+    "status": "todo"
+  }
+}

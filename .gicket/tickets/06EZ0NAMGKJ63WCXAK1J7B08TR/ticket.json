@@ -1,0 +1,21 @@
+﻿{
+    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
+    "ticket-id":  "06EZ0NAMGKJ63WCXAK1J7B08TR",
+    "ticket-type":  "task",
+    "title":  "Task: Implement SQL Server set-based save strategy",
+    "revision":  "06EZ0P8K7N0V51XX2TMHMNBCGR",
+    "status":  "todo",
+    "labels":  [
+                   "type/task",
+                   "automation/bot-ready",
+                   "area/sql-server",
+                   "area/performance"
+               ],
+    "assignees":  [
+
+                  ],
+    "milestoneId":  "06EZ0MF7MBCHGFFQKYQW6B7RKW",
+    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+    "created-at":  "2026-05-04T00:13:37.5224196Z",
+    "updated-at":  "2026-05-04T00:17:42.7173633Z"
+}

@@ -1,0 +1,22 @@
+﻿{
+    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
+    "ticket-id":  "06EZ0NB4965QZZYG0Z1PG5YY7C",
+    "ticket-type":  "story",
+    "title":  "Story: Optimize Oracle provider save strategy",
+    "revision":  "06EZ0P8K398QM491M0CRTGH5A0",
+    "status":  "todo",
+    "labels":  [
+                   "type/story",
+                   "automation/bot-ready",
+                   "area/oracle",
+                   "area/provider-support",
+                   "area/performance"
+               ],
+    "assignees":  [
+
+                  ],
+    "milestoneId":  "06EZ0MF7MBCHGFFQKYQW6B7RKW",
+    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+    "created-at":  "2026-05-04T00:13:41.5691461Z",
+    "updated-at":  "2026-05-04T00:17:42.6820444Z"
+}

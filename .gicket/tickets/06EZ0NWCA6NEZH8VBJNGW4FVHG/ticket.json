@@ -1,0 +1,22 @@
+﻿{
+    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
+    "ticket-id":  "06EZ0NWCA6NEZH8VBJNGW4FVHG",
+    "ticket-type":  "task",
+    "title":  "Task: Add multi-active satellite docs and tests",
+    "revision":  "06EZ0P8JWPBGW0MV7XM1XCG4NC",
+    "status":  "todo",
+    "labels":  [
+                   "type/task",
+                   "automation/bot-ready",
+                   "area/docs",
+                   "area/multi-active-satellite",
+                   "area/tests"
+               ],
+    "assignees":  [
+
+                  ],
+    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
+    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+    "created-at":  "2026-05-04T00:16:02.8382175Z",
+    "updated-at":  "2026-05-04T00:17:42.6294078Z"
+}

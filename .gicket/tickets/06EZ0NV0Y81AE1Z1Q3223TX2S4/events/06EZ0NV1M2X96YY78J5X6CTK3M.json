@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NV1M2X96YY78J5X6CTK3M",
+  "occurred-at": "2026-05-04T00:15:51.7129957Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Define bridge metadata for many-to-many and hierarchy traversal",
+    "status": "todo"
+  }
+}

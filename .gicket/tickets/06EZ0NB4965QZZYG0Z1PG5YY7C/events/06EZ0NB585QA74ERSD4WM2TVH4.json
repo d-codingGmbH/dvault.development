@@ -1,0 +1,13 @@
+{
+  "event-id": "06EZ0NB585QA74ERSD4WM2TVH4",
+  "occurred-at": "2026-05-04T00:13:41.5691461Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Optimize Oracle provider save strategy",
+    "status": "todo"
+  }
+}
