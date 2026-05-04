@@ -184,7 +184,7 @@ Provider integration tests use stable xUnit trait categories so required local c
 
 - `Category=ProviderIntegration.RequiredLocal`: required SQLite-backed integration coverage that does not need external services.
 - `Category=ProviderSmoke.Default`: provider package registration and configuration-contract smoke coverage that runs in the default local path.
-- `Category=ProviderIntegration.ExternalOptIn`: live external database integration coverage, currently Postgres and Oracle.
+- `Category=ProviderIntegration.ExternalOptIn`: live external database integration coverage, currently Postgres, Oracle, and MySQL.
 
 To make the default local provider boundary explicit in a focused run, exclude opt-in external database tests:
 
@@ -200,7 +200,7 @@ Run the local SQLite scenario comparison benchmarks from the repository root:
 dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --iterations 1 --warmup 0
 ```
 
-The benchmark executable compares conventional EF and DVault flows for the shared customer profile history contract, a larger customer profile bulk-history contract, and the reduced order-product fulfillment history contract. It uses SQLite temporary files by default and does not require Postgres, Oracle, Docker, `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, or `DVAULT_TEST_ORACLE_CONNECTION_STRING`.
+The benchmark executable compares conventional EF and DVault flows for the shared customer profile history contract, a larger customer profile bulk-history contract, and the reduced order-product fulfillment history contract. It uses SQLite temporary files by default and does not require Postgres, Oracle, MySQL, Docker, `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, or `DVAULT_TEST_MYSQL_CONNECTION_STRING`.
 Increase `--iterations` and `--warmup` locally when collecting steadier timing numbers.
 
 ## Optional Local Postgres Integration Tests
@@ -238,6 +238,24 @@ DVAULT_TEST_ORACLE_CONNECTION_STRING='User Id=dvault;Password=local-secret;Data 
 ```
 
 DVault does not provision Docker containers, Oracle databases, or Oracle users for these tests. The configured database and user must already exist, and the configured user must be allowed to create and drop temporary tables. Keep credentials in local environment variables or another untracked secret store, not in repository files.
+
+## Optional Local MySQL Integration Tests
+
+MySQL integration tests are opt-in and are skipped by default. Normal `dotnet test` execution does not require MySQL, Docker, or checked-in machine-specific configuration.
+
+To run the MySQL-backed integration test, provide a developer-managed MySQL database connection string in `DVAULT_TEST_MYSQL_CONNECTION_STRING`:
+
+```sh
+DVAULT_TEST_MYSQL_CONNECTION_STRING='Server=localhost;Port=3306;Database=dvault_tests;User=dvault;Password=local-secret' dotnet test DVault.slnx --nologo
+```
+
+To select only the live MySQL integration category, use the same configured connection string with the provider category filter:
+
+```sh
+DVAULT_TEST_MYSQL_CONNECTION_STRING='Server=localhost;Port=3306;Database=dvault_tests;User=dvault;Password=local-secret' dotnet test DVault.slnx --nologo --filter "Category=ProviderIntegration.ExternalOptIn&Provider=MySQL"
+```
+
+The integration project conditionally restores `Pomelo.EntityFrameworkCore.MySql` only when `DVAULT_TEST_MYSQL_CONNECTION_STRING` is non-empty. When running the live MySQL path, keep the variable set for restore, build, and test so the conditional provider package is available. DVault does not provision Docker containers or databases for these tests. The configured database must already exist, and the configured user must be allowed to create and drop the smoke-test table. Keep credentials in local environment variables or another untracked secret store, not in repository files.
 
 ## License
 

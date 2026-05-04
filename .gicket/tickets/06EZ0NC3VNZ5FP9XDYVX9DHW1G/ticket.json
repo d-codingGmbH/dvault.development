@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0NC3VNZ5FP9XDYVX9DHW1G",
   "ticket-type": "task",
   "title": "Task: Add MySQL opt-in integration configuration and smoke tests",
-  "revision": "06EZ0Y3MQF730SS758DFW19SQG",
-  "status": "todo",
+  "revision": "06EZ6ER44FB77KHST4P83ZVZTW",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
     "area/mysql",
     "area/tests",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:13:49.5306739Z",
-  "updated-at": "2026-05-04T00:51:59.2919375Z"
+  "updated-at": "2026-05-04T13:43:44.4191870Z"
 }

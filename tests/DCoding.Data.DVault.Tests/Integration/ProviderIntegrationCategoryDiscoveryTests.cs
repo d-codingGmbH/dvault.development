@@ -23,6 +23,8 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
     var expectedTypes = RequiredLocalSqliteCoverageTypes
         .Concat(
             [
+                typeof(MySqlExplicitDataVaultSaveServiceTests),
+                typeof(MySqlIntegrationTestConfigurationTests),
                 typeof(PostgresDataVaultSchemaTests),
                 typeof(PostgresOptimizedDataVaultSaveServiceTests),
                 typeof(PostgresIntegrationTestConfigurationTests),
@@ -95,6 +97,19 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
 
   [Fact]
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  public void LiveMySqlIntegrationTestsAreExternalProviderOptInCoverage() {
+    AssertTrait(
+        typeof(MySqlExplicitDataVaultSaveServiceTests),
+        ProviderTestCategories.CategoryTraitName,
+        ProviderTestCategories.ExternalProviderIntegration);
+    AssertTrait(
+        typeof(MySqlExplicitDataVaultSaveServiceTests),
+        ProviderTestCategories.ProviderTraitName,
+        ProviderTestCategories.MySqlProvider);
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
   public void PostgresConfigurationContractTestsRemainDefaultProviderSmokeCoverage() {
     AssertTrait(
         typeof(PostgresIntegrationTestConfigurationTests),
@@ -117,6 +132,19 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
         typeof(OracleIntegrationTestConfigurationTests),
         ProviderTestCategories.ProviderTraitName,
         ProviderTestCategories.OracleProvider);
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  public void MySqlConfigurationContractTestsRemainDefaultProviderSmokeCoverage() {
+    AssertTrait(
+        typeof(MySqlIntegrationTestConfigurationTests),
+        ProviderTestCategories.CategoryTraitName,
+        ProviderTestCategories.DefaultProviderSmoke);
+    AssertTrait(
+        typeof(MySqlIntegrationTestConfigurationTests),
+        ProviderTestCategories.ProviderTraitName,
+        ProviderTestCategories.MySqlProvider);
   }
 
   private static bool ContainsFact(Type type) {
