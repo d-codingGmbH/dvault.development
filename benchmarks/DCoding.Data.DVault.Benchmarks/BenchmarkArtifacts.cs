@@ -6,7 +6,7 @@ using System.Text.Json;
 namespace DCoding.Data.DVault.Benchmarks;
 
 internal static class BenchmarkArtifacts {
-  public const string ProviderName = "SQLite local temporary files";
+  public const string RequiredProviderName = "SQLite local temporary files";
 
   private const string MarkdownFileName = "benchmark-summary.md";
   private const string CsvFileName = "benchmark-summary.csv";
@@ -47,8 +47,8 @@ internal static class BenchmarkArtifacts {
     ArgumentNullException.ThrowIfNull(summaries);
 
     var builder = new StringBuilder();
-    builder.AppendLine("| Scenario | Provider | Baseline | Strategy family | Dataset size | Change ratio | Iterations | Mean ms | Min ms | Max ms | Persisted outcome |");
-    builder.AppendLine("| --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- |");
+    builder.AppendLine("| Scenario | Provider | Baseline | Strategy family | Dataset size | Change ratio | Execution status | Skip reason | Iterations | Mean ms | Min ms | Max ms | Persisted outcome |");
+    builder.AppendLine("| --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- |");
 
     foreach (var summary in summaries) {
       builder
@@ -64,6 +64,10 @@ internal static class BenchmarkArtifacts {
           .Append(EscapeMarkdownCell(summary.DatasetSize))
           .Append(" | ")
           .Append(EscapeMarkdownCell(summary.ChangeRatio))
+          .Append(" | ")
+          .Append(EscapeMarkdownCell(summary.ExecutionStatus))
+          .Append(" | ")
+          .Append(EscapeMarkdownCell(summary.SkipReason))
           .Append(" | ")
           .Append(summary.Iterations.ToString(CultureInfo.InvariantCulture))
           .Append(" | ")
@@ -90,9 +94,20 @@ internal static class BenchmarkArtifacts {
         .Append("- Benchmark baselines: ")
         .AppendLine(summaries.Count.ToString(CultureInfo.InvariantCulture));
     builder
-        .Append("- Provider: ")
+        .Append("- Required provider: ")
         .AppendLine(context.Provider);
-    builder.AppendLine("- External services: not required");
+    builder
+        .Append("- Optional PostgreSQL provider: ")
+        .AppendLine(context.OptionalPostgresProvider);
+    builder
+        .Append("- PostgreSQL execution status: ")
+        .AppendLine(context.PostgresExecutionStatus);
+    if (!string.IsNullOrEmpty(context.PostgresSkipReason)) {
+      builder
+          .Append("- PostgreSQL skip reason: ")
+          .AppendLine(context.PostgresSkipReason);
+    }
+
     builder.AppendLine();
     builder.AppendLine("## Run Context");
     builder.AppendLine();
@@ -130,7 +145,7 @@ internal static class BenchmarkArtifacts {
 
   private static string CreateCsv(IEnumerable<BenchmarkSummary> summaries) {
     var builder = new StringBuilder();
-    builder.AppendLine("scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,persistedOutcome");
+    builder.AppendLine("scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,persistedOutcome");
 
     foreach (var summary in summaries) {
       AppendCsvRow(
@@ -141,6 +156,8 @@ internal static class BenchmarkArtifacts {
           summary.StrategyFamily,
           summary.DatasetSize,
           summary.ChangeRatio,
+          summary.ExecutionStatus,
+          summary.SkipReason,
           summary.Iterations.ToString(CultureInfo.InvariantCulture),
           FormatMilliseconds(summary.MeanMilliseconds),
           FormatMilliseconds(summary.MinMilliseconds),
@@ -186,8 +203,8 @@ internal static class BenchmarkArtifacts {
         .Replace("|", "\\|", StringComparison.Ordinal);
   }
 
-  private static string FormatMilliseconds(double value) {
-    return value.ToString("F3", CultureInfo.InvariantCulture);
+  private static string FormatMilliseconds(double? value) {
+    return value?.ToString("F3", CultureInfo.InvariantCulture) ?? string.Empty;
   }
 }
 
@@ -195,6 +212,9 @@ internal sealed record BenchmarkArtifactPaths(string MarkdownPath, string CsvPat
 
 internal sealed record BenchmarkRunContext(
     string Provider,
+    string OptionalPostgresProvider,
+    string PostgresExecutionStatus,
+    string PostgresSkipReason,
     int Iterations,
     int WarmupIterations,
     string OsDescription,
@@ -203,11 +223,17 @@ internal sealed record BenchmarkRunContext(
     int ProcessorCount,
     string DotNetRuntimeDescription,
     string DotNetRuntimeVersion) {
-  public static BenchmarkRunContext Create(BenchmarkOptions options) {
+  public static BenchmarkRunContext Create(
+      BenchmarkOptions options,
+      PostgresBenchmarkAvailability postgresAvailability) {
     ArgumentNullException.ThrowIfNull(options);
+    ArgumentNullException.ThrowIfNull(postgresAvailability);
 
     return new BenchmarkRunContext(
-        BenchmarkArtifacts.ProviderName,
+        BenchmarkArtifacts.RequiredProviderName,
+        PostgresBenchmarkAvailability.ProviderName,
+        postgresAvailability.ExecutionStatus,
+        postgresAvailability.SkipReason?.DisplayText ?? string.Empty,
         options.Iterations,
         options.WarmupIterations,
         RuntimeInformation.OSDescription,

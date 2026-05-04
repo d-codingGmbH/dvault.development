@@ -9,6 +9,8 @@ namespace DCoding.Data.DVault.Benchmarks;
 internal sealed class CustomerProfilePlainEfBenchmark : IScenarioBenchmark {
   public string ScenarioName => "customer-profile-history";
 
+  public string ProviderName => BenchmarkArtifacts.RequiredProviderName;
+
   public string BaselineName => "conventional-ef";
 
   public string StrategyFamily => DataVaultBenchmarkHelpers.ClassicEfStrategyFamily;
@@ -117,13 +119,21 @@ internal sealed class CustomerProfilePlainEfBenchmark : IScenarioBenchmark {
 }
 
 internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
+  private readonly BenchmarkDatabaseProvider _provider;
   private readonly DataVaultBenchmarkStrategy _strategy;
 
-  public CustomerProfileDataVaultBenchmark(DataVaultBenchmarkStrategy strategy) {
+  public CustomerProfileDataVaultBenchmark(
+      BenchmarkDatabaseProvider provider,
+      DataVaultBenchmarkStrategy strategy) {
+    ArgumentNullException.ThrowIfNull(provider);
+
+    _provider = provider;
     _strategy = strategy;
   }
 
   public string ScenarioName => "customer-profile-history";
+
+  public string ProviderName => _provider.ProviderName;
 
   public string BaselineName => DataVaultBenchmarkHelpers.GetDataVaultBaselineName(_strategy);
 
@@ -134,71 +144,76 @@ internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
   public string ChangeRatio => "50% repeat-change history";
 
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
-    using var database = TempSqliteDatabase.Create();
-    var options = new DbContextOptionsBuilder<CustomerProfileDataVaultContext>()
-        .UseSqlite(database.ConnectionString)
-        .Options;
+    using var database = _provider.CreateDatabase();
+    var options = database.CreateOptions<CustomerProfileDataVaultContext>();
     var services = new ServiceCollection();
     DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy);
 
     using var provider = services.BuildServiceProvider(validateScopes: true);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
 
-    await using (var context = new CustomerProfileDataVaultContext(options)) {
-      await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+    try {
+      await using (var context = new CustomerProfileDataVaultContext(options)) {
+        await database.InitializeAsync(context, cancellationToken).ConfigureAwait(false);
+        await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+      }
+
+      var elapsed = await BenchmarkClock.MeasureAsync(async () => {
+        string customerHashKey;
+        var firstEvent = ScenarioContracts.CustomerProfileEvents[0];
+        await using (var context = new CustomerProfileDataVaultContext(options)) {
+          var firstHubResult = await saveService.SaveAsync(
+              context,
+              new DataVaultSaveRequest(
+                  firstEvent.ChangedAtUtc,
+                  firstEvent.RecordSource,
+                  [new(ScenarioContracts.CustomerHub, [new("Customer Id", firstEvent.CustomerBusinessKey)])],
+                  []),
+              cancellationToken).ConfigureAwait(false);
+          customerHashKey = DataVaultBenchmarkHelpers.GetHashKey(firstHubResult, DataVaultTableKind.Hub, "Customer");
+
+          await saveService.SaveAsync(
+              context,
+              new DataVaultSaveRequest(
+                  firstEvent.ChangedAtUtc,
+                  firstEvent.RecordSource,
+                  [],
+                  [],
+                  [CreateSatelliteSaveOperation(firstEvent, customerHashKey)]),
+              cancellationToken).ConfigureAwait(false);
+        }
+
+        var secondEvent = ScenarioContracts.CustomerProfileEvents[1];
+        await using (var context = new CustomerProfileDataVaultContext(options)) {
+          await saveService.SaveAsync(
+              context,
+              new DataVaultSaveRequest(
+                  secondEvent.ChangedAtUtc,
+                  secondEvent.RecordSource,
+                  [new(ScenarioContracts.CustomerHub, [new("Customer Id", secondEvent.CustomerBusinessKey)])],
+                  []),
+              cancellationToken).ConfigureAwait(false);
+
+          await saveService.SaveAsync(
+              context,
+              new DataVaultSaveRequest(
+                  secondEvent.ChangedAtUtc,
+                  secondEvent.RecordSource,
+                  [],
+                  [],
+                  [CreateSatelliteSaveOperation(secondEvent, customerHashKey)]),
+              cancellationToken).ConfigureAwait(false);
+        }
+      }).ConfigureAwait(false);
+
+      await VerifyOutcomeAsync(options, cancellationToken).ConfigureAwait(false);
+
+      return new ScenarioBenchmarkResult(elapsed, "1 customer hub row and 2 profile satellite rows for C-100");
     }
-
-    var elapsed = await BenchmarkClock.MeasureAsync(async () => {
-      string customerHashKey;
-      var firstEvent = ScenarioContracts.CustomerProfileEvents[0];
-      await using (var context = new CustomerProfileDataVaultContext(options)) {
-        var firstHubResult = await saveService.SaveAsync(
-            context,
-            new DataVaultSaveRequest(
-                firstEvent.ChangedAtUtc,
-                firstEvent.RecordSource,
-                [new(ScenarioContracts.CustomerHub, [new("Customer Id", firstEvent.CustomerBusinessKey)])],
-                []),
-            cancellationToken).ConfigureAwait(false);
-        customerHashKey = DataVaultBenchmarkHelpers.GetHashKey(firstHubResult, DataVaultTableKind.Hub, "Customer");
-
-        await saveService.SaveAsync(
-            context,
-            new DataVaultSaveRequest(
-                firstEvent.ChangedAtUtc,
-                firstEvent.RecordSource,
-                [],
-                [],
-                [CreateSatelliteSaveOperation(firstEvent, customerHashKey)]),
-            cancellationToken).ConfigureAwait(false);
-      }
-
-      var secondEvent = ScenarioContracts.CustomerProfileEvents[1];
-      await using (var context = new CustomerProfileDataVaultContext(options)) {
-        await saveService.SaveAsync(
-            context,
-            new DataVaultSaveRequest(
-                secondEvent.ChangedAtUtc,
-                secondEvent.RecordSource,
-                [new(ScenarioContracts.CustomerHub, [new("Customer Id", secondEvent.CustomerBusinessKey)])],
-                []),
-            cancellationToken).ConfigureAwait(false);
-
-        await saveService.SaveAsync(
-            context,
-            new DataVaultSaveRequest(
-                secondEvent.ChangedAtUtc,
-                secondEvent.RecordSource,
-                [],
-                [],
-                [CreateSatelliteSaveOperation(secondEvent, customerHashKey)]),
-            cancellationToken).ConfigureAwait(false);
-      }
-    }).ConfigureAwait(false);
-
-    await VerifyOutcomeAsync(options, cancellationToken).ConfigureAwait(false);
-
-    return new ScenarioBenchmarkResult(elapsed, "1 customer hub row and 2 profile satellite rows for C-100");
+    finally {
+      await using var cleanupContext = new CustomerProfileDataVaultContext(options);
+      await database.CleanupAsync(cleanupContext, CancellationToken.None).ConfigureAwait(false);
+    }
   }
 
   private static DataVaultSatelliteSaveOperation CreateSatelliteSaveOperation(
@@ -270,6 +285,8 @@ internal sealed class CustomerProfileBulkPlainEfBenchmark : IScenarioBenchmark {
   }
 
   public string ScenarioName => _scenario.ScenarioName;
+
+  public string ProviderName => BenchmarkArtifacts.RequiredProviderName;
 
   public string BaselineName => "conventional-ef-bulk";
 
@@ -389,19 +406,25 @@ internal sealed class CustomerProfileBulkPlainEfBenchmark : IScenarioBenchmark {
 }
 
 internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark {
+  private readonly BenchmarkDatabaseProvider _provider;
   private readonly CustomerProfileBulkScenarioDefinition _scenario;
   private readonly DataVaultBenchmarkStrategy _strategy;
 
   public CustomerProfileBulkDataVaultBenchmark(
+      BenchmarkDatabaseProvider provider,
       CustomerProfileBulkScenarioDefinition scenario,
       DataVaultBenchmarkStrategy strategy) {
+    ArgumentNullException.ThrowIfNull(provider);
     ArgumentNullException.ThrowIfNull(scenario);
 
+    _provider = provider;
     _scenario = scenario;
     _strategy = strategy;
   }
 
   public string ScenarioName => _scenario.ScenarioName;
+
+  public string ProviderName => _provider.ProviderName;
 
   public string BaselineName => DataVaultBenchmarkHelpers.GetDataVaultBaselineName(_strategy);
 
@@ -412,71 +435,76 @@ internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark
   public string ChangeRatio => _scenario.ChangeRatio;
 
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
-    using var database = TempSqliteDatabase.Create();
-    var options = new DbContextOptionsBuilder<CustomerProfileBulkDataVaultContext>()
-        .UseSqlite(database.ConnectionString)
-        .Options;
+    using var database = _provider.CreateDatabase();
+    var options = database.CreateOptions<CustomerProfileBulkDataVaultContext>();
     var services = new ServiceCollection();
     DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy);
 
     using var provider = services.BuildServiceProvider(validateScopes: true);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
 
-    await using (var context = new CustomerProfileBulkDataVaultContext(options)) {
-      await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+    try {
+      await using (var context = new CustomerProfileBulkDataVaultContext(options)) {
+        await database.InitializeAsync(context, cancellationToken).ConfigureAwait(false);
+        await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+      }
+
+      var elapsed = await BenchmarkClock.MeasureAsync(async () => {
+        await using var context = new CustomerProfileBulkDataVaultContext(options);
+        var hubResult = await saveService.SaveAsync(
+            context,
+            new DataVaultSaveRequest(
+                _scenario.BaseTimestamp,
+                _scenario.RecordSource,
+                Enumerable.Range(0, _scenario.CustomerCount)
+                    .Select(customerIndex => new DataVaultHubSaveOperation(
+                        ScenarioContracts.CustomerHub,
+                        [new("Customer Id", _scenario.CreateBusinessKey(customerIndex))]))
+                    .ToArray(),
+                []),
+            cancellationToken).ConfigureAwait(false);
+        var customerHashKeys = hubResult.SavedRecords
+            .Select((record, customerIndex) => new {
+              BusinessKey = _scenario.CreateBusinessKey(customerIndex),
+              record.HashKey,
+            })
+            .ToDictionary(value => value.BusinessKey, value => value.HashKey, StringComparer.Ordinal);
+
+        var satelliteRequests = Enumerable.Range(0, _scenario.ChangeCount)
+            .Select(changeIndex => new DataVaultSaveRequest(
+                _scenario.BaseTimestamp.AddMinutes(changeIndex),
+                _scenario.RecordSource,
+                [],
+                [],
+                Enumerable.Range(0, _scenario.CustomerCount)
+                    .Select(customerIndex => {
+                      var customerProfileEvent = _scenario.CreateEvent(customerIndex, changeIndex);
+                      return CreateSatelliteSaveOperation(
+                          customerProfileEvent,
+                          customerHashKeys[customerProfileEvent.CustomerBusinessKey]);
+                    })
+                    .ToArray()))
+            .ToArray();
+
+        await saveService.SaveAsync(
+            context,
+            new DataVaultBulkSaveRequest(satelliteRequests),
+            cancellationToken).ConfigureAwait(false);
+      }).ConfigureAwait(false);
+
+      await VerifyOutcomeAsync(options, _scenario, cancellationToken).ConfigureAwait(false);
+
+      return new ScenarioBenchmarkResult(
+          elapsed,
+          _scenario.CustomerCount.ToString(CultureInfo.InvariantCulture) +
+          " customer hubs and " +
+          _scenario.TotalChangeCount.ToString(CultureInfo.InvariantCulture) +
+          " profile satellite rows");
     }
-
-    var elapsed = await BenchmarkClock.MeasureAsync(async () => {
-      await using var context = new CustomerProfileBulkDataVaultContext(options);
-      var hubResult = await saveService.SaveAsync(
-          context,
-          new DataVaultSaveRequest(
-              _scenario.BaseTimestamp,
-              _scenario.RecordSource,
-              Enumerable.Range(0, _scenario.CustomerCount)
-                  .Select(customerIndex => new DataVaultHubSaveOperation(
-                      ScenarioContracts.CustomerHub,
-                      [new("Customer Id", _scenario.CreateBusinessKey(customerIndex))]))
-                  .ToArray(),
-              []),
-          cancellationToken).ConfigureAwait(false);
-      var customerHashKeys = hubResult.SavedRecords
-          .Select((record, customerIndex) => new {
-            BusinessKey = _scenario.CreateBusinessKey(customerIndex),
-            record.HashKey,
-          })
-          .ToDictionary(value => value.BusinessKey, value => value.HashKey, StringComparer.Ordinal);
-
-      var satelliteRequests = Enumerable.Range(0, _scenario.ChangeCount)
-          .Select(changeIndex => new DataVaultSaveRequest(
-              _scenario.BaseTimestamp.AddMinutes(changeIndex),
-              _scenario.RecordSource,
-              [],
-              [],
-              Enumerable.Range(0, _scenario.CustomerCount)
-                  .Select(customerIndex => {
-                    var customerProfileEvent = _scenario.CreateEvent(customerIndex, changeIndex);
-                    return CreateSatelliteSaveOperation(
-                        customerProfileEvent,
-                        customerHashKeys[customerProfileEvent.CustomerBusinessKey]);
-                  })
-                  .ToArray()))
-          .ToArray();
-
-      await saveService.SaveAsync(
-          context,
-          new DataVaultBulkSaveRequest(satelliteRequests),
-          cancellationToken).ConfigureAwait(false);
-    }).ConfigureAwait(false);
-
-    await VerifyOutcomeAsync(options, _scenario, cancellationToken).ConfigureAwait(false);
-
-    return new ScenarioBenchmarkResult(
-        elapsed,
-        _scenario.CustomerCount.ToString(CultureInfo.InvariantCulture) +
-        " customer hubs and " +
-        _scenario.TotalChangeCount.ToString(CultureInfo.InvariantCulture) +
-        " profile satellite rows");
+    finally {
+      await using var cleanupContext = new CustomerProfileBulkDataVaultContext(options);
+      await database.CleanupAsync(cleanupContext, CancellationToken.None).ConfigureAwait(false);
+    }
   }
 
   private static DataVaultSatelliteSaveOperation CreateSatelliteSaveOperation(

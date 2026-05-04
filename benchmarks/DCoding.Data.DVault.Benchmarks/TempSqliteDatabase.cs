@@ -1,6 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace DCoding.Data.DVault.Benchmarks;
 
-internal sealed class TempSqliteDatabase : IDisposable {
+internal sealed class TempSqliteDatabase : IBenchmarkDatabase {
   private readonly string _directoryPath;
   private bool _disposed;
 
@@ -17,6 +19,25 @@ internal sealed class TempSqliteDatabase : IDisposable {
 
     var databasePath = Path.Combine(directoryPath, "benchmark.db");
     return new TempSqliteDatabase(directoryPath, "Data Source=" + databasePath + ";Pooling=False");
+  }
+
+  public DbContextOptions<TContext> CreateOptions<TContext>()
+      where TContext : DbContext {
+    return new DbContextOptionsBuilder<TContext>()
+        .UseSqlite(ConnectionString)
+        .Options;
+  }
+
+  public Task InitializeAsync(DbContext context, CancellationToken cancellationToken) {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return Task.CompletedTask;
+  }
+
+  public Task CleanupAsync(DbContext context, CancellationToken cancellationToken) {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return Task.CompletedTask;
   }
 
   public void Dispose() {

@@ -9,80 +9,129 @@ namespace DCoding.Data.DVault.Tests.Integration;
 [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.RequiredLocalProviderIntegration)]
 [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqliteProvider)]
 public sealed class BenchmarkScenarioExecutionTests {
-  private const string ProviderName = "SQLite local temporary files";
+  private const string SqliteProviderName = "SQLite local temporary files";
+  private const string PostgresProviderName = "PostgreSQL external provider";
 
   private static readonly ExpectedBenchmarkRow[] ExpectedRows =
   [
-      new(
+      CompletedSqlite(
           "customer-profile-history",
           "conventional-ef",
           "classic-ef",
           "1 customer, 2 profile states",
           "50% repeat-change history"),
-      new(
+      CompletedSqlite(
           "customer-profile-history",
           "dvault-adddvault-fallback",
           "provider-neutral-dvault-fallback",
           "1 customer, 2 profile states",
           "50% repeat-change history"),
-      new(
+      CompletedSqlite(
           "customer-profile-history",
           "dvault-adddvaultsqlite-optimized",
           "sqlite-optimized-dvault",
           "1 customer, 2 profile states",
           "50% repeat-change history"),
-      new(
+      CompletedSqlite(
           "customer-profile-bulk-insert-only",
           "conventional-ef-bulk",
           "classic-ef",
           "100 customers, 1 profile state each",
           "0% repeat-change history"),
-      new(
+      CompletedSqlite(
           "customer-profile-bulk-insert-only",
           "dvault-adddvault-fallback",
           "provider-neutral-dvault-fallback",
           "100 customers, 1 profile state each",
           "0% repeat-change history"),
-      new(
+      CompletedSqlite(
           "customer-profile-bulk-insert-only",
           "dvault-adddvaultsqlite-optimized",
           "sqlite-optimized-dvault",
           "100 customers, 1 profile state each",
           "0% repeat-change history"),
-      new(
+      CompletedSqlite(
           "customer-profile-bulk-history",
           "conventional-ef-bulk",
           "classic-ef",
           "100 customers, 10 profile states each",
           "90% repeat-change history"),
-      new(
+      CompletedSqlite(
           "customer-profile-bulk-history",
           "dvault-adddvault-fallback",
           "provider-neutral-dvault-fallback",
           "100 customers, 10 profile states each",
           "90% repeat-change history"),
-      new(
+      CompletedSqlite(
           "customer-profile-bulk-history",
           "dvault-adddvaultsqlite-optimized",
           "sqlite-optimized-dvault",
           "100 customers, 10 profile states each",
           "90% repeat-change history"),
-      new(
+      CompletedSqlite(
           "order-product-fulfillment-history",
           "conventional-ef",
           "classic-ef",
           "1 order-product relationship, 2 fulfillment states",
           "50% repeat-change history"),
-      new(
+      CompletedSqlite(
           "order-product-fulfillment-history",
           "dvault-adddvault-fallback",
           "provider-neutral-dvault-fallback",
           "1 order-product relationship, 2 fulfillment states",
           "50% repeat-change history"),
-      new(
+      CompletedSqlite(
           "order-product-fulfillment-history",
           "dvault-adddvaultsqlite-optimized",
           "sqlite-optimized-dvault",
+          "1 order-product relationship, 2 fulfillment states",
+          "50% repeat-change history"),
+      SkippedPostgres(
+          "customer-profile-history",
+          "dvault-adddvault-fallback",
+          "provider-neutral-dvault-fallback",
+          "1 customer, 2 profile states",
+          "50% repeat-change history"),
+      SkippedPostgres(
+          "customer-profile-history",
+          "dvault-adddvaultpostgres-optimized",
+          "postgres-optimized-dvault",
+          "1 customer, 2 profile states",
+          "50% repeat-change history"),
+      SkippedPostgres(
+          "customer-profile-bulk-insert-only",
+          "dvault-adddvault-fallback",
+          "provider-neutral-dvault-fallback",
+          "100 customers, 1 profile state each",
+          "0% repeat-change history"),
+      SkippedPostgres(
+          "customer-profile-bulk-insert-only",
+          "dvault-adddvaultpostgres-optimized",
+          "postgres-optimized-dvault",
+          "100 customers, 1 profile state each",
+          "0% repeat-change history"),
+      SkippedPostgres(
+          "customer-profile-bulk-history",
+          "dvault-adddvault-fallback",
+          "provider-neutral-dvault-fallback",
+          "100 customers, 10 profile states each",
+          "90% repeat-change history"),
+      SkippedPostgres(
+          "customer-profile-bulk-history",
+          "dvault-adddvaultpostgres-optimized",
+          "postgres-optimized-dvault",
+          "100 customers, 10 profile states each",
+          "90% repeat-change history"),
+      SkippedPostgres(
+          "order-product-fulfillment-history",
+          "dvault-adddvault-fallback",
+          "provider-neutral-dvault-fallback",
+          "1 order-product relationship, 2 fulfillment states",
+          "50% repeat-change history"),
+      SkippedPostgres(
+          "order-product-fulfillment-history",
+          "dvault-adddvaultpostgres-optimized",
+          "postgres-optimized-dvault",
           "1 order-product relationship, 2 fulfillment states",
           "50% repeat-change history"),
   ];
@@ -91,8 +140,8 @@ public sealed class BenchmarkScenarioExecutionTests {
   public async Task LocalBenchmarkRunnerExecutesCustomerAndOrderComparisonsThroughSqlite() {
     var text = await RunBenchmarkAndCaptureOutputAsync(new BenchmarkOptions(1, 0)).ConfigureAwait(false);
 
-    Assert.Contains("Provider: " + ProviderName, text);
-    Assert.Contains("Postgres, Docker, and external services are not required.", text);
+    Assert.Contains("Required provider: " + SqliteProviderName, text);
+    Assert.Contains("PostgreSQL provider: skipped - " + NotConfiguredSkipReason, text);
 
     foreach (var expectedRow in ExpectedRows) {
       Assert.Contains(CreateMarkdownRowPrefix(expectedRow), text);
@@ -110,7 +159,9 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Contains(
         "1 order hub, 1 product hub, 1 link, and 2 fulfillment satellite rows for O-1000/SKU-COFFEE",
         text);
-    Assert.Contains("Executed 12 benchmark baselines.", text);
+    Assert.Contains("Recorded 20 benchmark report rows.", text);
+    Assert.Contains("Executed 12 benchmark report rows.", text);
+    Assert.Contains("Skipped 8 benchmark report rows.", text);
   }
 
   [Fact]
@@ -135,7 +186,10 @@ public sealed class BenchmarkScenarioExecutionTests {
 
       var markdown = await File.ReadAllTextAsync(markdownPath).ConfigureAwait(false);
       Assert.Contains("# DVault Benchmark Summary", markdown);
-      Assert.Contains("- Provider: " + ProviderName, markdown);
+      Assert.Contains("- Required provider: " + SqliteProviderName, markdown);
+      Assert.Contains("- Optional PostgreSQL provider: " + PostgresProviderName, markdown);
+      Assert.Contains("- PostgreSQL execution status: skipped", markdown);
+      Assert.Contains("- PostgreSQL skip reason: " + NotConfiguredSkipReason, markdown);
       Assert.Contains("- Iterations: 1", markdown);
       Assert.Contains("- Warmup iterations: 0", markdown);
       Assert.Contains("- OS description: ", markdown);
@@ -143,7 +197,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.Contains("- Process architecture: ", markdown);
       Assert.Contains("- Processor count: ", markdown);
       Assert.Contains("- .NET runtime version: ", markdown);
-      Assert.Contains("| Scenario | Provider | Baseline | Strategy family | Dataset size | Change ratio | Iterations | Mean ms | Min ms | Max ms | Persisted outcome |", markdown);
+      Assert.Contains("| Scenario | Provider | Baseline | Strategy family | Dataset size | Change ratio | Execution status | Skip reason | Iterations | Mean ms | Min ms | Max ms | Persisted outcome |", markdown);
 
       foreach (var expectedRow in ExpectedRows) {
         Assert.Contains(CreateMarkdownRowPrefix(expectedRow), markdown);
@@ -153,7 +207,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       var csvLines = csv.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
       Assert.Equal(ExpectedRows.Length + 1, csvLines.Length);
       Assert.Equal(
-          "scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,persistedOutcome",
+          "scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,persistedOutcome",
           csvLines[0]);
 
       foreach (var expectedRow in ExpectedRows) {
@@ -164,7 +218,10 @@ public sealed class BenchmarkScenarioExecutionTests {
 
       using var json = JsonDocument.Parse(await File.ReadAllTextAsync(jsonPath).ConfigureAwait(false));
       var context = json.RootElement.GetProperty("context");
-      Assert.Equal(ProviderName, context.GetProperty("provider").GetString());
+      Assert.Equal(SqliteProviderName, context.GetProperty("provider").GetString());
+      Assert.Equal(PostgresProviderName, context.GetProperty("optionalPostgresProvider").GetString());
+      Assert.Equal("skipped", context.GetProperty("postgresExecutionStatus").GetString());
+      Assert.Equal(NotConfiguredSkipReason, context.GetProperty("postgresSkipReason").GetString());
       Assert.Equal(1, context.GetProperty("iterations").GetInt32());
       Assert.Equal(0, context.GetProperty("warmupIterations").GetInt32());
       Assert.False(string.IsNullOrWhiteSpace(context.GetProperty("osDescription").GetString()));
@@ -180,7 +237,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       foreach (var expectedRow in ExpectedRows) {
         var matchingResults = results.Where(result =>
             result.GetProperty("scenarioName").GetString() == expectedRow.ScenarioName &&
-            result.GetProperty("provider").GetString() == ProviderName &&
+            result.GetProperty("provider").GetString() == expectedRow.ProviderName &&
             result.GetProperty("baselineName").GetString() == expectedRow.BaselineName &&
             result.GetProperty("strategyFamily").GetString() == expectedRow.StrategyFamily)
             .ToArray();
@@ -188,7 +245,16 @@ public sealed class BenchmarkScenarioExecutionTests {
         var result = Assert.Single(matchingResults);
         Assert.Equal(expectedRow.DatasetSize, result.GetProperty("datasetSize").GetString());
         Assert.Equal(expectedRow.ChangeRatio, result.GetProperty("changeRatio").GetString());
-        Assert.Equal(1, result.GetProperty("iterations").GetInt32());
+        Assert.Equal(expectedRow.ExecutionStatus, result.GetProperty("executionStatus").GetString());
+        Assert.Equal(expectedRow.SkipReason, result.GetProperty("skipReason").GetString());
+        Assert.Equal(expectedRow.Iterations, result.GetProperty("iterations").GetInt32());
+
+        if (expectedRow.ExecutionStatus == "skipped") {
+          Assert.Equal(JsonValueKind.Null, result.GetProperty("meanMilliseconds").ValueKind);
+          Assert.Equal(JsonValueKind.Null, result.GetProperty("minMilliseconds").ValueKind);
+          Assert.Equal(JsonValueKind.Null, result.GetProperty("maxMilliseconds").ValueKind);
+          Assert.Equal("not executed", result.GetProperty("persistedOutcome").GetString());
+        }
       }
     }
     finally {
@@ -198,15 +264,84 @@ public sealed class BenchmarkScenarioExecutionTests {
     }
   }
 
+  [Fact]
+  public async Task PostgresDiscoveryTreatsMissingEnvironmentVariableAsNotConfiguredSkip() {
+    var availability = await PostgresBenchmarkAvailability
+        .DiscoverAsync(
+            _ => "  ",
+            () => throw new InvalidOperationException("Provider dependency probe should not run."),
+            (_, _) => throw new InvalidOperationException("Connection probe should not run."),
+            CancellationToken.None)
+        .ConfigureAwait(false);
+
+    Assert.False(availability.IsAvailable);
+    Assert.Equal("skipped", availability.ExecutionStatus);
+    Assert.Equal("not configured", availability.SkipReason?.Category);
+    Assert.Equal(NotConfiguredSkipReason, availability.SkipReason?.DisplayText);
+  }
+
+  [Fact]
+  public async Task PostgresDiscoveryReportsUnavailableProviderDependencyBeforeConnecting() {
+    var connectionProbeCalled = false;
+
+    var availability = await PostgresBenchmarkAvailability
+        .DiscoverAsync(
+            _ => "Host=localhost;Database=dvault",
+            () => false,
+            (_, _) => {
+              connectionProbeCalled = true;
+              return Task.FromResult<string?>(null);
+            },
+            CancellationToken.None)
+        .ConfigureAwait(false);
+
+    Assert.False(connectionProbeCalled);
+    Assert.False(availability.IsAvailable);
+    Assert.Equal("provider dependency unavailable", availability.SkipReason?.Category);
+    Assert.Contains("Npgsql.EntityFrameworkCore.PostgreSQL", availability.SkipReason?.DisplayText);
+  }
+
+  [Fact]
+  public async Task PostgresDiscoveryReportsUnreachableConnectionAsSkippedProvider() {
+    var availability = await PostgresBenchmarkAvailability
+        .DiscoverAsync(
+            _ => "Host=localhost;Database=dvault",
+            () => true,
+            (_, _) => Task.FromResult<string?>("simulated connection failure"),
+            CancellationToken.None)
+        .ConfigureAwait(false);
+
+    Assert.False(availability.IsAvailable);
+    Assert.Equal("connection unreachable", availability.SkipReason?.Category);
+    Assert.Contains("simulated connection failure", availability.SkipReason?.DisplayText);
+  }
+
+  [Fact]
+  public async Task PostgresDiscoveryReportsConfiguredConnectionAsAvailable() {
+    var availability = await PostgresBenchmarkAvailability
+        .DiscoverAsync(
+            _ => "Host=localhost;Database=dvault",
+            () => true,
+            (_, _) => Task.FromResult<string?>(null),
+            CancellationToken.None)
+        .ConfigureAwait(false);
+
+    Assert.True(availability.IsAvailable);
+    Assert.Equal("completed", availability.ExecutionStatus);
+    Assert.Null(availability.SkipReason);
+    Assert.Equal(PostgresProviderName, availability.Provider.ProviderName);
+  }
+
   private static async Task<string> RunBenchmarkAndCaptureOutputAsync(BenchmarkOptions options) {
     var originalOutput = Console.Out;
     using var output = new StringWriter(CultureInfo.InvariantCulture);
+    var postgresAvailability = PostgresBenchmarkAvailability.Skipped(BenchmarkSkipReason.NotConfigured());
 
     try {
       Console.SetOut(output);
 
       await BenchmarkRunner
-          .RunAsync(options, CancellationToken.None)
+          .RunAsync(options, postgresAvailability, CancellationToken.None)
           .ConfigureAwait(false);
     }
     finally {
@@ -220,7 +355,7 @@ public sealed class BenchmarkScenarioExecutionTests {
     return "| " +
         expectedRow.ScenarioName +
         " | " +
-        ProviderName +
+        expectedRow.ProviderName +
         " | " +
         expectedRow.BaselineName +
         " | " +
@@ -229,19 +364,65 @@ public sealed class BenchmarkScenarioExecutionTests {
         expectedRow.DatasetSize +
         " | " +
         expectedRow.ChangeRatio +
-        " | 1 |";
+        " | " +
+        expectedRow.ExecutionStatus +
+        " | " +
+        expectedRow.SkipReason +
+        " | " +
+        expectedRow.Iterations.ToString(CultureInfo.InvariantCulture) +
+        " |";
   }
 
   private static string CreateCsvRowPrefix(ExpectedBenchmarkRow expectedRow) {
     return string.Join(
         ',',
         expectedRow.ScenarioName,
-        ProviderName,
+        expectedRow.ProviderName,
         expectedRow.BaselineName,
         expectedRow.StrategyFamily,
         EscapeCsv(expectedRow.DatasetSize),
         EscapeCsv(expectedRow.ChangeRatio),
-        "1") + ",";
+        expectedRow.ExecutionStatus,
+        EscapeCsv(expectedRow.SkipReason),
+        expectedRow.Iterations.ToString(CultureInfo.InvariantCulture)) + ",";
+  }
+
+  private static string NotConfiguredSkipReason => BenchmarkSkipReason.NotConfigured().DisplayText;
+
+  private static ExpectedBenchmarkRow CompletedSqlite(
+      string scenarioName,
+      string baselineName,
+      string strategyFamily,
+      string datasetSize,
+      string changeRatio) {
+    return new ExpectedBenchmarkRow(
+        scenarioName,
+        SqliteProviderName,
+        baselineName,
+        strategyFamily,
+        datasetSize,
+        changeRatio,
+        "completed",
+        string.Empty,
+        1);
+  }
+
+  private static ExpectedBenchmarkRow SkippedPostgres(
+      string scenarioName,
+      string baselineName,
+      string strategyFamily,
+      string datasetSize,
+      string changeRatio) {
+    return new ExpectedBenchmarkRow(
+        scenarioName,
+        PostgresProviderName,
+        baselineName,
+        strategyFamily,
+        datasetSize,
+        changeRatio,
+        "skipped",
+        NotConfiguredSkipReason,
+        0);
   }
 
   private static string EscapeCsv(string value) {
@@ -257,8 +438,12 @@ public sealed class BenchmarkScenarioExecutionTests {
 
   private sealed record ExpectedBenchmarkRow(
       string ScenarioName,
+      string ProviderName,
       string BaselineName,
       string StrategyFamily,
       string DatasetSize,
-      string ChangeRatio);
+      string ChangeRatio,
+      string ExecutionStatus,
+      string SkipReason,
+      int Iterations);
 }

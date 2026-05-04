@@ -13,10 +13,12 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" Condition="'$(DVAULT_TEST_POSTGRES_CONNECTION_STRING)' != ''" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
+    <ProjectReference Include="../../src/DCoding.Data.DVault.Postgres/DCoding.Data.DVault.Postgres.csproj" />
     <ProjectReference Include="../../src/DCoding.Data.DVault.Sqlite/DCoding.Data.DVault.Sqlite.csproj" />
   </ItemGroup>
 </Project>

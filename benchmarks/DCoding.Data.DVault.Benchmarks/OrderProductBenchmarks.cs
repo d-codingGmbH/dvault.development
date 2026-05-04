@@ -12,6 +12,8 @@ internal sealed class OrderProductPlainEfBenchmark : IScenarioBenchmark {
 
   public string ScenarioName => "order-product-fulfillment-history";
 
+  public string ProviderName => BenchmarkArtifacts.RequiredProviderName;
+
   public string BaselineName => "conventional-ef";
 
   public string StrategyFamily => DataVaultBenchmarkHelpers.ClassicEfStrategyFamily;
@@ -271,13 +273,21 @@ internal sealed class OrderProductPlainEfBenchmark : IScenarioBenchmark {
 }
 
 internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
+  private readonly BenchmarkDatabaseProvider _provider;
   private readonly DataVaultBenchmarkStrategy _strategy;
 
-  public OrderProductDataVaultBenchmark(DataVaultBenchmarkStrategy strategy) {
+  public OrderProductDataVaultBenchmark(
+      BenchmarkDatabaseProvider provider,
+      DataVaultBenchmarkStrategy strategy) {
+    ArgumentNullException.ThrowIfNull(provider);
+
+    _provider = provider;
     _strategy = strategy;
   }
 
   public string ScenarioName => "order-product-fulfillment-history";
+
+  public string ProviderName => _provider.ProviderName;
 
   public string BaselineName => DataVaultBenchmarkHelpers.GetDataVaultBaselineName(_strategy);
 
@@ -288,88 +298,93 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
   public string ChangeRatio => "50% repeat-change history";
 
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
-    using var database = TempSqliteDatabase.Create();
-    var options = new DbContextOptionsBuilder<OrderProductDataVaultContext>()
-        .UseSqlite(database.ConnectionString)
-        .Options;
+    using var database = _provider.CreateDatabase();
+    var options = database.CreateOptions<OrderProductDataVaultContext>();
     var services = new ServiceCollection();
     DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy);
 
     using var provider = services.BuildServiceProvider(validateScopes: true);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
 
-    await using (var context = new OrderProductDataVaultContext(options)) {
-      await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
-    }
+    try {
+      await using (var context = new OrderProductDataVaultContext(options)) {
+        await database.InitializeAsync(context, cancellationToken).ConfigureAwait(false);
+        await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+      }
 
-    string orderProductHashKey = string.Empty;
-    var elapsed = await BenchmarkClock.MeasureAsync(async () => {
-      var relationship = ScenarioContracts.OrderRelationship;
-      string orderHashKey;
-      string productHashKey;
+      string orderProductHashKey = string.Empty;
+      var elapsed = await BenchmarkClock.MeasureAsync(async () => {
+        var relationship = ScenarioContracts.OrderRelationship;
+        string orderHashKey;
+        string productHashKey;
+
+        await using (var context = new OrderProductDataVaultContext(options)) {
+          var hubResult = await saveService.SaveAsync(
+              context,
+              new DataVaultSaveRequest(
+                  relationship.CreatedAtUtc,
+                  relationship.RecordSource,
+                  [
+                      new(ScenarioContracts.OrderHub, [new("Order Id", relationship.OrderBusinessKey)]),
+                      new(ScenarioContracts.ProductHub, [new("Sku", relationship.ProductBusinessKey)]),
+                  ],
+                  []),
+              cancellationToken).ConfigureAwait(false);
+          orderHashKey = DataVaultBenchmarkHelpers.GetHashKey(hubResult, DataVaultTableKind.Hub, "Order");
+          productHashKey = DataVaultBenchmarkHelpers.GetHashKey(hubResult, DataVaultTableKind.Hub, "Product");
+
+          var linkResult = await saveService.SaveAsync(
+              context,
+              new DataVaultSaveRequest(
+                  relationship.CreatedAtUtc,
+                  relationship.RecordSource,
+                  [],
+                  [
+                      new(
+                          ScenarioContracts.OrderProductLink,
+                          [new("Order", orderHashKey), new("Product", productHashKey)]),
+                  ]),
+              cancellationToken).ConfigureAwait(false);
+          orderProductHashKey = DataVaultBenchmarkHelpers.GetHashKey(linkResult, DataVaultTableKind.Link, "OrderProduct");
+        }
+
+        foreach (var fulfillmentEvent in ScenarioContracts.MeasuredOrderFulfillmentEvents) {
+          await using var context = new OrderProductDataVaultContext(options);
+          await saveService.SaveAsync(
+              context,
+              new DataVaultSaveRequest(
+                  fulfillmentEvent.ChangedAtUtc,
+                  fulfillmentEvent.RecordSource,
+                  [],
+                  [],
+                  [CreateSatelliteSaveOperation(fulfillmentEvent, orderProductHashKey)]),
+              cancellationToken).ConfigureAwait(false);
+        }
+      }).ConfigureAwait(false);
 
       await using (var context = new OrderProductDataVaultContext(options)) {
-        var hubResult = await saveService.SaveAsync(
+        var replayResult = await saveService.SaveAsync(
             context,
             new DataVaultSaveRequest(
-                relationship.CreatedAtUtc,
-                relationship.RecordSource,
-                [
-                    new(ScenarioContracts.OrderHub, [new("Order Id", relationship.OrderBusinessKey)]),
-                    new(ScenarioContracts.ProductHub, [new("Sku", relationship.ProductBusinessKey)]),
-                ],
-                []),
-            cancellationToken).ConfigureAwait(false);
-        orderHashKey = DataVaultBenchmarkHelpers.GetHashKey(hubResult, DataVaultTableKind.Hub, "Order");
-        productHashKey = DataVaultBenchmarkHelpers.GetHashKey(hubResult, DataVaultTableKind.Hub, "Product");
-
-        var linkResult = await saveService.SaveAsync(
-            context,
-            new DataVaultSaveRequest(
-                relationship.CreatedAtUtc,
-                relationship.RecordSource,
+                ScenarioContracts.UnchangedOrderFulfillmentReplay.ChangedAtUtc,
+                ScenarioContracts.UnchangedOrderFulfillmentReplay.RecordSource,
                 [],
-                [
-                    new(
-                        ScenarioContracts.OrderProductLink,
-                        [new("Order", orderHashKey), new("Product", productHashKey)]),
-                ]),
+                [],
+                [CreateSatelliteSaveOperation(ScenarioContracts.UnchangedOrderFulfillmentReplay, orderProductHashKey)]),
             cancellationToken).ConfigureAwait(false);
-        orderProductHashKey = DataVaultBenchmarkHelpers.GetHashKey(linkResult, DataVaultTableKind.Link, "OrderProduct");
+        BenchmarkAssert.Equal(0, replayResult.RowsWritten, "The DVault replay operation must not persist a third satellite row.");
       }
 
-      foreach (var fulfillmentEvent in ScenarioContracts.MeasuredOrderFulfillmentEvents) {
-        await using var context = new OrderProductDataVaultContext(options);
-        await saveService.SaveAsync(
-            context,
-            new DataVaultSaveRequest(
-                fulfillmentEvent.ChangedAtUtc,
-                fulfillmentEvent.RecordSource,
-                [],
-                [],
-                [CreateSatelliteSaveOperation(fulfillmentEvent, orderProductHashKey)]),
-            cancellationToken).ConfigureAwait(false);
-      }
-    }).ConfigureAwait(false);
+      await VerifyOutcomeAsync(options, cancellationToken).ConfigureAwait(false);
 
-    await using (var context = new OrderProductDataVaultContext(options)) {
-      var replayResult = await saveService.SaveAsync(
-          context,
-          new DataVaultSaveRequest(
-              ScenarioContracts.UnchangedOrderFulfillmentReplay.ChangedAtUtc,
-              ScenarioContracts.UnchangedOrderFulfillmentReplay.RecordSource,
-              [],
-              [],
-              [CreateSatelliteSaveOperation(ScenarioContracts.UnchangedOrderFulfillmentReplay, orderProductHashKey)]),
-          cancellationToken).ConfigureAwait(false);
-      BenchmarkAssert.Equal(0, replayResult.RowsWritten, "The DVault replay operation must not persist a third satellite row.");
+      return new ScenarioBenchmarkResult(
+          elapsed,
+          "1 order hub, 1 product hub, 1 link, and 2 fulfillment satellite rows for O-1000/SKU-COFFEE");
     }
-
-    await VerifyOutcomeAsync(options, cancellationToken).ConfigureAwait(false);
-
-    return new ScenarioBenchmarkResult(
-        elapsed,
-        "1 order hub, 1 product hub, 1 link, and 2 fulfillment satellite rows for O-1000/SKU-COFFEE");
+    finally {
+      await using var cleanupContext = new OrderProductDataVaultContext(options);
+      await database.CleanupAsync(cleanupContext, CancellationToken.None).ConfigureAwait(false);
+    }
   }
 
   private static DataVaultSatelliteSaveOperation CreateSatelliteSaveOperation(

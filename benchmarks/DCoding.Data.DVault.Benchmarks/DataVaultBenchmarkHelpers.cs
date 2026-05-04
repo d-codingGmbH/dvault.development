@@ -8,6 +8,7 @@ internal static class DataVaultBenchmarkHelpers {
   public const string ClassicEfStrategyFamily = "classic-ef";
   public const string ProviderNeutralFallbackStrategyFamily = "provider-neutral-dvault-fallback";
   public const string SqliteOptimizedStrategyFamily = "sqlite-optimized-dvault";
+  public const string PostgresOptimizedStrategyFamily = "postgres-optimized-dvault";
 
   public static void AddDataVaultServices(IServiceCollection services, DataVaultBenchmarkStrategy strategy) {
     switch (strategy) {
@@ -16,6 +17,9 @@ internal static class DataVaultBenchmarkHelpers {
         break;
       case DataVaultBenchmarkStrategy.SqliteOptimized:
         services.AddDVaultSqlite();
+        break;
+      case DataVaultBenchmarkStrategy.PostgresOptimized:
+        services.AddDVaultPostgres();
         break;
       default:
         throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Unsupported benchmark strategy.");
@@ -26,6 +30,7 @@ internal static class DataVaultBenchmarkHelpers {
     return strategy switch {
       DataVaultBenchmarkStrategy.ProviderNeutralFallback => "dvault-adddvault-fallback",
       DataVaultBenchmarkStrategy.SqliteOptimized => "dvault-adddvaultsqlite-optimized",
+      DataVaultBenchmarkStrategy.PostgresOptimized => "dvault-adddvaultpostgres-optimized",
       _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Unsupported benchmark strategy."),
     };
   }
@@ -34,6 +39,7 @@ internal static class DataVaultBenchmarkHelpers {
     return strategy switch {
       DataVaultBenchmarkStrategy.ProviderNeutralFallback => ProviderNeutralFallbackStrategyFamily,
       DataVaultBenchmarkStrategy.SqliteOptimized => SqliteOptimizedStrategyFamily,
+      DataVaultBenchmarkStrategy.PostgresOptimized => PostgresOptimizedStrategyFamily,
       _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Unsupported benchmark strategy."),
     };
   }
@@ -53,4 +59,5 @@ internal static class DataVaultBenchmarkHelpers {
 internal enum DataVaultBenchmarkStrategy {
   ProviderNeutralFallback,
   SqliteOptimized,
+  PostgresOptimized,
 }
