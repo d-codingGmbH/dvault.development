@@ -27,6 +27,7 @@
     <ProjectReference Include="../../../benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.Oracle/DCoding.Data.DVault.Oracle.csproj" />
+    <ProjectReference Include="../../../src/DCoding.Data.DVault.Postgres/DCoding.Data.DVault.Postgres.csproj" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.Sqlite/DCoding.Data.DVault.Sqlite.csproj" />
     <ProjectReference Include="../Shared/DCoding.Data.DVault.Tests.Shared.csproj" />
   </ItemGroup>

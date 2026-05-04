@@ -24,6 +24,7 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
         .Concat(
             [
                 typeof(PostgresDataVaultSchemaTests),
+                typeof(PostgresOptimizedDataVaultSaveServiceTests),
                 typeof(PostgresIntegrationTestConfigurationTests),
                 typeof(OracleDataVaultSmokeTests),
                 typeof(OracleIntegrationTestConfigurationTests),
@@ -67,6 +68,14 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
         ProviderTestCategories.ExternalProviderIntegration);
     AssertTrait(
         typeof(PostgresDataVaultSchemaTests),
+        ProviderTestCategories.ProviderTraitName,
+        ProviderTestCategories.PostgresProvider);
+    AssertTrait(
+        typeof(PostgresOptimizedDataVaultSaveServiceTests),
+        ProviderTestCategories.CategoryTraitName,
+        ProviderTestCategories.ExternalProviderIntegration);
+    AssertTrait(
+        typeof(PostgresOptimizedDataVaultSaveServiceTests),
         ProviderTestCategories.ProviderTraitName,
         ProviderTestCategories.PostgresProvider);
   }
