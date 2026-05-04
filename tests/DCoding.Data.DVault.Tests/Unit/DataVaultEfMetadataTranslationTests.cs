@@ -94,6 +94,18 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataHonorsRelationalDefaultSchema() {
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.HasDefaultSchema("dvault_test_schema");
+    modelBuilder.ApplyDataVaultMetadata(CreateMetadataModel());
+
+    Assert.All(
+        modelBuilder.Model.GetEntityTypes(),
+        entityType => Assert.Equal("dvault_test_schema", entityType.GetSchema()));
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataKeepsEquivalentInputDeterministic() {
     var first = CreateTranslatedModel();
     var second = CreateTranslatedModel();

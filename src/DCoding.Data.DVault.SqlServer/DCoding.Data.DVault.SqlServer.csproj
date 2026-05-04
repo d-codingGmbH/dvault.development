@@ -8,7 +8,7 @@
     <PackageId>DCoding.Data.DVault.SqlServer</PackageId>
     <Title>DVault SQL Server Provider Extensions</Title>
     <Authors>d-coding GmbH</Authors>
-    <Description>SQL Server provider extension package for DCoding.Data.DVault.</Description>
+    <Description>SQL Server provider extensions and optimized write strategies for DCoding.Data.DVault.</Description>
     <PackageTags>dvault;data-vault;sql-server;ef-core;persistence</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -25,6 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
   </ItemGroup>
 

@@ -31,6 +31,9 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
                 typeof(OracleDataVaultSmokeTests),
                 typeof(OracleIntegrationTestConfigurationTests),
                 typeof(ProviderIntegrationCategoryDiscoveryTests),
+                typeof(SqlServerBatchScriptTests),
+                typeof(SqlServerDataVaultSmokeTests),
+                typeof(SqlServerIntegrationTestConfigurationTests),
             ])
         .Select(type => type.FullName!)
         .OrderBy(name => name, StringComparer.Ordinal)
@@ -110,6 +113,19 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
 
   [Fact]
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  public void LiveSqlServerIntegrationTestsAreExternalProviderOptInCoverage() {
+    AssertTrait(
+        typeof(SqlServerDataVaultSmokeTests),
+        ProviderTestCategories.CategoryTraitName,
+        ProviderTestCategories.ExternalProviderIntegration);
+    AssertTrait(
+        typeof(SqlServerDataVaultSmokeTests),
+        ProviderTestCategories.ProviderTraitName,
+        ProviderTestCategories.SqlServerProvider);
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
   public void PostgresConfigurationContractTestsRemainDefaultProviderSmokeCoverage() {
     AssertTrait(
         typeof(PostgresIntegrationTestConfigurationTests),
@@ -145,6 +161,24 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
         typeof(MySqlIntegrationTestConfigurationTests),
         ProviderTestCategories.ProviderTraitName,
         ProviderTestCategories.MySqlProvider);
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  public void SqlServerSupportContractTestsRemainDefaultProviderSmokeCoverage() {
+    foreach (var coverageType in new[] {
+        typeof(SqlServerBatchScriptTests),
+        typeof(SqlServerIntegrationTestConfigurationTests),
+    }) {
+      AssertTrait(
+          coverageType,
+          ProviderTestCategories.CategoryTraitName,
+          ProviderTestCategories.DefaultProviderSmoke);
+      AssertTrait(
+          coverageType,
+          ProviderTestCategories.ProviderTraitName,
+          ProviderTestCategories.SqlServerProvider);
+    }
   }
 
   private static bool ContainsFact(Type type) {

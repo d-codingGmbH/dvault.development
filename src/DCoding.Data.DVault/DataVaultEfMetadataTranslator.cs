@@ -238,8 +238,16 @@ internal static class DataVaultEfMetadataTranslator {
       ModelBuilder modelBuilder,
       EntityProjection entity,
       DataVaultProviderCapabilityProfile providerCapabilities) {
+    var defaultSchema = modelBuilder.Model.GetDefaultSchema();
+
     modelBuilder.SharedTypeEntity<Dictionary<string, object>>(entity.Name, entityBuilder => {
-      entityBuilder.ToTable(entity.Name);
+      if (defaultSchema is null) {
+        entityBuilder.ToTable(entity.Name);
+      }
+      else {
+        entityBuilder.ToTable(entity.Name, defaultSchema);
+      }
+
       entityBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProducedName, entity.Name);
       entityBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.EntityKind, entity.Kind);
       entityBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.MetadataName, entity.MetadataName);

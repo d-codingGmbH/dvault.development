@@ -275,11 +275,27 @@ public sealed class ExplicitDataVaultSaveServiceTests {
     var strategyType = typeof(DVaultSqlServerServiceCollectionExtensions).Assembly.GetType(
         "DCoding.Data.DVault.SqlServerDataVaultSaveStrategy",
         throwOnError: true);
-    var method = strategyType!.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
+    var method = GetSqlServerStrategyMethod(strategyType!, methodName, arguments);
 
     Assert.NotNull(method);
 
     return Assert.IsType<string>(method.Invoke(null, arguments));
+  }
+
+  private static MethodInfo? GetSqlServerStrategyMethod(Type strategyType, string methodName, object?[] arguments) {
+    return strategyType
+        .GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+        .SingleOrDefault(method => {
+          if (!string.Equals(method.Name, methodName, StringComparison.Ordinal)) {
+            return false;
+          }
+
+          var parameters = method.GetParameters();
+          return parameters.Length == arguments.Length &&
+              parameters
+                  .Zip(arguments)
+                  .All(pair => pair.Second is null || pair.First.ParameterType.IsInstanceOfType(pair.Second));
+        });
   }
 
   private static int CountOccurrences(string value, string searchValue) {

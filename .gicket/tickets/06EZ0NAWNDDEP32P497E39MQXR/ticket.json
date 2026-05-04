@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0NAWNDDEP32P497E39MQXR",
   "ticket-type": "task",
   "title": "Task: Add SQL Server opt-in integration configuration and smoke tests",
-  "revision": "06EZA6HQ2GN865YE1GM5FKPGXG",
-  "status": "todo",
+  "revision": "06EZAQQXQ8NAZ08Z7653MGJ73C",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
     "area/sql-server",
     "area/tests",
-    "needs-dev"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:13:39.9282995Z",
-  "updated-at": "2026-05-04T22:27:09.2049834Z"
+  "updated-at": "2026-05-04T23:42:16.5063206Z"
 }

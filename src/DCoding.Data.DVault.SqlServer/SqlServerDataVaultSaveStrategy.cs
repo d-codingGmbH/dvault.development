@@ -55,6 +55,7 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
 
     try {
       var filteredSatellitePlans = await FilterSatellitePlansAsync(
+          context.DbContext,
           connection,
           transaction,
           satellitePlans,
@@ -64,12 +65,14 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
           .Concat(filteredSatellitePlans.Results.Select(result => result.SavedRecord))
           .ToArray();
       var rowsWritten = await ExecuteSqlServerUniqueInsertRowsAsync(
+          context.DbContext,
           connection,
           transaction,
           uniquePlans,
           cancellationToken).ConfigureAwait(false);
 
       rowsWritten += await ExecuteSqlServerInsertRowsAsync(
+          context.DbContext,
           connection,
           transaction,
           filteredSatellitePlans.RowsToWrite.Select(plan => new SqlServerInsertRow(plan.Table.TableName, plan.Row)),
@@ -112,6 +115,76 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
       throw new ArgumentOutOfRangeException(nameof(rowCount));
     }
 
+    return CreateSqlServerUniqueInsertCommandText(
+        new SqlServerTableIdentifier(tableName, null),
+        columns,
+        hashKeyColumnName,
+        rowCount);
+  }
+
+  internal static string CreateSqlServerLatestSatelliteHashDiffCommandText(
+      string tableName,
+      string parentHashKeyColumnName,
+      string hashDiffColumnName,
+      string loadTimestampColumnName,
+      int rowCount) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
+    ArgumentException.ThrowIfNullOrWhiteSpace(parentHashKeyColumnName);
+    ArgumentException.ThrowIfNullOrWhiteSpace(hashDiffColumnName);
+    ArgumentException.ThrowIfNullOrWhiteSpace(loadTimestampColumnName);
+
+    if (rowCount <= 0) {
+      throw new ArgumentOutOfRangeException(nameof(rowCount));
+    }
+
+    return CreateSqlServerLatestSatelliteHashDiffCommandText(
+        new SqlServerTableIdentifier(tableName, null),
+        parentHashKeyColumnName,
+        hashDiffColumnName,
+        loadTimestampColumnName,
+        rowCount);
+  }
+
+  internal static string CreateSqlServerInsertCommandText(
+      string tableName,
+      IReadOnlyList<string> columns,
+      int rowCount) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
+    ArgumentNullException.ThrowIfNull(columns);
+
+    if (rowCount <= 0) {
+      throw new ArgumentOutOfRangeException(nameof(rowCount));
+    }
+
+    return CreateSqlServerInsertCommandText(
+        new SqlServerTableIdentifier(tableName, null),
+        columns,
+        rowCount);
+  }
+
+  internal static bool CanSaveProvider(string? providerName, bool hasPendingTrackedChanges) {
+    return string.Equals(providerName, SqlServerProviderName, StringComparison.Ordinal) &&
+        !hasPendingTrackedChanges;
+  }
+
+  internal static bool ShouldWriteSatelliteHashDiff(string? latestHashDiff, string candidateHashDiff) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(candidateHashDiff);
+
+    return latestHashDiff is null ||
+        !string.Equals(latestHashDiff, candidateHashDiff, StringComparison.Ordinal);
+  }
+
+  internal static bool ShouldAdvanceLatestSatelliteHashDiff(
+      DateTimeOffset latestLoadTimestamp,
+      DateTimeOffset candidateLoadTimestamp) {
+    return candidateLoadTimestamp >= latestLoadTimestamp;
+  }
+
+  private static string CreateSqlServerUniqueInsertCommandText(
+      SqlServerTableIdentifier table,
+      IReadOnlyList<string> columns,
+      string hashKeyColumnName,
+      int rowCount) {
     var sourceColumns = new[] { OrdinalColumnName }.Concat(columns).ToArray();
     var builder = new StringBuilder();
 
@@ -144,7 +217,7 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
         .Append(" FROM ")
         .Append(QuoteSqlServerIdentifier("source"))
         .Append(") INSERT INTO ")
-        .Append(QuoteSqlServerIdentifier(tableName))
+        .Append(QuoteSqlServerTable(table))
         .Append(" (");
     AppendIdentifierList(builder, columns);
     builder.Append(") SELECT ");
@@ -156,7 +229,7 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
         .Append('.')
         .Append(QuoteSqlServerIdentifier(RowNumberColumnName))
         .Append(" = 1 AND NOT EXISTS (SELECT 1 FROM ")
-        .Append(QuoteSqlServerIdentifier(tableName))
+        .Append(QuoteSqlServerTable(table))
         .Append(" AS ")
         .Append(QuoteSqlServerIdentifier("target"))
         .Append(" WITH (UPDLOCK, HOLDLOCK) WHERE ")
@@ -172,21 +245,12 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
     return builder.ToString();
   }
 
-  internal static string CreateSqlServerLatestSatelliteHashDiffCommandText(
-      string tableName,
+  private static string CreateSqlServerLatestSatelliteHashDiffCommandText(
+      SqlServerTableIdentifier table,
       string parentHashKeyColumnName,
       string hashDiffColumnName,
       string loadTimestampColumnName,
       int rowCount) {
-    ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
-    ArgumentException.ThrowIfNullOrWhiteSpace(parentHashKeyColumnName);
-    ArgumentException.ThrowIfNullOrWhiteSpace(hashDiffColumnName);
-    ArgumentException.ThrowIfNullOrWhiteSpace(loadTimestampColumnName);
-
-    if (rowCount <= 0) {
-      throw new ArgumentOutOfRangeException(nameof(rowCount));
-    }
-
     var builder = new StringBuilder();
 
     builder.Append("WITH ")
@@ -234,7 +298,7 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
         .Append(" DESC) AS ")
         .Append(QuoteSqlServerIdentifier(RowNumberColumnName))
         .Append(" FROM ")
-        .Append(QuoteSqlServerIdentifier(tableName))
+        .Append(QuoteSqlServerTable(table))
         .Append(" AS ")
         .Append(QuoteSqlServerIdentifier("target"))
         .Append(" INNER JOIN ")
@@ -262,44 +326,19 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
     return builder.ToString();
   }
 
-  internal static string CreateSqlServerInsertCommandText(
-      string tableName,
+  private static string CreateSqlServerInsertCommandText(
+      SqlServerTableIdentifier table,
       IReadOnlyList<string> columns,
       int rowCount) {
-    ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
-    ArgumentNullException.ThrowIfNull(columns);
-
-    if (rowCount <= 0) {
-      throw new ArgumentOutOfRangeException(nameof(rowCount));
-    }
-
     var builder = new StringBuilder();
     builder.Append("INSERT INTO ")
-        .Append(QuoteSqlServerIdentifier(tableName))
+        .Append(QuoteSqlServerTable(table))
         .Append(" (");
     AppendIdentifierList(builder, columns);
     builder.Append(") VALUES ");
     AppendParameterRows(builder, rowCount, columns.Count);
 
     return builder.ToString();
-  }
-
-  internal static bool CanSaveProvider(string? providerName, bool hasPendingTrackedChanges) {
-    return string.Equals(providerName, SqlServerProviderName, StringComparison.Ordinal) &&
-        !hasPendingTrackedChanges;
-  }
-
-  internal static bool ShouldWriteSatelliteHashDiff(string? latestHashDiff, string candidateHashDiff) {
-    ArgumentException.ThrowIfNullOrWhiteSpace(candidateHashDiff);
-
-    return latestHashDiff is null ||
-        !string.Equals(latestHashDiff, candidateHashDiff, StringComparison.Ordinal);
-  }
-
-  internal static bool ShouldAdvanceLatestSatelliteHashDiff(
-      DateTimeOffset latestLoadTimestamp,
-      DateTimeOffset candidateLoadTimestamp) {
-    return candidateLoadTimestamp >= latestLoadTimestamp;
   }
 
   private static IReadOnlyList<UniqueRowSavePlan> CreateUniqueRowSavePlans(DataVaultProviderSaveStrategyContext context) {
@@ -426,6 +465,7 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
   }
 
   private static async Task<FilteredSatelliteSavePlans> FilterSatellitePlansAsync(
+      DbContext dbContext,
       DbConnection connection,
       DbTransaction transaction,
       IReadOnlyList<SatelliteSavePlan> plans,
@@ -435,6 +475,7 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
 
     foreach (var group in plans.GroupBy(plan => plan.Table)) {
       var latestHashDiffs = await LoadLatestSatelliteHashDiffsAsync(
+          dbContext,
           connection,
           transaction,
           group.Key,
@@ -456,18 +497,20 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
   }
 
   private static async Task<Dictionary<string, LatestSatelliteHashDiff>> LoadLatestSatelliteHashDiffsAsync(
+      DbContext dbContext,
       DbConnection connection,
       DbTransaction transaction,
       SatelliteTableProjection table,
       IEnumerable<string> parentHashKeys,
       CancellationToken cancellationToken) {
     var latestRows = new List<LatestSatelliteHashDiff>();
+    var resolvedTable = ResolveTable(dbContext, table.TableName);
 
     foreach (var parentHashKeyBatch in parentHashKeys.Distinct(StringComparer.Ordinal).Chunk(SqlServerMaxCommandParameterCount)) {
       await using var command = connection.CreateCommand();
       command.Transaction = transaction;
       command.CommandText = CreateSqlServerLatestSatelliteHashDiffCommandText(
-          table.TableName,
+          resolvedTable,
           table.ParentHashKeyColumnName,
           table.HashDiffColumnName,
           table.LoadTimestampColumnName,
@@ -509,6 +552,7 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
   }
 
   private static async Task<int> ExecuteSqlServerUniqueInsertRowsAsync(
+      DbContext dbContext,
       DbConnection connection,
       DbTransaction transaction,
       IEnumerable<UniqueRowSavePlan> rows,
@@ -525,12 +569,13 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
         CreateColumnSignature(row.Row.Keys)))) {
       var columns = group.First().Row.Keys.ToArray();
       var chunkSize = Math.Max(1, SqlServerMaxCommandParameterCount / (columns.Length + 1));
+      var resolvedTable = ResolveTable(dbContext, group.Key.TableName);
 
       foreach (var chunk in group.Chunk(chunkSize)) {
         rowsWritten += await ExecuteSqlServerUniqueInsertChunkAsync(
             connection,
             transaction,
-            group.Key.TableName,
+            resolvedTable,
             columns,
             group.Key.HashKeyColumnName,
             chunk,
@@ -544,14 +589,14 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
   private static async Task<int> ExecuteSqlServerUniqueInsertChunkAsync(
       DbConnection connection,
       DbTransaction transaction,
-      string tableName,
+      SqlServerTableIdentifier table,
       IReadOnlyList<string> columns,
       string hashKeyColumnName,
       IReadOnlyList<UniqueRowSavePlan> rows,
       CancellationToken cancellationToken) {
     await using var command = connection.CreateCommand();
     command.Transaction = transaction;
-    command.CommandText = CreateSqlServerUniqueInsertCommandText(tableName, columns, hashKeyColumnName, rows.Count);
+    command.CommandText = CreateSqlServerUniqueInsertCommandText(table, columns, hashKeyColumnName, rows.Count);
 
     foreach (var row in rows) {
       AddParameter(command, row.Ordinal);
@@ -564,6 +609,7 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
   }
 
   private static async Task<int> ExecuteSqlServerInsertRowsAsync(
+      DbContext dbContext,
       DbConnection connection,
       DbTransaction transaction,
       IEnumerable<SqlServerInsertRow> rows,
@@ -579,12 +625,13 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
         CreateColumnSignature(row.Values.Keys)))) {
       var columns = group.First().Values.Keys.ToArray();
       var chunkSize = Math.Max(1, SqlServerMaxCommandParameterCount / columns.Length);
+      var resolvedTable = ResolveTable(dbContext, group.Key.TableName);
 
       foreach (var chunk in group.Chunk(chunkSize)) {
         rowsWritten += await ExecuteSqlServerInsertChunkAsync(
             connection,
             transaction,
-            group.Key.TableName,
+            resolvedTable,
             columns,
             chunk.Select(row => row.Values).ToArray(),
             cancellationToken).ConfigureAwait(false);
@@ -597,13 +644,13 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
   private static async Task<int> ExecuteSqlServerInsertChunkAsync(
       DbConnection connection,
       DbTransaction transaction,
-      string tableName,
+      SqlServerTableIdentifier table,
       IReadOnlyList<string> columns,
       IReadOnlyList<Dictionary<string, object>> rows,
       CancellationToken cancellationToken) {
     await using var command = connection.CreateCommand();
     command.Transaction = transaction;
-    command.CommandText = CreateSqlServerInsertCommandText(tableName, columns, rows.Count);
+    command.CommandText = CreateSqlServerInsertCommandText(table, columns, rows.Count);
 
     foreach (var row in rows) {
       foreach (var column in columns) {
@@ -749,6 +796,28 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
     throw new InvalidOperationException("SQL Server Data Vault latest satellite lookup returned a null load timestamp.");
   }
 
+  private static SqlServerTableIdentifier ResolveTable(DbContext dbContext, string producedName) {
+    var entityType = dbContext.Model
+        .GetEntityTypes()
+        .SingleOrDefault(entity =>
+            string.Equals(entity.FindAnnotation(DataVaultAnnotationNames.ProducedName)?.Value as string, producedName, StringComparison.Ordinal) ||
+            string.Equals(entity.GetTableName(), producedName, StringComparison.Ordinal));
+
+    if (entityType is null) {
+      return new SqlServerTableIdentifier(producedName, null);
+    }
+
+    return new SqlServerTableIdentifier(entityType.GetTableName() ?? producedName, entityType.GetSchema());
+  }
+
+  private static string QuoteSqlServerTable(SqlServerTableIdentifier table) {
+    if (table.SchemaName is null) {
+      return QuoteSqlServerIdentifier(table.TableName);
+    }
+
+    return QuoteSqlServerIdentifier(table.SchemaName) + "." + QuoteSqlServerIdentifier(table.TableName);
+  }
+
   private static void AppendIdentifierList(
       StringBuilder builder,
       IReadOnlyList<string> identifiers) {
@@ -874,4 +943,6 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
       string TableName,
       string HashKeyColumnName,
       string ColumnSignature);
+
+  private sealed record SqlServerTableIdentifier(string TableName, string? SchemaName);
 }
