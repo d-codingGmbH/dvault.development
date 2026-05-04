@@ -3,19 +3,18 @@
   "ticket-id": "06EZ0N9TJSXFXH0YZRA3QN2S14",
   "ticket-type": "story",
   "title": "Story: Optimize PostgreSQL provider save strategy",
-  "revision": "06EZ0Y3VFNKJS0DPJR7QXAGJPG",
-  "status": "todo",
+  "revision": "06EZ6QNGV75B1ED49BX8P6649W",
+  "status": "done",
   "labels": [
-    "type/story",
-    "automation/bot-ready",
+    "area/performance",
     "area/postgres",
     "area/provider-support",
-    "area/performance",
-    "needs-po"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:13:30.8607733Z",
-  "updated-at": "2026-05-04T00:52:01.0211642Z"
+  "updated-at": "2026-05-04T14:22:42.3930877Z"
 }
