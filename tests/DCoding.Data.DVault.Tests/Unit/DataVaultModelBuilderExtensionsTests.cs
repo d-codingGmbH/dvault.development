@@ -48,6 +48,35 @@ public sealed class DataVaultModelBuilderExtensionsTests {
 
     Assert.NotNull(annotation);
     Assert.Same(DataVaultConventions.Default, annotation.Value);
+    Assert.Equal(
+        "sqlite-v1",
+        Assert.IsType<string>(modelBuilder.Model.FindAnnotation(DataVaultAnnotationNames.ProviderProfile)?.Value));
+  }
+
+  [Fact]
+  public void UseDataVaultWithProviderProfileReturnsSameBuilderAndStoresSelectedProfileAnnotation() {
+    var modelBuilder = CreateModelBuilder();
+
+    var result = modelBuilder.UseDataVault(DataVaultProviderCapabilityProfiles.Oracle);
+
+    Assert.Same(modelBuilder, result);
+    Assert.Same(DataVaultConventions.Default, modelBuilder.Model.FindAnnotation(DataVaultAnnotationNames.Conventions)?.Value);
+    Assert.Equal(
+        "oracle-v1",
+        Assert.IsType<string>(modelBuilder.Model.FindAnnotation(DataVaultAnnotationNames.ProviderProfile)?.Value));
+  }
+
+  [Fact]
+  public void UseDataVaultWithProviderProfileRejectsNullArguments() {
+    ModelBuilder? modelBuilder = null;
+
+    var modelBuilderException = Assert.Throws<ArgumentNullException>(() =>
+        modelBuilder!.UseDataVault(DataVaultProviderCapabilityProfiles.Oracle));
+    var profileException = Assert.Throws<ArgumentNullException>(() =>
+        CreateModelBuilder().UseDataVault(null!));
+
+    Assert.Equal("modelBuilder", modelBuilderException.ParamName);
+    Assert.Equal("providerCapabilities", profileException.ParamName);
   }
 
   [Fact]

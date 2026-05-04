@@ -75,6 +75,11 @@ public enum DataVaultProviderValueFormat {
   /// Timestamp values are persisted as ISO 8601 UTC text.
   /// </summary>
   Iso8601UtcText,
+
+  /// <summary>
+  /// Timestamp values are persisted through the provider's native <see cref="DateTimeOffset" /> mapping.
+  /// </summary>
+  NativeDateTimeOffset,
 }
 
 /// <summary>
@@ -248,11 +253,34 @@ public static class DataVaultProviderCapabilityProfiles {
           Text(DataVaultLogicalPropertyKind.PayloadText),
       ]);
 
-  private static DataVaultProviderTypeMapping Text(DataVaultLogicalPropertyKind logicalPropertyKind) {
+  /// <summary>
+  /// Gets the initial Oracle v1 provider capability profile.
+  /// </summary>
+  public static DataVaultProviderCapabilityProfile Oracle { get; } = new(
+      "oracle-v1",
+      DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported,
+      DataVaultProviderConcurrencySupport.NoneInV1Unsupported,
+      [
+          Text(DataVaultLogicalPropertyKind.HashKey, "VARCHAR2(64 CHAR)"),
+          Text(DataVaultLogicalPropertyKind.HashDiff, "VARCHAR2(64 CHAR)"),
+          new(
+              DataVaultLogicalPropertyKind.LoadTimestamp,
+              typeof(DateTimeOffset),
+              "TIMESTAMP WITH TIME ZONE",
+              DataVaultProviderValueFormat.NativeDateTimeOffset),
+          Text(DataVaultLogicalPropertyKind.RecordSource, "VARCHAR2(255 CHAR)"),
+          Text(DataVaultLogicalPropertyKind.ParticipantReference, "VARCHAR2(64 CHAR)"),
+          Text(DataVaultLogicalPropertyKind.BusinessKey, "VARCHAR2(255 CHAR)"),
+          Text(DataVaultLogicalPropertyKind.PayloadText, "CLOB"),
+      ]);
+
+  private static DataVaultProviderTypeMapping Text(
+      DataVaultLogicalPropertyKind logicalPropertyKind,
+      string nativeStoreType = "TEXT") {
     return new DataVaultProviderTypeMapping(
         logicalPropertyKind,
         typeof(string),
-        "TEXT",
+        nativeStoreType,
         DataVaultProviderValueFormat.Text);
   }
 }

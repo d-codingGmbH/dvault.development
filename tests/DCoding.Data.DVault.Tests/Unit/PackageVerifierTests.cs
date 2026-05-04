@@ -194,8 +194,50 @@ public sealed class PackageVerifierTests {
             issue.Message.Contains("expected packed core version '" + PackageVersion + "'", StringComparison.Ordinal));
   }
 
+  [Fact]
+  public void OracleProjectDoesNotReferenceNonOracleProviderPackages() {
+    var projectPath = GetRepositoryPath(
+        "src/DCoding.Data.DVault.Oracle/DCoding.Data.DVault.Oracle.csproj");
+    var project = XDocument.Load(projectPath);
+    var packageReferences = project
+        .Descendants("PackageReference")
+        .Select(reference => Assert.IsType<string>(reference.Attribute("Include")?.Value))
+        .Order(StringComparer.Ordinal)
+        .ToArray();
+    var projectReferences = project
+        .Descendants("ProjectReference")
+        .Select(reference => Path.GetFileNameWithoutExtension(Assert.IsType<string>(reference.Attribute("Include")?.Value)))
+        .Order(StringComparer.Ordinal)
+        .ToArray();
+
+    Assert.Equal(["Microsoft.Extensions.DependencyInjection.Abstractions"], packageReferences);
+    Assert.Equal(["DCoding.Data.DVault"], projectReferences);
+    Assert.DoesNotContain(packageReferences, IsNonOracleDatabaseProviderReference);
+    Assert.DoesNotContain(projectReferences, reference =>
+        !string.Equals(reference, "DCoding.Data.DVault", StringComparison.Ordinal));
+  }
+
   private static PackageVerificationResult Verify(string packageDirectory) {
     return new PackageVerifier().Verify(new PackageVerificationOptions(packageDirectory));
+  }
+
+  private static string GetRepositoryPath(string repositoryRelativePath) {
+    var directory = new DirectoryInfo(AppContext.BaseDirectory);
+    while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "DVault.slnx"))) {
+      directory = directory.Parent;
+    }
+
+    Assert.NotNull(directory);
+
+    return Path.Combine(directory!.FullName, repositoryRelativePath.Replace('/', Path.DirectorySeparatorChar));
+  }
+
+  private static bool IsNonOracleDatabaseProviderReference(string packageId) {
+    return packageId.Contains("Sqlite", StringComparison.OrdinalIgnoreCase) ||
+        packageId.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) ||
+        packageId.Contains("PostgreSQL", StringComparison.OrdinalIgnoreCase) ||
+        packageId.Contains("SqlServer", StringComparison.OrdinalIgnoreCase) ||
+        packageId.Contains("MySql", StringComparison.OrdinalIgnoreCase);
   }
 
   private static Dictionary<string, PackageArchiveOptions> CreatePackageOptions() {

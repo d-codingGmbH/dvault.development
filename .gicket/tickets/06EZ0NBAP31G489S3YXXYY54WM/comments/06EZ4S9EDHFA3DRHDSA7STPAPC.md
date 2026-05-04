@@ -1,0 +1,20 @@
+﻿## Developer Rework Evidence
+
+This rework addresses the tester return by making the verification trail explicit. No repository source change was required; the branch already contains the Oracle capability profile, provider-aware model path, Oracle strategy registration, fallback coverage, package-boundary assertion, and API snapshot updates.
+
+### Acceptance Criteria Evidence
+
+- AC1: `src/DCoding.Data.DVault/DataVaultProviderCapabilities.cs` exposes `DataVaultProviderCapabilityProfiles.Oracle` with profile name `oracle-v1`, `NoneInV1Unsupported` SQL-function and concurrency baselines, and mappings for HashKey, HashDiff, LoadTimestamp, RecordSource, ParticipantReference, BusinessKey, and PayloadText. The key markers are `public static DataVaultProviderCapabilityProfile Oracle`, `TIMESTAMP WITH TIME ZONE`, `VARCHAR2(64 CHAR)`, `VARCHAR2(255 CHAR)`, and `CLOB`.
+- AC1 coverage: `tests/DCoding.Data.DVault.Tests/Unit/DataVaultProviderCapabilityProfileTests.cs` contains `OracleProfileDeclaresExplicitUnsupportedFunctionAndConcurrencyBaselines` and `OracleProfileDeclaresNativeStorageMappingsForAllLogicalPropertyKinds`, including the full logical-kind order and unsupported baseline assertions.
+- AC2: `src/DCoding.Data.DVault/DataVaultModelBuilderExtensions.cs` keeps the default `ApplyDataVaultMetadata(metadataModel)` path on `DataVaultProviderCapabilityProfiles.Sqlite` and adds `ApplyDataVaultMetadata(metadataModel, providerCapabilities)` plus `UseDataVault(providerCapabilities)` for provider-aware projection.
+- AC2 coverage: `tests/DCoding.Data.DVault.Tests/Unit/DataVaultEfMetadataTranslationTests.cs` contains `ApplyDataVaultMetadataWithOracleProfileProjectsOracleStorageAnnotations`, which asserts `oracle-v1` model/property annotations and Oracle storage metadata markers including `VARCHAR2(64 CHAR)`, `TIMESTAMP WITH TIME ZONE`, `VARCHAR2(255 CHAR)`, and `CLOB`. The same file's default `AssertProperty` path asserts `sqlite-v1` and `TEXT` for the baseline translation.
+- AC3: `src/DCoding.Data.DVault.Oracle/DVaultOracleServiceCollectionExtensions.cs` registers `OracleDataVaultSaveStrategy` through `IDataVaultProviderSaveStrategy`, while `src/DCoding.Data.DVault.Oracle/DCoding.Data.DVault.Oracle.csproj` references only `Microsoft.Extensions.DependencyInjection.Abstractions` plus the core `DCoding.Data.DVault` project.
+- AC3 coverage: `tests/DCoding.Data.DVault.Tests/Unit/ExplicitDataVaultSaveServiceTests.cs` expects `AddDVaultOracle()` to register a provider strategy, and `tests/DCoding.Data.DVault.Tests/Unit/PackageVerifierTests.cs` contains `OracleProjectDoesNotReferenceNonOracleProviderPackages`.
+- AC4: `src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs` gates selection with exact provider identity `Oracle.EntityFrameworkCore`, a clean change tracker, and `IsSupportedRequestBatch`, which rejects null requests and satellite-containing batches before dispatch.
+- AC4 coverage: `tests/DCoding.Data.DVault.Tests/Integration/DataVaultSaveStrategySelectionTests.cs` contains `AddDVaultOracleDeclinesSqliteContextAndFallsBackThroughCoreWriter`; it asserts the Oracle strategy declines a SQLite context and the save completes through the provider-neutral fallback writer.
+- AC5 and DoD2: `tests/DCoding.Data.DVault.Tests/Unit/Snapshots/PublicApi/DCoding.Data.DVault.approved.txt` includes the provider-aware `UseDataVault` and `ApplyDataVaultMetadata` overloads, `DataVaultProviderCapabilityProfiles.Oracle`, and the `NativeStoreType` surface.
+
+### Local Verification
+
+- `bash tools/check-format.sh` passed in this dev sandbox: one-member-per-file passed for 32 packable source files and formatting check passed.
+- `dotnet build DVault.slnx --nologo` and `dotnet test DVault.slnx --nologo` were attempted here but NuGet restore failed with `NU1301` because network access to `https://api.nuget.org/v3/index.json` is denied in this sandbox. Re-run those commands in a package-restored or network-enabled validation environment.

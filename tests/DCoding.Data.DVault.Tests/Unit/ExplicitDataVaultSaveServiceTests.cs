@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Reflection;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
@@ -40,7 +40,7 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.OracleProvider)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.MySqlProvider)]
   public void ProviderPackagesRegisterCoreSaveService() {
-    AssertProviderRegistration(services => services.AddDVaultOracle(), expectProviderStrategy: false);
+    AssertProviderRegistration(services => services.AddDVaultOracle(), expectProviderStrategy: true);
     AssertProviderRegistration(services => services.AddDVaultMySql(), expectProviderStrategy: false);
   }
 

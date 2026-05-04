@@ -27,15 +27,35 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataWithProviderProfileIsExplicitRootNamespaceTranslationExtension() {
+    var method = typeof(DCoding.Data.DVault.DataVaultModelBuilderExtensions)
+        .GetMethods(BindingFlags.Public | BindingFlags.Static)
+        .Single(methodInfo =>
+            methodInfo.Name == "ApplyDataVaultMetadata" &&
+            methodInfo.GetParameters().Length == 3);
+    var parameters = method.GetParameters();
+
+    Assert.Equal("DCoding.Data.DVault", method.DeclaringType?.Namespace);
+    Assert.Equal(typeof(ModelBuilder), parameters[0].ParameterType);
+    Assert.Equal(typeof(DataVaultMetadataModel), parameters[1].ParameterType);
+    Assert.Equal(typeof(DataVaultProviderCapabilityProfile), parameters[2].ParameterType);
+    Assert.Equal(typeof(ModelBuilder), method.ReturnType);
+    Assert.True(method.IsDefined(typeof(ExtensionAttribute), inherit: false));
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataRejectsNullArguments() {
     var metadataModel = CreateMetadataModel();
     ModelBuilder? modelBuilder = null;
 
     var modelBuilderException = Assert.Throws<ArgumentNullException>(() => modelBuilder!.ApplyDataVaultMetadata(metadataModel));
     var metadataException = Assert.Throws<ArgumentNullException>(() => CreateModelBuilder().ApplyDataVaultMetadata(null!));
+    var profileException = Assert.Throws<ArgumentNullException>(() =>
+        CreateModelBuilder().ApplyDataVaultMetadata(metadataModel, null!));
 
     Assert.Equal("modelBuilder", modelBuilderException.ParamName);
     Assert.Equal("metadataModel", metadataException.ParamName);
+    Assert.Equal("providerCapabilities", profileException.ParamName);
   }
 
   [Fact]
@@ -98,6 +118,71 @@ public sealed class DataVaultEfMetadataTranslationTests {
         PropertyNamesInOrdinalOrder(hub));
     AssertPrimaryKey(hub, "PkHubCustomerCustomerHashKey", ["CustomerHashKey"]);
     AssertIndex(hub, "IxHubCustomerBusinessKeyCustomerIdSourceSystem", ["CustomerId", "SourceSystem"], isUnique: true);
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataWithOracleProfileProjectsOracleStorageAnnotations() {
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.ApplyDataVaultMetadata(CreateMetadataModel(), DataVaultProviderCapabilityProfiles.Oracle);
+
+    Assert.Equal(
+        "oracle-v1",
+        Assert.IsType<string>(modelBuilder.Model.FindAnnotation(DataVaultAnnotationNames.ProviderProfile)?.Value));
+
+    var hub = FindEntity(modelBuilder.Model, "HubCustomer");
+    var link = FindEntity(modelBuilder.Model, "LinkCustomerOrder");
+    var satellite = FindEntity(modelBuilder.Model, "SatCustomerContact");
+
+    AssertProviderProperty(
+        hub,
+        "CustomerHashKey",
+        DataVaultLogicalPropertyKind.HashKey,
+        typeof(string),
+        "VARCHAR2(64 CHAR)",
+        DataVaultProviderValueFormat.Text);
+    AssertProviderProperty(
+        hub,
+        "LoadTimestamp",
+        DataVaultLogicalPropertyKind.LoadTimestamp,
+        typeof(DateTimeOffset),
+        "TIMESTAMP WITH TIME ZONE",
+        DataVaultProviderValueFormat.NativeDateTimeOffset);
+    AssertProviderProperty(
+        hub,
+        "RecordSource",
+        DataVaultLogicalPropertyKind.RecordSource,
+        typeof(string),
+        "VARCHAR2(255 CHAR)",
+        DataVaultProviderValueFormat.Text);
+    AssertProviderProperty(
+        hub,
+        "CustomerId",
+        DataVaultLogicalPropertyKind.BusinessKey,
+        typeof(string),
+        "VARCHAR2(255 CHAR)",
+        DataVaultProviderValueFormat.Text);
+    AssertProviderProperty(
+        link,
+        "CustomerHashKey",
+        DataVaultLogicalPropertyKind.ParticipantReference,
+        typeof(string),
+        "VARCHAR2(64 CHAR)",
+        DataVaultProviderValueFormat.Text);
+    AssertProviderProperty(
+        satellite,
+        "HashDiff",
+        DataVaultLogicalPropertyKind.HashDiff,
+        typeof(string),
+        "VARCHAR2(64 CHAR)",
+        DataVaultProviderValueFormat.Text);
+    AssertProviderProperty(
+        satellite,
+        "EmailAddress",
+        DataVaultLogicalPropertyKind.PayloadText,
+        typeof(string),
+        "CLOB",
+        DataVaultProviderValueFormat.Text);
   }
 
   [Fact]
@@ -274,6 +359,27 @@ public sealed class DataVaultEfMetadataTranslationTests {
     }
 
     Assert.Equal(expectedTechnicalRole, AnnotationValue<TechnicalMetadataColumnRole>(property, DataVaultAnnotationNames.TechnicalColumnRole));
+  }
+
+  private static void AssertProviderProperty(
+      IMutableEntityType entityType,
+      string propertyName,
+      DataVaultLogicalPropertyKind expectedLogicalPropertyKind,
+      Type expectedClrType,
+      string expectedStorageType,
+      DataVaultProviderValueFormat expectedValueFormat) {
+    var property = entityType.FindProperty(propertyName);
+
+    Assert.NotNull(property);
+    Assert.Equal(expectedClrType, property!.ClrType);
+    Assert.Equal("oracle-v1", AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderProfile));
+    Assert.Equal(expectedLogicalPropertyKind, AnnotationValue<DataVaultLogicalPropertyKind>(
+        property,
+        DataVaultAnnotationNames.ProviderLogicalPropertyKind));
+    Assert.Equal(expectedStorageType, AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderStorageType));
+    Assert.Equal(expectedValueFormat, AnnotationValue<DataVaultProviderValueFormat>(
+        property,
+        DataVaultAnnotationNames.ProviderValueFormat));
   }
 
   private static void InvokeTranslatorApply(

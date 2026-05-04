@@ -50,7 +50,7 @@ public static class DataVaultAnnotationNames {
   public const string TechnicalColumnRole = "DCoding.Data.DVault:TechnicalColumnRole";
 
   /// <summary>
-  /// Identifies the annotation that stores the provider capability profile used to project an Entity Framework property.
+  /// Identifies the annotation that stores the provider capability profile selected for a model or projected property.
   /// </summary>
   public const string ProviderProfile = "DCoding.Data.DVault:ProviderProfile";
 

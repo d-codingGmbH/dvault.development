@@ -33,6 +33,10 @@ public sealed class DataVaultSaveStrategySelectionTests {
       "Unknown provider dispatch should evaluate but reject incompatible optimized strategies, then select the fallback writer.";
   private const string UnknownProviderSelectedDiagnostic =
       "Unknown provider strategy was selected even though its provider gate did not match the current DbContext provider.";
+  private const string OracleProviderFallbackDiagnostic =
+      "Oracle optimized dispatch should reject non-Oracle DbContext providers and leave the built-in fallback writer selected.";
+  private const string OracleProviderSelectedDiagnostic =
+      "Oracle provider strategy accepted a SQLite DbContext; provider identity gating must stay exact.";
   private const string PriorityDispatchDiagnostic =
       "Provider strategy dispatch must evaluate registrations by descending Priority, skip incompatible strategies, and " +
           "stop at the first compatible strategy.";
@@ -146,6 +150,33 @@ public sealed class DataVaultSaveStrategySelectionTests {
     AssertFallbackPathObserved(
         context,
         UnknownProviderFallbackDiagnostic);
+  }
+
+  [Fact]
+  public async Task AddDVaultOracleDeclinesSqliteContextAndFallsBackThroughCoreWriter() {
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateOptions(database);
+    var services = new ServiceCollection();
+    services.AddDVaultOracle();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var request = CreateCustomerSaveRequest("oracle-provider-fallback");
+
+    await using var context = new StrategySelectionContext(options);
+    await context.Database.EnsureCreatedAsync();
+
+    var strategy = Assert.Single(provider.GetServices<IDataVaultProviderSaveStrategy>());
+
+    Assert.False(strategy.CanSave(context, [request]), OracleProviderSelectedDiagnostic);
+
+    var result = await saveService.SaveAsync(context, request);
+
+    AssertSavedCustomer(result);
+    await AssertCustomerRowAsync(context, "C-100", "oracle-provider-fallback");
+    AssertFallbackPathObserved(
+        context,
+        OracleProviderFallbackDiagnostic);
   }
 
   [Fact]
@@ -279,6 +310,17 @@ public sealed class DataVaultSaveStrategySelectionTests {
         UnknownProviderSelectedDiagnostic,
         "Unknown provider strategy was selected",
         "provider gate did not match");
+    AssertDiagnosticContains(
+        nameof(AddDVaultOracleDeclinesSqliteContextAndFallsBackThroughCoreWriter),
+        OracleProviderFallbackDiagnostic + " Actual tracked entries: <none>",
+        "Oracle optimized dispatch",
+        "reject non-Oracle DbContext providers",
+        "fallback writer");
+    AssertDiagnosticContains(
+        nameof(AddDVaultOracleDeclinesSqliteContextAndFallsBackThroughCoreWriter),
+        OracleProviderSelectedDiagnostic,
+        "Oracle provider strategy accepted",
+        "provider identity gating");
     AssertDiagnosticContains(
         nameof(DispatchEvaluatesStrategiesByDescendingPriorityUntilFirstCompatibleStrategy),
         PriorityDispatchDiagnostic,

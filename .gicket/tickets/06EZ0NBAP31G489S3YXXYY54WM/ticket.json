@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0NBAP31G489S3YXXYY54WM",
   "ticket-type": "task",
   "title": "Task: Implement Oracle provider capability profile and optimized writer boundary",
-  "revision": "06EZ0Y3F34E7N05V4A9T8GG25W",
-  "status": "todo",
+  "revision": "06EZ6WRSC0MKBKVWSV8VEP1PMW",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
     "area/oracle",
     "area/performance",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:13:43.2926030Z",
-  "updated-at": "2026-05-04T00:51:57.8490905Z"
+  "updated-at": "2026-05-04T14:44:59.8726428Z"
 }

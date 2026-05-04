@@ -1,4 +1,4 @@
-# DVault V1 Explicit Save Service
+﻿# DVault V1 Explicit Save Service
 
 Status: v1 implementation note
 Ticket: 06EXB7H6KV753KM125XN3VDRTM
@@ -48,11 +48,11 @@ Validation vocabulary:
 | --- | --- | --- | --- | --- | --- |
 | SQLite | Provider-specific optimization baseline through `AddDVaultSqlite()` and `SqliteDataVaultSaveStrategy`. | Yes. | Yes. | `ProviderIntegration.RequiredLocal` integration coverage is required locally. | Yes. Required benchmark coverage is SQLite-specific and uses local SQLite temporary files. |
 | PostgreSQL | Provider-specific optimization through `AddDVaultPostgres()` and the Npgsql-compatible PostgreSQL save strategy, with provider-neutral fallback when `CanSave` declines. | Yes, for clean `Npgsql.EntityFrameworkCore.PostgreSQL` contexts. | Yes, using PostgreSQL set-based insert/reuse and latest-state satellite checks. | `ProviderSmoke.Default` covers registration locally. Live execution remains `ProviderIntegration.ExternalOptIn`, gated by `DVAULT_TEST_POSTGRES_CONNECTION_STRING`; it is not required local validation. | No. |
-| SQL Server | Provider-specific optimization through `AddDVaultSqlServer()` and `SqlServerDataVaultSaveStrategy`. | Yes. | Yes. | `ProviderSmoke.Default` non-live strategy coverage; repeatable live SQL Server validation is tracked separately. | No. |
-| Oracle | Compatibility baseline only through `AddDVaultOracle()`. | No. | No. | `ProviderSmoke.Default`; provider integration validation is not required in v0.5. | No. |
-| MySQL | Compatibility baseline only through `AddDVaultMySql()`. | No. | No. | `ProviderSmoke.Default`; provider integration validation is not required in v0.5. | No. |
+| SQL Server | Provider-specific optimization through `AddDVaultSqlServer()` and `SqlServerDataVaultSaveStrategy`, with provider-neutral fallback when `CanSave` declines. | Yes, for clean SQL Server contexts. | Yes, using SQL Server set-based unique-row inserts and latest-state satellite checks. | `ProviderSmoke.Default` covers non-live strategy behavior locally. Repeatable live SQL Server validation is tracked separately and is not required local validation. | No. |
+| Oracle | Provider-specific optimization boundary through `AddDVaultOracle()` and an Oracle-gated hub/link insert strategy. Unsupported request shapes still fall back through the provider-neutral writer. | Yes, for clean Oracle hub/link batches only. | No. | `ProviderSmoke.Default` covers registration locally. Live execution remains `ProviderIntegration.ExternalOptIn`, gated by `DVAULT_TEST_ORACLE_CONNECTION_STRING`; it is not required local validation. | No. |
+| MySQL | Compatibility baseline only through `AddDVaultMySql()`. | No. | No. | `ProviderSmoke.Default` covers registration locally. Live execution remains `ProviderIntegration.ExternalOptIn`, gated by `DVAULT_TEST_MYSQL_CONNECTION_STRING`; it is not required local validation. | No. |
 
-This matrix is release-scoped to v0.5. It does not require Oracle or MySQL to ship provider-specific optimized writers, set-based satellite existence checks, required local integration suites, or benchmark baselines in this release. PostgreSQL live execution evidence remains opt-in because it requires a developer-managed database through `DVAULT_TEST_POSTGRES_CONNECTION_STRING`. SQL Server live execution evidence is tracked separately from the default non-live smoke coverage. Benchmark notes remain SQLite-specific because the benchmark runner uses SQLite temporary files and does not require Postgres, Docker, `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, or other external services.
+This matrix is release-scoped to v0.5. It requires provider-specific optimized writers for SQLite, PostgreSQL, SQL Server, and Oracle within their supported request shapes, but it does not require MySQL to ship one in this release. Oracle does not require set-based satellite existence checks, required local integration suites, or benchmark baselines in this release. PostgreSQL, Oracle, and MySQL live execution evidence remain opt-in because they require developer-managed databases through `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. SQL Server live execution evidence is tracked separately from the default non-live smoke coverage. Benchmark notes remain SQLite-specific because the benchmark runner uses SQLite temporary files and does not require Postgres, Oracle, MySQL, Docker, or external connection-string configuration.
 
 Current optimization-hook ownership is:
 
@@ -60,4 +60,5 @@ Current optimization-hook ownership is:
 - `src/DCoding.Data.DVault.Sqlite`: the v0.5 optimized save strategy and SQLite set-based existence-check behavior exposed by `AddDVaultSqlite()`.
 - `src/DCoding.Data.DVault.Postgres`: the Npgsql-compatible optimized save strategy exposed by `AddDVaultPostgres()` for clean PostgreSQL contexts, with fallback for incompatible contexts.
 - `src/DCoding.Data.DVault.SqlServer`: SQL Server optimized insert-only save strategy registration and SQL Server set-based existence-check behavior exposed by `AddDVaultSqlServer()`.
-- `src/DCoding.Data.DVault.Oracle` and `src/DCoding.Data.DVault.MySql`: compatibility-only registration surfaces for v0.5 and future provider-specific optimization hooks.
+- `src/DCoding.Data.DVault.Oracle`: Oracle capability registration plus an Oracle-gated insert-only hub/link save strategy that declines unsupported shapes for provider-neutral fallback.
+- `src/DCoding.Data.DVault.MySql`: compatibility-only registration surface for v0.5 and future provider-specific optimization hooks.
