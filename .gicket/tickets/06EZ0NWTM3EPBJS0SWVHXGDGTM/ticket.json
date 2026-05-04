@@ -1,21 +1,20 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0NWTM3EPBJS0SWVHXGDGTM",
-    "ticket-type":  "task",
-    "title":  "Task: Implement timestamp and record-source hook interfaces",
-    "revision":  "06EZ0P8JW48KM33PHMFVMKF4YM",
-    "status":  "todo",
-    "labels":  [
-                   "type/task",
-                   "automation/bot-ready",
-                   "area/configuration",
-                   "area/api"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:16:06.6149056Z",
-    "updated-at":  "2026-05-04T00:17:42.6254079Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0NWTM3EPBJS0SWVHXGDGTM",
+  "ticket-type": "task",
+  "title": "Task: Implement timestamp and record-source hook interfaces",
+  "revision": "06EZ0Y4VX6R7RN965GVVDEY5S0",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "automation/bot-ready",
+    "area/configuration",
+    "area/api",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:16:06.6149056Z",
+  "updated-at": "2026-05-04T00:52:09.3214405Z"
 }

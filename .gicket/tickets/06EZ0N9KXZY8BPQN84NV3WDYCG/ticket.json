@@ -1,21 +1,20 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0N9KXZY8BPQN84NV3WDYCG",
-    "ticket-type":  "task",
-    "title":  "Task: Add shared provider SQL execution contract tests",
-    "revision":  "06EZ0P8K8YB6WMWR223DNMZ2RG",
-    "status":  "todo",
-    "labels":  [
-                   "type/task",
-                   "automation/bot-ready",
-                   "area/provider-support",
-                   "area/tests"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF7MBCHGFFQKYQW6B7RKW",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:13:29.0870262Z",
-    "updated-at":  "2026-05-04T00:17:42.7274054Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0N9KXZY8BPQN84NV3WDYCG",
+  "ticket-type": "task",
+  "title": "Task: Add shared provider SQL execution contract tests",
+  "revision": "06EZ0Y34XRH00D4DVDAE8ED5MG",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "automation/bot-ready",
+    "area/provider-support",
+    "area/tests",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:13:29.0870262Z",
+  "updated-at": "2026-05-04T00:51:55.2468161Z"
 }

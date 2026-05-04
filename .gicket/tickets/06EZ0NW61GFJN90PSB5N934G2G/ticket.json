@@ -1,22 +1,21 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0NW61GFJN90PSB5N934G2G",
-    "ticket-type":  "task",
-    "title":  "Task: Persist multi-active satellites with deterministic uniqueness rules",
-    "revision":  "06EZ0P8JX2CA8PJMNK3ASWHMYG",
-    "status":  "todo",
-    "labels":  [
-                   "type/task",
-                   "automation/bot-ready",
-                   "area/modeling",
-                   "area/multi-active-satellite",
-                   "area/persistence"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:16:01.1650937Z",
-    "updated-at":  "2026-05-04T00:17:42.6324080Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0NW61GFJN90PSB5N934G2G",
+  "ticket-type": "task",
+  "title": "Task: Persist multi-active satellites with deterministic uniqueness rules",
+  "revision": "06EZ0Y4RF4FNDH23SZ3RD4KYKC",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "automation/bot-ready",
+    "area/modeling",
+    "area/multi-active-satellite",
+    "area/persistence",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:16:01.1650937Z",
+  "updated-at": "2026-05-04T00:52:08.4417021Z"
 }

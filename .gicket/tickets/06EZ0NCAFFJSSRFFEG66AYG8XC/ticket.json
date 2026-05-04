@@ -1,22 +1,21 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0NCAFFJSSRFFEG66AYG8XC",
-    "ticket-type":  "story",
-    "title":  "Story: Consolidate provider benchmark reporting",
-    "revision":  "06EZ0P8K2JZ6S896NRHH2XNFKR",
-    "status":  "todo",
-    "labels":  [
-                   "type/story",
-                   "automation/bot-ready",
-                   "area/benchmarks",
-                   "area/performance",
-                   "area/provider-support"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF7MBCHGFFQKYQW6B7RKW",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:13:51.2275332Z",
-    "updated-at":  "2026-05-04T00:17:42.6760326Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0NCAFFJSSRFFEG66AYG8XC",
+  "ticket-type": "story",
+  "title": "Story: Consolidate provider benchmark reporting",
+  "revision": "06EZ0Y42WY1P948F67VQF6Q31C",
+  "status": "todo",
+  "labels": [
+    "type/story",
+    "automation/bot-ready",
+    "area/benchmarks",
+    "area/performance",
+    "area/provider-support",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:13:51.2275332Z",
+  "updated-at": "2026-05-04T00:52:02.9193640Z"
 }

@@ -1,21 +1,20 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0NA7CWDYJ7ZS3K5GM0187M",
-    "ticket-type":  "task",
-    "title":  "Task: Add opt-in PostgreSQL integration coverage for optimized strategy",
-    "revision":  "06EZ0P8K867QT0YDZBJT16VZNG",
-    "status":  "todo",
-    "labels":  [
-                   "type/task",
-                   "automation/bot-ready",
-                   "area/postgres",
-                   "area/tests"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF7MBCHGFFQKYQW6B7RKW",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:13:34.1673758Z",
-    "updated-at":  "2026-05-04T00:17:42.7213802Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0NA7CWDYJ7ZS3K5GM0187M",
+  "ticket-type": "task",
+  "title": "Task: Add opt-in PostgreSQL integration coverage for optimized strategy",
+  "revision": "06EZ0Y38YQYE8N3RCBGYKQP310",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "automation/bot-ready",
+    "area/postgres",
+    "area/tests",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:13:34.1673758Z",
+  "updated-at": "2026-05-04T00:51:56.2773961Z"
 }

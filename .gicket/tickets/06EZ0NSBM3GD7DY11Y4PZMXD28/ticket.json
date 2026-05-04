@@ -1,21 +1,20 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0NSBM3GD7DY11Y4PZMXD28",
-    "ticket-type":  "story",
-    "title":  "Story: Define capability extension architecture for deferred Data Vault patterns",
-    "revision":  "06EZ0P8JRX5063SWF43YV0QSK0",
-    "status":  "todo",
-    "labels":  [
-                   "type/story",
-                   "automation/bot-ready",
-                   "area/architecture",
-                   "area/modeling"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:15:38.0177481Z",
-    "updated-at":  "2026-05-04T00:17:42.5996862Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0NSBM3GD7DY11Y4PZMXD28",
+  "ticket-type": "story",
+  "title": "Story: Define capability extension architecture for deferred Data Vault patterns",
+  "revision": "06EZ0Y5BE27HYF4AYNCKWX8ZR0",
+  "status": "todo",
+  "labels": [
+    "type/story",
+    "automation/bot-ready",
+    "area/architecture",
+    "area/modeling",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:15:38.0177481Z",
+  "updated-at": "2026-05-04T00:52:13.2961222Z"
 }

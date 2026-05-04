@@ -1,22 +1,21 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0N9TJSXFXH0YZRA3QN2S14",
-    "ticket-type":  "story",
-    "title":  "Story: Optimize PostgreSQL provider save strategy",
-    "revision":  "06EZ0P8K46YQ7K0MFACZBW65AW",
-    "status":  "todo",
-    "labels":  [
-                   "type/story",
-                   "automation/bot-ready",
-                   "area/postgres",
-                   "area/provider-support",
-                   "area/performance"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF7MBCHGFFQKYQW6B7RKW",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:13:30.8607733Z",
-    "updated-at":  "2026-05-04T00:17:42.6898057Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0N9TJSXFXH0YZRA3QN2S14",
+  "ticket-type": "story",
+  "title": "Story: Optimize PostgreSQL provider save strategy",
+  "revision": "06EZ0Y3VFNKJS0DPJR7QXAGJPG",
+  "status": "todo",
+  "labels": [
+    "type/story",
+    "automation/bot-ready",
+    "area/postgres",
+    "area/provider-support",
+    "area/performance",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:13:30.8607733Z",
+  "updated-at": "2026-05-04T00:52:01.0211642Z"
 }

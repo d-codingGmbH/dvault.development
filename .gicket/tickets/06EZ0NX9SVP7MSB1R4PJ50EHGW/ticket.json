@@ -1,21 +1,20 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0NX9SVP7MSB1R4PJ50EHGW",
-    "ticket-type":  "task",
-    "title":  "Task: Document advanced hook validation and failure modes",
-    "revision":  "06EZ0P8JV9ZSX9Z02D4WEPSGRC",
-    "status":  "todo",
-    "labels":  [
-                   "type/task",
-                   "automation/bot-ready",
-                   "area/docs",
-                   "area/configuration"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:16:10.3223336Z",
-    "updated-at":  "2026-05-04T00:17:42.6186110Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0NX9SVP7MSB1R4PJ50EHGW",
+  "ticket-type": "task",
+  "title": "Task: Document advanced hook validation and failure modes",
+  "revision": "06EZ0Y4Z0SQY4K83Q817M9VKS0",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "automation/bot-ready",
+    "area/docs",
+    "area/configuration",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:16:10.3223336Z",
+  "updated-at": "2026-05-04T00:52:10.1184341Z"
 }

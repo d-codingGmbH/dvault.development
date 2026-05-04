@@ -1,22 +1,21 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0NV0Y81AE1Z1Q3223TX2S4",
-    "ticket-type":  "task",
-    "title":  "Task: Define bridge metadata for many-to-many and hierarchy traversal",
-    "revision":  "06EZ0P8JYVA3CBYT1W9TFDA7XW",
-    "status":  "todo",
-    "labels":  [
-                   "type/task",
-                   "automation/bot-ready",
-                   "area/modeling",
-                   "area/bridge",
-                   "area/api"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:15:51.7129957Z",
-    "updated-at":  "2026-05-04T00:17:42.6464117Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0NV0Y81AE1Z1Q3223TX2S4",
+  "ticket-type": "task",
+  "title": "Task: Define bridge metadata for many-to-many and hierarchy traversal",
+  "revision": "06EZ0Y4GXDDJZNWA9G1ZX0HV14",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "automation/bot-ready",
+    "area/modeling",
+    "area/bridge",
+    "area/api",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:15:51.7129957Z",
+  "updated-at": "2026-05-04T00:52:06.5074396Z"
 }

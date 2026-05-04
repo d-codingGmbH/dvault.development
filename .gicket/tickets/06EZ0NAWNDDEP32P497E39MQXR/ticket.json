@@ -1,21 +1,20 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0NAWNDDEP32P497E39MQXR",
-    "ticket-type":  "task",
-    "title":  "Task: Add SQL Server opt-in integration configuration and smoke tests",
-    "revision":  "06EZ0P8K74GS26TDT5VFRV24YC",
-    "status":  "todo",
-    "labels":  [
-                   "type/task",
-                   "automation/bot-ready",
-                   "area/sql-server",
-                   "area/tests"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF7MBCHGFFQKYQW6B7RKW",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:13:39.9282995Z",
-    "updated-at":  "2026-05-04T00:17:42.7136059Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0NAWNDDEP32P497E39MQXR",
+  "ticket-type": "task",
+  "title": "Task: Add SQL Server opt-in integration configuration and smoke tests",
+  "revision": "06EZ0Y3CY05EJDQ4J6NZN99REW",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "automation/bot-ready",
+    "area/sql-server",
+    "area/tests",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:13:39.9282995Z",
+  "updated-at": "2026-05-04T00:51:57.2960589Z"
 }

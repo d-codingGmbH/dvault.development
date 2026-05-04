@@ -1,21 +1,20 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0NWKC9ZME5BSCJFSQEQ02R",
-    "ticket-type":  "story",
-    "title":  "Story: Expose advanced configuration hooks needed by deferred capabilities",
-    "revision":  "06EZ0P8JQCE6KW73XJWRFPQC9W",
-    "status":  "todo",
-    "labels":  [
-                   "type/story",
-                   "automation/bot-ready",
-                   "area/configuration",
-                   "area/architecture"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:16:04.6732003Z",
-    "updated-at":  "2026-05-04T00:17:42.5875208Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0NWKC9ZME5BSCJFSQEQ02R",
+  "ticket-type": "story",
+  "title": "Story: Expose advanced configuration hooks needed by deferred capabilities",
+  "revision": "06EZ0Y5H8TB2XDZ7AG4178HS4R",
+  "status": "todo",
+  "labels": [
+    "type/story",
+    "automation/bot-ready",
+    "area/configuration",
+    "area/architecture",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:16:04.6732003Z",
+  "updated-at": "2026-05-04T00:52:14.7905957Z"
 }

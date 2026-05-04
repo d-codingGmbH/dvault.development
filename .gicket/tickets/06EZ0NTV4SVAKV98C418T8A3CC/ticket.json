@@ -1,21 +1,20 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0NTV4SVAKV98C418T8A3CC",
-    "ticket-type":  "story",
-    "title":  "Story: Add bridge table modeling and generation",
-    "revision":  "06EZ0P8JSVRK0YQFAPYCHM0FCR",
-    "status":  "todo",
-    "labels":  [
-                   "type/story",
-                   "automation/bot-ready",
-                   "area/modeling",
-                   "area/bridge"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:15:50.1979027Z",
-    "updated-at":  "2026-05-04T00:17:42.6066955Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0NTV4SVAKV98C418T8A3CC",
+  "ticket-type": "story",
+  "title": "Story: Add bridge table modeling and generation",
+  "revision": "06EZ0Y57V431R5FMND5XPANGQR",
+  "status": "todo",
+  "labels": [
+    "type/story",
+    "automation/bot-ready",
+    "area/modeling",
+    "area/bridge",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:15:50.1979027Z",
+  "updated-at": "2026-05-04T00:52:12.3774163Z"
 }

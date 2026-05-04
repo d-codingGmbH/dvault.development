@@ -1,21 +1,20 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0NSXY2Y1JZ8SSCX177C770",
-    "ticket-type":  "story",
-    "title":  "Story: Add PIT table modeling and generation",
-    "revision":  "06EZ0P8JTF7F5B9NX23J4HKDD4",
-    "status":  "todo",
-    "labels":  [
-                   "type/story",
-                   "automation/bot-ready",
-                   "area/modeling",
-                   "area/pit"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:15:42.9713173Z",
-    "updated-at":  "2026-05-04T00:17:42.6111720Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0NSXY2Y1JZ8SSCX177C770",
+  "ticket-type": "story",
+  "title": "Story: Add PIT table modeling and generation",
+  "revision": "06EZ0Y55DNC26JEGV54HKNTJJ0",
+  "status": "todo",
+  "labels": [
+    "type/story",
+    "automation/bot-ready",
+    "area/modeling",
+    "area/pit",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:15:42.9713173Z",
+  "updated-at": "2026-05-04T00:52:11.7575368Z"
 }

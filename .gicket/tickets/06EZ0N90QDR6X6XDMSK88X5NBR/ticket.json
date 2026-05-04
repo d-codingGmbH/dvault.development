@@ -1,21 +1,20 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0N90QDR6X6XDMSK88X5NBR",
-    "ticket-type":  "task",
-    "title":  "Task: Document provider optimization capability matrix",
-    "revision":  "06EZ0P8K1G4V704NG4FWDZA1M4",
-    "status":  "todo",
-    "labels":  [
-                   "type/task",
-                   "automation/bot-ready",
-                   "area/provider-support",
-                   "area/docs"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF7MBCHGFFQKYQW6B7RKW",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:13:24.2307608Z",
-    "updated-at":  "2026-05-04T00:17:42.6680110Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0N90QDR6X6XDMSK88X5NBR",
+  "ticket-type": "task",
+  "title": "Task: Document provider optimization capability matrix",
+  "revision": "06EZ0Y46BGG6CNVKB6902MQKXG",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "automation/bot-ready",
+    "area/provider-support",
+    "area/docs",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:13:24.2307608Z",
+  "updated-at": "2026-05-04T00:52:03.8046298Z"
 }

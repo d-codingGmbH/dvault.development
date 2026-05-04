@@ -1,21 +1,20 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0NA180RA0FQ64KXQTHEVZW",
-    "ticket-type":  "task",
-    "title":  "Task: Implement PostgreSQL optimized hub/link/satellite writes",
-    "revision":  "06EZ0P8K8E4CGK2KN648DEKK14",
-    "status":  "todo",
-    "labels":  [
-                   "type/task",
-                   "automation/bot-ready",
-                   "area/postgres",
-                   "area/performance"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF7MBCHGFFQKYQW6B7RKW",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:13:32.4762941Z",
-    "updated-at":  "2026-05-04T00:17:42.7233883Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0NA180RA0FQ64KXQTHEVZW",
+  "ticket-type": "task",
+  "title": "Task: Implement PostgreSQL optimized hub/link/satellite writes",
+  "revision": "06EZ0Y376MWE4S864J44TRGBX0",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "automation/bot-ready",
+    "area/postgres",
+    "area/performance",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:13:32.4762941Z",
+  "updated-at": "2026-05-04T00:51:55.8296448Z"
 }

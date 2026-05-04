@@ -3,6 +3,6 @@
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "name": "v0.5.0 - Provider Optimizations and Deferred Capabilities",
   "description": "Release for provider-specific persistence optimizations across the existing database provider projects and the first implementation slice for deferred Data Vault capabilities: PIT tables, bridge tables, multi-active satellites, and advanced capability hooks.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-04T00:09:52.4222093Z"
 }

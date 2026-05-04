@@ -1,22 +1,21 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0NVX3RYPTFZKYCYEH9HB8W",
-    "ticket-type":  "task",
-    "title":  "Task: Define multi-active satellite driving-key contract",
-    "revision":  "06EZ0P8JXHK6KQQCZC49HR7TG8",
-    "status":  "todo",
-    "labels":  [
-                   "type/task",
-                   "automation/bot-ready",
-                   "area/modeling",
-                   "area/multi-active-satellite",
-                   "area/api"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:15:59.2321041Z",
-    "updated-at":  "2026-05-04T00:17:42.6364115Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0NVX3RYPTFZKYCYEH9HB8W",
+  "ticket-type": "task",
+  "title": "Task: Define multi-active satellite driving-key contract",
+  "revision": "06EZ0Y4PSCQP9HWDFKTBY5JX4C",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "automation/bot-ready",
+    "area/modeling",
+    "area/multi-active-satellite",
+    "area/api",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:15:59.2321041Z",
+  "updated-at": "2026-05-04T00:52:08.0112667Z"
 }

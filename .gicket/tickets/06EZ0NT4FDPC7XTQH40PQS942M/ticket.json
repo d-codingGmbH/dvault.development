@@ -1,22 +1,21 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0NT4FDPC7XTQH40PQS942M",
-    "ticket-type":  "task",
-    "title":  "Task: Define PIT metadata model and builder API",
-    "revision":  "06EZ0P8K02GSTSCF0X86612NJR",
-    "status":  "todo",
-    "labels":  [
-                   "type/task",
-                   "automation/bot-ready",
-                   "area/modeling",
-                   "area/pit",
-                   "area/api"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF8WZ2NVR4N230PKSQKPG",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:15:44.4961929Z",
-    "updated-at":  "2026-05-04T00:17:42.6564847Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0NT4FDPC7XTQH40PQS942M",
+  "ticket-type": "task",
+  "title": "Task: Define PIT metadata model and builder API",
+  "revision": "06EZ0Y4A07HWMD2X0AWTC704EM",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "automation/bot-ready",
+    "area/modeling",
+    "area/pit",
+    "area/api",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:15:44.4961929Z",
+  "updated-at": "2026-05-04T00:52:04.7379281Z"
 }

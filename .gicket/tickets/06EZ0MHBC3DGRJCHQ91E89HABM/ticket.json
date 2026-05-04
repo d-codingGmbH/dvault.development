@@ -1,21 +1,20 @@
 ﻿{
-    "$schema":  "https://schemas.d-coding.de/gicket/ticket/v1",
-    "ticket-id":  "06EZ0MHBC3DGRJCHQ91E89HABM",
-    "ticket-type":  "epic",
-    "title":  "Epic: Provider-specific database optimizations",
-    "revision":  "06EZ0P8JCD8NM9SBQRZ5WSVCFC",
-    "status":  "todo",
-    "labels":  [
-                   "type/epic",
-                   "area/provider-support",
-                   "area/performance",
-                   "automation/bot-ready"
-               ],
-    "assignees":  [
-
-                  ],
-    "milestoneId":  "06EZ0MF7MBCHGFFQKYQW6B7RKW",
-    "releaseId":  "06EZ0MF64VMB5C8ZJK2KJT4W2C",
-    "created-at":  "2026-05-04T00:10:10.5631976Z",
-    "updated-at":  "2026-05-04T00:17:42.4999763Z"
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06EZ0MHBC3DGRJCHQ91E89HABM",
+  "ticket-type": "epic",
+  "title": "Epic: Provider-specific database optimizations",
+  "revision": "06EZ0Y5JYDSVEMN5PJT65RQJ64",
+  "status": "todo",
+  "labels": [
+    "type/epic",
+    "area/provider-support",
+    "area/performance",
+    "automation/bot-ready",
+    "needs-po"
+  ],
+  "assignees": [],
+  "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
+  "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
+  "created-at": "2026-05-04T00:10:10.5631976Z",
+  "updated-at": "2026-05-04T00:52:15.2191604Z"
 }
