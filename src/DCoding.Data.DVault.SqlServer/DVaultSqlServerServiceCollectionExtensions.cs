@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DCoding.Data.DVault;
 
@@ -7,7 +8,7 @@ namespace DCoding.Data.DVault;
 /// </summary>
 public static class DVaultSqlServerServiceCollectionExtensions {
   /// <summary>
-  /// Adds DVault defaults for SQL Server. Provider-specific optimized writers can extend this package without changing callers.
+  /// Adds DVault defaults plus the SQL Server optimized save strategy.
   /// </summary>
   /// <param name="services">The service collection used by the application startup pipeline.</param>
   /// <returns>The same service collection so startup configuration can continue fluently.</returns>
@@ -15,6 +16,7 @@ public static class DVaultSqlServerServiceCollectionExtensions {
     ArgumentNullException.ThrowIfNull(services);
 
     services.AddDVault();
+    services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, SqlServerDataVaultSaveStrategy>());
 
     return services;
   }

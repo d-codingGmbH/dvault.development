@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0NAMGKJ63WCXAK1J7B08TR",
   "ticket-type": "task",
   "title": "Task: Implement SQL Server set-based save strategy",
-  "revision": "06EZ0Y3B587ERTSRF9N382GFPW",
-  "status": "todo",
+  "revision": "06EZ5TCSGKJMY5KF8VZV0WA6Z8",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
-    "area/sql-server",
     "area/performance",
-    "needs-po"
+    "area/sql-server",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:13:37.5224196Z",
-  "updated-at": "2026-05-04T00:51:56.8429548Z"
+  "updated-at": "2026-05-04T12:14:48.7088881Z"
 }

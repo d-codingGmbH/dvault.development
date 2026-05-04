@@ -1,84 +1,61 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the task to a provider-package-only SQL Server optimized save implementation behind the existing strategy boundary, with fallback preservation and repeatable live smoke coverage kept in the sibling SQL Server coverage ticket.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - This task owns the SQL Server optimized writer implementation itself; the separate repeatable opt-in SQL Server smoke suite already has its own child ticket 06EZ0NAWNDDEP32P497E39MQXR.
 - The optimized path must remain behind IDataVaultProviderSaveStrategy and AddDVaultSqlServer and must not add SQL Server SQL or provider-name branching to src/DCoding.Data.DVault.
 - The strategy should accept only compatible SQL Server DbContext instances with a clean change tracker and supported request/model shapes; all other cases must fall back through the existing provider-neutral save service.
 - No configurable batch-size threshold or required SQL Server feature is mandated here; any parameterized set-based insert-only approach is acceptable if it removes fallback-style per-row unique-row existence probes for the optimized path.
 - Satellite handling must preserve the current insert-only semantics already visible in DefaultDataVaultSaveService and SqliteDataVaultSaveStrategy: compare the latest known hash diff per parent across the ordered batch and insert only when the hash diff changes.
 
-### Scope In
+Scope In
 - Implement a SQL Server-specific IDataVaultProviderSaveStrategy inside src/DCoding.Data.DVault.SqlServer.
 - Register the strategy from AddDVaultSqlServer while preserving the existing AddDVault baseline.
 - Use SQL Server-appropriate set-based SQL for hub and link reuse detection and insert-only writes on the optimized path.
 - Use batch-oriented latest-hash-diff lookup and insert filtering for satellite rows without changing caller-visible save ordering or row-count semantics.
 - Add or update the minimal non-live tests needed to prove registration, compatibility gating, and fallback preservation for the new SQL Server strategy.
 
-### Scope Out
+Scope Out
 - The repeatable opt-in SQL Server smoke suite and configuration contract described by ticket 06EZ0NAWNDDEP32P497E39MQXR.
 - Always-on live SQL Server test infrastructure, CI secrets, containers, or local provisioning automation.
 - Changes to IDataVaultSaveService, stable hashing, naming policy, or provider-neutral EF metadata translation beyond what is strictly required to plug into the existing save-strategy boundary.
 - Provider-specific SQL or provider-name switches in src/DCoding.Data.DVault.
 - Optimized strategy work for PostgreSQL, Oracle, or MySQL.
 
-## Acceptance Criteria
-- AddDVaultSqlServer registers a SQL Server provider save strategy that is selected only for compatible SQL Server contexts and otherwise leaves provider-neutral fallback selection unchanged.
-- For compatible optimized-path hub and link saves, existence detection is performed set-based for the batch being saved rather than by one fallback-style existence probe per candidate row.
-- For compatible optimized-path satellite saves, the strategy performs batch-oriented latest-hash-diff lookup and inserts only changed rows, matching the fallback implementation's insert-only history semantics.
-- RowsWritten and saved-record ordering remain consistent with the existing explicit save contract for inserted, reused, unchanged, and changed rows.
-- All SQL Server-specific implementation code required for the optimized path remains in the SQL Server provider package.
-
-## Definition of Done
-- The SQL Server provider package builds with the new strategy wiring and any new packable-source files follow the repository one-member-per-file rule.
-- Automated coverage added or updated for this ticket proves registration, compatibility gating, and fallback-safe behavior without requiring a default-on live SQL Server instance.
-- Fallback behavior remains unchanged for non-SQL Server providers, dirty contexts, and unsupported optimized-path shapes.
-- Any deliberate public surface change in the SQL Server provider package is documented with XML comments and reflected in the SQL Server public API snapshot.
-- Affected repository validation for touched SQL Server package and test surfaces passes.
-
-## Implementation Notes
-- Use src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs as the reference pattern for strategy registration, transaction-safe raw SQL execution, parameterization, saved-record construction, and row-count semantics, while replacing SQLite SQL with SQL Server-appropriate set-based SQL.
-- Keep src/DCoding.Data.DVault/DataVaultSaveService.cs as the shared dispatcher and fallback owner; change core code only if a contract-safe adjustment is strictly necessary for the SQL Server provider to plug in.
-- Repository evidence still shows only DataVaultProviderCapabilityProfiles.Sqlite today; do not widen provider-aware metadata translation or the shared capability-profile matrix as part of this task unless the optimized writer cannot remain isolated without it.
-- The current repository still treats SQL Server as compatibility-only in unit tests and architecture notes, so update those expectations only where the new strategy legitimately changes the baseline.
-- The current authoritative satellite semantics are already visible in DefaultDataVaultSaveService and SqliteDataVaultSaveStrategy: latest hash diff per parent governs insert-or-skip decisions across the ordered request batch, and unchanged payloads do not write new rows.
-- The integration project currently has no SQL Server provider package or SQL Server environment configuration contract, so this ticket should not expand into full live-provider harness work.
-- Prefer parameterized insert-only SQL Server techniques over update or broad upsert behavior; the ticket does not require MERGE specifically if another set-based approach is safer and preserves the contract.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should the follow-on SQL Server smoke ticket adopt a Postgres-like environment contract, for example a DVAULT_TEST_SQLSERVER_CONNECTION_STRING-style opt-in variable?
 - Once the SQL Server optimized path lands, should docs/architecture/dvault-v1-explicit-save-service.md be updated in the same delivery stream to move SQL Server out of the current compatibility-only matrix row?
 - If PostgreSQL, Oracle, and MySQL later gain optimized writers, should the repository add a shared provider SQL execution contract helper analogous to the current SQLite-focused contract coverage?
 
-## Risks
+Risks
 - An implementation that still loops over rows and executes per-row existence checks behind raw SQL would satisfy wiring but miss the actual performance objective.
 - SQL Server-specific SQL can drift into update or upsert semantics that break the explicit insert-only contract for hub, link, or satellite history.
 - Overly broad CanSave gating could route dirty contexts or unsupported model shapes into the optimized path and bypass the known-safe fallback.
 - Because this ticket does not own the repeatable live SQL Server smoke suite, SQL text that looks correct in isolation may not be exercised against a real SQL Server instance until the follow-on coverage work lands.
 
-## Split Recommendations
+Split recommendations
 - Keep repeatable opt-in SQL Server smoke/live validation in ticket 06EZ0NAWNDDEP32P497E39MQXR so this ticket stays focused on provider-package implementation and fallback-safe strategy wiring.
 - If documentation or validation work expands beyond brief expectation updates, keep that work with the parent SQL Server optimization story rather than enlarging this implementation ticket.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 5
+- implementation-notes items: 7
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Goal: implement the SQL Server optimized save strategy behind the shared provider contract.
-
-Acceptance Criteria:
-- The implementation avoids per-row existence probes for large batches where set-based SQL is available.
-- Insert-only satellite history semantics remain identical to the fallback implementation.
-- The code remains isolated in the SQL Server provider package.
+Run mode
+- apply: planned updates are applied after this comment

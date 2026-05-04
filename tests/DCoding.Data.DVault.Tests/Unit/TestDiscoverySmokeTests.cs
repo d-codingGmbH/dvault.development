@@ -41,7 +41,6 @@ public sealed class TestDiscoverySmokeTests {
     AssertMethodTraits(
         nameof(ExplicitDataVaultSaveServiceTests.ProviderPackagesRegisterCoreSaveService),
         [
-            ProviderTestCategories.SqlServerProvider,
             ProviderTestCategories.OracleProvider,
             ProviderTestCategories.MySqlProvider,
         ]);
@@ -51,6 +50,24 @@ public sealed class TestDiscoverySmokeTests {
     AssertMethodTraits(
         nameof(ExplicitDataVaultSaveServiceTests.SqliteProviderPackageRegistersOptimizedSaveStrategy),
         [ProviderTestCategories.SqliteProvider]);
+    AssertMethodTraits(
+        nameof(ExplicitDataVaultSaveServiceTests.SqlServerProviderPackageRegistersOptimizedSaveStrategy),
+        [ProviderTestCategories.SqlServerProvider]);
+    AssertMethodTraits(
+        nameof(ExplicitDataVaultSaveServiceTests.SqlServerProviderSaveStrategyAcceptsOnlyCleanSqlServerContexts),
+        [ProviderTestCategories.SqlServerProvider]);
+    AssertMethodTraits(
+        nameof(ExplicitDataVaultSaveServiceTests.SqlServerUniqueInsertSqlUsesSetBasedExistenceDetection),
+        [ProviderTestCategories.SqlServerProvider]);
+    AssertMethodTraits(
+        nameof(ExplicitDataVaultSaveServiceTests.SqlServerSatelliteLookupSqlRanksLatestHashDiffsByParentBatch),
+        [ProviderTestCategories.SqlServerProvider]);
+    AssertMethodTraits(
+        nameof(ExplicitDataVaultSaveServiceTests.SqlServerSatelliteFilterUsesLatestHashDiffAcrossOrderedBatch),
+        [ProviderTestCategories.SqlServerProvider]);
+    AssertMethodTraits(
+        nameof(ExplicitDataVaultSaveServiceTests.SqlServerSavePlansKeepFallbackSavedRecordOrderingForBulkRequests),
+        [ProviderTestCategories.SqlServerProvider]);
   }
 
   [Fact]
