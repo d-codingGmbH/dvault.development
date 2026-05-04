@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0N90QDR6X6XDMSK88X5NBR",
   "ticket-type": "task",
   "title": "Task: Document provider optimization capability matrix",
-  "revision": "06EZ0Y46BGG6CNVKB6902MQKXG",
-  "status": "todo",
+  "revision": "06EZ17CHWEV6HFHA8MQPNKY8VC",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
-    "area/provider-support",
     "area/docs",
-    "needs-po"
+    "area/provider-support",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:13:24.2307608Z",
-  "updated-at": "2026-05-04T00:52:03.8046298Z"
+  "updated-at": "2026-05-04T01:32:31.5872728Z"
 }

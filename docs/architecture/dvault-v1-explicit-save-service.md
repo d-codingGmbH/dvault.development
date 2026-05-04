@@ -25,3 +25,23 @@ Hub and link writes use the generated hash-key value as the reuse key. When a re
 The current SQLite provider baseline is `DataVaultProviderCapabilityProfiles.Sqlite`, which declares `DataVaultProviderConcurrencySupport.NoneInV1Unsupported`. The default service therefore performs deterministic pre-insert reuse lookup for ordinary repeated saves, but it does not claim provider-neutral multi-writer conflict signals, retry behavior, merge semantics, or provider-specific upsert support.
 
 SaveChanges interceptors remain outside the default v1 path. An optional interceptor or convenience wrapper can be considered later without changing the explicit save boundary that downstream persistence work builds on.
+
+## V0.5 Provider Optimization Capability Matrix
+
+The v0.5 compatibility baseline is the core provider-neutral `AddDVault()`/`IDataVaultSaveService` path without a provider-specific save strategy. Provider packages that only register `AddDVault()` inherit this compatibility baseline; they are not unsupported, but they do not carry a v0.5 requirement for provider-specific optimized save behavior.
+
+Validation vocabulary:
+
+- `ProviderIntegration.RequiredLocal`: required local integration coverage.
+- `ProviderIntegration.ExternalOptIn`: optional external database validation that runs only when explicitly configured.
+- `ProviderSmoke.Default`: default smoke or contract coverage; provider integration validation is not required for v0.5.
+
+| Provider | V0.5 release posture | Optimized insert-only save behavior required | Set-based existence checks required | Validation expectation | Benchmark coverage required |
+| --- | --- | --- | --- | --- | --- |
+| SQLite | Provider-specific optimization baseline through `AddDVaultSqlite()` and `SqliteDataVaultSaveStrategy`. | Yes. This is the only provider-specific optimized insert-only save behavior required in v0.5. | Yes. SQLite is the only provider required to provide set-based existence checks in v0.5. | `ProviderIntegration.RequiredLocal` integration coverage is required locally. | Yes. Required benchmark coverage is SQLite-specific and uses local SQLite temporary files. |
+| PostgreSQL | Compatibility baseline through `AddDVaultPostgres()`; no provider-specific save strategy is required in v0.5. | No. | No. | `ProviderIntegration.ExternalOptIn` only, gated by `DVAULT_TEST_POSTGRES_CONNECTION_STRING`; it is not required local validation. | No. |
+| SQL Server | Compatibility baseline only through `AddDVaultSqlServer()`. | No. | No. | `ProviderSmoke.Default`; provider integration validation is not required in v0.5. | No. |
+| Oracle | Compatibility baseline only through `AddDVaultOracle()`. | No. | No. | `ProviderSmoke.Default`; provider integration validation is not required in v0.5. | No. |
+| MySQL | Compatibility baseline only through `AddDVaultMySql()`. | No. | No. | `ProviderSmoke.Default`; provider integration validation is not required in v0.5. | No. |
+
+This matrix is release-scoped to v0.5. It does not require SQL Server, Oracle, MySQL, or PostgreSQL to ship provider-specific optimized writers, set-based satellite existence checks, required local integration suites, or benchmark baselines in this release. Benchmark notes remain SQLite-specific because the benchmark runner uses SQLite temporary files and does not require Postgres, Docker, `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, or other external services.
