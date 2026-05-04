@@ -14,6 +14,12 @@ internal sealed class OrderProductPlainEfBenchmark : IScenarioBenchmark {
 
   public string BaselineName => "conventional-ef";
 
+  public string StrategyFamily => DataVaultBenchmarkHelpers.ClassicEfStrategyFamily;
+
+  public string DatasetSize => "1 order-product relationship, 2 fulfillment states";
+
+  public string ChangeRatio => "50% repeat-change history";
+
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
     using var database = TempSqliteDatabase.Create();
     var options = new DbContextOptionsBuilder<OrderFulfillmentHistoryContext>()
@@ -265,9 +271,21 @@ internal sealed class OrderProductPlainEfBenchmark : IScenarioBenchmark {
 }
 
 internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
+  private readonly DataVaultBenchmarkStrategy _strategy;
+
+  public OrderProductDataVaultBenchmark(DataVaultBenchmarkStrategy strategy) {
+    _strategy = strategy;
+  }
+
   public string ScenarioName => "order-product-fulfillment-history";
 
-  public string BaselineName => "dvault-explicit-save";
+  public string BaselineName => DataVaultBenchmarkHelpers.GetDataVaultBaselineName(_strategy);
+
+  public string StrategyFamily => DataVaultBenchmarkHelpers.GetDataVaultStrategyFamily(_strategy);
+
+  public string DatasetSize => "1 order-product relationship, 2 fulfillment states";
+
+  public string ChangeRatio => "50% repeat-change history";
 
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
     using var database = TempSqliteDatabase.Create();
@@ -275,7 +293,7 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
         .UseSqlite(database.ConnectionString)
         .Options;
     var services = new ServiceCollection();
-    services.AddDVaultSqlite();
+    DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy);
 
     using var provider = services.BuildServiceProvider(validateScopes: true);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();

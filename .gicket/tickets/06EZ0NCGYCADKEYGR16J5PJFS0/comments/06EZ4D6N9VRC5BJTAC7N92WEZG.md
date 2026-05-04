@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined current child ticket under story 06EZ0NCAFFJSSRFFEG66AYG8XC around the existing SQLite benchmark harness: compare classic EF, provider-neutral AddDVault fallback, and SQLite AddDVaultSqlite optimized rows in documentation artifacts, keep artifacts/benchmarks as the bounded output root, and leave external-provider expansion to follow-up work. No new attachments, child tickets, relations, or planning documents were created in this run.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Ticket 06EZ0NCGYCADKEYGR16J5PJFS0 remains a parentOf child of story 06EZ0NCAFFJSSRFFEG66AYG8XC and refines only the benchmark-artifact slice of that story.
 - The current repository baseline is the repo-local SQLite harness in benchmarks/DCoding.Data.DVault.Benchmarks; v0.5 required benchmark coverage is SQLite-only, so this ticket does not need live Postgres, MySQL, Oracle, or SQL Server execution.
 - The comparison set for this ticket is classic EF, provider-neutral AddDVault fallback, and the SQLite AddDVaultSqlite path that currently registers SqliteDataVaultSaveStrategy on the same local SQLite provider.
@@ -17,68 +16,46 @@
 - Benchmark artifact output stays under artifacts/, with artifacts/benchmarks ratified as the default bounded output location.
 - No ticket attachments, child tickets, or planning documents were created in this refinement run.
 
-### Scope In
+Scope In
 - Extend the existing benchmark runner and artifact schema so each emitted comparison row carries provider, strategy family, dataset-size metadata, and change-ratio metadata alongside timing and persisted-outcome fields.
 - Add provider-neutral fallback benchmark rows alongside the existing classic EF and SQLite optimized DVault rows.
 - Represent one large insert-only customer-profile bulk scenario and the existing large change-heavy customer-profile bulk scenario.
 - Keep the existing smaller customer-profile and order-product scenarios if they continue to provide comparison context and persisted-outcome proof.
 - Update benchmark documentation and automated coverage for the expanded comparison artifacts.
 
-### Scope Out
+Scope Out
 - Live external-provider benchmark execution or provider-package matrices beyond the current SQLite local temporary-file harness.
 - Changing production save-service architecture, provider strategy dispatch contracts, or non-benchmark product behavior.
 - CI performance gates, historical trend storage, dashboard publication, or checked-in benchmark result snapshots.
 - Tracked bin/ or obj/ outputs or artifact paths outside artifacts/.
 
-## Acceptance Criteria
-- One benchmark invocation can emit markdown, CSV, and JSON artifacts under an artifacts/... path, and all three formats describe the same comparison result set.
-- Artifact rows identify the database provider, strategy family, dataset size, change ratio, iteration count, mean/min/max milliseconds, and persisted outcome for each measured baseline.
-- For each represented SQLite scenario, artifacts include three strategy families: classic EF, provider-neutral DVault fallback via AddDVault(), and SQLite optimized DVault via AddDVaultSqlite().
-- The large change-heavy comparison is represented by the existing customer-profile-bulk-history workload of 100 customers and 10 profile states each.
-- A matching large insert-only customer-profile workload is represented so the artifact set includes a large baseline with one initial state per customer and no repeat-change history.
-- The output location remains under artifacts/ and the work does not introduce tracked bin/ or obj/ benchmark outputs.
-
-## Definition of Done
-- BenchmarkRunner, BenchmarkArtifacts, benchmark README, and automated tests are updated together so console execution and emitted artifacts stay aligned.
-- Automated coverage proves the fallback, optimized, and classic EF comparison rows appear in emitted artifacts for the required SQLite scenarios.
-- Automated coverage proves provider, strategy, dataset-size, and change-ratio metadata are exposed consistently across markdown, CSV, and JSON.
-- The benchmark flow remains runnable locally without Docker, external services, or machine-specific secrets.
-- Repository formatting and shared benchmark/project conventions remain satisfied.
-
-## Implementation Notes
-- Reuse the existing repo-local benchmark executable in benchmarks/DCoding.Data.DVault.Benchmarks; do not introduce a second benchmark pipeline.
-- Keep SQLite as the concrete provider baseline for this ticket, but model artifact rows so later provider tickets can add rows without discarding the current schema.
-- Use strategy categories derived from the current code paths: classic EF, provider-neutral DVault fallback, and provider-specific optimized DVault.
-- Treat dataset size and change ratio as scenario-declared metadata rather than values inferred from timing output so all three artifact formats stay deterministic.
-- Reuse the existing customer-profile-bulk-history scenario for change-heavy coverage and add the insert-only counterpart in the same scenario family to keep comparisons coherent.
-- Preserve the provider, runtime, and hardware context already emitted by the benchmark artifacts so copied benchmark tables do not lose execution context.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After additional provider benchmarks exist, should a follow-up ticket add explicit skipped-provider rows and opt-in external-provider comparisons without changing the current SQLite-required baseline?
 - When ticket 06EZ0NA7CWDYJ7ZS3K5GM0187M or later provider-optimization work lands, should the benchmark artifact schema add PostgreSQL or other provider rows as a separate expansion ticket?
 - Should later documentation work check in one sample provider-comparison artifact or attach one to a release ticket once the first reference-machine run is accepted?
 
-## Risks
+Risks
 - If documentation copies benchmark numbers without the emitted provider, runtime, and hardware context, readers may overgeneralize SQLite local measurements.
 - If the new dataset-size or change-ratio labels diverge between markdown, CSV, and JSON, the comparison artifacts stop being machine- and doc-friendly.
 - If the artifact schema hardcodes SQLite-only assumptions too tightly, later provider-expansion tickets may need a format revision.
 
-## Split Recommendations
+Split recommendations
 - No additional split is required for this ticket after bounding it to the existing SQLite benchmark harness, fallback/optimized/classic strategy comparison, and one added large insert-only scenario.
 - If stakeholders later want live external-provider execution or skipped-provider reporting, handle that as separate provider-expansion tickets instead of widening this task.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 5
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Goal: emit benchmark artifacts that compare provider, strategy, dataset size, and change ratio.
-
-Acceptance Criteria:
-- Artifacts include the provider-neutral fallback, optimized provider path where available, and the classic EF baseline where feasible.
-- Large insert-only and large change-heavy scenarios are represented.
-- The output location stays under artifacts and does not introduce tracked bin or obj output.
+Run mode
+- apply: planned updates are applied after this comment

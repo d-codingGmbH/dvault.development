@@ -47,15 +47,23 @@ internal static class BenchmarkArtifacts {
     ArgumentNullException.ThrowIfNull(summaries);
 
     var builder = new StringBuilder();
-    builder.AppendLine("| Scenario | Baseline | Iterations | Mean ms | Min ms | Max ms | Persisted outcome |");
-    builder.AppendLine("| --- | --- | ---: | ---: | ---: | ---: | --- |");
+    builder.AppendLine("| Scenario | Provider | Baseline | Strategy family | Dataset size | Change ratio | Iterations | Mean ms | Min ms | Max ms | Persisted outcome |");
+    builder.AppendLine("| --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- |");
 
     foreach (var summary in summaries) {
       builder
           .Append("| ")
           .Append(EscapeMarkdownCell(summary.ScenarioName))
           .Append(" | ")
+          .Append(EscapeMarkdownCell(summary.Provider))
+          .Append(" | ")
           .Append(EscapeMarkdownCell(summary.BaselineName))
+          .Append(" | ")
+          .Append(EscapeMarkdownCell(summary.StrategyFamily))
+          .Append(" | ")
+          .Append(EscapeMarkdownCell(summary.DatasetSize))
+          .Append(" | ")
+          .Append(EscapeMarkdownCell(summary.ChangeRatio))
           .Append(" | ")
           .Append(summary.Iterations.ToString(CultureInfo.InvariantCulture))
           .Append(" | ")
@@ -122,13 +130,17 @@ internal static class BenchmarkArtifacts {
 
   private static string CreateCsv(IEnumerable<BenchmarkSummary> summaries) {
     var builder = new StringBuilder();
-    builder.AppendLine("scenario,baseline,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,persistedOutcome");
+    builder.AppendLine("scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,persistedOutcome");
 
     foreach (var summary in summaries) {
       AppendCsvRow(
           builder,
           summary.ScenarioName,
+          summary.Provider,
           summary.BaselineName,
+          summary.StrategyFamily,
+          summary.DatasetSize,
+          summary.ChangeRatio,
           summary.Iterations.ToString(CultureInfo.InvariantCulture),
           FormatMilliseconds(summary.MeanMilliseconds),
           FormatMilliseconds(summary.MinMilliseconds),

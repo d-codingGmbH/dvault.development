@@ -7,11 +7,25 @@ internal static class BenchmarkRunner {
   private static readonly IScenarioBenchmark[] Benchmarks =
   [
       new CustomerProfilePlainEfBenchmark(),
-      new CustomerProfileDataVaultBenchmark(),
-      new CustomerProfileBulkPlainEfBenchmark(),
-      new CustomerProfileBulkDataVaultBenchmark(),
+      new CustomerProfileDataVaultBenchmark(DataVaultBenchmarkStrategy.ProviderNeutralFallback),
+      new CustomerProfileDataVaultBenchmark(DataVaultBenchmarkStrategy.SqliteOptimized),
+      new CustomerProfileBulkPlainEfBenchmark(CustomerProfileBulkScenarios.InsertOnly),
+      new CustomerProfileBulkDataVaultBenchmark(
+          CustomerProfileBulkScenarios.InsertOnly,
+          DataVaultBenchmarkStrategy.ProviderNeutralFallback),
+      new CustomerProfileBulkDataVaultBenchmark(
+          CustomerProfileBulkScenarios.InsertOnly,
+          DataVaultBenchmarkStrategy.SqliteOptimized),
+      new CustomerProfileBulkPlainEfBenchmark(CustomerProfileBulkScenarios.ChangeHeavy),
+      new CustomerProfileBulkDataVaultBenchmark(
+          CustomerProfileBulkScenarios.ChangeHeavy,
+          DataVaultBenchmarkStrategy.ProviderNeutralFallback),
+      new CustomerProfileBulkDataVaultBenchmark(
+          CustomerProfileBulkScenarios.ChangeHeavy,
+          DataVaultBenchmarkStrategy.SqliteOptimized),
       new OrderProductPlainEfBenchmark(),
-      new OrderProductDataVaultBenchmark(),
+      new OrderProductDataVaultBenchmark(DataVaultBenchmarkStrategy.ProviderNeutralFallback),
+      new OrderProductDataVaultBenchmark(DataVaultBenchmarkStrategy.SqliteOptimized),
   ];
 
   public static async Task RunAsync(BenchmarkOptions options, CancellationToken cancellationToken) {
@@ -39,7 +53,11 @@ internal static class BenchmarkRunner {
 
       summaries.Add(BenchmarkSummary.Create(
           benchmark.ScenarioName,
+          BenchmarkArtifacts.ProviderName,
           benchmark.BaselineName,
+          benchmark.StrategyFamily,
+          benchmark.DatasetSize,
+          benchmark.ChangeRatio,
           elapsedTimes,
           persistedOutcome));
     }
@@ -82,6 +100,12 @@ internal interface IScenarioBenchmark {
 
   string BaselineName { get; }
 
+  string StrategyFamily { get; }
+
+  string DatasetSize { get; }
+
+  string ChangeRatio { get; }
+
   Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken);
 }
 
@@ -89,7 +113,11 @@ internal sealed record ScenarioBenchmarkResult(TimeSpan Elapsed, string Persiste
 
 internal sealed record BenchmarkSummary(
     string ScenarioName,
+    string Provider,
     string BaselineName,
+    string StrategyFamily,
+    string DatasetSize,
+    string ChangeRatio,
     int Iterations,
     double MeanMilliseconds,
     double MinMilliseconds,
@@ -97,16 +125,33 @@ internal sealed record BenchmarkSummary(
     string PersistedOutcome) {
   public static BenchmarkSummary Create(
       string scenarioName,
+      string providerName,
       string baselineName,
+      string strategyFamily,
+      string datasetSize,
+      string changeRatio,
       IReadOnlyList<TimeSpan> elapsedTimes,
       string persistedOutcome) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(scenarioName);
+    ArgumentException.ThrowIfNullOrWhiteSpace(providerName);
+    ArgumentException.ThrowIfNullOrWhiteSpace(baselineName);
+    ArgumentException.ThrowIfNullOrWhiteSpace(strategyFamily);
+    ArgumentException.ThrowIfNullOrWhiteSpace(datasetSize);
+    ArgumentException.ThrowIfNullOrWhiteSpace(changeRatio);
+    ArgumentException.ThrowIfNullOrWhiteSpace(persistedOutcome);
+    ArgumentNullException.ThrowIfNull(elapsedTimes);
+
     if (elapsedTimes.Count == 0) {
       throw new ArgumentException("At least one benchmark iteration is required.", nameof(elapsedTimes));
     }
 
     return new BenchmarkSummary(
         scenarioName,
+        providerName,
         baselineName,
+        strategyFamily,
+        datasetSize,
+        changeRatio,
         elapsedTimes.Count,
         elapsedTimes.Average(value => value.TotalMilliseconds),
         elapsedTimes.Min(value => value.TotalMilliseconds),
