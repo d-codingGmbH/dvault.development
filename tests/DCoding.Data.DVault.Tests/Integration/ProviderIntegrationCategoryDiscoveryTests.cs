@@ -12,6 +12,7 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
       typeof(PlainEfCustomerProfileHistorySqliteTests),
       typeof(SqliteDataVaultSchemaTests),
       typeof(SqliteProviderCapabilityProfileTests),
+      typeof(SqliteProviderSqlExecutionContractTests),
       typeof(SqliteTestDatabaseTests),
   ];
 

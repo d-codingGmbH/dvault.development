@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0N9KXZY8BPQN84NV3WDYCG",
   "ticket-type": "task",
   "title": "Task: Add shared provider SQL execution contract tests",
-  "revision": "06EZ0Y34XRH00D4DVDAE8ED5MG",
-  "status": "todo",
+  "revision": "06EZ1HAMN2GJQFJ2D9J9SAE7A0",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
     "area/provider-support",
     "area/tests",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:13:29.0870262Z",
-  "updated-at": "2026-05-04T00:51:55.2468161Z"
+  "updated-at": "2026-05-04T02:15:57.3520355Z"
 }
