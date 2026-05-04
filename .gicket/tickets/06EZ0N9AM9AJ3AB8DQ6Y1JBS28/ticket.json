@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0N9AM9AJ3AB8DQ6Y1JBS28",
   "ticket-type": "task",
   "title": "Task: Add strategy-selection tests for fallback versus optimized providers",
-  "revision": "06EZ0Y48ATP8K505E4XPMENBHW",
-  "status": "todo",
+  "revision": "06EZ224T925ZZC23QCBTYV8G2G",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
     "area/provider-support",
     "area/tests",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:13:26.8166324Z",
-  "updated-at": "2026-05-04T00:52:04.3108869Z"
+  "updated-at": "2026-05-04T03:29:26.0889900Z"
 }
