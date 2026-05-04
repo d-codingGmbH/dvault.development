@@ -3,7 +3,7 @@
   "ticket-id": "06EXB7ZZDZH7ADQ12R2MGY60A0",
   "ticket-type": "epic",
   "title": "Epic: Quality gates and NuGet readiness",
-  "revision": "06EYZV59D00RY4NTXXPTN66318",
+  "revision": "06EYZVH2XKVZH98SGPHPRA4FQ4",
   "status": "done",
   "labels": [
     "area/quality",
@@ -15,5 +15,5 @@
   "milestoneId": "06EXB6FBB9CGKTR138D9SEBG50",
   "releaseId": "06EXB6F5K9RMVX0WQXAXNQF9F4",
   "created-at": "2026-04-28T19:45:25.9869629Z",
-  "updated-at": "2026-05-03T22:19:17.7362564Z"
+  "updated-at": "2026-05-03T22:20:54.3800000Z"
 }
