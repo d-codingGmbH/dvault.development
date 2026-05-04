@@ -1,80 +1,59 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined Oracle validation to a Postgres-style external opt-in smoke path with `DVAULT_TEST_ORACLE_CONNECTION_STRING`, one representative hub-save check, and documentation, while keeping optimized-writer work out of scope.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Oracle should follow the repository's existing external-provider test pattern: one developer-managed connection-string environment variable, skipped-by-default live tests, and `ProviderIntegration.ExternalOptIn` for the configured database path.
 - The v1 configuration contract for this ticket is `DVAULT_TEST_ORACLE_CONNECTION_STRING`; missing or blank values mean the live Oracle smoke path is not configured.
 - `AddDVaultOracle()` currently exposes the Oracle compatibility baseline by delegating to `AddDVault()`, so this ticket's live smoke must verify observable behavior through the public `IDataVaultSaveService` contract rather than depend on the absence or presence of a provider-specific strategy.
 - Existing default Oracle provider-registration smoke coverage remains part of normal local validation; the new live insert-path validation is opt-in and must not make Oracle a default developer prerequisite.
 - The bounded v1 save scenario for this ticket is one representative insert-only hub save; broader link, satellite, reuse, concurrency, or performance scenarios belong to separate Oracle tickets.
 
-### Scope In
+Scope In
 - Add Oracle external-test configuration plumbing in the integration test project, following the current Postgres-style opt-in pattern.
 - Add default-run configuration-contract coverage that proves missing Oracle configuration is treated as a documented skip condition instead of a noisy failure.
 - Add one opt-in live Oracle smoke test that starts DVault through `AddDVaultOracle()` and persists a single representative hub row through `IDataVaultSaveService`.
 - Document the Oracle opt-in command shape, environment variable name, and external database prerequisite for maintainers.
 - Keep Oracle test category and provider trait discovery aligned with the repository's existing provider smoke and external-integration conventions.
 
-### Scope Out
+Scope Out
 - Implementing an Oracle provider capability profile or optimized save strategy.
 - Adding multi-scenario Oracle coverage for links, satellites, reuse/idempotency, concurrency, or benchmarks.
 - Adding checked-in secrets, Docker images, CI infrastructure, or repository-managed Oracle provisioning.
 - Making the packable `src/DCoding.Data.DVault.Oracle` project depend directly on a concrete Oracle EF Core provider package.
 - Expanding shared provider contracts beyond what is needed for the Oracle configuration path and one live smoke save.
 
-## Acceptance Criteria
-- Normal repository test runs without Oracle configuration still pass because the new Oracle live smoke coverage is external opt-in and reports a clear skip instead of failing.
-- The missing-configuration path explicitly names `DVAULT_TEST_ORACLE_CONNECTION_STRING` and states that Oracle database provisioning is external to DVault.
-- When `DVAULT_TEST_ORACLE_CONNECTION_STRING` is supplied, the Oracle smoke path verifies startup through `AddDVaultOracle()` and one insert-only explicit-save scenario against a developer-managed Oracle database.
-- The bounded live save scenario proves one representative hub row is written and observable through the public save result and persisted table state.
-- README or adjacent test guidance documents the Oracle opt-in variable, an Oracle-only test selection path, and the expectation that the target database and user already exist.
-
-## Definition of Done
-- Integration-test configuration code, live Oracle smoke coverage, and maintainer-facing documentation are present and use the repository's existing provider test-category conventions.
-- Default smoke/configuration tests cover the unconfigured Oracle path, and live Oracle tests are isolated behind the opt-in contract.
-- Default local validation does not require Oracle credentials, a running Oracle instance, or always-on Oracle test dependencies.
-- The Oracle smoke test asserts public behavior and remains valid whether the provider package is still using the current fallback writer or later gains a provider-specific strategy.
-- The ticket lands without broadening the Oracle work beyond one representative insert-only smoke scenario and the required documentation.
-
-## Implementation Notes
-- Use the existing Postgres integration configuration pattern as the baseline: a small Oracle configuration helper, trimmed connection-string normalization, and a named skip message.
-- Use `ProviderTestCategories.ExternalProviderIntegration` plus `Provider=Oracle` for the live test, and keep configuration-contract tests under `ProviderSmoke.Default`.
-- Keep any Oracle EF Core provider dependency conditional and test-project-local; the packable Oracle provider package should remain a provider-extension boundary rather than a direct database-provider carrier.
-- Reuse the existing minimal Customer hub metadata/save pattern from shared or SQLite integration coverage instead of inventing a new Oracle-only model for smoke validation.
-- Avoid assertions that Oracle currently has no registered provider strategy; sibling Oracle optimization tickets may add one later, and this smoke ticket should keep validating the public save contract.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - If Oracle optimized-writer work lands later, should the live Oracle smoke suite gain one explicit strategy-selection assertion or remain purely public-contract smoke coverage?
 - Should SQL Server, Oracle, and MySQL all standardize on the same `DVAULT_TEST_<PROVIDER>_CONNECTION_STRING` naming pattern in contributor-facing documentation?
 - Is there later value in an optional nightly or release-time external-provider smoke run once maintainers have stable Oracle access?
 
-## Risks
+Risks
 - The first Oracle opt-in harness may expose provider-package acquisition, target-framework compatibility, or local setup friction because the repository currently has no Oracle external-fixture baseline.
 - Oracle object-creation and cleanup behavior may be more brittle than the existing SQLite and Postgres paths if the configured user lacks the expected privileges.
 - If the live smoke test overfits current fallback internals instead of observable save behavior, it will conflict with later Oracle optimized-writer work.
 
-## Split Recommendations
+Split recommendations
 - No split recommended; provider capability registration and optimized writer work already belong to sibling Oracle tickets, and this ticket stays bounded to opt-in validation configuration, one live save smoke, and documentation.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 5
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Goal: define and add opt-in Oracle smoke validation for the provider package.
-
-Acceptance Criteria:
-- Oracle smoke tests are skipped by default with a clear configuration message.
-- The smoke path verifies provider registration and one insert-only save scenario.
-- Documentation names required environment variables or test settings.
+Run mode
+- apply: planned updates are applied after this comment

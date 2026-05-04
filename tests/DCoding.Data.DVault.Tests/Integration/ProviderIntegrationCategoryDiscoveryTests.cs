@@ -25,6 +25,8 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
             [
                 typeof(PostgresDataVaultSchemaTests),
                 typeof(PostgresIntegrationTestConfigurationTests),
+                typeof(OracleDataVaultSmokeTests),
+                typeof(OracleIntegrationTestConfigurationTests),
                 typeof(ProviderIntegrationCategoryDiscoveryTests),
             ])
         .Select(type => type.FullName!)
@@ -71,6 +73,19 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
 
   [Fact]
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  public void LiveOracleIntegrationTestsAreExternalProviderOptInCoverage() {
+    AssertTrait(
+        typeof(OracleDataVaultSmokeTests),
+        ProviderTestCategories.CategoryTraitName,
+        ProviderTestCategories.ExternalProviderIntegration);
+    AssertTrait(
+        typeof(OracleDataVaultSmokeTests),
+        ProviderTestCategories.ProviderTraitName,
+        ProviderTestCategories.OracleProvider);
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
   public void PostgresConfigurationContractTestsRemainDefaultProviderSmokeCoverage() {
     AssertTrait(
         typeof(PostgresIntegrationTestConfigurationTests),
@@ -80,6 +95,19 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
         typeof(PostgresIntegrationTestConfigurationTests),
         ProviderTestCategories.ProviderTraitName,
         ProviderTestCategories.PostgresProvider);
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  public void OracleConfigurationContractTestsRemainDefaultProviderSmokeCoverage() {
+    AssertTrait(
+        typeof(OracleIntegrationTestConfigurationTests),
+        ProviderTestCategories.CategoryTraitName,
+        ProviderTestCategories.DefaultProviderSmoke);
+    AssertTrait(
+        typeof(OracleIntegrationTestConfigurationTests),
+        ProviderTestCategories.ProviderTraitName,
+        ProviderTestCategories.OracleProvider);
   }
 
   private static bool ContainsFact(Type type) {

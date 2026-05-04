@@ -15,6 +15,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" Condition="'$(DVAULT_TEST_POSTGRES_CONNECTION_STRING)' != ''" />
+    <PackageReference Include="Oracle.EntityFrameworkCore" Version="10.23.60" Condition="'$(DVAULT_TEST_ORACLE_CONNECTION_STRING)' != ''" />
     <PackageReference Include="xunit.v3.mtp-v1" Version="3.2.2" />
   </ItemGroup>
 
@@ -25,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="../../../benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
+    <ProjectReference Include="../../../src/DCoding.Data.DVault.Oracle/DCoding.Data.DVault.Oracle.csproj" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.Sqlite/DCoding.Data.DVault.Sqlite.csproj" />
     <ProjectReference Include="../Shared/DCoding.Data.DVault.Tests.Shared.csproj" />
   </ItemGroup>

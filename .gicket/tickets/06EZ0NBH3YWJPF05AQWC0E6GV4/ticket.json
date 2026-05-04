@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0NBH3YWJPF05AQWC0E6GV4",
   "ticket-type": "task",
   "title": "Task: Add Oracle opt-in integration configuration and smoke tests",
-  "revision": "06EZ0Y3GS62RR3H80A0W3XMMTR",
-  "status": "todo",
+  "revision": "06EZ4VP80XB4BW7D5TA21SXVSG",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
     "area/oracle",
     "area/tests",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:13:44.7372312Z",
-  "updated-at": "2026-05-04T00:51:58.2812797Z"
+  "updated-at": "2026-05-04T10:00:39.6873474Z"
 }
