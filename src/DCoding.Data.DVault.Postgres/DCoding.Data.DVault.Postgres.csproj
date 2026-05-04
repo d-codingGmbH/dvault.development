@@ -8,7 +8,7 @@
     <PackageId>DCoding.Data.DVault.Postgres</PackageId>
     <Title>DVault PostgreSQL Provider Extensions</Title>
     <Authors>d-coding GmbH</Authors>
-    <Description>PostgreSQL provider extension package for DCoding.Data.DVault.</Description>
+    <Description>PostgreSQL provider extensions and optimized write strategies for DCoding.Data.DVault.</Description>
     <PackageTags>dvault;data-vault;postgresql;postgres;ef-core;persistence</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

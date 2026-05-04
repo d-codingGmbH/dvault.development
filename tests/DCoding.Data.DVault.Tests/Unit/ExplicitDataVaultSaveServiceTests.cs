@@ -35,15 +35,20 @@ public sealed class ExplicitDataVaultSaveServiceTests {
 
   [Fact]
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
-  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.PostgresProvider)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqlServerProvider)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.OracleProvider)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.MySqlProvider)]
   public void ProviderPackagesRegisterCoreSaveService() {
-    AssertProviderRegistration(services => services.AddDVaultPostgres(), expectProviderStrategy: false);
     AssertProviderRegistration(services => services.AddDVaultSqlServer(), expectProviderStrategy: false);
     AssertProviderRegistration(services => services.AddDVaultOracle(), expectProviderStrategy: false);
     AssertProviderRegistration(services => services.AddDVaultMySql(), expectProviderStrategy: false);
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.PostgresProvider)]
+  public void PostgresProviderPackageRegistersOptimizedSaveStrategy() {
+    AssertProviderRegistration(services => services.AddDVaultPostgres(), expectProviderStrategy: true);
   }
 
   [Fact]

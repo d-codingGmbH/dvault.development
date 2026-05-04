@@ -1,0 +1,636 @@
+using System.Data;
+using System.Data.Common;
+using System.Globalization;
+using System.Text;
+using DCoding.Data.DVault.Modeling;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Storage;
+
+namespace DCoding.Data.DVault;
+
+internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStrategy {
+  private const int PostgresMaxCommandParameterCount = 30000;
+  private const string NpgsqlProviderName = "Npgsql.EntityFrameworkCore.PostgreSQL";
+  private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
+
+  public int Priority => 100;
+
+  public bool CanSave(DbContext dbContext, IReadOnlyList<DataVaultSaveRequest> requests) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(requests);
+
+    return string.Equals(dbContext.Database.ProviderName, NpgsqlProviderName, StringComparison.Ordinal) &&
+        !dbContext.ChangeTracker
+            .Entries()
+            .Any(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
+  }
+
+  public async Task<DataVaultSaveResult> SaveAsync(
+      DataVaultProviderSaveStrategyContext context,
+      CancellationToken cancellationToken = default) {
+    ArgumentNullException.ThrowIfNull(context);
+
+    var uniquePlans = CreateUniqueRowSavePlans(context);
+    var satellitePlans = CreateSatelliteSavePlans(context.Requests);
+
+    if (uniquePlans.Count == 0 && satellitePlans.Count == 0) {
+      return new DataVaultSaveResult(0, []);
+    }
+
+    return await ExecutePostgresSaveAsync(
+        context.DbContext,
+        uniquePlans,
+        satellitePlans,
+        cancellationToken).ConfigureAwait(false);
+  }
+
+  private static async Task<DataVaultSaveResult> ExecutePostgresSaveAsync(
+      DbContext dbContext,
+      IReadOnlyList<UniqueRowSavePlan> uniquePlans,
+      IReadOnlyList<SatelliteSavePlan> satellitePlans,
+      CancellationToken cancellationToken) {
+    var connection = dbContext.Database.GetDbConnection();
+    var shouldCloseConnection = connection.State != ConnectionState.Open;
+    if (shouldCloseConnection) {
+      await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    DbTransaction? localTransaction = null;
+    var transaction = dbContext.Database.CurrentTransaction?.GetDbTransaction();
+    if (transaction is null) {
+      localTransaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+      transaction = localTransaction;
+    }
+
+    try {
+      var filteredSatellitePlans = await FilterSatellitePlansAsync(
+          connection,
+          transaction,
+          dbContext,
+          satellitePlans,
+          cancellationToken).ConfigureAwait(false);
+      var savedRecords = uniquePlans
+          .Select(plan => plan.SavedRecord)
+          .Concat(filteredSatellitePlans.Results.Select(result => result.SavedRecord))
+          .ToArray();
+      var rowsWritten = await ExecutePostgresInsertRowsAsync(
+          connection,
+          transaction,
+          dbContext,
+          uniquePlans.Select(plan => new PostgresInsertRow(plan.Table.TableName, plan.Row, plan.Table.HashKeyColumnName)),
+          cancellationToken).ConfigureAwait(false);
+
+      rowsWritten += await ExecutePostgresInsertRowsAsync(
+          connection,
+          transaction,
+          dbContext,
+          filteredSatellitePlans.RowsToWrite.Select(plan => new PostgresInsertRow(plan.Table.TableName, plan.Row, ConflictTargetColumnName: null)),
+          cancellationToken).ConfigureAwait(false);
+
+      if (localTransaction is not null) {
+        await localTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+      }
+
+      return new DataVaultSaveResult(rowsWritten, savedRecords);
+    }
+    catch {
+      if (localTransaction is not null) {
+        await localTransaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+      }
+
+      throw;
+    }
+    finally {
+      if (localTransaction is not null) {
+        await localTransaction.DisposeAsync().ConfigureAwait(false);
+      }
+
+      if (shouldCloseConnection) {
+        await connection.CloseAsync().ConfigureAwait(false);
+      }
+    }
+  }
+
+  private static IReadOnlyList<UniqueRowSavePlan> CreateUniqueRowSavePlans(DataVaultProviderSaveStrategyContext context) {
+    var plans = new List<UniqueRowSavePlan>();
+
+    foreach (var request in context.Requests) {
+      plans.AddRange(request.HubOperations.Select(operation => CreateHubSavePlan(context, request, operation)));
+      plans.AddRange(request.LinkOperations.Select(operation => CreateLinkSavePlan(context, request, operation)));
+    }
+
+    return plans.ToArray();
+  }
+
+  private static UniqueRowSavePlan CreateHubSavePlan(
+      DataVaultProviderSaveStrategyContext context,
+      DataVaultSaveRequest request,
+      DataVaultHubSaveOperation operation) {
+    var hub = operation.Metadata;
+    var tableName = NamingPolicy.GetHubTableName(new DataVaultHubNameContext(hub.Name));
+    var hashKeyColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, hub.Name, tableName));
+    var loadTimestampColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, hub.Name, tableName));
+    var recordSourceColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.RecordSource, hub.Name, tableName));
+    var businessKeyColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        hub.BusinessKeyColumns.Select(column => column.ColumnName),
+        [hashKeyColumnName, loadTimestampColumnName, recordSourceColumnName]);
+    var businessKeyFields = hub.BusinessKeyColumns
+        .Select(column => new KeyValuePair<string, string>(
+            column.ColumnName,
+            GetRequiredValue(operation.BusinessKeyValues, column.ColumnName, nameof(operation.BusinessKeyValues))))
+        .ToArray();
+    var hashKey = ComputeHash(context, businessKeyFields);
+    var row = new Dictionary<string, object> {
+      [hashKeyColumnName] = hashKey,
+      [loadTimestampColumnName] = request.LoadTimestamp,
+      [recordSourceColumnName] = request.RecordSource,
+    };
+
+    for (var index = 0; index < businessKeyFields.Length; index++) {
+      row.Add(businessKeyColumnNames[index], businessKeyFields[index].Value);
+    }
+
+    return new UniqueRowSavePlan(
+        new UniqueTableProjection(tableName, hashKeyColumnName),
+        hashKey,
+        row,
+        new DataVaultSavedRecord(DataVaultTableKind.Hub, hub.Name, tableName, hashKey));
+  }
+
+  private static UniqueRowSavePlan CreateLinkSavePlan(
+      DataVaultProviderSaveStrategyContext context,
+      DataVaultSaveRequest request,
+      DataVaultLinkSaveOperation operation) {
+    var link = operation.Metadata;
+    var participantNames = link.Participants
+        .Select(participant => participant.HubReference.Name)
+        .ToArray();
+    var tableName = NamingPolicy.GetLinkTableName(new DataVaultLinkNameContext(link.Name, participantNames));
+    var linkHashKeyColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, link.Name, tableName));
+    var loadTimestampColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, link.Name, tableName));
+    var recordSourceColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.RecordSource, link.Name, tableName));
+    var participantHashKeyColumnNames = participantNames
+        .Select(participantName => NamingPolicy.GetTechnicalColumnName(
+            new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, participantName, tableName)))
+        .ToArray();
+    var participantHashKeyFields = participantNames
+        .Select(participantName => new KeyValuePair<string, string>(
+            participantName,
+            GetRequiredValue(operation.ParticipantHashKeyValues, participantName, nameof(operation.ParticipantHashKeyValues))))
+        .ToArray();
+    var linkHashKey = ComputeHash(context, participantHashKeyFields);
+    var row = new Dictionary<string, object> {
+      [linkHashKeyColumnName] = linkHashKey,
+      [loadTimestampColumnName] = request.LoadTimestamp,
+      [recordSourceColumnName] = request.RecordSource,
+    };
+
+    for (var index = 0; index < participantHashKeyFields.Length; index++) {
+      row.Add(participantHashKeyColumnNames[index], participantHashKeyFields[index].Value);
+    }
+
+    return new UniqueRowSavePlan(
+        new UniqueTableProjection(tableName, linkHashKeyColumnName),
+        linkHashKey,
+        row,
+        new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, tableName, linkHashKey));
+  }
+
+  private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(IReadOnlyList<DataVaultSaveRequest> requests) {
+    return requests
+        .SelectMany(request => request.SatelliteOperations
+            .Select(operation => CreateSatelliteSavePlan(request, operation)))
+        .Select((plan, index) => plan with { Ordinal = index })
+        .ToArray();
+  }
+
+  private static SatelliteSavePlan CreateSatelliteSavePlan(
+      DataVaultSaveRequest request,
+      DataVaultSatelliteSaveOperation operation) {
+    var satellite = operation.Metadata;
+    var tableName = NamingPolicy.GetSatelliteTableName(
+        new DataVaultSatelliteNameContext(satellite.Parent.Name, satellite.Name));
+    var parentHashKeyColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, satellite.Parent.Name, tableName));
+    var hashDiffColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashDiff, satellite.Name, tableName));
+    var loadTimestampColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, satellite.Name, tableName));
+    var recordSourceColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.RecordSource, satellite.Name, tableName));
+    var payloadColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        satellite.PayloadColumns.Select(column => column.ColumnName),
+        [parentHashKeyColumnName, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);
+    var payloadFields = satellite.PayloadColumns
+        .Select(column => new KeyValuePair<string, string>(
+            column.ColumnName,
+            GetRequiredValue(operation.PayloadValues, column.ColumnName, nameof(operation.PayloadValues))))
+        .ToArray();
+    var row = new Dictionary<string, object> {
+      [parentHashKeyColumnName] = operation.ParentHashKey,
+      [hashDiffColumnName] = operation.HashDiff,
+      [loadTimestampColumnName] = request.LoadTimestamp,
+      [recordSourceColumnName] = request.RecordSource,
+    };
+
+    for (var index = 0; index < payloadFields.Length; index++) {
+      row.Add(payloadColumnNames[index], payloadFields[index].Value);
+    }
+
+    var table = new SatelliteTableProjection(
+        tableName,
+        parentHashKeyColumnName,
+        hashDiffColumnName,
+        loadTimestampColumnName);
+    var savedRecord = new DataVaultSavedRecord(
+        DataVaultTableKind.Satellite,
+        satellite.Name,
+        tableName,
+        operation.ParentHashKey);
+
+    return new SatelliteSavePlan(
+        -1,
+        table,
+        operation.ParentHashKey,
+        operation.HashDiff,
+        request.LoadTimestamp,
+        row,
+        savedRecord);
+  }
+
+  private static async Task<FilteredSatelliteSavePlans> FilterSatellitePlansAsync(
+      DbConnection connection,
+      DbTransaction transaction,
+      DbContext dbContext,
+      IReadOnlyList<SatelliteSavePlan> plans,
+      CancellationToken cancellationToken) {
+    var results = new SaveOperationResult[plans.Count];
+    var rowsToWrite = new List<SatelliteSavePlan>();
+
+    foreach (var group in plans.GroupBy(plan => plan.Table)) {
+      var latestHashDiffs = await LoadLatestSatelliteHashDiffsAsync(
+          connection,
+          transaction,
+          dbContext,
+          group.Key,
+          group.Select(plan => plan.ParentHashKey),
+          cancellationToken).ConfigureAwait(false);
+
+      foreach (var plan in group) {
+        var rowWritten = ShouldWriteSatelliteRow(latestHashDiffs, plan);
+        if (rowWritten) {
+          rowsToWrite.Add(plan);
+          TrackLatestSatelliteHashDiff(latestHashDiffs, plan);
+        }
+
+        results[plan.Ordinal] = new SaveOperationResult(plan.SavedRecord, rowWritten);
+      }
+    }
+
+    return new FilteredSatelliteSavePlans(rowsToWrite, results);
+  }
+
+  private static async Task<Dictionary<string, LatestSatelliteHashDiff>> LoadLatestSatelliteHashDiffsAsync(
+      DbConnection connection,
+      DbTransaction transaction,
+      DbContext dbContext,
+      SatelliteTableProjection table,
+      IEnumerable<string> parentHashKeys,
+      CancellationToken cancellationToken) {
+    var latestRows = new List<LatestSatelliteHashDiff>();
+
+    foreach (var parentHashKeyBatch in parentHashKeys.Distinct(StringComparer.Ordinal).Chunk(500)) {
+      await using var command = connection.CreateCommand();
+      command.Transaction = transaction;
+
+      var parameterNames = AddCommandParameters(command, parentHashKeyBatch);
+      command.CommandText = CreateLatestSatelliteHashDiffsCommandText(dbContext, table, parameterNames);
+
+      await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+      while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
+        latestRows.Add(new LatestSatelliteHashDiff(
+            reader.GetString(0),
+            reader.GetString(1),
+            ReadDateTimeOffset(reader, ordinal: 2)));
+      }
+    }
+
+    return latestRows.ToDictionary(row => row.ParentHashKey, StringComparer.Ordinal);
+  }
+
+  private static bool ShouldWriteSatelliteRow(
+      Dictionary<string, LatestSatelliteHashDiff> latestHashDiffs,
+      SatelliteSavePlan plan) {
+    return !latestHashDiffs.TryGetValue(plan.ParentHashKey, out var latestHashDiff) ||
+        !string.Equals(latestHashDiff.HashDiff, plan.HashDiff, StringComparison.Ordinal);
+  }
+
+  private static void TrackLatestSatelliteHashDiff(
+      Dictionary<string, LatestSatelliteHashDiff> latestHashDiffs,
+      SatelliteSavePlan plan) {
+    if (!latestHashDiffs.TryGetValue(plan.ParentHashKey, out var latestHashDiff) ||
+        plan.LoadTimestamp >= latestHashDiff.LoadTimestamp) {
+      latestHashDiffs[plan.ParentHashKey] = new LatestSatelliteHashDiff(
+          plan.ParentHashKey,
+          plan.HashDiff,
+          plan.LoadTimestamp);
+    }
+  }
+
+  private static async Task<int> ExecutePostgresInsertRowsAsync(
+      DbConnection connection,
+      DbTransaction transaction,
+      DbContext dbContext,
+      IEnumerable<PostgresInsertRow> rows,
+      CancellationToken cancellationToken) {
+    var rowArray = rows.ToArray();
+    if (rowArray.Length == 0) {
+      return 0;
+    }
+
+    var rowsWritten = 0;
+
+    foreach (var group in rowArray.GroupBy(row => new PostgresInsertRowShape(
+        row.TableName,
+        CreateColumnSignature(row.Values.Keys),
+        row.ConflictTargetColumnName))) {
+      var columns = group.First().Values.Keys.ToArray();
+      var chunkSize = Math.Max(1, PostgresMaxCommandParameterCount / columns.Length);
+
+      foreach (var chunk in group.Chunk(chunkSize)) {
+        rowsWritten += await ExecutePostgresInsertChunkAsync(
+            connection,
+            transaction,
+            dbContext,
+            group.Key.TableName,
+            columns,
+            chunk.Select(row => row.Values).ToArray(),
+            group.Key.ConflictTargetColumnName,
+            cancellationToken).ConfigureAwait(false);
+      }
+    }
+
+    return rowsWritten;
+  }
+
+  private static async Task<int> ExecutePostgresInsertChunkAsync(
+      DbConnection connection,
+      DbTransaction transaction,
+      DbContext dbContext,
+      string tableName,
+      IReadOnlyList<string> columns,
+      IReadOnlyList<Dictionary<string, object>> rows,
+      string? conflictTargetColumnName,
+      CancellationToken cancellationToken) {
+    await using var command = connection.CreateCommand();
+    command.Transaction = transaction;
+    command.CommandText = CreatePostgresInsertCommandText(
+        dbContext,
+        tableName,
+        columns,
+        rows.Count,
+        conflictTargetColumnName);
+
+    var parameterIndex = 0;
+    foreach (var row in rows) {
+      foreach (var column in columns) {
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = CreatePostgresParameterName(parameterIndex);
+        parameter.Value = row[column];
+        command.Parameters.Add(parameter);
+        parameterIndex++;
+      }
+    }
+
+    return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+  }
+
+  private static string CreatePostgresInsertCommandText(
+      DbContext dbContext,
+      string tableName,
+      IReadOnlyList<string> columns,
+      int rowCount,
+      string? conflictTargetColumnName) {
+    var builder = new StringBuilder();
+    builder.Append("INSERT INTO ")
+        .Append(QuotePostgresTableIdentifier(dbContext, tableName))
+        .Append(" (");
+
+    for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++) {
+      if (columnIndex > 0) {
+        builder.Append(", ");
+      }
+
+      builder.Append(QuotePostgresIdentifier(columns[columnIndex]));
+    }
+
+    builder.Append(") VALUES ");
+
+    var parameterIndex = 0;
+    for (var rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+      if (rowIndex > 0) {
+        builder.Append(", ");
+      }
+
+      builder.Append('(');
+      for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++) {
+        if (columnIndex > 0) {
+          builder.Append(", ");
+        }
+
+        builder.Append(CreatePostgresParameterName(parameterIndex));
+        parameterIndex++;
+      }
+
+      builder.Append(')');
+    }
+
+    if (conflictTargetColumnName is not null) {
+      builder.Append(" ON CONFLICT (")
+          .Append(QuotePostgresIdentifier(conflictTargetColumnName))
+          .Append(") DO NOTHING");
+    }
+
+    return builder.ToString();
+  }
+
+  private static string CreateLatestSatelliteHashDiffsCommandText(
+      DbContext dbContext,
+      SatelliteTableProjection table,
+      IReadOnlyList<string> parentHashKeyParameterNames) {
+    var builder = new StringBuilder();
+    builder.Append("SELECT DISTINCT ON (")
+        .Append(QuotePostgresIdentifier(table.ParentHashKeyColumnName))
+        .Append(") ")
+        .Append(QuotePostgresIdentifier(table.ParentHashKeyColumnName))
+        .Append(", ")
+        .Append(QuotePostgresIdentifier(table.HashDiffColumnName))
+        .Append(", ")
+        .Append(QuotePostgresIdentifier(table.LoadTimestampColumnName))
+        .Append(" FROM ")
+        .Append(QuotePostgresTableIdentifier(dbContext, table.TableName))
+        .Append(" WHERE ")
+        .Append(QuotePostgresIdentifier(table.ParentHashKeyColumnName))
+        .Append(" IN (");
+
+    for (var index = 0; index < parentHashKeyParameterNames.Count; index++) {
+      if (index > 0) {
+        builder.Append(", ");
+      }
+
+      builder.Append(parentHashKeyParameterNames[index]);
+    }
+
+    builder.Append(") ORDER BY ")
+        .Append(QuotePostgresIdentifier(table.ParentHashKeyColumnName))
+        .Append(", ")
+        .Append(QuotePostgresIdentifier(table.LoadTimestampColumnName))
+        .Append(" DESC");
+
+    return builder.ToString();
+  }
+
+  private static IReadOnlyList<string> AddCommandParameters(
+      DbCommand command,
+      IEnumerable<string> values) {
+    var parameterNames = new List<string>();
+
+    foreach (var value in values) {
+      var parameterName = CreatePostgresParameterName(command.Parameters.Count);
+      var parameter = command.CreateParameter();
+      parameter.ParameterName = parameterName;
+      parameter.Value = value;
+      command.Parameters.Add(parameter);
+      parameterNames.Add(parameterName);
+    }
+
+    return parameterNames;
+  }
+
+  private static string QuotePostgresTableIdentifier(DbContext dbContext, string producedTableName) {
+    var entityType = FindEntityType(dbContext, producedTableName);
+    var tableName = entityType?.GetTableName() ?? producedTableName;
+    var schemaName = entityType?.GetSchema();
+
+    if (string.IsNullOrWhiteSpace(schemaName)) {
+      return QuotePostgresIdentifier(tableName);
+    }
+
+    return QuotePostgresIdentifier(schemaName) + "." + QuotePostgresIdentifier(tableName);
+  }
+
+  private static IEntityType? FindEntityType(DbContext dbContext, string producedTableName) {
+    foreach (var entityType in dbContext.Model.GetEntityTypes()) {
+      var producedName = entityType.FindAnnotation(DataVaultAnnotationNames.ProducedName)?.Value as string;
+      if (string.Equals(producedName, producedTableName, StringComparison.Ordinal)) {
+        return entityType;
+      }
+    }
+
+    foreach (var entityType in dbContext.Model.GetEntityTypes()) {
+      if (string.Equals(entityType.GetTableName(), producedTableName, StringComparison.Ordinal) ||
+          string.Equals(entityType.Name, producedTableName, StringComparison.Ordinal)) {
+        return entityType;
+      }
+    }
+
+    return null;
+  }
+
+  private static DateTimeOffset ReadDateTimeOffset(DbDataReader reader, int ordinal) {
+    var value = reader.GetValue(ordinal);
+
+    return value switch {
+      DateTimeOffset timestampOffset => timestampOffset.ToUniversalTime(),
+      DateTime timestampValue => new DateTimeOffset(DateTime.SpecifyKind(timestampValue, DateTimeKind.Utc)).ToUniversalTime(),
+      string timestampText => DateTimeOffset.Parse(
+          timestampText,
+          CultureInfo.InvariantCulture,
+          DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal),
+      _ => throw new InvalidOperationException(
+          "PostgreSQL Data Vault save strategy expected a load timestamp value but received '" +
+          value.GetType().FullName +
+          "'."),
+    };
+  }
+
+  private static string CreatePostgresParameterName(int index) {
+    return "@p" + index.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private static string QuotePostgresIdentifier(string identifier) {
+    return "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+  }
+
+  private static string CreateColumnSignature(IEnumerable<string> columns) {
+    return string.Join('\u001f', columns);
+  }
+
+  private static string ComputeHash(
+      DataVaultProviderSaveStrategyContext context,
+      IEnumerable<KeyValuePair<string, string>> fields) {
+    var normalizedFields = context.StableHashNormalizer.NormalizeFields(
+        fields.Select(field => new KeyValuePair<string, object?>(field.Key, field.Value)));
+
+    return context.StableHashService.ComputeHash(normalizedFields).Value;
+  }
+
+  private static string GetRequiredValue(
+      IReadOnlyDictionary<string, string> values,
+      string name,
+      string parameterName) {
+    if (values.TryGetValue(name, out var value)) {
+      return value;
+    }
+
+    throw new ArgumentException("The Data Vault save operation is missing required value '" + name + "'.", parameterName);
+  }
+
+  private sealed record SaveOperationResult(DataVaultSavedRecord SavedRecord, bool RowWritten);
+
+  private sealed record UniqueTableProjection(string TableName, string HashKeyColumnName);
+
+  private sealed record UniqueRowSavePlan(
+      UniqueTableProjection Table,
+      string HashKey,
+      Dictionary<string, object> Row,
+      DataVaultSavedRecord SavedRecord);
+
+  private sealed record SatelliteTableProjection(
+      string TableName,
+      string ParentHashKeyColumnName,
+      string HashDiffColumnName,
+      string LoadTimestampColumnName);
+
+  private sealed record SatelliteSavePlan(
+      int Ordinal,
+      SatelliteTableProjection Table,
+      string ParentHashKey,
+      string HashDiff,
+      DateTimeOffset LoadTimestamp,
+      Dictionary<string, object> Row,
+      DataVaultSavedRecord SavedRecord);
+
+  private sealed record FilteredSatelliteSavePlans(
+      IReadOnlyList<SatelliteSavePlan> RowsToWrite,
+      IReadOnlyList<SaveOperationResult> Results);
+
+  private sealed record LatestSatelliteHashDiff(string ParentHashKey, string HashDiff, DateTimeOffset LoadTimestamp);
+
+  private sealed record PostgresInsertRow(
+      string TableName,
+      Dictionary<string, object> Values,
+      string? ConflictTargetColumnName);
+
+  private sealed record PostgresInsertRowShape(
+      string TableName,
+      string ColumnSignature,
+      string? ConflictTargetColumnName);
+}

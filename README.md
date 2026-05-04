@@ -132,7 +132,7 @@ services.AddDVaultOracle();
 services.AddDVaultMySql();
 ```
 
-`DCoding.Data.DVault.Sqlite` currently registers the optimized SQLite set-based save strategy. The PostgreSQL, SQL Server, Oracle, and MySQL packages provide stable package and startup boundaries and use the provider-neutral fallback until their dialect-specific writers are implemented.
+`DCoding.Data.DVault.Sqlite` registers the optimized SQLite set-based save strategy. `DCoding.Data.DVault.Postgres` registers an optimized Npgsql/PostgreSQL strategy for clean contexts that use set-based `INSERT ... ON CONFLICT DO NOTHING` hub and link writes plus latest-state satellite checks. SQL Server, Oracle, and MySQL currently provide stable package and startup boundaries and use the provider-neutral fallback until their dialect-specific writers are implemented. Provider strategies decline incompatible contexts so the provider-neutral fallback remains the caller-visible safety net.
 
 ### Query generated tables
 
