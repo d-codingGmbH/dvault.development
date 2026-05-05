@@ -39,7 +39,9 @@ internal static class BenchmarkRunner {
     ArgumentNullException.ThrowIfNull(optionalProviders);
 
     var summaries = new List<BenchmarkSummary>();
-    var sqliteBenchmarks = CreateSqliteBenchmarks();
+    var sqliteBenchmarks = options.ScaleMatrix
+        ? CreateScaleBenchmarks(BenchmarkDatabaseProviders.Sqlite, DataVaultBenchmarkStrategy.SqliteOptimized)
+        : CreateSqliteBenchmarks();
     var providerStrategies = new Dictionary<string, DataVaultBenchmarkStrategy>(StringComparer.Ordinal) {
         [BenchmarkExternalProviderDefinitions.Postgres.ProviderName] = DataVaultBenchmarkStrategy.PostgresOptimized,
         [BenchmarkExternalProviderDefinitions.SqlServer.ProviderName] = DataVaultBenchmarkStrategy.SqlServerOptimized,
@@ -65,7 +67,9 @@ internal static class BenchmarkRunner {
 
     foreach (var availability in optionalProviders) {
       var strategy = providerStrategies[availability.ProviderName];
-      var providerBenchmarks = CreateProviderBenchmarks(availability.Provider, strategy);
+      var providerBenchmarks = options.ScaleMatrix
+          ? CreateScaleBenchmarks(availability.Provider, strategy)
+          : CreateProviderBenchmarks(availability.Provider, strategy);
       if (availability.IsAvailable) {
         foreach (var benchmark in providerBenchmarks) {
           summaries.Add(await TryExecuteBenchmarkAsync(benchmark, options, cancellationToken).ConfigureAwait(false));
@@ -112,6 +116,7 @@ internal static class BenchmarkRunner {
     Console.WriteLine("  --iterations <n>  Number of measured iterations. Default: 5.");
     Console.WriteLine("  --warmup <n>      Number of unreported warmup iterations. Default: 1.");
     Console.WriteLine("  --output <dir>    Directory for benchmark-summary.md, benchmark-summary.csv, and benchmark-summary.json.");
+    Console.WriteLine("  --scale           Run only customer profile scale scenarios across configured providers.");
     Console.WriteLine();
     Console.WriteLine("Optional PostgreSQL provider:");
     Console.WriteLine(
@@ -189,6 +194,23 @@ internal static class BenchmarkRunner {
         new OrderProductDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback),
         new OrderProductDataVaultBenchmark(provider, optimizedStrategy),
     ];
+  }
+
+  private static IScenarioBenchmark[] CreateScaleBenchmarks(
+      BenchmarkDatabaseProvider provider,
+      DataVaultBenchmarkStrategy optimizedStrategy) {
+    var benchmarks = new List<IScenarioBenchmark>();
+
+    foreach (var scenario in CustomerProfileBulkScenarios.ScaleMatrix) {
+      benchmarks.Add(new CustomerProfileBulkPlainEfBenchmark(provider, scenario));
+      benchmarks.Add(new CustomerProfileBulkDataVaultBenchmark(
+          provider,
+          scenario,
+          DataVaultBenchmarkStrategy.ProviderNeutralFallback));
+      benchmarks.Add(new CustomerProfileBulkDataVaultBenchmark(provider, scenario, optimizedStrategy));
+    }
+
+    return [.. benchmarks];
   }
 
   private static async Task<BenchmarkSummary> ExecuteBenchmarkAsync(

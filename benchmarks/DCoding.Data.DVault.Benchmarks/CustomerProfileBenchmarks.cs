@@ -279,17 +279,29 @@ internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
 }
 
 internal sealed class CustomerProfileBulkPlainEfBenchmark : IScenarioBenchmark {
+  private readonly BenchmarkDatabaseProvider _provider;
   private readonly CustomerProfileBulkScenarioDefinition _scenario;
 
   public CustomerProfileBulkPlainEfBenchmark(CustomerProfileBulkScenarioDefinition scenario) {
     ArgumentNullException.ThrowIfNull(scenario);
 
+    _provider = BenchmarkDatabaseProviders.Sqlite;
+    _scenario = scenario;
+  }
+
+  public CustomerProfileBulkPlainEfBenchmark(
+      BenchmarkDatabaseProvider provider,
+      CustomerProfileBulkScenarioDefinition scenario) {
+    ArgumentNullException.ThrowIfNull(provider);
+    ArgumentNullException.ThrowIfNull(scenario);
+
+    _provider = provider;
     _scenario = scenario;
   }
 
   public string ScenarioName => _scenario.ScenarioName;
 
-  public string ProviderName => BenchmarkArtifacts.RequiredProviderName;
+  public string ProviderName => _provider.ProviderName;
 
   public string BaselineName => "conventional-ef-bulk";
 
@@ -300,39 +312,46 @@ internal sealed class CustomerProfileBulkPlainEfBenchmark : IScenarioBenchmark {
   public string ChangeRatio => _scenario.ChangeRatio;
 
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
-    using var database = TempSqliteDatabase.Create();
-    var options = new DbContextOptionsBuilder<CustomerProfileBulkHistoryContext>()
-        .UseSqlite(database.ConnectionString)
-        .Options;
+    using var database = _provider.CreateDatabase();
+    var options = database.CreateOptions<CustomerProfileBulkHistoryContext>();
 
-    await using (var context = new CustomerProfileBulkHistoryContext(options)) {
-      await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
-    }
-
-    var elapsed = await BenchmarkClock.MeasureAsync(async () => {
-      await using var context = new CustomerProfileBulkHistoryContext(options);
-
-      foreach (var customerProfileEvent in _scenario.CreateEvents()) {
-        context.CustomerProfileHistoryRows.Add(new CustomerProfileBulkHistoryRow {
-          CustomerBusinessKey = customerProfileEvent.CustomerBusinessKey,
-          CustomerName = customerProfileEvent.CustomerName,
-          CustomerStatus = customerProfileEvent.CustomerStatus,
-          ChangedAtUtc = customerProfileEvent.ChangedAtUtc,
-          RecordSource = customerProfileEvent.RecordSource,
-        });
+    try {
+      await using (var context = new CustomerProfileBulkHistoryContext(options)) {
+        await database.InitializeAsync(context, cancellationToken).ConfigureAwait(false);
+        await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
       }
 
-      await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-    }).ConfigureAwait(false);
+      var elapsed = await BenchmarkClock.MeasureAsync(async () => {
+        await using var context = new CustomerProfileBulkHistoryContext(options);
+        var rowId = 0L;
 
-    await VerifyOutcomeAsync(options, _scenario, cancellationToken).ConfigureAwait(false);
+        foreach (var customerProfileEvent in _scenario.CreateEvents()) {
+          context.CustomerProfileHistoryRows.Add(new CustomerProfileBulkHistoryRow {
+            Id = ++rowId,
+            CustomerBusinessKey = customerProfileEvent.CustomerBusinessKey,
+            CustomerName = customerProfileEvent.CustomerName,
+            CustomerStatus = customerProfileEvent.CustomerStatus,
+            ChangedAtUtc = customerProfileEvent.ChangedAtUtc,
+            RecordSource = customerProfileEvent.RecordSource,
+          });
+        }
 
-    return new ScenarioBenchmarkResult(
-        elapsed,
-        _scenario.TotalChangeCount.ToString(CultureInfo.InvariantCulture) +
-        " customer profile history rows for " +
-        _scenario.CustomerCount.ToString(CultureInfo.InvariantCulture) +
-        " customers");
+        await context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+      }).ConfigureAwait(false);
+
+      await VerifyOutcomeAsync(options, _scenario, cancellationToken).ConfigureAwait(false);
+
+      return new ScenarioBenchmarkResult(
+          elapsed,
+          _scenario.TotalChangeCount.ToString(CultureInfo.InvariantCulture) +
+          " customer profile history rows for " +
+          _scenario.CustomerCount.ToString(CultureInfo.InvariantCulture) +
+          " customers");
+    }
+    finally {
+      await using var cleanupContext = new CustomerProfileBulkHistoryContext(options);
+      await database.CleanupAsync(cleanupContext, CancellationToken.None).ConfigureAwait(false);
+    }
   }
 
   private static async Task VerifyOutcomeAsync(
@@ -383,6 +402,7 @@ internal sealed class CustomerProfileBulkPlainEfBenchmark : IScenarioBenchmark {
       modelBuilder.Entity<CustomerProfileBulkHistoryRow>(entity => {
         entity.ToTable("CustomerProfileBulkHistory");
         entity.HasKey(row => row.Id);
+        entity.Property(row => row.Id).ValueGeneratedNever();
         entity.Property(row => row.CustomerBusinessKey).IsRequired();
         entity.Property(row => row.CustomerName).IsRequired();
         entity.Property(row => row.CustomerStatus).IsRequired();
@@ -598,6 +618,7 @@ internal static class CustomerProfileBulkScenarios {
   private const int CustomerCount = 100;
   private const int SampleCustomerIndex = 42;
   private static readonly DateTimeOffset BaseTimestamp = new(2026, 4, 29, 10, 0, 0, TimeSpan.Zero);
+  private static readonly int[] ScaleCustomerCounts = [10, 100, 1000];
 
   public static readonly CustomerProfileBulkScenarioDefinition InsertOnly = new(
       "customer-profile-bulk-insert-only",
@@ -618,6 +639,40 @@ internal static class CustomerProfileBulkScenarios {
       SampleCustomerIndex,
       "bulk-history-benchmark",
       BaseTimestamp);
+
+  public static IReadOnlyList<CustomerProfileBulkScenarioDefinition> ScaleMatrix { get; } =
+  [
+      .. ScaleCustomerCounts.Select(customerCount => CreateScale(customerCount, changeCount: 1)),
+      .. ScaleCustomerCounts.Select(customerCount => CreateScale(customerCount, changeCount: 10)),
+  ];
+
+  private static CustomerProfileBulkScenarioDefinition CreateScale(int customerCount, int changeCount) {
+    var changeRatio = changeCount == 1
+        ? "0% repeat-change history"
+        : (((changeCount - 1) * 100) / changeCount).ToString(CultureInfo.InvariantCulture) + "% repeat-change history";
+
+    return new CustomerProfileBulkScenarioDefinition(
+        "customer-profile-scale-" +
+        customerCount.ToString(CultureInfo.InvariantCulture) +
+        "x" +
+        changeCount.ToString(CultureInfo.InvariantCulture),
+        customerCount.ToString(CultureInfo.InvariantCulture) +
+        " customers, " +
+        changeCount.ToString(CultureInfo.InvariantCulture) +
+        " profile state" +
+        (changeCount == 1 ? string.Empty : "s") +
+        " each",
+        changeRatio,
+        customerCount,
+        changeCount,
+        Math.Min(SampleCustomerIndex, customerCount - 1),
+        "scale-" +
+        customerCount.ToString(CultureInfo.InvariantCulture) +
+        "x" +
+        changeCount.ToString(CultureInfo.InvariantCulture) +
+        "-benchmark",
+        BaseTimestamp);
+  }
 }
 
 internal sealed record CustomerProfileBulkScenarioDefinition(

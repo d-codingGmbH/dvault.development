@@ -1,6 +1,10 @@
 namespace DCoding.Data.DVault.Benchmarks;
 
-internal sealed record BenchmarkOptions(int Iterations, int WarmupIterations, string? ArtifactOutputDirectory = null) {
+internal sealed record BenchmarkOptions(
+    int Iterations,
+    int WarmupIterations,
+    string? ArtifactOutputDirectory = null,
+    bool ScaleMatrix = false) {
   private const int DefaultIterations = 5;
   private const int DefaultWarmupIterations = 1;
 
@@ -12,9 +16,13 @@ internal sealed record BenchmarkOptions(int Iterations, int WarmupIterations, st
     var iterations = DefaultIterations;
     var warmupIterations = DefaultWarmupIterations;
     string? artifactOutputDirectory = null;
+    var scaleMatrix = false;
 
     for (var index = 0; index < args.Count; index++) {
       switch (args[index]) {
+        case "--scale":
+          scaleMatrix = true;
+          break;
         case "--iterations":
           iterations = ReadPositiveInt(args, ref index, "--iterations");
           break;
@@ -30,7 +38,7 @@ internal sealed record BenchmarkOptions(int Iterations, int WarmupIterations, st
       }
     }
 
-    return new BenchmarkOptions(iterations, warmupIterations, artifactOutputDirectory);
+    return new BenchmarkOptions(iterations, warmupIterations, artifactOutputDirectory, scaleMatrix);
   }
 
   private static int ReadPositiveInt(IReadOnlyList<string> args, ref int index, string optionName) {

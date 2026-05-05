@@ -152,6 +152,7 @@ internal abstract class SharedExternalBenchmarkDatabase : IBenchmarkDatabase {
       "HubOrder",
       "HubProduct",
       "HubCustomer",
+      "CustomerProfileBulkHistory",
   ];
 
   public abstract DbContextOptions<TContext> CreateOptions<TContext>()
