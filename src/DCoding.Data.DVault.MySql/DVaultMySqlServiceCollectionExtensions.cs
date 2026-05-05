@@ -8,7 +8,7 @@ namespace DCoding.Data.DVault;
 /// </summary>
 public static class DVaultMySqlServiceCollectionExtensions {
   /// <summary>
-  /// Adds DVault defaults plus the Pomelo.EntityFrameworkCore.MySql optimized save strategy.
+  /// Adds DVault defaults plus the MySQL optimized save strategy for supported EF Core MySQL providers.
   /// </summary>
   /// <param name="services">The service collection used by the application startup pipeline.</param>
   /// <returns>The same service collection so startup configuration can continue fluently.</returns>
@@ -17,6 +17,9 @@ public static class DVaultMySqlServiceCollectionExtensions {
 
     DataVaultProviderCapabilityProfileSelection.Register(
         MySqlDataVaultSaveStrategy.PomeloProviderName,
+        DataVaultProviderCapabilityProfiles.MySql);
+    DataVaultProviderCapabilityProfileSelection.Register(
+        MySqlDataVaultSaveStrategy.OracleProviderName,
         DataVaultProviderCapabilityProfiles.MySql);
     services.AddDVault();
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, MySqlDataVaultSaveStrategy>());

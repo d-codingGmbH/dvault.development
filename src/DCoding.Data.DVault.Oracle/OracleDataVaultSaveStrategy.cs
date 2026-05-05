@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore.Storage;
 namespace DCoding.Data.DVault;
 
 internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrategy {
+  private const int MinimumOptimizedBatchOperationCount = 50;
+  private const int MaximumOptimizedSatelliteOperationCount = 200;
   private const string OracleProviderName = "Oracle.EntityFrameworkCore";
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
 
@@ -20,7 +22,7 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
 
     return string.Equals(dbContext.Database.ProviderName, OracleProviderName, StringComparison.Ordinal) &&
         IsCleanContext(dbContext) &&
-        IsSupportedRequestBatch(requests);
+        IsOptimizedBatchShape(requests);
   }
 
   public async Task<DataVaultSaveResult> SaveAsync(
@@ -28,23 +30,35 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
       CancellationToken cancellationToken = default) {
     ArgumentNullException.ThrowIfNull(context);
 
-    if (!CanSave(context.DbContext, context.Requests)) {
-      throw new InvalidOperationException(
-          "Oracle DVault save strategy cannot persist this DbContext and request batch shape.");
-    }
-
-    var plans = CreateUniqueRowSavePlans(context);
+    var uniquePlans = CreateUniqueRowSavePlans(context);
+    var satellitePlans = CreateSatelliteSavePlans(context.Requests);
+    var filteredSatellitePlans = await FilterSatellitePlansAsync(
+        context.DbContext,
+        satellitePlans,
+        cancellationToken).ConfigureAwait(false);
+    var savedRecords = uniquePlans
+        .Select(plan => plan.SavedRecord)
+        .Concat(filteredSatellitePlans.Results.Select(result => result.SavedRecord))
+        .ToArray();
     var rowsWritten = await ExecuteOracleInsertRowsAsync(
         context.DbContext,
-        plans.Select(plan => new OracleInsertRow(
+        uniquePlans.Select(plan => new OracleInsertRow(
             plan.Table.TableName,
             plan.Table.HashKeyColumnName,
             plan.HashKey,
-            plan.Row)),
+            plan.Row,
+            OracleInsertConflictBehavior.Ignore)),
         cancellationToken).ConfigureAwait(false);
-    var savedRecords = plans
-        .Select(plan => plan.SavedRecord)
-        .ToArray();
+
+    rowsWritten += await ExecuteOracleInsertRowsAsync(
+        context.DbContext,
+        filteredSatellitePlans.RowsToWrite.Select(plan => new OracleInsertRow(
+            plan.Table.TableName,
+            HashKeyColumnName: null,
+            HashKey: null,
+            plan.Row,
+            OracleInsertConflictBehavior.Fail)),
+        cancellationToken).ConfigureAwait(false);
 
     return new DataVaultSaveResult(rowsWritten, savedRecords);
   }
@@ -55,14 +69,18 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
         .Any(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
   }
 
-  private static bool IsSupportedRequestBatch(IReadOnlyList<DataVaultSaveRequest> requests) {
+  internal static bool IsOptimizedBatchShape(IReadOnlyList<DataVaultSaveRequest> requests) {
+    ArgumentNullException.ThrowIfNull(requests);
+
+    var operationCount = 0;
+    var satelliteOperationCount = 0;
     foreach (var request in requests) {
-      if (request is null || request.SatelliteOperations.Count != 0) {
-        return false;
-      }
+      operationCount += request.HubOperations.Count + request.LinkOperations.Count + request.SatelliteOperations.Count;
+      satelliteOperationCount += request.SatelliteOperations.Count;
     }
 
-    return true;
+    return operationCount >= MinimumOptimizedBatchOperationCount &&
+        satelliteOperationCount <= MaximumOptimizedSatelliteOperationCount;
   }
 
   private static IReadOnlyList<UniqueRowSavePlan> CreateUniqueRowSavePlans(DataVaultProviderSaveStrategyContext context) {
@@ -99,7 +117,7 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     var hashKey = ComputeHash(context, businessKeyFields);
     var row = new Dictionary<string, object> {
       [hashKeyColumnName] = hashKey,
-      [loadTimestampColumnName] = request.LoadTimestamp,
+      [loadTimestampColumnName] = FormatLoadTimestamp(request.LoadTimestamp),
       [recordSourceColumnName] = request.RecordSource,
     };
 
@@ -141,7 +159,7 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     var linkHashKey = ComputeHash(context, participantHashKeyFields);
     var row = new Dictionary<string, object> {
       [linkHashKeyColumnName] = linkHashKey,
-      [loadTimestampColumnName] = request.LoadTimestamp,
+      [loadTimestampColumnName] = FormatLoadTimestamp(request.LoadTimestamp),
       [recordSourceColumnName] = request.RecordSource,
     };
 
@@ -154,6 +172,157 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
         linkHashKey,
         row,
         new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, tableName, linkHashKey));
+  }
+
+  private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(IReadOnlyList<DataVaultSaveRequest> requests) {
+    return requests
+        .SelectMany(request => request.SatelliteOperations
+            .Select(operation => CreateSatelliteSavePlan(request, operation)))
+        .Select((plan, index) => plan with { Ordinal = index })
+        .ToArray();
+  }
+
+  private static SatelliteSavePlan CreateSatelliteSavePlan(
+      DataVaultSaveRequest request,
+      DataVaultSatelliteSaveOperation operation) {
+    var satellite = operation.Metadata;
+    var tableName = NamingPolicy.GetSatelliteTableName(
+        new DataVaultSatelliteNameContext(satellite.Parent.Name, satellite.Name));
+    var parentHashKeyColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, satellite.Parent.Name, tableName));
+    var hashDiffColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashDiff, satellite.Name, tableName));
+    var loadTimestampColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, satellite.Name, tableName));
+    var recordSourceColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.RecordSource, satellite.Name, tableName));
+    var payloadColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        satellite.PayloadColumns.Select(column => column.ColumnName),
+        [parentHashKeyColumnName, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);
+    var payloadFields = satellite.PayloadColumns
+        .Select(column => new KeyValuePair<string, string>(
+            column.ColumnName,
+            GetRequiredValue(operation.PayloadValues, column.ColumnName, nameof(operation.PayloadValues))))
+        .ToArray();
+    var row = new Dictionary<string, object> {
+      [parentHashKeyColumnName] = operation.ParentHashKey,
+      [hashDiffColumnName] = operation.HashDiff,
+      [loadTimestampColumnName] = FormatLoadTimestamp(request.LoadTimestamp),
+      [recordSourceColumnName] = request.RecordSource,
+    };
+
+    for (var index = 0; index < payloadFields.Length; index++) {
+      row.Add(payloadColumnNames[index], payloadFields[index].Value);
+    }
+
+    var table = new SatelliteTableProjection(
+        tableName,
+        parentHashKeyColumnName,
+        hashDiffColumnName,
+        loadTimestampColumnName);
+    var savedRecord = new DataVaultSavedRecord(
+        DataVaultTableKind.Satellite,
+        satellite.Name,
+        tableName,
+        operation.ParentHashKey);
+
+    return new SatelliteSavePlan(
+        -1,
+        table,
+        operation.ParentHashKey,
+        operation.HashDiff,
+        request.LoadTimestamp,
+        row,
+        savedRecord);
+  }
+
+  private static async Task<FilteredSatelliteSavePlans> FilterSatellitePlansAsync(
+      DbContext dbContext,
+      IReadOnlyList<SatelliteSavePlan> plans,
+      CancellationToken cancellationToken) {
+    var results = new SaveOperationResult[plans.Count];
+    var rowsToWrite = new List<SatelliteSavePlan>();
+
+    foreach (var group in plans.GroupBy(plan => plan.Table)) {
+      var latestHashDiffs = await LoadLatestSatelliteHashDiffsAsync(
+          dbContext,
+          group.Key,
+          group.Select(plan => plan.ParentHashKey),
+          cancellationToken).ConfigureAwait(false);
+
+      foreach (var plan in group) {
+        var rowWritten = ShouldWriteSatelliteRow(latestHashDiffs, plan);
+        if (rowWritten) {
+          rowsToWrite.Add(plan);
+          TrackLatestSatelliteHashDiff(latestHashDiffs, plan);
+        }
+
+        results[plan.Ordinal] = new SaveOperationResult(plan.SavedRecord, rowWritten);
+      }
+    }
+
+    return new FilteredSatelliteSavePlans(rowsToWrite, results);
+  }
+
+  private static async Task<Dictionary<string, LatestSatelliteHashDiff>> LoadLatestSatelliteHashDiffsAsync(
+      DbContext dbContext,
+      SatelliteTableProjection table,
+      IEnumerable<string> parentHashKeys,
+      CancellationToken cancellationToken) {
+    var connection = dbContext.Database.GetDbConnection();
+    var shouldCloseConnection = connection.State != ConnectionState.Open;
+    if (shouldCloseConnection) {
+      await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    var latestRows = new List<LatestSatelliteHashDiff>();
+
+    try {
+      foreach (var parentHashKeyBatch in parentHashKeys.Distinct(StringComparer.Ordinal).Chunk(500)) {
+        await using var command = connection.CreateCommand();
+        command.Transaction = dbContext.Database.CurrentTransaction?.GetDbTransaction();
+
+        var parameterNames = AddCommandParameters(command, parentHashKeyBatch);
+        command.CommandText = CreateLatestSatelliteHashDiffsCommandText(table, parameterNames);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
+          latestRows.Add(new LatestSatelliteHashDiff(
+              GetRequiredString(reader, ordinal: 0),
+              GetRequiredString(reader, ordinal: 1),
+              ParseLoadTimestamp(GetRequiredString(reader, ordinal: 2))));
+        }
+      }
+    }
+    finally {
+      if (shouldCloseConnection) {
+        await connection.CloseAsync().ConfigureAwait(false);
+      }
+    }
+
+    return latestRows
+        .GroupBy(row => row.ParentHashKey, StringComparer.Ordinal)
+        .Select(group => group.OrderByDescending(row => row.LoadTimestamp).First())
+        .ToDictionary(row => row.ParentHashKey, StringComparer.Ordinal);
+  }
+
+  private static bool ShouldWriteSatelliteRow(
+      Dictionary<string, LatestSatelliteHashDiff> latestHashDiffs,
+      SatelliteSavePlan plan) {
+    return !latestHashDiffs.TryGetValue(plan.ParentHashKey, out var latestHashDiff) ||
+        !string.Equals(latestHashDiff.HashDiff, plan.HashDiff, StringComparison.Ordinal);
+  }
+
+  private static void TrackLatestSatelliteHashDiff(
+      Dictionary<string, LatestSatelliteHashDiff> latestHashDiffs,
+      SatelliteSavePlan plan) {
+    if (!latestHashDiffs.TryGetValue(plan.ParentHashKey, out var latestHashDiff) ||
+        plan.LoadTimestamp >= latestHashDiff.LoadTimestamp) {
+      latestHashDiffs[plan.ParentHashKey] = new LatestSatelliteHashDiff(
+          plan.ParentHashKey,
+          plan.HashDiff,
+          plan.LoadTimestamp);
+    }
   }
 
   private static async Task<int> ExecuteOracleInsertRowsAsync(
@@ -221,29 +390,25 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     command.Transaction = transaction;
 
     var columns = row.Values.Keys.ToArray();
-    command.CommandText = CreateOracleInsertCommandText(
-        row.TableName,
-        columns,
-        row.HashKeyColumnName,
-        columns.Length);
+    command.CommandText = CreateOracleInsertCommandText(row, columns);
 
     for (var index = 0; index < columns.Length; index++) {
-      AddParameter(command, index, row.Values[columns[index]]);
+      AddParameter(command, row.Values[columns[index]]);
     }
 
-    AddParameter(command, columns.Length, row.HashKey);
+    if (row.ConflictBehavior == OracleInsertConflictBehavior.Ignore) {
+      AddParameter(command, row.HashKey!);
+    }
 
     return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
   }
 
   private static string CreateOracleInsertCommandText(
-      string tableName,
-      IReadOnlyList<string> columns,
-      string hashKeyColumnName,
-      int hashKeyParameterIndex) {
+      OracleInsertRow row,
+      IReadOnlyList<string> columns) {
     var builder = new StringBuilder();
     builder.Append("INSERT INTO ")
-        .Append(QuoteOracleIdentifier(tableName))
+        .Append(QuoteOracleIdentifier(row.TableName))
         .Append(" (");
 
     for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++) {
@@ -264,22 +429,90 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
       builder.Append(CreateOracleParameterPlaceholder(columnIndex));
     }
 
-    builder.Append(" FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM ")
-        .Append(QuoteOracleIdentifier(tableName))
-        .Append(" WHERE ")
-        .Append(QuoteOracleIdentifier(hashKeyColumnName))
-        .Append(" = ")
-        .Append(CreateOracleParameterPlaceholder(hashKeyParameterIndex))
-        .Append(')');
+    if (row.ConflictBehavior == OracleInsertConflictBehavior.Ignore) {
+      builder.Append(" FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM ")
+          .Append(QuoteOracleIdentifier(row.TableName))
+          .Append(" WHERE ")
+          .Append(QuoteOracleIdentifier(row.HashKeyColumnName!))
+          .Append(" = ")
+          .Append(CreateOracleParameterPlaceholder(columns.Count))
+          .Append(')');
+    }
+    else {
+      builder.Append(" FROM DUAL");
+    }
 
     return builder.ToString();
   }
 
-  private static void AddParameter(DbCommand command, int index, object value) {
+  private static string CreateLatestSatelliteHashDiffsCommandText(
+      SatelliteTableProjection table,
+      IReadOnlyList<string> parentHashKeyParameterNames) {
+    var builder = new StringBuilder();
+    builder.Append("SELECT ")
+        .Append(QuoteOracleIdentifier(table.ParentHashKeyColumnName))
+        .Append(", ")
+        .Append(QuoteOracleIdentifier(table.HashDiffColumnName))
+        .Append(", ")
+        .Append(QuoteOracleIdentifier(table.LoadTimestampColumnName))
+        .Append(" FROM (SELECT ")
+        .Append(QuoteOracleIdentifier(table.ParentHashKeyColumnName))
+        .Append(", ")
+        .Append(QuoteOracleIdentifier(table.HashDiffColumnName))
+        .Append(", ")
+        .Append(QuoteOracleIdentifier(table.LoadTimestampColumnName))
+        .Append(", ROW_NUMBER() OVER (PARTITION BY ")
+        .Append(QuoteOracleIdentifier(table.ParentHashKeyColumnName))
+        .Append(" ORDER BY ")
+        .Append(QuoteOracleIdentifier(table.LoadTimestampColumnName))
+        .Append(" DESC) AS ")
+        .Append(QuoteOracleIdentifier("rn"))
+        .Append(" FROM ")
+        .Append(QuoteOracleIdentifier(table.TableName))
+        .Append(" WHERE ")
+        .Append(QuoteOracleIdentifier(table.ParentHashKeyColumnName))
+        .Append(" IN (");
+
+    for (var index = 0; index < parentHashKeyParameterNames.Count; index++) {
+      if (index > 0) {
+        builder.Append(", ");
+      }
+
+      builder.Append(parentHashKeyParameterNames[index]);
+    }
+
+    builder.Append(")) WHERE ")
+        .Append(QuoteOracleIdentifier("rn"))
+        .Append(" = 1");
+
+    return builder.ToString();
+  }
+
+  private static IReadOnlyList<string> AddCommandParameters(
+      DbCommand command,
+      IEnumerable<string> values) {
+    var parameterNames = new List<string>();
+
+    foreach (var value in values) {
+      var parameterName = CreateOracleParameterPlaceholder(command.Parameters.Count);
+      AddParameter(command, value);
+      parameterNames.Add(parameterName);
+    }
+
+    return parameterNames;
+  }
+
+  private static void AddParameter(DbCommand command, object value) {
     var parameter = command.CreateParameter();
-    parameter.ParameterName = CreateOracleParameterName(index);
+    parameter.ParameterName = CreateOracleParameterName(command.Parameters.Count);
     parameter.Value = value;
     command.Parameters.Add(parameter);
+  }
+
+  private static string GetRequiredString(DbDataReader reader, int ordinal) {
+    return reader.GetValue(ordinal) as string ??
+        Convert.ToString(reader.GetValue(ordinal), CultureInfo.InvariantCulture) ??
+        throw new InvalidOperationException("Oracle Data Vault latest satellite lookup returned a null value.");
   }
 
   private static string CreateOracleParameterName(int index) {
@@ -292,6 +525,17 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
 
   private static string QuoteOracleIdentifier(string identifier) {
     return "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+  }
+
+  private static string FormatLoadTimestamp(DateTimeOffset timestamp) {
+    return timestamp.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
+  }
+
+  private static DateTimeOffset ParseLoadTimestamp(string value) {
+    return DateTimeOffset.Parse(
+        value,
+        CultureInfo.InvariantCulture,
+        DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
   }
 
   private static string ComputeHash(
@@ -314,6 +558,8 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     throw new ArgumentException("The Data Vault save operation is missing required value '" + name + "'.", parameterName);
   }
 
+  private sealed record SaveOperationResult(DataVaultSavedRecord SavedRecord, bool RowWritten);
+
   private sealed record UniqueTableProjection(string TableName, string HashKeyColumnName);
 
   private sealed record UniqueRowSavePlan(
@@ -322,9 +568,36 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
       Dictionary<string, object> Row,
       DataVaultSavedRecord SavedRecord);
 
+  private sealed record SatelliteTableProjection(
+      string TableName,
+      string ParentHashKeyColumnName,
+      string HashDiffColumnName,
+      string LoadTimestampColumnName);
+
+  private sealed record SatelliteSavePlan(
+      int Ordinal,
+      SatelliteTableProjection Table,
+      string ParentHashKey,
+      string HashDiff,
+      DateTimeOffset LoadTimestamp,
+      Dictionary<string, object> Row,
+      DataVaultSavedRecord SavedRecord);
+
+  private sealed record FilteredSatelliteSavePlans(
+      IReadOnlyList<SatelliteSavePlan> RowsToWrite,
+      IReadOnlyList<SaveOperationResult> Results);
+
+  private sealed record LatestSatelliteHashDiff(string ParentHashKey, string HashDiff, DateTimeOffset LoadTimestamp);
+
   private sealed record OracleInsertRow(
       string TableName,
-      string HashKeyColumnName,
-      string HashKey,
-      Dictionary<string, object> Values);
+      string? HashKeyColumnName,
+      string? HashKey,
+      Dictionary<string, object> Values,
+      OracleInsertConflictBehavior ConflictBehavior);
+
+  private enum OracleInsertConflictBehavior {
+    Fail,
+    Ignore,
+  }
 }

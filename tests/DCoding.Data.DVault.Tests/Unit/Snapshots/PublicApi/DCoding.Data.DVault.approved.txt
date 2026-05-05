@@ -58,10 +58,12 @@ type public enum DCoding.Data.DVault.DataVaultPropertyRole
   value Payload = 3
 
 type public sealed class DCoding.Data.DVault.DataVaultProviderCapabilityProfile
-  ctor public DataVaultProviderCapabilityProfile(string profileName, DCoding.Data.DVault.DataVaultProviderSqlFunctionSupport sqlFunctionSupport, DCoding.Data.DVault.DataVaultProviderConcurrencySupport concurrencySupport, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultProviderTypeMapping> typeMappings)
+  ctor public DataVaultProviderCapabilityProfile(string profileName, DCoding.Data.DVault.DataVaultProviderSqlFunctionSupport sqlFunctionSupport, DCoding.Data.DVault.DataVaultProviderConcurrencySupport concurrencySupport, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultProviderTypeMapping> typeMappings, int? maximumIdentifierLength = null, bool allowsIndexesCoveredByPrimaryKey = true)
   property public DCoding.Data.DVault.DataVaultProviderConcurrencySupport ConcurrencySupport { get; }
   property public DCoding.Data.DVault.DataVaultProviderSqlFunctionSupport SqlFunctionSupport { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultProviderTypeMapping> TypeMappings { get; }
+  property public bool AllowsIndexesCoveredByPrimaryKey { get; }
+  property public int? MaximumIdentifierLength { get; }
   property public string ProfileName { get; }
   method public DCoding.Data.DVault.DataVaultProviderTypeMapping GetRequiredTypeMapping(DCoding.Data.DVault.DataVaultLogicalPropertyKind logicalPropertyKind)
   method public void RequireConcurrencySignal(string signalName)

@@ -10,6 +10,8 @@ namespace DCoding.Data.DVault;
 
 internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStrategy {
   private const int SqlServerMaxCommandParameterCount = 2000;
+  private const int MinimumOptimizedBatchOperationCount = 50;
+  private const int MaximumOptimizedSatelliteOperationCount = 500;
   private const string SqlServerProviderName = "Microsoft.EntityFrameworkCore.SqlServer";
   private const string OrdinalColumnName = "__dvault_ordinal";
   private const string RowNumberColumnName = "__dvault_row_number";
@@ -25,7 +27,8 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
         .Entries()
         .Any(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
 
-    return CanSaveProvider(dbContext.Database.ProviderName, hasPendingTrackedChanges);
+    return CanSaveProvider(dbContext.Database.ProviderName, hasPendingTrackedChanges) &&
+        IsOptimizedBatchShape(requests);
   }
 
   public async Task<DataVaultSaveResult> SaveAsync(
@@ -165,6 +168,20 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
   internal static bool CanSaveProvider(string? providerName, bool hasPendingTrackedChanges) {
     return string.Equals(providerName, SqlServerProviderName, StringComparison.Ordinal) &&
         !hasPendingTrackedChanges;
+  }
+
+  internal static bool IsOptimizedBatchShape(IReadOnlyList<DataVaultSaveRequest> requests) {
+    ArgumentNullException.ThrowIfNull(requests);
+
+    var operationCount = 0;
+    var satelliteOperationCount = 0;
+    foreach (var request in requests) {
+      operationCount += request.HubOperations.Count + request.LinkOperations.Count + request.SatelliteOperations.Count;
+      satelliteOperationCount += request.SatelliteOperations.Count;
+    }
+
+    return operationCount >= MinimumOptimizedBatchOperationCount &&
+        satelliteOperationCount <= MaximumOptimizedSatelliteOperationCount;
   }
 
   internal static bool ShouldWriteSatelliteHashDiff(string? latestHashDiff, string candidateHashDiff) {

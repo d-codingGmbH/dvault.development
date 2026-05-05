@@ -14,9 +14,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
-    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="10.0.0" Condition="'$(DVAULT_TEST_MYSQL_CONNECTION_STRING)' != ''" />
+    <PackageReference Include="MySql.EntityFrameworkCore" Version="10.0.1" Condition="'$(DVAULT_TEST_MYSQL_CONNECTION_STRING)' != ''" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" Condition="'$(DVAULT_TEST_POSTGRES_CONNECTION_STRING)' != ''" />
-    <PackageReference Include="Oracle.EntityFrameworkCore" Version="10.23.60" Condition="'$(DVAULT_TEST_ORACLE_CONNECTION_STRING)' != ''" />
+    <PackageReference Include="Oracle.EntityFrameworkCore" Version="10.23.26000" Condition="'$(DVAULT_TEST_ORACLE_CONNECTION_STRING)' != ''" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" Condition="'$(DVAULT_TEST_SQLSERVER_CONNECTION_STRING)' != ''" />
     <PackageReference Include="xunit.v3.mtp-v1" Version="3.2.2" />
   </ItemGroup>

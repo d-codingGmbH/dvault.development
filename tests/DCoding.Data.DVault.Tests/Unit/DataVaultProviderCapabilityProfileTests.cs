@@ -52,6 +52,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
     Assert.Equal("oracle-v1", profile.ProfileName);
     Assert.Equal(DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported, profile.SqlFunctionSupport);
     Assert.Equal(DataVaultProviderConcurrencySupport.NoneInV1Unsupported, profile.ConcurrencySupport);
+    Assert.False(profile.AllowsIndexesCoveredByPrimaryKey);
 
     var functionException = Assert.Throws<NotSupportedException>(() => profile.RequireSqlFunction("computed_hash"));
     var concurrencyException = Assert.Throws<NotSupportedException>(() => profile.RequireConcurrencySignal("rowversion"));
@@ -92,9 +93,9 @@ public sealed class DataVaultProviderCapabilityProfileTests {
     AssertMapping(
         profile,
         DataVaultLogicalPropertyKind.LoadTimestamp,
-        typeof(DateTimeOffset),
-        "TIMESTAMP WITH TIME ZONE",
-        DataVaultProviderValueFormat.NativeDateTimeOffset);
+        typeof(string),
+        "VARCHAR2(33 CHAR)",
+        DataVaultProviderValueFormat.Iso8601UtcText);
     AssertMapping(
         profile,
         DataVaultLogicalPropertyKind.RecordSource,
@@ -128,6 +129,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
     Assert.Equal("mysql-pomelo-v1", profile.ProfileName);
     Assert.Equal(DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported, profile.SqlFunctionSupport);
     Assert.Equal(DataVaultProviderConcurrencySupport.NoneInV1Unsupported, profile.ConcurrencySupport);
+    Assert.Equal(64, profile.MaximumIdentifierLength);
     Assert.Equal(
         [
             DataVaultLogicalPropertyKind.HashKey,

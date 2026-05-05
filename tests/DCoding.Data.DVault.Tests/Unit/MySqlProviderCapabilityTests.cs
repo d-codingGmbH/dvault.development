@@ -23,7 +23,7 @@ public sealed class MySqlProviderCapabilityTests {
           DataVaultProviderCapabilityProfiles.MySql,
           DataVaultProviderCapabilityProfileSelection.Select(MySqlDataVaultSaveStrategy.PomeloProviderName));
       Assert.Same(
-          DataVaultProviderCapabilityProfiles.Sqlite,
+          DataVaultProviderCapabilityProfiles.MySql,
           DataVaultProviderCapabilityProfileSelection.Select("MySql.EntityFrameworkCore"));
       Assert.Same(
           DataVaultProviderCapabilityProfiles.Sqlite,
@@ -35,9 +35,9 @@ public sealed class MySqlProviderCapabilityTests {
   }
 
   [Fact]
-  public void MySqlStrategyAcceptsOnlyPomeloProviderName() {
+  public void MySqlStrategyAcceptsPomeloAndOfficialOracleProviderNames() {
     Assert.True(MySqlDataVaultSaveStrategy.IsSupportedProviderName("Pomelo.EntityFrameworkCore.MySql"));
-    Assert.False(MySqlDataVaultSaveStrategy.IsSupportedProviderName("MySql.EntityFrameworkCore"));
+    Assert.True(MySqlDataVaultSaveStrategy.IsSupportedProviderName("MySql.EntityFrameworkCore"));
     Assert.False(MySqlDataVaultSaveStrategy.IsSupportedProviderName("Microsoft.EntityFrameworkCore.Sqlite"));
     Assert.False(MySqlDataVaultSaveStrategy.IsSupportedProviderName(null));
   }

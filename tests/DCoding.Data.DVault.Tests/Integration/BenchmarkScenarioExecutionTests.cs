@@ -141,7 +141,7 @@ public sealed class BenchmarkScenarioExecutionTests {
     var text = await RunBenchmarkAndCaptureOutputAsync(new BenchmarkOptions(1, 0)).ConfigureAwait(false);
 
     Assert.Contains("Required provider: " + SqliteProviderName, text);
-    Assert.Contains("PostgreSQL provider: skipped - " + NotConfiguredSkipReason, text);
+    Assert.Contains(PostgresProviderName + ": skipped - " + NotConfiguredSkipReason, text);
 
     foreach (var expectedRow in ExpectedRows) {
       Assert.Contains(CreateMarkdownRowPrefix(expectedRow), text);
@@ -159,9 +159,9 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Contains(
         "1 order hub, 1 product hub, 1 link, and 2 fulfillment satellite rows for O-1000/SKU-COFFEE",
         text);
-    Assert.Contains("Recorded 20 benchmark report rows.", text);
+    Assert.Contains("Recorded 44 benchmark report rows.", text);
     Assert.Contains("Executed 12 benchmark report rows.", text);
-    Assert.Contains("Skipped 8 benchmark report rows.", text);
+    Assert.Contains("Skipped 32 benchmark report rows.", text);
   }
 
   [Fact]
@@ -205,7 +205,7 @@ public sealed class BenchmarkScenarioExecutionTests {
 
       var csv = await File.ReadAllTextAsync(csvPath).ConfigureAwait(false);
       var csvLines = csv.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
-      Assert.Equal(ExpectedRows.Length + 1, csvLines.Length);
+      Assert.Equal(45, csvLines.Length);
       Assert.Equal(
           "scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,persistedOutcome",
           csvLines[0]);
@@ -232,7 +232,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.False(string.IsNullOrWhiteSpace(context.GetProperty("dotNetRuntimeVersion").GetString()));
 
       var results = json.RootElement.GetProperty("results").EnumerateArray().ToArray();
-      Assert.Equal(ExpectedRows.Length, results.Length);
+      Assert.Equal(44, results.Length);
 
       foreach (var expectedRow in ExpectedRows) {
         var matchingResults = results.Where(result =>
@@ -336,12 +336,25 @@ public sealed class BenchmarkScenarioExecutionTests {
     var originalOutput = Console.Out;
     using var output = new StringWriter(CultureInfo.InvariantCulture);
     var postgresAvailability = PostgresBenchmarkAvailability.Skipped(BenchmarkSkipReason.NotConfigured());
+    var optionalProviders = new[]
+    {
+        BenchmarkProviderAvailability.FromPostgres(postgresAvailability),
+        BenchmarkProviderAvailability.Skipped(
+            BenchmarkExternalProviderDefinitions.SqlServer,
+            BenchmarkSkipReason.NotConfigured(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable)),
+        BenchmarkProviderAvailability.Skipped(
+            BenchmarkExternalProviderDefinitions.MySql,
+            BenchmarkSkipReason.NotConfigured(BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable)),
+        BenchmarkProviderAvailability.Skipped(
+            BenchmarkExternalProviderDefinitions.Oracle,
+            BenchmarkSkipReason.NotConfigured(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable)),
+    };
 
     try {
       Console.SetOut(output);
 
       await BenchmarkRunner
-          .RunAsync(options, postgresAvailability, CancellationToken.None)
+          .RunAsync(options, postgresAvailability, optionalProviders, CancellationToken.None)
           .ConfigureAwait(false);
     }
     finally {

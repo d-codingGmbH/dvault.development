@@ -300,6 +300,7 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
     using var database = _provider.CreateDatabase();
     var options = database.CreateOptions<OrderProductDataVaultContext>();
+    var providerCapabilities = _provider.ProviderCapabilities;
     var services = new ServiceCollection();
     DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy);
 
@@ -307,7 +308,7 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
 
     try {
-      await using (var context = new OrderProductDataVaultContext(options)) {
+      await using (var context = new OrderProductDataVaultContext(options, providerCapabilities)) {
         await database.InitializeAsync(context, cancellationToken).ConfigureAwait(false);
         await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
       }
@@ -318,7 +319,7 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
         string orderHashKey;
         string productHashKey;
 
-        await using (var context = new OrderProductDataVaultContext(options)) {
+        await using (var context = new OrderProductDataVaultContext(options, providerCapabilities)) {
           var hubResult = await saveService.SaveAsync(
               context,
               new DataVaultSaveRequest(
@@ -349,7 +350,7 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
         }
 
         foreach (var fulfillmentEvent in ScenarioContracts.MeasuredOrderFulfillmentEvents) {
-          await using var context = new OrderProductDataVaultContext(options);
+          await using var context = new OrderProductDataVaultContext(options, providerCapabilities);
           await saveService.SaveAsync(
               context,
               new DataVaultSaveRequest(
@@ -362,7 +363,7 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
         }
       }).ConfigureAwait(false);
 
-      await using (var context = new OrderProductDataVaultContext(options)) {
+      await using (var context = new OrderProductDataVaultContext(options, providerCapabilities)) {
         var replayResult = await saveService.SaveAsync(
             context,
             new DataVaultSaveRequest(
@@ -375,14 +376,14 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
         BenchmarkAssert.Equal(0, replayResult.RowsWritten, "The DVault replay operation must not persist a third satellite row.");
       }
 
-      await VerifyOutcomeAsync(options, cancellationToken).ConfigureAwait(false);
+      await VerifyOutcomeAsync(options, providerCapabilities, cancellationToken).ConfigureAwait(false);
 
       return new ScenarioBenchmarkResult(
           elapsed,
           "1 order hub, 1 product hub, 1 link, and 2 fulfillment satellite rows for O-1000/SKU-COFFEE");
     }
     finally {
-      await using var cleanupContext = new OrderProductDataVaultContext(options);
+      await using var cleanupContext = new OrderProductDataVaultContext(options, providerCapabilities);
       await database.CleanupAsync(cleanupContext, CancellationToken.None).ConfigureAwait(false);
     }
   }
@@ -402,8 +403,9 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
 
   private static async Task VerifyOutcomeAsync(
       DbContextOptions<OrderProductDataVaultContext> options,
+      DataVaultProviderCapabilityProfile providerCapabilities,
       CancellationToken cancellationToken) {
-    await using var context = new OrderProductDataVaultContext(options);
+    await using var context = new OrderProductDataVaultContext(options, providerCapabilities);
     var orderRows = await context.Set<Dictionary<string, object>>("HubOrder")
         .AsNoTracking()
         .ToListAsync(cancellationToken)
@@ -420,7 +422,7 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
         .AsNoTracking()
         .ToListAsync(cancellationToken)
         .ConfigureAwait(false))
-        .OrderBy(row => (DateTimeOffset)row["LoadTimestamp"])
+        .OrderBy(row => DataVaultBenchmarkHelpers.ReadLoadTimestamp(row))
         .ToArray();
     var orderRow = BenchmarkAssert.Single(orderRows, "The DVault order benchmark must persist one order hub row.");
     var productRow = BenchmarkAssert.Single(productRows, "The DVault order benchmark must persist one product hub row.");
@@ -436,7 +438,7 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
     BenchmarkAssert.True(DataVaultBenchmarkHelpers.IsLowercaseSha256(orderProductHashKey), "Order-product link hash key must use the stable SHA-256 shape.");
     BenchmarkAssert.Equal(orderHashKey, (string)linkRow["OrderHashKey"], "Order-product link order hash key drifted.");
     BenchmarkAssert.Equal(productHashKey, (string)linkRow["ProductHashKey"], "Order-product link product hash key drifted.");
-    BenchmarkAssert.Equal(ScenarioContracts.OrderRelationship.CreatedAtUtc, (DateTimeOffset)linkRow["LoadTimestamp"], "Order-product link load timestamp drifted.");
+    BenchmarkAssert.Equal(ScenarioContracts.OrderRelationship.CreatedAtUtc, DataVaultBenchmarkHelpers.ReadLoadTimestamp(linkRow), "Order-product link load timestamp drifted.");
     BenchmarkAssert.Equal(ScenarioContracts.OrderRelationship.RecordSource, (string)linkRow["RecordSource"], "Order-product link record source drifted.");
     BenchmarkAssert.Equal(ScenarioContracts.MeasuredOrderFulfillmentEvents.Length, fulfillmentRows.Length, "The DVault order benchmark must persist exactly two fulfillment satellite rows.");
 
@@ -456,14 +458,15 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
     BenchmarkAssert.Equal(expected.AllocationStatus, (string)row["AllocationStatus"], "Fulfillment satellite allocation status drifted.");
     BenchmarkAssert.Equal(expected.WarehouseCode, (string)row["WarehouseCode"], "Fulfillment satellite warehouse code drifted.");
     BenchmarkAssert.Equal(expected.HashDiff, (string)row["HashDiff"], "Fulfillment satellite hash diff drifted.");
-    BenchmarkAssert.Equal(expected.ChangedAtUtc, (DateTimeOffset)row["LoadTimestamp"], "Fulfillment satellite load timestamp drifted.");
+    BenchmarkAssert.Equal(expected.ChangedAtUtc, DataVaultBenchmarkHelpers.ReadLoadTimestamp(row), "Fulfillment satellite load timestamp drifted.");
     BenchmarkAssert.Equal(expected.RecordSource, (string)row["RecordSource"], "Fulfillment satellite record source drifted.");
   }
 
-  private sealed class OrderProductDataVaultContext(DbContextOptions<OrderProductDataVaultContext> options)
-      : DbContext(options) {
+  private sealed class OrderProductDataVaultContext(
+      DbContextOptions<OrderProductDataVaultContext> options,
+      DataVaultProviderCapabilityProfile providerCapabilities) : DbContext(options) {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(ScenarioContracts.CreateOrderProductDataVaultModel());
+      modelBuilder.ApplyDataVaultMetadata(ScenarioContracts.CreateOrderProductDataVaultModel(), providerCapabilities);
     }
   }
 }

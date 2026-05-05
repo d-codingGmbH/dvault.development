@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace DCoding.Data.DVault;
 
@@ -451,6 +453,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       DataVaultHubSaveOperation operation,
       CancellationToken cancellationToken) {
     var plan = CreateHubSavePlan(request, operation);
+    ApplyModelValueFormats(dbContext, plan.Table.TableName, plan.Row);
     var rowWritten = await AddRowIfMissingAsync(
         dbContext,
         plan.Table.TableName,
@@ -506,6 +509,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       DataVaultLinkSaveOperation operation,
       CancellationToken cancellationToken) {
     var plan = CreateLinkSavePlan(request, operation);
+    ApplyModelValueFormats(dbContext, plan.Table.TableName, plan.Row);
     var rowWritten = await AddRowIfMissingAsync(
         dbContext,
         plan.Table.TableName,
@@ -597,6 +601,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     foreach (var group in filteredPlans.RowsToWrite.GroupBy(plan => plan.Table)) {
       var rows = dbContext.Set<Dictionary<string, object>>(group.Key.TableName);
       foreach (var plan in group) {
+        ApplyModelValueFormats(dbContext, group.Key.TableName, plan.Row);
         rows.Add(plan.Row);
       }
     }
@@ -746,17 +751,20 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       CancellationToken cancellationToken) {
     var rows = dbContext.Set<Dictionary<string, object>>(table.TableName);
     var latestRows = new List<LatestSatelliteHashDiff>();
+    var persistedRows = await rows
+        .AsNoTracking()
+        .ToListAsync(cancellationToken)
+        .ConfigureAwait(false);
 
     foreach (var parentHashKeyBatch in parentHashKeys.Distinct(StringComparer.Ordinal).Chunk(500)) {
-      var batchRows = await rows
-          .AsNoTracking()
-          .Where(existingRow => parentHashKeyBatch.Contains(EF.Property<string>(existingRow, table.ParentHashKeyColumnName)))
-          .Select(existingRow => new LatestSatelliteHashDiff(
-              EF.Property<string>(existingRow, table.ParentHashKeyColumnName),
-              EF.Property<string>(existingRow, table.HashDiffColumnName),
-              EF.Property<DateTimeOffset>(existingRow, table.LoadTimestampColumnName)))
-          .ToListAsync(cancellationToken)
-          .ConfigureAwait(false);
+      var parentHashKeySet = parentHashKeyBatch.ToHashSet(StringComparer.Ordinal);
+      var batchRows = persistedRows
+          .Select(row => TryCreateLatestSatelliteHashDiff(row, table, out var latestHashDiff)
+              ? latestHashDiff
+              : null)
+          .Where(row => row is not null && parentHashKeySet.Contains(row.ParentHashKey))
+          .Cast<LatestSatelliteHashDiff>()
+          .ToArray();
 
       var batchLatestRows = batchRows
           .GroupBy(row => row.ParentHashKey, StringComparer.Ordinal)
@@ -796,13 +804,70 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         row.TryGetValue(table.LoadTimestampColumnName, out var loadTimestampValue) &&
         parentHashKeyValue is string parentHashKey &&
         hashDiffValue is string hashDiff &&
-        loadTimestampValue is DateTimeOffset loadTimestamp) {
+        TryReadLoadTimestamp(loadTimestampValue, out var loadTimestamp)) {
       latestHashDiff = new LatestSatelliteHashDiff(parentHashKey, hashDiff, loadTimestamp);
       return true;
     }
 
     latestHashDiff = new LatestSatelliteHashDiff(string.Empty, string.Empty, DateTimeOffset.MinValue);
     return false;
+  }
+
+  private static void ApplyModelValueFormats(
+      DbContext dbContext,
+      string tableName,
+      Dictionary<string, object> row) {
+    var entityType = FindEntityType(dbContext, tableName);
+    if (entityType is null) {
+      return;
+    }
+
+    foreach (var property in entityType.GetProperties()) {
+      if (!row.TryGetValue(property.Name, out var value)) {
+        continue;
+      }
+
+      var valueFormat = property.FindAnnotation(DataVaultAnnotationNames.ProviderValueFormat)?.Value;
+      if (valueFormat is DataVaultProviderValueFormat.Iso8601UtcText &&
+          property.ClrType == typeof(string) &&
+          value is DateTimeOffset loadTimestamp) {
+        row[property.Name] = FormatLoadTimestamp(loadTimestamp);
+      }
+    }
+  }
+
+  private static IEntityType? FindEntityType(DbContext dbContext, string tableName) {
+    return dbContext.Model.GetEntityTypes().FirstOrDefault(entity =>
+        string.Equals(entity.FindAnnotation(DataVaultAnnotationNames.ProducedName)?.Value as string, tableName, StringComparison.Ordinal) ||
+        string.Equals(entity.Name, tableName, StringComparison.Ordinal));
+  }
+
+  private static bool TryReadLoadTimestamp(object? value, out DateTimeOffset loadTimestamp) {
+    if (value is DateTimeOffset dateTimeOffset) {
+      loadTimestamp = dateTimeOffset.ToUniversalTime();
+      return true;
+    }
+
+    if (value is DateTime dateTime) {
+      loadTimestamp = new DateTimeOffset(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc));
+      return true;
+    }
+
+    if (value is string text &&
+        DateTimeOffset.TryParse(
+            text,
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+            out loadTimestamp)) {
+      return true;
+    }
+
+    loadTimestamp = DateTimeOffset.MinValue;
+    return false;
+  }
+
+  private static string FormatLoadTimestamp(DateTimeOffset loadTimestamp) {
+    return loadTimestamp.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
   }
 
   private static IEnumerable<Dictionary<string, object>> GetTrackedRows(DbContext dbContext, string tableName) {

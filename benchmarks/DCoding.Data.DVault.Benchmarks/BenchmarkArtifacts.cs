@@ -107,6 +107,23 @@ internal static class BenchmarkArtifacts {
           .Append("- PostgreSQL skip reason: ")
           .AppendLine(context.PostgresSkipReason);
     }
+    if (context.OptionalProviders.Count > 0) {
+      builder.AppendLine("- Optional provider status:");
+      foreach (var provider in context.OptionalProviders) {
+        builder
+            .Append("  - ")
+            .Append(provider.ProviderName)
+            .Append(": ")
+            .Append(provider.ExecutionStatus);
+        if (!string.IsNullOrEmpty(provider.SkipReason)) {
+          builder
+              .Append(" - ")
+              .Append(provider.SkipReason);
+        }
+
+        builder.AppendLine();
+      }
+    }
 
     builder.AppendLine();
     builder.AppendLine("## Run Context");
@@ -222,12 +239,24 @@ internal sealed record BenchmarkRunContext(
     string ProcessArchitecture,
     int ProcessorCount,
     string DotNetRuntimeDescription,
-    string DotNetRuntimeVersion) {
+    string DotNetRuntimeVersion,
+    IReadOnlyList<BenchmarkProviderRunContext> OptionalProviders) {
   public static BenchmarkRunContext Create(
       BenchmarkOptions options,
       PostgresBenchmarkAvailability postgresAvailability) {
+    return Create(
+        options,
+        postgresAvailability,
+        [BenchmarkProviderAvailability.FromPostgres(postgresAvailability)]);
+  }
+
+  public static BenchmarkRunContext Create(
+      BenchmarkOptions options,
+      PostgresBenchmarkAvailability postgresAvailability,
+      IReadOnlyList<BenchmarkProviderAvailability> optionalProviders) {
     ArgumentNullException.ThrowIfNull(options);
     ArgumentNullException.ThrowIfNull(postgresAvailability);
+    ArgumentNullException.ThrowIfNull(optionalProviders);
 
     return new BenchmarkRunContext(
         BenchmarkArtifacts.RequiredProviderName,
@@ -241,7 +270,24 @@ internal sealed record BenchmarkRunContext(
         RuntimeInformation.ProcessArchitecture.ToString(),
         Environment.ProcessorCount,
         RuntimeInformation.FrameworkDescription,
-        Environment.Version.ToString());
+        Environment.Version.ToString(),
+        [.. optionalProviders.Select(BenchmarkProviderRunContext.FromAvailability)]);
+  }
+}
+
+internal sealed record BenchmarkProviderRunContext(
+    string ProviderName,
+    string ConnectionStringEnvironmentVariable,
+    string ExecutionStatus,
+    string SkipReason) {
+  public static BenchmarkProviderRunContext FromAvailability(BenchmarkProviderAvailability availability) {
+    ArgumentNullException.ThrowIfNull(availability);
+
+    return new BenchmarkProviderRunContext(
+        availability.ProviderName,
+        availability.Definition.ConnectionStringEnvironmentVariable,
+        availability.ExecutionStatus,
+        availability.SkipReason?.DisplayText ?? string.Empty);
   }
 }
 

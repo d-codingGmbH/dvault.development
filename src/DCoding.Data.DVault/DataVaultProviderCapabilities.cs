@@ -141,13 +141,22 @@ public sealed class DataVaultProviderCapabilityProfile {
   /// <param name="sqlFunctionSupport">The SQL-function support declaration.</param>
   /// <param name="concurrencySupport">The concurrency support declaration.</param>
   /// <param name="typeMappings">The provider type mappings declared by the profile.</param>
+  /// <param name="maximumIdentifierLength">The provider-specific maximum physical identifier length, when enforced.</param>
+  /// <param name="allowsIndexesCoveredByPrimaryKey">
+  /// A value indicating whether the provider accepts secondary indexes whose column list matches the primary key.
+  /// </param>
   public DataVaultProviderCapabilityProfile(
       string profileName,
       DataVaultProviderSqlFunctionSupport sqlFunctionSupport,
       DataVaultProviderConcurrencySupport concurrencySupport,
-      IEnumerable<DataVaultProviderTypeMapping> typeMappings) {
+      IEnumerable<DataVaultProviderTypeMapping> typeMappings,
+      int? maximumIdentifierLength = null,
+      bool allowsIndexesCoveredByPrimaryKey = true) {
     ArgumentException.ThrowIfNullOrWhiteSpace(profileName);
     ArgumentNullException.ThrowIfNull(typeMappings);
+    if (maximumIdentifierLength <= 0) {
+      throw new ArgumentOutOfRangeException(nameof(maximumIdentifierLength));
+    }
 
     var mappings = typeMappings.ToArray();
     var mappingsByKind = new Dictionary<DataVaultLogicalPropertyKind, DataVaultProviderTypeMapping>();
@@ -163,6 +172,8 @@ public sealed class DataVaultProviderCapabilityProfile {
     SqlFunctionSupport = sqlFunctionSupport;
     ConcurrencySupport = concurrencySupport;
     TypeMappings = new ReadOnlyCollection<DataVaultProviderTypeMapping>(mappings);
+    MaximumIdentifierLength = maximumIdentifierLength;
+    AllowsIndexesCoveredByPrimaryKey = allowsIndexesCoveredByPrimaryKey;
     _typeMappingsByKind = mappingsByKind;
   }
 
@@ -185,6 +196,16 @@ public sealed class DataVaultProviderCapabilityProfile {
   /// Gets the provider type mappings declared by the profile.
   /// </summary>
   public IReadOnlyList<DataVaultProviderTypeMapping> TypeMappings { get; }
+
+  /// <summary>
+  /// Gets the provider-specific maximum physical identifier length, if the provider enforces one.
+  /// </summary>
+  public int? MaximumIdentifierLength { get; }
+
+  /// <summary>
+  /// Gets a value indicating whether the provider accepts secondary indexes whose column list matches the primary key.
+  /// </summary>
+  public bool AllowsIndexesCoveredByPrimaryKey { get; }
 
   /// <summary>
   /// Returns the required type mapping for one logical property kind.
@@ -265,14 +286,15 @@ public static class DataVaultProviderCapabilityProfiles {
           Text(DataVaultLogicalPropertyKind.HashDiff, "VARCHAR2(64 CHAR)"),
           new(
               DataVaultLogicalPropertyKind.LoadTimestamp,
-              typeof(DateTimeOffset),
-              "TIMESTAMP WITH TIME ZONE",
-              DataVaultProviderValueFormat.NativeDateTimeOffset),
+              typeof(string),
+              "VARCHAR2(33 CHAR)",
+              DataVaultProviderValueFormat.Iso8601UtcText),
           Text(DataVaultLogicalPropertyKind.RecordSource, "VARCHAR2(255 CHAR)"),
           Text(DataVaultLogicalPropertyKind.ParticipantReference, "VARCHAR2(64 CHAR)"),
           Text(DataVaultLogicalPropertyKind.BusinessKey, "VARCHAR2(255 CHAR)"),
           Text(DataVaultLogicalPropertyKind.PayloadText, "CLOB"),
-      ]);
+      ],
+      allowsIndexesCoveredByPrimaryKey: false);
 
   /// <summary>
   /// Gets the Pomelo.EntityFrameworkCore.MySql v1 provider capability profile.
@@ -293,7 +315,8 @@ public static class DataVaultProviderCapabilityProfiles {
           Text(DataVaultLogicalPropertyKind.ParticipantReference, "varchar(64)"),
           Text(DataVaultLogicalPropertyKind.BusinessKey, "varchar(255)"),
           Text(DataVaultLogicalPropertyKind.PayloadText, "longtext"),
-      ]);
+      ],
+      maximumIdentifierLength: 64);
 
   private static DataVaultProviderTypeMapping Text(
       DataVaultLogicalPropertyKind logicalPropertyKind,

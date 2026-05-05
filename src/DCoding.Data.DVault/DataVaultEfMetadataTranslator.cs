@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -261,18 +263,46 @@ internal static class DataVaultEfMetadataTranslator {
       }
 
       var keyBuilder = entityBuilder.HasKey(entity.PrimaryKey.PropertyNames.ToArray());
-      keyBuilder.HasName(entity.PrimaryKey.Name);
+      keyBuilder.HasName(GetPhysicalIdentifierName(entity.PrimaryKey.Name, providerCapabilities));
       keyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProducedName, entity.PrimaryKey.Name);
 
       for (var ordinal = 0; ordinal < entity.Indexes.Count; ordinal++) {
         var index = entity.Indexes[ordinal];
+        if (IsIndexCoveredByPrimaryKey(index, entity.PrimaryKey, providerCapabilities)) {
+          continue;
+        }
+
         var indexBuilder = entityBuilder.HasIndex(index.PropertyNames.ToArray());
         indexBuilder.IsUnique(index.IsUnique);
-        indexBuilder.HasDatabaseName(index.Name);
+        indexBuilder.HasDatabaseName(GetPhysicalIdentifierName(index.Name, providerCapabilities));
         indexBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProducedName, index.Name);
         indexBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.Ordinal, ordinal);
       }
     });
+  }
+
+  private static bool IsIndexCoveredByPrimaryKey(
+      IndexProjection index,
+      KeyProjection primaryKey,
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    return !providerCapabilities.AllowsIndexesCoveredByPrimaryKey &&
+        index.PropertyNames.SequenceEqual(primaryKey.PropertyNames, StringComparer.Ordinal);
+  }
+
+  private static string GetPhysicalIdentifierName(
+      string producedName,
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    if (providerCapabilities.MaximumIdentifierLength is not { } maximumIdentifierLength ||
+        producedName.Length <= maximumIdentifierLength) {
+      return producedName;
+    }
+
+    const int hashLength = 8;
+    var prefixLength = Math.Max(1, maximumIdentifierLength - hashLength - 1);
+    var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(producedName)))
+        .ToLowerInvariant()[..hashLength];
+
+    return producedName[..prefixLength] + "_" + hash;
   }
 
   private static void ApplyProperty(

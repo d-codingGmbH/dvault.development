@@ -10,8 +10,10 @@ namespace DCoding.Data.DVault;
 
 internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrategy {
   internal const string PomeloProviderName = "Pomelo.EntityFrameworkCore.MySql";
+  internal const string OracleProviderName = "MySql.EntityFrameworkCore";
 
   private const int MySqlMaxCommandParameterCount = 60000;
+  private const int MinimumOptimizedBatchOperationCount = 50;
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
 
   public int Priority => 100;
@@ -21,6 +23,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     ArgumentNullException.ThrowIfNull(requests);
 
     return IsSupportedProviderName(dbContext.Database.ProviderName) &&
+        IsOptimizedBatchShape(requests) &&
         !dbContext.ChangeTracker
             .Entries()
             .Any(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
@@ -57,7 +60,19 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   }
 
   internal static bool IsSupportedProviderName(string? providerName) {
-    return string.Equals(providerName, PomeloProviderName, StringComparison.Ordinal);
+    return string.Equals(providerName, PomeloProviderName, StringComparison.Ordinal) ||
+        string.Equals(providerName, OracleProviderName, StringComparison.Ordinal);
+  }
+
+  internal static bool IsOptimizedBatchShape(IReadOnlyList<DataVaultSaveRequest> requests) {
+    ArgumentNullException.ThrowIfNull(requests);
+
+    var operationCount = 0;
+    foreach (var request in requests) {
+      operationCount += request.HubOperations.Count + request.LinkOperations.Count + request.SatelliteOperations.Count;
+    }
+
+    return operationCount >= MinimumOptimizedBatchOperationCount;
   }
 
   internal static string CreateMySqlInsertCommandText(
@@ -293,26 +308,41 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
       SatelliteTableProjection table,
       IEnumerable<string> parentHashKeys,
       CancellationToken cancellationToken) {
-    var rows = dbContext.Set<Dictionary<string, object>>(table.TableName);
-    var latestRows = new List<LatestSatelliteHashDiff>();
-
-    foreach (var parentHashKeyBatch in parentHashKeys.Distinct(StringComparer.Ordinal).Chunk(500)) {
-      var batchRows = await rows
-          .AsNoTracking()
-          .Where(existingRow => parentHashKeyBatch.Contains(EF.Property<string>(existingRow, table.ParentHashKeyColumnName)))
-          .Select(existingRow => new LatestSatelliteHashDiff(
-              EF.Property<string>(existingRow, table.ParentHashKeyColumnName),
-              EF.Property<string>(existingRow, table.HashDiffColumnName),
-              EF.Property<DateTimeOffset>(existingRow, table.LoadTimestampColumnName)))
-          .ToListAsync(cancellationToken)
-          .ConfigureAwait(false);
-
-      latestRows.AddRange(batchRows
-          .GroupBy(row => row.ParentHashKey, StringComparer.Ordinal)
-          .Select(group => group.OrderByDescending(row => row.LoadTimestamp).First()));
+    var connection = dbContext.Database.GetDbConnection();
+    var shouldCloseConnection = connection.State != ConnectionState.Open;
+    if (shouldCloseConnection) {
+      await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    return latestRows.ToDictionary(row => row.ParentHashKey, StringComparer.Ordinal);
+    var latestRows = new List<LatestSatelliteHashDiff>();
+
+    try {
+      foreach (var parentHashKeyBatch in parentHashKeys.Distinct(StringComparer.Ordinal).Chunk(500)) {
+        await using var command = connection.CreateCommand();
+        command.Transaction = dbContext.Database.CurrentTransaction?.GetDbTransaction();
+
+        var parameterNames = AddCommandParameters(command, parentHashKeyBatch);
+        command.CommandText = CreateLatestSatelliteHashDiffsCommandText(table, parameterNames);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
+          latestRows.Add(new LatestSatelliteHashDiff(
+              GetRequiredString(reader, ordinal: 0),
+              GetRequiredString(reader, ordinal: 1),
+              GetRequiredDateTimeOffset(reader, ordinal: 2)));
+        }
+      }
+    }
+    finally {
+      if (shouldCloseConnection) {
+        await connection.CloseAsync().ConfigureAwait(false);
+      }
+    }
+
+    return latestRows
+        .GroupBy(row => row.ParentHashKey, StringComparer.Ordinal)
+        .Select(group => group.OrderByDescending(row => row.LoadTimestamp).First())
+        .ToDictionary(row => row.ParentHashKey, StringComparer.Ordinal);
   }
 
   private static bool ShouldWriteSatelliteRow(
@@ -430,6 +460,94 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
 
   private static string CreateMySqlParameterName(int index) {
     return "@p" + index.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private static string CreateLatestSatelliteHashDiffsCommandText(
+      SatelliteTableProjection table,
+      IReadOnlyList<string> parentHashKeyParameterNames) {
+    var builder = new StringBuilder();
+    builder.Append("SELECT ")
+        .Append(QuoteMySqlIdentifier(table.ParentHashKeyColumnName))
+        .Append(", ")
+        .Append(QuoteMySqlIdentifier(table.HashDiffColumnName))
+        .Append(", ")
+        .Append(QuoteMySqlIdentifier(table.LoadTimestampColumnName))
+        .Append(" FROM ")
+        .Append(QuoteMySqlIdentifier(table.TableName))
+        .Append(" WHERE ")
+        .Append(QuoteMySqlIdentifier(table.ParentHashKeyColumnName))
+        .Append(" IN (");
+
+    for (var index = 0; index < parentHashKeyParameterNames.Count; index++) {
+      if (index > 0) {
+        builder.Append(", ");
+      }
+
+      builder.Append(parentHashKeyParameterNames[index]);
+    }
+
+    builder.Append(") ORDER BY ")
+        .Append(QuoteMySqlIdentifier(table.ParentHashKeyColumnName))
+        .Append(", ")
+        .Append(QuoteMySqlIdentifier(table.LoadTimestampColumnName))
+        .Append(" DESC");
+
+    return builder.ToString();
+  }
+
+  private static IReadOnlyList<string> AddCommandParameters(
+      DbCommand command,
+      IEnumerable<string> values) {
+    var parameterNames = new List<string>();
+
+    foreach (var value in values) {
+      var parameterName = CreateMySqlParameterName(command.Parameters.Count);
+      var parameter = command.CreateParameter();
+      parameter.ParameterName = parameterName;
+      parameter.Value = value;
+      command.Parameters.Add(parameter);
+      parameterNames.Add(parameterName);
+    }
+
+    return parameterNames;
+  }
+
+  private static string GetRequiredString(DbDataReader reader, int ordinal) {
+    return reader.GetValue(ordinal) as string ??
+        Convert.ToString(reader.GetValue(ordinal), CultureInfo.InvariantCulture) ??
+        throw new InvalidOperationException("MySQL Data Vault latest satellite lookup returned a null value.");
+  }
+
+  private static DateTimeOffset GetRequiredDateTimeOffset(DbDataReader reader, int ordinal) {
+    var value = reader.GetValue(ordinal);
+    if (value is DateTimeOffset dateTimeOffset) {
+      return dateTimeOffset.ToUniversalTime();
+    }
+
+    if (value is DateTime dateTime) {
+      if (dateTime.Kind == DateTimeKind.Unspecified) {
+        dateTime = DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
+      }
+
+      return new DateTimeOffset(dateTime).ToUniversalTime();
+    }
+
+    if (value is string text) {
+      return DateTimeOffset.Parse(
+          text,
+          CultureInfo.InvariantCulture,
+          DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+    }
+
+    var converted = Convert.ToString(value, CultureInfo.InvariantCulture);
+    if (!string.IsNullOrWhiteSpace(converted)) {
+      return DateTimeOffset.Parse(
+          converted,
+          CultureInfo.InvariantCulture,
+          DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+    }
+
+    throw new InvalidOperationException("MySQL Data Vault latest satellite lookup returned a null load timestamp.");
   }
 
   private static string QuoteMySqlIdentifier(string identifier) {

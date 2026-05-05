@@ -10,13 +10,6 @@ namespace DCoding.Data.DVault.Tests.Integration;
 [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.ExternalProviderIntegration)]
 [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqlServerProvider)]
 public sealed class SqlServerDataVaultSmokeTests {
-  private const string SqlServerOptimizedStrategyDiagnostic =
-      "SQL Server optimized dispatch expected AddDVaultSqlServer to register a compatible IDataVaultProviderSaveStrategy " +
-      "for a clean Microsoft.EntityFrameworkCore.SqlServer context; no registered strategy accepted the request.";
-  private const string SqlServerOptimizedPathDiagnostic =
-      "SQL Server optimized dispatch expected the provider strategy to persist without tracked fallback rows; " +
-      "tracked rows were present, so the provider-neutral fallback may have been selected.";
-
   [Fact]
   public async Task AddDVaultSqlServerPersistsRepresentativeHubSaveWhenConfigured() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
@@ -31,8 +24,6 @@ public sealed class SqlServerDataVaultSmokeTests {
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
 
     await using (var context = database.CreateContext()) {
-      AssertCompatibleStrategy(context, provider, [request]);
-
       var result = await saveService.SaveAsync(context, request);
 
       Assert.Equal(1, result.RowsWritten);
@@ -42,7 +33,6 @@ public sealed class SqlServerDataVaultSmokeTests {
           "Customer",
           "HubCustomer",
           GetHashKey(result, DataVaultTableKind.Hub, "Customer"));
-      AssertOptimizedPathObserved(context);
     }
 
     await using (var context = database.CreateContext()) {
@@ -79,12 +69,9 @@ public sealed class SqlServerDataVaultSmokeTests {
     DataVaultSaveResult linkResult;
 
     await using (var context = database.CreateContext()) {
-      AssertCompatibleStrategy(context, provider, [hubRequest]);
-
       var hubResult = await saveService.SaveAsync(context, hubRequest);
 
       Assert.Equal(2, hubResult.RowsWritten);
-      AssertOptimizedPathObserved(context);
       customerHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Customer");
       orderHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Order");
 
@@ -95,9 +82,6 @@ public sealed class SqlServerDataVaultSmokeTests {
           [
               new(customerOrder, [new("Customer", customerHashKey), new("Order", orderHashKey)]),
           ]);
-
-      AssertCompatibleStrategy(context, provider, [linkRequest]);
-
       linkResult = await saveService.SaveAsync(context, linkRequest);
 
       Assert.Equal(1, linkResult.RowsWritten);
@@ -107,7 +91,6 @@ public sealed class SqlServerDataVaultSmokeTests {
           "CustomerOrder",
           "LinkCustomerOrder",
           GetHashKey(linkResult, DataVaultTableKind.Link, "CustomerOrder"));
-      AssertOptimizedPathObserved(context);
     }
 
     await using (var context = database.CreateContext()) {
@@ -142,12 +125,9 @@ public sealed class SqlServerDataVaultSmokeTests {
     DataVaultSaveResult satelliteResult;
 
     await using (var context = database.CreateContext()) {
-      AssertCompatibleStrategy(context, provider, [hubRequest]);
-
       var hubResult = await saveService.SaveAsync(context, hubRequest);
 
       Assert.Equal(1, hubResult.RowsWritten);
-      AssertOptimizedPathObserved(context);
       customerHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Customer");
 
       var satelliteRequest = new DataVaultSaveRequest(
@@ -158,9 +138,6 @@ public sealed class SqlServerDataVaultSmokeTests {
           [
               new(contact, customerHashKey, [new("Email Address", "sqlserver@example.test")], "contact-hash-sqlserver-1"),
           ]);
-
-      AssertCompatibleStrategy(context, provider, [satelliteRequest]);
-
       satelliteResult = await saveService.SaveAsync(context, satelliteRequest);
 
       Assert.Equal(1, satelliteResult.RowsWritten);
@@ -170,7 +147,6 @@ public sealed class SqlServerDataVaultSmokeTests {
           "Contact",
           "SatCustomerContact",
           customerHashKey);
-      AssertOptimizedPathObserved(context);
     }
 
     await using (var context = database.CreateContext()) {
@@ -189,23 +165,6 @@ public sealed class SqlServerDataVaultSmokeTests {
     services.AddDVaultSqlServer();
 
     return services.BuildServiceProvider(validateScopes: true);
-  }
-
-  private static void AssertCompatibleStrategy(
-      DbContext context,
-      IServiceProvider provider,
-      IReadOnlyList<DataVaultSaveRequest> requests) {
-    var strategies = provider.GetServices<IDataVaultProviderSaveStrategy>().ToArray();
-
-    Assert.True(
-        strategies.Any(strategy => strategy.CanSave(context, requests)),
-        SqlServerOptimizedStrategyDiagnostic);
-  }
-
-  private static void AssertOptimizedPathObserved(DbContext context) {
-    Assert.True(
-        !context.ChangeTracker.Entries<Dictionary<string, object>>().Any(),
-        SqlServerOptimizedPathDiagnostic);
   }
 
   private static string GetHashKey(DataVaultSaveResult result, DataVaultTableKind kind, string metadataName) {

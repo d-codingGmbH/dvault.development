@@ -1,6 +1,9 @@
 using System.Data.Common;
 using System.Reflection;
+using DCoding.Data.DVault;
 using Microsoft.EntityFrameworkCore;
+
+#pragma warning disable EF1003 // Benchmark cleanup uses fixed produced table names plus provider quoting helpers.
 
 namespace DCoding.Data.DVault.Benchmarks;
 
@@ -12,6 +15,8 @@ internal abstract class BenchmarkDatabaseProvider {
   }
 
   public string ProviderName { get; }
+
+  public virtual DataVaultProviderCapabilityProfile ProviderCapabilities => DataVaultProviderCapabilityProfiles.Sqlite;
 
   public abstract IBenchmarkDatabase CreateDatabase();
 }
@@ -30,6 +35,18 @@ internal static class BenchmarkDatabaseProviders {
 
   public static BenchmarkDatabaseProvider CreatePostgres(string connectionString) {
     return new PostgresBenchmarkDatabaseProvider(connectionString);
+  }
+
+  public static BenchmarkDatabaseProvider CreateSqlServer(string connectionString) {
+    return new SqlServerBenchmarkDatabaseProvider(connectionString);
+  }
+
+  public static BenchmarkDatabaseProvider CreateMySql(string connectionString) {
+    return new MySqlBenchmarkDatabaseProvider(connectionString);
+  }
+
+  public static BenchmarkDatabaseProvider CreateOracle(string connectionString) {
+    return new OracleBenchmarkDatabaseProvider(connectionString);
   }
 
   private sealed class SqliteBenchmarkDatabaseProvider : BenchmarkDatabaseProvider {
@@ -60,6 +77,206 @@ internal static class BenchmarkDatabaseProviders {
 
       return new TempPostgresSchemaDatabase(_connectionString);
     }
+  }
+
+  private sealed class SqlServerBenchmarkDatabaseProvider : BenchmarkDatabaseProvider {
+    private readonly string _connectionString;
+
+    public SqlServerBenchmarkDatabaseProvider(string connectionString)
+        : base(BenchmarkExternalProviderDefinitions.SqlServer.ProviderName) {
+      _connectionString = connectionString;
+    }
+
+    public override IBenchmarkDatabase CreateDatabase() {
+      if (string.IsNullOrWhiteSpace(_connectionString)) {
+        throw new InvalidOperationException(
+            "SQL Server benchmark rows cannot execute without " +
+            BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable +
+            ".");
+      }
+
+      return new TempSqlServerDatabase(_connectionString);
+    }
+  }
+
+  private sealed class MySqlBenchmarkDatabaseProvider : BenchmarkDatabaseProvider {
+    private readonly string _connectionString;
+
+    public MySqlBenchmarkDatabaseProvider(string connectionString)
+        : base(BenchmarkExternalProviderDefinitions.MySql.ProviderName) {
+      _connectionString = connectionString;
+    }
+
+    public override IBenchmarkDatabase CreateDatabase() {
+      if (string.IsNullOrWhiteSpace(_connectionString)) {
+        throw new InvalidOperationException(
+            "MySQL benchmark rows cannot execute without " +
+            BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable +
+            ".");
+      }
+
+      return new TempMySqlDatabase(_connectionString);
+    }
+
+    public override DataVaultProviderCapabilityProfile ProviderCapabilities => DataVaultProviderCapabilityProfiles.MySql;
+  }
+
+  private sealed class OracleBenchmarkDatabaseProvider : BenchmarkDatabaseProvider {
+    private readonly string _connectionString;
+
+    public OracleBenchmarkDatabaseProvider(string connectionString)
+        : base(BenchmarkExternalProviderDefinitions.Oracle.ProviderName) {
+      _connectionString = connectionString;
+    }
+
+    public override IBenchmarkDatabase CreateDatabase() {
+      if (string.IsNullOrWhiteSpace(_connectionString)) {
+        throw new InvalidOperationException(
+            "Oracle benchmark rows cannot execute without " +
+            BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable +
+            ".");
+      }
+
+      return new TempOracleDatabase(_connectionString);
+    }
+
+    public override DataVaultProviderCapabilityProfile ProviderCapabilities => DataVaultProviderCapabilityProfiles.Oracle;
+  }
+}
+
+internal abstract class SharedExternalBenchmarkDatabase : IBenchmarkDatabase {
+  private static readonly string[] ProducedTableNames = [
+      "SatOrderProductFulfillment",
+      "LinkOrderProduct",
+      "SatCustomerProfile",
+      "HubOrder",
+      "HubProduct",
+      "HubCustomer",
+  ];
+
+  public abstract DbContextOptions<TContext> CreateOptions<TContext>()
+      where TContext : DbContext;
+
+  public virtual Task InitializeAsync(DbContext context, CancellationToken cancellationToken) {
+    return CleanupAsync(context, cancellationToken);
+  }
+
+  public abstract Task CleanupAsync(DbContext context, CancellationToken cancellationToken);
+
+  public void Dispose() {
+  }
+
+  protected static IReadOnlyList<string> GetProducedTableNames() {
+    return ProducedTableNames;
+  }
+}
+
+internal sealed class TempSqlServerDatabase : SharedExternalBenchmarkDatabase {
+  private readonly string _connectionString;
+
+  public TempSqlServerDatabase(string connectionString) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+
+    _connectionString = connectionString;
+  }
+
+  public override DbContextOptions<TContext> CreateOptions<TContext>() {
+    var builder = new DbContextOptionsBuilder<TContext>();
+    SqlServerBenchmarkReflection.UseSqlServer(builder, _connectionString);
+
+    return builder.Options;
+  }
+
+  public override async Task CleanupAsync(DbContext context, CancellationToken cancellationToken) {
+    ArgumentNullException.ThrowIfNull(context);
+
+    foreach (var tableName in GetProducedTableNames()) {
+      await context.Database.ExecuteSqlRawAsync(
+          "IF OBJECT_ID(N'dbo." + SqlServerStringLiteralContent(tableName) + "', N'U') IS NOT NULL DROP TABLE " + QuoteSqlServerIdentifier(tableName),
+          cancellationToken).ConfigureAwait(false);
+    }
+  }
+
+  private static string SqlServerStringLiteralContent(string value) {
+    return value.Replace("'", "''", StringComparison.Ordinal);
+  }
+
+  private static string QuoteSqlServerIdentifier(string identifier) {
+    return "[" + identifier.Replace("]", "]]", StringComparison.Ordinal) + "]";
+  }
+}
+
+internal sealed class TempMySqlDatabase : SharedExternalBenchmarkDatabase {
+  private readonly string _connectionString;
+
+  public TempMySqlDatabase(string connectionString) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+
+    _connectionString = connectionString;
+  }
+
+  public override DbContextOptions<TContext> CreateOptions<TContext>() {
+    var builder = new DbContextOptionsBuilder<TContext>();
+    MySqlBenchmarkReflection.UseMySql(builder, _connectionString);
+
+    return builder.Options;
+  }
+
+  public override async Task CleanupAsync(DbContext context, CancellationToken cancellationToken) {
+    ArgumentNullException.ThrowIfNull(context);
+
+    await context.Database.ExecuteSqlRawAsync("SET FOREIGN_KEY_CHECKS = 0;", cancellationToken).ConfigureAwait(false);
+    try {
+      foreach (var tableName in GetProducedTableNames()) {
+        await context.Database.ExecuteSqlRawAsync(
+            "DROP TABLE IF EXISTS " + QuoteMySqlIdentifier(tableName) + ";",
+            cancellationToken).ConfigureAwait(false);
+      }
+    }
+    finally {
+      await context.Database.ExecuteSqlRawAsync("SET FOREIGN_KEY_CHECKS = 1;", CancellationToken.None).ConfigureAwait(false);
+    }
+  }
+
+  private static string QuoteMySqlIdentifier(string identifier) {
+    return "`" + identifier.Replace("`", "``", StringComparison.Ordinal) + "`";
+  }
+}
+
+internal sealed class TempOracleDatabase : SharedExternalBenchmarkDatabase {
+  private readonly string _connectionString;
+
+  public TempOracleDatabase(string connectionString) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+
+    _connectionString = connectionString;
+  }
+
+  public override DbContextOptions<TContext> CreateOptions<TContext>() {
+    var builder = new DbContextOptionsBuilder<TContext>();
+    OracleBenchmarkReflection.UseOracle(builder, _connectionString);
+
+    return builder.Options;
+  }
+
+  public override async Task CleanupAsync(DbContext context, CancellationToken cancellationToken) {
+    ArgumentNullException.ThrowIfNull(context);
+
+    foreach (var tableName in GetProducedTableNames()) {
+      await context.Database.ExecuteSqlRawAsync(
+          "BEGIN EXECUTE IMMEDIATE " +
+          SqlLiteral("DROP TABLE " + QuoteOracleIdentifier(tableName) + " PURGE") +
+          "; EXCEPTION WHEN OTHERS THEN IF SQLCODE != -942 THEN RAISE; END IF; END;",
+          cancellationToken).ConfigureAwait(false);
+    }
+  }
+
+  private static string QuoteOracleIdentifier(string identifier) {
+    return "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+  }
+
+  private static string SqlLiteral(string value) {
+    return "'" + value.Replace("'", "''", StringComparison.Ordinal) + "'";
   }
 }
 
@@ -122,6 +339,8 @@ internal sealed class TempPostgresSchemaDatabase : IBenchmarkDatabase {
     return "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
   }
 }
+
+#pragma warning restore EF1003
 
 internal static class NpgsqlReflection {
   private const string NpgsqlOptionsExtensionTypeName =

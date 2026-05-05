@@ -146,6 +146,7 @@ internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
     using var database = _provider.CreateDatabase();
     var options = database.CreateOptions<CustomerProfileDataVaultContext>();
+    var providerCapabilities = _provider.ProviderCapabilities;
     var services = new ServiceCollection();
     DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy);
 
@@ -153,7 +154,7 @@ internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
 
     try {
-      await using (var context = new CustomerProfileDataVaultContext(options)) {
+      await using (var context = new CustomerProfileDataVaultContext(options, providerCapabilities)) {
         await database.InitializeAsync(context, cancellationToken).ConfigureAwait(false);
         await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
       }
@@ -161,7 +162,7 @@ internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
       var elapsed = await BenchmarkClock.MeasureAsync(async () => {
         string customerHashKey;
         var firstEvent = ScenarioContracts.CustomerProfileEvents[0];
-        await using (var context = new CustomerProfileDataVaultContext(options)) {
+        await using (var context = new CustomerProfileDataVaultContext(options, providerCapabilities)) {
           var firstHubResult = await saveService.SaveAsync(
               context,
               new DataVaultSaveRequest(
@@ -184,7 +185,7 @@ internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
         }
 
         var secondEvent = ScenarioContracts.CustomerProfileEvents[1];
-        await using (var context = new CustomerProfileDataVaultContext(options)) {
+        await using (var context = new CustomerProfileDataVaultContext(options, providerCapabilities)) {
           await saveService.SaveAsync(
               context,
               new DataVaultSaveRequest(
@@ -206,12 +207,12 @@ internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
         }
       }).ConfigureAwait(false);
 
-      await VerifyOutcomeAsync(options, cancellationToken).ConfigureAwait(false);
+      await VerifyOutcomeAsync(options, providerCapabilities, cancellationToken).ConfigureAwait(false);
 
       return new ScenarioBenchmarkResult(elapsed, "1 customer hub row and 2 profile satellite rows for C-100");
     }
     finally {
-      await using var cleanupContext = new CustomerProfileDataVaultContext(options);
+      await using var cleanupContext = new CustomerProfileDataVaultContext(options, providerCapabilities);
       await database.CleanupAsync(cleanupContext, CancellationToken.None).ConfigureAwait(false);
     }
   }
@@ -231,8 +232,9 @@ internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
 
   private static async Task VerifyOutcomeAsync(
       DbContextOptions<CustomerProfileDataVaultContext> options,
+      DataVaultProviderCapabilityProfile providerCapabilities,
       CancellationToken cancellationToken) {
-    await using var context = new CustomerProfileDataVaultContext(options);
+    await using var context = new CustomerProfileDataVaultContext(options, providerCapabilities);
     var customerRows = await context.Set<Dictionary<string, object>>("HubCustomer")
         .AsNoTracking()
         .ToListAsync(cancellationToken)
@@ -241,7 +243,7 @@ internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
         .AsNoTracking()
         .ToListAsync(cancellationToken)
         .ConfigureAwait(false))
-        .OrderBy(row => (DateTimeOffset)row["LoadTimestamp"])
+        .OrderBy(row => DataVaultBenchmarkHelpers.ReadLoadTimestamp(row))
         .ToArray();
     var customerRow = BenchmarkAssert.Single(customerRows, "The DVault customer benchmark must persist one customer hub row.");
     var customerHashKey = (string)customerRow["CustomerHashKey"];
@@ -263,14 +265,15 @@ internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
     BenchmarkAssert.Equal(expected.CustomerName, (string)row["CustomerName"], "Profile satellite customer name drifted.");
     BenchmarkAssert.Equal(expected.CustomerStatus, (string)row["CustomerStatus"], "Profile satellite status drifted.");
     BenchmarkAssert.Equal(expected.HashDiff, (string)row["HashDiff"], "Profile satellite hash diff drifted.");
-    BenchmarkAssert.Equal(expected.ChangedAtUtc, (DateTimeOffset)row["LoadTimestamp"], "Profile satellite load timestamp drifted.");
+    BenchmarkAssert.Equal(expected.ChangedAtUtc, DataVaultBenchmarkHelpers.ReadLoadTimestamp(row), "Profile satellite load timestamp drifted.");
     BenchmarkAssert.Equal(expected.RecordSource, (string)row["RecordSource"], "Profile satellite record source drifted.");
   }
 
-  private sealed class CustomerProfileDataVaultContext(DbContextOptions<CustomerProfileDataVaultContext> options)
-      : DbContext(options) {
+  private sealed class CustomerProfileDataVaultContext(
+      DbContextOptions<CustomerProfileDataVaultContext> options,
+      DataVaultProviderCapabilityProfile providerCapabilities) : DbContext(options) {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(ScenarioContracts.CreateCustomerProfileDataVaultModel());
+      modelBuilder.ApplyDataVaultMetadata(ScenarioContracts.CreateCustomerProfileDataVaultModel(), providerCapabilities);
     }
   }
 }
@@ -437,6 +440,7 @@ internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
     using var database = _provider.CreateDatabase();
     var options = database.CreateOptions<CustomerProfileBulkDataVaultContext>();
+    var providerCapabilities = _provider.ProviderCapabilities;
     var services = new ServiceCollection();
     DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy);
 
@@ -444,13 +448,13 @@ internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
 
     try {
-      await using (var context = new CustomerProfileBulkDataVaultContext(options)) {
+      await using (var context = new CustomerProfileBulkDataVaultContext(options, providerCapabilities)) {
         await database.InitializeAsync(context, cancellationToken).ConfigureAwait(false);
         await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
       }
 
       var elapsed = await BenchmarkClock.MeasureAsync(async () => {
-        await using var context = new CustomerProfileBulkDataVaultContext(options);
+        await using var context = new CustomerProfileBulkDataVaultContext(options, providerCapabilities);
         var hubResult = await saveService.SaveAsync(
             context,
             new DataVaultSaveRequest(
@@ -492,7 +496,7 @@ internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark
             cancellationToken).ConfigureAwait(false);
       }).ConfigureAwait(false);
 
-      await VerifyOutcomeAsync(options, _scenario, cancellationToken).ConfigureAwait(false);
+      await VerifyOutcomeAsync(options, providerCapabilities, _scenario, cancellationToken).ConfigureAwait(false);
 
       return new ScenarioBenchmarkResult(
           elapsed,
@@ -502,7 +506,7 @@ internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark
           " profile satellite rows");
     }
     finally {
-      await using var cleanupContext = new CustomerProfileBulkDataVaultContext(options);
+      await using var cleanupContext = new CustomerProfileBulkDataVaultContext(options, providerCapabilities);
       await database.CleanupAsync(cleanupContext, CancellationToken.None).ConfigureAwait(false);
     }
   }
@@ -522,9 +526,10 @@ internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark
 
   private static async Task VerifyOutcomeAsync(
       DbContextOptions<CustomerProfileBulkDataVaultContext> options,
+      DataVaultProviderCapabilityProfile providerCapabilities,
       CustomerProfileBulkScenarioDefinition scenario,
       CancellationToken cancellationToken) {
-    await using var context = new CustomerProfileBulkDataVaultContext(options);
+    await using var context = new CustomerProfileBulkDataVaultContext(options, providerCapabilities);
     var hubRows = await context.Set<Dictionary<string, object>>("HubCustomer")
         .AsNoTracking()
         .ToListAsync(cancellationToken)
@@ -540,7 +545,7 @@ internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark
     var sampleCustomerHashKey = (string)sampleCustomerRow["CustomerHashKey"];
     var sampleProfileRows = profileRows
         .Where(row => string.Equals((string)row["CustomerHashKey"], sampleCustomerHashKey, StringComparison.Ordinal))
-        .OrderBy(row => (DateTimeOffset)row["LoadTimestamp"])
+        .OrderBy(row => DataVaultBenchmarkHelpers.ReadLoadTimestamp(row))
         .ToArray();
 
     BenchmarkAssert.Equal(
@@ -576,14 +581,15 @@ internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark
     BenchmarkAssert.Equal(expected.CustomerName, (string)row["CustomerName"], "Bulk profile satellite customer name drifted.");
     BenchmarkAssert.Equal(expected.CustomerStatus, (string)row["CustomerStatus"], "Bulk profile satellite status drifted.");
     BenchmarkAssert.Equal(expected.HashDiff, (string)row["HashDiff"], "Bulk profile satellite hash diff drifted.");
-    BenchmarkAssert.Equal(expected.ChangedAtUtc, (DateTimeOffset)row["LoadTimestamp"], "Bulk profile satellite load timestamp drifted.");
+    BenchmarkAssert.Equal(expected.ChangedAtUtc, DataVaultBenchmarkHelpers.ReadLoadTimestamp(row), "Bulk profile satellite load timestamp drifted.");
     BenchmarkAssert.Equal(expected.RecordSource, (string)row["RecordSource"], "Bulk profile satellite record source drifted.");
   }
 
-  private sealed class CustomerProfileBulkDataVaultContext(DbContextOptions<CustomerProfileBulkDataVaultContext> options)
-      : DbContext(options) {
+  private sealed class CustomerProfileBulkDataVaultContext(
+      DbContextOptions<CustomerProfileBulkDataVaultContext> options,
+      DataVaultProviderCapabilityProfile providerCapabilities) : DbContext(options) {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(ScenarioContracts.CreateCustomerProfileDataVaultModel());
+      modelBuilder.ApplyDataVaultMetadata(ScenarioContracts.CreateCustomerProfileDataVaultModel(), providerCapabilities);
     }
   }
 }

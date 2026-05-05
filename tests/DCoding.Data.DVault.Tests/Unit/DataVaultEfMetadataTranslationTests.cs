@@ -157,9 +157,9 @@ public sealed class DataVaultEfMetadataTranslationTests {
         hub,
         "LoadTimestamp",
         DataVaultLogicalPropertyKind.LoadTimestamp,
-        typeof(DateTimeOffset),
-        "TIMESTAMP WITH TIME ZONE",
-        DataVaultProviderValueFormat.NativeDateTimeOffset);
+        typeof(string),
+        "VARCHAR2(33 CHAR)",
+        DataVaultProviderValueFormat.Iso8601UtcText);
     AssertProviderProperty(
         hub,
         "RecordSource",
@@ -195,6 +195,10 @@ public sealed class DataVaultEfMetadataTranslationTests {
         typeof(string),
         "CLOB",
         DataVaultProviderValueFormat.Text);
+    Assert.DoesNotContain(
+        satellite.GetIndexes(),
+        index => index.Properties.Select(property => property.Name)
+            .SequenceEqual(["CustomerHashKey", "LoadTimestamp"], StringComparer.Ordinal));
   }
 
   [Fact]
