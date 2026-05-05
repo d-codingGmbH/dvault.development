@@ -3,19 +3,18 @@
   "ticket-id": "06EZEHCCMBFDGW35YGR5D20EEW",
   "ticket-type": null,
   "title": "Story: Align provider optimization closure contracts and release posture",
-  "revision": "06EZEHJX0V24WZ4X9KMBWJP4CC",
-  "status": "todo",
+  "revision": "06EZF14GJNZ4DRSPDEX1XCE75C",
+  "status": "done",
   "labels": [
-    "type/story",
-    "area/provider-support",
-    "area/performance",
     "area/documentation",
-    "needs-po",
-    "automation/bot-ready"
+    "area/performance",
+    "area/provider-support",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-05T08:33:43.8654996Z",
-  "updated-at": "2026-05-05T08:34:36.9348496Z"
+  "updated-at": "2026-05-05T09:42:33.3659684Z"
 }
