@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace DCoding.Data.DVault;
 
@@ -7,14 +8,18 @@ namespace DCoding.Data.DVault;
 /// </summary>
 public static class DVaultMySqlServiceCollectionExtensions {
   /// <summary>
-  /// Adds DVault defaults for MySQL. Provider-specific optimized writers can extend this package without changing callers.
+  /// Adds DVault defaults plus the Pomelo.EntityFrameworkCore.MySql optimized save strategy.
   /// </summary>
   /// <param name="services">The service collection used by the application startup pipeline.</param>
   /// <returns>The same service collection so startup configuration can continue fluently.</returns>
   public static IServiceCollection AddDVaultMySql(this IServiceCollection services) {
     ArgumentNullException.ThrowIfNull(services);
 
+    DataVaultProviderCapabilityProfileSelection.Register(
+        MySqlDataVaultSaveStrategy.PomeloProviderName,
+        DataVaultProviderCapabilityProfiles.MySql);
     services.AddDVault();
+    services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, MySqlDataVaultSaveStrategy>());
 
     return services;
   }

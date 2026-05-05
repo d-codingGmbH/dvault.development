@@ -274,6 +274,27 @@ public static class DataVaultProviderCapabilityProfiles {
           Text(DataVaultLogicalPropertyKind.PayloadText, "CLOB"),
       ]);
 
+  /// <summary>
+  /// Gets the Pomelo.EntityFrameworkCore.MySql v1 provider capability profile.
+  /// </summary>
+  public static DataVaultProviderCapabilityProfile MySql { get; } = new(
+      "mysql-pomelo-v1",
+      DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported,
+      DataVaultProviderConcurrencySupport.NoneInV1Unsupported,
+      [
+          Text(DataVaultLogicalPropertyKind.HashKey, "varchar(64)"),
+          Text(DataVaultLogicalPropertyKind.HashDiff, "varchar(64)"),
+          new(
+              DataVaultLogicalPropertyKind.LoadTimestamp,
+              typeof(DateTimeOffset),
+              "varchar(33)",
+              DataVaultProviderValueFormat.Iso8601UtcText),
+          Text(DataVaultLogicalPropertyKind.RecordSource, "varchar(255)"),
+          Text(DataVaultLogicalPropertyKind.ParticipantReference, "varchar(64)"),
+          Text(DataVaultLogicalPropertyKind.BusinessKey, "varchar(255)"),
+          Text(DataVaultLogicalPropertyKind.PayloadText, "longtext"),
+      ]);
+
   private static DataVaultProviderTypeMapping Text(
       DataVaultLogicalPropertyKind logicalPropertyKind,
       string nativeStoreType = "TEXT") {

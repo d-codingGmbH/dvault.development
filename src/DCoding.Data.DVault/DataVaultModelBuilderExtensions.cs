@@ -37,7 +37,7 @@ public static class DataVaultModelBuilderExtensions {
   }
 
   /// <summary>
-  /// Translates provider-neutral Data Vault metadata declarations into provider-neutral Entity Framework model metadata.
+  /// Translates provider-neutral Data Vault metadata declarations into provider-aware Entity Framework model metadata.
   /// </summary>
   /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
   /// <param name="metadataModel">The provider-neutral Data Vault metadata declarations to project.</param>

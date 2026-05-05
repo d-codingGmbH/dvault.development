@@ -22,6 +22,9 @@ public static class DVaultSqliteServiceCollectionExtensions {
   public static IServiceCollection AddDVaultSqlite(this IServiceCollection services) {
     ArgumentNullException.ThrowIfNull(services);
 
+    DataVaultProviderCapabilityProfileSelection.Register(
+        SqliteDataVaultSaveStrategy.ProviderName,
+        DataVaultProviderCapabilityProfiles.Sqlite);
     services.AddDVault();
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, SqliteDataVaultSaveStrategy>());
 
@@ -30,6 +33,8 @@ public static class DVaultSqliteServiceCollectionExtensions {
 }
 
 internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrategy {
+  internal const string ProviderName = "Microsoft.EntityFrameworkCore.Sqlite";
+
   private const int SqliteMaxCommandParameterCount = 900;
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
 
@@ -39,7 +44,7 @@ internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(requests);
 
-    return string.Equals(dbContext.Database.ProviderName, "Microsoft.EntityFrameworkCore.Sqlite", StringComparison.Ordinal) &&
+    return string.Equals(dbContext.Database.ProviderName, ProviderName, StringComparison.Ordinal) &&
         !dbContext.ChangeTracker
             .Entries()
             .Any(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);

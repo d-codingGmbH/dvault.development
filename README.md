@@ -25,7 +25,7 @@ dotnet add package DCoding.Data.DVault.Postgres --version 0.4.1
 dotnet add package DCoding.Data.DVault.SqlServer --version 0.4.1
 ```
 
-Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite or the relevant provider for PostgreSQL, SQL Server, Oracle, or MySQL.
+Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Pomelo.EntityFrameworkCore.MySql` for the DVault MySQL v1 path, or the relevant provider for PostgreSQL, SQL Server, or Oracle.
 
 ## Quickstart
 
@@ -132,7 +132,7 @@ services.AddDVaultOracle();
 services.AddDVaultMySql();
 ```
 
-`DCoding.Data.DVault.Sqlite` registers the optimized SQLite set-based save strategy. `DCoding.Data.DVault.Postgres` registers an optimized Npgsql/PostgreSQL strategy for clean contexts that use set-based `INSERT ... ON CONFLICT DO NOTHING` hub and link writes plus latest-state satellite checks. `DCoding.Data.DVault.SqlServer` registers an optimized SQL Server strategy for clean contexts with set-based unique-row inserts and latest-state satellite checks. `DCoding.Data.DVault.Oracle` registers an Oracle-gated insert-only strategy for clean hub/link batches and declines unsupported shapes so the provider-neutral fallback writer handles them. `DCoding.Data.DVault.MySql` currently provides the stable package and startup boundary and uses the provider-neutral fallback. Provider strategies decline incompatible contexts so the provider-neutral fallback remains the caller-visible safety net.
+`DCoding.Data.DVault.Sqlite` registers the optimized SQLite set-based save strategy. `DCoding.Data.DVault.Postgres` registers an optimized Npgsql/PostgreSQL strategy for clean contexts that use set-based `INSERT ... ON CONFLICT DO NOTHING` hub and link writes plus latest-state satellite checks. `DCoding.Data.DVault.SqlServer` registers an optimized SQL Server strategy for clean contexts with set-based unique-row inserts and latest-state satellite checks. `DCoding.Data.DVault.Oracle` registers an Oracle-gated insert-only strategy for clean hub/link batches and declines unsupported shapes so the provider-neutral fallback writer handles them. `DCoding.Data.DVault.MySql` targets `Pomelo.EntityFrameworkCore.MySql`, registers that Pomelo provider name for the existing `ApplyDataVaultMetadata(...)` capability-profile selection path, and registers an optimized MySQL strategy for clean Pomelo contexts. Provider strategies decline incompatible contexts so the provider-neutral fallback remains the caller-visible safety net.
 
 ### Query generated tables
 

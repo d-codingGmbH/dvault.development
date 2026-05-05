@@ -68,6 +68,7 @@ type public sealed class DCoding.Data.DVault.DataVaultProviderCapabilityProfile
   method public void RequireSqlFunction(string functionName)
 
 type public static class DCoding.Data.DVault.DataVaultProviderCapabilityProfiles
+  property public static DCoding.Data.DVault.DataVaultProviderCapabilityProfile MySql { get; }
   property public static DCoding.Data.DVault.DataVaultProviderCapabilityProfile Oracle { get; }
   property public static DCoding.Data.DVault.DataVaultProviderCapabilityProfile Sqlite { get; }
 

@@ -6,10 +6,9 @@ namespace DCoding.Data.DVault;
 
 internal static class DataVaultEfMetadataTranslator {
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
-  private static readonly DataVaultProviderCapabilityProfile ProviderCapabilities = DataVaultProviderCapabilityProfiles.Sqlite;
 
   public static void Apply(ModelBuilder modelBuilder, DataVaultMetadataModel metadataModel) {
-    Apply(modelBuilder, metadataModel, ProviderCapabilities);
+    Apply(modelBuilder, metadataModel, DataVaultProviderCapabilityProfileSelection.Select(modelBuilder));
   }
 
   internal static void Apply(

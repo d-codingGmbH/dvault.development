@@ -77,7 +77,6 @@ public sealed class DataVaultProviderCapabilityProfileTests {
             DataVaultLogicalPropertyKind.PayloadText,
         ],
         profile.TypeMappings.Select(mapping => mapping.LogicalPropertyKind));
-
     AssertMapping(
         profile,
         DataVaultLogicalPropertyKind.HashKey,
@@ -119,6 +118,69 @@ public sealed class DataVaultProviderCapabilityProfileTests {
         DataVaultLogicalPropertyKind.PayloadText,
         typeof(string),
         "CLOB",
+        DataVaultProviderValueFormat.Text);
+  }
+
+  [Fact]
+  public void MySqlPomeloProfileDeclaresBoundedTextAndTimestampMappings() {
+    var profile = DataVaultProviderCapabilityProfiles.MySql;
+
+    Assert.Equal("mysql-pomelo-v1", profile.ProfileName);
+    Assert.Equal(DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported, profile.SqlFunctionSupport);
+    Assert.Equal(DataVaultProviderConcurrencySupport.NoneInV1Unsupported, profile.ConcurrencySupport);
+    Assert.Equal(
+        [
+            DataVaultLogicalPropertyKind.HashKey,
+            DataVaultLogicalPropertyKind.HashDiff,
+            DataVaultLogicalPropertyKind.LoadTimestamp,
+            DataVaultLogicalPropertyKind.RecordSource,
+            DataVaultLogicalPropertyKind.ParticipantReference,
+            DataVaultLogicalPropertyKind.BusinessKey,
+            DataVaultLogicalPropertyKind.PayloadText,
+        ],
+        profile.TypeMappings.Select(mapping => mapping.LogicalPropertyKind));
+
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.HashKey,
+        typeof(string),
+        "varchar(64)",
+        DataVaultProviderValueFormat.Text);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.HashDiff,
+        typeof(string),
+        "varchar(64)",
+        DataVaultProviderValueFormat.Text);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.LoadTimestamp,
+        typeof(DateTimeOffset),
+        "varchar(33)",
+        DataVaultProviderValueFormat.Iso8601UtcText);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.RecordSource,
+        typeof(string),
+        "varchar(255)",
+        DataVaultProviderValueFormat.Text);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.ParticipantReference,
+        typeof(string),
+        "varchar(64)",
+        DataVaultProviderValueFormat.Text);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.BusinessKey,
+        typeof(string),
+        "varchar(255)",
+        DataVaultProviderValueFormat.Text);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.PayloadText,
+        typeof(string),
+        "longtext",
         DataVaultProviderValueFormat.Text);
   }
 

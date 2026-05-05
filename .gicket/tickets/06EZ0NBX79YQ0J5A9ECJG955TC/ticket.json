@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0NBX79YQ0J5A9ECJG955TC",
   "ticket-type": "task",
   "title": "Task: Implement MySQL provider capability profile and optimized writer boundary",
-  "revision": "06EZA6HSM0SYE438G0447MSB9W",
-  "status": "todo",
+  "revision": "06EZB3WXMQZRKM4CSADSPCPAE4",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
     "area/mysql",
     "area/performance",
-    "needs-dev"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:13:47.8371746Z",
-  "updated-at": "2026-05-04T22:27:09.8563793Z"
+  "updated-at": "2026-05-05T00:35:23.1737281Z"
 }

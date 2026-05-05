@@ -41,7 +41,7 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.MySqlProvider)]
   public void ProviderPackagesRegisterCoreSaveService() {
     AssertProviderRegistration(services => services.AddDVaultOracle(), expectProviderStrategy: true);
-    AssertProviderRegistration(services => services.AddDVaultMySql(), expectProviderStrategy: false);
+    AssertProviderRegistration(services => services.AddDVaultMySql(), expectProviderStrategy: true);
   }
 
   [Fact]
@@ -360,18 +360,23 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   private static void AssertProviderRegistration(
       Action<IServiceCollection> configure,
       bool expectProviderStrategy) {
-    var services = new ServiceCollection();
+    try {
+      var services = new ServiceCollection();
 
-    configure(services);
+      configure(services);
 
-    using var provider = services.BuildServiceProvider(validateScopes: true);
+      using var provider = services.BuildServiceProvider(validateScopes: true);
 
-    Assert.NotNull(provider.GetRequiredService<IDataVaultSaveService>());
-    if (expectProviderStrategy) {
-      Assert.NotEmpty(provider.GetServices<IDataVaultProviderSaveStrategy>());
+      Assert.NotNull(provider.GetRequiredService<IDataVaultSaveService>());
+      if (expectProviderStrategy) {
+        Assert.NotEmpty(provider.GetServices<IDataVaultProviderSaveStrategy>());
+      }
+      else {
+        Assert.Empty(provider.GetServices<IDataVaultProviderSaveStrategy>());
+      }
     }
-    else {
-      Assert.Empty(provider.GetServices<IDataVaultProviderSaveStrategy>());
+    finally {
+      DataVaultProviderCapabilityProfileSelection.Reset();
     }
   }
 
