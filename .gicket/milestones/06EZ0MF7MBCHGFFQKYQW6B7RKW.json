@@ -3,6 +3,6 @@
   "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
   "name": "v0.5.0 - Provider-specific optimization baseline",
   "description": "Establish provider-specific optimization contracts, implementations, tests, and benchmark evidence for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL while preserving the provider-neutral fallback.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-04T00:09:52.8028779Z"
 }
