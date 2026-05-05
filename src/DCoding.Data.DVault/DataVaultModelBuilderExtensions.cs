@@ -45,7 +45,11 @@ public static class DataVaultModelBuilderExtensions {
   public static ModelBuilder ApplyDataVaultMetadata(
       this ModelBuilder modelBuilder,
       DataVaultMetadataModel metadataModel) {
-    return modelBuilder.ApplyDataVaultMetadata(metadataModel, DefaultProviderCapabilities);
+    ArgumentNullException.ThrowIfNull(modelBuilder);
+
+    return modelBuilder.ApplyDataVaultMetadata(
+        metadataModel,
+        DataVaultProviderCapabilityProfileSelection.Select(modelBuilder));
   }
 
   /// <summary>

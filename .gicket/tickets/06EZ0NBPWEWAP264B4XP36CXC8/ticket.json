@@ -3,19 +3,18 @@
   "ticket-id": "06EZ0NBPWEWAP264B4XP36CXC8",
   "ticket-type": "story",
   "title": "Story: Optimize MySQL provider save strategy",
-  "revision": "06EZ0Y40W093WGWQ6HAKGN7HT0",
-  "status": "todo",
+  "revision": "06EZBGMVMF3P009KFXB67XP7NR",
+  "status": "done",
   "labels": [
-    "type/story",
-    "automation/bot-ready",
     "area/mysql",
-    "area/provider-support",
     "area/performance",
-    "needs-po"
+    "area/provider-support",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:13:46.4225460Z",
-  "updated-at": "2026-05-04T00:52:02.4000633Z"
+  "updated-at": "2026-05-05T01:31:04.9959156Z"
 }
