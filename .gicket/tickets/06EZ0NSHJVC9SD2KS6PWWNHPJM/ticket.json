@@ -3,7 +3,7 @@
   "ticket-id": "06EZ0NSHJVC9SD2KS6PWWNHPJM",
   "ticket-type": "task",
   "title": "Task: Publish deferred capability decision record",
-  "revision": "06EZJ3S25ZPKGF6MR18MXJ6A38",
+  "revision": "06EZMHYGAMY5DJDWFVVZ9FVT4W",
   "status": "done",
   "labels": [
     "area/architecture",
@@ -15,5 +15,5 @@
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:15:39.5397337Z",
-  "updated-at": "2026-05-05T16:53:31.8230665Z"
+  "updated-at": "2026-05-05T22:35:03.6370750Z"
 }
