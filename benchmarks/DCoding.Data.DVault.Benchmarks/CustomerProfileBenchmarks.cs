@@ -618,7 +618,7 @@ internal static class CustomerProfileBulkScenarios {
   private const int CustomerCount = 100;
   private const int SampleCustomerIndex = 42;
   private static readonly DateTimeOffset BaseTimestamp = new(2026, 4, 29, 10, 0, 0, TimeSpan.Zero);
-  private static readonly int[] ScaleCustomerCounts = [10, 100, 1000];
+  private static readonly int[] ScaleCustomerCounts = [10, 100, 1000, 10000];
 
   public static readonly CustomerProfileBulkScenarioDefinition InsertOnly = new(
       "customer-profile-bulk-insert-only",
