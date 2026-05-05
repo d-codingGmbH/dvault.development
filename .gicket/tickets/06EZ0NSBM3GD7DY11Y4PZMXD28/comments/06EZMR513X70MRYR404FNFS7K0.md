@@ -1,0 +1,32 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `2` selected relation flow(s) for source ticket `06EZ0NSBM3GD7DY11Y4PZMXD28`.
+- Role `po-critic` completed with outcome `po-critic-non-blocking-apply` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `6`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `217cf1060a0f4be49e036b4157923c22`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06EZ0NSXY2Y1JZ8SSCX177C770` via `blocks` path `06EZ0NSBM3GD7DY11Y4PZMXD28 -> 06EZ0NSXY2Y1JZ8SSCX177C770`
+- [queued] `blocked-follow-up-comment` -> `06EZ0NTV4SVAKV98C418T8A3CC` via `blocks` path `06EZ0NSBM3GD7DY11Y4PZMXD28 -> 06EZ0NTV4SVAKV98C418T8A3CC`
+- [queued] `blocked-follow-up-comment` -> `06EZ0NVN71BN0QWJDCWGVZ2PYG` via `blocks` path `06EZ0NSBM3GD7DY11Y4PZMXD28 -> 06EZ0NVN71BN0QWJDCWGVZ2PYG`
+- [queued] `blocked-follow-up-comment` -> `06EZ0NWKC9ZME5BSCJFSQEQ02R` via `blocks` path `06EZ0NSBM3GD7DY11Y4PZMXD28 -> 06EZ0NWKC9ZME5BSCJFSQEQ02R`
+- [queued] `child-follow-up-comment` -> `06EZ0NSHJVC9SD2KS6PWWNHPJM` via `parentOf` path `06EZ0NSBM3GD7DY11Y4PZMXD28 -> 06EZ0NSHJVC9SD2KS6PWWNHPJM`
+- [queued] `child-follow-up-comment` -> `06EZ0NSQFCD3W4CDCJ44GFSKA0` via `parentOf` path `06EZ0NSBM3GD7DY11Y4PZMXD28 -> 06EZ0NSQFCD3W4CDCJ44GFSKA0`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06EZ0NSBM3GD7DY11Y4PZMXD28` owner `ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f` base `develop` source-owner `ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06EZ0NSXY2Y1JZ8SSCX177C770` owner `ticket/06EZ0NSXY2Y1JZ8SSCX177C770-story-add-pit-table-modeling-and-generation` base `develop` source-owner `ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f`: Target ticket owner branch 'ticket/06EZ0NSXY2Y1JZ8SSCX177C770-story-add-pit-table-modeling-and-generation' differs from source owner branch 'ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06EZ0NTV4SVAKV98C418T8A3CC` owner `ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation` base `develop` source-owner `ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f`: Target ticket owner branch 'ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation' differs from source owner branch 'ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06EZ0NVN71BN0QWJDCWGVZ2PYG` owner `ticket/06EZ0NVN71BN0QWJDCWGVZ2PYG-story-add-multi-active-satellite-modeling` base `develop` source-owner `ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f`: Target ticket owner branch 'ticket/06EZ0NVN71BN0QWJDCWGVZ2PYG-story-add-multi-active-satellite-modeling' differs from source owner branch 'ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06EZ0NWKC9ZME5BSCJFSQEQ02R` owner `ticket/06EZ0NWKC9ZME5BSCJFSQEQ02R-story-expose-advanced-configuration-hooks-needed` base `develop` source-owner `ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f`: Target ticket owner branch 'ticket/06EZ0NWKC9ZME5BSCJFSQEQ02R-story-expose-advanced-configuration-hooks-needed' differs from source owner branch 'ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06EZ0NSHJVC9SD2KS6PWWNHPJM` owner `ticket/06EZ0NSHJVC9SD2KS6PWWNHPJM-task-publish-deferred-capability-decision-record` base `develop` source-owner `ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f`: Target ticket owner branch 'ticket/06EZ0NSHJVC9SD2KS6PWWNHPJM-task-publish-deferred-capability-decision-record' differs from source owner branch 'ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06EZ0NSQFCD3W4CDCJ44GFSKA0` owner `ticket/06EZ0NSQFCD3W4CDCJ44GFSKA0-task-add-api-snapshot-guardrails-for-deferred-ca` base `develop` source-owner `ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f`: Target ticket owner branch 'ticket/06EZ0NSQFCD3W4CDCJ44GFSKA0-task-add-api-snapshot-guardrails-for-deferred-ca' differs from source owner branch 'ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f'.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06EZ0NSXY2Y1JZ8SSCX177C770` on owner branch `ticket/06EZ0NSXY2Y1JZ8SSCX177C770-story-add-pit-table-modeling-and-generation` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06EZ0NTV4SVAKV98C418T8A3CC` on owner branch `ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06EZ0NVN71BN0QWJDCWGVZ2PYG` on owner branch `ticket/06EZ0NVN71BN0QWJDCWGVZ2PYG-story-add-multi-active-satellite-modeling` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06EZ0NWKC9ZME5BSCJFSQEQ02R` on owner branch `ticket/06EZ0NWKC9ZME5BSCJFSQEQ02R-story-expose-advanced-configuration-hooks-needed` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `child-follow-up-target` to `06EZ0NSHJVC9SD2KS6PWWNHPJM` on owner branch `ticket/06EZ0NSHJVC9SD2KS6PWWNHPJM-task-publish-deferred-capability-decision-record` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `child-follow-up-target` to `06EZ0NSQFCD3W4CDCJ44GFSKA0` on owner branch `ticket/06EZ0NSQFCD3W4CDCJ44GFSKA0-task-add-api-snapshot-guardrails-for-deferred-ca` after that branch is refreshed/rebased.

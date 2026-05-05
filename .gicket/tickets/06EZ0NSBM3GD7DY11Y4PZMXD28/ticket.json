@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0NSBM3GD7DY11Y4PZMXD28",
   "ticket-type": "story",
   "title": "Story: Define capability extension architecture for deferred Data Vault patterns",
-  "revision": "06EZ0Y5BE27HYF4AYNCKWX8ZR0",
-  "status": "todo",
+  "revision": "06EZMVN07CMQ7RESHJ7STQ2Z44",
+  "status": "done",
   "labels": [
-    "type/story",
-    "automation/bot-ready",
     "area/architecture",
     "area/modeling",
-    "needs-po"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:15:38.0177481Z",
-  "updated-at": "2026-05-04T00:52:13.2961222Z"
+  "updated-at": "2026-05-05T23:17:27.2278890Z"
 }
