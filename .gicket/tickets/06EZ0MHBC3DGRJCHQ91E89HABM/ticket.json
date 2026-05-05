@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0MHBC3DGRJCHQ91E89HABM",
   "ticket-type": "epic",
   "title": "Epic: Provider-specific database optimizations",
-  "revision": "06EZEHP2EQKBBA2BBNHMVWD2FM",
-  "status": "todo",
+  "revision": "06EZF5DSY2SQ74R2EF3TA3GZ58",
+  "status": "done",
   "labels": [
     "area/performance",
     "area/provider-support",
-    "type/epic",
-    "needs-po",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:10:10.5631976Z",
-  "updated-at": "2026-05-05T08:35:02.9011792Z"
+  "updated-at": "2026-05-05T10:01:18.0640000Z"
 }
