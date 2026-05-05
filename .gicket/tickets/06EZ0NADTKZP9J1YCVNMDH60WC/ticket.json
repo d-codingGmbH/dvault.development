@@ -3,19 +3,18 @@
   "ticket-id": "06EZ0NADTKZP9J1YCVNMDH60WC",
   "ticket-type": "story",
   "title": "Story: Optimize SQL Server provider save strategy",
-  "revision": "06EZ0Y3XDRJCPMWNNRXQR0BN58",
-  "status": "todo",
+  "revision": "06EZB96XEPMHTHZPRV1DH3H3Z4",
+  "status": "done",
   "labels": [
-    "type/story",
-    "automation/bot-ready",
-    "area/sql-server",
-    "area/provider-support",
     "area/performance",
-    "needs-po"
+    "area/provider-support",
+    "area/sql-server",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF7MBCHGFFQKYQW6B7RKW",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:13:35.8588608Z",
-  "updated-at": "2026-05-04T00:52:01.5180002Z"
+  "updated-at": "2026-05-05T00:58:35.7652644Z"
 }
