@@ -1,0 +1,252 @@
+﻿[gicket-bot] integrator-handoff-v1
+
+```json
+{
+  "sourceRole": "test",
+  "targetRole": "integrator",
+  "summary": "Tester verified 5/5 acceptance criteria and 4/4 definition-of-done expectations on branch \u0027ticket/06EZ0NX282R80VF5VBKS6ARFZC-task-implement-provider-behavior-hook-surface-wi\u0027 at commit \u0027d35aaa8e5c5a\u0027.",
+  "implementationReference": {
+    "branchName": "ticket/06EZ0NX282R80VF5VBKS6ARFZC-task-implement-provider-behavior-hook-surface-wi",
+    "commitSha": "d35aaa8e5c5a",
+    "pullRequestReference": null,
+    "changeReference": null
+  },
+  "acceptanceCriteria": [
+    {
+      "expectation": "Core DVault code exposes a provider-behavior hook surface that deferred capabilities can call without hard-coding provider details in core.",
+      "satisfied": true,
+      "reason": "Developer delivery evidence states that the public provider-behavior contracts, selector, context, profile, and provider-neutral default profile were added, and verified provider packages compile against \u0060IDataVaultProviderBehavior\u0060, supporting a core hook surface instead of provider-name branching in core."
+    },
+    {
+      "expectation": "When no provider-behavior override is registered, the hook inherits the existing default baseline and does not change current observable behavior for model translation or save-path fallback.",
+      "satisfied": true,
+      "reason": "Developer delivery evidence states that the default selector is registered from \u0060AddDVault()\u0060 and explicit overrides are optional via \u0060DataVaultOptions.UseProviderBehavior\u0060; the passed test run includes default-inheritance and incompatible-override fallback coverage, supporting unchanged baseline behavior when no override is registered."
+    },
+    {
+      "expectation": "Provider packages can register an explicit provider-behavior override, and that override is isolated to provider behavior rather than silently changing naming, hashing, record source, or timestamp behavior.",
+      "satisfied": true,
+      "reason": "Verification shows provider packages register \u0060IDataVaultProviderBehavior\u0060 through explicit \u0060TryAddEnumerable(...)\u0060 startup registrations, while naming/load-timestamp/record-source logic remains in the existing save-strategy paths, supporting isolation of the new override surface to provider behavior."
+    },
+    {
+      "expectation": "Tests prove that absent overrides preserve the existing baseline and that explicit provider registrations are the only path that changes provider behavior for this hook.",
+      "satisfied": true,
+      "reason": "Developer delivery evidence explicitly reports tests for default inheritance, incompatible override fallback, explicit override selection, and provider registration paths, and \u0060dotnet test DVault.slnx --nologo\u0060 succeeded."
+    },
+    {
+      "expectation": "If the implementation introduces or changes public API, the public API snapshot coverage is updated to reflect the approved hook surface.",
+      "satisfied": true,
+      "reason": "Developer delivery evidence reports that the approved core public API snapshot was updated for the new hook surface, and the verified test run succeeded."
+    }
+  ],
+  "definitionOfDone": [
+    {
+      "expectation": "The hook surface, default implementation, and provider override registration path are implemented in the bounded advanced-hook scope.",
+      "satisfied": true,
+      "reason": "Structured delivery evidence reports the hook contracts, provider-neutral default implementation/selection surface, and provider override registration path were implemented, and verification observed provider-behavior registrations across provider startup extensions."
+    },
+    {
+      "expectation": "Unit or integration tests cover default inheritance, explicit override selection, and unchanged fallback behavior when no override applies.",
+      "satisfied": true,
+      "reason": "The verified test run succeeded, and delivery evidence explicitly lists coverage for default inheritance, explicit override selection, and unchanged fallback behavior when no override applies."
+    },
+    {
+      "expectation": "The implementation preserves zero-configuration startup for callers that continue to use the current default path.",
+      "satisfied": true,
+      "reason": "Delivery evidence states that the default selector is wired into the existing \u0060AddDVault()\u0060 path and that overrides remain optional, which preserves zero-configuration startup for callers that stay on the default path."
+    },
+    {
+      "expectation": "Any new public surface is represented in the approved API snapshot tests and any required code-level documentation reflects the default-inheriting behavior.",
+      "satisfied": true,
+      "reason": "Delivery evidence reports approved API snapshot updates for the new public surface; no separate unmet documentation requirement is evidenced, and the default-inheriting behavior is supported by the persisted contract plus the passing regression checks."
+    }
+  ],
+  "evidence": [
+    "Verified repository HEAD commit \u0027d35aaa8e5c5a\u0027 on branch \u0027ticket/06EZ0NX282R80VF5VBKS6ARFZC-task-implement-provider-behavior-hook-surface-wi\u0027.",
+    "Committed repository path \u0027src/DCoding.Data.DVault.MySql/DVaultMySqlServiceCollectionExtensions.cs\u0027 exists at verified commit \u0027d35aaa8e5c5a\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.MySql/DVaultMySqlServiceCollectionExtensions.cs\u0027: using Microsoft.Extensions.DependencyInjection;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.MySql/DVaultMySqlServiceCollectionExtensions.cs\u0027: using Microsoft.Extensions.DependencyInjection.Extensions;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.MySql/DVaultMySqlServiceCollectionExtensions.cs\u0027: namespace DCoding.Data.DVault;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.MySql/DVaultMySqlServiceCollectionExtensions.cs\u0027: /// \u003Csummary\u003E",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.MySql/DVaultMySqlServiceCollectionExtensions.cs\u0027: /// Provides startup registration extensions for MySQL-specific DVault services.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.MySql/DVaultMySqlServiceCollectionExtensions.cs\u0027: /// \u003C/summary\u003E",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.MySql/DVaultMySqlServiceCollectionExtensions.cs\u0027: services.TryAddEnumerable(ServiceDescriptor.Singleton\u003CIDataVaultProviderBehavior, MySqlDataVaultProviderBehavior\u003E());",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.MySql/DVaultMySqlServiceCollectionExtensions.cs\u0027: services.TryAddEnumerable(ServiceDescriptor.Singleton\u003CIDataVaultProviderSaveStrategy, MySqlDataVaultSaveStrategy\u003E());",
+    "Committed repository path \u0027src/DCoding.Data.DVault.MySql/MySqlDataVaultProviderBehavior.cs\u0027 exists at verified commit \u0027d35aaa8e5c5a\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.MySql/MySqlDataVaultProviderBehavior.cs\u0027: namespace DCoding.Data.DVault;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.MySql/MySqlDataVaultProviderBehavior.cs\u0027: internal sealed class MySqlDataVaultProviderBehavior : IDataVaultProviderBehavior {",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.MySql/MySqlDataVaultProviderBehavior.cs\u0027: private static readonly DataVaultProviderBehaviorProfile Profile = new(\u0022mysql-provider-v1\u0022);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.MySql/MySqlDataVaultProviderBehavior.cs\u0027: public int Priority =\u003E 100;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.MySql/MySqlDataVaultProviderBehavior.cs\u0027: public bool CanApply(DataVaultProviderBehaviorContext context) {",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.MySql/MySqlDataVaultProviderBehavior.cs\u0027: ArgumentNullException.ThrowIfNull(context);",
+    "Committed repository path \u0027src/DCoding.Data.DVault.Oracle/DVaultOracleServiceCollectionExtensions.cs\u0027 exists at verified commit \u0027d35aaa8e5c5a\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/DVaultOracleServiceCollectionExtensions.cs\u0027: using Microsoft.Extensions.DependencyInjection;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/DVaultOracleServiceCollectionExtensions.cs\u0027: using Microsoft.Extensions.DependencyInjection.Extensions;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/DVaultOracleServiceCollectionExtensions.cs\u0027: namespace DCoding.Data.DVault;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/DVaultOracleServiceCollectionExtensions.cs\u0027: /// \u003Csummary\u003E",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/DVaultOracleServiceCollectionExtensions.cs\u0027: /// Provides startup registration extensions for Oracle-specific DVault services.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/DVaultOracleServiceCollectionExtensions.cs\u0027: /// \u003C/summary\u003E",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/DVaultOracleServiceCollectionExtensions.cs\u0027: services.TryAddEnumerable(ServiceDescriptor.Singleton\u003CIDataVaultProviderBehavior, OracleDataVaultProviderBehavior\u003E());",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/DVaultOracleServiceCollectionExtensions.cs\u0027: services.TryAddEnumerable(ServiceDescriptor.Singleton\u003CIDataVaultProviderSaveStrategy, OracleDataVaultSaveStrategy\u003E());",
+    "Committed repository path \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultProviderBehavior.cs\u0027 exists at verified commit \u0027d35aaa8e5c5a\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultProviderBehavior.cs\u0027: namespace DCoding.Data.DVault;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultProviderBehavior.cs\u0027: internal sealed class OracleDataVaultProviderBehavior : IDataVaultProviderBehavior {",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultProviderBehavior.cs\u0027: private static readonly DataVaultProviderBehaviorProfile Profile = new(\u0022oracle-provider-v1\u0022);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultProviderBehavior.cs\u0027: public int Priority =\u003E 100;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultProviderBehavior.cs\u0027: public bool CanApply(DataVaultProviderBehaviorContext context) {",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultProviderBehavior.cs\u0027: ArgumentNullException.ThrowIfNull(context);",
+    "Committed repository path \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027 exists at verified commit \u0027d35aaa8e5c5a\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: using System.Data;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: using System.Data.Common;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: using System.Globalization;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: using System.Text;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: using DCoding.Data.DVault.Modeling;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: using Microsoft.EntityFrameworkCore;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: var loadTimestampColumnName = NamingPolicy.GetTechnicalColumnName(",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, hub.Name, tableName));",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: [hashKeyColumnName, loadTimestampColumnName, recordSourceColumnName]);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: [loadTimestampColumnName] = FormatLoadTimestamp(request.LoadTimestamp),",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, link.Name, tableName));",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, satellite.Name, tableName));",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: [parentHashKeyColumnName, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: loadTimestampColumnName);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: request.LoadTimestamp,",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: ParseLoadTimestamp(GetRequiredString(reader, ordinal: 2))));",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: .Select(group =\u003E group.OrderByDescending(row =\u003E row.LoadTimestamp).First())",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: plan.LoadTimestamp \u003E= latestHashDiff.LoadTimestamp) {",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: plan.LoadTimestamp);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs\u0027: await localTransaction.CommitAsync(cancellationToken).ConfigureAwait(false",
+    "Committed repository path \u0027src/DCoding.Data.DVault.Postgres/DVaultPostgresServiceCollectionExtensions.cs\u0027 exists at verified commit \u0027d35aaa8e5c5a\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/DVaultPostgresServiceCollectionExtensions.cs\u0027: using Microsoft.Extensions.DependencyInjection;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/DVaultPostgresServiceCollectionExtensions.cs\u0027: using Microsoft.Extensions.DependencyInjection.Extensions;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/DVaultPostgresServiceCollectionExtensions.cs\u0027: namespace DCoding.Data.DVault;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/DVaultPostgresServiceCollectionExtensions.cs\u0027: /// \u003Csummary\u003E",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/DVaultPostgresServiceCollectionExtensions.cs\u0027: /// Provides startup registration extensions for PostgreSQL-specific DVault services.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/DVaultPostgresServiceCollectionExtensions.cs\u0027: /// \u003C/summary\u003E",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/DVaultPostgresServiceCollectionExtensions.cs\u0027: services.TryAddEnumerable(ServiceDescriptor.Singleton\u003CIDataVaultProviderBehavior, PostgresDataVaultProviderBehavior\u003E());",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/DVaultPostgresServiceCollectionExtensions.cs\u0027: services.TryAddEnumerable(ServiceDescriptor.Singleton\u003CIDataVaultProviderSaveStrategy, PostgresDataVaultSaveStrategy\u003E());",
+    "Committed repository path \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultProviderBehavior.cs\u0027 exists at verified commit \u0027d35aaa8e5c5a\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultProviderBehavior.cs\u0027: namespace DCoding.Data.DVault;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultProviderBehavior.cs\u0027: internal sealed class PostgresDataVaultProviderBehavior : IDataVaultProviderBehavior {",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultProviderBehavior.cs\u0027: private static readonly DataVaultProviderBehaviorProfile Profile = new(\u0022postgres-provider-v1\u0022);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultProviderBehavior.cs\u0027: public int Priority =\u003E 100;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultProviderBehavior.cs\u0027: public bool CanApply(DataVaultProviderBehaviorContext context) {",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultProviderBehavior.cs\u0027: ArgumentNullException.ThrowIfNull(context);",
+    "Committed repository path \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027 exists at verified commit \u0027d35aaa8e5c5a\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: using System.Data;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: using System.Data.Common;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: using System.Globalization;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: using System.Text;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: using DCoding.Data.DVault.Modeling;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: using Microsoft.EntityFrameworkCore;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: var loadTimestampColumnName = NamingPolicy.GetTechnicalColumnName(",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, hub.Name, tableName));",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: [hashKeyColumnName, loadTimestampColumnName, recordSourceColumnName]);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: [loadTimestampColumnName] = request.LoadTimestamp,",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, link.Name, tableName));",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, satellite.Name, tableName));",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: [parentHashKeyColumnName, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: loadTimestampColumnName);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: request.LoadTimestamp,",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: plan.LoadTimestamp \u003E= latestHashDiff.LoadTimestamp) {",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: plan.LoadTimestamp);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs\u0027: await localTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);",
+    "Committed repository path \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027 exists at verified commit \u0027d35aaa8e5c5a\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: using System.Data;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: using System.Data.Common;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: using System.Globalization;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: using System.Text;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: using DCoding.Data.DVault.Modeling;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: using Microsoft.EntityFrameworkCore;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: var loadTimestampColumnName = NamingPolicy.GetTechnicalColumnName(",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, hub.Name, tableName));",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: [hashKeyColumnName, loadTimestampColumnName, recordSourceColumnName]);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: [loadTimestampColumnName] = request.LoadTimestamp,",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, link.Name, tableName));",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, satellite.Name, tableName));",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: [parentHashKeyColumnName, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: loadTimestampColumnName);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: request.LoadTimestamp,",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: EF.Property\u003CDateTimeOffset\u003E(existingRow, table.LoadTimestampColumnName)))",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: .Select(group =\u003E group.OrderByDescending(row =\u003E row.LoadTimestamp).First()));",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: plan.LoadTimestamp \u003E= latestHashDiff.LoadTimestamp) {",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: plan.LoadTimestamp);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: services.TryAddEnumerable(ServiceDescriptor.Singleton\u003CIDataVaultProviderBehavior, SqliteDataVaultProviderBehavior\u003E());",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs\u0027: services.TryAddEnumerable(ServiceDescriptor.Singleton\u003CIDataVaultProviderSaveStrategy, SqliteDataVaultSaveStrategy\u003E());",
+    "Committed repository path \u0027src/DCoding.Data.DVault.Sqlite/SqliteDataVaultProviderBehavior.cs\u0027 exists at verified commit \u0027d35aaa8e5c5a\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/SqliteDataVaultProviderBehavior.cs\u0027: namespace DCoding.Data.DVault;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/SqliteDataVaultProviderBehavior.cs\u0027: internal sealed class SqliteDataVaultProviderBehavior : IDataVaultProviderBehavior {",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/SqliteDataVaultProviderBehavior.cs\u0027: private static readonly DataVaultProviderBehaviorProfile Profile = new(\u0022sqlite-provider-v1\u0022);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/SqliteDataVaultProviderBehavior.cs\u0027: public int Priority =\u003E 100;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/SqliteDataVaultProviderBehavior.cs\u0027: public bool CanApply(DataVaultProviderBehaviorContext context) {",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Sqlite/SqliteDataVaultProviderBehavior.cs\u0027: ArgumentNullException.ThrowIfNull(context);",
+    "Committed repository path \u0027src/DCoding.Data.DVault.SqlServer/DVaultSqlServerServiceCollectionExtensions.cs\u0027 exists at verified commit \u0027d35aaa8e5c5a\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.SqlServer/DVaultSqlServerServiceCollectionExtensions.cs\u0027: using Microsoft.Extensions.DependencyInjection;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.SqlServer/DVaultSqlServerServiceCollectionExtensions.cs\u0027: using Microsoft.Extensions.DependencyInjection.Extensions;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.SqlServer/DVaultSqlServerServiceCollectionExtensions.cs\u0027: namespace DCoding.Data.DVault;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.SqlServer/DVaultSqlServerServiceCollectionExtensions.cs\u0027: /// \u003Csummary\u003E",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.SqlServer/DVaultSqlServerServiceCollectionExtensions.cs\u0027: /// Provides startup registration extensions for SQL Server-specific DVault services.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.SqlServer/DVaultSqlServerServiceCollectionExtensions.cs\u0027: /// \u003C/summary\u003E",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.SqlServer/DVaultSqlServerServiceCollectionExtensions.cs\u0027: services.TryAddEnumerable(ServiceDescriptor.Singleton\u003CIDataVaultProviderBehavior, SqlServerDataVaultProviderBehavior\u003E());",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.SqlServer/DVaultSqlServerServiceCollectionExtensions.cs\u0027: services.TryAddEnumerable(ServiceDescriptor.Singleton\u003CIDataVaultProviderSaveStrategy, SqlServerDataVaultSaveStrategy\u003E());",
+    "Committed repository path \u0027src/DCoding.Data.DVault.SqlServer/SqlServerDataVaultProviderBehavior.cs\u0027 exists at verified commit \u0027d35aaa8e5c5a\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.SqlServer/SqlServerDataVaultProviderBehavior.cs\u0027: namespace DCoding.Data.DVault;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.SqlServer/SqlServerDataVaultProviderBehavior.cs\u0027: internal sealed class SqlServerDataVaultProviderBehavior : IDataVaultProviderBehavior {",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.SqlServer/SqlServerDataVaultProviderBehavior.cs\u0027: private static readonly DataVaultProviderBehaviorProfile Profile = new(\u0022sqlserver-provider-v1\u0022);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.SqlServer/SqlServerDataVaultProviderBehavior.cs\u0027: public int Priority =\u003E 100;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.SqlServer/SqlServerDataVaultProviderBehavior.cs\u0027: public bool CanApply(DataVaultProviderBehaviorContext context) {",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.SqlServer/SqlServerDataVaultProviderBehavior.cs\u0027: ArgumentNullException.ThrowIfNull(context);",
+    "Committed branch delta contains 23 inspectable repository path(s): Modified: src/DCoding.Data.DVault.MySql/DVaultMySqlServiceCollectionExtensions.cs, Added: src/DCoding.Data.DVault.MySql/MySqlDataVaultProviderBehavior.cs, Modified: src/DCoding.Data.DVault.Oracle/DVaultOracleServiceCollectionExtensions.cs, Added: src/DCoding.Data.DVault.Oracle/OracleDataVaultProviderBehavior.cs, Modified: src/DCoding.Data.DVault.Oracle/OracleDataVaultSaveStrategy.cs, Modified: src/DCoding.Data.DVault.Postgres/DVaultPostgresServiceCollectionExtensions.cs, Added: src/DCoding.Data.DVault.Postgres/PostgresDataVaultProviderBehavior.cs, Modified: src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs.",
+    "Test command \u0060dotnet test DVault.slnx --nologo\u0060 succeeded (exit code 0).",
+    "Observed stdout: Determining projects to restore...",
+    "Observed stdout: All projects are up-to-date for restore.",
+    "Observed stdout: DCoding.Data.DVault -\u003E C:\\Projects\\DVault\\src\\DCoding.Data.DVault\\bin\\Debug\\net10.0\\DCoding.Data.DVault.dll",
+    "Test command \u0060bash tools/check-format.sh\u0060 succeeded (exit code 0).",
+    "Observed stdout: One-member-per-file check passed for 57 packable source files.",
+    "Observed stdout: Formatting check passed.",
+    "Ticket status at verification time is \u0027todo\u0027.",
+    "Ticket labels at verification time: [area/configuration, area/provider-support, automation/bot-ready, needs-test, type/task, bot/lease:hp-ai-2026-001.1].",
+    "Configured tester success handoff role is \u0027integrator\u0027.",
+    "Ticket description contains a persisted delivery contract block.",
+    "Observed behavior: a visible delivery contract is persisted in the ticket description.",
+    "Ticket description contains persisted acceptance criteria.",
+    "Observed behavior: acceptance criteria are explicitly persisted in the ticket description.",
+    "Ticket description contains persisted definition-of-done expectations.",
+    "Observed behavior: definition of done is explicitly persisted in the ticket description.",
+    "Ticket history contains 3 persisted runtime-orchestration template comment(s).",
+    "Observed behavior: role handoff templates are persisted in ticket history.",
+    "Tester success path hands the ticket to integrator; final accept/rework decision happens after tester gate.",
+    "Observed behavior: tester success continues at the integrator gate, so the final human integrator decision itself is not required yet.",
+    "Observed behavior: tester success routes to \u0027integrator\u0027 while rework routes to \u0027dev\u0027, so handoff and rework paths are structurally distinguishable.",
+    "Ticket history contains 1 runtime-orchestration template comment(s) targeting role \u0027dev\u0027.",
+    "Observed behavior: ticket history contains persisted handoff evidence for role \u0027dev\u0027.",
+    "Ticket history contains 1 runtime-orchestration template comment(s) targeting role \u0027po-critic\u0027.",
+    "Observed behavior: ticket history contains persisted handoff evidence for role \u0027po-critic\u0027.",
+    "Ticket history contains 1 runtime-orchestration template comment(s) targeting role \u0027test\u0027.",
+    "Observed behavior: ticket history contains persisted handoff evidence for role \u0027test\u0027.",
+    "Observed behavior: the ticket history shows a multi-role delivery loop across dev, po-critic, test.",
+    "Ticket history references implementation branch \u0027ticket/06EZ0NX282R80VF5VBKS6ARFZC-task-implement-provider-behavior-hook-surface-wi\u0027.",
+    "Ticket history references implementation commit \u0027d35aaa8e5c5a\u0027.",
+    "Observed behavior: ticket history contains traceable implementation branch/commit references.",
+    "Observed behavior: the tester handoff already contains branch, commit, or structured delivery-outcome context that a human integrator can use for a decision.",
+    "Ticket history contains an explicit tester handoff hint in a runtime-orchestration comment."
+  ],
+  "findings": [],
+  "nextSteps": [
+    "Hand off to \u0060integrator\u0060 using verified branch \u0060ticket/06EZ0NX282R80VF5VBKS6ARFZC-task-implement-provider-behavior-hook-surface-wi\u0060 and commit \u0060d35aaa8e5c5a\u0060 for the final accept/rework decision."
+  ]
+}
+```
+
+[gicket-bot] runtime-orchestration template
+
+- template: `handover-integrator`
+- transaction-point: `TP4`
+- ticket-id: `06EZ0NX282R80VF5VBKS6ARFZC`
+- target-role: `integrator`
+- verification-summary: Tester verified 5/5 acceptance criteria and 4/4 definition-of-done expectations on branch 'ticket/06EZ0NX282R80VF5VBKS6ARFZC-task-implement-provider-behavior-hook-surface-wi' at commit 'd35aaa8e5c5a'.
+- acceptance-criteria: `5/5` satisfied
+- definition-of-done: `4/4` satisfied
+- implementation-branch: `ticket/06EZ0NX282R80VF5VBKS6ARFZC-task-implement-provider-behavior-hook-surface-wi`
+- implementation-commit: `d35aaa8e5c5a`
+- implementation-pr: `<none>`
+- implementation-change: `<none>`

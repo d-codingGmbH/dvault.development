@@ -11,8 +11,9 @@ namespace DCoding.Data.DVault;
 internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrategy {
   private const int MinimumOptimizedBatchOperationCount = 50;
   private const int MaximumOptimizedSatelliteOperationCount = 200;
-  private const string OracleProviderName = "Oracle.EntityFrameworkCore";
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
+
+  internal const string OracleProviderName = "Oracle.EntityFrameworkCore";
 
   public int Priority => 100;
 

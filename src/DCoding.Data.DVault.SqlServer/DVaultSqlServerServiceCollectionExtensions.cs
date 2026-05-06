@@ -16,6 +16,7 @@ public static class DVaultSqlServerServiceCollectionExtensions {
     ArgumentNullException.ThrowIfNull(services);
 
     services.AddDVault();
+    services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBehavior, SqlServerDataVaultProviderBehavior>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, SqlServerDataVaultSaveStrategy>());
 
     return services;

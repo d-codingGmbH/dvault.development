@@ -11,8 +11,9 @@ namespace DCoding.Data.DVault;
 
 internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStrategy {
   private const int PostgresMaxCommandParameterCount = 30000;
-  private const string NpgsqlProviderName = "Npgsql.EntityFrameworkCore.PostgreSQL";
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
+
+  internal const string NpgsqlProviderName = "Npgsql.EntityFrameworkCore.PostgreSQL";
 
   public int Priority => 100;
 

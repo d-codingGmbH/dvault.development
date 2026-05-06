@@ -16,6 +16,7 @@ public static class DVaultOracleServiceCollectionExtensions {
     ArgumentNullException.ThrowIfNull(services);
 
     services.AddDVault();
+    services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBehavior, OracleDataVaultProviderBehavior>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, OracleDataVaultSaveStrategy>());
 
     return services;

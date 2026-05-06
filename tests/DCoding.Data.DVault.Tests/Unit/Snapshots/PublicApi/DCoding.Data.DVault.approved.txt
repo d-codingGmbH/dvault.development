@@ -60,6 +60,8 @@ type public sealed class DCoding.Data.DVault.DataVaultOptions
   ctor public DataVaultOptions()
   method public DCoding.Data.DVault.DataVaultOptions UseLoadTimestampResolver(DCoding.Data.DVault.IDataVaultLoadTimestampResolver resolver)
   method public DCoding.Data.DVault.DataVaultOptions UseLoadTimestampResolver<TResolver>() where TResolver : class, DCoding.Data.DVault.IDataVaultLoadTimestampResolver
+  method public DCoding.Data.DVault.DataVaultOptions UseProviderBehavior(DCoding.Data.DVault.IDataVaultProviderBehavior providerBehavior)
+  method public DCoding.Data.DVault.DataVaultOptions UseProviderBehavior<TProviderBehavior>() where TProviderBehavior : class, DCoding.Data.DVault.IDataVaultProviderBehavior
   method public DCoding.Data.DVault.DataVaultOptions UseRecordSourceResolver(DCoding.Data.DVault.IDataVaultRecordSourceResolver resolver)
   method public DCoding.Data.DVault.DataVaultOptions UseRecordSourceResolver<TResolver>() where TResolver : class, DCoding.Data.DVault.IDataVaultRecordSourceResolver
 
@@ -68,6 +70,19 @@ type public enum DCoding.Data.DVault.DataVaultPropertyRole
   value BusinessKey = 1
   value ParticipantReference = 2
   value Payload = 3
+
+type public sealed class DCoding.Data.DVault.DataVaultProviderBehaviorContext
+  ctor public DataVaultProviderBehaviorContext(Microsoft.EntityFrameworkCore.DbContext dbContext)
+  ctor public DataVaultProviderBehaviorContext(string? providerName)
+  property public Microsoft.EntityFrameworkCore.DbContext? DbContext { get; }
+  property public string? ProviderName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultProviderBehaviorProfile
+  ctor public DataVaultProviderBehaviorProfile(string profileName)
+  property public string ProfileName { get; }
+
+type public static class DCoding.Data.DVault.DataVaultProviderBehaviorProfiles
+  property public static DCoding.Data.DVault.DataVaultProviderBehaviorProfile ProviderNeutral { get; }
 
 type public sealed class DCoding.Data.DVault.DataVaultProviderCapabilityProfile
   ctor public DataVaultProviderCapabilityProfile(string profileName, DCoding.Data.DVault.DataVaultProviderSqlFunctionSupport sqlFunctionSupport, DCoding.Data.DVault.DataVaultProviderConcurrencySupport concurrencySupport, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultProviderTypeMapping> typeMappings, int? maximumIdentifierLength = null, bool allowsIndexesCoveredByPrimaryKey = true)
@@ -160,6 +175,15 @@ type public sealed class DCoding.Data.DVault.DataVaultSavedRecord
 
 type public interface DCoding.Data.DVault.IDataVaultLoadTimestampResolver
   method public abstract System.DateTimeOffset? ResolveLoadTimestamp(DCoding.Data.DVault.DataVaultLoadTimestampResolutionContext context)
+
+type public interface DCoding.Data.DVault.IDataVaultProviderBehavior
+  property public int Priority { get; }
+  method public abstract DCoding.Data.DVault.DataVaultProviderBehaviorProfile CreateProfile(DCoding.Data.DVault.DataVaultProviderBehaviorContext context)
+  method public abstract bool CanApply(DCoding.Data.DVault.DataVaultProviderBehaviorContext context)
+
+type public interface DCoding.Data.DVault.IDataVaultProviderBehaviorSelector
+  method public abstract DCoding.Data.DVault.DataVaultProviderBehaviorProfile SelectBehavior(DCoding.Data.DVault.DataVaultProviderBehaviorContext context)
+  method public abstract DCoding.Data.DVault.DataVaultProviderBehaviorProfile SelectBehavior(Microsoft.EntityFrameworkCore.DbContext dbContext)
 
 type public interface DCoding.Data.DVault.IDataVaultProviderSaveStrategy
   property public int Priority { get; }

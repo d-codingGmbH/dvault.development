@@ -8,6 +8,7 @@ namespace DCoding.Data.DVault;
 public sealed class DataVaultOptions {
   private ServiceDescriptor? _loadTimestampResolverDescriptor;
   private ServiceDescriptor? _recordSourceResolverDescriptor;
+  private readonly List<ServiceDescriptor> _providerBehaviorDescriptors = [];
 
   /// <summary>
   /// Configures the load timestamp resolver instance used by the explicit save service.
@@ -55,11 +56,37 @@ public sealed class DataVaultOptions {
     return this;
   }
 
+  /// <summary>
+  /// Adds an explicit provider-behavior override while preserving the provider-neutral baseline when it does not apply.
+  /// </summary>
+  /// <param name="providerBehavior">The provider-behavior override instance to register.</param>
+  /// <returns>The current options instance.</returns>
+  public DataVaultOptions UseProviderBehavior(IDataVaultProviderBehavior providerBehavior) {
+    ArgumentNullException.ThrowIfNull(providerBehavior);
+
+    _providerBehaviorDescriptors.Add(ServiceDescriptor.Singleton<IDataVaultProviderBehavior>(providerBehavior));
+    return this;
+  }
+
+  /// <summary>
+  /// Adds an explicit provider-behavior override implementation while preserving the provider-neutral baseline when it does not apply.
+  /// </summary>
+  /// <typeparam name="TProviderBehavior">The provider-behavior override implementation type.</typeparam>
+  /// <returns>The current options instance.</returns>
+  public DataVaultOptions UseProviderBehavior<TProviderBehavior>()
+      where TProviderBehavior : class, IDataVaultProviderBehavior {
+    _providerBehaviorDescriptors.Add(ServiceDescriptor.Singleton<IDataVaultProviderBehavior, TProviderBehavior>());
+    return this;
+  }
+
   internal void Apply(IServiceCollection services) {
     ArgumentNullException.ThrowIfNull(services);
 
     ReplaceDescriptor(services, _loadTimestampResolverDescriptor);
     ReplaceDescriptor(services, _recordSourceResolverDescriptor);
+    foreach (var providerBehaviorDescriptor in _providerBehaviorDescriptors) {
+      services.Add(providerBehaviorDescriptor);
+    }
   }
 
   private static void ReplaceDescriptor(IServiceCollection services, ServiceDescriptor? descriptor) {

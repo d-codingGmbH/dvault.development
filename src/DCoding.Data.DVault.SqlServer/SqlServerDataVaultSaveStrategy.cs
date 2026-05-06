@@ -12,10 +12,11 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
   private const int SqlServerMaxCommandParameterCount = 2000;
   private const int MinimumOptimizedBatchOperationCount = 50;
   private const int MaximumOptimizedSatelliteOperationCount = 500;
-  private const string SqlServerProviderName = "Microsoft.EntityFrameworkCore.SqlServer";
   private const string OrdinalColumnName = "__dvault_ordinal";
   private const string RowNumberColumnName = "__dvault_row_number";
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
+
+  internal const string SqlServerProviderName = "Microsoft.EntityFrameworkCore.SqlServer";
 
   public int Priority => 100;
 
