@@ -93,4 +93,9 @@ public enum DataVaultPropertyRole {
   /// Property carries a satellite descriptive payload value.
   /// </summary>
   Payload,
+
+  /// <summary>
+  /// Property carries a PIT satellite snapshot load-timestamp reference.
+  /// </summary>
+  SnapshotReference,
 }

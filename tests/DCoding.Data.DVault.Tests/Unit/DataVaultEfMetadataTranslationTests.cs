@@ -163,6 +163,54 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataCreatesProviderNeutralPitMetadata() {
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.ApplyDataVaultMetadata(CreatePitMetadataModel());
+
+    Assert.Equal(4, modelBuilder.Model.GetEntityTypes().Count());
+    AssertPit(FindEntity(modelBuilder.Model, "PitCustomerProfileStatus"));
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataMapsPitProducedNamesToRelationalMetadata() {
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.ApplyDataVaultMetadata(CreatePitMetadataModel());
+
+    AssertRelationalPitEntity(
+        FindEntity(modelBuilder.Model, "PitCustomerProfileStatus"),
+        "PitCustomerProfileStatus",
+        ["CustomerHashKey", "LoadTimestamp", "ProfileLoadTimestamp", "StatusLoadTimestamp"],
+        "PkPitCustomerProfileStatusCustomerHashKeyLoadTimestamp");
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataPreservesPitSatelliteDeclarationOrder() {
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.ApplyDataVaultMetadata(CreatePitMetadataModel(["Status", "Profile"]));
+
+    var pit = FindEntity(modelBuilder.Model, "PitCustomerStatusProfile");
+
+    Assert.Equal(
+        ["CustomerHashKey", "LoadTimestamp", "StatusLoadTimestamp", "ProfileLoadTimestamp"],
+        PropertyNamesInOrdinalOrder(pit));
+    AssertPrimaryKey(pit, "PkPitCustomerStatusProfileCustomerHashKeyLoadTimestamp", ["CustomerHashKey", "LoadTimestamp"]);
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataKeepsPitOutputDeterministic() {
+    var firstModelBuilder = CreateModelBuilder();
+    var secondModelBuilder = CreateModelBuilder();
+
+    firstModelBuilder.ApplyDataVaultMetadata(CreatePitMetadataModel());
+    secondModelBuilder.ApplyDataVaultMetadata(CreatePitMetadataModel());
+
+    Assert.Equal(ModelShape(firstModelBuilder.Model), ModelShape(secondModelBuilder.Model));
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataWithOracleProfileProjectsOracleStorageAnnotations() {
     var modelBuilder = CreateModelBuilder();
 
@@ -232,6 +280,23 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataWithOracleProfileProjectsPitSnapshotStorageAnnotations() {
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.ApplyDataVaultMetadata(CreatePitMetadataModel(), DataVaultProviderCapabilityProfiles.Oracle);
+
+    var pit = FindEntity(modelBuilder.Model, "PitCustomerProfileStatus");
+
+    AssertProviderProperty(
+        pit,
+        "ProfileLoadTimestamp",
+        DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+        typeof(string),
+        "VARCHAR2(33 CHAR)",
+        DataVaultProviderValueFormat.Iso8601UtcText);
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataTranslatesLinkParentSatellites() {
     var modelBuilder = CreateModelBuilder();
     var metadataModel = new DataVaultMetadataModel(
@@ -263,6 +328,140 @@ public sealed class DataVaultEfMetadataTranslationTests {
         "IxSatCustomerOrderStateSatelliteParentCustomerOrderHashKeyLoadTimestamp",
         ["CustomerOrderHashKey", "LoadTimestamp"],
         isUnique: false);
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataRejectsPitWithEmptySatelliteSetWithoutPartialMapping() {
+    var metadataModel = new DataVaultMetadataModel(
+        [new DataVaultHubMetadata("Customer", ["Customer Id"])],
+        [],
+        [],
+        [new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), Array.Empty<string>())]);
+
+    AssertPitTranslationFailure(metadataModel, "at least one attached satellite");
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataRejectsPitWithDuplicateSatelliteReferencesWithoutPartialMapping() {
+    var metadataModel = new DataVaultMetadataModel(
+        [new DataVaultHubMetadata("Customer", ["Customer Id"])],
+        [],
+        [
+            new DataVaultSatelliteMetadata(
+                "Profile",
+                DataVaultMetadataReference.Hub("Customer"),
+                ["Email Address"]),
+        ],
+        [new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), new[] { "Profile", "Profile" })]);
+
+    AssertPitTranslationFailure(metadataModel, "duplicate satellite reference 'Profile'");
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataRejectsPitWithSatelliteMissingFromModelWithoutPartialMapping() {
+    var metadataModel = new DataVaultMetadataModel(
+        [new DataVaultHubMetadata("Customer", ["Customer Id"])],
+        [],
+        [],
+        [new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["Profile"])]);
+
+    AssertPitTranslationFailure(metadataModel, "satellite 'Profile' that is not declared");
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataRejectsPitWithMissingHubWithoutPartialMapping() {
+    var metadataModel = new DataVaultMetadataModel(
+        [],
+        [],
+        [],
+        [new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["Profile"])]);
+
+    AssertPitTranslationFailure(metadataModel, "hub 'Customer' that is not declared");
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataRejectsPitWithSatelliteAttachedToAnotherHubWithoutPartialMapping() {
+    var metadataModel = new DataVaultMetadataModel(
+        [
+            new DataVaultHubMetadata("Customer", ["Customer Id"]),
+            new DataVaultHubMetadata("Order", ["Order Id"]),
+        ],
+        [],
+        [
+            new DataVaultSatelliteMetadata(
+                "Profile",
+                DataVaultMetadataReference.Hub("Order"),
+                ["Status Code"]),
+        ],
+        [new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["Profile"])]);
+
+    AssertPitTranslationFailure(metadataModel, "attached to hub 'Order' instead of declared hub 'Customer'");
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataRejectsLinkBasedPitParentWithoutPartialMapping() {
+    var metadataModel = new DataVaultMetadataModel(
+        [
+            new DataVaultHubMetadata("Customer", ["Customer Id"]),
+            new DataVaultHubMetadata("Order", ["Order Id"]),
+        ],
+        [
+            new DataVaultLinkMetadata(
+                "CustomerOrder",
+                [DataVaultMetadataReference.Hub("Customer"), DataVaultMetadataReference.Hub("Order")]),
+        ],
+        [
+            new DataVaultSatelliteMetadata(
+                "State",
+                DataVaultMetadataReference.Link("CustomerOrder"),
+                ["State Code"]),
+        ],
+        [new DataVaultPitMetadata(DataVaultMetadataReference.Link("CustomerOrder"), ["State"])]);
+
+    AssertPitTranslationFailure(metadataModel, "link-based PIT tables");
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataRejectsLinkParentPitSatelliteWithoutPartialMapping() {
+    var metadataModel = new DataVaultMetadataModel(
+        [
+            new DataVaultHubMetadata("Customer", ["Customer Id"]),
+            new DataVaultHubMetadata("Order", ["Order Id"]),
+        ],
+        [
+            new DataVaultLinkMetadata(
+                "CustomerOrder",
+                [DataVaultMetadataReference.Hub("Customer"), DataVaultMetadataReference.Hub("Order")]),
+        ],
+        [
+            new DataVaultSatelliteMetadata(
+                "State",
+                DataVaultMetadataReference.Link("CustomerOrder"),
+                ["State Code"]),
+        ],
+        [new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["State"])]);
+
+    AssertPitTranslationFailure(metadataModel, "attached to Link 'CustomerOrder'");
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataRejectsMultiActivePitSatelliteWithoutPartialMapping() {
+    var metadataModel = new DataVaultMetadataModel(
+        [new DataVaultHubMetadata("Customer", ["Customer Id"])],
+        [],
+        [
+            new DataVaultSatelliteMetadata(
+                "Profile",
+                DataVaultMetadataReference.Hub("Customer"),
+                ["Email Address"]),
+        ],
+        [
+            new DataVaultPitMetadata(
+                DataVaultMetadataReference.Hub("Customer"),
+                [new DataVaultPitSatelliteReferenceMetadata("Profile", isMultiActive: true)]),
+        ]);
+
+    AssertPitTranslationFailure(metadataModel, "multi-active satellite 'Profile'");
   }
 
   [Fact]
@@ -302,6 +501,11 @@ public sealed class DataVaultEfMetadataTranslationTests {
         [],
         [],
         (IEnumerable<DataVaultBridgeMetadata>)null!));
+    Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel(
+        [],
+        [],
+        [],
+        (IEnumerable<DataVaultPitMetadata>)null!));
     Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel([null!], [], []));
     Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel([], [null!], []));
     Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel([], [], [null!]));
@@ -315,6 +519,11 @@ public sealed class DataVaultEfMetadataTranslationTests {
         [],
         [],
         new DataVaultBridgeMetadata[] { null! }));
+    Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel(
+        [],
+        [],
+        [],
+        new DataVaultPitMetadata[] { null! }));
   }
 
   private static IMutableModel CreateTranslatedModel() {
@@ -339,6 +548,27 @@ public sealed class DataVaultEfMetadataTranslationTests {
                 DataVaultMetadataReference.Hub("Customer"),
                 ["Email Address"]),
         ]);
+  }
+
+  private static DataVaultMetadataModel CreatePitMetadataModel() {
+    return CreatePitMetadataModel(["Profile", "Status"]);
+  }
+
+  private static DataVaultMetadataModel CreatePitMetadataModel(string[] pitSatelliteNames) {
+    return new DataVaultMetadataModel(
+        [new DataVaultHubMetadata("Customer", ["Customer Id"])],
+        [],
+        [
+            new DataVaultSatelliteMetadata(
+                "Profile",
+                DataVaultMetadataReference.Hub("Customer"),
+                ["Email Address"]),
+            new DataVaultSatelliteMetadata(
+                "Status",
+                DataVaultMetadataReference.Hub("Customer"),
+                ["Status Code"]),
+        ],
+        [new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), pitSatelliteNames)]);
   }
 
   private static ModelBuilder CreateModelBuilder() {
@@ -396,6 +626,25 @@ public sealed class DataVaultEfMetadataTranslationTests {
         ["CustomerHashKey", "LoadTimestamp"],
         isUnique: false);
     AssertNoRelationships(satellite);
+  }
+
+  private static void AssertPit(IMutableEntityType pit) {
+    Assert.Equal(DataVaultTableKind.Pit, AnnotationValue<DataVaultTableKind>(pit, DataVaultAnnotationNames.EntityKind));
+    Assert.Equal("CustomerProfileStatus", AnnotationValue<string>(pit, DataVaultAnnotationNames.MetadataName));
+    Assert.Equal(
+        DataVaultMetadataReferenceKind.Hub,
+        AnnotationValue<DataVaultMetadataReferenceKind>(pit, DataVaultAnnotationNames.ParentReferenceKind));
+    Assert.Equal("Customer", AnnotationValue<string>(pit, DataVaultAnnotationNames.ParentReferenceName));
+    Assert.Equal(
+        ["CustomerHashKey", "LoadTimestamp", "ProfileLoadTimestamp", "StatusLoadTimestamp"],
+        PropertyNamesInOrdinalOrder(pit));
+    AssertProperty(pit, "CustomerHashKey", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.HashKey);
+    AssertProperty(pit, "LoadTimestamp", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.LoadTimestamp);
+    AssertProperty(pit, "ProfileLoadTimestamp", DataVaultPropertyRole.SnapshotReference, TechnicalMetadataColumnRole.LoadTimestamp);
+    AssertProperty(pit, "StatusLoadTimestamp", DataVaultPropertyRole.SnapshotReference, TechnicalMetadataColumnRole.LoadTimestamp);
+    AssertPrimaryKey(pit, "PkPitCustomerProfileStatusCustomerHashKeyLoadTimestamp", ["CustomerHashKey", "LoadTimestamp"]);
+    Assert.Empty(pit.GetIndexes());
+    AssertNoRelationships(pit);
   }
 
   private static void AssertProperty(
@@ -473,6 +722,7 @@ public sealed class DataVaultEfMetadataTranslationTests {
       DataVaultPropertyRole.BusinessKey => DataVaultLogicalPropertyKind.BusinessKey,
       DataVaultPropertyRole.ParticipantReference => DataVaultLogicalPropertyKind.ParticipantReference,
       DataVaultPropertyRole.Payload => DataVaultLogicalPropertyKind.PayloadText,
+      DataVaultPropertyRole.SnapshotReference => DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
       DataVaultPropertyRole.Technical => technicalRole switch {
         TechnicalMetadataColumnRole.HashKey => DataVaultLogicalPropertyKind.HashKey,
         TechnicalMetadataColumnRole.HashDiff => DataVaultLogicalPropertyKind.HashDiff,
@@ -485,13 +735,15 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   private static Type ExpectedClrType(DataVaultLogicalPropertyKind logicalPropertyKind) {
-    return logicalPropertyKind == DataVaultLogicalPropertyKind.LoadTimestamp
+    return logicalPropertyKind is DataVaultLogicalPropertyKind.LoadTimestamp or
+        DataVaultLogicalPropertyKind.SatelliteSnapshotReference
         ? typeof(DateTimeOffset)
         : typeof(string);
   }
 
   private static DataVaultProviderValueFormat ExpectedValueFormat(DataVaultLogicalPropertyKind logicalPropertyKind) {
-    return logicalPropertyKind == DataVaultLogicalPropertyKind.LoadTimestamp
+    return logicalPropertyKind is DataVaultLogicalPropertyKind.LoadTimestamp or
+        DataVaultLogicalPropertyKind.SatelliteSnapshotReference
         ? DataVaultProviderValueFormat.Iso8601UtcText
         : DataVaultProviderValueFormat.Text;
   }
@@ -534,6 +786,33 @@ public sealed class DataVaultEfMetadataTranslationTests {
             .Select(property => property.GetColumnOrder()));
     Assert.Equal(expectedPrimaryKeyName, entityType.FindPrimaryKey()!.GetName());
     Assert.Equal(expectedIndexName, Assert.Single(entityType.GetIndexes()).GetDatabaseName());
+  }
+
+  private static void AssertRelationalPitEntity(
+      IMutableEntityType entityType,
+      string expectedTableName,
+      string[] expectedColumnNames,
+      string expectedPrimaryKeyName) {
+    var table = StoreObjectIdentifier.Table(expectedTableName, schema: null);
+
+    Assert.Equal(expectedTableName, entityType.GetTableName());
+    Assert.Equal(expectedColumnNames, PropertyNamesInOrdinalOrder(entityType));
+    Assert.Equal(
+        expectedColumnNames,
+        entityType.GetProperties()
+            .OrderBy(property => AnnotationValue<int>(property, DataVaultAnnotationNames.Ordinal))
+            .Select(property => property.GetColumnName(table)));
+    Assert.Equal(expectedPrimaryKeyName, entityType.FindPrimaryKey()!.GetName());
+    Assert.Empty(entityType.GetIndexes());
+  }
+
+  private static void AssertPitTranslationFailure(DataVaultMetadataModel metadataModel, string expectedMessage) {
+    var modelBuilder = CreateModelBuilder();
+
+    var exception = Assert.Throws<NotSupportedException>(() => modelBuilder.ApplyDataVaultMetadata(metadataModel));
+
+    Assert.Contains(expectedMessage, exception.Message, StringComparison.Ordinal);
+    Assert.Empty(modelBuilder.Model.GetEntityTypes());
   }
 
   private static void AssertNoRelationships(IMutableEntityType entityType) {

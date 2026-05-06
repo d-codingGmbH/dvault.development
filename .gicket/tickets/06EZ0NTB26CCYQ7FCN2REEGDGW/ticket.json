@@ -3,19 +3,18 @@
   "ticket-id": "06EZ0NTB26CCYQ7FCN2REEGDGW",
   "ticket-type": "task",
   "title": "Task: Generate provider-neutral PIT EF model mapping",
-  "revision": "06EZ0Y4C035R8MCRYR5RK5EDS8",
-  "status": "todo",
+  "revision": "06EZST6Y91618E5WQRT92KJMKG",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
+    "area/ef-core",
     "area/modeling",
     "area/pit",
-    "area/ef-core",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:15:46.2170124Z",
-  "updated-at": "2026-05-04T00:52:05.2486755Z"
+  "updated-at": "2026-05-06T10:50:12.9364942Z"
 }

@@ -21,7 +21,8 @@ internal static class DataVaultEfMetadataTranslator {
     ArgumentNullException.ThrowIfNull(metadataModel);
     ArgumentNullException.ThrowIfNull(providerCapabilities);
 
-    foreach (var entity in CreateEntities(metadataModel)) {
+    var entities = CreateEntities(metadataModel).ToArray();
+    foreach (var entity in entities) {
       ApplyEntity(modelBuilder, entity, providerCapabilities);
     }
   }
@@ -37,6 +38,10 @@ internal static class DataVaultEfMetadataTranslator {
 
     foreach (var satellite in metadataModel.Satellites) {
       yield return CreateSatelliteEntity(satellite);
+    }
+
+    foreach (var pit in metadataModel.Pits) {
+      yield return CreatePitEntity(pit, metadataModel);
     }
   }
 
@@ -228,6 +233,149 @@ internal static class DataVaultEfMetadataTranslator {
         indexes);
   }
 
+  private static EntityProjection CreatePitEntity(
+      DataVaultPitMetadata pit,
+      DataVaultMetadataModel metadataModel) {
+    var hub = ResolvePitHub(pit, metadataModel.Hubs);
+    var satellites = ResolvePitSatellites(pit, metadataModel.Satellites, hub);
+    var tableName = GetPitTableName(hub.Name, satellites);
+    var parentHashKeyColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, hub.Name, tableName));
+    var loadTimestampColumnName = NamingPolicy.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, pit.Name, tableName));
+    var snapshotColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        satellites.Select(satellite => satellite.Name + " Load Timestamp"),
+        [parentHashKeyColumnName, loadTimestampColumnName]);
+    var properties = new List<PropertyProjection>
+    {
+        TechnicalProperty(parentHashKeyColumnName, TechnicalMetadataColumnRole.HashKey, hub.Name),
+        TechnicalProperty(
+            loadTimestampColumnName,
+            TechnicalMetadataColumnRole.LoadTimestamp,
+            pit.LoadTimestampMetadata.EffectiveColumnName),
+    };
+
+    for (var index = 0; index < snapshotColumnNames.Count; index++) {
+      properties.Add(new PropertyProjection(
+          snapshotColumnNames[index],
+          DataVaultPropertyRole.SnapshotReference,
+          TechnicalMetadataColumnRole.LoadTimestamp,
+          satellites[index].Name));
+    }
+
+    var primaryKey = new KeyProjection(
+        NamingPolicy.GetConstraintName(
+            new DataVaultConstraintNameContext(
+                DataVaultConstraintKind.PrimaryKey,
+                tableName,
+                [parentHashKeyColumnName, loadTimestampColumnName])),
+        [parentHashKeyColumnName, loadTimestampColumnName]);
+
+    return new EntityProjection(
+        tableName,
+        DataVaultTableKind.Pit,
+        pit.Name,
+        pit.Parent,
+        properties,
+        primaryKey,
+        []);
+  }
+
+  private static DataVaultHubMetadata ResolvePitHub(
+      DataVaultPitMetadata pit,
+      IEnumerable<DataVaultHubMetadata> hubs) {
+    if (pit.Parent.Kind != DataVaultMetadataReferenceKind.Hub) {
+      throw PitTranslationFailure(
+          "PIT metadata '" + pit.Name + "' declares parent '" + pit.Parent.Name + "' as " + pit.Parent.Kind +
+          "; link-based PIT tables are outside the supported baseline.");
+    }
+
+    var matches = hubs
+        .Where(hub => string.Equals(hub.Name, pit.Parent.Name, StringComparison.Ordinal))
+        .ToArray();
+
+    return matches.Length switch {
+      1 => matches[0],
+      0 => throw PitTranslationFailure(
+          "PIT metadata '" + pit.Name + "' references hub '" + pit.Parent.Name + "' that is not declared."),
+      _ => throw PitTranslationFailure(
+          "PIT metadata '" + pit.Name + "' references hub '" + pit.Parent.Name + "' more than once."),
+    };
+  }
+
+  private static IReadOnlyList<DataVaultSatelliteMetadata> ResolvePitSatellites(
+      DataVaultPitMetadata pit,
+      IEnumerable<DataVaultSatelliteMetadata> satellites,
+      DataVaultHubMetadata hub) {
+    if (pit.Satellites.Count == 0) {
+      throw PitTranslationFailure(
+          "PIT metadata '" + pit.Name + "' must declare at least one attached satellite.");
+    }
+
+    var availableSatellites = satellites.ToArray();
+    var satelliteNames = new HashSet<string>(StringComparer.Ordinal);
+    var resolvedSatellites = new List<DataVaultSatelliteMetadata>();
+
+    foreach (var satelliteReference in pit.Satellites) {
+      if (!satelliteNames.Add(satelliteReference.SatelliteName)) {
+        throw PitTranslationFailure(
+            "PIT metadata '" + pit.Name + "' declares duplicate satellite reference '" +
+            satelliteReference.SatelliteName + "'.");
+      }
+
+      if (satelliteReference.IsMultiActive) {
+        throw PitTranslationFailure(
+            "PIT metadata '" + pit.Name + "' references multi-active satellite '" +
+            satelliteReference.SatelliteName + "', which is outside the supported baseline.");
+      }
+
+      var matches = availableSatellites
+          .Where(satellite => string.Equals(satellite.Name, satelliteReference.SatelliteName, StringComparison.Ordinal))
+          .ToArray();
+      var satellite = matches.Length switch {
+        1 => matches[0],
+        0 => throw PitTranslationFailure(
+            "PIT metadata '" + pit.Name + "' references satellite '" +
+            satelliteReference.SatelliteName + "' that is not declared."),
+        _ => throw PitTranslationFailure(
+            "PIT metadata '" + pit.Name + "' references satellite '" +
+            satelliteReference.SatelliteName + "' more than once."),
+      };
+
+      if (satellite.Parent.Kind != DataVaultMetadataReferenceKind.Hub) {
+        throw PitTranslationFailure(
+            "PIT metadata '" + pit.Name + "' references satellite '" + satellite.Name +
+            "' attached to " + satellite.Parent.Kind + " '" + satellite.Parent.Name +
+            "'; link-based PIT tables are outside the supported baseline.");
+      }
+
+      if (!string.Equals(satellite.Parent.Name, hub.Name, StringComparison.Ordinal)) {
+        throw PitTranslationFailure(
+            "PIT metadata '" + pit.Name + "' references satellite '" + satellite.Name +
+            "' that is attached to hub '" + satellite.Parent.Name +
+            "' instead of declared hub '" + hub.Name + "'.");
+      }
+
+      resolvedSatellites.Add(satellite);
+    }
+
+    return resolvedSatellites;
+  }
+
+  private static string GetPitTableName(
+      string hubName,
+      IEnumerable<DataVaultSatelliteMetadata> satellites) {
+    var namingPolicy = DefaultNamingPolicy.Instance;
+
+    return "Pit" + namingPolicy.NormalizeProducedIdentifier(hubName) +
+        string.Concat(satellites.Select(satellite => namingPolicy.NormalizeProducedIdentifier(satellite.Name)));
+  }
+
+  private static NotSupportedException PitTranslationFailure(string message) {
+    return new NotSupportedException(
+        "PIT metadata translation supports only one hub plus attached non-multi-active satellites. " + message);
+  }
+
   private static PropertyProjection TechnicalProperty(
       string name,
       TechnicalMetadataColumnRole technicalRole,
@@ -358,6 +506,7 @@ internal static class DataVaultEfMetadataTranslator {
       DataVaultPropertyRole.BusinessKey => DataVaultLogicalPropertyKind.BusinessKey,
       DataVaultPropertyRole.ParticipantReference => DataVaultLogicalPropertyKind.ParticipantReference,
       DataVaultPropertyRole.Payload => DataVaultLogicalPropertyKind.PayloadText,
+      DataVaultPropertyRole.SnapshotReference => DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
       DataVaultPropertyRole.Technical => GetTechnicalLogicalPropertyKind(property),
       _ => throw new ArgumentOutOfRangeException(nameof(property), property.Role, "Unsupported Data Vault property role."),
     };

@@ -700,6 +700,11 @@ public enum DataVaultTableKind {
   /// Point-in-time table.
   /// </summary>
   PointInTime,
+
+  /// <summary>
+  /// PIT table translated from metadata declarations.
+  /// </summary>
+  Pit,
 }
 
 /// <summary>

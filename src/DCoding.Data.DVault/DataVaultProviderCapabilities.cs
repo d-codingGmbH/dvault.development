@@ -40,6 +40,11 @@ public enum DataVaultLogicalPropertyKind {
   /// Satellite text payload value.
   /// </summary>
   PayloadText,
+
+  /// <summary>
+  /// PIT satellite snapshot load-timestamp reference value.
+  /// </summary>
+  SatelliteSnapshotReference,
 }
 
 /// <summary>
@@ -272,6 +277,11 @@ public static class DataVaultProviderCapabilityProfiles {
           Text(DataVaultLogicalPropertyKind.ParticipantReference),
           Text(DataVaultLogicalPropertyKind.BusinessKey),
           Text(DataVaultLogicalPropertyKind.PayloadText),
+          new(
+              DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+              typeof(DateTimeOffset),
+              "TEXT",
+              DataVaultProviderValueFormat.Iso8601UtcText),
       ]);
 
   /// <summary>
@@ -293,6 +303,11 @@ public static class DataVaultProviderCapabilityProfiles {
           Text(DataVaultLogicalPropertyKind.ParticipantReference, "VARCHAR2(64 CHAR)"),
           Text(DataVaultLogicalPropertyKind.BusinessKey, "VARCHAR2(255 CHAR)"),
           Text(DataVaultLogicalPropertyKind.PayloadText, "CLOB"),
+          new(
+              DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+              typeof(string),
+              "VARCHAR2(33 CHAR)",
+              DataVaultProviderValueFormat.Iso8601UtcText),
       ],
       allowsIndexesCoveredByPrimaryKey: false);
 
@@ -315,6 +330,11 @@ public static class DataVaultProviderCapabilityProfiles {
           Text(DataVaultLogicalPropertyKind.ParticipantReference, "varchar(64)"),
           Text(DataVaultLogicalPropertyKind.BusinessKey, "varchar(255)"),
           Text(DataVaultLogicalPropertyKind.PayloadText, "longtext"),
+          new(
+              DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+              typeof(DateTimeOffset),
+              "varchar(33)",
+              DataVaultProviderValueFormat.Iso8601UtcText),
       ],
       maximumIdentifierLength: 64);
 

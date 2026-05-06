@@ -74,6 +74,48 @@ public sealed class SqliteDataVaultSchemaTests {
   }
 
   [Fact]
+  public async Task ApplyDataVaultMetadataCreatesAndReadsBaselinePitSqliteTable() {
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+
+    var options = new DbContextOptionsBuilder<PitDataVaultSchemaContext>()
+        .UseSqlite(CreateConnectionString(database))
+        .Options;
+    var pitLoadTimestamp = new DateTimeOffset(2026, 5, 6, 10, 0, 0, TimeSpan.Zero);
+    var profileLoadTimestamp = pitLoadTimestamp.AddMinutes(-5);
+    var statusLoadTimestamp = pitLoadTimestamp.AddMinutes(-2);
+
+    using (var context = new PitDataVaultSchemaContext(options)) {
+      context.Database.EnsureCreated();
+
+      context.Set<Dictionary<string, object>>("PitCustomerProfileStatus").Add(
+          new Dictionary<string, object> {
+            ["CustomerHashKey"] = "customer-hash",
+            ["LoadTimestamp"] = pitLoadTimestamp,
+            ["ProfileLoadTimestamp"] = profileLoadTimestamp,
+            ["StatusLoadTimestamp"] = statusLoadTimestamp,
+          });
+      await context.SaveChangesAsync();
+      context.ChangeTracker.Clear();
+
+      var row = Assert.Single(await context.Set<Dictionary<string, object>>("PitCustomerProfileStatus").AsNoTracking().ToListAsync());
+
+      Assert.Equal("customer-hash", Assert.IsType<string>(row["CustomerHashKey"]));
+      Assert.Equal(pitLoadTimestamp, Assert.IsType<DateTimeOffset>(row["LoadTimestamp"]));
+      Assert.Equal(profileLoadTimestamp, Assert.IsType<DateTimeOffset>(row["ProfileLoadTimestamp"]));
+      Assert.Equal(statusLoadTimestamp, Assert.IsType<DateTimeOffset>(row["StatusLoadTimestamp"]));
+    }
+
+    using var connection = database.CreateOpenConnection();
+
+    AssertTableWithoutSecondaryIndexes(
+        connection,
+        "PitCustomerProfileStatus",
+        ["CustomerHashKey", "LoadTimestamp", "ProfileLoadTimestamp", "StatusLoadTimestamp"],
+        "PkPitCustomerProfileStatusCustomerHashKeyLoadTimestamp",
+        ["CustomerHashKey", "LoadTimestamp"]);
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataMatchesCommittedSqliteSchemaSnapshot() {
     using var database = SqliteTestDatabase.CreateTemporaryFile();
 
@@ -110,7 +152,7 @@ public sealed class SqliteDataVaultSchemaTests {
         "0",
         connection.ExecuteScalarString(
             "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND " +
-            "(name LIKE 'Hub%' OR name LIKE 'Link%' OR name LIKE 'Sat%');"));
+            "(name LIKE 'Hub%' OR name LIKE 'Link%' OR name LIKE 'Sat%' OR name LIKE 'Pit%');"));
   }
 
   private static void AssertTable(
@@ -132,6 +174,23 @@ public sealed class SqliteDataVaultSchemaTests {
     Assert.Equal(string.Join("|", expectedPrimaryKeyColumnNames), PrimaryKeyColumnNames(connection, tableName));
     Assert.Equal(expectedIndexUnique ? "1" : "0", IndexUniqueValue(connection, tableName, expectedIndexName));
     Assert.Equal(string.Join("|", expectedIndexColumnNames), IndexColumnNames(connection, expectedIndexName));
+  }
+
+  private static void AssertTableWithoutSecondaryIndexes(
+      SqliteTestConnection connection,
+      string tableName,
+      string[] expectedColumnNames,
+      string expectedPrimaryKeyName,
+      string[] expectedPrimaryKeyColumnNames) {
+    var createSql = connection.ExecuteScalarString(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = " + SqlLiteral(tableName) + ";");
+
+    Assert.NotNull(createSql);
+    Assert.Contains("CONSTRAINT \"" + expectedPrimaryKeyName + "\"", createSql!, StringComparison.Ordinal);
+    Assert.Contains("PRIMARY KEY", createSql!, StringComparison.Ordinal);
+    Assert.Equal(string.Join("|", expectedColumnNames), ColumnNames(connection, tableName));
+    Assert.Equal(string.Join("|", expectedPrimaryKeyColumnNames), PrimaryKeyColumnNames(connection, tableName));
+    Assert.Null(IndexNames(connection, tableName));
   }
 
   private static string CreateCanonicalSchemaSnapshot(SqliteTestConnection connection) {
@@ -218,6 +277,23 @@ public sealed class SqliteDataVaultSchemaTests {
                 DataVaultMetadataReference.Link("CustomerOrderRegion"),
                 ["State Code"]),
         ]);
+  }
+
+  private static DataVaultMetadataModel CreatePitMetadataModel() {
+    return new DataVaultMetadataModel(
+        [new DataVaultHubMetadata("Customer", ["Customer Id"])],
+        [],
+        [
+            new DataVaultSatelliteMetadata(
+                "Profile",
+                DataVaultMetadataReference.Hub("Customer"),
+                ["Email Address"]),
+            new DataVaultSatelliteMetadata(
+                "Status",
+                DataVaultMetadataReference.Hub("Customer"),
+                ["Status Code"]),
+        ],
+        [new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["Profile", "Status"])]);
   }
 
   private static string ReadSnapshot(string fileName) {
@@ -323,6 +399,12 @@ public sealed class SqliteDataVaultSchemaTests {
       DbContextOptions<SnapshotDataVaultSchemaContext> options) : DbContext(options) {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
       modelBuilder.ApplyDataVaultMetadata(CreateSnapshotMetadataModel());
+    }
+  }
+
+  private sealed class PitDataVaultSchemaContext(DbContextOptions<PitDataVaultSchemaContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(CreatePitMetadataModel());
     }
   }
 

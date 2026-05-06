@@ -19,7 +19,8 @@ public sealed class DataVaultMetadataModel {
           links,
           satellites,
           Array.Empty<DataVaultPointInTimeMetadata>(),
-          Array.Empty<DataVaultBridgeMetadata>()) {
+          Array.Empty<DataVaultBridgeMetadata>(),
+          Array.Empty<DataVaultPitMetadata>()) {
   }
 
   /// <summary>
@@ -34,7 +35,13 @@ public sealed class DataVaultMetadataModel {
       IEnumerable<DataVaultLinkMetadata> links,
       IEnumerable<DataVaultSatelliteMetadata> satellites,
       IEnumerable<DataVaultPointInTimeMetadata> pointInTimeTables)
-      : this(hubs, links, satellites, pointInTimeTables, Array.Empty<DataVaultBridgeMetadata>()) {
+      : this(
+          hubs,
+          links,
+          satellites,
+          pointInTimeTables,
+          Array.Empty<DataVaultBridgeMetadata>(),
+          Array.Empty<DataVaultPitMetadata>()) {
   }
 
   /// <summary>
@@ -49,7 +56,34 @@ public sealed class DataVaultMetadataModel {
       IEnumerable<DataVaultLinkMetadata> links,
       IEnumerable<DataVaultSatelliteMetadata> satellites,
       IEnumerable<DataVaultBridgeMetadata> bridges)
-      : this(hubs, links, satellites, Array.Empty<DataVaultPointInTimeMetadata>(), bridges) {
+      : this(
+          hubs,
+          links,
+          satellites,
+          Array.Empty<DataVaultPointInTimeMetadata>(),
+          bridges,
+          Array.Empty<DataVaultPitMetadata>()) {
+  }
+
+  /// <summary>
+  /// Initializes a new aggregate metadata model with optional PIT declarations.
+  /// </summary>
+  /// <param name="hubs">The hub metadata declarations to translate.</param>
+  /// <param name="links">The link metadata declarations to translate.</param>
+  /// <param name="satellites">The satellite metadata declarations to translate.</param>
+  /// <param name="pits">The point-in-time metadata declarations to translate.</param>
+  public DataVaultMetadataModel(
+      IEnumerable<DataVaultHubMetadata> hubs,
+      IEnumerable<DataVaultLinkMetadata> links,
+      IEnumerable<DataVaultSatelliteMetadata> satellites,
+      IEnumerable<DataVaultPitMetadata> pits)
+      : this(
+          hubs,
+          links,
+          satellites,
+          Array.Empty<DataVaultPointInTimeMetadata>(),
+          Array.Empty<DataVaultBridgeMetadata>(),
+          pits) {
   }
 
   /// <summary>
@@ -65,12 +99,23 @@ public sealed class DataVaultMetadataModel {
       IEnumerable<DataVaultLinkMetadata> links,
       IEnumerable<DataVaultSatelliteMetadata> satellites,
       IEnumerable<DataVaultPointInTimeMetadata> pointInTimeTables,
-      IEnumerable<DataVaultBridgeMetadata> bridges) {
-    Hubs = RequireItems(hubs, nameof(hubs));
-    Links = RequireItems(links, nameof(links));
-    Satellites = RequireItems(satellites, nameof(satellites));
-    PointInTimeTables = RequireItems(pointInTimeTables, nameof(pointInTimeTables));
-    Bridges = RequireItems(bridges, nameof(bridges));
+      IEnumerable<DataVaultBridgeMetadata> bridges)
+      : this(hubs, links, satellites, pointInTimeTables, bridges, Array.Empty<DataVaultPitMetadata>()) {
+  }
+
+  private DataVaultMetadataModel(
+      IEnumerable<DataVaultHubMetadata> hubs,
+      IEnumerable<DataVaultLinkMetadata> links,
+      IEnumerable<DataVaultSatelliteMetadata> satellites,
+      IEnumerable<DataVaultPointInTimeMetadata> pointInTimeTables,
+      IEnumerable<DataVaultBridgeMetadata> bridges,
+      IEnumerable<DataVaultPitMetadata> pits) {
+    Hubs = DataVaultMetadataValidation.RequireItems(hubs, nameof(hubs));
+    Links = DataVaultMetadataValidation.RequireItems(links, nameof(links));
+    Satellites = DataVaultMetadataValidation.RequireItems(satellites, nameof(satellites));
+    PointInTimeTables = DataVaultMetadataValidation.RequireItems(pointInTimeTables, nameof(pointInTimeTables));
+    Bridges = DataVaultMetadataValidation.RequireItems(bridges, nameof(bridges));
+    Pits = DataVaultMetadataValidation.RequireItems(pits, nameof(pits));
     ValidatePointInTimeTables();
     ValidateBridges();
   }
@@ -99,6 +144,11 @@ public sealed class DataVaultMetadataModel {
   /// Gets the bridge metadata declarations to validate and expose.
   /// </summary>
   public IReadOnlyList<DataVaultBridgeMetadata> Bridges { get; }
+
+  /// <summary>
+  /// Gets the point-in-time metadata declarations to translate.
+  /// </summary>
+  public IReadOnlyList<DataVaultPitMetadata> Pits { get; }
 
   /// <summary>
   /// Creates a new aggregate metadata model from provider-neutral Data Vault declarations.
@@ -147,6 +197,22 @@ public sealed class DataVaultMetadataModel {
   }
 
   /// <summary>
+  /// Creates a new aggregate metadata model from provider-neutral Data Vault declarations with PIT declarations.
+  /// </summary>
+  /// <param name="hubs">The hub metadata declarations to translate.</param>
+  /// <param name="links">The link metadata declarations to translate.</param>
+  /// <param name="satellites">The satellite metadata declarations to translate.</param>
+  /// <param name="pits">The point-in-time metadata declarations to translate.</param>
+  /// <returns>The aggregate metadata model.</returns>
+  public static DataVaultMetadataModel Create(
+      IEnumerable<DataVaultHubMetadata> hubs,
+      IEnumerable<DataVaultLinkMetadata> links,
+      IEnumerable<DataVaultSatelliteMetadata> satellites,
+      IEnumerable<DataVaultPitMetadata> pits) {
+    return new DataVaultMetadataModel(hubs, links, satellites, pits);
+  }
+
+  /// <summary>
   /// Creates a new aggregate metadata model from provider-neutral Data Vault declarations with point-in-time and bridge declarations.
   /// </summary>
   /// <param name="hubs">The hub metadata declarations to translate.</param>
@@ -162,20 +228,6 @@ public sealed class DataVaultMetadataModel {
       IEnumerable<DataVaultPointInTimeMetadata> pointInTimeTables,
       IEnumerable<DataVaultBridgeMetadata> bridges) {
     return new DataVaultMetadataModel(hubs, links, satellites, pointInTimeTables, bridges);
-  }
-
-  private static IReadOnlyList<T> RequireItems<T>(IEnumerable<T> items, string parameterName)
-      where T : class {
-    ArgumentNullException.ThrowIfNull(items, parameterName);
-
-    var values = items.ToArray();
-    foreach (var value in values) {
-      if (value is null) {
-        throw new ArgumentException("Metadata declaration collections must not contain null values.", parameterName);
-      }
-    }
-
-    return values;
   }
 
   private void ValidatePointInTimeTables() {

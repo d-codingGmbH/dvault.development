@@ -33,6 +33,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
             DataVaultLogicalPropertyKind.ParticipantReference,
             DataVaultLogicalPropertyKind.BusinessKey,
             DataVaultLogicalPropertyKind.PayloadText,
+            DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
         ],
         profile.TypeMappings.Select(mapping => mapping.LogicalPropertyKind));
 
@@ -43,6 +44,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
     AssertMapping(profile, DataVaultLogicalPropertyKind.ParticipantReference, typeof(string), DataVaultProviderValueFormat.Text);
     AssertMapping(profile, DataVaultLogicalPropertyKind.BusinessKey, typeof(string), DataVaultProviderValueFormat.Text);
     AssertMapping(profile, DataVaultLogicalPropertyKind.PayloadText, typeof(string), DataVaultProviderValueFormat.Text);
+    AssertMapping(profile, DataVaultLogicalPropertyKind.SatelliteSnapshotReference, typeof(DateTimeOffset), DataVaultProviderValueFormat.Iso8601UtcText);
   }
 
   [Fact]
@@ -76,6 +78,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
             DataVaultLogicalPropertyKind.ParticipantReference,
             DataVaultLogicalPropertyKind.BusinessKey,
             DataVaultLogicalPropertyKind.PayloadText,
+            DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
         ],
         profile.TypeMappings.Select(mapping => mapping.LogicalPropertyKind));
     AssertMapping(
@@ -120,6 +123,12 @@ public sealed class DataVaultProviderCapabilityProfileTests {
         typeof(string),
         "CLOB",
         DataVaultProviderValueFormat.Text);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+        typeof(string),
+        "VARCHAR2(33 CHAR)",
+        DataVaultProviderValueFormat.Iso8601UtcText);
   }
 
   [Fact]
@@ -139,6 +148,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
             DataVaultLogicalPropertyKind.ParticipantReference,
             DataVaultLogicalPropertyKind.BusinessKey,
             DataVaultLogicalPropertyKind.PayloadText,
+            DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
         ],
         profile.TypeMappings.Select(mapping => mapping.LogicalPropertyKind));
 
@@ -184,6 +194,12 @@ public sealed class DataVaultProviderCapabilityProfileTests {
         typeof(string),
         "longtext",
         DataVaultProviderValueFormat.Text);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+        typeof(DateTimeOffset),
+        "varchar(33)",
+        DataVaultProviderValueFormat.Iso8601UtcText);
   }
 
   [Fact]

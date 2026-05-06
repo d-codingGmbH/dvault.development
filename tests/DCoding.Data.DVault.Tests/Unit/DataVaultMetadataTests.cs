@@ -240,6 +240,29 @@ public sealed class DataVaultMetadataTests {
   }
 
   [Fact]
+  public void PitMetadataRetainsParentAndSatelliteDeclarationOrder() {
+    var pit = new DataVaultPitMetadata(
+        DataVaultMetadataReference.Hub("Customer"),
+        [
+            new DataVaultPitSatelliteReferenceMetadata("Profile"),
+            new DataVaultPitSatelliteReferenceMetadata("Status", isMultiActive: true),
+        ]);
+
+    Assert.Equal("CustomerProfileStatus", pit.Name);
+    Assert.Equal(DataVaultMetadataReferenceKind.Hub, pit.Parent.Kind);
+    Assert.Equal("Customer", pit.Parent.Name);
+    Assert.Equal(["Profile", "Status"], pit.Satellites.Select(satellite => satellite.SatelliteName));
+    Assert.False(pit.Satellites[0].IsMultiActive);
+    Assert.True(pit.Satellites[1].IsMultiActive);
+    Assert.Equal(TechnicalMetadataColumnRole.HashKey, pit.HashKeyMetadata.Role);
+    Assert.Equal(TechnicalMetadataColumnRole.LoadTimestamp, pit.LoadTimestampMetadata.Role);
+    AssertRequiredRoles(
+        pit.TechnicalMetadataColumns,
+        TechnicalMetadataColumnRole.HashKey,
+        TechnicalMetadataColumnRole.LoadTimestamp);
+  }
+
+  [Fact]
   public void MetadataAbstractionsUseProviderNeutralClrContracts() {
     var metadataTypes = new[]
     {
@@ -249,6 +272,8 @@ public sealed class DataVaultMetadataTests {
         typeof(DataVaultLinkMetadata),
         typeof(DataVaultLinkParticipantMetadata),
         typeof(DataVaultPointInTimeMetadata),
+        typeof(DataVaultPitMetadata),
+        typeof(DataVaultPitSatelliteReferenceMetadata),
         typeof(DataVaultSatelliteMetadata),
         typeof(DataVaultSatellitePayloadMetadata),
     };
@@ -290,6 +315,13 @@ public sealed class DataVaultMetadataTests {
           DataVaultMetadataReference.Hub("Customer"),
           [DataVaultMetadataReference.Satellite("Contact")]));
       ThrowsArgumentException(() => new DataVaultBusinessKeyMetadata(invalidName!));
+      ThrowsArgumentException(() => new DataVaultPitMetadata(
+          DataVaultMetadataReference.Hub(invalidName!),
+          ["Profile"]));
+      ThrowsArgumentException(() => new DataVaultPitMetadata(
+          DataVaultMetadataReference.Hub("Customer"),
+          [invalidName!]));
+      ThrowsArgumentException(() => new DataVaultPitSatelliteReferenceMetadata(invalidName!));
       ThrowsArgumentException(() => new DataVaultSatellitePayloadMetadata(invalidName!));
     }
   }
@@ -312,6 +344,15 @@ public sealed class DataVaultMetadataTests {
         "CustomerHistory",
         DataVaultMetadataReference.Hub("Customer"),
         null!));
+    ThrowsArgumentException(() => new DataVaultPitMetadata(
+        null!,
+        ["Profile"]));
+    ThrowsArgumentException(() => new DataVaultPitMetadata(
+        DataVaultMetadataReference.Hub("Customer"),
+        (IEnumerable<string>)null!));
+    ThrowsArgumentException(() => new DataVaultPitMetadata(
+        DataVaultMetadataReference.Hub("Customer"),
+        (IEnumerable<DataVaultPitSatelliteReferenceMetadata>)null!));
   }
 
   [Fact]

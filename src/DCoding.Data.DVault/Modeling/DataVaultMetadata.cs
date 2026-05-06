@@ -313,6 +313,31 @@ public sealed class DataVaultSatellitePayloadMetadata {
 }
 
 /// <summary>
+/// Describes one satellite snapshot reference declared by a point-in-time metadata projection.
+/// </summary>
+public sealed class DataVaultPitSatelliteReferenceMetadata {
+  /// <summary>
+  /// Initializes a new PIT satellite reference metadata declaration.
+  /// </summary>
+  /// <param name="satelliteName">The provider-neutral satellite metadata name.</param>
+  /// <param name="isMultiActive">Whether the referenced satellite uses multi-active snapshot semantics.</param>
+  public DataVaultPitSatelliteReferenceMetadata(string satelliteName, bool isMultiActive = false) {
+    SatelliteName = DataVaultMetadataValidation.RequireName(satelliteName, nameof(satelliteName));
+    IsMultiActive = isMultiActive;
+  }
+
+  /// <summary>
+  /// Gets the provider-neutral satellite metadata name.
+  /// </summary>
+  public string SatelliteName { get; }
+
+  /// <summary>
+  /// Gets a value indicating whether the referenced satellite uses multi-active snapshot semantics.
+  /// </summary>
+  public bool IsMultiActive { get; }
+}
+
+/// <summary>
 /// Describes the identifying metadata for a Data Vault hub.
 /// </summary>
 public sealed class DataVaultHubMetadata {
@@ -585,6 +610,90 @@ public sealed class DataVaultPointInTimeMetadata {
   }
 }
 
+/// <summary>
+/// Describes the minimum point-in-time projection metadata consumed by the EF metadata translator.
+/// </summary>
+public sealed class DataVaultPitMetadata {
+  /// <summary>
+  /// Initializes a new PIT metadata declaration from satellite names in declaration order.
+  /// </summary>
+  /// <param name="parent">The hub or link metadata reference declared as the PIT parent.</param>
+  /// <param name="satelliteNames">The satellite metadata names included in declaration order.</param>
+  public DataVaultPitMetadata(DataVaultMetadataReference parent, IEnumerable<string> satelliteNames)
+      : this(parent, CreateSatelliteReferences(satelliteNames)) {
+  }
+
+  /// <summary>
+  /// Initializes a new PIT metadata declaration from satellite references in declaration order.
+  /// </summary>
+  /// <param name="parent">The hub or link metadata reference declared as the PIT parent.</param>
+  /// <param name="satellites">The satellite metadata references included in declaration order.</param>
+  public DataVaultPitMetadata(
+      DataVaultMetadataReference parent,
+      IEnumerable<DataVaultPitSatelliteReferenceMetadata> satellites) {
+    ArgumentNullException.ThrowIfNull(parent);
+
+    Parent = parent;
+    Satellites = DataVaultMetadataValidation.RequireItems(satellites, nameof(satellites));
+    Name = CreateDefaultName(parent.Name, Satellites);
+    HashKeyMetadata = TechnicalMetadataColumnContract.ForRole(TechnicalMetadataColumnRole.HashKey);
+    LoadTimestampMetadata = TechnicalMetadataColumnContract.ForRole(TechnicalMetadataColumnRole.LoadTimestamp);
+    TechnicalMetadataColumns =
+    [
+        HashKeyMetadata,
+        LoadTimestampMetadata,
+    ];
+  }
+
+  /// <summary>
+  /// Gets the deterministic provider-neutral PIT metadata name.
+  /// </summary>
+  public string Name { get; }
+
+  /// <summary>
+  /// Gets the hub or link metadata reference declared as the PIT parent.
+  /// </summary>
+  public DataVaultMetadataReference Parent { get; }
+
+  /// <summary>
+  /// Gets the satellite metadata references included in declaration order.
+  /// </summary>
+  public IReadOnlyList<DataVaultPitSatelliteReferenceMetadata> Satellites { get; }
+
+  /// <summary>
+  /// Gets the required parent hash-key technical metadata for the PIT projection.
+  /// </summary>
+  public TechnicalMetadataColumnContract HashKeyMetadata { get; }
+
+  /// <summary>
+  /// Gets the required PIT load-timestamp technical metadata.
+  /// </summary>
+  public TechnicalMetadataColumnContract LoadTimestampMetadata { get; }
+
+  /// <summary>
+  /// Gets the required technical metadata columns for PIT records.
+  /// </summary>
+  public IReadOnlyList<TechnicalMetadataColumnContract> TechnicalMetadataColumns { get; }
+
+  private static IReadOnlyList<DataVaultPitSatelliteReferenceMetadata> CreateSatelliteReferences(
+      IEnumerable<string> satelliteNames) {
+    ArgumentNullException.ThrowIfNull(satelliteNames);
+
+    return satelliteNames
+        .Select(satelliteName => new DataVaultPitSatelliteReferenceMetadata(satelliteName))
+        .ToArray();
+  }
+
+  private static string CreateDefaultName(
+      string parentName,
+      IEnumerable<DataVaultPitSatelliteReferenceMetadata> satellites) {
+    var namingPolicy = DefaultNamingPolicy.Instance;
+
+    return namingPolicy.NormalizeProducedIdentifier(parentName) +
+        string.Concat(satellites.Select(satellite => namingPolicy.NormalizeProducedIdentifier(satellite.SatelliteName)));
+  }
+}
+
 internal static class DataVaultMetadataValidation {
   public static string RequireName(string name, string parameterName) {
     ArgumentException.ThrowIfNullOrWhiteSpace(name, parameterName);
@@ -652,5 +761,19 @@ internal static class DataVaultMetadataValidation {
     }
 
     return kind;
+  }
+
+  public static IReadOnlyList<T> RequireItems<T>(IEnumerable<T> items, string parameterName)
+      where T : class {
+    ArgumentNullException.ThrowIfNull(items, parameterName);
+
+    var values = items.ToArray();
+    foreach (var value in values) {
+      if (value is null) {
+        throw new ArgumentException("Metadata declaration collections must not contain null values.", parameterName);
+      }
+    }
+
+    return values;
   }
 }
