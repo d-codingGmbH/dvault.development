@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0NWKC9ZME5BSCJFSQEQ02R",
   "ticket-type": "story",
   "title": "Story: Expose advanced configuration hooks needed by deferred capabilities",
-  "revision": "06EZ0Y5H8TB2XDZ7AG4178HS4R",
-  "status": "todo",
+  "revision": "06EZPQD6WJ3Q95NR428WKXC1NG",
+  "status": "done",
   "labels": [
-    "type/story",
-    "automation/bot-ready",
-    "area/configuration",
     "area/architecture",
-    "needs-po"
+    "area/configuration",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:16:04.6732003Z",
-  "updated-at": "2026-05-04T00:52:14.7905957Z"
+  "updated-at": "2026-05-06T03:38:32.0366927Z"
 }
