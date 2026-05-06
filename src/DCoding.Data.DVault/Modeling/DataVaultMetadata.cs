@@ -15,10 +15,15 @@ public enum DataVaultMetadataReferenceKind {
   /// References a link metadata declaration.
   /// </summary>
   Link,
+
+  /// <summary>
+  /// References a satellite metadata declaration.
+  /// </summary>
+  Satellite,
 }
 
 /// <summary>
-/// Represents a named hub or link metadata target.
+/// Represents a named hub, link, or satellite metadata target.
 /// </summary>
 public sealed class DataVaultMetadataReference {
   private DataVaultMetadataReference(DataVaultMetadataReferenceKind kind, string name) {
@@ -32,7 +37,7 @@ public sealed class DataVaultMetadataReference {
   public DataVaultMetadataReferenceKind Kind { get; }
 
   /// <summary>
-  /// Gets the referenced hub or link name.
+  /// Gets the referenced hub, link, or satellite name.
   /// </summary>
   public string Name { get; }
 
@@ -51,6 +56,15 @@ public sealed class DataVaultMetadataReference {
   public static DataVaultMetadataReference Link(string name) {
     return new DataVaultMetadataReference(
         DataVaultMetadataReferenceKind.Link,
+        DataVaultMetadataValidation.RequireName(name, nameof(name)));
+  }
+
+  /// <summary>
+  /// Creates a reference to satellite metadata.
+  /// </summary>
+  public static DataVaultMetadataReference Satellite(string name) {
+    return new DataVaultMetadataReference(
+        DataVaultMetadataReferenceKind.Satellite,
         DataVaultMetadataValidation.RequireName(name, nameof(name)));
   }
 }
@@ -341,6 +355,53 @@ public sealed class DataVaultSatelliteMetadata {
   public IReadOnlyList<TechnicalMetadataColumnContract> TechnicalMetadataColumns { get; }
 }
 
+/// <summary>
+/// Describes one provider-neutral point-in-time table declaration for one hub and ordered satellite snapshots.
+/// </summary>
+public sealed class DataVaultPointInTimeMetadata {
+  /// <summary>
+  /// Initializes a new point-in-time metadata declaration.
+  /// </summary>
+  /// <param name="name">The provider-neutral point-in-time table name base.</param>
+  /// <param name="hubReference">The hub referenced by the point-in-time table.</param>
+  /// <param name="satelliteReferences">The ordered satellite references captured by the point-in-time table.</param>
+  public DataVaultPointInTimeMetadata(
+      string name,
+      DataVaultMetadataReference hubReference,
+      IEnumerable<DataVaultMetadataReference> satelliteReferences) {
+    Name = DataVaultMetadataValidation.RequireName(name, nameof(name));
+    HubReference = DataVaultMetadataValidation.RequireHubReference(hubReference, nameof(hubReference));
+    SatelliteReferences = RequireSatelliteReferences(satelliteReferences);
+  }
+
+  /// <summary>
+  /// Gets the point-in-time table name base.
+  /// </summary>
+  public string Name { get; }
+
+  /// <summary>
+  /// Gets the hub referenced by the point-in-time table.
+  /// </summary>
+  public DataVaultMetadataReference HubReference { get; }
+
+  /// <summary>
+  /// Gets the ordered satellite references captured by the point-in-time table.
+  /// </summary>
+  public IReadOnlyList<DataVaultMetadataReference> SatelliteReferences { get; }
+
+  private static IReadOnlyList<DataVaultMetadataReference> RequireSatelliteReferences(
+      IEnumerable<DataVaultMetadataReference> satelliteReferences) {
+    ArgumentNullException.ThrowIfNull(satelliteReferences);
+
+    var values = satelliteReferences.ToArray();
+    foreach (var reference in values) {
+      DataVaultMetadataValidation.RequireSatelliteReference(reference, nameof(satelliteReferences));
+    }
+
+    return values;
+  }
+}
+
 internal static class DataVaultMetadataValidation {
   public static string RequireName(string name, string parameterName) {
     ArgumentException.ThrowIfNullOrWhiteSpace(name, parameterName);
@@ -373,6 +434,18 @@ internal static class DataVaultMetadataValidation {
 
     if (reference.Kind != DataVaultMetadataReferenceKind.Hub) {
       throw new ArgumentException("A link participant must reference a hub.", parameterName);
+    }
+
+    return reference;
+  }
+
+  public static DataVaultMetadataReference RequireSatelliteReference(
+      DataVaultMetadataReference reference,
+      string parameterName) {
+    ArgumentNullException.ThrowIfNull(reference, parameterName);
+
+    if (reference.Kind != DataVaultMetadataReferenceKind.Satellite) {
+      throw new ArgumentException("A point-in-time satellite reference must reference a satellite.", parameterName);
     }
 
     return reference;

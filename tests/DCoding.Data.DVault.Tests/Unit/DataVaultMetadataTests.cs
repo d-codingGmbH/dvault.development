@@ -95,6 +95,103 @@ public sealed class DataVaultMetadataTests {
   }
 
   [Fact]
+  public void PointInTimeMetadataRetainsHubAndSatelliteReferences() {
+    var pointInTime = new DataVaultPointInTimeMetadata(
+        "CustomerHistory",
+        DataVaultMetadataReference.Hub("Customer"),
+        [
+            DataVaultMetadataReference.Satellite("Contact"),
+            DataVaultMetadataReference.Satellite("Preferences"),
+        ]);
+
+    Assert.Equal("CustomerHistory", pointInTime.Name);
+    Assert.Equal(DataVaultMetadataReferenceKind.Hub, pointInTime.HubReference.Kind);
+    Assert.Equal("Customer", pointInTime.HubReference.Name);
+    Assert.Equal(
+        [DataVaultMetadataReferenceKind.Satellite, DataVaultMetadataReferenceKind.Satellite],
+        pointInTime.SatelliteReferences.Select(reference => reference.Kind));
+    Assert.Equal(["Contact", "Preferences"], pointInTime.SatelliteReferences.Select(reference => reference.Name));
+  }
+
+  [Fact]
+  public void MetadataModelValidatesPointInTimeReferencesAgainstDeclaredHubsAndSatellites() {
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
+    var order = new DataVaultHubMetadata("Order", ["OrderId"]);
+    var contact = new DataVaultSatelliteMetadata("Contact", customer.ToReference(), ["EmailAddress"]);
+    var preferences = new DataVaultSatelliteMetadata("Preferences", customer.ToReference(), ["LanguageCode"]);
+    var orderStatus = new DataVaultSatelliteMetadata("OrderStatus", order.ToReference(), ["StatusCode"]);
+
+    var model = new DataVaultMetadataModel(
+        [customer, order],
+        [],
+        [contact, preferences, orderStatus],
+        [
+            new DataVaultPointInTimeMetadata(
+                "CustomerHistory",
+                customer.ToReference(),
+                [
+                    DataVaultMetadataReference.Satellite("Contact"),
+                    DataVaultMetadataReference.Satellite("Preferences"),
+                ]),
+        ]);
+
+    var pointInTime = Assert.Single(model.PointInTimeTables);
+
+    Assert.Equal("CustomerHistory", pointInTime.Name);
+    Assert.Equal("Customer", pointInTime.HubReference.Name);
+    Assert.Equal(["Contact", "Preferences"], pointInTime.SatelliteReferences.Select(reference => reference.Name));
+  }
+
+  [Fact]
+  public void MetadataModelRejectsInvalidPointInTimeReferences() {
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
+    var order = new DataVaultHubMetadata("Order", ["OrderId"]);
+    var contact = new DataVaultSatelliteMetadata("Contact", customer.ToReference(), ["EmailAddress"]);
+    var orderStatus = new DataVaultSatelliteMetadata("OrderStatus", order.ToReference(), ["StatusCode"]);
+
+    AssertPointInTimeValidation(
+        "missing hub",
+        [],
+        [contact],
+        new DataVaultPointInTimeMetadata(
+            "CustomerHistory",
+            customer.ToReference(),
+            [DataVaultMetadataReference.Satellite("Contact")]));
+    AssertPointInTimeValidation(
+        "at least one satellite",
+        [customer],
+        [contact],
+        new DataVaultPointInTimeMetadata("CustomerHistory", customer.ToReference(), []));
+    AssertPointInTimeValidation(
+        "missing satellite",
+        [customer],
+        [contact],
+        new DataVaultPointInTimeMetadata(
+            "CustomerHistory",
+            customer.ToReference(),
+            [DataVaultMetadataReference.Satellite("Preferences")]));
+    AssertPointInTimeValidation(
+        "does not belong to hub",
+        [customer, order],
+        [contact, orderStatus],
+        new DataVaultPointInTimeMetadata(
+            "CustomerHistory",
+            customer.ToReference(),
+            [DataVaultMetadataReference.Satellite("OrderStatus")]));
+    AssertPointInTimeValidation(
+        "more than once",
+        [customer],
+        [contact],
+        new DataVaultPointInTimeMetadata(
+            "CustomerHistory",
+            customer.ToReference(),
+            [
+                DataVaultMetadataReference.Satellite("Contact"),
+                DataVaultMetadataReference.Satellite("Contact"),
+            ]));
+  }
+
+  [Fact]
   public void MetadataAbstractionsUseProviderNeutralClrContracts() {
     var metadataTypes = new[]
     {
@@ -102,6 +199,7 @@ public sealed class DataVaultMetadataTests {
             typeof(DataVaultHubMetadata),
             typeof(DataVaultLinkMetadata),
             typeof(DataVaultLinkParticipantMetadata),
+            typeof(DataVaultPointInTimeMetadata),
             typeof(DataVaultSatelliteMetadata),
             typeof(DataVaultSatellitePayloadMetadata),
         };
@@ -121,6 +219,7 @@ public sealed class DataVaultMetadataTests {
       ThrowsArgumentException(() => new DataVaultHubMetadata("Customer", [invalidName!]));
       ThrowsArgumentException(() => DataVaultMetadataReference.Hub(invalidName!));
       ThrowsArgumentException(() => DataVaultMetadataReference.Link(invalidName!));
+      ThrowsArgumentException(() => DataVaultMetadataReference.Satellite(invalidName!));
       ThrowsArgumentException(() => new DataVaultLinkMetadata(
           invalidName!,
           [DataVaultMetadataReference.Hub("Customer"), DataVaultMetadataReference.Hub("Order")]));
@@ -132,6 +231,10 @@ public sealed class DataVaultMetadataTests {
           "CustomerContact",
           DataVaultMetadataReference.Hub("Customer"),
           [invalidName!]));
+      ThrowsArgumentException(() => new DataVaultPointInTimeMetadata(
+          invalidName!,
+          DataVaultMetadataReference.Hub("Customer"),
+          [DataVaultMetadataReference.Satellite("Contact")]));
       ThrowsArgumentException(() => new DataVaultBusinessKeyMetadata(invalidName!));
       ThrowsArgumentException(() => new DataVaultSatellitePayloadMetadata(invalidName!));
     }
@@ -151,6 +254,10 @@ public sealed class DataVaultMetadataTests {
         "CustomerContact",
         DataVaultMetadataReference.Hub("Customer"),
         []));
+    Assert.Throws<ArgumentNullException>(() => new DataVaultPointInTimeMetadata(
+        "CustomerHistory",
+        DataVaultMetadataReference.Hub("Customer"),
+        null!));
   }
 
   [Fact]
@@ -172,10 +279,33 @@ public sealed class DataVaultMetadataTests {
         ["EmailAddress"]));
   }
 
+  [Fact]
+  public void PointInTimeMetadataRequiresHubAndSatelliteReferences() {
+    ThrowsArgumentException(() => new DataVaultPointInTimeMetadata(
+        "CustomerHistory",
+        DataVaultMetadataReference.Link("CustomerOrder"),
+        [DataVaultMetadataReference.Satellite("Contact")]));
+    ThrowsArgumentException(() => new DataVaultPointInTimeMetadata(
+        "CustomerHistory",
+        DataVaultMetadataReference.Hub("Customer"),
+        [DataVaultMetadataReference.Hub("Customer")]));
+  }
+
   private static void ThrowsArgumentException(Action action) {
     var exception = Record.Exception(action);
 
     Assert.IsAssignableFrom<ArgumentException>(exception);
+  }
+
+  private static void AssertPointInTimeValidation(
+      string expectedMessage,
+      IEnumerable<DataVaultHubMetadata> hubs,
+      IEnumerable<DataVaultSatelliteMetadata> satellites,
+      DataVaultPointInTimeMetadata pointInTimeTable) {
+    var exception = Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel(hubs, [], satellites, [pointInTimeTable]));
+
+    Assert.Equal("pointInTimeTables", exception.ParamName);
+    Assert.Contains(expectedMessage, exception.Message, StringComparison.Ordinal);
   }
 
   private static void AssertRequiredRoles(

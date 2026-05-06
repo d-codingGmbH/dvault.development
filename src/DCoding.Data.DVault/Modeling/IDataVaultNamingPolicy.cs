@@ -20,9 +20,19 @@ public interface IDataVaultNamingPolicy {
   string GetSatelliteTableName(DataVaultSatelliteNameContext context);
 
   /// <summary>
+  /// Returns the table name for a point-in-time table.
+  /// </summary>
+  string GetPointInTimeTableName(DataVaultPointInTimeNameContext context);
+
+  /// <summary>
   /// Returns the name for a Data Vault technical column.
   /// </summary>
   string GetTechnicalColumnName(DataVaultTechnicalColumnNameContext context);
+
+  /// <summary>
+  /// Returns the name for a point-in-time table column.
+  /// </summary>
+  string GetPointInTimeColumnName(DataVaultPointInTimeColumnNameContext context);
 
   /// <summary>
   /// Returns the name for an index produced by the modeling flow.
@@ -51,11 +61,29 @@ public sealed record DataVaultLinkNameContext(string? RelationshipName, IReadOnl
 public sealed record DataVaultSatelliteNameContext(string ParentEntityName, string SatelliteName);
 
 /// <summary>
+/// Describes a point-in-time table name request.
+/// </summary>
+public sealed record DataVaultPointInTimeNameContext(
+    string PointInTimeName,
+    string HubName,
+    IReadOnlyList<string> SatelliteNames);
+
+/// <summary>
 /// Describes a technical column name request.
 /// </summary>
 public sealed record DataVaultTechnicalColumnNameContext(
     DataVaultTechnicalColumnKind Kind,
     string BaseName,
+    string OwnerTableName);
+
+/// <summary>
+/// Describes a point-in-time table column name request.
+/// </summary>
+public sealed record DataVaultPointInTimeColumnNameContext(
+    DataVaultPointInTimeColumnKind Kind,
+    string PointInTimeName,
+    string HubName,
+    string? SatelliteName,
     string OwnerTableName);
 
 /// <summary>
@@ -98,6 +126,26 @@ public enum DataVaultTechnicalColumnKind {
   /// Record source column.
   /// </summary>
   RecordSource,
+}
+
+/// <summary>
+/// Identifies point-in-time table column families.
+/// </summary>
+public enum DataVaultPointInTimeColumnKind {
+  /// <summary>
+  /// Hash-key reference to the PIT table's hub.
+  /// </summary>
+  HubHashKeyReference,
+
+  /// <summary>
+  /// PIT load timestamp used with the hub hash-key reference as the table key.
+  /// </summary>
+  LoadTimestamp,
+
+  /// <summary>
+  /// Snapshot load-timestamp reference for one participating satellite.
+  /// </summary>
+  SatelliteSnapshotLoadTimestampReference,
 }
 
 /// <summary>

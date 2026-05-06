@@ -33,6 +33,12 @@ public sealed class DefaultDataVaultNamingPolicy : IDataVaultNamingPolicy {
   }
 
   /// <inheritdoc />
+  public string GetPointInTimeTableName(DataVaultPointInTimeNameContext context) {
+    ArgumentNullException.ThrowIfNull(context);
+    return "Pit" + DefaultPolicy.NormalizeObjectName(context.PointInTimeName);
+  }
+
+  /// <inheritdoc />
   public string GetTechnicalColumnName(DataVaultTechnicalColumnNameContext context) {
     ArgumentNullException.ThrowIfNull(context);
     return context.Kind switch {
@@ -41,6 +47,18 @@ public sealed class DefaultDataVaultNamingPolicy : IDataVaultNamingPolicy {
       DataVaultTechnicalColumnKind.LoadTimestamp => DefaultPolicy.GetLoadTimestampColumnName(),
       DataVaultTechnicalColumnKind.RecordSource => DefaultPolicy.GetRecordSourceColumnName(),
       _ => throw new ArgumentOutOfRangeException(nameof(context), context.Kind, "Unsupported technical column kind."),
+    };
+  }
+
+  /// <inheritdoc />
+  public string GetPointInTimeColumnName(DataVaultPointInTimeColumnNameContext context) {
+    ArgumentNullException.ThrowIfNull(context);
+    return context.Kind switch {
+      DataVaultPointInTimeColumnKind.HubHashKeyReference => DefaultPolicy.GetHashKeyColumnName(context.HubName),
+      DataVaultPointInTimeColumnKind.LoadTimestamp => "Pit" + DefaultPolicy.GetLoadTimestampColumnName(),
+      DataVaultPointInTimeColumnKind.SatelliteSnapshotLoadTimestampReference =>
+          NormalizeProducedName(RequireSatelliteName(context)) + DefaultPolicy.GetLoadTimestampColumnName(),
+      _ => throw new ArgumentOutOfRangeException(nameof(context), context.Kind, "Unsupported point-in-time column kind."),
     };
   }
 
@@ -87,6 +105,14 @@ public sealed class DefaultDataVaultNamingPolicy : IDataVaultNamingPolicy {
       DataVaultConstraintKind.ForeignKey => "Fk",
       _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported constraint kind."),
     };
+  }
+
+  private static string RequireSatelliteName(DataVaultPointInTimeColumnNameContext context) {
+    if (string.IsNullOrWhiteSpace(context.SatelliteName)) {
+      throw new ArgumentException("A point-in-time satellite snapshot column requires a satellite name.", nameof(context));
+    }
+
+    return context.SatelliteName;
   }
 
   private static string JoinProducedNames(IEnumerable<string> names) {

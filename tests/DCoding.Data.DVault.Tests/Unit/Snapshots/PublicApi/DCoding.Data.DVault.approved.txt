@@ -225,6 +225,7 @@ type public enum DCoding.Data.DVault.Modeling.DataVaultColumnKind
   value Technical = 0
   value BusinessKey = 1
   value Payload = 2
+  value PointInTime = 3
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultConstraint : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultConstraint>
   ctor public DataVaultConstraint(string Name, DCoding.Data.DVault.Modeling.DataVaultConstraintKind Kind, System.Collections.Generic.IReadOnlyList<string> ColumnNames)
@@ -353,20 +354,25 @@ type public sealed class DCoding.Data.DVault.Modeling.DataVaultLinkParticipantMe
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultMetadataModel
   ctor public DataVaultMetadataModel(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> hubs, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> links, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> satellites)
+  ctor public DataVaultMetadataModel(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> hubs, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> links, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> satellites, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultPointInTimeMetadata> pointInTimeTables)
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> Hubs { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> Links { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultPointInTimeMetadata> PointInTimeTables { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> Satellites { get; }
   method public static DCoding.Data.DVault.Modeling.DataVaultMetadataModel Create(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> hubs, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> links, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> satellites)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataModel Create(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> hubs, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> links, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> satellites, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultPointInTimeMetadata> pointInTimeTables)
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultMetadataReference
   property public DCoding.Data.DVault.Modeling.DataVaultMetadataReferenceKind Kind { get; }
   property public string Name { get; }
   method public static DCoding.Data.DVault.Modeling.DataVaultMetadataReference Hub(string name)
   method public static DCoding.Data.DVault.Modeling.DataVaultMetadataReference Link(string name)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataReference Satellite(string name)
 
 type public enum DCoding.Data.DVault.Modeling.DataVaultMetadataReferenceKind
   value Hub = 0
   value Link = 1
+  value Satellite = 2
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultModel
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultTable> Tables { get; }
@@ -380,6 +386,8 @@ type public sealed class DCoding.Data.DVault.Modeling.DataVaultModelBuilder
   method public DCoding.Data.DVault.Modeling.DataVaultModel Build()
   method public DCoding.Data.DVault.Modeling.DataVaultModelBuilder Link(System.Collections.Generic.IEnumerable<string> participantNames)
   method public DCoding.Data.DVault.Modeling.DataVaultModelBuilder Link(string? relationshipName, System.Collections.Generic.IEnumerable<string> participantNames)
+  method public DCoding.Data.DVault.Modeling.DataVaultModelBuilder PointInTime(string pointInTimeName, string hubName, System.Collections.Generic.IEnumerable<string> satelliteNames)
+  method public DCoding.Data.DVault.Modeling.DataVaultPointInTimeBuilder PointInTime(string pointInTimeName, string hubName, System.Action<DCoding.Data.DVault.Modeling.DataVaultPointInTimeBuilder>? configure = null)
 
 type public static class DCoding.Data.DVault.Modeling.DataVaultModelBuilderExtensions
   method public static DCoding.Data.DVault.Modeling.DataVaultModelBuilder UseDataVault(this DCoding.Data.DVault.Modeling.DataVaultModelBuilder modelBuilder)
@@ -397,6 +405,62 @@ type public sealed class DCoding.Data.DVault.Modeling.DataVaultModelOptions
   ctor public DataVaultModelOptions()
   property public DCoding.Data.DVault.Modeling.IDataVaultNamingPolicy? NamingPolicy { get; set; }
   method public DCoding.Data.DVault.Modeling.DataVaultModelOptions UseNamingPolicy(DCoding.Data.DVault.Modeling.IDataVaultNamingPolicy? namingPolicy)
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultPointInTimeBuilder
+  method public DCoding.Data.DVault.Modeling.DataVaultPointInTimeBuilder Satellite(string satelliteName)
+
+type public enum DCoding.Data.DVault.Modeling.DataVaultPointInTimeColumnKind
+  value HubHashKeyReference = 0
+  value LoadTimestamp = 1
+  value SatelliteSnapshotLoadTimestampReference = 2
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultPointInTimeColumnNameContext : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultPointInTimeColumnNameContext>
+  ctor public DataVaultPointInTimeColumnNameContext(DCoding.Data.DVault.Modeling.DataVaultPointInTimeColumnKind Kind, string PointInTimeName, string HubName, string? SatelliteName, string OwnerTableName)
+  property public DCoding.Data.DVault.Modeling.DataVaultPointInTimeColumnKind Kind { get; init; }
+  property public string HubName { get; init; }
+  property public string OwnerTableName { get; init; }
+  property public string PointInTimeName { get; init; }
+  property public string? SatelliteName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.Modeling.DataVaultPointInTimeColumnNameContext? left, DCoding.Data.DVault.Modeling.DataVaultPointInTimeColumnNameContext? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.Modeling.DataVaultPointInTimeColumnNameContext? left, DCoding.Data.DVault.Modeling.DataVaultPointInTimeColumnNameContext? right)
+  method public virtual bool Equals(DCoding.Data.DVault.Modeling.DataVaultPointInTimeColumnNameContext? other)
+  method public void Deconstruct(out DCoding.Data.DVault.Modeling.DataVaultPointInTimeColumnKind Kind, out string PointInTimeName, out string HubName, out string? SatelliteName, out string OwnerTableName)
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultPointInTimeField : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultPointInTimeField>
+  ctor public DataVaultPointInTimeField(string Name, DCoding.Data.DVault.Modeling.DataVaultPointInTimeColumnKind Kind, string? SatelliteName, int? KeyOrdinal)
+  property public DCoding.Data.DVault.Modeling.DataVaultPointInTimeColumnKind Kind { get; init; }
+  property public int? KeyOrdinal { get; init; }
+  property public string Name { get; init; }
+  property public string? SatelliteName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.Modeling.DataVaultPointInTimeField? left, DCoding.Data.DVault.Modeling.DataVaultPointInTimeField? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.Modeling.DataVaultPointInTimeField? left, DCoding.Data.DVault.Modeling.DataVaultPointInTimeField? right)
+  method public virtual bool Equals(DCoding.Data.DVault.Modeling.DataVaultPointInTimeField? other)
+  method public void Deconstruct(out string Name, out DCoding.Data.DVault.Modeling.DataVaultPointInTimeColumnKind Kind, out string? SatelliteName, out int? KeyOrdinal)
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultPointInTimeMetadata
+  ctor public DataVaultPointInTimeMetadata(string name, DCoding.Data.DVault.Modeling.DataVaultMetadataReference hubReference, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultMetadataReference> satelliteReferences)
+  property public DCoding.Data.DVault.Modeling.DataVaultMetadataReference HubReference { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultMetadataReference> SatelliteReferences { get; }
+  property public string Name { get; }
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultPointInTimeNameContext : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultPointInTimeNameContext>
+  ctor public DataVaultPointInTimeNameContext(string PointInTimeName, string HubName, System.Collections.Generic.IReadOnlyList<string> SatelliteNames)
+  property public System.Collections.Generic.IReadOnlyList<string> SatelliteNames { get; init; }
+  property public string HubName { get; init; }
+  property public string PointInTimeName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.Modeling.DataVaultPointInTimeNameContext? left, DCoding.Data.DVault.Modeling.DataVaultPointInTimeNameContext? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.Modeling.DataVaultPointInTimeNameContext? left, DCoding.Data.DVault.Modeling.DataVaultPointInTimeNameContext? right)
+  method public virtual bool Equals(DCoding.Data.DVault.Modeling.DataVaultPointInTimeNameContext? other)
+  method public void Deconstruct(out string PointInTimeName, out string HubName, out System.Collections.Generic.IReadOnlyList<string> SatelliteNames)
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatelliteBuilder
   method public DCoding.Data.DVault.Modeling.DataVaultSatelliteBuilder Payload(string propertyName)
@@ -430,16 +494,19 @@ type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatellitePayloadM
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultTable
   ctor public DataVaultTable(string name, DCoding.Data.DVault.Modeling.DataVaultTableKind kind, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultColumn> columns, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultIndex> indexes, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultConstraint> constraints)
+  ctor public DataVaultTable(string name, DCoding.Data.DVault.Modeling.DataVaultTableKind kind, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultColumn> columns, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultIndex> indexes, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultConstraint> constraints, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultPointInTimeField> pointInTimeFields)
   property public DCoding.Data.DVault.Modeling.DataVaultTableKind Kind { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultColumn> Columns { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultConstraint> Constraints { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultIndex> Indexes { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultPointInTimeField> PointInTimeFields { get; }
   property public string Name { get; }
 
 type public enum DCoding.Data.DVault.Modeling.DataVaultTableKind
   value Hub = 0
   value Link = 1
   value Satellite = 2
+  value PointInTime = 3
 
 type public enum DCoding.Data.DVault.Modeling.DataVaultTechnicalColumnKind
   value HashKey = 0
@@ -467,6 +534,8 @@ type public sealed class DCoding.Data.DVault.Modeling.DefaultDataVaultNamingPoli
   method public virtual string GetHubTableName(DCoding.Data.DVault.Modeling.DataVaultHubNameContext context)
   method public virtual string GetIndexName(DCoding.Data.DVault.Modeling.DataVaultIndexNameContext context)
   method public virtual string GetLinkTableName(DCoding.Data.DVault.Modeling.DataVaultLinkNameContext context)
+  method public virtual string GetPointInTimeColumnName(DCoding.Data.DVault.Modeling.DataVaultPointInTimeColumnNameContext context)
+  method public virtual string GetPointInTimeTableName(DCoding.Data.DVault.Modeling.DataVaultPointInTimeNameContext context)
   method public virtual string GetSatelliteTableName(DCoding.Data.DVault.Modeling.DataVaultSatelliteNameContext context)
   method public virtual string GetTechnicalColumnName(DCoding.Data.DVault.Modeling.DataVaultTechnicalColumnNameContext context)
 
@@ -491,6 +560,8 @@ type public interface DCoding.Data.DVault.Modeling.IDataVaultNamingPolicy
   method public abstract string GetHubTableName(DCoding.Data.DVault.Modeling.DataVaultHubNameContext context)
   method public abstract string GetIndexName(DCoding.Data.DVault.Modeling.DataVaultIndexNameContext context)
   method public abstract string GetLinkTableName(DCoding.Data.DVault.Modeling.DataVaultLinkNameContext context)
+  method public abstract string GetPointInTimeColumnName(DCoding.Data.DVault.Modeling.DataVaultPointInTimeColumnNameContext context)
+  method public abstract string GetPointInTimeTableName(DCoding.Data.DVault.Modeling.DataVaultPointInTimeNameContext context)
   method public abstract string GetSatelliteTableName(DCoding.Data.DVault.Modeling.DataVaultSatelliteNameContext context)
   method public abstract string GetTechnicalColumnName(DCoding.Data.DVault.Modeling.DataVaultTechnicalColumnNameContext context)
 

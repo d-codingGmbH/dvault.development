@@ -262,9 +262,11 @@ public sealed class DataVaultEfMetadataTranslationTests {
     Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel(null!, [], []));
     Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel([], null!, []));
     Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel([], [], null!));
+    Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel([], [], [], null!));
     Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel([null!], [], []));
     Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel([], [null!], []));
     Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel([], [], [null!]));
+    Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel([], [], [], [null!]));
   }
 
   private static IMutableModel CreateTranslatedModel() {
