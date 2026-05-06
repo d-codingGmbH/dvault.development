@@ -3,19 +3,18 @@
   "ticket-id": "06EZ0NVX3RYPTFZKYCYEH9HB8W",
   "ticket-type": "task",
   "title": "Task: Define multi-active satellite driving-key contract",
-  "revision": "06EZ0Y4PSCQP9HWDFKTBY5JX4C",
-  "status": "todo",
+  "revision": "06EZRQKRSJ3H07NHF0B9P1TGJG",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
+    "area/api",
     "area/modeling",
     "area/multi-active-satellite",
-    "area/api",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:15:59.2321041Z",
-  "updated-at": "2026-05-04T00:52:08.0112667Z"
+  "updated-at": "2026-05-06T08:19:02.9881703Z"
 }
