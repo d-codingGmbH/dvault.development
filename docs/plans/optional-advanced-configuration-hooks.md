@@ -38,6 +38,58 @@ The default path requires no user action:
 
 Unset hooks must inherit these defaults. Defaults must be deterministic across machines, processes, cultures, time zones, providers, and repeated runs unless a later ticket explicitly changes a versioned convention.
 
+## Deterministic Default Examples
+
+The following examples illustrate default behavior without requiring any advanced hook configuration:
+
+| Category | Deterministic default example | Hidden inputs avoided |
+| --- | --- | --- |
+| Naming conventions | A hub named `Customer` uses the default hub table shape `HubCustomer`; a link over `Customer` and `Order` with no explicit relationship name uses declaration order for `LinkCustomerOrder`; the technical columns remain `LoadTimestamp` and `RecordSource`. | Provider dialect, current culture, machine name, deployment name, and random suffixes. |
+| Hashing behavior | The default stable hash service uses the `sha256-v1` algorithm identifier for normalized model text, and logical persistence content hashes use SHA-256 over canonical payload bytes. | Process-local salts, current time, serializer iteration order, provider-generated identifiers, and current directory values. |
+| Record source resolution | With default services, an explicit save request carrying `recordSource: "crm-import"` resolves to the same lineage value for every hub, link, and satellite operation in that request. | Generic fallback text, ambient tenant state, local files, machine identity, and mutable process state. |
+| Timestamp sourcing and formatting | With default services, an explicit save request carrying the UTC instant `2026-05-04T12:00:00Z` resolves that UTC instant at the save boundary before provider dispatch. | Local time, current clock, current culture, database defaults, and provider-local time zones. |
+| Provider behavior | Without provider-specific strategy registration, the provider-neutral save service preserves the same logical fields, canonical payload bytes, hash values, record source, and UTC timestamp semantics. | Provider-name branching in core logic, silent field dropping, provider-only metadata, and dialect-specific identity changes. |
+
+## When Not To Configure Advanced Hooks
+
+Do not configure advanced hooks for ordinary convention-first setup. The default `AddDVault()` path remains the expected startup path when the application can supply explicit save requests with UTC load timestamps and record sources, accepts the default naming policy, and does not need provider-specific physical behavior.
+
+Do not use advanced hooks to hide missing ingest metadata, make provider defaults fill required DVault fields, change logical identity without a versioned migration plan, or make tests depend on the current clock, current culture, random values, machine-specific inputs, or process-local state. A hook is appropriate only when the application has a deterministic rule that preserves the DVault logical contract and fails clearly when the rule cannot be applied.
+
+## Current Source-Backed Resolver Configuration
+
+The current source-backed custom configuration surface is limited to resolver replacement through `DataVaultOptions` at the explicit save-service boundary. The example below intentionally uses exactly one custom path: `UseRecordSourceResolver<TResolver>()` with `IDataVaultRecordSourceResolver`. Naming, hashing, provider behavior, timestamp formatting, and broader hook APIs remain planned expansion boundaries, not implemented public APIs.
+
+```csharp
+using System;
+using System.Collections.Generic;
+using DCoding.Data.DVault;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+
+services.AddDVault(options =>
+    options.UseRecordSourceResolver<CanonicalRecordSourceResolver>());
+
+internal sealed class CanonicalRecordSourceResolver : IDataVaultRecordSourceResolver {
+  private static readonly IReadOnlyDictionary<string, string> SourceAliases =
+      new Dictionary<string, string>(StringComparer.Ordinal) {
+        ["crm-import"] = "crm",
+        ["orders-import"] = "orders",
+      };
+
+  public string? ResolveRecordSource(DataVaultRecordSourceResolutionContext context) {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return SourceAliases.TryGetValue(context.Request.RecordSource, out var source)
+        ? source
+        : null;
+  }
+}
+```
+
+This resolver is deterministic because it depends only on the explicit request value and an ordinal in-process mapping. Returning `null` for an unmapped source is intentional: the save service treats a missing or empty resolver output as an invalid record source instead of silently substituting a generic fallback.
+
 ## Naming Hook
 
 Default behavior:
@@ -100,8 +152,8 @@ Optional customization:
 
 Validation expectations:
 
-- Custom record source resolution must fail clearly when it produces a missing, empty, ambiguous, or non-reproducible source value.
-- Custom record source resolution must preserve lineage semantics and must not silently replace unknown sources with a generic fallback.
+- Custom record source resolution must fail clearly when it produces a missing, empty, ambiguous, non-reproducible, generic fallback, or lineage-erasing source value.
+- Custom record source resolution must preserve lineage semantics and must not silently replace meaningful unknown sources with a generic fallback.
 
 Future expansion boundary:
 
@@ -124,7 +176,7 @@ Optional customization:
 
 Validation expectations:
 
-- Custom timestamp behavior must fail clearly for missing required timestamps, non-UTC logical values, ambiguous offsets, non-normalized formats, unsupported precision, or values that cannot round trip through the provider boundary.
+- Custom timestamp behavior must fail clearly for missing required timestamps, non-UTC logical values, ambiguous offsets, non-normalized formats, unsupported precision, or non-round-trippable values through the provider boundary.
 - Custom timestamp behavior must not silently use local time, current culture, provider defaults, or lossy conversion when the logical contract requires UTC.
 
 Future expansion boundary:

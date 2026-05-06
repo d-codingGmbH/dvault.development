@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0NX9SVP7MSB1R4PJ50EHGW",
   "ticket-type": "task",
   "title": "Task: Document advanced hook validation and failure modes",
-  "revision": "06EZ0Y4Z0SQY4K83Q817M9VKS0",
-  "status": "todo",
+  "revision": "06EZNRTJF9TEGHYM16A0CJBAS8",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
-    "area/docs",
     "area/configuration",
-    "needs-po"
+    "area/docs",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:16:10.3223336Z",
-  "updated-at": "2026-05-04T00:52:10.1184341Z"
+  "updated-at": "2026-05-06T01:24:55.0341684Z"
 }
