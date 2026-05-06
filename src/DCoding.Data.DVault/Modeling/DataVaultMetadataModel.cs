@@ -14,7 +14,12 @@ public sealed class DataVaultMetadataModel {
       IEnumerable<DataVaultHubMetadata> hubs,
       IEnumerable<DataVaultLinkMetadata> links,
       IEnumerable<DataVaultSatelliteMetadata> satellites)
-      : this(hubs, links, satellites, Array.Empty<DataVaultPointInTimeMetadata>()) {
+      : this(
+          hubs,
+          links,
+          satellites,
+          Array.Empty<DataVaultPointInTimeMetadata>(),
+          Array.Empty<DataVaultBridgeMetadata>()) {
   }
 
   /// <summary>
@@ -28,13 +33,46 @@ public sealed class DataVaultMetadataModel {
       IEnumerable<DataVaultHubMetadata> hubs,
       IEnumerable<DataVaultLinkMetadata> links,
       IEnumerable<DataVaultSatelliteMetadata> satellites,
-      IEnumerable<DataVaultPointInTimeMetadata> pointInTimeTables) {
+      IEnumerable<DataVaultPointInTimeMetadata> pointInTimeTables)
+      : this(hubs, links, satellites, pointInTimeTables, Array.Empty<DataVaultBridgeMetadata>()) {
+  }
+
+  /// <summary>
+  /// Initializes a new aggregate metadata model with optional bridge declarations.
+  /// </summary>
+  /// <param name="hubs">The hub metadata declarations to translate.</param>
+  /// <param name="links">The link metadata declarations to translate.</param>
+  /// <param name="satellites">The satellite metadata declarations to translate.</param>
+  /// <param name="bridges">The bridge metadata declarations to validate and expose.</param>
+  public DataVaultMetadataModel(
+      IEnumerable<DataVaultHubMetadata> hubs,
+      IEnumerable<DataVaultLinkMetadata> links,
+      IEnumerable<DataVaultSatelliteMetadata> satellites,
+      IEnumerable<DataVaultBridgeMetadata> bridges)
+      : this(hubs, links, satellites, Array.Empty<DataVaultPointInTimeMetadata>(), bridges) {
+  }
+
+  /// <summary>
+  /// Initializes a new aggregate metadata model with optional point-in-time and bridge declarations.
+  /// </summary>
+  /// <param name="hubs">The hub metadata declarations to translate.</param>
+  /// <param name="links">The link metadata declarations to translate.</param>
+  /// <param name="satellites">The satellite metadata declarations to translate.</param>
+  /// <param name="pointInTimeTables">The point-in-time metadata declarations to validate and expose.</param>
+  /// <param name="bridges">The bridge metadata declarations to validate and expose.</param>
+  public DataVaultMetadataModel(
+      IEnumerable<DataVaultHubMetadata> hubs,
+      IEnumerable<DataVaultLinkMetadata> links,
+      IEnumerable<DataVaultSatelliteMetadata> satellites,
+      IEnumerable<DataVaultPointInTimeMetadata> pointInTimeTables,
+      IEnumerable<DataVaultBridgeMetadata> bridges) {
     Hubs = RequireItems(hubs, nameof(hubs));
     Links = RequireItems(links, nameof(links));
     Satellites = RequireItems(satellites, nameof(satellites));
     PointInTimeTables = RequireItems(pointInTimeTables, nameof(pointInTimeTables));
-
+    Bridges = RequireItems(bridges, nameof(bridges));
     ValidatePointInTimeTables();
+    ValidateBridges();
   }
 
   /// <summary>
@@ -56,6 +94,11 @@ public sealed class DataVaultMetadataModel {
   /// Gets the point-in-time metadata declarations to validate and expose.
   /// </summary>
   public IReadOnlyList<DataVaultPointInTimeMetadata> PointInTimeTables { get; }
+
+  /// <summary>
+  /// Gets the bridge metadata declarations to validate and expose.
+  /// </summary>
+  public IReadOnlyList<DataVaultBridgeMetadata> Bridges { get; }
 
   /// <summary>
   /// Creates a new aggregate metadata model from provider-neutral Data Vault declarations.
@@ -85,6 +128,40 @@ public sealed class DataVaultMetadataModel {
       IEnumerable<DataVaultSatelliteMetadata> satellites,
       IEnumerable<DataVaultPointInTimeMetadata> pointInTimeTables) {
     return new DataVaultMetadataModel(hubs, links, satellites, pointInTimeTables);
+  }
+
+  /// <summary>
+  /// Creates a new aggregate metadata model from provider-neutral Data Vault declarations with bridge declarations.
+  /// </summary>
+  /// <param name="hubs">The hub metadata declarations to translate.</param>
+  /// <param name="links">The link metadata declarations to translate.</param>
+  /// <param name="satellites">The satellite metadata declarations to translate.</param>
+  /// <param name="bridges">The bridge metadata declarations to validate and expose.</param>
+  /// <returns>The aggregate metadata model.</returns>
+  public static DataVaultMetadataModel Create(
+      IEnumerable<DataVaultHubMetadata> hubs,
+      IEnumerable<DataVaultLinkMetadata> links,
+      IEnumerable<DataVaultSatelliteMetadata> satellites,
+      IEnumerable<DataVaultBridgeMetadata> bridges) {
+    return new DataVaultMetadataModel(hubs, links, satellites, bridges);
+  }
+
+  /// <summary>
+  /// Creates a new aggregate metadata model from provider-neutral Data Vault declarations with point-in-time and bridge declarations.
+  /// </summary>
+  /// <param name="hubs">The hub metadata declarations to translate.</param>
+  /// <param name="links">The link metadata declarations to translate.</param>
+  /// <param name="satellites">The satellite metadata declarations to translate.</param>
+  /// <param name="pointInTimeTables">The point-in-time metadata declarations to validate and expose.</param>
+  /// <param name="bridges">The bridge metadata declarations to validate and expose.</param>
+  /// <returns>The aggregate metadata model.</returns>
+  public static DataVaultMetadataModel Create(
+      IEnumerable<DataVaultHubMetadata> hubs,
+      IEnumerable<DataVaultLinkMetadata> links,
+      IEnumerable<DataVaultSatelliteMetadata> satellites,
+      IEnumerable<DataVaultPointInTimeMetadata> pointInTimeTables,
+      IEnumerable<DataVaultBridgeMetadata> bridges) {
+    return new DataVaultMetadataModel(hubs, links, satellites, pointInTimeTables, bridges);
   }
 
   private static IReadOnlyList<T> RequireItems<T>(IEnumerable<T> items, string parameterName)
@@ -156,5 +233,221 @@ public sealed class DataVaultMetadataModel {
     return new ArgumentException(
         "Point-in-time table '" + pointInTimeTable.Name + "' " + message,
         "pointInTimeTables");
+  }
+
+  private void ValidateBridges() {
+    foreach (var bridge in Bridges) {
+      ValidateBridge(bridge);
+    }
+  }
+
+  private void ValidateBridge(DataVaultBridgeMetadata bridge) {
+    var sourceHub = RequireDeclaredHub(bridge, bridge.SourceHubReference, "source");
+    var targetHub = RequireDeclaredHub(bridge, bridge.TargetHubReference, "target");
+    var link = RequireDeclaredLink(bridge, bridge.LinkReference);
+    var sourceParticipantOrdinal = ResolveParticipantOrdinal(
+        bridge,
+        link,
+        sourceHub.Name,
+        bridge.SourceParticipantOrdinal,
+        "source");
+    var targetParticipantOrdinal = ResolveParticipantOrdinal(
+        bridge,
+        link,
+        targetHub.Name,
+        bridge.TargetParticipantOrdinal,
+        "target");
+
+    if (bridge.Kind == DataVaultBridgeKind.Hierarchy) {
+      ValidateHierarchyBridge(
+          bridge,
+          link,
+          sourceHub.Name,
+          targetHub.Name,
+          sourceParticipantOrdinal,
+          targetParticipantOrdinal);
+    }
+  }
+
+  private DataVaultHubMetadata RequireDeclaredHub(
+      DataVaultBridgeMetadata bridge,
+      DataVaultMetadataReference hubReference,
+      string roleName) {
+    var matches = Hubs
+        .Where(hub => string.Equals(hub.Name, hubReference.Name, StringComparison.Ordinal))
+        .ToArray();
+
+    if (matches.Length == 0) {
+      throw new ArgumentException(
+          "Bridge '" +
+          bridge.Name +
+          "' references " +
+          roleName +
+          " hub '" +
+          hubReference.Name +
+          "' that is not declared in the same metadata model.",
+          "bridges");
+    }
+
+    if (matches.Length > 1) {
+      throw new ArgumentException(
+          "Bridge '" +
+          bridge.Name +
+          "' references " +
+          roleName +
+          " hub '" +
+          hubReference.Name +
+          "' but that hub name is declared more than once.",
+          "bridges");
+    }
+
+    return matches[0];
+  }
+
+  private DataVaultLinkMetadata RequireDeclaredLink(
+      DataVaultBridgeMetadata bridge,
+      DataVaultMetadataReference linkReference) {
+    var matches = Links
+        .Where(link => string.Equals(link.Name, linkReference.Name, StringComparison.Ordinal))
+        .ToArray();
+
+    if (matches.Length == 0) {
+      throw new ArgumentException(
+          "Bridge '" +
+          bridge.Name +
+          "' references link '" +
+          linkReference.Name +
+          "' that is not declared in the same metadata model.",
+          "bridges");
+    }
+
+    if (matches.Length > 1) {
+      throw new ArgumentException(
+          "Bridge '" +
+          bridge.Name +
+          "' references link '" +
+          linkReference.Name +
+          "' but that link name is declared more than once.",
+          "bridges");
+    }
+
+    return matches[0];
+  }
+
+  private static int ResolveParticipantOrdinal(
+      DataVaultBridgeMetadata bridge,
+      DataVaultLinkMetadata link,
+      string hubName,
+      int? participantOrdinal,
+      string roleName) {
+    if (participantOrdinal.HasValue) {
+      var ordinal = participantOrdinal.Value;
+      if (ordinal >= link.Participants.Count) {
+        throw new ArgumentException(
+            "Bridge '" +
+            bridge.Name +
+            "' selects " +
+            roleName +
+            " participant ordinal " +
+            ordinal +
+            " but link '" +
+            link.Name +
+            "' declares only " +
+            link.Participants.Count +
+            " participant(s).",
+            "bridges");
+      }
+
+      var participantHubName = link.Participants[ordinal].HubReference.Name;
+      if (!string.Equals(participantHubName, hubName, StringComparison.Ordinal)) {
+        throw new ArgumentException(
+            "Bridge '" +
+            bridge.Name +
+            "' selects " +
+            roleName +
+            " participant ordinal " +
+            ordinal +
+            " for hub '" +
+            hubName +
+            "', but that ordinal resolves to hub '" +
+            participantHubName +
+            "'.",
+            "bridges");
+      }
+
+      return ordinal;
+    }
+
+    var matchingOrdinals = link.Participants
+        .Select((participant, index) => new { participant, index })
+        .Where(item => string.Equals(item.participant.HubReference.Name, hubName, StringComparison.Ordinal))
+        .Select(item => item.index)
+        .ToArray();
+
+    if (matchingOrdinals.Length == 0) {
+      throw new ArgumentException(
+          "Bridge '" +
+          bridge.Name +
+          "' selects " +
+          roleName +
+          " hub '" +
+          hubName +
+          "', but link '" +
+          link.Name +
+          "' does not declare that participant.",
+          "bridges");
+    }
+
+    if (matchingOrdinals.Length > 1) {
+      throw new ArgumentException(
+          "Bridge '" +
+          bridge.Name +
+          "' has ambiguous " +
+          roleName +
+          " endpoint selection for hub '" +
+          hubName +
+          "' on link '" +
+          link.Name +
+          "'. Declare the participant ordinal explicitly.",
+          "bridges");
+    }
+
+    return matchingOrdinals[0];
+  }
+
+  private static void ValidateHierarchyBridge(
+      DataVaultBridgeMetadata bridge,
+      DataVaultLinkMetadata link,
+      string sourceHubName,
+      string targetHubName,
+      int sourceParticipantOrdinal,
+      int targetParticipantOrdinal) {
+    if (!string.Equals(sourceHubName, targetHubName, StringComparison.Ordinal)) {
+      throw new ArgumentException(
+          "Hierarchy bridge '" +
+          bridge.Name +
+          "' must use the same recursive hub for its source and target endpoints.",
+          "bridges");
+    }
+
+    var recursiveParticipantCount = link.Participants
+        .Count(participant => string.Equals(participant.HubReference.Name, sourceHubName, StringComparison.Ordinal));
+    if (recursiveParticipantCount < 2) {
+      throw new ArgumentException(
+          "Hierarchy bridge '" +
+          bridge.Name +
+          "' must traverse a recursive link that declares hub '" +
+          sourceHubName +
+          "' at least twice.",
+          "bridges");
+    }
+
+    if (sourceParticipantOrdinal == targetParticipantOrdinal) {
+      throw new ArgumentException(
+          "Hierarchy bridge '" +
+          bridge.Name +
+          "' resolves ancestor and descendant selectors to the same link participant.",
+          "bridges");
+    }
   }
 }

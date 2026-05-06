@@ -60,6 +60,54 @@ public sealed class DataVaultMetadataTests {
   }
 
   [Fact]
+  public void BridgeMetadataRetainsManyToManyTraversalSelectors() {
+    var customer = DataVaultMetadataReference.Hub("Customer");
+    var product = DataVaultMetadataReference.Hub("Product");
+    var customerProduct = DataVaultMetadataReference.Link("CustomerProduct");
+
+    var bridge = DataVaultBridgeMetadata.ManyToMany(
+        "CustomerProductBridge",
+        customer,
+        customerProduct,
+        product,
+        sourceParticipantOrdinal: 0,
+        targetParticipantOrdinal: 1);
+
+    Assert.Equal("CustomerProductBridge", bridge.Name);
+    Assert.Equal(DataVaultBridgeKind.ManyToMany, bridge.Kind);
+    Assert.Equal(DataVaultMetadataReferenceKind.Hub, bridge.SourceHubReference.Kind);
+    Assert.Equal("Customer", bridge.SourceHubReference.Name);
+    Assert.Equal(DataVaultMetadataReferenceKind.Link, bridge.LinkReference.Kind);
+    Assert.Equal("CustomerProduct", bridge.LinkReference.Name);
+    Assert.Equal(DataVaultMetadataReferenceKind.Hub, bridge.TargetHubReference.Kind);
+    Assert.Equal("Product", bridge.TargetHubReference.Name);
+    Assert.Equal(0, bridge.SourceParticipantOrdinal);
+    Assert.Equal(1, bridge.TargetParticipantOrdinal);
+  }
+
+  [Fact]
+  public void BridgeMetadataRetainsHierarchyTraversalSelectors() {
+    var employee = DataVaultMetadataReference.Hub("Employee");
+    var employeeReportsTo = DataVaultMetadataReference.Link("EmployeeReportsTo");
+
+    var bridge = DataVaultBridgeMetadata.Hierarchy(
+        "EmployeeHierarchy",
+        employee,
+        employeeReportsTo,
+        employee,
+        ancestorParticipantOrdinal: 0,
+        descendantParticipantOrdinal: 1);
+
+    Assert.Equal("EmployeeHierarchy", bridge.Name);
+    Assert.Equal(DataVaultBridgeKind.Hierarchy, bridge.Kind);
+    Assert.Equal("Employee", bridge.SourceHubReference.Name);
+    Assert.Equal("EmployeeReportsTo", bridge.LinkReference.Name);
+    Assert.Equal("Employee", bridge.TargetHubReference.Name);
+    Assert.Equal(0, bridge.SourceParticipantOrdinal);
+    Assert.Equal(1, bridge.TargetParticipantOrdinal);
+  }
+
+  [Fact]
   public void SatelliteMetadataRetainsHubParentAndDescriptiveAttributes() {
     var parent = DataVaultMetadataReference.Hub("Customer");
 
@@ -195,14 +243,15 @@ public sealed class DataVaultMetadataTests {
   public void MetadataAbstractionsUseProviderNeutralClrContracts() {
     var metadataTypes = new[]
     {
-            typeof(DataVaultBusinessKeyMetadata),
-            typeof(DataVaultHubMetadata),
-            typeof(DataVaultLinkMetadata),
-            typeof(DataVaultLinkParticipantMetadata),
-            typeof(DataVaultPointInTimeMetadata),
-            typeof(DataVaultSatelliteMetadata),
-            typeof(DataVaultSatellitePayloadMetadata),
-        };
+        typeof(DataVaultBusinessKeyMetadata),
+        typeof(DataVaultBridgeMetadata),
+        typeof(DataVaultHubMetadata),
+        typeof(DataVaultLinkMetadata),
+        typeof(DataVaultLinkParticipantMetadata),
+        typeof(DataVaultPointInTimeMetadata),
+        typeof(DataVaultSatelliteMetadata),
+        typeof(DataVaultSatellitePayloadMetadata),
+    };
     var providerTokens = new[] { "Sqlite", "Postgres", "Npgsql", "Migration", "Sequence", "Trigger" };
 
     foreach (var metadataType in metadataTypes) {
@@ -220,6 +269,11 @@ public sealed class DataVaultMetadataTests {
       ThrowsArgumentException(() => DataVaultMetadataReference.Hub(invalidName!));
       ThrowsArgumentException(() => DataVaultMetadataReference.Link(invalidName!));
       ThrowsArgumentException(() => DataVaultMetadataReference.Satellite(invalidName!));
+      ThrowsArgumentException(() => DataVaultBridgeMetadata.ManyToMany(
+          invalidName!,
+          DataVaultMetadataReference.Hub("Customer"),
+          DataVaultMetadataReference.Link("CustomerProduct"),
+          DataVaultMetadataReference.Hub("Product")));
       ThrowsArgumentException(() => new DataVaultLinkMetadata(
           invalidName!,
           [DataVaultMetadataReference.Hub("Customer"), DataVaultMetadataReference.Hub("Order")]));
@@ -272,6 +326,38 @@ public sealed class DataVaultMetadataTests {
   }
 
   [Fact]
+  public void BridgeMetadataRequiresValidTraversalReferencesAndOrdinals() {
+    ThrowsArgumentException(() => DataVaultBridgeMetadata.ManyToMany(
+        "CustomerProductBridge",
+        DataVaultMetadataReference.Link("CustomerProduct"),
+        DataVaultMetadataReference.Link("CustomerProduct"),
+        DataVaultMetadataReference.Hub("Product")));
+    ThrowsArgumentException(() => DataVaultBridgeMetadata.ManyToMany(
+        "CustomerProductBridge",
+        DataVaultMetadataReference.Hub("Customer"),
+        DataVaultMetadataReference.Hub("Customer"),
+        DataVaultMetadataReference.Hub("Product")));
+    ThrowsArgumentException(() => DataVaultBridgeMetadata.ManyToMany(
+        "CustomerProductBridge",
+        DataVaultMetadataReference.Hub("Customer"),
+        DataVaultMetadataReference.Link("CustomerProduct"),
+        DataVaultMetadataReference.Link("CustomerProduct")));
+    ThrowsArgumentException(() => DataVaultBridgeMetadata.ManyToMany(
+        "CustomerProductBridge",
+        DataVaultMetadataReference.Hub("Customer"),
+        DataVaultMetadataReference.Link("CustomerProduct"),
+        DataVaultMetadataReference.Hub("Product"),
+        sourceParticipantOrdinal: -1,
+        targetParticipantOrdinal: 1));
+    ThrowsArgumentException(() => new DataVaultBridgeMetadata(
+        "CustomerProductBridge",
+        (DataVaultBridgeKind)42,
+        DataVaultMetadataReference.Hub("Customer"),
+        DataVaultMetadataReference.Link("CustomerProduct"),
+        DataVaultMetadataReference.Hub("Product")));
+  }
+
+  [Fact]
   public void SatelliteMetadataRequiresParentRelationship() {
     ThrowsArgumentException(() => new DataVaultSatelliteMetadata(
         "CustomerContact",
@@ -289,6 +375,133 @@ public sealed class DataVaultMetadataTests {
         "CustomerHistory",
         DataVaultMetadataReference.Hub("Customer"),
         [DataVaultMetadataReference.Hub("Customer")]));
+  }
+
+  [Fact]
+  public void MetadataModelRetainsOptionalBridgeDeclarations() {
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
+    var product = new DataVaultHubMetadata("Product", ["ProductId"]);
+    var customerProduct = new DataVaultLinkMetadata(
+        "CustomerProduct",
+        [customer.ToReference(), product.ToReference()]);
+    var bridge = DataVaultBridgeMetadata.ManyToMany(
+        "CustomerProductBridge",
+        customer.ToReference(),
+        customerProduct.ToReference(),
+        product.ToReference(),
+        sourceParticipantOrdinal: 0,
+        targetParticipantOrdinal: 1);
+
+    var modelWithoutBridges = new DataVaultMetadataModel([customer, product], [customerProduct], []);
+    var modelWithBridges = new DataVaultMetadataModel([customer, product], [customerProduct], [], [bridge]);
+
+    Assert.Empty(modelWithoutBridges.Bridges);
+    Assert.Equal([bridge], modelWithBridges.Bridges);
+  }
+
+  [Fact]
+  public void MetadataModelAcceptsSingleLinkHierarchyBridgeDeclaration() {
+    var employee = new DataVaultHubMetadata("Employee", ["EmployeeId"]);
+    var employeeReportsTo = new DataVaultLinkMetadata(
+        "EmployeeReportsTo",
+        [employee.ToReference(), employee.ToReference()]);
+    var bridge = DataVaultBridgeMetadata.Hierarchy(
+        "EmployeeHierarchy",
+        employee.ToReference(),
+        employeeReportsTo.ToReference(),
+        employee.ToReference(),
+        ancestorParticipantOrdinal: 0,
+        descendantParticipantOrdinal: 1);
+
+    var model = new DataVaultMetadataModel([employee], [employeeReportsTo], [], [bridge]);
+
+    Assert.Equal([bridge], model.Bridges);
+  }
+
+  [Fact]
+  public void MetadataModelRejectsBridgeWithUnknownHubReference() {
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
+    var product = new DataVaultHubMetadata("Product", ["ProductId"]);
+    var customerProduct = new DataVaultLinkMetadata(
+        "CustomerProduct",
+        [customer.ToReference(), product.ToReference()]);
+    var bridge = DataVaultBridgeMetadata.ManyToMany(
+        "CustomerProductBridge",
+        customer.ToReference(),
+        customerProduct.ToReference(),
+        product.ToReference(),
+        sourceParticipantOrdinal: 0,
+        targetParticipantOrdinal: 1);
+
+    ThrowsArgumentException(() => new DataVaultMetadataModel([customer], [customerProduct], [], [bridge]));
+  }
+
+  [Fact]
+  public void MetadataModelRejectsBridgeWithUnknownLinkReference() {
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
+    var product = new DataVaultHubMetadata("Product", ["ProductId"]);
+    var bridge = DataVaultBridgeMetadata.ManyToMany(
+        "CustomerProductBridge",
+        customer.ToReference(),
+        DataVaultMetadataReference.Link("CustomerProduct"),
+        product.ToReference(),
+        sourceParticipantOrdinal: 0,
+        targetParticipantOrdinal: 1);
+
+    ThrowsArgumentException(() => new DataVaultMetadataModel([customer, product], [], [], [bridge]));
+  }
+
+  [Fact]
+  public void MetadataModelRejectsBridgeParticipantSelectorOutsideReferencedLink() {
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
+    var product = new DataVaultHubMetadata("Product", ["ProductId"]);
+    var customerProduct = new DataVaultLinkMetadata(
+        "CustomerProduct",
+        [customer.ToReference(), product.ToReference()]);
+    var bridge = DataVaultBridgeMetadata.ManyToMany(
+        "CustomerProductBridge",
+        customer.ToReference(),
+        customerProduct.ToReference(),
+        product.ToReference(),
+        sourceParticipantOrdinal: 1,
+        targetParticipantOrdinal: 0);
+
+    ThrowsArgumentException(() => new DataVaultMetadataModel([customer, product], [customerProduct], [], [bridge]));
+  }
+
+  [Fact]
+  public void MetadataModelRejectsAmbiguousBridgeEndpointSelection() {
+    var employee = new DataVaultHubMetadata("Employee", ["EmployeeId"]);
+    var employeeReportsTo = new DataVaultLinkMetadata(
+        "EmployeeReportsTo",
+        [employee.ToReference(), employee.ToReference()]);
+    var bridge = new DataVaultBridgeMetadata(
+        "EmployeeHierarchy",
+        DataVaultBridgeKind.Hierarchy,
+        employee.ToReference(),
+        employeeReportsTo.ToReference(),
+        employee.ToReference());
+
+    ThrowsArgumentException(() => new DataVaultMetadataModel([employee], [employeeReportsTo], [], [bridge]));
+  }
+
+  [Theory]
+  [InlineData(0)]
+  [InlineData(1)]
+  public void MetadataModelRejectsHierarchyBridgeSelfCycle(int participantOrdinal) {
+    var employee = new DataVaultHubMetadata("Employee", ["EmployeeId"]);
+    var employeeReportsTo = new DataVaultLinkMetadata(
+        "EmployeeReportsTo",
+        [employee.ToReference(), employee.ToReference()]);
+    var bridge = DataVaultBridgeMetadata.Hierarchy(
+        "EmployeeHierarchy",
+        employee.ToReference(),
+        employeeReportsTo.ToReference(),
+        employee.ToReference(),
+        ancestorParticipantOrdinal: participantOrdinal,
+        descendantParticipantOrdinal: participantOrdinal);
+
+    ThrowsArgumentException(() => new DataVaultMetadataModel([employee], [employeeReportsTo], [], [bridge]));
   }
 
   private static void ThrowsArgumentException(Action action) {

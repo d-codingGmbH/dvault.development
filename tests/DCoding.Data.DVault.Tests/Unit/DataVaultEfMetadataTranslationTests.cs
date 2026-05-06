@@ -70,6 +70,36 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataDoesNotProjectBridgeEntitiesBeforeBridgeMappingTicket() {
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
+    var product = new DataVaultHubMetadata("Product", ["ProductId"]);
+    var customerProduct = new DataVaultLinkMetadata(
+        "CustomerProduct",
+        [customer.ToReference(), product.ToReference()]);
+    var bridge = DataVaultBridgeMetadata.ManyToMany(
+        "CustomerProductBridge",
+        customer.ToReference(),
+        customerProduct.ToReference(),
+        product.ToReference(),
+        sourceParticipantOrdinal: 0,
+        targetParticipantOrdinal: 1);
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.ApplyDataVaultMetadata(new DataVaultMetadataModel(
+        [customer, product],
+        [customerProduct],
+        [],
+        [bridge]));
+
+    Assert.Equal(
+        ["HubCustomer", "HubProduct", "LinkCustomerProduct"],
+        modelBuilder.Model.GetEntityTypes()
+            .Select(entityType => AnnotationValue<string>(entityType, DataVaultAnnotationNames.ProducedName))
+            .Order(StringComparer.Ordinal)
+            .ToArray());
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataMapsProducedNamesToRelationalMetadata() {
     var model = CreateTranslatedModel();
 
@@ -262,11 +292,29 @@ public sealed class DataVaultEfMetadataTranslationTests {
     Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel(null!, [], []));
     Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel([], null!, []));
     Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel([], [], null!));
-    Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel([], [], [], null!));
+    Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel(
+        [],
+        [],
+        [],
+        (IEnumerable<DataVaultPointInTimeMetadata>)null!));
+    Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel(
+        [],
+        [],
+        [],
+        (IEnumerable<DataVaultBridgeMetadata>)null!));
     Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel([null!], [], []));
     Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel([], [null!], []));
     Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel([], [], [null!]));
-    Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel([], [], [], [null!]));
+    Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel(
+        [],
+        [],
+        [],
+        new DataVaultPointInTimeMetadata[] { null! }));
+    Assert.Throws<ArgumentException>(() => new DataVaultMetadataModel(
+        [],
+        [],
+        [],
+        new DataVaultBridgeMetadata[] { null! }));
   }
 
   private static IMutableModel CreateTranslatedModel() {

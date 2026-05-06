@@ -23,6 +23,21 @@ public enum DataVaultMetadataReferenceKind {
 }
 
 /// <summary>
+/// Identifies the supported provider-neutral bridge traversal shapes.
+/// </summary>
+public enum DataVaultBridgeKind {
+  /// <summary>
+  /// Represents a bridge that traverses one link between a source hub and a target hub.
+  /// </summary>
+  ManyToMany,
+
+  /// <summary>
+  /// Represents a bridge that traverses one recursive link as a directional hierarchy edge.
+  /// </summary>
+  Hierarchy,
+}
+
+/// <summary>
 /// Represents a named hub, link, or satellite metadata target.
 /// </summary>
 public sealed class DataVaultMetadataReference {
@@ -112,6 +127,174 @@ public sealed class DataVaultLinkParticipantMetadata {
 }
 
 /// <summary>
+/// Describes one provider-neutral bridge traversal over a declared Data Vault link.
+/// </summary>
+public sealed class DataVaultBridgeMetadata {
+  /// <summary>
+  /// Initializes a bridge metadata declaration whose endpoint participants can be resolved by hub reference.
+  /// </summary>
+  public DataVaultBridgeMetadata(
+      string name,
+      DataVaultBridgeKind kind,
+      DataVaultMetadataReference sourceHubReference,
+      DataVaultMetadataReference linkReference,
+      DataVaultMetadataReference targetHubReference)
+      : this(
+          name,
+          kind,
+          sourceHubReference,
+          linkReference,
+          targetHubReference,
+          sourceParticipantOrdinal: null,
+          targetParticipantOrdinal: null) {
+  }
+
+  /// <summary>
+  /// Initializes a bridge metadata declaration with explicit endpoint participant ordinals.
+  /// </summary>
+  public DataVaultBridgeMetadata(
+      string name,
+      DataVaultBridgeKind kind,
+      DataVaultMetadataReference sourceHubReference,
+      DataVaultMetadataReference linkReference,
+      DataVaultMetadataReference targetHubReference,
+      int sourceParticipantOrdinal,
+      int targetParticipantOrdinal)
+      : this(
+          name,
+          kind,
+          sourceHubReference,
+          linkReference,
+          targetHubReference,
+          (int?)sourceParticipantOrdinal,
+          targetParticipantOrdinal) {
+  }
+
+  private DataVaultBridgeMetadata(
+      string name,
+      DataVaultBridgeKind kind,
+      DataVaultMetadataReference sourceHubReference,
+      DataVaultMetadataReference linkReference,
+      DataVaultMetadataReference targetHubReference,
+      int? sourceParticipantOrdinal,
+      int? targetParticipantOrdinal) {
+    Name = DataVaultMetadataValidation.RequireName(name, nameof(name));
+    Kind = DataVaultMetadataValidation.RequireBridgeKind(kind, nameof(kind));
+    SourceHubReference = DataVaultMetadataValidation.RequireHubReference(
+        sourceHubReference,
+        nameof(sourceHubReference));
+    LinkReference = DataVaultMetadataValidation.RequireLinkReference(linkReference, nameof(linkReference));
+    TargetHubReference = DataVaultMetadataValidation.RequireHubReference(
+        targetHubReference,
+        nameof(targetHubReference));
+    SourceParticipantOrdinal = RequireParticipantOrdinal(sourceParticipantOrdinal, nameof(sourceParticipantOrdinal));
+    TargetParticipantOrdinal = RequireParticipantOrdinal(targetParticipantOrdinal, nameof(targetParticipantOrdinal));
+  }
+
+  /// <summary>
+  /// Gets the bridge name.
+  /// </summary>
+  public string Name { get; }
+
+  /// <summary>
+  /// Gets the bridge traversal kind.
+  /// </summary>
+  public DataVaultBridgeKind Kind { get; }
+
+  /// <summary>
+  /// Gets the hub that starts the bridge traversal.
+  /// </summary>
+  public DataVaultMetadataReference SourceHubReference { get; }
+
+  /// <summary>
+  /// Gets the link traversed by the bridge.
+  /// </summary>
+  public DataVaultMetadataReference LinkReference { get; }
+
+  /// <summary>
+  /// Gets the hub reached by the bridge traversal.
+  /// </summary>
+  public DataVaultMetadataReference TargetHubReference { get; }
+
+  /// <summary>
+  /// Gets the source-side link participant ordinal, when declared explicitly.
+  /// </summary>
+  public int? SourceParticipantOrdinal { get; }
+
+  /// <summary>
+  /// Gets the target-side link participant ordinal, when declared explicitly.
+  /// </summary>
+  public int? TargetParticipantOrdinal { get; }
+
+  /// <summary>
+  /// Creates a many-to-many bridge declaration whose endpoint participants can be resolved by hub reference.
+  /// </summary>
+  public static DataVaultBridgeMetadata ManyToMany(
+      string name,
+      DataVaultMetadataReference sourceHubReference,
+      DataVaultMetadataReference linkReference,
+      DataVaultMetadataReference targetHubReference) {
+    return new DataVaultBridgeMetadata(
+        name,
+        DataVaultBridgeKind.ManyToMany,
+        sourceHubReference,
+        linkReference,
+        targetHubReference);
+  }
+
+  /// <summary>
+  /// Creates a many-to-many bridge declaration with explicit endpoint participant ordinals.
+  /// </summary>
+  public static DataVaultBridgeMetadata ManyToMany(
+      string name,
+      DataVaultMetadataReference sourceHubReference,
+      DataVaultMetadataReference linkReference,
+      DataVaultMetadataReference targetHubReference,
+      int sourceParticipantOrdinal,
+      int targetParticipantOrdinal) {
+    return new DataVaultBridgeMetadata(
+        name,
+        DataVaultBridgeKind.ManyToMany,
+        sourceHubReference,
+        linkReference,
+        targetHubReference,
+        sourceParticipantOrdinal,
+        targetParticipantOrdinal);
+  }
+
+  /// <summary>
+  /// Creates a hierarchy bridge declaration with explicit ancestor and descendant participant ordinals.
+  /// </summary>
+  public static DataVaultBridgeMetadata Hierarchy(
+      string name,
+      DataVaultMetadataReference ancestorHubReference,
+      DataVaultMetadataReference linkReference,
+      DataVaultMetadataReference descendantHubReference,
+      int ancestorParticipantOrdinal,
+      int descendantParticipantOrdinal) {
+    return new DataVaultBridgeMetadata(
+        name,
+        DataVaultBridgeKind.Hierarchy,
+        ancestorHubReference,
+        linkReference,
+        descendantHubReference,
+        ancestorParticipantOrdinal,
+        descendantParticipantOrdinal);
+  }
+
+  private static int? RequireParticipantOrdinal(int? participantOrdinal, string parameterName) {
+    if (participantOrdinal.GetValueOrDefault() < 0 && participantOrdinal.HasValue) {
+      throw new ArgumentOutOfRangeException(
+          parameterName,
+          participantOrdinal,
+          "Bridge participant ordinals must be zero or greater.");
+    }
+
+    return participantOrdinal;
+  }
+}
+
+/// <summary>
 /// Describes one payload column declared by a Data Vault satellite.
 /// </summary>
 public sealed class DataVaultSatellitePayloadMetadata {
@@ -151,9 +334,9 @@ public sealed class DataVaultHubMetadata {
     TechnicalMetadataColumns =
     [
         HashKeyMetadata,
-            LoadTimestampMetadata,
-            RecordSourceMetadata,
-        ];
+        LoadTimestampMetadata,
+        RecordSourceMetadata,
+    ];
   }
 
   /// <summary>
@@ -216,9 +399,9 @@ public sealed class DataVaultLinkMetadata {
     TechnicalMetadataColumns =
     [
         HashKeyMetadata,
-            LoadTimestampMetadata,
-            RecordSourceMetadata,
-        ];
+        LoadTimestampMetadata,
+        RecordSourceMetadata,
+    ];
   }
 
   /// <summary>
@@ -309,9 +492,9 @@ public sealed class DataVaultSatelliteMetadata {
     TechnicalMetadataColumns =
     [
         HashDiffMetadata,
-            LoadTimestampMetadata,
-            RecordSourceMetadata,
-        ];
+        LoadTimestampMetadata,
+        RecordSourceMetadata,
+    ];
   }
 
   /// <summary>
@@ -449,5 +632,25 @@ internal static class DataVaultMetadataValidation {
     }
 
     return reference;
+  }
+
+  public static DataVaultMetadataReference RequireLinkReference(
+      DataVaultMetadataReference reference,
+      string parameterName) {
+    ArgumentNullException.ThrowIfNull(reference, parameterName);
+
+    if (reference.Kind != DataVaultMetadataReferenceKind.Link) {
+      throw new ArgumentException("A bridge traversal must reference a link.", parameterName);
+    }
+
+    return reference;
+  }
+
+  public static DataVaultBridgeKind RequireBridgeKind(DataVaultBridgeKind kind, string parameterName) {
+    if (!Enum.IsDefined(typeof(DataVaultBridgeKind), kind)) {
+      throw new ArgumentOutOfRangeException(parameterName, kind, "Unsupported Data Vault bridge kind.");
+    }
+
+    return kind;
   }
 }
