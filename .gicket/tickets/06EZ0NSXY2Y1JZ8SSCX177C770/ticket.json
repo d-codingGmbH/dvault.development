@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0NSXY2Y1JZ8SSCX177C770",
   "ticket-type": "story",
   "title": "Story: Add PIT table modeling and generation",
-  "revision": "06EZ0Y55DNC26JEGV54HKNTJJ0",
-  "status": "todo",
+  "revision": "06EZV68588PG8YWWHD65SJ1ASG",
+  "status": "done",
   "labels": [
-    "type/story",
-    "automation/bot-ready",
     "area/modeling",
     "area/pit",
-    "needs-po"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:15:42.9713173Z",
-  "updated-at": "2026-05-04T00:52:11.7575368Z"
+  "updated-at": "2026-05-06T14:02:37.2505628Z"
 }

@@ -1,20 +1,26 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Clarified that this story is canonically anchored on `DataVaultPitMetadata` / `DataVaultMetadataModel.Pits`, explicitly scoped the older `PointInTime` API out of this story, and required docs to call out the naming split; no new child tickets, relation changes, or planning documents were materialized.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+PO-critic checklist responses
+- critic-item-1: `answered` - The canonical public surface for this story's minimal example and acceptance boundary is the new translator-facing PIT path only: `DataVaultPitMetadata`, ordered `DataVaultPitSatelliteReferenceMetadata`, and `DataVaultMetadataModel.Pits`, as consumed by `ApplyDataVaultMetadata`. The older public `PointInTime` path is not part of this story's canonical example or acceptance boundary.
+- critic-item-2: `answered` - The older public `DataVaultPointInTimeMetadata` / `DataVaultModelBuilder.PointInTime(...)` surface is explicitly out of scope for this story. Clarifications, Scope Out, and documentation acceptance now require the docs to say that this story's example uses only the `DataVaultPitMetadata` path and does not reconcile the older surface.
+- critic-item-3: `answered` - No same-ticket coexistence reconciliation was added for the older surface because this refinement explicitly narrows the story to the `DataVaultPitMetadata` path and requires docs to call out the older `PointInTime` API as separate and unchanged. Any consolidation, deprecation, or formal coexistence contract remains a later API-shape follow-up rather than part of this story's acceptance boundary.
+- critic-item-4: `answered` - The story's minimal example and developer scope are now anchored only on the new `DataVaultPitMetadata` EF-translation path. The older `PointInTime` / `DataVaultPointInTimeMetadata` path is not the canonical example for this ticket.
+- critic-item-5: `answered` - Docs and examples for this story must use only the EF PIT naming `[<Hub>HashKey, LoadTimestamp, <Satellite>LoadTimestamp...]` and must explicitly note that the older `PointInTime` surface remains separate and keeps its own `PitLoadTimestamp` naming semantics, which this ticket does not change.
+
+Clarifications
 - The canonical public surface for this story's minimal example, developer scope, and acceptance boundary is the translator-facing PIT path: `DataVaultPitMetadata`, ordered `DataVaultPitSatelliteReferenceMetadata`, and `DataVaultMetadataModel.Pits`, as consumed by `ApplyDataVaultMetadata`.
 - The older public `DataVaultPointInTimeMetadata` / `DataVaultModelBuilder.PointInTime(...)` surface is not the acceptance boundary for this story and is not reconciled, renamed, or deprecated here.
 - Story documentation and examples must use only the canonical `DataVaultPitMetadata` path and must explicitly call out that the repository still contains the older `PointInTime` surface as a separate public API outside this ticket's scope.
 - Within this story, PIT column naming examples are `[<Hub>HashKey, LoadTimestamp, <Satellite>LoadTimestamp...]`; `PitLoadTimestamp` belongs to the older `PointInTime` surface and is not the canonical story example.
 
-### Scope In
+Scope In
 - Anchor the story's PIT modeling example, documentation, tests, and acceptance boundary on `DataVaultMetadataModel.Pits` and `DataVaultPitMetadata`.
 - Add or ratify provider-neutral PIT metadata declarations for one hub plus ordered satellite snapshot references.
 - Translate PIT metadata through `ApplyDataVaultMetadata` into provider-aware EF shared-type model metadata.
@@ -22,7 +28,7 @@
 - Map PIT snapshot timestamp columns through existing provider capability profiles as provider-neutral snapshot-reference properties.
 - Document the supported PIT baseline, limitations, canonical example, and explicit separation from the older `PointInTime` surface.
 
-### Scope Out
+Scope Out
 - Automatic PIT population, refresh scheduling, recomputation, or maintenance through `IDataVaultSaveService` or any other write path.
 - Persisted-versus-computed strategy variants beyond the single generated-table baseline.
 - Link-based PITs, PITs over link-attached satellites, and PITs involving multi-active satellite semantics.
@@ -30,66 +36,37 @@
 - Changes to the zero-configuration startup path or to existing hub, link, and satellite contracts just to support PIT.
 - Reconciling, renaming, deprecating, or otherwise changing `DataVaultPointInTimeMetadata`, `DataVaultModelBuilder.PointInTime(...)`, `DataVaultModel`, or the older `PitLoadTimestamp` naming semantics just to align them with the new PIT translation path.
 
-## Acceptance Criteria
-- The canonical public surface for this story's example and acceptance boundary is `DataVaultPitMetadata` / `DataVaultMetadataModel.Pits`; declaring PIT metadata there is explicit and opt-in, and models without PIT declarations produce the same hub, link, and satellite EF metadata as before.
-- A PIT declaration must resolve to one existing hub and one or more unique existing satellites attached to that hub; unsupported combinations fail deterministically and do not leave partial PIT entity mappings behind.
-- Applying PIT metadata generates a deterministic provider-neutral EF PIT projection whose produced table name follows the visible `Pit<Hub><Satellite...>` baseline and whose columns are `[<Hub>HashKey, LoadTimestamp, <Satellite>LoadTimestamp...]` in satellite declaration order.
-- The PIT primary key is the parent hash key plus PIT load timestamp, and the baseline PIT projection creates no EF foreign-key relationships, navigations, or secondary indexes.
-- Provider-capability metadata covers PIT snapshot reference columns as `SatelliteSnapshotReference` logical properties for the supported baseline profiles.
-- Tests verify PIT names, column order, property roles, key shape, provider annotations, unsupported-case failures, and a basic SQLite create/read queryability path.
-- Repository docs include a minimal example anchored on `DataVaultPitMetadata` / `DataVaultMetadataModel.Pits`, explicitly state that the older `DataVaultPointInTimeMetadata` / `PointInTime(...)` surface remains separate and out of scope for this story, and do not present `PitLoadTimestamp` as the canonical example naming for this ticket.
-
-## Definition of Done
-- The core modeling surface exposes the PIT metadata needed by `DataVaultMetadataModel.Pits` and the EF translator consumes it end to end.
-- `ApplyDataVaultMetadata` produces PIT entities without regressing existing hub, link, or satellite translation behavior.
-- Unit tests cover deterministic naming, ordering, annotations, and unsupported PIT combinations.
-- Integration coverage proves the SQLite baseline can create and read the generated PIT table shape.
-- Repository documentation shows a minimal `DataVaultPitMetadata` declaration, uses `LoadTimestamp` / `<Satellite>LoadTimestamp` for this story's PIT example, and clearly states that the older `DataVaultPointInTimeMetadata` / `PointInTime(...)` surface is not reconciled by this ticket.
-
-## Implementation Notes
-- Keep the story anchored on the translator-facing PIT surface already present in the branch: `DataVaultPitMetadata`, ordered `DataVaultPitSatelliteReferenceMetadata`, and `DataVaultMetadataModel.Pits`.
-- Do not broaden this story into reconciling or renaming the older `DataVaultPointInTimeMetadata` / `DataVaultModelBuilder.PointInTime(...)` public API; if docs mention it, the note should say it remains a separate older surface outside this ticket.
-- When describing generated PIT names in tests or docs, use the EF translation baseline `LoadTimestamp` plus `<Satellite>LoadTimestamp`; do not mix in `PitLoadTimestamp` from the older public point-in-time path.
-- Keep PIT positioned as an opt-in read-optimization projection consistent with `docs/plans/deferred-data-vault-capabilities.md`; do not broaden this story into mandatory setup or save-path behavior.
-- Reuse the existing annotation and provider-capability infrastructure so PIT columns participate in the same provider-neutral metadata pipeline as other DVault structures.
-- The bounded baseline is hub-only and satellite-snapshot-only: snapshot columns point to satellite load timestamps, not payload values or hash diffs.
-- No new child tickets, relation writes, or planning-document writes were materialized in this refinement pass.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should a later API-shape ticket consolidate, deprecate, or formally document coexistence between `DataVaultPointInTimeMetadata` / `PointInTime(...)` and `DataVaultPitMetadata` / `DataVaultMetadataModel.Pits`?
 - If PIT moves beyond metadata generation, should the next phase standardize persisted refresh tables, computed query projections, or both?
 - What temporal-grain and late-arriving-data reconciliation rules should future PIT population automation use?
 - After the metadata baseline is proven, do any providers need dedicated physical indexes or other read-optimization work for PIT tables?
 - Should link-based PIT support and multi-active PIT support remain separate deferred tickets rather than being added to this baseline story?
 
-## Risks
+Risks
 - If docs or examples mix `LoadTimestamp` and `PitLoadTimestamp`, consumers may assume the two public PIT surfaces are interchangeable even though this story intentionally treats them as separate.
 - Because this baseline is metadata-only, consumers may assume PIT rows are automatically maintained unless the docs explicitly say population and refresh are deferred.
 - The no-relationship, no-secondary-index baseline may be functionally correct but still insufficient for real read workloads until later optimization tickets land.
 - Users may over-assume PIT coverage unless the ticket and docs explicitly call out that link-based and multi-active scenarios are unsupported in this story.
 
-## Split Recommendations
+Split recommendations
 - Keep PIT metadata projection, canonical `DataVaultPitMetadata` examples, and documentation in this story, but reserve PIT row population or refresh orchestration for a separate follow-up ticket.
 - If public PIT API cleanup becomes material, split consolidation or deprecation of `DataVaultPointInTimeMetadata` / `PointInTime(...)` versus `DataVaultPitMetadata` / `DataVaultMetadataModel.Pits` into its own public-surface ticket rather than expanding this story.
 - Handle provider-specific PIT indexing or physical optimization in provider-owned follow-up tickets once the shared metadata baseline is stable.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 7
+- definition-of-done items: 5
+- implementation-notes items: 7
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Goal: add baseline point-in-time table modeling and EF model generation for Data Vault read optimization scenarios.
-
-Scope:
-- Define PIT metadata that references a hub and one or more satellites.
-- Generate provider-neutral EF model metadata for the PIT structure.
-- Document supported PIT semantics, limitations, and example usage.
-
-Acceptance Criteria:
-- PIT modeling is explicit and does not alter existing hub/satellite persistence unless configured.
-- Tests verify generated names, keys, relationships, and basic queryability for the provider-neutral baseline.
-- Documentation shows a minimal PIT example and states which automation is deferred to future tickets.
+Run mode
+- apply: planned updates are applied after this comment
