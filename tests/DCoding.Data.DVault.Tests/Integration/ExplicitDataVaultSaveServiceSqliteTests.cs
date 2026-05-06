@@ -74,6 +74,68 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     }
   }
 
+  [Theory]
+  [InlineData(false)]
+  [InlineData(true)]
+  public async Task SaveServiceAppliesConfiguredRequestHooksThroughFallbackAndSqliteStrategy(bool useSqliteStrategy) {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+    var customerOrder = new DataVaultLinkMetadata(
+        "CustomerOrder",
+        [customer.ToReference(), order.ToReference()]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"]);
+    var request = new DataVaultSaveRequest(
+        new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero),
+        "request-source",
+        [new(customer, [new("Customer Id", "C-100")])],
+        [new(customerOrder, [new("Customer", "customer-hash"), new("Order", "order-hash")])],
+        [new(contact, "customer-hash", [new("Email Address", "first@example.test")], "contact-hash-1")]);
+    var resolvedTimestamp = new DateTimeOffset(2026, 5, 4, 12, 30, 0, TimeSpan.Zero);
+    var timestampResolver = new CountingLoadTimestampResolver(resolvedTimestamp);
+    var recordSourceResolver = new CountingRecordSourceResolver("hooked-source");
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<ExplicitSaveServiceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVault(configure => configure
+        .UseLoadTimestampResolver(timestampResolver)
+        .UseRecordSourceResolver(recordSourceResolver));
+    if (useSqliteStrategy) {
+      services.AddDVaultSqlite();
+    }
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+
+      var result = await saveService.SaveAsync(context, request);
+
+      Assert.Equal(3, result.RowsWritten);
+    }
+
+    Assert.Equal(1, timestampResolver.CallCount);
+    Assert.Equal(1, recordSourceResolver.CallCount);
+
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      var hubRow = await context.Set<Dictionary<string, object>>("HubCustomer").AsNoTracking().SingleAsync();
+      var linkRow = await context.Set<Dictionary<string, object>>("LinkCustomerOrder").AsNoTracking().SingleAsync();
+      var satelliteRow = await context.Set<Dictionary<string, object>>("SatCustomerContact").AsNoTracking().SingleAsync();
+
+      Assert.Equal(resolvedTimestamp, hubRow["LoadTimestamp"]);
+      Assert.Equal(resolvedTimestamp, linkRow["LoadTimestamp"]);
+      Assert.Equal(resolvedTimestamp, satelliteRow["LoadTimestamp"]);
+      Assert.Equal("hooked-source", hubRow["RecordSource"]);
+      Assert.Equal("hooked-source", linkRow["RecordSource"]);
+      Assert.Equal("hooked-source", satelliteRow["RecordSource"]);
+    }
+  }
+
   [Fact]
   public async Task DefaultSaveServiceReusesExistingHubAndLinkRowsAcrossSqliteContexts() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
@@ -896,6 +958,28 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
       Assert.Equal(expected[index].MetadataName, actual[index].MetadataName);
       Assert.Equal(expected[index].TableName, actual[index].TableName);
       Assert.Equal(expected[index].HashKey, actual[index].HashKey);
+    }
+  }
+
+  private sealed class CountingLoadTimestampResolver(DateTimeOffset loadTimestamp) : IDataVaultLoadTimestampResolver {
+    public int CallCount { get; private set; }
+
+    public DateTimeOffset? ResolveLoadTimestamp(DataVaultLoadTimestampResolutionContext context) {
+      ArgumentNullException.ThrowIfNull(context);
+
+      CallCount++;
+      return loadTimestamp;
+    }
+  }
+
+  private sealed class CountingRecordSourceResolver(string recordSource) : IDataVaultRecordSourceResolver {
+    public int CallCount { get; private set; }
+
+    public string? ResolveRecordSource(DataVaultRecordSourceResolutionContext context) {
+      ArgumentNullException.ThrowIfNull(context);
+
+      CallCount++;
+      return recordSource;
     }
   }
 

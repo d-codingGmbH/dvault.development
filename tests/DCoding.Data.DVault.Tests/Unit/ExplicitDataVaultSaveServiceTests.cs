@@ -36,6 +36,137 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   }
 
   [Fact]
+  public void AddDVaultProvidesDefaultTimestampAndRecordSourceResolvers() {
+    var services = new ServiceCollection();
+
+    services.AddDVault();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var request = CreateCustomerSaveRequest("crm-import");
+    var timestampResolver = provider.GetRequiredService<IDataVaultLoadTimestampResolver>();
+    var recordSourceResolver = provider.GetRequiredService<IDataVaultRecordSourceResolver>();
+
+    Assert.Equal(
+        request.LoadTimestamp,
+        timestampResolver.ResolveLoadTimestamp(new DataVaultLoadTimestampResolutionContext(request)));
+    Assert.Equal(
+        request.RecordSource,
+        recordSourceResolver.ResolveRecordSource(new DataVaultRecordSourceResolutionContext(request, request.LoadTimestamp)));
+  }
+
+  [Fact]
+  public void AddDVaultConfiguresOptionalTimestampAndRecordSourceResolvers() {
+    var timestampResolver = new FixedLoadTimestampResolver(new DateTimeOffset(2026, 5, 4, 12, 0, 0, TimeSpan.Zero));
+    var recordSourceResolver = new FixedRecordSourceResolver("hooked-source");
+    var services = new ServiceCollection();
+
+    services.AddDVault(options => options
+        .UseLoadTimestampResolver(timestampResolver)
+        .UseRecordSourceResolver(recordSourceResolver));
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+
+    Assert.Same(timestampResolver, provider.GetRequiredService<IDataVaultLoadTimestampResolver>());
+    Assert.Same(recordSourceResolver, provider.GetRequiredService<IDataVaultRecordSourceResolver>());
+    Assert.NotNull(provider.GetRequiredService<IDataVaultSaveService>());
+  }
+
+  [Fact]
+  public async Task SaveServiceResolvesHooksOncePerRequestBeforeProviderStrategyExecution() {
+    var firstRequest = CreateCustomerSaveRequest("input-a");
+    var secondRequest = CreateCustomerSaveRequest("input-b");
+    var timestampResolver = new SequenceLoadTimestampResolver(
+        new DateTimeOffset(2026, 5, 4, 10, 0, 0, TimeSpan.Zero),
+        new DateTimeOffset(2026, 5, 4, 11, 0, 0, TimeSpan.Zero));
+    var recordSourceResolver = new SequenceRecordSourceResolver("source-a", "source-b");
+    var providerStrategy = new CapturingProviderSaveStrategy();
+    var saveService = new DefaultDataVaultSaveService(
+        new TestStableHashService(),
+        new TestStableHashNormalizer(),
+        [timestampResolver],
+        [recordSourceResolver],
+        [providerStrategy]);
+
+    using var dbContext = new DbContext(new DbContextOptionsBuilder().Options);
+
+    await saveService.SaveAsync(dbContext, new DataVaultBulkSaveRequest([firstRequest, secondRequest]));
+
+    Assert.Equal(2, timestampResolver.CallCount);
+    Assert.Equal(2, recordSourceResolver.CallCount);
+    Assert.NotNull(providerStrategy.CapturedContext);
+    Assert.Collection(
+        providerStrategy.CapturedContext.ResolvedRequests,
+        request => {
+          Assert.Same(firstRequest, request.Request);
+          Assert.Equal(new DateTimeOffset(2026, 5, 4, 10, 0, 0, TimeSpan.Zero), request.LoadTimestamp);
+          Assert.Equal("source-a", request.RecordSource);
+        },
+        request => {
+          Assert.Same(secondRequest, request.Request);
+          Assert.Equal(new DateTimeOffset(2026, 5, 4, 11, 0, 0, TimeSpan.Zero), request.LoadTimestamp);
+          Assert.Equal("source-b", request.RecordSource);
+        });
+  }
+
+  [Fact]
+  public async Task SaveServiceRejectsNullLoadTimestampHookOutput() {
+    var saveService = CreateHookedSaveService(
+        new FixedLoadTimestampResolver(null),
+        new FixedRecordSourceResolver("hooked-source"));
+
+    using var dbContext = new DbContext(new DbContextOptionsBuilder().Options);
+    var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        saveService.SaveAsync(dbContext, CreateCustomerSaveRequest("input-source")));
+
+    Assert.Contains("load timestamp resolver returned null", exception.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public async Task SaveServiceRejectsNonUtcLoadTimestampHookOutput() {
+    var saveService = CreateHookedSaveService(
+        new FixedLoadTimestampResolver(new DateTimeOffset(2026, 5, 4, 12, 0, 0, TimeSpan.FromHours(2))),
+        new FixedRecordSourceResolver("hooked-source"));
+
+    using var dbContext = new DbContext(new DbContextOptionsBuilder().Options);
+    var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        saveService.SaveAsync(dbContext, CreateCustomerSaveRequest("input-source")));
+
+    Assert.Contains("zero offset", exception.Message, StringComparison.Ordinal);
+  }
+
+  [Theory]
+  [InlineData(null)]
+  [InlineData("")]
+  [InlineData(" ")]
+  public async Task SaveServiceRejectsEmptyRecordSourceHookOutput(string? recordSource) {
+    var saveService = CreateHookedSaveService(
+        new FixedLoadTimestampResolver(new DateTimeOffset(2026, 5, 4, 12, 0, 0, TimeSpan.Zero)),
+        new FixedRecordSourceResolver(recordSource));
+
+    using var dbContext = new DbContext(new DbContextOptionsBuilder().Options);
+    var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        saveService.SaveAsync(dbContext, CreateCustomerSaveRequest("input-source")));
+
+    Assert.Contains("record-source resolver must return a non-empty record source", exception.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void SaveServiceRejectsAmbiguousHookResolverConfiguration() {
+    var exception = Assert.Throws<InvalidOperationException>(() =>
+        new DefaultDataVaultSaveService(
+            new TestStableHashService(),
+            new TestStableHashNormalizer(),
+            [
+                new FixedLoadTimestampResolver(new DateTimeOffset(2026, 5, 4, 12, 0, 0, TimeSpan.Zero)),
+                new FixedLoadTimestampResolver(new DateTimeOffset(2026, 5, 4, 13, 0, 0, TimeSpan.Zero)),
+            ],
+            [new FixedRecordSourceResolver("hooked-source")],
+            []));
+
+    Assert.Contains("ambiguous", exception.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.OracleProvider)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.MySqlProvider)]
@@ -185,7 +316,7 @@ public sealed class ExplicitDataVaultSaveServiceTests {
         new TestStableHashService(),
         new TestStableHashNormalizer());
     var savedRecords = InvokeSqlServerSavedRecords("CreateUniqueRowSavePlans", strategyContext)
-        .Concat(InvokeSqlServerSavedRecords("CreateSatelliteSavePlans", (object)requests))
+        .Concat(InvokeSqlServerSavedRecords("CreateSatelliteSavePlans", strategyContext.ResolvedRequests))
         .ToArray();
 
     Assert.Collection(
@@ -269,6 +400,17 @@ public sealed class ExplicitDataVaultSaveServiceTests {
         recordSource,
         [new DataVaultHubSaveOperation(customer, [new("Customer Id", "C-100")])],
         []);
+  }
+
+  private static DefaultDataVaultSaveService CreateHookedSaveService(
+      IDataVaultLoadTimestampResolver loadTimestampResolver,
+      IDataVaultRecordSourceResolver recordSourceResolver) {
+    return new DefaultDataVaultSaveService(
+        new TestStableHashService(),
+        new TestStableHashNormalizer(),
+        [loadTimestampResolver],
+        [recordSourceResolver],
+        [new CapturingProviderSaveStrategy()]);
   }
 
   private static string InvokeSqlServerCommandTextFactory(string methodName, params object[] arguments) {
@@ -392,6 +534,76 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   }
 
   private sealed record SatelliteDecisionCandidate(string HashDiff, DateTimeOffset LoadTimestamp);
+
+  private sealed class FixedLoadTimestampResolver(DateTimeOffset? loadTimestamp) : IDataVaultLoadTimestampResolver {
+    public DateTimeOffset? ResolveLoadTimestamp(DataVaultLoadTimestampResolutionContext context) {
+      ArgumentNullException.ThrowIfNull(context);
+
+      return loadTimestamp;
+    }
+  }
+
+  private sealed class FixedRecordSourceResolver(string? recordSource) : IDataVaultRecordSourceResolver {
+    public string? ResolveRecordSource(DataVaultRecordSourceResolutionContext context) {
+      ArgumentNullException.ThrowIfNull(context);
+
+      return recordSource;
+    }
+  }
+
+  private sealed class SequenceLoadTimestampResolver : IDataVaultLoadTimestampResolver {
+    private readonly DateTimeOffset[] _loadTimestamps;
+
+    public SequenceLoadTimestampResolver(params DateTimeOffset[] loadTimestamps) {
+      _loadTimestamps = loadTimestamps;
+    }
+
+    public int CallCount { get; private set; }
+
+    public DateTimeOffset? ResolveLoadTimestamp(DataVaultLoadTimestampResolutionContext context) {
+      ArgumentNullException.ThrowIfNull(context);
+
+      return _loadTimestamps[CallCount++];
+    }
+  }
+
+  private sealed class SequenceRecordSourceResolver : IDataVaultRecordSourceResolver {
+    private readonly string[] _recordSources;
+
+    public SequenceRecordSourceResolver(params string[] recordSources) {
+      _recordSources = recordSources;
+    }
+
+    public int CallCount { get; private set; }
+
+    public string? ResolveRecordSource(DataVaultRecordSourceResolutionContext context) {
+      ArgumentNullException.ThrowIfNull(context);
+
+      return _recordSources[CallCount++];
+    }
+  }
+
+  private sealed class CapturingProviderSaveStrategy : IDataVaultProviderSaveStrategy {
+    public int Priority => 1000;
+
+    public DataVaultProviderSaveStrategyContext? CapturedContext { get; private set; }
+
+    public bool CanSave(DbContext dbContext, IReadOnlyList<DataVaultSaveRequest> requests) {
+      ArgumentNullException.ThrowIfNull(dbContext);
+      ArgumentNullException.ThrowIfNull(requests);
+
+      return true;
+    }
+
+    public Task<DataVaultSaveResult> SaveAsync(
+        DataVaultProviderSaveStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      ArgumentNullException.ThrowIfNull(context);
+
+      CapturedContext = context;
+      return Task.FromResult(new DataVaultSaveResult(0, []));
+    }
+  }
 
   private sealed class TestStableHashService : IStableHashService {
     public string AlgorithmId => "test-sha256-v1";

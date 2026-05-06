@@ -6,6 +6,7 @@
 
 type public static class DCoding.Data.DVault.DVaultServiceCollectionExtensions
   method public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddDVault(this Microsoft.Extensions.DependencyInjection.IServiceCollection services)
+  method public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddDVault(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<DCoding.Data.DVault.DataVaultOptions> configure)
 
 type public static class DCoding.Data.DVault.DataVaultAnnotationNames
   field public const string Conventions = "DCoding.Data.DVault:Conventions"
@@ -36,6 +37,10 @@ type public sealed class DCoding.Data.DVault.DataVaultLinkSaveOperation
   property public DCoding.Data.DVault.Modeling.DataVaultLinkMetadata Metadata { get; }
   property public System.Collections.Generic.IReadOnlyDictionary<string, string> ParticipantHashKeyValues { get; }
 
+type public sealed class DCoding.Data.DVault.DataVaultLoadTimestampResolutionContext
+  ctor public DataVaultLoadTimestampResolutionContext(DCoding.Data.DVault.DataVaultSaveRequest request)
+  property public DCoding.Data.DVault.DataVaultSaveRequest Request { get; }
+
 type public enum DCoding.Data.DVault.DataVaultLogicalPropertyKind
   value HashKey = 0
   value HashDiff = 1
@@ -50,6 +55,13 @@ type public static class DCoding.Data.DVault.DataVaultModelBuilderExtensions
   method public static Microsoft.EntityFrameworkCore.ModelBuilder ApplyDataVaultMetadata(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
   method public static Microsoft.EntityFrameworkCore.ModelBuilder UseDataVault(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder)
   method public static Microsoft.EntityFrameworkCore.ModelBuilder UseDataVault(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
+
+type public sealed class DCoding.Data.DVault.DataVaultOptions
+  ctor public DataVaultOptions()
+  method public DCoding.Data.DVault.DataVaultOptions UseLoadTimestampResolver(DCoding.Data.DVault.IDataVaultLoadTimestampResolver resolver)
+  method public DCoding.Data.DVault.DataVaultOptions UseLoadTimestampResolver<TResolver>() where TResolver : class, DCoding.Data.DVault.IDataVaultLoadTimestampResolver
+  method public DCoding.Data.DVault.DataVaultOptions UseRecordSourceResolver(DCoding.Data.DVault.IDataVaultRecordSourceResolver resolver)
+  method public DCoding.Data.DVault.DataVaultOptions UseRecordSourceResolver<TResolver>() where TResolver : class, DCoding.Data.DVault.IDataVaultRecordSourceResolver
 
 type public enum DCoding.Data.DVault.DataVaultPropertyRole
   value Technical = 0
@@ -79,9 +91,11 @@ type public enum DCoding.Data.DVault.DataVaultProviderConcurrencySupport
 
 type public sealed class DCoding.Data.DVault.DataVaultProviderSaveStrategyContext
   ctor public DataVaultProviderSaveStrategyContext(Microsoft.EntityFrameworkCore.DbContext dbContext, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> requests, DCoding.Data.DVault.IStableHashService stableHashService, DCoding.Data.DVault.IStableHashNormalizer stableHashNormalizer)
+  ctor public DataVaultProviderSaveStrategyContext(Microsoft.EntityFrameworkCore.DbContext dbContext, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> requests, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultResolvedSaveRequest> resolvedRequests, DCoding.Data.DVault.IStableHashService stableHashService, DCoding.Data.DVault.IStableHashNormalizer stableHashNormalizer)
   property public DCoding.Data.DVault.IStableHashNormalizer StableHashNormalizer { get; }
   property public DCoding.Data.DVault.IStableHashService StableHashService { get; }
   property public Microsoft.EntityFrameworkCore.DbContext DbContext { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultResolvedSaveRequest> ResolvedRequests { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> Requests { get; }
 
 type public enum DCoding.Data.DVault.DataVaultProviderSqlFunctionSupport
@@ -104,6 +118,17 @@ type public enum DCoding.Data.DVault.DataVaultProviderValueFormat
   value Text = 0
   value Iso8601UtcText = 1
   value NativeDateTimeOffset = 2
+
+type public sealed class DCoding.Data.DVault.DataVaultRecordSourceResolutionContext
+  ctor public DataVaultRecordSourceResolutionContext(DCoding.Data.DVault.DataVaultSaveRequest request, System.DateTimeOffset loadTimestamp)
+  property public DCoding.Data.DVault.DataVaultSaveRequest Request { get; }
+  property public System.DateTimeOffset LoadTimestamp { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultResolvedSaveRequest
+  ctor public DataVaultResolvedSaveRequest(DCoding.Data.DVault.DataVaultSaveRequest request, System.DateTimeOffset loadTimestamp, string recordSource)
+  property public DCoding.Data.DVault.DataVaultSaveRequest Request { get; }
+  property public System.DateTimeOffset LoadTimestamp { get; }
+  property public string RecordSource { get; }
 
 type public sealed class DCoding.Data.DVault.DataVaultSatelliteSaveOperation
   ctor public DataVaultSatelliteSaveOperation(DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata metadata, string parentHashKey, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> payloadValues, string hashDiff)
@@ -133,10 +158,16 @@ type public sealed class DCoding.Data.DVault.DataVaultSavedRecord
   property public string MetadataName { get; }
   property public string TableName { get; }
 
+type public interface DCoding.Data.DVault.IDataVaultLoadTimestampResolver
+  method public abstract System.DateTimeOffset? ResolveLoadTimestamp(DCoding.Data.DVault.DataVaultLoadTimestampResolutionContext context)
+
 type public interface DCoding.Data.DVault.IDataVaultProviderSaveStrategy
   property public int Priority { get; }
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(DCoding.Data.DVault.DataVaultProviderSaveStrategyContext context, System.Threading.CancellationToken cancellationToken = default)
   method public abstract bool CanSave(Microsoft.EntityFrameworkCore.DbContext dbContext, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> requests)
+
+type public interface DCoding.Data.DVault.IDataVaultRecordSourceResolver
+  method public abstract string? ResolveRecordSource(DCoding.Data.DVault.DataVaultRecordSourceResolutionContext context)
 
 type public interface DCoding.Data.DVault.IDataVaultSaveService
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultBulkSaveRequest request, System.Threading.CancellationToken cancellationToken = default)

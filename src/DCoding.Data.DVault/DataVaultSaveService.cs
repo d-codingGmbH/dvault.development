@@ -351,26 +351,57 @@ public sealed class DataVaultSavedRecord {
 internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
 
+  private readonly IDataVaultLoadTimestampResolver _loadTimestampResolver;
   private readonly IReadOnlyList<IDataVaultProviderSaveStrategy> _providerSaveStrategies;
+  private readonly IDataVaultRecordSourceResolver _recordSourceResolver;
   private readonly IStableHashService _stableHashService;
   private readonly IStableHashNormalizer _stableHashNormalizer;
 
   public DefaultDataVaultSaveService(
       IStableHashService stableHashService,
       IStableHashNormalizer stableHashNormalizer)
-      : this(stableHashService, stableHashNormalizer, []) {
+      : this(
+          stableHashService,
+          stableHashNormalizer,
+          [DefaultDataVaultLoadTimestampResolver.Instance],
+          [DefaultDataVaultRecordSourceResolver.Instance],
+          []) {
   }
 
   public DefaultDataVaultSaveService(
       IStableHashService stableHashService,
       IStableHashNormalizer stableHashNormalizer,
+      IEnumerable<IDataVaultProviderSaveStrategy> providerSaveStrategies)
+      : this(
+          stableHashService,
+          stableHashNormalizer,
+          [DefaultDataVaultLoadTimestampResolver.Instance],
+          [DefaultDataVaultRecordSourceResolver.Instance],
+          providerSaveStrategies) {
+  }
+
+  public DefaultDataVaultSaveService(
+      IStableHashService stableHashService,
+      IStableHashNormalizer stableHashNormalizer,
+      IEnumerable<IDataVaultLoadTimestampResolver> loadTimestampResolvers,
+      IEnumerable<IDataVaultRecordSourceResolver> recordSourceResolvers,
       IEnumerable<IDataVaultProviderSaveStrategy> providerSaveStrategies) {
     ArgumentNullException.ThrowIfNull(stableHashService);
     ArgumentNullException.ThrowIfNull(stableHashNormalizer);
+    ArgumentNullException.ThrowIfNull(loadTimestampResolvers);
+    ArgumentNullException.ThrowIfNull(recordSourceResolvers);
     ArgumentNullException.ThrowIfNull(providerSaveStrategies);
 
     _stableHashService = stableHashService;
     _stableHashNormalizer = stableHashNormalizer;
+    _loadTimestampResolver = RequireSingleResolver(
+        loadTimestampResolvers,
+        DefaultDataVaultLoadTimestampResolver.Instance,
+        "Data Vault load timestamp resolver configuration is ambiguous; register at most one load timestamp resolver.");
+    _recordSourceResolver = RequireSingleResolver(
+        recordSourceResolvers,
+        DefaultDataVaultRecordSourceResolver.Instance,
+        "Data Vault record-source resolver configuration is ambiguous; register at most one record-source resolver.");
     _providerSaveStrategies = providerSaveStrategies
         .OrderByDescending(strategy => strategy.Priority)
         .ToArray();
@@ -400,6 +431,8 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       DbContext dbContext,
       IReadOnlyList<DataVaultSaveRequest> requests,
       CancellationToken cancellationToken) {
+    var resolvedRequests = ResolveRequests(requests);
+
     foreach (var strategy in _providerSaveStrategies) {
       if (!strategy.CanSave(dbContext, requests)) {
         continue;
@@ -408,6 +441,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       var context = new DataVaultProviderSaveStrategyContext(
           dbContext,
           requests,
+          resolvedRequests,
           _stableHashService,
           _stableHashNormalizer);
       return await strategy.SaveAsync(context, cancellationToken).ConfigureAwait(false);
@@ -416,17 +450,17 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     var savedRecords = new List<DataVaultSavedRecord>();
     var rowsWritten = 0;
 
-    foreach (var request in requests) {
-      foreach (var operation in request.HubOperations) {
-        var result = await AddHubAsync(dbContext, request, operation, cancellationToken).ConfigureAwait(false);
+    foreach (var resolvedRequest in resolvedRequests) {
+      foreach (var operation in resolvedRequest.Request.HubOperations) {
+        var result = await AddHubAsync(dbContext, resolvedRequest, operation, cancellationToken).ConfigureAwait(false);
         savedRecords.Add(result.SavedRecord);
         if (result.RowWritten) {
           rowsWritten++;
         }
       }
 
-      foreach (var operation in request.LinkOperations) {
-        var result = await AddLinkAsync(dbContext, request, operation, cancellationToken).ConfigureAwait(false);
+      foreach (var operation in resolvedRequest.Request.LinkOperations) {
+        var result = await AddLinkAsync(dbContext, resolvedRequest, operation, cancellationToken).ConfigureAwait(false);
         savedRecords.Add(result.SavedRecord);
         if (result.RowWritten) {
           rowsWritten++;
@@ -434,7 +468,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       }
     }
 
-    var satelliteResults = await AddSatellitesAsync(dbContext, requests, cancellationToken).ConfigureAwait(false);
+    var satelliteResults = await AddSatellitesAsync(dbContext, resolvedRequests, cancellationToken).ConfigureAwait(false);
     foreach (var result in satelliteResults) {
       savedRecords.Add(result.SavedRecord);
       if (result.RowWritten) {
@@ -447,9 +481,35 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     return new DataVaultSaveResult(rowsWritten, savedRecords);
   }
 
+  private IReadOnlyList<DataVaultResolvedSaveRequest> ResolveRequests(IReadOnlyList<DataVaultSaveRequest> requests) {
+    var resolvedRequests = new DataVaultResolvedSaveRequest[requests.Count];
+
+    for (var index = 0; index < requests.Count; index++) {
+      var request = requests[index];
+      var loadTimestamp = _loadTimestampResolver.ResolveLoadTimestamp(new DataVaultLoadTimestampResolutionContext(request));
+      if (loadTimestamp is null) {
+        throw new InvalidOperationException("Data Vault load timestamp resolver returned null.");
+      }
+
+      if (loadTimestamp.Value.Offset != TimeSpan.Zero) {
+        throw new InvalidOperationException("Data Vault load timestamp resolver must return a UTC DateTimeOffset with zero offset.");
+      }
+
+      var recordSource = _recordSourceResolver.ResolveRecordSource(
+          new DataVaultRecordSourceResolutionContext(request, loadTimestamp.Value));
+      if (string.IsNullOrWhiteSpace(recordSource)) {
+        throw new InvalidOperationException("Data Vault record-source resolver must return a non-empty record source.");
+      }
+
+      resolvedRequests[index] = new DataVaultResolvedSaveRequest(request, loadTimestamp.Value, recordSource);
+    }
+
+    return resolvedRequests;
+  }
+
   private async Task<SaveOperationResult> AddHubAsync(
       DbContext dbContext,
-      DataVaultSaveRequest request,
+      DataVaultResolvedSaveRequest request,
       DataVaultHubSaveOperation operation,
       CancellationToken cancellationToken) {
     var plan = CreateHubSavePlan(request, operation);
@@ -466,7 +526,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
   }
 
   private UniqueRowSavePlan CreateHubSavePlan(
-      DataVaultSaveRequest request,
+      DataVaultResolvedSaveRequest request,
       DataVaultHubSaveOperation operation) {
     var hub = operation.Metadata;
     var tableName = NamingPolicy.GetHubTableName(new DataVaultHubNameContext(hub.Name));
@@ -505,7 +565,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
 
   private async Task<SaveOperationResult> AddLinkAsync(
       DbContext dbContext,
-      DataVaultSaveRequest request,
+      DataVaultResolvedSaveRequest request,
       DataVaultLinkSaveOperation operation,
       CancellationToken cancellationToken) {
     var plan = CreateLinkSavePlan(request, operation);
@@ -522,7 +582,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
   }
 
   private UniqueRowSavePlan CreateLinkSavePlan(
-      DataVaultSaveRequest request,
+      DataVaultResolvedSaveRequest request,
       DataVaultLinkSaveOperation operation) {
     var link = operation.Metadata;
     var participantNames = link.Participants
@@ -593,7 +653,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
 
   private async Task<IReadOnlyList<SaveOperationResult>> AddSatellitesAsync(
       DbContext dbContext,
-      IReadOnlyList<DataVaultSaveRequest> requests,
+      IReadOnlyList<DataVaultResolvedSaveRequest> requests,
       CancellationToken cancellationToken) {
     var plans = CreateSatelliteSavePlans(requests);
     var filteredPlans = await FilterSatellitePlansAsync(dbContext, plans, cancellationToken).ConfigureAwait(false);
@@ -609,9 +669,9 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     return filteredPlans.Results;
   }
 
-  private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(IReadOnlyList<DataVaultSaveRequest> requests) {
+  private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(IReadOnlyList<DataVaultResolvedSaveRequest> requests) {
     return requests
-        .SelectMany(request => request.SatelliteOperations
+        .SelectMany(request => request.Request.SatelliteOperations
             .Select(operation => CreateSatelliteSavePlan(request, operation)))
         .Select((plan, index) => plan with { Ordinal = index })
         .ToArray();
@@ -646,7 +706,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
   }
 
   private static SatelliteSavePlan CreateSatelliteSavePlan(
-      DataVaultSaveRequest request,
+      DataVaultResolvedSaveRequest request,
       DataVaultSatelliteSaveOperation operation) {
     var satellite = operation.Metadata;
     var tableName = NamingPolicy.GetSatelliteTableName(
@@ -908,6 +968,28 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     }
 
     throw new ArgumentException("The Data Vault save operation is missing required value '" + name + "'.", parameterName);
+  }
+
+  private static TResolver RequireSingleResolver<TResolver>(
+      IEnumerable<TResolver> resolvers,
+      TResolver fallback,
+      string ambiguityMessage)
+      where TResolver : class {
+    ArgumentNullException.ThrowIfNull(resolvers);
+    ArgumentNullException.ThrowIfNull(fallback);
+
+    var resolverArray = resolvers.ToArray();
+    foreach (var resolver in resolverArray) {
+      if (resolver is null) {
+        throw new ArgumentException("Data Vault resolver collections must not contain null values.", nameof(resolvers));
+      }
+    }
+
+    return resolverArray.Length switch {
+      0 => fallback,
+      1 => resolverArray[0],
+      _ => throw new InvalidOperationException(ambiguityMessage),
+    };
   }
 
   private sealed record SaveOperationResult(DataVaultSavedRecord SavedRecord, bool RowWritten);

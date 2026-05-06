@@ -56,7 +56,7 @@ internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     ArgumentNullException.ThrowIfNull(context);
 
     var uniquePlans = CreateUniqueRowSavePlans(context);
-    var satellitePlans = CreateSatelliteSavePlans(context.Requests);
+    var satellitePlans = CreateSatelliteSavePlans(context.ResolvedRequests);
     var filteredSatellitePlans = await FilterSatellitePlansAsync(
         context.DbContext,
         satellitePlans,
@@ -83,9 +83,9 @@ internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrate
   private static IReadOnlyList<UniqueRowSavePlan> CreateUniqueRowSavePlans(DataVaultProviderSaveStrategyContext context) {
     var plans = new List<UniqueRowSavePlan>();
 
-    foreach (var request in context.Requests) {
-      plans.AddRange(request.HubOperations.Select(operation => CreateHubSavePlan(context, request, operation)));
-      plans.AddRange(request.LinkOperations.Select(operation => CreateLinkSavePlan(context, request, operation)));
+    foreach (var request in context.ResolvedRequests) {
+      plans.AddRange(request.Request.HubOperations.Select(operation => CreateHubSavePlan(context, request, operation)));
+      plans.AddRange(request.Request.LinkOperations.Select(operation => CreateLinkSavePlan(context, request, operation)));
     }
 
     return plans.ToArray();
@@ -93,7 +93,7 @@ internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrate
 
   private static UniqueRowSavePlan CreateHubSavePlan(
       DataVaultProviderSaveStrategyContext context,
-      DataVaultSaveRequest request,
+      DataVaultResolvedSaveRequest request,
       DataVaultHubSaveOperation operation) {
     var hub = operation.Metadata;
     var tableName = NamingPolicy.GetHubTableName(new DataVaultHubNameContext(hub.Name));
@@ -131,7 +131,7 @@ internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrate
 
   private static UniqueRowSavePlan CreateLinkSavePlan(
       DataVaultProviderSaveStrategyContext context,
-      DataVaultSaveRequest request,
+      DataVaultResolvedSaveRequest request,
       DataVaultLinkSaveOperation operation) {
     var link = operation.Metadata;
     var participantNames = link.Participants
@@ -171,16 +171,16 @@ internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrate
         new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, tableName, linkHashKey));
   }
 
-  private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(IReadOnlyList<DataVaultSaveRequest> requests) {
+  private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(IReadOnlyList<DataVaultResolvedSaveRequest> requests) {
     return requests
-        .SelectMany(request => request.SatelliteOperations
+        .SelectMany(request => request.Request.SatelliteOperations
             .Select(operation => CreateSatelliteSavePlan(request, operation)))
         .Select((plan, index) => plan with { Ordinal = index })
         .ToArray();
   }
 
   private static SatelliteSavePlan CreateSatelliteSavePlan(
-      DataVaultSaveRequest request,
+      DataVaultResolvedSaveRequest request,
       DataVaultSatelliteSaveOperation operation) {
     var satellite = operation.Metadata;
     var tableName = NamingPolicy.GetSatelliteTableName(

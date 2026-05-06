@@ -20,9 +20,30 @@ public static class DVaultServiceCollectionExtensions {
     TryAddSingleton(services, typeof(DataVaultConventions), DataVaultConventions.Default);
     TryAddSingleton(services, typeof(IStableHashService), DefaultStableHashService.Instance);
     TryAddSingleton(services, typeof(IStableHashNormalizer), DefaultStableHashNormalizer.Instance);
+    TryAddSingleton(services, typeof(IDataVaultLoadTimestampResolver), DefaultDataVaultLoadTimestampResolver.Instance);
+    TryAddSingleton(services, typeof(IDataVaultRecordSourceResolver), DefaultDataVaultRecordSourceResolver.Instance);
     TryAddSingleton(services, typeof(IDataVaultSaveService), typeof(DefaultDataVaultSaveService));
 
     return services;
+  }
+
+  /// <summary>
+  /// Adds the provider-neutral DVault defaults and applies optional advanced configuration.
+  /// </summary>
+  /// <param name="services">The service collection used by the application startup pipeline.</param>
+  /// <param name="configure">The optional advanced configuration callback.</param>
+  /// <returns>The same service collection so startup configuration can continue fluently.</returns>
+  public static IServiceCollection AddDVault(
+      this IServiceCollection services,
+      Action<DataVaultOptions> configure) {
+    ArgumentNullException.ThrowIfNull(services);
+    ArgumentNullException.ThrowIfNull(configure);
+
+    var options = new DataVaultOptions();
+    configure(options);
+    options.Apply(services);
+
+    return services.AddDVault();
   }
 
   private static void TryAddSingleton(IServiceCollection services, Type serviceType, object implementationInstance) {

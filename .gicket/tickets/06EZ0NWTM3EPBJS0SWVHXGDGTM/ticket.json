@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0NWTM3EPBJS0SWVHXGDGTM",
   "ticket-type": "task",
   "title": "Task: Implement timestamp and record-source hook interfaces",
-  "revision": "06EZ0Y4VX6R7RN965GVVDEY5S0",
-  "status": "todo",
+  "revision": "06EZN86S5GTCH13XAFJEFT91FC",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
-    "area/configuration",
     "area/api",
-    "needs-po"
+    "area/configuration",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:16:06.6149056Z",
-  "updated-at": "2026-05-04T00:52:09.3214405Z"
+  "updated-at": "2026-05-06T00:12:18.6044947Z"
 }

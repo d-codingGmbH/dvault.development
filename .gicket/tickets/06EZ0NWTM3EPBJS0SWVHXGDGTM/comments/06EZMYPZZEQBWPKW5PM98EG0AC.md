@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the ticket around the existing explicit save boundary: optional timestamp and record-source hook interfaces must preserve zero-config defaults, resolve values once per DataVaultSaveRequest, and behave identically across fallback and provider-specific save paths.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The zero-configuration `AddDVault()` path stays intact; timestamp and record-source hooks are additive opt-in extension points, not required configuration.
 - The current caller-visible metadata boundary remains `IDataVaultSaveService` plus `DataVaultSaveRequest`; this ticket should refine behavior around that boundary instead of introducing a hidden `SaveChanges` path.
 - For v1, one `DataVaultSaveRequest` continues to produce one effective load timestamp and one effective record source shared by its contained hub, link, and satellite operations; per-row overrides inside a single request are out of scope.
@@ -16,64 +15,45 @@
 - Timestamp hooks resolve logical UTC values, while persisted provider-specific representation continues to follow the existing provider capability profile and model value-format rules.
 - Record source remains required lineage metadata; hook behavior may normalize or replace the supplied value deterministically, but it must not remove the requirement or inject a generic unknown fallback.
 
-### Scope In
+Scope In
 - Introduce optional timestamp and record-source hook interfaces on the core DVault advanced-configuration surface.
 - Apply one shared timestamp/record-source resolution pipeline across `DefaultDataVaultSaveService` and all registered `IDataVaultProviderSaveStrategy` implementations.
 - Preserve and validate UTC timestamp semantics and required deterministic record-source semantics at the explicit save boundary.
 - Add regression and hook-behavior tests for default inheritance, custom behavior, and invalid hook outputs.
 
-### Scope Out
+Scope Out
 - Provider behavior hook surface and provider-specific option matrices owned by ticket `06EZ0NX282R80VF5VBKS6ARFZC`.
 - Broader advanced-hook documentation and examples owned by ticket `06EZ0NX9SVP7MSB1R4PJ50EHGW`.
 - Naming-hook or hashing-hook changes beyond consuming the already-existing stable hash services as baseline dependencies.
 - Per hub/link/satellite-row metadata overrides inside one `DataVaultSaveRequest`.
 - A new hidden ambient write path, `SaveChanges` interception, or any change that removes the explicit save-service boundary.
 
-## Acceptance Criteria
-- With no timestamp or record-source hook configured, `AddDVault()`, `DataVaultSaveRequest`, `DefaultDataVaultSaveService`, and registered provider save strategies persist exactly the same load timestamp and record source behavior that the current branch has today.
-- DVault exposes optional timestamp and record-source hook interfaces on the core advanced-configuration surface without making the default `AddDVault()` path require an options object or any extra configuration.
-- For v1, one explicit save request resolves to one effective load timestamp and one effective record source shared by its hub, link, and satellite operations; custom hooks can influence those resolved values only at that request boundary.
-- Resolved timestamps preserve UTC instant semantics and provider-round-trippable persisted formats, and resolved record sources remain required deterministic lineage metadata with no silent generic fallback.
-- Automated tests cover default passthrough, custom hook output, null/empty/invalid hook results, and consistent behavior between the provider-neutral fallback writer and provider-specific save strategies.
-
-## Definition of Done
-- Any new public hook interfaces or registration entry points are reflected in the public API snapshot.
-- Core fallback and provider-specific writers consume the same resolved timestamp/record-source contract before persistence so behavior does not diverge by provider path.
-- Existing call sites that only use `AddDVault()`, `UseDataVault()`, `ApplyDataVaultMetadata()`, and `DataVaultSaveRequest` continue to compile and behave the same when hooks are unused.
-- Targeted unit and integration coverage passes for UTC normalization, record-source validation, default inheritance, and provider-path parity.
-
-## Implementation Notes
-- Follow the existing extensibility pattern already present in `IDataVaultNamingPolicy`, `IStableHashService`, and `IStableHashNormalizer`: optional public interfaces, DI-friendly defaults, and caller overrides that do not disturb the convention-first baseline.
-- Keep `DataVaultSaveRequest` as the caller-visible metadata boundary; hook logic should normalize, validate, or resolve effective values around that boundary rather than inventing per-row metadata or hidden interception.
-- Resolve effective timestamp and record-source values once and carry them through the provider-neutral save service and provider-strategy execution context so SQLite, PostgreSQL, SQL Server, Oracle, and MySQL paths cannot implement different hook semantics.
-- Timestamp hooks should operate on logical UTC instants; provider capability profiles and existing model value-format handling remain responsible for final persisted representation.
-- Stay within this ticket's implementation boundary and do not absorb provider-behavior scope from `06EZ0NX282R80VF5VBKS6ARFZC` or broader end-user documentation scope from `06EZ0NX9SVP7MSB1R4PJ50EHGW`.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - If future advanced scenarios need timestamp or record-source derivation from richer ingest context than the current `DataVaultSaveRequest` carries, should that arrive through a new save-context payload rather than per-row overrides?
 - Should a later ticket explicitly separate deterministic test-time and wall-clock timestamp modes, as suggested in `docs/plans/optional-advanced-configuration-hooks.md`?
 
-## Risks
+Risks
 - Provider save strategies currently duplicate timestamp and record-source handling, so any hook implementation that is not centralized can drift between fallback and optimized paths.
 - Oracle already persists load timestamps as text while other providers use different model CLR mappings; careless hook-output rules can break round-tripping or chronological satellite ordering.
 - Expanding beyond request-level resolution in this ticket risks cascading API changes across `DataVaultSaveRequest`, provider strategies, and sibling hook tickets.
 
-## Split Recommendations
+Split recommendations
 - If implementation starts needing provider-specific option objects, native timestamp precision controls, or other adapter-only behavior, move that work to `06EZ0NX282R80VF5VBKS6ARFZC`.
 - If the effort grows into end-user documentation, narrative examples, or failure-mode guides beyond code comments and test evidence, move that work to `06EZ0NX9SVP7MSB1R4PJ50EHGW`.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Goal: implement opt-in timestamp and record-source hooks for advanced capability scenarios.
-
-Acceptance Criteria:
-- Defaults match existing behavior exactly.
-- Hooks can be configured per model or save operation where appropriate.
-- Tests cover custom values, null/invalid values, and deterministic fallback.
+Run mode
+- apply: planned updates are applied after this comment
