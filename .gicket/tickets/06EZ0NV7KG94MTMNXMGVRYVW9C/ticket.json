@@ -3,19 +3,18 @@
   "ticket-id": "06EZ0NV7KG94MTMNXMGVRYVW9C",
   "ticket-type": "task",
   "title": "Task: Generate provider-neutral bridge EF model mapping",
-  "revision": "06EZ0Y4KDV8DCNRA0EW5RC9JHR",
-  "status": "todo",
+  "revision": "06EZX8R6GZX265YS0CSFAN2ESC",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
-    "area/modeling",
     "area/bridge",
     "area/ef-core",
-    "needs-po"
+    "area/modeling",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:15:53.4829493Z",
-  "updated-at": "2026-05-04T00:52:07.1504409Z"
+  "updated-at": "2026-05-06T18:53:10.1516958Z"
 }

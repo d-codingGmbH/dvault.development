@@ -34,6 +34,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
             DataVaultLogicalPropertyKind.BusinessKey,
             DataVaultLogicalPropertyKind.PayloadText,
             DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+            DataVaultLogicalPropertyKind.BridgeDepth,
         ],
         profile.TypeMappings.Select(mapping => mapping.LogicalPropertyKind));
 
@@ -45,6 +46,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
     AssertMapping(profile, DataVaultLogicalPropertyKind.BusinessKey, typeof(string), DataVaultProviderValueFormat.Text);
     AssertMapping(profile, DataVaultLogicalPropertyKind.PayloadText, typeof(string), DataVaultProviderValueFormat.Text);
     AssertMapping(profile, DataVaultLogicalPropertyKind.SatelliteSnapshotReference, typeof(DateTimeOffset), DataVaultProviderValueFormat.Iso8601UtcText);
+    AssertMapping(profile, DataVaultLogicalPropertyKind.BridgeDepth, typeof(int), "INTEGER", DataVaultProviderValueFormat.NativeInteger);
   }
 
   [Fact]
@@ -79,6 +81,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
             DataVaultLogicalPropertyKind.BusinessKey,
             DataVaultLogicalPropertyKind.PayloadText,
             DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+            DataVaultLogicalPropertyKind.BridgeDepth,
         ],
         profile.TypeMappings.Select(mapping => mapping.LogicalPropertyKind));
     AssertMapping(
@@ -129,6 +132,12 @@ public sealed class DataVaultProviderCapabilityProfileTests {
         typeof(string),
         "VARCHAR2(33 CHAR)",
         DataVaultProviderValueFormat.Iso8601UtcText);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.BridgeDepth,
+        typeof(int),
+        "NUMBER(10)",
+        DataVaultProviderValueFormat.NativeInteger);
   }
 
   [Fact]
@@ -149,6 +158,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
             DataVaultLogicalPropertyKind.BusinessKey,
             DataVaultLogicalPropertyKind.PayloadText,
             DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+            DataVaultLogicalPropertyKind.BridgeDepth,
         ],
         profile.TypeMappings.Select(mapping => mapping.LogicalPropertyKind));
 
@@ -200,6 +210,12 @@ public sealed class DataVaultProviderCapabilityProfileTests {
         typeof(DateTimeOffset),
         "varchar(33)",
         DataVaultProviderValueFormat.Iso8601UtcText);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.BridgeDepth,
+        typeof(int),
+        "int",
+        DataVaultProviderValueFormat.NativeInteger);
   }
 
   [Fact]

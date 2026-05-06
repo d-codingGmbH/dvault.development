@@ -98,4 +98,9 @@ public enum DataVaultPropertyRole {
   /// Property carries a PIT satellite snapshot load-timestamp reference.
   /// </summary>
   SnapshotReference,
+
+  /// <summary>
+  /// Property carries a bridge hierarchy traversal depth value.
+  /// </summary>
+  BridgeDepth,
 }

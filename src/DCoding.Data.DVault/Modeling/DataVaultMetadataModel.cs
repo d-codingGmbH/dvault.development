@@ -288,7 +288,7 @@ public sealed class DataVaultMetadataModel {
   }
 
   private void ValidateBridges() {
-    foreach (var bridge in Bridges) {
+    foreach (var bridge in Bridges.Where(bridge => bridge.RequiresReferenceValidation)) {
       ValidateBridge(bridge);
     }
   }

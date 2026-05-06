@@ -705,6 +705,11 @@ public enum DataVaultTableKind {
   /// PIT table translated from metadata declarations.
   /// </summary>
   Pit,
+
+  /// <summary>
+  /// Bridge table.
+  /// </summary>
+  Bridge,
 }
 
 /// <summary>

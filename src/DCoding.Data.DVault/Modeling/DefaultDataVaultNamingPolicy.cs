@@ -95,6 +95,7 @@ public sealed class DefaultDataVaultNamingPolicy : IDataVaultNamingPolicy {
       DataVaultIndexKind.BusinessKey => "BusinessKey",
       DataVaultIndexKind.Relationship => "Relationship",
       DataVaultIndexKind.SatelliteParent => "SatelliteParent",
+      DataVaultIndexKind.BridgeTraversal => "Traversal",
       _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported index kind."),
     };
   }

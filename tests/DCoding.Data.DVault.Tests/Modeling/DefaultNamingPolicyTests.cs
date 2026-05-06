@@ -184,6 +184,7 @@ internal static class DefaultNamingPolicyTests {
             DataVaultModelConcept.Hub,
                 DataVaultModelConcept.Link,
                 DataVaultModelConcept.Satellite,
+                DataVaultModelConcept.Bridge,
                 DataVaultModelConcept.HashKey,
                 DataVaultModelConcept.HashDiff,
                 DataVaultModelConcept.LoadTimestamp,

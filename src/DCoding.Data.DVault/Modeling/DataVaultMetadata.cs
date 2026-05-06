@@ -127,6 +127,103 @@ public sealed class DataVaultLinkParticipantMetadata {
 }
 
 /// <summary>
+/// Identifies the role of one bridge endpoint binding.
+/// </summary>
+internal enum DataVaultBridgeEndpointRole {
+  /// <summary>
+  /// Many-to-many source endpoint.
+  /// </summary>
+  From,
+
+  /// <summary>
+  /// Many-to-many target endpoint.
+  /// </summary>
+  To,
+
+  /// <summary>
+  /// Hierarchy ancestor endpoint.
+  /// </summary>
+  Ancestor,
+
+  /// <summary>
+  /// Hierarchy descendant endpoint.
+  /// </summary>
+  Descendant,
+}
+
+/// <summary>
+/// Describes one ordered endpoint binding declared by a Data Vault bridge.
+/// </summary>
+internal sealed class DataVaultBridgeEndpointMetadata {
+  /// <summary>
+  /// Initializes a new bridge endpoint binding.
+  /// </summary>
+  /// <param name="role">The role carried by this bridge endpoint binding.</param>
+  /// <param name="hubReference">The hub type referenced by the bridge endpoint.</param>
+  /// <param name="sourceEndpointName">The source link participant name bound by this endpoint.</param>
+  internal DataVaultBridgeEndpointMetadata(
+      DataVaultBridgeEndpointRole role,
+      DataVaultMetadataReference hubReference,
+      string sourceEndpointName) {
+    HubReference = DataVaultMetadataValidation.RequireHubReference(hubReference, nameof(hubReference));
+    SourceEndpointName = DataVaultMetadataValidation.RequireName(sourceEndpointName, nameof(sourceEndpointName));
+    Role = role;
+    HashKeyMetadata = TechnicalMetadataColumnContract.ForRole(TechnicalMetadataColumnRole.HashKey);
+  }
+
+  /// <summary>
+  /// Gets the role carried by this bridge endpoint binding.
+  /// </summary>
+  internal DataVaultBridgeEndpointRole Role { get; }
+
+  /// <summary>
+  /// Gets the hub type referenced by the bridge endpoint.
+  /// </summary>
+  internal DataVaultMetadataReference HubReference { get; }
+
+  /// <summary>
+  /// Gets the source link participant name bound by this endpoint.
+  /// </summary>
+  internal string SourceEndpointName { get; }
+
+  /// <summary>
+  /// Gets the technical hash-key metadata used to reference the bridge endpoint hub key.
+  /// </summary>
+  internal TechnicalMetadataColumnContract HashKeyMetadata { get; }
+}
+
+/// <summary>
+/// Identifies optional bridge projection features outside the baseline provider-neutral v1 mapping.
+/// </summary>
+[Flags]
+internal enum DataVaultBridgeProjectionFeatures {
+  /// <summary>
+  /// The bridge asks only for the baseline provider-neutral projection.
+  /// </summary>
+  None = 0,
+
+  /// <summary>
+  /// The bridge asks for effectivity-window columns.
+  /// </summary>
+  EffectivityWindow = 1,
+
+  /// <summary>
+  /// The bridge asks for additional path payload columns.
+  /// </summary>
+  PathPayload = 2,
+
+  /// <summary>
+  /// The bridge asks for closure maintenance state.
+  /// </summary>
+  ClosureMaintenance = 4,
+
+  /// <summary>
+  /// The bridge asks for generated Entity Framework relationship graph metadata.
+  /// </summary>
+  RelationshipGraph = 8,
+}
+
+/// <summary>
 /// Describes one provider-neutral bridge traversal over a declared Data Vault link.
 /// </summary>
 public sealed class DataVaultBridgeMetadata {
@@ -189,6 +286,37 @@ public sealed class DataVaultBridgeMetadata {
         nameof(targetHubReference));
     SourceParticipantOrdinal = RequireParticipantOrdinal(sourceParticipantOrdinal, nameof(sourceParticipantOrdinal));
     TargetParticipantOrdinal = RequireParticipantOrdinal(targetParticipantOrdinal, nameof(targetParticipantOrdinal));
+    Source = LinkReference;
+    Endpoints = CreateDefaultEndpoints(Kind, SourceHubReference, TargetHubReference);
+    ProjectionFeatures = DataVaultBridgeProjectionFeatures.None;
+    RequiresReferenceValidation = true;
+  }
+
+  /// <summary>
+  /// Initializes a new bridge metadata declaration.
+  /// </summary>
+  internal DataVaultBridgeMetadata(
+      string name,
+      DataVaultBridgeKind kind,
+      DataVaultMetadataReference source,
+      IEnumerable<DataVaultBridgeEndpointMetadata> endpoints,
+      DataVaultBridgeProjectionFeatures projectionFeatures = DataVaultBridgeProjectionFeatures.None) {
+    Name = DataVaultMetadataValidation.RequireName(name, nameof(name));
+    Source = DataVaultMetadataValidation.RequireLinkReference(source, nameof(source));
+    LinkReference = Source;
+    Kind = DataVaultMetadataValidation.RequireBridgeKind(kind, nameof(kind));
+    Endpoints = RequireEndpointRoles(
+        DataVaultMetadataValidation.RequireItems(
+            endpoints,
+            nameof(endpoints),
+            "A bridge requires at least one endpoint binding."),
+        Kind,
+        nameof(endpoints));
+    (SourceHubReference, TargetHubReference) = ResolveEndpointReferences(Kind, Endpoints);
+    SourceParticipantOrdinal = null;
+    TargetParticipantOrdinal = null;
+    ProjectionFeatures = projectionFeatures;
+    RequiresReferenceValidation = false;
   }
 
   /// <summary>
@@ -225,6 +353,23 @@ public sealed class DataVaultBridgeMetadata {
   /// Gets the target-side link participant ordinal, when declared explicitly.
   /// </summary>
   public int? TargetParticipantOrdinal { get; }
+
+  /// <summary>
+  /// Gets the source link traversed by the bridge.
+  /// </summary>
+  internal DataVaultMetadataReference Source { get; }
+
+  /// <summary>
+  /// Gets the ordered endpoint bindings projected by the bridge.
+  /// </summary>
+  internal IReadOnlyList<DataVaultBridgeEndpointMetadata> Endpoints { get; }
+
+  /// <summary>
+  /// Gets the optional bridge projection features requested beyond the baseline.
+  /// </summary>
+  internal DataVaultBridgeProjectionFeatures ProjectionFeatures { get; }
+
+  internal bool RequiresReferenceValidation { get; }
 
   /// <summary>
   /// Creates a many-to-many bridge declaration whose endpoint participants can be resolved by hub reference.
@@ -291,6 +436,88 @@ public sealed class DataVaultBridgeMetadata {
     }
 
     return participantOrdinal;
+  }
+
+  private static IReadOnlyList<DataVaultBridgeEndpointMetadata> CreateDefaultEndpoints(
+      DataVaultBridgeKind kind,
+      DataVaultMetadataReference sourceHubReference,
+      DataVaultMetadataReference targetHubReference) {
+    return kind switch {
+      DataVaultBridgeKind.ManyToMany =>
+      [
+          new DataVaultBridgeEndpointMetadata(
+              DataVaultBridgeEndpointRole.From,
+              sourceHubReference,
+              sourceHubReference.Name),
+          new DataVaultBridgeEndpointMetadata(
+              DataVaultBridgeEndpointRole.To,
+              targetHubReference,
+              targetHubReference.Name),
+      ],
+      DataVaultBridgeKind.Hierarchy =>
+      [
+          new DataVaultBridgeEndpointMetadata(
+              DataVaultBridgeEndpointRole.Ancestor,
+              sourceHubReference,
+              sourceHubReference.Name),
+          new DataVaultBridgeEndpointMetadata(
+              DataVaultBridgeEndpointRole.Descendant,
+              targetHubReference,
+              targetHubReference.Name),
+      ],
+      _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported bridge kind."),
+    };
+  }
+
+  private static (DataVaultMetadataReference SourceHubReference, DataVaultMetadataReference TargetHubReference)
+      ResolveEndpointReferences(
+          DataVaultBridgeKind kind,
+          IReadOnlyList<DataVaultBridgeEndpointMetadata> endpoints) {
+    return kind switch {
+      DataVaultBridgeKind.ManyToMany => (
+          endpoints.Single(endpoint => endpoint.Role == DataVaultBridgeEndpointRole.From).HubReference,
+          endpoints.Single(endpoint => endpoint.Role == DataVaultBridgeEndpointRole.To).HubReference),
+      DataVaultBridgeKind.Hierarchy => (
+          endpoints.Single(endpoint => endpoint.Role == DataVaultBridgeEndpointRole.Ancestor).HubReference,
+          endpoints.Single(endpoint => endpoint.Role == DataVaultBridgeEndpointRole.Descendant).HubReference),
+      _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported bridge kind."),
+    };
+  }
+
+  private static IReadOnlyList<DataVaultBridgeEndpointMetadata> RequireEndpointRoles(
+      IReadOnlyList<DataVaultBridgeEndpointMetadata> endpoints,
+      DataVaultBridgeKind kind,
+      string parameterName) {
+    return kind switch {
+      DataVaultBridgeKind.ManyToMany => RequireEndpointRoles(
+          endpoints,
+          parameterName,
+          DataVaultBridgeEndpointRole.From,
+          DataVaultBridgeEndpointRole.To,
+          "A many-to-many bridge requires exactly one From endpoint and exactly one To endpoint."),
+      DataVaultBridgeKind.Hierarchy => RequireEndpointRoles(
+          endpoints,
+          parameterName,
+          DataVaultBridgeEndpointRole.Ancestor,
+          DataVaultBridgeEndpointRole.Descendant,
+          "A hierarchy bridge requires exactly one Ancestor endpoint and exactly one Descendant endpoint."),
+      _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unsupported bridge kind."),
+    };
+  }
+
+  private static IReadOnlyList<DataVaultBridgeEndpointMetadata> RequireEndpointRoles(
+      IReadOnlyList<DataVaultBridgeEndpointMetadata> endpoints,
+      string parameterName,
+      DataVaultBridgeEndpointRole firstRole,
+      DataVaultBridgeEndpointRole secondRole,
+      string message) {
+    if (endpoints.Count != 2 ||
+        endpoints.Count(endpoint => endpoint.Role == firstRole) != 1 ||
+        endpoints.Count(endpoint => endpoint.Role == secondRole) != 1) {
+      throw new ArgumentException(message, parameterName);
+    }
+
+    return endpoints;
   }
 }
 
@@ -742,14 +969,13 @@ internal static class DataVaultMetadataValidation {
 
     return reference;
   }
-
   public static DataVaultMetadataReference RequireLinkReference(
       DataVaultMetadataReference reference,
       string parameterName) {
     ArgumentNullException.ThrowIfNull(reference, parameterName);
 
     if (reference.Kind != DataVaultMetadataReferenceKind.Link) {
-      throw new ArgumentException("A bridge traversal must reference a link.", parameterName);
+      throw new ArgumentException("A bridge source must reference a link.", parameterName);
     }
 
     return reference;
@@ -761,6 +987,26 @@ internal static class DataVaultMetadataValidation {
     }
 
     return kind;
+  }
+
+  public static IReadOnlyList<T> RequireItems<T>(
+      IEnumerable<T> items,
+      string parameterName,
+      string emptyMessage)
+      where T : class {
+    ArgumentNullException.ThrowIfNull(items, parameterName);
+
+    var values = items.ToArray();
+    if (values.Length == 0) {
+      throw new ArgumentException(emptyMessage, parameterName);
+    }
+    foreach (var value in values) {
+      if (value is null) {
+        throw new ArgumentException("Metadata declaration collections must not contain null values.", parameterName);
+      }
+    }
+
+    return values;
   }
 
   public static IReadOnlyList<T> RequireItems<T>(IEnumerable<T> items, string parameterName)

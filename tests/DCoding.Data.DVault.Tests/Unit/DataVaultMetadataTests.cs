@@ -263,10 +263,106 @@ public sealed class DataVaultMetadataTests {
   }
 
   [Fact]
+  public void BridgeMetadataRetainsSourceEndpointBindingsAndProjectionFeatures() {
+    var bridge = new DataVaultBridgeMetadata(
+        "SalesRegionHierarchy",
+        DataVaultBridgeKind.Hierarchy,
+        DataVaultMetadataReference.Link("SalesRegionParentChild"),
+        [
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.Ancestor,
+                DataVaultMetadataReference.Hub("SalesRegion"),
+                "ParentRegion"),
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.Descendant,
+                DataVaultMetadataReference.Hub("SalesRegion"),
+                "ChildRegion"),
+        ],
+        DataVaultBridgeProjectionFeatures.EffectivityWindow);
+
+    Assert.Equal("SalesRegionHierarchy", bridge.Name);
+    Assert.Equal(DataVaultBridgeKind.Hierarchy, bridge.Kind);
+    Assert.Equal(DataVaultMetadataReferenceKind.Link, bridge.Source.Kind);
+    Assert.Equal("SalesRegionParentChild", bridge.Source.Name);
+    Assert.Equal(DataVaultBridgeProjectionFeatures.EffectivityWindow, bridge.ProjectionFeatures);
+    Assert.Equal(
+        [DataVaultBridgeEndpointRole.Ancestor, DataVaultBridgeEndpointRole.Descendant],
+        bridge.Endpoints.Select(endpoint => endpoint.Role));
+    Assert.Equal(["SalesRegion", "SalesRegion"], bridge.Endpoints.Select(endpoint => endpoint.HubReference.Name));
+    Assert.Equal(["ParentRegion", "ChildRegion"], bridge.Endpoints.Select(endpoint => endpoint.SourceEndpointName));
+    Assert.All(bridge.Endpoints, endpoint => Assert.Equal(TechnicalMetadataColumnRole.HashKey, endpoint.HashKeyMetadata.Role));
+  }
+
+  [Fact]
+  public void BridgeMetadataRequiresEndpointRolesForBridgeKind() {
+    ThrowsArgumentException(() => new DataVaultBridgeMetadata(
+        "CustomerOrder",
+        DataVaultBridgeKind.ManyToMany,
+        DataVaultMetadataReference.Link("CustomerOrder"),
+        [
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.From,
+                DataVaultMetadataReference.Hub("Customer"),
+                "Customer"),
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.Ancestor,
+                DataVaultMetadataReference.Hub("Order"),
+                "Order"),
+        ]));
+    ThrowsArgumentException(() => new DataVaultBridgeMetadata(
+        "CustomerOrder",
+        DataVaultBridgeKind.ManyToMany,
+        DataVaultMetadataReference.Link("CustomerOrder"),
+        [
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.From,
+                DataVaultMetadataReference.Hub("Customer"),
+                "Customer"),
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.To,
+                DataVaultMetadataReference.Hub("Order"),
+                "Order"),
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.To,
+                DataVaultMetadataReference.Hub("Invoice"),
+                "Invoice"),
+        ]));
+    ThrowsArgumentException(() => new DataVaultBridgeMetadata(
+        "SalesRegionHierarchy",
+        DataVaultBridgeKind.Hierarchy,
+        DataVaultMetadataReference.Link("SalesRegionParentChild"),
+        [
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.From,
+                DataVaultMetadataReference.Hub("SalesRegion"),
+                "ParentRegion"),
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.To,
+                DataVaultMetadataReference.Hub("SalesRegion"),
+                "ChildRegion"),
+        ]));
+    ThrowsArgumentException(() => new DataVaultBridgeMetadata(
+        "SalesRegionHierarchy",
+        DataVaultBridgeKind.Hierarchy,
+        DataVaultMetadataReference.Link("SalesRegionParentChild"),
+        [
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.Ancestor,
+                DataVaultMetadataReference.Hub("SalesRegion"),
+                "ParentRegion"),
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.Ancestor,
+                DataVaultMetadataReference.Hub("SalesRegion"),
+                "ChildRegion"),
+        ]));
+  }
+
+  [Fact]
   public void MetadataAbstractionsUseProviderNeutralClrContracts() {
     var metadataTypes = new[]
     {
         typeof(DataVaultBusinessKeyMetadata),
+        typeof(DataVaultBridgeEndpointMetadata),
         typeof(DataVaultBridgeMetadata),
         typeof(DataVaultHubMetadata),
         typeof(DataVaultLinkMetadata),
@@ -302,6 +398,20 @@ public sealed class DataVaultMetadataTests {
       ThrowsArgumentException(() => new DataVaultLinkMetadata(
           invalidName!,
           [DataVaultMetadataReference.Hub("Customer"), DataVaultMetadataReference.Hub("Order")]));
+      ThrowsArgumentException(() => new DataVaultBridgeMetadata(
+          invalidName!,
+          DataVaultBridgeKind.ManyToMany,
+          DataVaultMetadataReference.Link("CustomerOrder"),
+          [
+              new DataVaultBridgeEndpointMetadata(
+                  DataVaultBridgeEndpointRole.From,
+                  DataVaultMetadataReference.Hub("Customer"),
+                  "Customer"),
+          ]));
+      ThrowsArgumentException(() => new DataVaultBridgeEndpointMetadata(
+          DataVaultBridgeEndpointRole.From,
+          DataVaultMetadataReference.Hub("Customer"),
+          invalidName!));
       ThrowsArgumentException(() => new DataVaultSatelliteMetadata(
           invalidName!,
           DataVaultMetadataReference.Hub("Customer"),
@@ -332,6 +442,21 @@ public sealed class DataVaultMetadataTests {
     ThrowsArgumentException(() => new DataVaultHubMetadata("Customer", []));
     ThrowsArgumentException(() => new DataVaultLinkMetadata("CustomerOrder", null!));
     ThrowsArgumentException(() => new DataVaultLinkMetadata("CustomerOrder", []));
+    ThrowsArgumentException(() => new DataVaultBridgeMetadata(
+        "CustomerOrder",
+        DataVaultBridgeKind.ManyToMany,
+        DataVaultMetadataReference.Link("CustomerOrder"),
+        null!));
+    ThrowsArgumentException(() => new DataVaultBridgeMetadata(
+        "CustomerOrder",
+        DataVaultBridgeKind.ManyToMany,
+        DataVaultMetadataReference.Link("CustomerOrder"),
+        []));
+    ThrowsArgumentException(() => new DataVaultBridgeMetadata(
+        "CustomerOrder",
+        DataVaultBridgeKind.ManyToMany,
+        DataVaultMetadataReference.Link("CustomerOrder"),
+        [null!]));
     ThrowsArgumentException(() => new DataVaultSatelliteMetadata(
         "CustomerContact",
         DataVaultMetadataReference.Hub("Customer"),
@@ -364,6 +489,20 @@ public sealed class DataVaultMetadataTests {
         "CustomerOrder",
         [DataVaultMetadataReference.Hub("Customer"), DataVaultMetadataReference.Link("OrderPayment")]));
     ThrowsArgumentException(() => new DataVaultLinkParticipantMetadata(DataVaultMetadataReference.Link("OrderPayment")));
+    ThrowsArgumentException(() => new DataVaultBridgeMetadata(
+        "CustomerOrder",
+        DataVaultBridgeKind.ManyToMany,
+        DataVaultMetadataReference.Hub("Customer"),
+        [
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.From,
+                DataVaultMetadataReference.Hub("Customer"),
+                "Customer"),
+        ]));
+    ThrowsArgumentException(() => new DataVaultBridgeEndpointMetadata(
+        DataVaultBridgeEndpointRole.From,
+        DataVaultMetadataReference.Link("OrderPayment"),
+        "Customer"));
   }
 
   [Fact]

@@ -40,6 +40,10 @@ internal static class DataVaultEfMetadataTranslator {
       yield return CreateSatelliteEntity(satellite);
     }
 
+    foreach (var bridge in metadataModel.Bridges) {
+      yield return CreateBridgeEntity(bridge);
+    }
+
     foreach (var pit in metadataModel.Pits) {
       yield return CreatePitEntity(pit, metadataModel);
     }
@@ -231,6 +235,144 @@ internal static class DataVaultEfMetadataTranslator {
         properties,
         primaryKey,
         indexes);
+  }
+
+  private static EntityProjection CreateBridgeEntity(DataVaultBridgeMetadata bridge) {
+    if (bridge.ProjectionFeatures != DataVaultBridgeProjectionFeatures.None) {
+      throw new NotSupportedException(
+          "Bridge metadata '" +
+          bridge.Name +
+          "' requests unsupported provider-neutral projection feature(s) '" +
+          bridge.ProjectionFeatures +
+          "'. Baseline bridge translation supports only endpoint hash-key columns and hierarchy TraversalDepth.");
+    }
+
+    return bridge.Kind switch {
+      DataVaultBridgeKind.ManyToMany => CreateManyToManyBridgeEntity(bridge),
+      DataVaultBridgeKind.Hierarchy => CreateHierarchyBridgeEntity(bridge),
+      _ => throw new NotSupportedException(
+          "Bridge metadata '" +
+          bridge.Name +
+          "' declares unsupported bridge kind '" +
+          bridge.Kind +
+          "'. Baseline bridge translation supports only many-to-many and hierarchy bridge metadata."),
+    };
+  }
+
+  private static EntityProjection CreateManyToManyBridgeEntity(DataVaultBridgeMetadata bridge) {
+    var tableName = GetBridgeTableName(bridge);
+    var participantColumnNames = bridge.Endpoints
+        .Select(GetBridgeEndpointHashKeyColumnName)
+        .ToArray();
+    var properties = bridge.Endpoints
+        .Select((endpoint, index) => BridgeParticipantProperty(participantColumnNames[index], endpoint))
+        .ToArray();
+    var primaryKey = new KeyProjection(
+        NamingPolicy.GetConstraintName(
+            new DataVaultConstraintNameContext(DataVaultConstraintKind.PrimaryKey, tableName, participantColumnNames)),
+        participantColumnNames);
+    var traversalColumnNames = participantColumnNames.Reverse().ToArray();
+    var indexes = new[]
+    {
+        new IndexProjection(
+            NamingPolicy.GetIndexName(new DataVaultIndexNameContext(
+                DataVaultIndexKind.BridgeTraversal,
+                tableName,
+                traversalColumnNames,
+                IsUnique: false)),
+            traversalColumnNames,
+            IsUnique: false),
+    };
+
+    return new EntityProjection(
+        tableName,
+        DataVaultTableKind.Bridge,
+        bridge.Name,
+        ParentReference: null,
+        properties,
+        primaryKey,
+        indexes);
+  }
+
+  private static EntityProjection CreateHierarchyBridgeEntity(DataVaultBridgeMetadata bridge) {
+    var tableName = GetBridgeTableName(bridge);
+    var participantColumnNames = bridge.Endpoints
+        .Select(GetBridgeEndpointHashKeyColumnName)
+        .ToArray();
+    var endpointColumns = bridge.Endpoints
+        .Zip(participantColumnNames, (endpoint, columnName) => new EndpointColumn(endpoint.Role, columnName))
+        .ToArray();
+    // DataVaultBridgeMetadata validates hierarchy endpoint roles before translation.
+    var ancestorColumnName = endpointColumns.First(endpoint => endpoint.Role == DataVaultBridgeEndpointRole.Ancestor).ColumnName;
+    var descendantColumnName = endpointColumns.First(endpoint => endpoint.Role == DataVaultBridgeEndpointRole.Descendant).ColumnName;
+    var traversalDepthColumnName = "TraversalDepth";
+    var properties = bridge.Endpoints
+        .Select((endpoint, index) => BridgeParticipantProperty(participantColumnNames[index], endpoint))
+        .Concat([new PropertyProjection(
+            traversalDepthColumnName,
+            DataVaultPropertyRole.BridgeDepth,
+            TechnicalRole: null,
+            traversalDepthColumnName)])
+        .ToArray();
+    var primaryKey = new KeyProjection(
+        NamingPolicy.GetConstraintName(
+            new DataVaultConstraintNameContext(
+                DataVaultConstraintKind.PrimaryKey,
+                tableName,
+                [ancestorColumnName, descendantColumnName])),
+        [ancestorColumnName, descendantColumnName]);
+    var indexes = new[]
+    {
+        new IndexProjection(
+            NamingPolicy.GetIndexName(new DataVaultIndexNameContext(
+                DataVaultIndexKind.BridgeTraversal,
+                tableName,
+                [ancestorColumnName, traversalDepthColumnName],
+                IsUnique: false)),
+            [ancestorColumnName, traversalDepthColumnName],
+            IsUnique: false),
+        new IndexProjection(
+            NamingPolicy.GetIndexName(new DataVaultIndexNameContext(
+                DataVaultIndexKind.BridgeTraversal,
+                tableName,
+                [descendantColumnName, ancestorColumnName],
+                IsUnique: false)),
+            [descendantColumnName, ancestorColumnName],
+            IsUnique: false),
+    };
+
+    return new EntityProjection(
+        tableName,
+        DataVaultTableKind.Bridge,
+        bridge.Name,
+        ParentReference: null,
+        properties,
+        primaryKey,
+        indexes);
+  }
+
+  private static string GetBridgeTableName(DataVaultBridgeMetadata bridge) {
+    return "Bridge" + DefaultNamingPolicy.Instance.NormalizeProducedIdentifier(bridge.Name);
+  }
+
+  private static string GetBridgeEndpointHashKeyColumnName(DataVaultBridgeEndpointMetadata endpoint) {
+    var baseName = endpoint.Role switch {
+      DataVaultBridgeEndpointRole.Ancestor => "Ancestor" + DefaultNamingPolicy.Instance.NormalizeProducedIdentifier(endpoint.HubReference.Name),
+      DataVaultBridgeEndpointRole.Descendant => "Descendant" + DefaultNamingPolicy.Instance.NormalizeProducedIdentifier(endpoint.HubReference.Name),
+      _ => endpoint.HubReference.Name,
+    };
+
+    return DefaultNamingPolicy.Instance.NormalizeProducedIdentifier(baseName) + "HashKey";
+  }
+
+  private static PropertyProjection BridgeParticipantProperty(
+      string columnName,
+      DataVaultBridgeEndpointMetadata endpoint) {
+    return new PropertyProjection(
+        columnName,
+        DataVaultPropertyRole.ParticipantReference,
+        TechnicalMetadataColumnRole.HashKey,
+        endpoint.SourceEndpointName);
   }
 
   private static EntityProjection CreatePitEntity(
@@ -491,6 +633,10 @@ internal static class DataVaultEfMetadataTranslator {
       return entityBuilder.IndexerProperty<string>(property.Name);
     }
 
+    if (typeMapping.ModelClrType == typeof(int)) {
+      return entityBuilder.IndexerProperty<int>(property.Name);
+    }
+
     throw new NotSupportedException(
         "Provider capability profile '" +
         providerCapabilities.ProfileName +
@@ -507,6 +653,7 @@ internal static class DataVaultEfMetadataTranslator {
       DataVaultPropertyRole.ParticipantReference => DataVaultLogicalPropertyKind.ParticipantReference,
       DataVaultPropertyRole.Payload => DataVaultLogicalPropertyKind.PayloadText,
       DataVaultPropertyRole.SnapshotReference => DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+      DataVaultPropertyRole.BridgeDepth => DataVaultLogicalPropertyKind.BridgeDepth,
       DataVaultPropertyRole.Technical => GetTechnicalLogicalPropertyKind(property),
       _ => throw new ArgumentOutOfRangeException(nameof(property), property.Role, "Unsupported Data Vault property role."),
     };
@@ -544,4 +691,6 @@ internal static class DataVaultEfMetadataTranslator {
   private sealed record KeyProjection(string Name, IReadOnlyList<string> PropertyNames);
 
   private sealed record IndexProjection(string Name, IReadOnlyList<string> PropertyNames, bool IsUnique);
+
+  private readonly record struct EndpointColumn(DataVaultBridgeEndpointRole Role, string ColumnName);
 }

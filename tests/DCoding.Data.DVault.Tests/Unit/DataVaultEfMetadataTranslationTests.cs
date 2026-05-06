@@ -70,33 +70,23 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   [Fact]
-  public void ApplyDataVaultMetadataDoesNotProjectBridgeEntitiesBeforeBridgeMappingTicket() {
-    var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
-    var product = new DataVaultHubMetadata("Product", ["ProductId"]);
-    var customerProduct = new DataVaultLinkMetadata(
-        "CustomerProduct",
-        [customer.ToReference(), product.ToReference()]);
-    var bridge = DataVaultBridgeMetadata.ManyToMany(
-        "CustomerProductBridge",
-        customer.ToReference(),
-        customerProduct.ToReference(),
-        product.ToReference(),
-        sourceParticipantOrdinal: 0,
-        targetParticipantOrdinal: 1);
+  public void ApplyDataVaultMetadataCreatesProviderNeutralBridgeMetadata() {
     var modelBuilder = CreateModelBuilder();
 
-    modelBuilder.ApplyDataVaultMetadata(new DataVaultMetadataModel(
-        [customer, product],
-        [customerProduct],
-        [],
-        [bridge]));
+    modelBuilder.ApplyDataVaultMetadata(CreateBridgeMetadataModel());
 
-    Assert.Equal(
-        ["HubCustomer", "HubProduct", "LinkCustomerProduct"],
-        modelBuilder.Model.GetEntityTypes()
-            .Select(entityType => AnnotationValue<string>(entityType, DataVaultAnnotationNames.ProducedName))
-            .Order(StringComparer.Ordinal)
-            .ToArray());
+    var model = modelBuilder.Model;
+    var orderHub = FindEntity(model, "HubOrder");
+    var manyToManyBridge = FindEntity(model, "BridgeCustomerOrder");
+    var hierarchyBridge = FindEntity(model, "BridgeSalesRegionHierarchy");
+
+    Assert.Equal(6, model.GetEntityTypes().Count());
+    AssertHub(FindEntity(model, "HubCustomer"));
+    AssertOrderHub(orderHub);
+    AssertLink(FindEntity(model, "LinkCustomerOrder"));
+    AssertSatellite(FindEntity(model, "SatCustomerContact"));
+    AssertManyToManyBridge(manyToManyBridge);
+    AssertHierarchyBridge(hierarchyBridge);
   }
 
   [Fact]
@@ -121,6 +111,37 @@ public sealed class DataVaultEfMetadataTranslationTests {
         ["CustomerHashKey", "HashDiff", "LoadTimestamp", "RecordSource", "EmailAddress"],
         "PkSatCustomerContactCustomerHashKeyLoadTimestamp",
         "IxSatCustomerContactSatelliteParentCustomerHashKeyLoadTimestamp");
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataMapsBridgeProducedNamesToRelationalMetadata() {
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.ApplyDataVaultMetadata(CreateBridgeMetadataModel());
+
+    AssertRelationalEntityWithIndexes(
+        FindEntity(modelBuilder.Model, "BridgeCustomerOrder"),
+        "BridgeCustomerOrder",
+        ["CustomerHashKey", "OrderHashKey"],
+        "PkBridgeCustomerOrderCustomerHashKeyOrderHashKey",
+        [
+            (
+                "IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey",
+                ["OrderHashKey", "CustomerHashKey"]),
+        ]);
+    AssertRelationalEntityWithIndexes(
+        FindEntity(modelBuilder.Model, "BridgeSalesRegionHierarchy"),
+        "BridgeSalesRegionHierarchy",
+        ["AncestorSalesRegionHashKey", "DescendantSalesRegionHashKey", "TraversalDepth"],
+        "PkBridgeSalesRegionHierarchyAncestorSalesRegionHashKeyDescendantSalesRegionHashKey",
+        [
+            (
+                "IxBridgeSalesRegionHierarchyTraversalAncestorSalesRegionHashKeyTraversalDepth",
+                ["AncestorSalesRegionHashKey", "TraversalDepth"]),
+            (
+                "IxBridgeSalesRegionHierarchyTraversalDescendantSalesRegionHashKeyAncestorSalesRegionHashKey",
+                ["DescendantSalesRegionHashKey", "AncestorSalesRegionHashKey"]),
+        ]);
   }
 
   [Fact]
@@ -487,6 +508,65 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataFailsDeterministicallyWhenBridgeRequestsUnsupportedProjectionFeatures() {
+    var metadataModel = new DataVaultMetadataModel(
+        [],
+        [
+            new DataVaultLinkMetadata(
+                "CustomerOrder",
+                [DataVaultMetadataReference.Hub("Customer"), DataVaultMetadataReference.Hub("Order")]),
+        ],
+        [],
+        [
+            new DataVaultBridgeMetadata(
+                "CustomerOrder",
+                DataVaultBridgeKind.ManyToMany,
+                DataVaultMetadataReference.Link("CustomerOrder"),
+                [
+                    new DataVaultBridgeEndpointMetadata(
+                        DataVaultBridgeEndpointRole.From,
+                        DataVaultMetadataReference.Hub("Customer"),
+                        "Customer"),
+                    new DataVaultBridgeEndpointMetadata(
+                        DataVaultBridgeEndpointRole.To,
+                        DataVaultMetadataReference.Hub("Order"),
+                        "Order"),
+                ],
+                DataVaultBridgeProjectionFeatures.EffectivityWindow),
+        ]);
+
+    var exception = Assert.Throws<NotSupportedException>(() => CreateModelBuilder().ApplyDataVaultMetadata(metadataModel));
+
+    Assert.Contains("CustomerOrder", exception.Message, StringComparison.Ordinal);
+    Assert.Contains("EffectivityWindow", exception.Message, StringComparison.Ordinal);
+    Assert.Contains("only endpoint hash-key columns and hierarchy TraversalDepth", exception.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void MalformedHierarchyEndpointBindingsRemainMetadataValidationConcerns() {
+    var exception = Assert.Throws<ArgumentException>(() => new DataVaultBridgeMetadata(
+        "SalesRegionHierarchy",
+        DataVaultBridgeKind.Hierarchy,
+        DataVaultMetadataReference.Link("SalesRegionParentChild"),
+        [
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.From,
+                DataVaultMetadataReference.Hub("SalesRegion"),
+                "ParentRegion"),
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.To,
+                DataVaultMetadataReference.Hub("SalesRegion"),
+                "ChildRegion"),
+        ]));
+
+    Assert.Equal("endpoints", exception.ParamName);
+    Assert.Contains(
+        "A hierarchy bridge requires exactly one Ancestor endpoint and exactly one Descendant endpoint.",
+        exception.Message,
+        StringComparison.Ordinal);
+  }
+
+  [Fact]
   public void DataVaultMetadataModelRejectsNullCollectionsAndItems() {
     Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel(null!, [], []));
     Assert.Throws<ArgumentNullException>(() => new DataVaultMetadataModel([], null!, []));
@@ -571,6 +651,55 @@ public sealed class DataVaultEfMetadataTranslationTests {
         [new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), pitSatelliteNames)]);
   }
 
+  private static DataVaultMetadataModel CreateBridgeMetadataModel() {
+    return new DataVaultMetadataModel(
+        [
+            new DataVaultHubMetadata("Customer", ["Customer Id"]),
+            new DataVaultHubMetadata("Order", ["Order Id"]),
+        ],
+        [
+            new DataVaultLinkMetadata(
+                "CustomerOrder",
+                [DataVaultMetadataReference.Hub("Customer"), DataVaultMetadataReference.Hub("Order")]),
+        ],
+        [
+            new DataVaultSatelliteMetadata(
+                "Contact",
+                DataVaultMetadataReference.Hub("Customer"),
+                ["Email Address"]),
+        ],
+        [
+            new DataVaultBridgeMetadata(
+                "CustomerOrder",
+                DataVaultBridgeKind.ManyToMany,
+                DataVaultMetadataReference.Link("CustomerOrder"),
+                [
+                    new DataVaultBridgeEndpointMetadata(
+                        DataVaultBridgeEndpointRole.From,
+                        DataVaultMetadataReference.Hub("Customer"),
+                        "Customer"),
+                    new DataVaultBridgeEndpointMetadata(
+                        DataVaultBridgeEndpointRole.To,
+                        DataVaultMetadataReference.Hub("Order"),
+                        "Order"),
+                ]),
+            new DataVaultBridgeMetadata(
+                "SalesRegionHierarchy",
+                DataVaultBridgeKind.Hierarchy,
+                DataVaultMetadataReference.Link("SalesRegionParentChild"),
+                [
+                    new DataVaultBridgeEndpointMetadata(
+                        DataVaultBridgeEndpointRole.Ancestor,
+                        DataVaultMetadataReference.Hub("SalesRegion"),
+                        "ParentRegion"),
+                    new DataVaultBridgeEndpointMetadata(
+                        DataVaultBridgeEndpointRole.Descendant,
+                        DataVaultMetadataReference.Hub("SalesRegion"),
+                        "ChildRegion"),
+                ]),
+        ]);
+  }
+
   private static ModelBuilder CreateModelBuilder() {
     return new ModelBuilder(new ConventionSet());
   }
@@ -585,6 +714,19 @@ public sealed class DataVaultEfMetadataTranslationTests {
     AssertProperty(hub, "CustomerId", DataVaultPropertyRole.BusinessKey, expectedTechnicalRole: null);
     AssertPrimaryKey(hub, "PkHubCustomerCustomerHashKey", ["CustomerHashKey"]);
     AssertIndex(hub, "IxHubCustomerBusinessKeyCustomerId", ["CustomerId"], isUnique: true);
+    AssertNoRelationships(hub);
+  }
+
+  private static void AssertOrderHub(IMutableEntityType hub) {
+    Assert.Equal(DataVaultTableKind.Hub, AnnotationValue<DataVaultTableKind>(hub, DataVaultAnnotationNames.EntityKind));
+    Assert.Equal("Order", AnnotationValue<string>(hub, DataVaultAnnotationNames.MetadataName));
+    Assert.Equal(["OrderHashKey", "LoadTimestamp", "RecordSource", "OrderId"], PropertyNamesInOrdinalOrder(hub));
+    AssertProperty(hub, "OrderHashKey", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.HashKey);
+    AssertProperty(hub, "LoadTimestamp", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.LoadTimestamp);
+    AssertProperty(hub, "RecordSource", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.RecordSource);
+    AssertProperty(hub, "OrderId", DataVaultPropertyRole.BusinessKey, expectedTechnicalRole: null);
+    AssertPrimaryKey(hub, "PkHubOrderOrderHashKey", ["OrderHashKey"]);
+    AssertIndex(hub, "IxHubOrderBusinessKeyOrderId", ["OrderId"], isUnique: true);
     AssertNoRelationships(hub);
   }
 
@@ -647,6 +789,66 @@ public sealed class DataVaultEfMetadataTranslationTests {
     AssertNoRelationships(pit);
   }
 
+  private static void AssertManyToManyBridge(IMutableEntityType bridge) {
+    Assert.Equal(DataVaultTableKind.Bridge, AnnotationValue<DataVaultTableKind>(bridge, DataVaultAnnotationNames.EntityKind));
+    Assert.Equal("CustomerOrder", AnnotationValue<string>(bridge, DataVaultAnnotationNames.MetadataName));
+    Assert.Equal(["CustomerHashKey", "OrderHashKey"], PropertyNamesInOrdinalOrder(bridge));
+    AssertProperty(bridge, "CustomerHashKey", DataVaultPropertyRole.ParticipantReference, TechnicalMetadataColumnRole.HashKey);
+    AssertProperty(bridge, "OrderHashKey", DataVaultPropertyRole.ParticipantReference, TechnicalMetadataColumnRole.HashKey);
+    Assert.Equal("Customer", AnnotationValue<string>(bridge.FindProperty("CustomerHashKey")!, DataVaultAnnotationNames.MetadataName));
+    Assert.Equal("Order", AnnotationValue<string>(bridge.FindProperty("OrderHashKey")!, DataVaultAnnotationNames.MetadataName));
+    AssertPrimaryKey(
+        bridge,
+        "PkBridgeCustomerOrderCustomerHashKeyOrderHashKey",
+        ["CustomerHashKey", "OrderHashKey"]);
+    AssertIndex(
+        bridge,
+        "IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey",
+        ["OrderHashKey", "CustomerHashKey"],
+        isUnique: false);
+    AssertNoRelationships(bridge);
+  }
+
+  private static void AssertHierarchyBridge(IMutableEntityType bridge) {
+    Assert.Equal(DataVaultTableKind.Bridge, AnnotationValue<DataVaultTableKind>(bridge, DataVaultAnnotationNames.EntityKind));
+    Assert.Equal("SalesRegionHierarchy", AnnotationValue<string>(bridge, DataVaultAnnotationNames.MetadataName));
+    Assert.Equal(
+        ["AncestorSalesRegionHashKey", "DescendantSalesRegionHashKey", "TraversalDepth"],
+        PropertyNamesInOrdinalOrder(bridge));
+    AssertProperty(
+        bridge,
+        "AncestorSalesRegionHashKey",
+        DataVaultPropertyRole.ParticipantReference,
+        TechnicalMetadataColumnRole.HashKey);
+    AssertProperty(
+        bridge,
+        "DescendantSalesRegionHashKey",
+        DataVaultPropertyRole.ParticipantReference,
+        TechnicalMetadataColumnRole.HashKey);
+    AssertProperty(bridge, "TraversalDepth", DataVaultPropertyRole.BridgeDepth, expectedTechnicalRole: null);
+    Assert.Equal(
+        "ParentRegion",
+        AnnotationValue<string>(bridge.FindProperty("AncestorSalesRegionHashKey")!, DataVaultAnnotationNames.MetadataName));
+    Assert.Equal(
+        "ChildRegion",
+        AnnotationValue<string>(bridge.FindProperty("DescendantSalesRegionHashKey")!, DataVaultAnnotationNames.MetadataName));
+    AssertPrimaryKey(
+        bridge,
+        "PkBridgeSalesRegionHierarchyAncestorSalesRegionHashKeyDescendantSalesRegionHashKey",
+        ["AncestorSalesRegionHashKey", "DescendantSalesRegionHashKey"]);
+    AssertNamedIndex(
+        bridge,
+        "IxBridgeSalesRegionHierarchyTraversalAncestorSalesRegionHashKeyTraversalDepth",
+        ["AncestorSalesRegionHashKey", "TraversalDepth"],
+        isUnique: false);
+    AssertNamedIndex(
+        bridge,
+        "IxBridgeSalesRegionHierarchyTraversalDescendantSalesRegionHashKeyAncestorSalesRegionHashKey",
+        ["DescendantSalesRegionHashKey", "AncestorSalesRegionHashKey"],
+        isUnique: false);
+    AssertNoRelationships(bridge);
+  }
+
   private static void AssertProperty(
       IMutableEntityType entityType,
       string propertyName,
@@ -663,7 +865,7 @@ public sealed class DataVaultEfMetadataTranslationTests {
     Assert.Equal(expectedLogicalPropertyKind, AnnotationValue<DataVaultLogicalPropertyKind>(
         property,
         DataVaultAnnotationNames.ProviderLogicalPropertyKind));
-    Assert.Equal("TEXT", AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderStorageType));
+    Assert.Equal(ExpectedStorageType(expectedLogicalPropertyKind), AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderStorageType));
     Assert.Equal(ExpectedValueFormat(expectedLogicalPropertyKind), AnnotationValue<DataVaultProviderValueFormat>(
         property,
         DataVaultAnnotationNames.ProviderValueFormat));
@@ -723,6 +925,7 @@ public sealed class DataVaultEfMetadataTranslationTests {
       DataVaultPropertyRole.ParticipantReference => DataVaultLogicalPropertyKind.ParticipantReference,
       DataVaultPropertyRole.Payload => DataVaultLogicalPropertyKind.PayloadText,
       DataVaultPropertyRole.SnapshotReference => DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+      DataVaultPropertyRole.BridgeDepth => DataVaultLogicalPropertyKind.BridgeDepth,
       DataVaultPropertyRole.Technical => technicalRole switch {
         TechnicalMetadataColumnRole.HashKey => DataVaultLogicalPropertyKind.HashKey,
         TechnicalMetadataColumnRole.HashDiff => DataVaultLogicalPropertyKind.HashDiff,
@@ -735,17 +938,25 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   private static Type ExpectedClrType(DataVaultLogicalPropertyKind logicalPropertyKind) {
-    return logicalPropertyKind is DataVaultLogicalPropertyKind.LoadTimestamp or
-        DataVaultLogicalPropertyKind.SatelliteSnapshotReference
-        ? typeof(DateTimeOffset)
-        : typeof(string);
+    return logicalPropertyKind switch {
+      DataVaultLogicalPropertyKind.LoadTimestamp => typeof(DateTimeOffset),
+      DataVaultLogicalPropertyKind.SatelliteSnapshotReference => typeof(DateTimeOffset),
+      DataVaultLogicalPropertyKind.BridgeDepth => typeof(int),
+      _ => typeof(string),
+    };
   }
 
   private static DataVaultProviderValueFormat ExpectedValueFormat(DataVaultLogicalPropertyKind logicalPropertyKind) {
-    return logicalPropertyKind is DataVaultLogicalPropertyKind.LoadTimestamp or
-        DataVaultLogicalPropertyKind.SatelliteSnapshotReference
-        ? DataVaultProviderValueFormat.Iso8601UtcText
-        : DataVaultProviderValueFormat.Text;
+    return logicalPropertyKind switch {
+      DataVaultLogicalPropertyKind.LoadTimestamp => DataVaultProviderValueFormat.Iso8601UtcText,
+      DataVaultLogicalPropertyKind.SatelliteSnapshotReference => DataVaultProviderValueFormat.Iso8601UtcText,
+      DataVaultLogicalPropertyKind.BridgeDepth => DataVaultProviderValueFormat.NativeInteger,
+      _ => DataVaultProviderValueFormat.Text,
+    };
+  }
+
+  private static string ExpectedStorageType(DataVaultLogicalPropertyKind logicalPropertyKind) {
+    return logicalPropertyKind == DataVaultLogicalPropertyKind.BridgeDepth ? "INTEGER" : "TEXT";
   }
 
   private static void AssertPrimaryKey(IMutableEntityType entityType, string expectedName, string[] expectedProperties) {
@@ -760,6 +971,18 @@ public sealed class DataVaultEfMetadataTranslationTests {
     var index = Assert.Single(entityType.GetIndexes());
 
     Assert.Equal(expectedName, AnnotationValue<string>(index, DataVaultAnnotationNames.ProducedName));
+    Assert.Equal(expectedProperties, index.Properties.Select(property => property.Name));
+    Assert.Equal(isUnique, index.IsUnique);
+  }
+
+  private static void AssertNamedIndex(IMutableEntityType entityType, string expectedName, string[] expectedProperties, bool isUnique) {
+    var index = Assert.Single(
+        entityType.GetIndexes(),
+        index => string.Equals(
+            AnnotationValue<string>(index, DataVaultAnnotationNames.ProducedName),
+            expectedName,
+            StringComparison.Ordinal));
+
     Assert.Equal(expectedProperties, index.Properties.Select(property => property.Name));
     Assert.Equal(isUnique, index.IsUnique);
   }
@@ -813,6 +1036,43 @@ public sealed class DataVaultEfMetadataTranslationTests {
 
     Assert.Contains(expectedMessage, exception.Message, StringComparison.Ordinal);
     Assert.Empty(modelBuilder.Model.GetEntityTypes());
+  }
+
+  private static void AssertRelationalEntityWithIndexes(
+      IMutableEntityType entityType,
+      string expectedTableName,
+      string[] expectedColumnNames,
+      string expectedPrimaryKeyName,
+      (string Name, string[] Properties)[] expectedIndexes) {
+    var table = StoreObjectIdentifier.Table(expectedTableName, schema: null);
+
+    Assert.Equal(expectedTableName, entityType.GetTableName());
+    Assert.Equal(expectedColumnNames, PropertyNamesInOrdinalOrder(entityType));
+    Assert.Equal(
+        expectedColumnNames,
+        entityType.GetProperties()
+            .OrderBy(property => AnnotationValue<int>(property, DataVaultAnnotationNames.Ordinal))
+            .Select(property => property.GetColumnName(table)));
+    Assert.Equal(
+        Enumerable.Range(0, expectedColumnNames.Length).Select(order => (int?)order),
+        entityType.GetProperties()
+            .OrderBy(property => AnnotationValue<int>(property, DataVaultAnnotationNames.Ordinal))
+            .Select(property => property.GetColumnOrder()));
+    Assert.Equal(expectedPrimaryKeyName, entityType.FindPrimaryKey()!.GetName());
+
+    var indexesByName = entityType.GetIndexes()
+        .ToDictionary(index => index.GetDatabaseName() ?? string.Empty, StringComparer.Ordinal);
+
+    Assert.DoesNotContain(string.Empty, indexesByName.Keys);
+    Assert.Equal(
+        expectedIndexes.Select(index => index.Name).Order(StringComparer.Ordinal),
+        indexesByName.Keys.Order(StringComparer.Ordinal));
+
+    foreach (var expectedIndex in expectedIndexes) {
+      var index = indexesByName[expectedIndex.Name];
+
+      Assert.Equal(expectedIndex.Properties, index.Properties.Select(property => property.GetColumnName(table)));
+    }
   }
 
   private static void AssertNoRelationships(IMutableEntityType entityType) {

@@ -1,0 +1,13 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/attachment-manifest/v1",
+  "attachments": [
+    {
+      "attachmentId": "06EZSK9Q43V2J6P9SQVTRY3W3R",
+      "sha256": "3c660fa24361a55aa695aa43e3ba91d69691da4128aa8eca02037e678e5084b3",
+      "fileName": "06EZ0NV0Y81AE1Z1Q3223TX2S4-bridge-metadata-v1-contract.md",
+      "contentType": "text/markdown",
+      "size": 5102,
+      "addedAt": "2026-05-06T10:20:00.6720000Z"
+    }
+  ]
+}

@@ -24,8 +24,44 @@ public sealed class SqliteDataVaultSchemaTests {
     using var connection = database.CreateOpenConnection();
 
     Assert.Equal(
-        "HubCustomer|HubOrder|LinkCustomerOrder|SatCustomerContact|SatCustomerOrderState",
+        "BridgeCustomerOrder|BridgeSalesRegionHierarchy|HubCustomer|HubOrder|LinkCustomerOrder|SatCustomerContact|SatCustomerOrderState",
         TableNames(connection));
+    AssertTable(
+        connection,
+        "BridgeCustomerOrder",
+        ["CustomerHashKey", "OrderHashKey"],
+        "PkBridgeCustomerOrderCustomerHashKeyOrderHashKey",
+        ["CustomerHashKey", "OrderHashKey"],
+        "IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey",
+        ["OrderHashKey", "CustomerHashKey"],
+        expectedIndexUnique: false);
+    Assert.Equal(
+        "IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey",
+        IndexNames(connection, "BridgeCustomerOrder"));
+    Assert.Equal("0", ForeignKeyCount(connection, "BridgeCustomerOrder"));
+    AssertTable(
+        connection,
+        "BridgeSalesRegionHierarchy",
+        ["AncestorSalesRegionHashKey", "DescendantSalesRegionHashKey", "TraversalDepth"],
+        "PkBridgeSalesRegionHierarchyAncestorSalesRegionHashKeyDescendantSalesRegionHashKey",
+        ["AncestorSalesRegionHashKey", "DescendantSalesRegionHashKey"],
+        "IxBridgeSalesRegionHierarchyTraversalAncestorSalesRegionHashKeyTraversalDepth",
+        ["AncestorSalesRegionHashKey", "TraversalDepth"],
+        expectedIndexUnique: false);
+    Assert.Equal(
+        "IxBridgeSalesRegionHierarchyTraversalAncestorSalesRegionHashKeyTraversalDepth|" +
+        "IxBridgeSalesRegionHierarchyTraversalDescendantSalesRegionHashKeyAncestorSalesRegionHashKey",
+        IndexNames(connection, "BridgeSalesRegionHierarchy"));
+    Assert.Equal(
+        "0",
+        IndexUniqueValue(
+            connection,
+            "BridgeSalesRegionHierarchy",
+            "IxBridgeSalesRegionHierarchyTraversalDescendantSalesRegionHashKeyAncestorSalesRegionHashKey"));
+    Assert.Equal(
+        "DescendantSalesRegionHashKey|AncestorSalesRegionHashKey",
+        IndexColumnNames(connection, "IxBridgeSalesRegionHierarchyTraversalDescendantSalesRegionHashKeyAncestorSalesRegionHashKey"));
+    Assert.Equal("0", ForeignKeyCount(connection, "BridgeSalesRegionHierarchy"));
     AssertTable(
         connection,
         "HubCustomer",
@@ -152,7 +188,7 @@ public sealed class SqliteDataVaultSchemaTests {
         "0",
         connection.ExecuteScalarString(
             "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND " +
-            "(name LIKE 'Hub%' OR name LIKE 'Link%' OR name LIKE 'Sat%' OR name LIKE 'Pit%');"));
+            "(name LIKE 'Hub%' OR name LIKE 'Link%' OR name LIKE 'Sat%' OR name LIKE 'Bridge%' OR name LIKE 'Pit%');"));
   }
 
   private static void AssertTable(
@@ -248,6 +284,36 @@ public sealed class SqliteDataVaultSchemaTests {
                 "State",
                 DataVaultMetadataReference.Link("CustomerOrder"),
                 ["State Code"]),
+        ],
+        [
+            new DataVaultBridgeMetadata(
+                "CustomerOrder",
+                DataVaultBridgeKind.ManyToMany,
+                DataVaultMetadataReference.Link("CustomerOrder"),
+                [
+                    new DataVaultBridgeEndpointMetadata(
+                        DataVaultBridgeEndpointRole.From,
+                        DataVaultMetadataReference.Hub("Customer"),
+                        "Customer"),
+                    new DataVaultBridgeEndpointMetadata(
+                        DataVaultBridgeEndpointRole.To,
+                        DataVaultMetadataReference.Hub("Order"),
+                        "Order"),
+                ]),
+            new DataVaultBridgeMetadata(
+                "SalesRegionHierarchy",
+                DataVaultBridgeKind.Hierarchy,
+                DataVaultMetadataReference.Link("SalesRegionParentChild"),
+                [
+                    new DataVaultBridgeEndpointMetadata(
+                        DataVaultBridgeEndpointRole.Ancestor,
+                        DataVaultMetadataReference.Hub("SalesRegion"),
+                        "ParentRegion"),
+                    new DataVaultBridgeEndpointMetadata(
+                        DataVaultBridgeEndpointRole.Descendant,
+                        DataVaultMetadataReference.Hub("SalesRegion"),
+                        "ChildRegion"),
+                ]),
         ]);
   }
 
@@ -276,6 +342,36 @@ public sealed class SqliteDataVaultSchemaTests {
                 "Fulfillment Status",
                 DataVaultMetadataReference.Link("CustomerOrderRegion"),
                 ["State Code"]),
+        ],
+        [
+            new DataVaultBridgeMetadata(
+                "CustomerOrder",
+                DataVaultBridgeKind.ManyToMany,
+                DataVaultMetadataReference.Link("CustomerOrder"),
+                [
+                    new DataVaultBridgeEndpointMetadata(
+                        DataVaultBridgeEndpointRole.From,
+                        DataVaultMetadataReference.Hub("Customer"),
+                        "Customer"),
+                    new DataVaultBridgeEndpointMetadata(
+                        DataVaultBridgeEndpointRole.To,
+                        DataVaultMetadataReference.Hub("Order"),
+                        "Order"),
+                ]),
+            new DataVaultBridgeMetadata(
+                "SalesRegionHierarchy",
+                DataVaultBridgeKind.Hierarchy,
+                DataVaultMetadataReference.Link("SalesRegionParentChild"),
+                [
+                    new DataVaultBridgeEndpointMetadata(
+                        DataVaultBridgeEndpointRole.Ancestor,
+                        DataVaultMetadataReference.Hub("SalesRegion"),
+                        "ParentRegion"),
+                    new DataVaultBridgeEndpointMetadata(
+                        DataVaultBridgeEndpointRole.Descendant,
+                        DataVaultMetadataReference.Hub("SalesRegion"),
+                        "ChildRegion"),
+                ]),
         ]);
   }
 
@@ -365,6 +461,11 @@ public sealed class SqliteDataVaultSchemaTests {
     return connection.ExecuteScalarString(
         "SELECT group_concat(name, '|') FROM (" +
         "SELECT name FROM pragma_index_info(" + SqlLiteral(indexName) + ") ORDER BY seqno);");
+  }
+
+  private static string? ForeignKeyCount(SqliteTestConnection connection, string tableName) {
+    return connection.ExecuteScalarString(
+        "SELECT count(*) FROM pragma_foreign_key_list(" + SqlLiteral(tableName) + ");");
   }
 
   private static string FormatList(string? values) {

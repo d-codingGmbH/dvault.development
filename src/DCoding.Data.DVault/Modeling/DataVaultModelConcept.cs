@@ -38,4 +38,9 @@ public enum DataVaultModelConcept {
   /// Represents the record source metadata concept.
   /// </summary>
   RecordSource,
+
+  /// <summary>
+  /// Represents a bridge table for baseline relationship traversal.
+  /// </summary>
+  Bridge,
 }

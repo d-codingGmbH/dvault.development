@@ -166,6 +166,11 @@ public enum DataVaultIndexKind {
   /// Index over satellite parent columns.
   /// </summary>
   SatelliteParent,
+
+  /// <summary>
+  /// Index over bridge traversal columns.
+  /// </summary>
+  BridgeTraversal,
 }
 
 /// <summary>

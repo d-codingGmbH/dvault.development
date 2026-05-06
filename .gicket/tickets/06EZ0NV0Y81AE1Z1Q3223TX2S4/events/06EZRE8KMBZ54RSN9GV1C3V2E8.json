@@ -1,0 +1,15 @@
+{
+  "event-id": "06EZRE8KMBZ54RSN9GV1C3V2E8",
+  "occurred-at": "2026-05-06T07:38:12.2588492Z",
+  "event-type": "TicketRelationAdded",
+  "actor": {
+    "name": "system",
+    "email": "system@example.invalid"
+  },
+  "payload": {
+    "relation-id": "06EZ0NV0Y81AE1Z1Q3223TX2S4--06EZ0NV7KG94MTMNXMGVRYVW9C--blocks",
+    "relation-type": "blocks",
+    "source-ticket-id": "06EZ0NV0Y81AE1Z1Q3223TX2S4",
+    "target-ticket-id": "06EZ0NV7KG94MTMNXMGVRYVW9C"
+  }
+}

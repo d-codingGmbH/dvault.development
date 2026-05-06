@@ -45,6 +45,11 @@ public enum DataVaultLogicalPropertyKind {
   /// PIT satellite snapshot load-timestamp reference value.
   /// </summary>
   SatelliteSnapshotReference,
+
+  /// <summary>
+  /// Integer hierarchy depth value produced for bridge traversal metadata.
+  /// </summary>
+  BridgeDepth,
 }
 
 /// <summary>
@@ -85,6 +90,11 @@ public enum DataVaultProviderValueFormat {
   /// Timestamp values are persisted through the provider's native <see cref="DateTimeOffset" /> mapping.
   /// </summary>
   NativeDateTimeOffset,
+
+  /// <summary>
+  /// Integer values are persisted through the provider's native integer mapping.
+  /// </summary>
+  NativeInteger,
 }
 
 /// <summary>
@@ -282,6 +292,7 @@ public static class DataVaultProviderCapabilityProfiles {
               typeof(DateTimeOffset),
               "TEXT",
               DataVaultProviderValueFormat.Iso8601UtcText),
+          Integer(DataVaultLogicalPropertyKind.BridgeDepth, "INTEGER"),
       ]);
 
   /// <summary>
@@ -308,6 +319,7 @@ public static class DataVaultProviderCapabilityProfiles {
               typeof(string),
               "VARCHAR2(33 CHAR)",
               DataVaultProviderValueFormat.Iso8601UtcText),
+          Integer(DataVaultLogicalPropertyKind.BridgeDepth, "NUMBER(10)"),
       ],
       allowsIndexesCoveredByPrimaryKey: false);
 
@@ -335,6 +347,7 @@ public static class DataVaultProviderCapabilityProfiles {
               typeof(DateTimeOffset),
               "varchar(33)",
               DataVaultProviderValueFormat.Iso8601UtcText),
+          Integer(DataVaultLogicalPropertyKind.BridgeDepth, "int"),
       ],
       maximumIdentifierLength: 64);
 
@@ -346,5 +359,15 @@ public static class DataVaultProviderCapabilityProfiles {
         typeof(string),
         nativeStoreType,
         DataVaultProviderValueFormat.Text);
+  }
+
+  private static DataVaultProviderTypeMapping Integer(
+      DataVaultLogicalPropertyKind logicalPropertyKind,
+      string nativeStoreType) {
+    return new DataVaultProviderTypeMapping(
+        logicalPropertyKind,
+        typeof(int),
+        nativeStoreType,
+        DataVaultProviderValueFormat.NativeInteger);
   }
 }
