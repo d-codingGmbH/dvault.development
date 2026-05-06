@@ -98,6 +98,16 @@ This baseline does not populate or refresh PIT rows. It also does not define sch
 
 The repository still contains the older public `DataVaultPointInTimeMetadata` and `DataVaultModelBuilder.PointInTime(...)` modeling surface. That surface is separate from this PIT metadata translation baseline, remains outside this ticket's scope, and is not reconciled, renamed, or deprecated here. Examples for this baseline should use `LoadTimestamp` plus `<Satellite>LoadTimestamp`; `PitLoadTimestamp` belongs to the older point-in-time modeling surface and is not the canonical naming example for `DataVaultPitMetadata`.
 
+## Bridge Documentation Baseline
+
+Bridge tables remain an opt-in v0.5 deferred capability layered on the current hub, link, and satellite baseline. They are not part of ordinary DVault setup, they are not required by `AddDVault()`, `UseDataVault()`, `ApplyDataVaultMetadata()`, or `IDataVaultSaveService`, and they do not change the current explicit save-service boundary.
+
+The visible repository baseline does not expose a bridge runtime surface today. `DataVaultEfMetadataTranslator` creates EF projections for hubs, links, and satellites only. `DataVaultAnnotationNames` exposes provider-neutral annotation names for conventions, produced names, entity kind, metadata name, parent reference, ordinal, property role, technical column role, and provider metadata, but it does not define a bridge-specific annotation contract. This record therefore documents bridge tables as deferred architecture context rather than as implemented EF metadata output, generated table names, save behavior, or a public modeling API.
+
+Conceptual deferred bridge-use-case example: a reporting consumer may need to traverse from Customer to Product when the current Data Vault model stores Customer, Order, and Product as hubs and stores the relationships through ordinary links such as CustomerOrder and OrderProduct. A future opt-in bridge capability could support that many-to-many Customer-to-Product traversal as a relationship-query convenience around the existing hub and link baseline. This is not a source-backed API walkthrough, does not prescribe a bridge table name or shape, and does not imply current runtime support beyond the existing hub, link, satellite, metadata projection, and explicit save-service vocabulary.
+
+Bridge hierarchy-specific behavior, including hierarchy flattening depth and recursive traversal behavior, is unsupported in the current baseline. Provider-specific bridge DDL, indexes, migrations, native SQL, and maintenance strategies are deferred to later provider-scoped tickets. PIT interactions and multi-active satellite interactions are also deferred unless later tickets define their contracts explicitly.
+
 ## Hook Stance
 
 Advanced hooks are additive overrides. They must preserve the ordinary default path:

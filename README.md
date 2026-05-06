@@ -155,6 +155,10 @@ public static class SalesVaultReader {
 
 The shared-type table names and columns in this quickstart follow DVault's default naming conventions, for example `HubCustomer`, `HubOrder`, `LinkCustomerOrder`, `CustomerHashKey`, `OrderHashKey`, `LoadTimestamp`, and `RecordSource`. This Customer/Order/CustomerOrder flow is mirrored by the SQLite explicit-save integration tests in `tests/DCoding.Data.DVault.Tests`.
 
+## Deferred Capabilities
+
+PIT tables, bridge tables, and multi-active satellites are opt-in v0.5 deferred capabilities rather than part of ordinary hub, link, and satellite setup. The current bridge documentation baseline is in `docs/plans/deferred-data-vault-capabilities.md`; it states that the visible source projects no bridge-specific EF metadata output or annotation contract and includes one conceptual many-to-many traversal scenario without defining a bridge runtime API.
+
 ## Layout
 
 - `DVault.slnx`: Canonical root solution file for build and test automation.

@@ -3,19 +3,18 @@
   "ticket-id": "06EZ0NVE88WW9PMM04NVAZHRG0",
   "ticket-type": "task",
   "title": "Task: Add bridge documentation and example scenario",
-  "revision": "06EZ0Y4MY60FB3HPN5900BCT4C",
-  "status": "todo",
+  "revision": "06EZVC9R9YDSVYPVYP0M4G8388",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
-    "area/docs",
     "area/bridge",
+    "area/docs",
     "area/examples",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:15:55.2370312Z",
-  "updated-at": "2026-05-04T00:52:07.5370559Z"
+  "updated-at": "2026-05-06T14:29:03.1834563Z"
 }
