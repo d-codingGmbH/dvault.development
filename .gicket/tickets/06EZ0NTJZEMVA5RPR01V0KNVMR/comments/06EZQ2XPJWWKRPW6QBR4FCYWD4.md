@@ -1,77 +1,57 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the PIT documentation ticket around the existing SQLite/public-API baseline: document when PIT tables are useful, state that PIT generation is still deferred in v0.5, and anchor the example to the existing customer profile history scenario instead of introducing new runtime PIT features.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - For this ticket, 'PIT support' means documentation of PIT use cases and the current v0.5 support boundary, not implementation of PIT table generation or a PIT-specific runtime API.
 - The bounded example baseline is the existing SQLite-oriented customer profile history scenario already fixed in docs/plans/customer-profile-comparison-contract-06EXB7RY-06EXB7S6.md and covered by current integration tests.
 - The example should use the current public path only: AddDVault(), ApplyDataVaultMetadata(), IDataVaultSaveService, and EF queries over generated shared-type tables; it may show a manual/as-of read pattern but must not invent a PIT-specific API surface.
 - The documentation should explicitly ratify the current architecture decision that hub, link, and satellite modeling is the v0.5 baseline and PIT tables remain an opt-in deferred capability family.
 
-### Scope In
+Scope In
 - Add README and/or docs guidance explaining when PIT tables are useful in Data Vault terms, especially for repeated time-sliced reads and simplifying joins across historical satellite data.
 - Document the current v0.5 boundary: DVault supports hub, link, and satellite modeling plus explicit save/query flows, but does not generate or manage PIT tables yet.
 - Provide one minimal runnable example scenario based on the existing SQLite customer profile history flow that demonstrates the current public-API path and a PIT-adjacent as-of read/query explanation.
 - Make limitations and future work explicit, including refresh semantics, temporal grain, persisted-versus-computed shape, and late-arriving data handling as deferred decisions.
 
-### Scope Out
+Scope Out
 - Implementing PIT table generation, PIT refresh jobs, PIT metadata/model types, or PIT-specific save/query APIs.
 - Changing AddDVault(), UseDataVault(), ApplyDataVaultMetadata(), IDataVaultSaveService, or provider capability profiles to add PIT behavior in this ticket.
 - Adding provider-specific PIT SQL, migrations, indexing strategy, or cross-provider optimization commitments.
 - Creating a new standalone examples application or broader example infrastructure beyond the current docs-plus-existing-test baseline.
 
-## Acceptance Criteria
-- README and/or docs explain when a PIT table is useful and frame it against the current DVault baseline, including that PIT helps consumers answer repeated point-in-time questions over historical vault data.
-- The documentation explicitly states that v0.5 does not provide generated PIT tables or PIT-specific runtime APIs, and that PIT remains a deferred opt-in capability family.
-- The example scenario uses only current public APIs and repository-supported patterns, reusing the existing SQLite customer profile history baseline rather than inventing a new domain or internal API path.
-- The example is minimal and runnable within the existing repository validation model: docs stay format-checkable and any executable snippet or companion verification aligns with the current SQLite-backed test roots and normal docs/example checks.
-- The documentation clearly distinguishes current behavior from future PIT work and lists the main unresolved future decisions: refresh strategy, supported temporal grain, persisted versus computed PIT shape, and late-arriving data reconciliation.
-
-## Definition of Done
-- A canonical PIT guidance section exists in README and/or docs and is consistent with docs/plans/deferred-data-vault-capabilities.md and docs/architecture/mvp-data-vault-concepts.md.
-- The example narrative or snippet is aligned with the existing customer profile history contract and current public API naming/layout conventions.
-- No new documentation text promises generated PIT support, provider-specific PIT behavior, or workflow beyond the documented v0.5 baseline.
-- Repository validation for the touched docs/example surface passes through the existing format/docs/test checks already used by the repo.
-
-## Implementation Notes
-- Use docs/plans/deferred-data-vault-capabilities.md as the source of truth for the v0.5 PIT boundary and future-decision list.
-- Use docs/architecture/mvp-data-vault-concepts.md and README.md as the baseline for current hub/link/satellite terminology, explicit save flow, and shared-type table query pattern.
-- Prefer the shared customer profile history scenario from docs/plans/customer-profile-comparison-contract-06EXB7RY-06EXB7S6.md because it already has fixed timestamps, record sources, and expected persisted outcomes.
-- The strongest executable anchor in the current tree is the SQLite customer profile history coverage in tests/DCoding.Data.DVault.Tests/Integration/ExplicitDataVaultSaveServiceSqliteTests.cs; documentation should mirror that baseline instead of creating a new unchecked scenario.
-- Because README.md and docs/plans/shared-implementation-standards.md both mark examples/ as future-use, keep this ticket on the existing documentation and test-backed surfaces unless scope is deliberately expanded elsewhere.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - When the dedicated PIT implementation story resumes, should the first supported shape be persisted PIT tables, computed query helpers, or both?
 - What PIT refresh and late-arriving-data semantics should be standardized first, and do those commitments stay provider-neutral or become provider-specific?
 - Once the repository activates the examples/ surface, should this documentation scenario graduate into a dedicated runnable sample project?
 
-## Risks
+Risks
 - The main documentation risk is overstating support and accidentally promising generated PIT behavior that the deferred capability record explicitly leaves open.
 - If the example depends on provider-specific SQL or a new example project, the ticket will drift beyond the current SQLite/local-validation baseline and broaden scope unnecessarily.
 - If the docs introduce a brand-new business scenario instead of reusing the shared customer profile contract, the repository can accumulate scenario drift between docs, tests, and benchmark narratives.
 
-## Split Recommendations
+Split recommendations
 - If work expands from documentation into PIT runtime behavior, move generated tables, refresh semantics, and API design into the dedicated PIT story 06EZ0NSXY2Y1JZ8SSCX177C770.
 - If the team wants a standalone runnable sample rather than a docs-backed example, split that into a separate example-infrastructure ticket so this task stays documentation-only.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Goal: document PIT support with a minimal, runnable example.
-
-Acceptance Criteria:
-- README or docs explain when to use a PIT table and what v0.5 supports.
-- The example uses the public API and can be validated by existing docs/example checks.
-- Limitations and future work are explicit.
+Run mode
+- apply: planned updates are applied after this comment

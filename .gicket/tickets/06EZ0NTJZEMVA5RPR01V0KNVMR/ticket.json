@@ -3,19 +3,18 @@
   "ticket-id": "06EZ0NTJZEMVA5RPR01V0KNVMR",
   "ticket-type": "task",
   "title": "Task: Add PIT documentation and example scenario",
-  "revision": "06EZ0Y4E2M95V3967QGKNR17W8",
-  "status": "todo",
+  "revision": "06EZQ56TV9V0R3239D44Z8QC8W",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
     "area/docs",
-    "area/pit",
     "area/examples",
-    "needs-po"
+    "area/pit",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:15:48.2202736Z",
-  "updated-at": "2026-05-04T00:52:05.7815326Z"
+  "updated-at": "2026-05-06T04:38:49.8180000Z"
 }
