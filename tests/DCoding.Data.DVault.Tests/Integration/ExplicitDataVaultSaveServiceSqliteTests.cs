@@ -899,6 +899,149 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     }
   }
 
+  [Fact]
+  public async Task DefaultSaveServicePersistsMultiActiveSatelliteRowsByCanonicalDrivingKeysThroughSqlite() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contactChannel = new DataVaultSatelliteMetadata(
+        "ContactChannel",
+        customer.ToReference(),
+        ["Email Address"],
+        ["Contact Type", "Region Code"]);
+    var parentHashKey = "customer-hash";
+    var firstLoadTimestamp = new DateTimeOffset(2026, 5, 6, 10, 0, 0, TimeSpan.Zero);
+    var replayLoadTimestamp = new DateTimeOffset(2026, 5, 6, 10, 30, 0, TimeSpan.Zero);
+    var changedLoadTimestamp = new DateTimeOffset(2026, 5, 6, 11, 0, 0, TimeSpan.Zero);
+    var firstRequest = new DataVaultSaveRequest(
+        firstLoadTimestamp,
+        "crm-import",
+        [],
+        [],
+        [
+            new(
+                contactChannel,
+                parentHashKey,
+                [new("Region Code", "DE"), new("Contact Type", "billing")],
+                [new("Email Address", "billing-de@example.test")],
+                "contact-channel-hash-1"),
+            new(
+                contactChannel,
+                parentHashKey,
+                [new("Contact Type", "shipping"), new("Region Code", "DE")],
+                [new("Email Address", "shipping-de@example.test")],
+                "contact-channel-hash-2"),
+        ]);
+    var replayRequest = new DataVaultSaveRequest(
+        replayLoadTimestamp,
+        "crm-replay",
+        [],
+        [],
+        [
+            new(
+                contactChannel,
+                parentHashKey,
+                [new("Region Code", "DE"), new("Contact Type", "billing")],
+                [new("Email Address", "ignored-replay@example.test")],
+                "contact-channel-hash-1"),
+        ]);
+    var changedRequest = new DataVaultSaveRequest(
+        changedLoadTimestamp,
+        "crm-change",
+        [],
+        [],
+        [
+            new(
+                contactChannel,
+                parentHashKey,
+                [new("Contact Type", "billing"), new("Region Code", "DE")],
+                [new("Email Address", "billing-de-new@example.test")],
+                "contact-channel-hash-3"),
+        ]);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<ExplicitSaveServiceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var strategy = Assert.Single(provider.GetServices<IDataVaultProviderSaveStrategy>());
+
+    DataVaultSaveResult firstResult;
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+
+      Assert.False(strategy.CanSave(context, [firstRequest]));
+
+      firstResult = await saveService.SaveAsync(context, firstRequest);
+    }
+
+    DataVaultSaveResult replayResult;
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      replayResult = await saveService.SaveAsync(context, replayRequest);
+    }
+
+    DataVaultSaveResult changedResult;
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      changedResult = await saveService.SaveAsync(context, changedRequest);
+    }
+
+    Assert.Equal(2, firstResult.RowsWritten);
+    Assert.Equal(0, replayResult.RowsWritten);
+    Assert.Equal(1, changedResult.RowsWritten);
+    Assert.Collection(
+        firstResult.SavedRecords,
+        record => AssertMultiActiveSavedRecord(record, parentHashKey, "billing", "DE"),
+        record => AssertMultiActiveSavedRecord(record, parentHashKey, "shipping", "DE"));
+    AssertMultiActiveSavedRecord(Assert.Single(replayResult.SavedRecords), parentHashKey, "billing", "DE");
+    AssertMultiActiveSavedRecord(Assert.Single(changedResult.SavedRecords), parentHashKey, "billing", "DE");
+
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      var rows = await context.Set<Dictionary<string, object>>("SatCustomerContactChannel")
+          .AsNoTracking()
+          .ToListAsync();
+      var billingRows = rows
+          .Where(row =>
+              Assert.IsType<string>(row["ContactType"]) == "billing" &&
+              Assert.IsType<string>(row["RegionCode"]) == "DE")
+          .OrderBy(row => (DateTimeOffset)row["LoadTimestamp"])
+          .ToArray();
+      var shippingRow = Assert.Single(rows.Where(row =>
+          Assert.IsType<string>(row["ContactType"]) == "shipping" &&
+          Assert.IsType<string>(row["RegionCode"]) == "DE"));
+
+      Assert.Equal(3, rows.Count);
+      Assert.Equal(2, billingRows.Length);
+      AssertMultiActiveSatelliteRow(
+          billingRows[0],
+          parentHashKey,
+          "billing",
+          "DE",
+          "billing-de@example.test",
+          "contact-channel-hash-1",
+          firstLoadTimestamp,
+          "crm-import");
+      AssertMultiActiveSatelliteRow(
+          billingRows[1],
+          parentHashKey,
+          "billing",
+          "DE",
+          "billing-de-new@example.test",
+          "contact-channel-hash-3",
+          changedLoadTimestamp,
+          "crm-change");
+      AssertMultiActiveSatelliteRow(
+          shippingRow,
+          parentHashKey,
+          "shipping",
+          "DE",
+          "shipping-de@example.test",
+          "contact-channel-hash-2",
+          firstLoadTimestamp,
+          "crm-import");
+    }
+  }
+
   private static string GetHashKey(DataVaultSaveResult result, DataVaultTableKind kind, string metadataName) {
     return result.SavedRecords
         .Single(record => record.Kind == kind && record.MetadataName == metadataName)
@@ -917,6 +1060,24 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     Assert.Equal(metadataName, record.MetadataName);
     Assert.Equal(tableName, record.TableName);
     Assert.Equal(hashKey, record.HashKey);
+  }
+
+  private static void AssertMultiActiveSavedRecord(
+      DataVaultSavedRecord record,
+      string parentHashKey,
+      string contactType,
+      string regionCode) {
+    Assert.Equal(DataVaultTableKind.Satellite, record.Kind);
+    Assert.Equal("ContactChannel", record.MetadataName);
+    Assert.Equal("SatCustomerContactChannel", record.TableName);
+    Assert.Equal(parentHashKey, record.HashKey);
+    var expectedDrivingKeyValues = new[]
+    {
+        new KeyValuePair<string, string>("Contact Type", contactType),
+        new KeyValuePair<string, string>("Region Code", regionCode),
+    };
+
+    Assert.Equal(expectedDrivingKeyValues, record.DrivingKeyValues.ToArray());
   }
 
   private static void AssertSatelliteRow(
@@ -949,6 +1110,24 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     Assert.Equal(recordSource, row["RecordSource"]);
   }
 
+  private static void AssertMultiActiveSatelliteRow(
+      Dictionary<string, object> row,
+      string parentHashKey,
+      string contactType,
+      string regionCode,
+      string emailAddress,
+      string hashDiff,
+      DateTimeOffset loadTimestamp,
+      string recordSource) {
+    Assert.Equal(parentHashKey, row["CustomerHashKey"]);
+    Assert.Equal(contactType, row["ContactType"]);
+    Assert.Equal(regionCode, row["RegionCode"]);
+    Assert.Equal(emailAddress, row["EmailAddress"]);
+    Assert.Equal(hashDiff, row["HashDiff"]);
+    Assert.Equal(loadTimestamp, row["LoadTimestamp"]);
+    Assert.Equal(recordSource, row["RecordSource"]);
+  }
+
   private static void AssertSavedRecordsEqual(
       IReadOnlyList<DataVaultSavedRecord> expected,
       IReadOnlyList<DataVaultSavedRecord> actual) {
@@ -958,6 +1137,7 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
       Assert.Equal(expected[index].MetadataName, actual[index].MetadataName);
       Assert.Equal(expected[index].TableName, actual[index].TableName);
       Assert.Equal(expected[index].HashKey, actual[index].HashKey);
+      Assert.Equal(expected[index].DrivingKeyValues.ToArray(), actual[index].DrivingKeyValues.ToArray());
     }
   }
 
@@ -1003,6 +1183,11 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
                 "Profile",
                 DataVaultMetadataReference.Hub("Customer"),
                 ["customer_name", "customer_status"]),
+            new DataVaultSatelliteMetadata(
+                "ContactChannel",
+                DataVaultMetadataReference.Hub("Customer"),
+                ["Email Address"],
+                ["Contact Type", "Region Code"]),
             new DataVaultSatelliteMetadata(
                 "State",
                 DataVaultMetadataReference.Link("CustomerOrder"),

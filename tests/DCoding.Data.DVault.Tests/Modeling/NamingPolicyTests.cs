@@ -10,6 +10,7 @@ internal static class NamingPolicyTests {
             new("default naming policy path applies normalization and column collision rules", DefaultNamingPolicyPathAppliesNormalizationAndColumnCollisionRules),
             new("index and constraint names keep produced technical column names", IndexAndConstraintNamesKeepProducedTechnicalColumnNames),
             new("link declarations can fall back to participant order", LinkDeclarationsCanFallBackToParticipantOrder),
+            new("multi-active satellite declarations build driving-key columns and keys", MultiActiveSatelliteDeclarationsBuildDrivingKeyColumnsAndKeys),
             new("point-in-time declarations build deterministic names and fields", PointInTimeDeclarationsBuildDeterministicNamesAndFields),
             new("point-in-time declarations validate references", PointInTimeDeclarationsValidateReferences),
             new("custom naming policy overrides each v1 name family", CustomNamingPolicyOverridesEachV1NameFamily),
@@ -164,6 +165,48 @@ internal static class NamingPolicyTests {
     var link = Single(model.Tables, table => table.Kind == DataVaultTableKind.Link);
 
     Equal("LinkCustomerOrder", link.Name);
+  }
+
+  private static void MultiActiveSatelliteDeclarationsBuildDrivingKeyColumnsAndKeys() {
+    var model = DataVaultModel.Create(modelBuilder => {
+      modelBuilder.Hub("Customer", hub => {
+        hub.BusinessKey("Customer Id");
+        hub.Satellite("Contact", satellite => {
+          satellite.DrivingKey("Contact Type");
+          satellite.DrivingKey("Region Code");
+          satellite.Payload("Email Address");
+        });
+      });
+    });
+
+    var satellite = Single(model.Tables, table => table.Kind == DataVaultTableKind.Satellite);
+
+    SequenceEqual(
+        ["CustomerHashKey", "ContactType", "RegionCode", "HashDiff", "LoadTimestamp", "RecordSource", "EmailAddress"],
+        satellite.Columns.Select(column => column.Name));
+    SequenceEqual(
+        [
+            DataVaultColumnKind.Technical,
+                DataVaultColumnKind.DrivingKey,
+                DataVaultColumnKind.DrivingKey,
+                DataVaultColumnKind.Technical,
+                DataVaultColumnKind.Technical,
+                DataVaultColumnKind.Technical,
+                DataVaultColumnKind.Payload,
+            ],
+        satellite.Columns.Select(column => column.Kind));
+    SequenceEqual(
+        ["IxSatCustomerContactSatelliteParentCustomerHashKeyContactTypeRegionCodeLoadTimestamp"],
+        satellite.Indexes.Select(index => index.Name));
+    SequenceEqual(
+        ["CustomerHashKey", "ContactType", "RegionCode", "LoadTimestamp"],
+        satellite.Indexes.Single().ColumnNames);
+    SequenceEqual(
+        ["PkSatCustomerContactCustomerHashKeyContactTypeRegionCodeLoadTimestamp"],
+        satellite.Constraints.Select(constraint => constraint.Name));
+    SequenceEqual(
+        ["CustomerHashKey", "ContactType", "RegionCode", "LoadTimestamp"],
+        satellite.Constraints.Single().ColumnNames);
   }
 
   private static void PointInTimeDeclarationsBuildDeterministicNamesAndFields() {

@@ -24,6 +24,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
 
     return IsSupportedProviderName(dbContext.Database.ProviderName) &&
         IsOptimizedBatchShape(requests) &&
+        !ContainsMultiActiveSatelliteOperations(requests) &&
         !dbContext.ChangeTracker
             .Entries()
             .Any(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
@@ -73,6 +74,10 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     }
 
     return operationCount >= MinimumOptimizedBatchOperationCount;
+  }
+
+  private static bool ContainsMultiActiveSatelliteOperations(IReadOnlyList<DataVaultSaveRequest> requests) {
+    return requests.Any(request => request.SatelliteOperations.Any(operation => operation.Metadata.DrivingKeyNames.Count > 0));
   }
 
   internal static string CreateMySqlInsertCommandText(

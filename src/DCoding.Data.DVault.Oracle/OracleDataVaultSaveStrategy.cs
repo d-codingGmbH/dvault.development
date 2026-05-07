@@ -23,6 +23,7 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
 
     return string.Equals(dbContext.Database.ProviderName, OracleProviderName, StringComparison.Ordinal) &&
         IsCleanContext(dbContext) &&
+        !ContainsMultiActiveSatelliteOperations(requests) &&
         IsOptimizedBatchShape(requests);
   }
 
@@ -82,6 +83,10 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
 
     return operationCount >= MinimumOptimizedBatchOperationCount &&
         satelliteOperationCount <= MaximumOptimizedSatelliteOperationCount;
+  }
+
+  private static bool ContainsMultiActiveSatelliteOperations(IReadOnlyList<DataVaultSaveRequest> requests) {
+    return requests.Any(request => request.SatelliteOperations.Any(operation => operation.Metadata.DrivingKeyNames.Count > 0));
   }
 
   private static IReadOnlyList<UniqueRowSavePlan> CreateUniqueRowSavePlans(DataVaultProviderSaveStrategyContext context) {

@@ -1,4 +1,4 @@
-namespace DCoding.Data.DVault;
+﻿namespace DCoding.Data.DVault;
 
 /// <summary>
 /// Defines DVault-owned provider-neutral annotation names used on Entity Framework metadata.
@@ -103,4 +103,9 @@ public enum DataVaultPropertyRole {
   /// Property carries a bridge hierarchy traversal depth value.
   /// </summary>
   BridgeDepth,
+
+  /// <summary>
+  /// Property carries a multi-active satellite driving-key value.
+  /// </summary>
+  DrivingKey,
 }

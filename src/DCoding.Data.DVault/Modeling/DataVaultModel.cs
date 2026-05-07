@@ -226,6 +226,8 @@ public sealed partial class DataVaultModelBuilder {
       HubDeclaration hub,
       SatelliteDeclaration satellite,
       IDataVaultNamingPolicy namingPolicy) {
+    ValidateSatelliteDrivingKeys(satellite);
+
     var tableName = namingPolicy.GetSatelliteTableName(
         new DataVaultSatelliteNameContext(hub.EntityName, satellite.SatelliteName));
     var parentHashKeyColumnName = namingPolicy.GetTechnicalColumnName(
@@ -236,23 +238,44 @@ public sealed partial class DataVaultModelBuilder {
         new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, satellite.SatelliteName, tableName));
     var recordSourceColumnName = namingPolicy.GetTechnicalColumnName(
         new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.RecordSource, satellite.SatelliteName, tableName));
+    var drivingKeyColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        satellite.DrivingKeyProperties,
+        [parentHashKeyColumnName, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);
 
     var columns = new List<DataVaultColumn>
     {
             new(parentHashKeyColumnName, DataVaultColumnKind.Technical),
-            new(hashDiffColumnName, DataVaultColumnKind.Technical),
-            new(loadTimestampColumnName, DataVaultColumnKind.Technical),
-            new(recordSourceColumnName, DataVaultColumnKind.Technical),
         };
+
+    foreach (var drivingKeyColumnName in drivingKeyColumnNames) {
+      columns.Add(new DataVaultColumn(drivingKeyColumnName, DataVaultColumnKind.DrivingKey));
+    }
+
+    columns.AddRange(
+        [
+            new DataVaultColumn(hashDiffColumnName, DataVaultColumnKind.Technical),
+            new DataVaultColumn(loadTimestampColumnName, DataVaultColumnKind.Technical),
+            new DataVaultColumn(recordSourceColumnName, DataVaultColumnKind.Technical),
+        ]);
 
     var payloadColumns = DefaultDataVaultNamingPolicy.GetColumnNames(
         satellite.PayloadProperties,
-        [parentHashKeyColumnName, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);
+        [parentHashKeyColumnName, .. drivingKeyColumnNames, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);
 
     foreach (var payloadColumn in payloadColumns) {
       columns.Add(new DataVaultColumn(payloadColumn, DataVaultColumnKind.Payload));
     }
 
+    var primaryKeyColumnNames = new[]
+    {
+        parentHashKeyColumnName,
+    }
+        .Concat(drivingKeyColumnNames)
+        .Append(loadTimestampColumnName)
+        .ToArray();
+    string[] satelliteParentIndexColumnNames = drivingKeyColumnNames.Count == 0
+        ? [parentHashKeyColumnName]
+        : primaryKeyColumnNames;
     var indexes = new[]
     {
             new DataVaultIndex(
@@ -260,9 +283,9 @@ public sealed partial class DataVaultModelBuilder {
                     new DataVaultIndexNameContext(
                         DataVaultIndexKind.SatelliteParent,
                         tableName,
-                        [parentHashKeyColumnName],
+                        satelliteParentIndexColumnNames,
                         IsUnique: false)),
-                [parentHashKeyColumnName],
+                satelliteParentIndexColumnNames,
                 IsUnique: false),
         };
 
@@ -273,9 +296,9 @@ public sealed partial class DataVaultModelBuilder {
                     new DataVaultConstraintNameContext(
                         DataVaultConstraintKind.PrimaryKey,
                         tableName,
-                        [parentHashKeyColumnName, loadTimestampColumnName])),
+                        primaryKeyColumnNames)),
                 DataVaultConstraintKind.PrimaryKey,
-                [parentHashKeyColumnName, loadTimestampColumnName]),
+                primaryKeyColumnNames),
         };
 
     return new DataVaultTable(tableName, DataVaultTableKind.Satellite, columns, indexes, constraints);
@@ -463,6 +486,41 @@ public sealed partial class DataVaultModelBuilder {
     return link.RelationshipName ?? string.Join(" ", link.ParticipantNames);
   }
 
+  private static void ValidateSatelliteDrivingKeys(SatelliteDeclaration satellite) {
+    if (satellite.DrivingKeyProperties.Count == 0) {
+      return;
+    }
+
+    var drivingKeyNames = new HashSet<string>(StringComparer.Ordinal);
+    foreach (var drivingKey in satellite.DrivingKeyProperties) {
+      if (string.IsNullOrWhiteSpace(drivingKey)) {
+        throw SatelliteDrivingKeyValidationException(satellite, "declares an empty driving-key name.");
+      }
+
+      if (!drivingKeyNames.Add(drivingKey)) {
+        throw SatelliteDrivingKeyValidationException(
+            satellite,
+            "declares duplicate driving-key name '" + drivingKey + "'.");
+      }
+    }
+
+    var payloadNames = satellite.PayloadProperties.ToHashSet(StringComparer.Ordinal);
+    foreach (var drivingKey in satellite.DrivingKeyProperties) {
+      if (payloadNames.Contains(drivingKey)) {
+        throw SatelliteDrivingKeyValidationException(
+            satellite,
+            "declares driving-key name '" + drivingKey + "' as both a driving key and payload.");
+      }
+    }
+  }
+
+  private static InvalidOperationException SatelliteDrivingKeyValidationException(
+      SatelliteDeclaration satellite,
+      string message) {
+    return new InvalidOperationException(
+        "Satellite '" + satellite.SatelliteName + "' " + message);
+  }
+
   internal sealed class HubDeclaration(string entityName) {
     public string EntityName { get; } = entityName;
 
@@ -473,6 +531,8 @@ public sealed partial class DataVaultModelBuilder {
 
   internal sealed class SatelliteDeclaration(string satelliteName) {
     public string SatelliteName { get; } = satelliteName;
+
+    public List<string> DrivingKeyProperties { get; } = [];
 
     public List<string> PayloadProperties { get; } = [];
   }
@@ -553,6 +613,16 @@ public sealed class DataVaultSatelliteBuilder {
   public DataVaultSatelliteBuilder Payload(string propertyName) {
     ArgumentException.ThrowIfNullOrWhiteSpace(propertyName);
     _declaration.PayloadProperties.Add(propertyName);
+
+    return this;
+  }
+
+  /// <summary>
+  /// Adds a multi-active driving-key property to the satellite.
+  /// </summary>
+  public DataVaultSatelliteBuilder DrivingKey(string propertyName) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(propertyName);
+    _declaration.DrivingKeyProperties.Add(propertyName);
 
     return this;
   }
@@ -735,4 +805,9 @@ public enum DataVaultColumnKind {
   /// Point-in-time table column.
   /// </summary>
   PointInTime,
+
+  /// <summary>
+  /// Satellite driving-key column.
+  /// </summary>
+  DrivingKey,
 }

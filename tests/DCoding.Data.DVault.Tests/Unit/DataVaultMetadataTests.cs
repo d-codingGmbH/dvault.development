@@ -120,6 +120,7 @@ public sealed class DataVaultMetadataTests {
     Assert.Equal(DataVaultMetadataReferenceKind.Hub, satellite.Parent.Kind);
     Assert.Equal("Customer", satellite.Parent.Name);
     Assert.Equal(["EmailAddress", "PhoneNumber"], satellite.DescriptiveAttributeNames);
+    Assert.Empty(satellite.DrivingKeyNames);
     Assert.Equal(["EmailAddress", "PhoneNumber"], satellite.PayloadColumns.Select(column => column.ColumnName));
     Assert.Equal(TechnicalMetadataColumnRole.HashDiff, satellite.HashDiffMetadata.Role);
     Assert.Equal(TechnicalMetadataColumnRole.LoadTimestamp, satellite.LoadTimestampMetadata.Role);
@@ -129,6 +130,31 @@ public sealed class DataVaultMetadataTests {
         TechnicalMetadataColumnRole.HashDiff,
         TechnicalMetadataColumnRole.LoadTimestamp,
         TechnicalMetadataColumnRole.RecordSource);
+  }
+
+  [Fact]
+  public void SatelliteMetadataRetainsMultiActiveDrivingKeyDeclarationOrder() {
+    var parent = DataVaultMetadataReference.Hub("Customer");
+
+    var satellite = new DataVaultSatelliteMetadata(
+        "CustomerContact",
+        parent,
+        ["EmailAddress"],
+        ["ContactType", "RegionCode"]);
+
+    Assert.Equal(["ContactType", "RegionCode"], satellite.DrivingKeyNames);
+    Assert.Equal(["EmailAddress"], satellite.DescriptiveAttributeNames);
+  }
+
+  [Fact]
+  public void SatelliteMetadataRejectsInvalidMultiActiveDrivingKeyDeclarations() {
+    var parent = DataVaultMetadataReference.Hub("Customer");
+
+    ThrowsArgumentException(() => new DataVaultSatelliteMetadata("CustomerContact", parent, ["EmailAddress"], null!));
+    ThrowsArgumentException(() => new DataVaultSatelliteMetadata("CustomerContact", parent, ["EmailAddress"], []));
+    ThrowsArgumentException(() => new DataVaultSatelliteMetadata("CustomerContact", parent, ["EmailAddress"], [""]));
+    ThrowsArgumentException(() => new DataVaultSatelliteMetadata("CustomerContact", parent, ["EmailAddress"], ["ContactType", "ContactType"]));
+    ThrowsArgumentException(() => new DataVaultSatelliteMetadata("CustomerContact", parent, ["EmailAddress"], ["EmailAddress"]));
   }
 
   [Fact]
@@ -420,6 +446,11 @@ public sealed class DataVaultMetadataTests {
           "CustomerContact",
           DataVaultMetadataReference.Hub("Customer"),
           [invalidName!]));
+      ThrowsArgumentException(() => new DataVaultSatelliteMetadata(
+          "CustomerContact",
+          DataVaultMetadataReference.Hub("Customer"),
+          ["EmailAddress"],
+          [invalidName!]));
       ThrowsArgumentException(() => new DataVaultPointInTimeMetadata(
           invalidName!,
           DataVaultMetadataReference.Hub("Customer"),
@@ -464,6 +495,16 @@ public sealed class DataVaultMetadataTests {
     ThrowsArgumentException(() => new DataVaultSatelliteMetadata(
         "CustomerContact",
         DataVaultMetadataReference.Hub("Customer"),
+        []));
+    ThrowsArgumentException(() => new DataVaultSatelliteMetadata(
+        "CustomerContact",
+        DataVaultMetadataReference.Hub("Customer"),
+        ["EmailAddress"],
+        null!));
+    ThrowsArgumentException(() => new DataVaultSatelliteMetadata(
+        "CustomerContact",
+        DataVaultMetadataReference.Hub("Customer"),
+        ["EmailAddress"],
         []));
     Assert.Throws<ArgumentNullException>(() => new DataVaultPointInTimeMetadata(
         "CustomerHistory",

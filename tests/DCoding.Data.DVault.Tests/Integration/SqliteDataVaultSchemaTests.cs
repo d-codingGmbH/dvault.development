@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -24,7 +24,7 @@ public sealed class SqliteDataVaultSchemaTests {
     using var connection = database.CreateOpenConnection();
 
     Assert.Equal(
-        "BridgeCustomerOrder|BridgeSalesRegionHierarchy|HubCustomer|HubOrder|LinkCustomerOrder|SatCustomerContact|SatCustomerOrderState",
+        "BridgeCustomerOrder|BridgeSalesRegionHierarchy|HubCustomer|HubOrder|LinkCustomerOrder|SatCustomerContact|SatCustomerContactChannel|SatCustomerOrderState",
         TableNames(connection));
     AssertTable(
         connection,
@@ -97,6 +97,15 @@ public sealed class SqliteDataVaultSchemaTests {
         ["CustomerHashKey", "LoadTimestamp"],
         "IxSatCustomerContactSatelliteParentCustomerHashKeyLoadTimestamp",
         ["CustomerHashKey", "LoadTimestamp"],
+        expectedIndexUnique: false);
+    AssertTable(
+        connection,
+        "SatCustomerContactChannel",
+        ["CustomerHashKey", "ContactType", "RegionCode", "HashDiff", "LoadTimestamp", "RecordSource", "EmailAddress"],
+        "PkSatCustomerContactChannelCustomerHashKeyContactTypeRegionCodeLoadTimestamp",
+        ["CustomerHashKey", "ContactType", "RegionCode", "LoadTimestamp"],
+        "IxSatCustomerContactChannelSatelliteParentCustomerHashKeyContactTypeRegionCodeLoadTimestamp",
+        ["CustomerHashKey", "ContactType", "RegionCode", "LoadTimestamp"],
         expectedIndexUnique: false);
     AssertTable(
         connection,
@@ -280,6 +289,11 @@ public sealed class SqliteDataVaultSchemaTests {
                 "Contact",
                 DataVaultMetadataReference.Hub("Customer"),
                 ["Email Address"]),
+            new DataVaultSatelliteMetadata(
+                "ContactChannel",
+                DataVaultMetadataReference.Hub("Customer"),
+                ["Email Address"],
+                ["Contact Type", "Region Code"]),
             new DataVaultSatelliteMetadata(
                 "State",
                 DataVaultMetadataReference.Link("CustomerOrder"),

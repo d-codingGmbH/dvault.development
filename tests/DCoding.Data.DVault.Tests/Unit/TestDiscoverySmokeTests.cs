@@ -23,6 +23,7 @@ public sealed class TestDiscoverySmokeTests {
         typeof(DataVaultModelBuilderExtensionsTests),
         typeof(DataVaultEfMetadataTranslationTests),
         typeof(TechnicalMetadataColumnContractTests),
+        typeof(ModelingConventionCoverageTests),
         typeof(DefaultNamingPolicyTests),
         typeof(NamingPolicyTests),
         typeof(StableHashNormalizerTests),

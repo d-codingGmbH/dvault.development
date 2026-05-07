@@ -1,0 +1,1 @@
+﻿﻿Manual unblock note: merged current `develop` into this active branch before clearing the runtime escalation. Ticket `06EZ0NVX3RYPTFZKYCYEH9HB8W` is now visible here as `done`, so PO can re-evaluate this persistence ticket against the finalized driving-key contract instead of repeating the old prerequisite-blocked clarification.

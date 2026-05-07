@@ -184,6 +184,36 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataProjectsMultiActiveSatelliteDrivingKeysInCanonicalOrder() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"],
+        ["Contact Type", "Region Code"]);
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.ApplyDataVaultMetadata(new DataVaultMetadataModel([customer], [], [contact]));
+
+    var satellite = FindEntity(modelBuilder.Model, "SatCustomerContact");
+
+    Assert.Equal(
+        ["CustomerHashKey", "ContactType", "RegionCode", "HashDiff", "LoadTimestamp", "RecordSource", "EmailAddress"],
+        PropertyNamesInOrdinalOrder(satellite));
+    AssertProperty(satellite, "ContactType", DataVaultPropertyRole.DrivingKey, expectedTechnicalRole: null);
+    AssertProperty(satellite, "RegionCode", DataVaultPropertyRole.DrivingKey, expectedTechnicalRole: null);
+    AssertPrimaryKey(
+        satellite,
+        "PkSatCustomerContactCustomerHashKeyContactTypeRegionCodeLoadTimestamp",
+        ["CustomerHashKey", "ContactType", "RegionCode", "LoadTimestamp"]);
+    AssertIndex(
+        satellite,
+        "IxSatCustomerContactSatelliteParentCustomerHashKeyContactTypeRegionCodeLoadTimestamp",
+        ["CustomerHashKey", "ContactType", "RegionCode", "LoadTimestamp"],
+        isUnique: false);
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataCreatesProviderNeutralPitMetadata() {
     var modelBuilder = CreateModelBuilder();
 
@@ -923,6 +953,7 @@ public sealed class DataVaultEfMetadataTranslationTests {
     return role switch {
       DataVaultPropertyRole.BusinessKey => DataVaultLogicalPropertyKind.BusinessKey,
       DataVaultPropertyRole.ParticipantReference => DataVaultLogicalPropertyKind.ParticipantReference,
+      DataVaultPropertyRole.DrivingKey => DataVaultLogicalPropertyKind.DrivingKey,
       DataVaultPropertyRole.Payload => DataVaultLogicalPropertyKind.PayloadText,
       DataVaultPropertyRole.SnapshotReference => DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
       DataVaultPropertyRole.BridgeDepth => DataVaultLogicalPropertyKind.BridgeDepth,

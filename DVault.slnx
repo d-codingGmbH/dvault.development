@@ -16,6 +16,9 @@
   <Folder Name="/tests/DCoding.Data.DVault.Tests/Integration/">
     <Project Path="tests/DCoding.Data.DVault.Tests/Integration/DCoding.Data.DVault.Tests.Integration.csproj" />
   </Folder>
+  <Folder Name="/tests/DCoding.Data.DVault.Tests/Modeling/">
+    <Project Path="tests/DCoding.Data.DVault.Tests/Modeling/DCoding.Data.DVault.Tests.Modeling.csproj" />
+  </Folder>
   <Folder Name="/tests/DCoding.Data.DVault.Tests/Shared/">
     <Project Path="tests/DCoding.Data.DVault.Tests/Shared/DCoding.Data.DVault.Tests.Shared.csproj" />
   </Folder>

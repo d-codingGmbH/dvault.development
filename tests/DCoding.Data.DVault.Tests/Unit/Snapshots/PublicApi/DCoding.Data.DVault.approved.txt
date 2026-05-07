@@ -1,4 +1,4 @@
-# DVault public API snapshot
+﻿# DVault public API snapshot
 # Package: DCoding.Data.DVault
 # Assembly: DCoding.Data.DVault
 # Generated from built assembly output.
@@ -51,6 +51,7 @@ type public enum DCoding.Data.DVault.DataVaultLogicalPropertyKind
   value PayloadText = 6
   value SatelliteSnapshotReference = 7
   value BridgeDepth = 8
+  value DrivingKey = 9
 
 type public static class DCoding.Data.DVault.DataVaultModelBuilderExtensions
   method public static Microsoft.EntityFrameworkCore.ModelBuilder ApplyDataVaultMetadata(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel)
@@ -74,6 +75,7 @@ type public enum DCoding.Data.DVault.DataVaultPropertyRole
   value Payload = 3
   value SnapshotReference = 4
   value BridgeDepth = 5
+  value DrivingKey = 6
 
 type public sealed class DCoding.Data.DVault.DataVaultProviderBehaviorContext
   ctor public DataVaultProviderBehaviorContext(Microsoft.EntityFrameworkCore.DbContext dbContext)
@@ -151,8 +153,10 @@ type public sealed class DCoding.Data.DVault.DataVaultResolvedSaveRequest
   property public string RecordSource { get; }
 
 type public sealed class DCoding.Data.DVault.DataVaultSatelliteSaveOperation
+  ctor public DataVaultSatelliteSaveOperation(DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata metadata, string parentHashKey, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> drivingKeyValues, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> payloadValues, string hashDiff)
   ctor public DataVaultSatelliteSaveOperation(DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata metadata, string parentHashKey, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> payloadValues, string hashDiff)
   property public DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata Metadata { get; }
+  property public System.Collections.Generic.IReadOnlyDictionary<string, string> DrivingKeyValues { get; }
   property public System.Collections.Generic.IReadOnlyDictionary<string, string> PayloadValues { get; }
   property public string HashDiff { get; }
   property public string ParentHashKey { get; }
@@ -173,7 +177,9 @@ type public sealed class DCoding.Data.DVault.DataVaultSaveResult
 
 type public sealed class DCoding.Data.DVault.DataVaultSavedRecord
   ctor public DataVaultSavedRecord(DCoding.Data.DVault.Modeling.DataVaultTableKind kind, string metadataName, string tableName, string hashKey)
+  ctor public DataVaultSavedRecord(DCoding.Data.DVault.Modeling.DataVaultTableKind kind, string metadataName, string tableName, string hashKey, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> drivingKeyValues)
   property public DCoding.Data.DVault.Modeling.DataVaultTableKind Kind { get; }
+  property public System.Collections.Generic.IReadOnlyDictionary<string, string> DrivingKeyValues { get; }
   property public string HashKey { get; }
   property public string MetadataName { get; }
   property public string TableName { get; }
@@ -249,6 +255,7 @@ type public enum DCoding.Data.DVault.Modeling.DataVaultColumnKind
   value BusinessKey = 1
   value Payload = 2
   value PointInTime = 3
+  value DrivingKey = 4
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultConstraint : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultConstraint>
   ctor public DataVaultConstraint(string Name, DCoding.Data.DVault.Modeling.DataVaultConstraintKind Kind, System.Collections.Generic.IReadOnlyList<string> ColumnNames)
@@ -511,10 +518,12 @@ type public sealed class DCoding.Data.DVault.Modeling.DataVaultPointInTimeNameCo
   method public void Deconstruct(out string PointInTimeName, out string HubName, out System.Collections.Generic.IReadOnlyList<string> SatelliteNames)
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatelliteBuilder
+  method public DCoding.Data.DVault.Modeling.DataVaultSatelliteBuilder DrivingKey(string propertyName)
   method public DCoding.Data.DVault.Modeling.DataVaultSatelliteBuilder Payload(string propertyName)
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata
   ctor public DataVaultSatelliteMetadata(string name, DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, System.Collections.Generic.IEnumerable<string> descriptiveAttributeNames)
+  ctor public DataVaultSatelliteMetadata(string name, DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, System.Collections.Generic.IEnumerable<string> descriptiveAttributeNames, System.Collections.Generic.IEnumerable<string> drivingKeyNames)
   property public DCoding.Data.DVault.Modeling.DataVaultMetadataReference Parent { get; }
   property public DCoding.Data.DVault.TechnicalMetadataColumnContract HashDiffMetadata { get; }
   property public DCoding.Data.DVault.TechnicalMetadataColumnContract LoadTimestampMetadata { get; }
@@ -522,6 +531,7 @@ type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultSatellitePayloadMetadata> PayloadColumns { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.TechnicalMetadataColumnContract> TechnicalMetadataColumns { get; }
   property public System.Collections.Generic.IReadOnlyList<string> DescriptiveAttributeNames { get; }
+  property public System.Collections.Generic.IReadOnlyList<string> DrivingKeyNames { get; }
   property public string Name { get; }
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatelliteNameContext : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultSatelliteNameContext>

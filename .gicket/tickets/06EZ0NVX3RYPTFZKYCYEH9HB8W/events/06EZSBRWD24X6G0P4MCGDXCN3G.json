@@ -1,0 +1,16 @@
+{
+  "event-id": "06EZSBRWD24X6G0P4MCGDXCN3G",
+  "occurred-at": "2026-05-06T09:47:07.7520000Z",
+  "event-type": "TicketAttachmentAdded",
+  "actor": {
+    "name": "system",
+    "email": "system@example.invalid"
+  },
+  "payload": {
+    "attachment-id": "06EZSBRWD150ATNH9T6FCXYQ2R",
+    "sha256": "2e749cc4806696ee40c242616697a7c91057ced8a6e11d0e4a9480b7e40516fd",
+    "file-name": "multi-active-satellite-driving-key-contract.md",
+    "content-type": "text/markdown",
+    "size": 4660
+  }
+}

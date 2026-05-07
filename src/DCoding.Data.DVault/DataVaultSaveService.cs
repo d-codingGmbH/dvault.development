@@ -246,6 +246,23 @@ public sealed class DataVaultSatelliteSaveOperation {
       DataVaultSatelliteMetadata metadata,
       string parentHashKey,
       IEnumerable<KeyValuePair<string, string>> payloadValues,
+      string hashDiff)
+      : this(metadata, parentHashKey, [], payloadValues, hashDiff) {
+  }
+
+  /// <summary>
+  /// Initializes a new multi-active satellite save operation.
+  /// </summary>
+  /// <param name="metadata">The satellite metadata declaration that owns the target table and payload shape.</param>
+  /// <param name="parentHashKey">The explicit parent hub or link hash key associated with this satellite row.</param>
+  /// <param name="drivingKeyValues">Driving-key values keyed by the satellite metadata driving-key names.</param>
+  /// <param name="payloadValues">Payload values keyed by the satellite metadata payload names.</param>
+  /// <param name="hashDiff">The caller-supplied deterministic hash diff for this payload state.</param>
+  public DataVaultSatelliteSaveOperation(
+      DataVaultSatelliteMetadata metadata,
+      string parentHashKey,
+      IEnumerable<KeyValuePair<string, string>> drivingKeyValues,
+      IEnumerable<KeyValuePair<string, string>> payloadValues,
       string hashDiff) {
     ArgumentNullException.ThrowIfNull(metadata);
     ArgumentException.ThrowIfNullOrWhiteSpace(parentHashKey);
@@ -253,6 +270,7 @@ public sealed class DataVaultSatelliteSaveOperation {
 
     Metadata = metadata;
     ParentHashKey = parentHashKey;
+    DrivingKeyValues = RequireDrivingKeyValues(metadata, drivingKeyValues);
     PayloadValues = DataVaultHubSaveOperation.RequireValues(payloadValues, nameof(payloadValues));
     HashDiff = hashDiff;
   }
@@ -268,6 +286,11 @@ public sealed class DataVaultSatelliteSaveOperation {
   public string ParentHashKey { get; }
 
   /// <summary>
+  /// Gets driving-key values keyed by the satellite metadata driving-key names.
+  /// </summary>
+  public IReadOnlyDictionary<string, string> DrivingKeyValues { get; }
+
+  /// <summary>
   /// Gets payload values keyed by the satellite metadata payload names.
   /// </summary>
   public IReadOnlyDictionary<string, string> PayloadValues { get; }
@@ -276,6 +299,31 @@ public sealed class DataVaultSatelliteSaveOperation {
   /// Gets the caller-supplied deterministic hash diff for this payload state.
   /// </summary>
   public string HashDiff { get; }
+
+  private static IReadOnlyDictionary<string, string> RequireDrivingKeyValues(
+      DataVaultSatelliteMetadata metadata,
+      IEnumerable<KeyValuePair<string, string>> drivingKeyValues) {
+    var values = DataVaultHubSaveOperation.RequireValues(drivingKeyValues, nameof(drivingKeyValues));
+    var declaredNames = metadata.DrivingKeyNames.ToHashSet(StringComparer.Ordinal);
+
+    foreach (var drivingKeyName in metadata.DrivingKeyNames) {
+      if (!values.ContainsKey(drivingKeyName)) {
+        throw new ArgumentException(
+            "The Data Vault satellite save operation is missing required driving-key value '" + drivingKeyName + "'.",
+            nameof(drivingKeyValues));
+      }
+    }
+
+    foreach (var suppliedName in values.Keys) {
+      if (!declaredNames.Contains(suppliedName)) {
+        throw new ArgumentException(
+            "The Data Vault satellite save operation contains unexpected driving-key value '" + suppliedName + "'.",
+            nameof(drivingKeyValues));
+      }
+    }
+
+    return values;
+  }
 }
 
 /// <summary>
@@ -316,7 +364,24 @@ public sealed class DataVaultSavedRecord {
   /// <param name="metadataName">The metadata declaration name that produced the row.</param>
   /// <param name="tableName">The produced table name that received the row.</param>
   /// <param name="hashKey">The generated Data Vault hash key persisted for the row, or parent hash key for satellites.</param>
-  public DataVaultSavedRecord(DataVaultTableKind kind, string metadataName, string tableName, string hashKey) {
+  public DataVaultSavedRecord(DataVaultTableKind kind, string metadataName, string tableName, string hashKey)
+      : this(kind, metadataName, tableName, hashKey, []) {
+  }
+
+  /// <summary>
+  /// Initializes a new saved row summary with multi-active driving-key identity values.
+  /// </summary>
+  /// <param name="kind">Whether the saved row is a hub, link, or satellite.</param>
+  /// <param name="metadataName">The metadata declaration name that produced the row.</param>
+  /// <param name="tableName">The produced table name that received the row.</param>
+  /// <param name="hashKey">The generated Data Vault hash key persisted for the row, or parent hash key for satellites.</param>
+  /// <param name="drivingKeyValues">Driving-key identity values keyed by canonical driving-key name.</param>
+  public DataVaultSavedRecord(
+      DataVaultTableKind kind,
+      string metadataName,
+      string tableName,
+      string hashKey,
+      IEnumerable<KeyValuePair<string, string>> drivingKeyValues) {
     ArgumentException.ThrowIfNullOrWhiteSpace(metadataName);
     ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
     ArgumentException.ThrowIfNullOrWhiteSpace(hashKey);
@@ -325,6 +390,7 @@ public sealed class DataVaultSavedRecord {
     MetadataName = metadataName;
     TableName = tableName;
     HashKey = hashKey;
+    DrivingKeyValues = DataVaultHubSaveOperation.RequireValues(drivingKeyValues, nameof(drivingKeyValues));
   }
 
   /// <summary>
@@ -346,6 +412,11 @@ public sealed class DataVaultSavedRecord {
   /// Gets the generated Data Vault hash key persisted for the row, or parent hash key for satellites.
   /// </summary>
   public string HashKey { get; }
+
+  /// <summary>
+  /// Gets multi-active driving-key identity values keyed by canonical driving-key name.
+  /// </summary>
+  public IReadOnlyDictionary<string, string> DrivingKeyValues { get; }
 }
 
 internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
@@ -719,9 +790,17 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, satellite.Name, tableName));
     var recordSourceColumnName = NamingPolicy.GetTechnicalColumnName(
         new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.RecordSource, satellite.Name, tableName));
+    var drivingKeyColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        satellite.DrivingKeyNames,
+        [parentHashKeyColumnName, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);
+    var drivingKeyFields = satellite.DrivingKeyNames
+        .Select(name => new KeyValuePair<string, string>(
+            name,
+            GetRequiredValue(operation.DrivingKeyValues, name, nameof(operation.DrivingKeyValues))))
+        .ToArray();
     var payloadColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
         satellite.PayloadColumns.Select(column => column.ColumnName),
-        [parentHashKeyColumnName, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);
+        [parentHashKeyColumnName, .. drivingKeyColumnNames, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);
     var payloadFields = satellite.PayloadColumns
         .Select(column => new KeyValuePair<string, string>(
             column.ColumnName,
@@ -729,10 +808,15 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         .ToArray();
     var row = new Dictionary<string, object> {
       [parentHashKeyColumnName] = operation.ParentHashKey,
-      [hashDiffColumnName] = operation.HashDiff,
-      [loadTimestampColumnName] = request.LoadTimestamp,
-      [recordSourceColumnName] = request.RecordSource,
     };
+
+    for (var index = 0; index < drivingKeyFields.Length; index++) {
+      row.Add(drivingKeyColumnNames[index], drivingKeyFields[index].Value);
+    }
+
+    row.Add(hashDiffColumnName, operation.HashDiff);
+    row.Add(loadTimestampColumnName, request.LoadTimestamp);
+    row.Add(recordSourceColumnName, request.RecordSource);
 
     for (var index = 0; index < payloadFields.Length; index++) {
       row.Add(payloadColumnNames[index], payloadFields[index].Value);
@@ -742,16 +826,22 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         tableName,
         parentHashKeyColumnName,
         hashDiffColumnName,
-        loadTimestampColumnName);
+        loadTimestampColumnName,
+        drivingKeyColumnNames);
+    var seriesKey = new SatelliteSeriesKey(
+        operation.ParentHashKey,
+        drivingKeyFields.Select(field => field.Value));
     var savedRecord = new DataVaultSavedRecord(
         DataVaultTableKind.Satellite,
         satellite.Name,
         tableName,
-        operation.ParentHashKey);
+        operation.ParentHashKey,
+        drivingKeyFields);
 
     return new SatelliteSavePlan(
         -1,
         table,
+        seriesKey,
         operation.ParentHashKey,
         operation.HashDiff,
         request.LoadTimestamp,
@@ -759,7 +849,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         savedRecord);
   }
 
-  private static async Task<Dictionary<string, LatestSatelliteHashDiff>> LoadLatestSatelliteHashDiffsAsync(
+  private static async Task<Dictionary<SatelliteSeriesKey, LatestSatelliteHashDiff>> LoadLatestSatelliteHashDiffsAsync(
       DbContext dbContext,
       SatelliteTableProjection table,
       IEnumerable<string> parentHashKeys,
@@ -773,35 +863,35 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         cancellationToken).ConfigureAwait(false);
 
     foreach (var persistedHashDiff in persistedHashDiffs) {
-      if (!latestByParent.TryGetValue(persistedHashDiff.ParentHashKey, out var current) ||
+      if (!latestByParent.TryGetValue(persistedHashDiff.SeriesKey, out var current) ||
           persistedHashDiff.LoadTimestamp > current.LoadTimestamp) {
-        latestByParent[persistedHashDiff.ParentHashKey] = persistedHashDiff;
+        latestByParent[persistedHashDiff.SeriesKey] = persistedHashDiff;
       }
     }
 
     return latestByParent;
   }
 
-  private static Dictionary<string, LatestSatelliteHashDiff> GetLatestTrackedSatelliteHashDiffs(
+  private static Dictionary<SatelliteSeriesKey, LatestSatelliteHashDiff> GetLatestTrackedSatelliteHashDiffs(
       DbContext dbContext,
       SatelliteTableProjection table,
       IEnumerable<string> parentHashKeys) {
     var parentKeySet = parentHashKeys.ToHashSet(StringComparer.Ordinal);
-    var latestByParent = new Dictionary<string, LatestSatelliteHashDiff>(StringComparer.Ordinal);
+    var latestBySeries = new Dictionary<SatelliteSeriesKey, LatestSatelliteHashDiff>();
 
     foreach (var trackedRow in GetTrackedRows(dbContext, table.TableName)) {
       if (!TryCreateLatestSatelliteHashDiff(trackedRow, table, out var current) ||
-          !parentKeySet.Contains(current.ParentHashKey)) {
+          !parentKeySet.Contains(current.SeriesKey.ParentHashKey)) {
         continue;
       }
 
-      if (!latestByParent.TryGetValue(current.ParentHashKey, out var previous) ||
+      if (!latestBySeries.TryGetValue(current.SeriesKey, out var previous) ||
           current.LoadTimestamp > previous.LoadTimestamp) {
-        latestByParent[current.ParentHashKey] = current;
+        latestBySeries[current.SeriesKey] = current;
       }
     }
 
-    return latestByParent;
+    return latestBySeries;
   }
 
   private static async Task<IReadOnlyList<LatestSatelliteHashDiff>> LoadLatestPersistedSatelliteHashDiffsAsync(
@@ -822,12 +912,12 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
           .Select(row => TryCreateLatestSatelliteHashDiff(row, table, out var latestHashDiff)
               ? latestHashDiff
               : null)
-          .Where(row => row is not null && parentHashKeySet.Contains(row.ParentHashKey))
+          .Where(row => row is not null && parentHashKeySet.Contains(row.SeriesKey.ParentHashKey))
           .Cast<LatestSatelliteHashDiff>()
           .ToArray();
 
       var batchLatestRows = batchRows
-          .GroupBy(row => row.ParentHashKey, StringComparer.Ordinal)
+          .GroupBy(row => row.SeriesKey)
           .Select(group => group.OrderByDescending(row => row.LoadTimestamp).First());
 
       latestRows.AddRange(batchLatestRows);
@@ -837,19 +927,19 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
   }
 
   private static bool ShouldWriteSatelliteRow(
-      Dictionary<string, LatestSatelliteHashDiff> latestHashDiffs,
+      Dictionary<SatelliteSeriesKey, LatestSatelliteHashDiff> latestHashDiffs,
       SatelliteSavePlan plan) {
-    return !latestHashDiffs.TryGetValue(plan.ParentHashKey, out var latestHashDiff) ||
+    return !latestHashDiffs.TryGetValue(plan.SeriesKey, out var latestHashDiff) ||
         !string.Equals(latestHashDiff.HashDiff, plan.HashDiff, StringComparison.Ordinal);
   }
 
   private static void TrackLatestSatelliteHashDiff(
-      Dictionary<string, LatestSatelliteHashDiff> latestHashDiffs,
+      Dictionary<SatelliteSeriesKey, LatestSatelliteHashDiff> latestHashDiffs,
       SatelliteSavePlan plan) {
-    if (!latestHashDiffs.TryGetValue(plan.ParentHashKey, out var latestHashDiff) ||
+    if (!latestHashDiffs.TryGetValue(plan.SeriesKey, out var latestHashDiff) ||
         plan.LoadTimestamp >= latestHashDiff.LoadTimestamp) {
-      latestHashDiffs[plan.ParentHashKey] = new LatestSatelliteHashDiff(
-          plan.ParentHashKey,
+      latestHashDiffs[plan.SeriesKey] = new LatestSatelliteHashDiff(
+          plan.SeriesKey,
           plan.HashDiff,
           plan.LoadTimestamp);
     }
@@ -864,13 +954,39 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         row.TryGetValue(table.LoadTimestampColumnName, out var loadTimestampValue) &&
         parentHashKeyValue is string parentHashKey &&
         hashDiffValue is string hashDiff &&
+        TryReadDrivingKeyValues(row, table, out var drivingKeyValues) &&
         TryReadLoadTimestamp(loadTimestampValue, out var loadTimestamp)) {
-      latestHashDiff = new LatestSatelliteHashDiff(parentHashKey, hashDiff, loadTimestamp);
+      latestHashDiff = new LatestSatelliteHashDiff(
+          new SatelliteSeriesKey(parentHashKey, drivingKeyValues),
+          hashDiff,
+          loadTimestamp);
       return true;
     }
 
-    latestHashDiff = new LatestSatelliteHashDiff(string.Empty, string.Empty, DateTimeOffset.MinValue);
+    latestHashDiff = new LatestSatelliteHashDiff(
+        new SatelliteSeriesKey(string.Empty, []),
+        string.Empty,
+        DateTimeOffset.MinValue);
     return false;
+  }
+
+  private static bool TryReadDrivingKeyValues(
+      Dictionary<string, object> row,
+      SatelliteTableProjection table,
+      out IReadOnlyList<string> drivingKeyValues) {
+    var values = new string[table.DrivingKeyColumnNames.Count];
+    for (var index = 0; index < table.DrivingKeyColumnNames.Count; index++) {
+      if (!row.TryGetValue(table.DrivingKeyColumnNames[index], out var value) ||
+          value is not string text) {
+        drivingKeyValues = [];
+        return false;
+      }
+
+      values[index] = text;
+    }
+
+    drivingKeyValues = values;
+    return true;
   }
 
   private static void ApplyModelValueFormats(
@@ -1003,15 +1119,60 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       DataVaultSavedRecord SavedRecord,
       int Ordinal);
 
-  private sealed record SatelliteTableProjection(
-      string TableName,
-      string ParentHashKeyColumnName,
-      string HashDiffColumnName,
-      string LoadTimestampColumnName);
+  private sealed class SatelliteTableProjection : IEquatable<SatelliteTableProjection> {
+    private readonly string _drivingKeyColumnSignature;
+
+    public SatelliteTableProjection(
+        string tableName,
+        string parentHashKeyColumnName,
+        string hashDiffColumnName,
+        string loadTimestampColumnName,
+        IEnumerable<string> drivingKeyColumnNames) {
+      TableName = tableName;
+      ParentHashKeyColumnName = parentHashKeyColumnName;
+      HashDiffColumnName = hashDiffColumnName;
+      LoadTimestampColumnName = loadTimestampColumnName;
+      DrivingKeyColumnNames = drivingKeyColumnNames.ToArray();
+      _drivingKeyColumnSignature = DefaultDataVaultSaveService.CreateOrdinalSignature(DrivingKeyColumnNames);
+    }
+
+    public string TableName { get; }
+
+    public string ParentHashKeyColumnName { get; }
+
+    public string HashDiffColumnName { get; }
+
+    public string LoadTimestampColumnName { get; }
+
+    public IReadOnlyList<string> DrivingKeyColumnNames { get; }
+
+    public bool Equals(SatelliteTableProjection? other) {
+      return other is not null &&
+          string.Equals(TableName, other.TableName, StringComparison.Ordinal) &&
+          string.Equals(ParentHashKeyColumnName, other.ParentHashKeyColumnName, StringComparison.Ordinal) &&
+          string.Equals(HashDiffColumnName, other.HashDiffColumnName, StringComparison.Ordinal) &&
+          string.Equals(LoadTimestampColumnName, other.LoadTimestampColumnName, StringComparison.Ordinal) &&
+          string.Equals(_drivingKeyColumnSignature, other._drivingKeyColumnSignature, StringComparison.Ordinal);
+    }
+
+    public override bool Equals(object? obj) {
+      return Equals(obj as SatelliteTableProjection);
+    }
+
+    public override int GetHashCode() {
+      return HashCode.Combine(
+          StringComparer.Ordinal.GetHashCode(TableName),
+          StringComparer.Ordinal.GetHashCode(ParentHashKeyColumnName),
+          StringComparer.Ordinal.GetHashCode(HashDiffColumnName),
+          StringComparer.Ordinal.GetHashCode(LoadTimestampColumnName),
+          StringComparer.Ordinal.GetHashCode(_drivingKeyColumnSignature));
+    }
+  }
 
   private sealed record SatelliteSavePlan(
       int Ordinal,
       SatelliteTableProjection Table,
+      SatelliteSeriesKey SeriesKey,
       string ParentHashKey,
       string HashDiff,
       DateTimeOffset LoadTimestamp,
@@ -1022,5 +1183,42 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       IReadOnlyList<SatelliteSavePlan> RowsToWrite,
       IReadOnlyList<SaveOperationResult> Results);
 
-  private sealed record LatestSatelliteHashDiff(string ParentHashKey, string HashDiff, DateTimeOffset LoadTimestamp);
+  private sealed record LatestSatelliteHashDiff(
+      SatelliteSeriesKey SeriesKey,
+      string HashDiff,
+      DateTimeOffset LoadTimestamp);
+
+  private sealed class SatelliteSeriesKey : IEquatable<SatelliteSeriesKey> {
+    private readonly string _drivingKeyValueSignature;
+
+    public SatelliteSeriesKey(string parentHashKey, IEnumerable<string> drivingKeyValues) {
+      ParentHashKey = parentHashKey;
+      DrivingKeyValues = drivingKeyValues.ToArray();
+      _drivingKeyValueSignature = DefaultDataVaultSaveService.CreateOrdinalSignature(DrivingKeyValues);
+    }
+
+    public string ParentHashKey { get; }
+
+    public IReadOnlyList<string> DrivingKeyValues { get; }
+
+    public bool Equals(SatelliteSeriesKey? other) {
+      return other is not null &&
+          string.Equals(ParentHashKey, other.ParentHashKey, StringComparison.Ordinal) &&
+          string.Equals(_drivingKeyValueSignature, other._drivingKeyValueSignature, StringComparison.Ordinal);
+    }
+
+    public override bool Equals(object? obj) {
+      return Equals(obj as SatelliteSeriesKey);
+    }
+
+    public override int GetHashCode() {
+      return HashCode.Combine(
+          StringComparer.Ordinal.GetHashCode(ParentHashKey),
+          StringComparer.Ordinal.GetHashCode(_drivingKeyValueSignature));
+    }
+  }
+
+  private static string CreateOrdinalSignature(IEnumerable<string> values) {
+    return string.Concat(values.Select(value => value.Length.ToString(CultureInfo.InvariantCulture) + ":" + value));
+  }
 }

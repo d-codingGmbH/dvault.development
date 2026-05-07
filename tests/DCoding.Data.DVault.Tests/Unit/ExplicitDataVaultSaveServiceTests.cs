@@ -376,6 +376,56 @@ public sealed class ExplicitDataVaultSaveServiceTests {
     Assert.Throws<ArgumentException>(() => new DataVaultHubSaveOperation(hub, [new("Customer Id", null!)]));
   }
 
+  [Fact]
+  public void SatelliteSaveOperationValidatesMultiActiveDrivingKeyValuesExactly() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"],
+        ["Contact Type", "Region Code"]);
+
+    var operation = new DataVaultSatelliteSaveOperation(
+        contact,
+        "customer-hash",
+        [new("Region Code", "DE"), new("Contact Type", "billing")],
+        [new("Email Address", "billing@example.test")],
+        "contact-hash");
+
+    Assert.Equal(["Contact Type", "Region Code"], contact.DrivingKeyNames);
+    Assert.Equal("billing", operation.DrivingKeyValues["Contact Type"]);
+    Assert.Equal("DE", operation.DrivingKeyValues["Region Code"]);
+    Assert.Throws<ArgumentException>(() => new DataVaultSatelliteSaveOperation(
+        contact,
+        "customer-hash",
+        [new("Contact Type", "billing")],
+        [new("Email Address", "billing@example.test")],
+        "contact-hash"));
+    Assert.Throws<ArgumentException>(() => new DataVaultSatelliteSaveOperation(
+        contact,
+        "customer-hash",
+        [new("Contact Type", "billing"), new("Region Code", "DE"), new("Scope", "extra")],
+        [new("Email Address", "billing@example.test")],
+        "contact-hash"));
+    Assert.Throws<ArgumentException>(() => new DataVaultSatelliteSaveOperation(
+        contact,
+        "customer-hash",
+        [new("Contact Type", "billing"), new("Contact Type", "shipping"), new("Region Code", "DE")],
+        [new("Email Address", "billing@example.test")],
+        "contact-hash"));
+    Assert.Throws<ArgumentException>(() => new DataVaultSatelliteSaveOperation(
+        contact,
+        "customer-hash",
+        [new("Contact Type", null!), new("Region Code", "DE")],
+        [new("Email Address", "billing@example.test")],
+        "contact-hash"));
+    Assert.Throws<ArgumentException>(() => new DataVaultSatelliteSaveOperation(
+        contact,
+        "customer-hash",
+        [new("Email Address", "billing@example.test")],
+        "contact-hash"));
+  }
+
   private sealed class ReplacementDataVaultSaveService : IDataVaultSaveService {
     public Task<DataVaultSaveResult> SaveAsync(
         DbContext dbContext,

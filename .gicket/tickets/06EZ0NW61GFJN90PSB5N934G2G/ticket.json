@@ -3,19 +3,19 @@
   "ticket-id": "06EZ0NW61GFJN90PSB5N934G2G",
   "ticket-type": "task",
   "title": "Task: Persist multi-active satellites with deterministic uniqueness rules",
-  "revision": "06EZW1S1YCJRSBHKA3W1D5CAB0",
-  "status": "todo",
+  "revision": "06F0066C448X4FGNRAYGEFM0QR",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
     "area/modeling",
     "area/multi-active-satellite",
     "area/persistence",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
+  "has-attachments": true,
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:16:01.1650937Z",
-  "updated-at": "2026-05-06T16:02:53.5550465Z"
+  "updated-at": "2026-05-07T01:41:25.6652072Z"
 }

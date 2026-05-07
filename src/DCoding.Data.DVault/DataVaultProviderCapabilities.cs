@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 
 namespace DCoding.Data.DVault;
 
@@ -50,6 +50,11 @@ public enum DataVaultLogicalPropertyKind {
   /// Integer hierarchy depth value produced for bridge traversal metadata.
   /// </summary>
   BridgeDepth,
+
+  /// <summary>
+  /// Multi-active satellite driving-key value.
+  /// </summary>
+  DrivingKey,
 }
 
 /// <summary>
@@ -293,6 +298,7 @@ public static class DataVaultProviderCapabilityProfiles {
               "TEXT",
               DataVaultProviderValueFormat.Iso8601UtcText),
           Integer(DataVaultLogicalPropertyKind.BridgeDepth, "INTEGER"),
+          Text(DataVaultLogicalPropertyKind.DrivingKey),
       ]);
 
   /// <summary>
@@ -320,6 +326,7 @@ public static class DataVaultProviderCapabilityProfiles {
               "VARCHAR2(33 CHAR)",
               DataVaultProviderValueFormat.Iso8601UtcText),
           Integer(DataVaultLogicalPropertyKind.BridgeDepth, "NUMBER(10)"),
+          Text(DataVaultLogicalPropertyKind.DrivingKey, "VARCHAR2(255 CHAR)"),
       ],
       allowsIndexesCoveredByPrimaryKey: false);
 
@@ -348,6 +355,7 @@ public static class DataVaultProviderCapabilityProfiles {
               "varchar(33)",
               DataVaultProviderValueFormat.Iso8601UtcText),
           Integer(DataVaultLogicalPropertyKind.BridgeDepth, "int"),
+          Text(DataVaultLogicalPropertyKind.DrivingKey, "varchar(255)"),
       ],
       maximumIdentifierLength: 64);
 

@@ -182,23 +182,38 @@ internal static class DataVaultEfMetadataTranslator {
         new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, satellite.Name, tableName));
     var recordSourceColumnName = NamingPolicy.GetTechnicalColumnName(
         new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.RecordSource, satellite.Name, tableName));
+    var drivingKeyColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        satellite.DrivingKeyNames,
+        [parentHashKeyColumnName, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);
 
     var payloadColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
         satellite.PayloadColumns.Select(column => column.ColumnName),
-        [parentHashKeyColumnName, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);
+        [parentHashKeyColumnName, .. drivingKeyColumnNames, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);
     var properties = new List<PropertyProjection>
     {
         TechnicalProperty(parentHashKeyColumnName, TechnicalMetadataColumnRole.HashKey, satellite.Parent.Name),
-        TechnicalProperty(hashDiffColumnName, TechnicalMetadataColumnRole.HashDiff, satellite.HashDiffMetadata.EffectiveColumnName),
-        TechnicalProperty(
-            loadTimestampColumnName,
-            TechnicalMetadataColumnRole.LoadTimestamp,
-            satellite.LoadTimestampMetadata.EffectiveColumnName),
-        TechnicalProperty(
-            recordSourceColumnName,
-            TechnicalMetadataColumnRole.RecordSource,
-            satellite.RecordSourceMetadata.EffectiveColumnName),
     };
+
+    for (var index = 0; index < drivingKeyColumnNames.Count; index++) {
+      properties.Add(new PropertyProjection(
+          drivingKeyColumnNames[index],
+          DataVaultPropertyRole.DrivingKey,
+          TechnicalRole: null,
+          satellite.DrivingKeyNames[index]));
+    }
+
+    properties.AddRange(
+        [
+            TechnicalProperty(hashDiffColumnName, TechnicalMetadataColumnRole.HashDiff, satellite.HashDiffMetadata.EffectiveColumnName),
+            TechnicalProperty(
+                loadTimestampColumnName,
+                TechnicalMetadataColumnRole.LoadTimestamp,
+                satellite.LoadTimestampMetadata.EffectiveColumnName),
+            TechnicalProperty(
+                recordSourceColumnName,
+                TechnicalMetadataColumnRole.RecordSource,
+                satellite.RecordSourceMetadata.EffectiveColumnName),
+        ]);
 
     for (var index = 0; index < payloadColumnNames.Count; index++) {
       properties.Add(new PropertyProjection(
@@ -208,15 +223,22 @@ internal static class DataVaultEfMetadataTranslator {
           satellite.PayloadColumns[index].ColumnName));
     }
 
+    var satelliteParentIndexColumnNames = new[]
+    {
+        parentHashKeyColumnName,
+    }
+        .Concat(drivingKeyColumnNames)
+        .Append(loadTimestampColumnName)
+        .ToArray();
     var indexes = new[]
     {
         new IndexProjection(
             NamingPolicy.GetIndexName(new DataVaultIndexNameContext(
                 DataVaultIndexKind.SatelliteParent,
                 tableName,
-                [parentHashKeyColumnName, loadTimestampColumnName],
+                satelliteParentIndexColumnNames,
                 IsUnique: false)),
-            [parentHashKeyColumnName, loadTimestampColumnName],
+            satelliteParentIndexColumnNames,
             IsUnique: false),
     };
     var primaryKey = new KeyProjection(
@@ -224,8 +246,8 @@ internal static class DataVaultEfMetadataTranslator {
             new DataVaultConstraintNameContext(
                 DataVaultConstraintKind.PrimaryKey,
                 tableName,
-                [parentHashKeyColumnName, loadTimestampColumnName])),
-        [parentHashKeyColumnName, loadTimestampColumnName]);
+                satelliteParentIndexColumnNames)),
+        satelliteParentIndexColumnNames);
 
     return new EntityProjection(
         tableName,
@@ -484,6 +506,12 @@ internal static class DataVaultEfMetadataTranslator {
             satelliteReference.SatelliteName + "' more than once."),
       };
 
+      if (satellite.DrivingKeyNames.Count > 0) {
+        throw PitTranslationFailure(
+            "PIT metadata '" + pit.Name + "' references multi-active satellite '" +
+            satelliteReference.SatelliteName + "', which is outside the supported baseline.");
+      }
+
       if (satellite.Parent.Kind != DataVaultMetadataReferenceKind.Hub) {
         throw PitTranslationFailure(
             "PIT metadata '" + pit.Name + "' references satellite '" + satellite.Name +
@@ -651,6 +679,7 @@ internal static class DataVaultEfMetadataTranslator {
     return property.Role switch {
       DataVaultPropertyRole.BusinessKey => DataVaultLogicalPropertyKind.BusinessKey,
       DataVaultPropertyRole.ParticipantReference => DataVaultLogicalPropertyKind.ParticipantReference,
+      DataVaultPropertyRole.DrivingKey => DataVaultLogicalPropertyKind.DrivingKey,
       DataVaultPropertyRole.Payload => DataVaultLogicalPropertyKind.PayloadText,
       DataVaultPropertyRole.SnapshotReference => DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
       DataVaultPropertyRole.BridgeDepth => DataVaultLogicalPropertyKind.BridgeDepth,

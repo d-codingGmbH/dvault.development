@@ -29,6 +29,7 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
         .Any(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
 
     return CanSaveProvider(dbContext.Database.ProviderName, hasPendingTrackedChanges) &&
+        !ContainsMultiActiveSatelliteOperations(requests) &&
         IsOptimizedBatchShape(requests);
   }
 
@@ -183,6 +184,10 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
 
     return operationCount >= MinimumOptimizedBatchOperationCount &&
         satelliteOperationCount <= MaximumOptimizedSatelliteOperationCount;
+  }
+
+  private static bool ContainsMultiActiveSatelliteOperations(IReadOnlyList<DataVaultSaveRequest> requests) {
+    return requests.Any(request => request.SatelliteOperations.Any(operation => operation.Metadata.DrivingKeyNames.Count > 0));
   }
 
   internal static bool ShouldWriteSatelliteHashDiff(string? latestHashDiff, string candidateHashDiff) {

@@ -1,0 +1,13 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/attachment-manifest/v1",
+  "attachments": [
+    {
+      "attachmentId": "06EZSBTHYFASBVRCMX13FZPQNR",
+      "sha256": "2e749cc4806696ee40c242616697a7c91057ced8a6e11d0e4a9480b7e40516fd",
+      "fileName": "multi-active-satellite-driving-key-contract.md",
+      "contentType": "text/markdown",
+      "size": 4660,
+      "addedAt": "2026-05-06T09:47:21.4590000Z"
+    }
+  ]
+}

@@ -22,6 +22,7 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     ArgumentNullException.ThrowIfNull(requests);
 
     return string.Equals(dbContext.Database.ProviderName, NpgsqlProviderName, StringComparison.Ordinal) &&
+        !ContainsMultiActiveSatelliteOperations(requests) &&
         !dbContext.ChangeTracker
             .Entries()
             .Any(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
@@ -122,6 +123,10 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     }
 
     return plans.ToArray();
+  }
+
+  private static bool ContainsMultiActiveSatelliteOperations(IReadOnlyList<DataVaultSaveRequest> requests) {
+    return requests.Any(request => request.SatelliteOperations.Any(operation => operation.Metadata.DrivingKeyNames.Count > 0));
   }
 
   private static UniqueRowSavePlan CreateHubSavePlan(
