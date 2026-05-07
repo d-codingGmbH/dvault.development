@@ -1,0 +1,1 @@
+﻿Created follow-up 06F03T9R8QK81VQCC158NJ62YG to preserve the PO-critic finding without discarding completed work: bridge docs must be reconciled with the implemented baseline before this story closes.

@@ -1,0 +1,19 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F03T9R8QK81VQCC158NJ62YG",
+  "ticket-type": null,
+  "title": "Task: Reconcile bridge documentation with implemented baseline",
+  "revision": "06F03TEWXG74DMQCEW9PNHPWSC",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "automation/bot-ready",
+    "area/bridge",
+    "area/docs",
+    "area/examples",
+    "needs-dev"
+  ],
+  "assignees": [],
+  "created-at": "2026-05-07T10:08:42.6789921Z",
+  "updated-at": "2026-05-07T10:09:24.2041293Z"
+}
