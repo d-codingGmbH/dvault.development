@@ -120,6 +120,52 @@ public static class SalesVaultWriter {
 
 `DataVaultSaveRequest` keeps the load timestamp and record source explicit. DVault does not intercept `SaveChanges`; callers choose when to write vault rows. For loaders that already have multiple source batches prepared, `DataVaultBulkSaveRequest` processes ordered save requests through the same service and keeps satellite HashDiff state in memory across the batch.
 
+### Multi-active satellite opt-in
+
+Ordinary satellites remain the default. A satellite becomes multi-active only when it declares one or more driving keys, and those names define the canonical identity tuple for each active satellite row. Driving-key values stay separate from payload values, and `hashDiff` continues to represent payload state for change detection rather than driving-key identity.
+
+The minimal shape below declares a customer contact satellite with payload `Email Address` and driving keys `Contact Type` then `Region Code`:
+
+```csharp
+var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+var contact = new DataVaultSatelliteMetadata(
+    "Contact",
+    customer.ToReference(),
+    ["Email Address"],
+    ["Contact Type", "Region Code"]);
+
+modelBuilder.ApplyDataVaultMetadata(
+    new DataVaultMetadataModel(
+        [customer],
+        [],
+        [contact]));
+```
+
+The save operation supplies driving-key values by logical name. Caller enumeration order does not matter; the values below are matched by name and persisted in the declared canonical order `Contact Type`, then `Region Code`:
+
+```csharp
+await saveService.SaveAsync(
+    context,
+    new DataVaultSaveRequest(
+        loadTimestamp,
+        "crm-import",
+        [],
+        [],
+        [
+            new(
+                contact,
+                "customer-hash",
+                [new("Region Code", "DE"), new("Contact Type", "billing")],
+                [new("Email Address", "billing-de@example.test")],
+                "contact-payload-hash"),
+        ]),
+    cancellationToken);
+```
+
+The provider-neutral projection stores driving-key columns immediately after the parent hash-key column and before `HashDiff`, `LoadTimestamp`, `RecordSource`, and payload columns. For the example above, the satellite row shape is `CustomerHashKey`, `ContactType`, `RegionCode`, `HashDiff`, `LoadTimestamp`, `RecordSource`, then `EmailAddress`. The satellite primary key and parent/latest-state index expand to `(CustomerHashKey, ContactType, RegionCode, LoadTimestamp)`, so different driving-key tuples for the same parent can coexist. Re-saving the same parent plus driving-key tuple with the same `hashDiff` reuses the latest state; changing the `hashDiff` writes a new history row for that tuple.
+
+Current multi-active support is intentionally narrow and opt-in. Future work includes PIT over multi-active satellites, bridge interactions involving multi-active state, link-based PIT support, and provider-specific optimized multi-active save behavior. Provider-specific save strategies may decline multi-active batches so the provider-neutral writer handles the documented baseline.
+
 ### Provider Packages
 
 `DCoding.Data.DVault` contains the provider-neutral API, metadata model, naming conventions, stable hashing, and EF fallback writer. Provider packages extend that base registration without changing the write API:
@@ -157,7 +203,7 @@ The shared-type table names and columns in this quickstart follow DVault's defau
 
 ## Deferred Capabilities
 
-PIT tables, bridge tables, and multi-active satellites are opt-in v0.5 deferred capabilities rather than part of ordinary hub, link, and satellite setup. The current bridge documentation baseline is in `docs/plans/deferred-data-vault-capabilities.md`; it states that the visible source projects no bridge-specific EF metadata output or annotation contract and includes one conceptual many-to-many traversal scenario without defining a bridge runtime API.
+PIT tables, bridge tables, and multi-active satellites remain opt-in v0.5 capabilities rather than part of ordinary hub, link, and satellite setup. Multi-active satellite support is limited to the driving-key modeling, projection, and explicit-save baseline described above. The current bridge documentation baseline is in `docs/plans/deferred-data-vault-capabilities.md`; it states that the visible source projects no bridge-specific EF metadata output or annotation contract and includes one conceptual many-to-many traversal scenario without defining a bridge runtime API.
 
 ## Layout
 
