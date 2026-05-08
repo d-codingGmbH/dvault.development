@@ -665,6 +665,10 @@ internal static class DataVaultEfMetadataTranslator {
       return entityBuilder.IndexerProperty<int>(property.Name);
     }
 
+    if (typeMapping.ModelClrType == typeof(long)) {
+      return entityBuilder.IndexerProperty<long>(property.Name);
+    }
+
     throw new NotSupportedException(
         "Provider capability profile '" +
         providerCapabilities.ProfileName +

@@ -100,6 +100,31 @@ public enum DataVaultProviderValueFormat {
   /// Integer values are persisted through the provider's native integer mapping.
   /// </summary>
   NativeInteger,
+
+  /// <summary>
+  /// Timestamp values are persisted as UTC <see cref="DateTime" /> ticks in a native 64-bit integer column.
+  /// </summary>
+  UtcTicks,
+}
+
+/// <summary>
+/// Identifies the physical load-timestamp storage shape used when provider profiles are projected to EF metadata.
+/// </summary>
+public enum DataVaultLoadTimestampStorage {
+  /// <summary>
+  /// Keeps the provider profile's default load-timestamp storage mapping.
+  /// </summary>
+  ProviderDefault,
+
+  /// <summary>
+  /// Persists load timestamps as ISO 8601 UTC text.
+  /// </summary>
+  Iso8601UtcText,
+
+  /// <summary>
+  /// Persists load timestamps as UTC <see cref="DateTime" /> ticks in a native 64-bit integer column.
+  /// </summary>
+  UtcTicks,
 }
 
 /// <summary>
@@ -242,6 +267,27 @@ public sealed class DataVaultProviderCapabilityProfile {
   }
 
   /// <summary>
+  /// Creates a copy of this profile with load-timestamp mappings adapted to the requested storage format.
+  /// </summary>
+  /// <param name="storage">The load-timestamp storage format to project.</param>
+  /// <returns>The current profile for <see cref="DataVaultLoadTimestampStorage.ProviderDefault" />; otherwise a transformed profile.</returns>
+  public DataVaultProviderCapabilityProfile WithLoadTimestampStorage(DataVaultLoadTimestampStorage storage) {
+    if (storage == DataVaultLoadTimestampStorage.ProviderDefault) {
+      return this;
+    }
+
+    return new DataVaultProviderCapabilityProfile(
+        ProfileName + GetLoadTimestampStorageProfileSuffix(storage),
+        SqlFunctionSupport,
+        ConcurrencySupport,
+        TypeMappings.Select(mapping => IsLoadTimestampMapping(mapping.LogicalPropertyKind)
+            ? CreateLoadTimestampMapping(mapping.LogicalPropertyKind, storage)
+            : mapping),
+        MaximumIdentifierLength,
+        AllowsIndexesCoveredByPrimaryKey);
+  }
+
+  /// <summary>
   /// Fails deterministically when a caller requires a SQL function that the profile does not support.
   /// </summary>
   /// <param name="functionName">The SQL function capability required by the caller.</param>
@@ -266,6 +312,70 @@ public sealed class DataVaultProviderCapabilityProfile {
   private NotSupportedException UnsupportedCapability(string capabilityName) {
     return new NotSupportedException(
         "Provider capability profile '" + ProfileName + "' does not declare required capability '" + capabilityName + "'.");
+  }
+
+  private static bool IsLoadTimestampMapping(DataVaultLogicalPropertyKind logicalPropertyKind) {
+    return logicalPropertyKind is
+        DataVaultLogicalPropertyKind.LoadTimestamp or
+        DataVaultLogicalPropertyKind.SatelliteSnapshotReference;
+  }
+
+  private DataVaultProviderTypeMapping CreateLoadTimestampMapping(
+      DataVaultLogicalPropertyKind logicalPropertyKind,
+      DataVaultLoadTimestampStorage storage) {
+    return storage switch {
+      DataVaultLoadTimestampStorage.Iso8601UtcText => new DataVaultProviderTypeMapping(
+          logicalPropertyKind,
+          typeof(string),
+          GetIso8601UtcTextStoreType(),
+          DataVaultProviderValueFormat.Iso8601UtcText),
+      DataVaultLoadTimestampStorage.UtcTicks => new DataVaultProviderTypeMapping(
+          logicalPropertyKind,
+          typeof(long),
+          GetUtcTicksStoreType(),
+          DataVaultProviderValueFormat.UtcTicks),
+      _ => throw new ArgumentOutOfRangeException(nameof(storage), storage, "Unsupported Data Vault load timestamp storage."),
+    };
+  }
+
+  private string GetIso8601UtcTextStoreType() {
+    if (ProfileName.StartsWith("oracle-", StringComparison.Ordinal)) {
+      return "VARCHAR2(33 CHAR)";
+    }
+
+    if (ProfileName.StartsWith("mysql-", StringComparison.Ordinal)) {
+      return "varchar(33)";
+    }
+
+    if (ProfileName.StartsWith("sqlserver-", StringComparison.Ordinal)) {
+      return "nvarchar(33)";
+    }
+
+    if (ProfileName.StartsWith("postgres-", StringComparison.Ordinal)) {
+      return "varchar(33)";
+    }
+
+    return "TEXT";
+  }
+
+  private string GetUtcTicksStoreType() {
+    if (ProfileName.StartsWith("oracle-", StringComparison.Ordinal)) {
+      return "NUMBER(19)";
+    }
+
+    if (ProfileName.StartsWith("sqlite-", StringComparison.Ordinal)) {
+      return "INTEGER";
+    }
+
+    return "bigint";
+  }
+
+  private static string GetLoadTimestampStorageProfileSuffix(DataVaultLoadTimestampStorage storage) {
+    return storage switch {
+      DataVaultLoadTimestampStorage.Iso8601UtcText => "-loadts-iso8601",
+      DataVaultLoadTimestampStorage.UtcTicks => "-loadts-utc-ticks",
+      _ => throw new ArgumentOutOfRangeException(nameof(storage), storage, "Unsupported Data Vault load timestamp storage."),
+    };
   }
 }
 
@@ -329,6 +439,62 @@ public static class DataVaultProviderCapabilityProfiles {
           Text(DataVaultLogicalPropertyKind.DrivingKey, "VARCHAR2(255 CHAR)"),
       ],
       allowsIndexesCoveredByPrimaryKey: false);
+
+  /// <summary>
+  /// Gets the PostgreSQL v1 provider capability profile.
+  /// </summary>
+  public static DataVaultProviderCapabilityProfile Postgres { get; } = new(
+      "postgres-v1",
+      DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported,
+      DataVaultProviderConcurrencySupport.NoneInV1Unsupported,
+      [
+          Text(DataVaultLogicalPropertyKind.HashKey, "varchar(64)"),
+          Text(DataVaultLogicalPropertyKind.HashDiff, "varchar(64)"),
+          new(
+              DataVaultLogicalPropertyKind.LoadTimestamp,
+              typeof(DateTimeOffset),
+              "timestamp with time zone",
+              DataVaultProviderValueFormat.NativeDateTimeOffset),
+          Text(DataVaultLogicalPropertyKind.RecordSource, "varchar(255)"),
+          Text(DataVaultLogicalPropertyKind.ParticipantReference, "varchar(64)"),
+          Text(DataVaultLogicalPropertyKind.BusinessKey, "varchar(255)"),
+          Text(DataVaultLogicalPropertyKind.PayloadText, "text"),
+          new(
+              DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+              typeof(DateTimeOffset),
+              "timestamp with time zone",
+              DataVaultProviderValueFormat.NativeDateTimeOffset),
+          Integer(DataVaultLogicalPropertyKind.BridgeDepth, "integer"),
+          Text(DataVaultLogicalPropertyKind.DrivingKey, "varchar(255)"),
+      ]);
+
+  /// <summary>
+  /// Gets the SQL Server v1 provider capability profile.
+  /// </summary>
+  public static DataVaultProviderCapabilityProfile SqlServer { get; } = new(
+      "sqlserver-v1",
+      DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported,
+      DataVaultProviderConcurrencySupport.NoneInV1Unsupported,
+      [
+          Text(DataVaultLogicalPropertyKind.HashKey, "nvarchar(64)"),
+          Text(DataVaultLogicalPropertyKind.HashDiff, "nvarchar(64)"),
+          new(
+              DataVaultLogicalPropertyKind.LoadTimestamp,
+              typeof(DateTimeOffset),
+              "datetimeoffset",
+              DataVaultProviderValueFormat.NativeDateTimeOffset),
+          Text(DataVaultLogicalPropertyKind.RecordSource, "nvarchar(255)"),
+          Text(DataVaultLogicalPropertyKind.ParticipantReference, "nvarchar(64)"),
+          Text(DataVaultLogicalPropertyKind.BusinessKey, "nvarchar(255)"),
+          Text(DataVaultLogicalPropertyKind.PayloadText, "nvarchar(max)"),
+          new(
+              DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+              typeof(DateTimeOffset),
+              "datetimeoffset",
+              DataVaultProviderValueFormat.NativeDateTimeOffset),
+          Integer(DataVaultLogicalPropertyKind.BridgeDepth, "int"),
+          Text(DataVaultLogicalPropertyKind.DrivingKey, "nvarchar(255)"),
+      ]);
 
   /// <summary>
   /// Gets the Pomelo.EntityFrameworkCore.MySql v1 provider capability profile.

@@ -235,6 +235,85 @@ public sealed class DataVaultProviderCapabilityProfileTests {
   }
 
   [Fact]
+  public void PostgresProfileDeclaresNativeTimestampMappings() {
+    var profile = DataVaultProviderCapabilityProfiles.Postgres;
+
+    Assert.Equal("postgres-v1", profile.ProfileName);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.LoadTimestamp,
+        typeof(DateTimeOffset),
+        "timestamp with time zone",
+        DataVaultProviderValueFormat.NativeDateTimeOffset);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+        typeof(DateTimeOffset),
+        "timestamp with time zone",
+        DataVaultProviderValueFormat.NativeDateTimeOffset);
+  }
+
+  [Fact]
+  public void SqlServerProfileDeclaresNativeTimestampMappings() {
+    var profile = DataVaultProviderCapabilityProfiles.SqlServer;
+
+    Assert.Equal("sqlserver-v1", profile.ProfileName);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.LoadTimestamp,
+        typeof(DateTimeOffset),
+        "datetimeoffset",
+        DataVaultProviderValueFormat.NativeDateTimeOffset);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+        typeof(DateTimeOffset),
+        "datetimeoffset",
+        DataVaultProviderValueFormat.NativeDateTimeOffset);
+  }
+
+  [Fact]
+  public void LoadTimestampStorageCanBeProjectedToUtcTicksWithoutChangingProviderDefault() {
+    var profile = DataVaultProviderCapabilityProfiles.Oracle;
+    var providerDefault = profile.WithLoadTimestampStorage(DataVaultLoadTimestampStorage.ProviderDefault);
+    var ticksProfile = profile.WithLoadTimestampStorage(DataVaultLoadTimestampStorage.UtcTicks);
+
+    Assert.Same(profile, providerDefault);
+    Assert.Equal("oracle-v1-loadts-utc-ticks", ticksProfile.ProfileName);
+    AssertMapping(
+        ticksProfile,
+        DataVaultLogicalPropertyKind.LoadTimestamp,
+        typeof(long),
+        "NUMBER(19)",
+        DataVaultProviderValueFormat.UtcTicks);
+    AssertMapping(
+        ticksProfile,
+        DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+        typeof(long),
+        "NUMBER(19)",
+        DataVaultProviderValueFormat.UtcTicks);
+    AssertMapping(
+        ticksProfile,
+        DataVaultLogicalPropertyKind.HashKey,
+        typeof(string),
+        "VARCHAR2(64 CHAR)",
+        DataVaultProviderValueFormat.Text);
+  }
+
+  [Fact]
+  public void LoadTimestampStorageCanBeProjectedToIsoTextForNativeTimestampProfiles() {
+    var profile = DataVaultProviderCapabilityProfiles.SqlServer.WithLoadTimestampStorage(DataVaultLoadTimestampStorage.Iso8601UtcText);
+
+    Assert.Equal("sqlserver-v1-loadts-iso8601", profile.ProfileName);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.LoadTimestamp,
+        typeof(string),
+        "nvarchar(33)",
+        DataVaultProviderValueFormat.Iso8601UtcText);
+  }
+
+  [Fact]
   public void RequiredTypeMappingLookupFailsDeterministicallyWhenCapabilityIsMissing() {
     var profile = new DataVaultProviderCapabilityProfile(
         "test-profile",

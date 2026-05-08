@@ -15,6 +15,9 @@ public static class DVaultSqlServerServiceCollectionExtensions {
   public static IServiceCollection AddDVaultSqlServer(this IServiceCollection services) {
     ArgumentNullException.ThrowIfNull(services);
 
+    DataVaultProviderCapabilityProfileSelection.Register(
+        SqlServerDataVaultSaveStrategy.SqlServerProviderName,
+        DataVaultProviderCapabilityProfiles.SqlServer);
     services.AddDVault();
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBehavior, SqlServerDataVaultProviderBehavior>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, SqlServerDataVaultSaveStrategy>());

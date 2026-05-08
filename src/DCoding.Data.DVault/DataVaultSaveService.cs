@@ -1004,10 +1004,9 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       }
 
       var valueFormat = property.FindAnnotation(DataVaultAnnotationNames.ProviderValueFormat)?.Value;
-      if (valueFormat is DataVaultProviderValueFormat.Iso8601UtcText &&
-          property.ClrType == typeof(string) &&
+      if (valueFormat is DataVaultProviderValueFormat &&
           value is DateTimeOffset loadTimestamp) {
-        row[property.Name] = FormatLoadTimestamp(loadTimestamp);
+        row[property.Name] = DataVaultLoadTimestampValueConverter.ToProviderValue(property, loadTimestamp);
       }
     }
   }
@@ -1019,31 +1018,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
   }
 
   private static bool TryReadLoadTimestamp(object? value, out DateTimeOffset loadTimestamp) {
-    if (value is DateTimeOffset dateTimeOffset) {
-      loadTimestamp = dateTimeOffset.ToUniversalTime();
-      return true;
-    }
-
-    if (value is DateTime dateTime) {
-      loadTimestamp = new DateTimeOffset(DateTime.SpecifyKind(dateTime, DateTimeKind.Utc));
-      return true;
-    }
-
-    if (value is string text &&
-        DateTimeOffset.TryParse(
-            text,
-            CultureInfo.InvariantCulture,
-            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-            out loadTimestamp)) {
-      return true;
-    }
-
-    loadTimestamp = DateTimeOffset.MinValue;
-    return false;
-  }
-
-  private static string FormatLoadTimestamp(DateTimeOffset loadTimestamp) {
-    return loadTimestamp.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
+    return DataVaultLoadTimestampValueConverter.TryReadProviderValue(value, out loadTimestamp);
   }
 
   private static IEnumerable<Dictionary<string, object>> GetTrackedRows(DbContext dbContext, string tableName) {

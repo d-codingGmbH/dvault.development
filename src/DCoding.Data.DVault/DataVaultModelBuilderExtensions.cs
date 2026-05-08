@@ -37,6 +37,22 @@ public static class DataVaultModelBuilderExtensions {
   }
 
   /// <summary>
+  /// Records the provider-neutral DVault default conventions, selected provider profile, and load-timestamp storage shape.
+  /// </summary>
+  /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
+  /// <param name="providerCapabilities">The provider capability profile used when projecting Data Vault metadata.</param>
+  /// <param name="loadTimestampStorage">The physical load-timestamp storage shape to project.</param>
+  /// <returns>The same model builder so Entity Framework model configuration can continue fluently.</returns>
+  public static ModelBuilder UseDataVault(
+      this ModelBuilder modelBuilder,
+      DataVaultProviderCapabilityProfile providerCapabilities,
+      DataVaultLoadTimestampStorage loadTimestampStorage) {
+    ArgumentNullException.ThrowIfNull(providerCapabilities);
+
+    return modelBuilder.UseDataVault(providerCapabilities.WithLoadTimestampStorage(loadTimestampStorage));
+  }
+
+  /// <summary>
   /// Translates provider-neutral Data Vault metadata declarations into provider-aware Entity Framework model metadata.
   /// </summary>
   /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
@@ -71,5 +87,25 @@ public static class DataVaultModelBuilderExtensions {
     DataVaultEfMetadataTranslator.Apply(modelBuilder, metadataModel, providerCapabilities);
 
     return modelBuilder;
+  }
+
+  /// <summary>
+  /// Translates provider-neutral Data Vault metadata into Entity Framework metadata for one provider profile and timestamp storage shape.
+  /// </summary>
+  /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
+  /// <param name="metadataModel">The provider-neutral Data Vault metadata declarations to project.</param>
+  /// <param name="providerCapabilities">The provider capability profile used to project storage metadata.</param>
+  /// <param name="loadTimestampStorage">The physical load-timestamp storage shape to project.</param>
+  /// <returns>The same model builder so Entity Framework model configuration can continue fluently.</returns>
+  public static ModelBuilder ApplyDataVaultMetadata(
+      this ModelBuilder modelBuilder,
+      DataVaultMetadataModel metadataModel,
+      DataVaultProviderCapabilityProfile providerCapabilities,
+      DataVaultLoadTimestampStorage loadTimestampStorage) {
+    ArgumentNullException.ThrowIfNull(providerCapabilities);
+
+    return modelBuilder.ApplyDataVaultMetadata(
+        metadataModel,
+        providerCapabilities.WithLoadTimestampStorage(loadTimestampStorage));
   }
 }

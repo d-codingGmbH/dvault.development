@@ -331,6 +331,40 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataWithUtcTicksStorageProjectsIntegerTimestampAnnotations() {
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.ApplyDataVaultMetadata(
+        CreateMetadataModel(),
+        DataVaultProviderCapabilityProfiles.Sqlite,
+        DataVaultLoadTimestampStorage.UtcTicks);
+
+    Assert.Equal(
+        "sqlite-v1-loadts-utc-ticks",
+        Assert.IsType<string>(modelBuilder.Model.FindAnnotation(DataVaultAnnotationNames.ProviderProfile)?.Value));
+
+    var hub = FindEntity(modelBuilder.Model, "HubCustomer");
+    var satellite = FindEntity(modelBuilder.Model, "SatCustomerContact");
+
+    AssertProviderProperty(
+        hub,
+        "LoadTimestamp",
+        DataVaultLogicalPropertyKind.LoadTimestamp,
+        typeof(long),
+        "INTEGER",
+        DataVaultProviderValueFormat.UtcTicks,
+        "sqlite-v1-loadts-utc-ticks");
+    AssertProviderProperty(
+        satellite,
+        "LoadTimestamp",
+        DataVaultLogicalPropertyKind.LoadTimestamp,
+        typeof(long),
+        "INTEGER",
+        DataVaultProviderValueFormat.UtcTicks,
+        "sqlite-v1-loadts-utc-ticks");
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataWithOracleProfileProjectsPitSnapshotStorageAnnotations() {
     var modelBuilder = CreateModelBuilder();
 
@@ -914,12 +948,13 @@ public sealed class DataVaultEfMetadataTranslationTests {
       DataVaultLogicalPropertyKind expectedLogicalPropertyKind,
       Type expectedClrType,
       string expectedStorageType,
-      DataVaultProviderValueFormat expectedValueFormat) {
+      DataVaultProviderValueFormat expectedValueFormat,
+      string expectedProviderProfile = "oracle-v1") {
     var property = entityType.FindProperty(propertyName);
 
     Assert.NotNull(property);
     Assert.Equal(expectedClrType, property!.ClrType);
-    Assert.Equal("oracle-v1", AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderProfile));
+    Assert.Equal(expectedProviderProfile, AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderProfile));
     Assert.Equal(expectedLogicalPropertyKind, AnnotationValue<DataVaultLogicalPropertyKind>(
         property,
         DataVaultAnnotationNames.ProviderLogicalPropertyKind));

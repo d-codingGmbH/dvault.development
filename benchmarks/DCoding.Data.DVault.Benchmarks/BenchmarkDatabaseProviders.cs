@@ -77,6 +77,8 @@ internal static class BenchmarkDatabaseProviders {
 
       return new TempPostgresSchemaDatabase(_connectionString);
     }
+
+    public override DataVaultProviderCapabilityProfile ProviderCapabilities => DataVaultProviderCapabilityProfiles.Postgres;
   }
 
   private sealed class SqlServerBenchmarkDatabaseProvider : BenchmarkDatabaseProvider {
@@ -97,6 +99,8 @@ internal static class BenchmarkDatabaseProviders {
 
       return new TempSqlServerDatabase(_connectionString);
     }
+
+    public override DataVaultProviderCapabilityProfile ProviderCapabilities => DataVaultProviderCapabilityProfiles.SqlServer;
   }
 
   private sealed class MySqlBenchmarkDatabaseProvider : BenchmarkDatabaseProvider {

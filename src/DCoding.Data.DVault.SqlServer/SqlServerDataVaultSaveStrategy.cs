@@ -40,7 +40,7 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
     cancellationToken.ThrowIfCancellationRequested();
 
     var uniquePlans = CreateUniqueRowSavePlans(context);
-    var satellitePlans = CreateSatelliteSavePlans(context.ResolvedRequests);
+    var satellitePlans = CreateSatelliteSavePlansForContext(context);
     if (uniquePlans.Count == 0 && satellitePlans.Count == 0) {
       return new DataVaultSaveResult(0, []);
     }
@@ -390,7 +390,11 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
     var hashKey = ComputeHash(context, businessKeyFields);
     var row = new Dictionary<string, object> {
       [projection.HashKeyColumnName] = hashKey,
-      [projection.LoadTimestampColumnName] = request.LoadTimestamp,
+      [projection.LoadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          context.DbContext,
+          projection.TableName,
+          projection.LoadTimestampColumnName,
+          request.LoadTimestamp),
       [projection.RecordSourceColumnName] = request.RecordSource,
     };
 
@@ -422,7 +426,11 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
     var linkHashKey = ComputeHash(context, participantHashKeyFields);
     var row = new Dictionary<string, object> {
       [projection.LinkHashKeyColumnName] = linkHashKey,
-      [projection.LoadTimestampColumnName] = request.LoadTimestamp,
+      [projection.LoadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          context.DbContext,
+          projection.TableName,
+          projection.LoadTimestampColumnName,
+          request.LoadTimestamp),
       [projection.RecordSourceColumnName] = request.RecordSource,
     };
 
@@ -438,15 +446,24 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
         Ordinal: -1);
   }
 
+  private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlansForContext(DataVaultProviderSaveStrategyContext context) {
+    return context.ResolvedRequests
+        .SelectMany(request => request.Request.SatelliteOperations
+            .Select(operation => CreateSatelliteSavePlan(context.DbContext, request, operation)))
+        .Select((plan, index) => plan with { Ordinal = index })
+        .ToArray();
+  }
+
   private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(IReadOnlyList<DataVaultResolvedSaveRequest> requests) {
     return requests
         .SelectMany(request => request.Request.SatelliteOperations
-            .Select(operation => CreateSatelliteSavePlan(request, operation)))
+            .Select(operation => CreateSatelliteSavePlan(null, request, operation)))
         .Select((plan, index) => plan with { Ordinal = index })
         .ToArray();
   }
 
   private static SatelliteSavePlan CreateSatelliteSavePlan(
+      DbContext? dbContext,
       DataVaultResolvedSaveRequest request,
       DataVaultSatelliteSaveOperation operation) {
     var projection = CreateSatelliteProjection(operation.Metadata);
@@ -458,7 +475,13 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
     var row = new Dictionary<string, object> {
       [projection.ParentHashKeyColumnName] = operation.ParentHashKey,
       [projection.HashDiffColumnName] = operation.HashDiff,
-      [projection.LoadTimestampColumnName] = request.LoadTimestamp,
+      [projection.LoadTimestampColumnName] = dbContext is null
+          ? request.LoadTimestamp.ToUniversalTime()
+          : DataVaultLoadTimestampValueConverter.ToProviderValue(
+              dbContext,
+              projection.TableName,
+              projection.LoadTimestampColumnName,
+              request.LoadTimestamp),
       [projection.RecordSourceColumnName] = request.RecordSource,
     };
 
@@ -788,35 +811,7 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
   }
 
   private static DateTimeOffset GetRequiredDateTimeOffset(DbDataReader reader, int ordinal) {
-    var value = reader.GetValue(ordinal);
-    if (value is DateTimeOffset dateTimeOffset) {
-      return dateTimeOffset.ToUniversalTime();
-    }
-
-    if (value is DateTime dateTime) {
-      if (dateTime.Kind == DateTimeKind.Unspecified) {
-        dateTime = DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
-      }
-
-      return new DateTimeOffset(dateTime).ToUniversalTime();
-    }
-
-    if (value is string text) {
-      return DateTimeOffset.Parse(
-          text,
-          CultureInfo.InvariantCulture,
-          DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
-    }
-
-    var converted = Convert.ToString(value, CultureInfo.InvariantCulture);
-    if (!string.IsNullOrWhiteSpace(converted)) {
-      return DateTimeOffset.Parse(
-          converted,
-          CultureInfo.InvariantCulture,
-          DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
-    }
-
-    throw new InvalidOperationException("SQL Server Data Vault latest satellite lookup returned a null load timestamp.");
+    return DataVaultLoadTimestampValueConverter.ReadProviderValue(reader.GetValue(ordinal));
   }
 
   private static SqlServerTableIdentifier ResolveTable(DbContext dbContext, string producedName) {

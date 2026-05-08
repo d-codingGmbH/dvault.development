@@ -40,7 +40,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     ArgumentNullException.ThrowIfNull(context);
 
     var uniquePlans = CreateUniqueRowSavePlans(context);
-    var satellitePlans = CreateSatelliteSavePlans(context.ResolvedRequests);
+    var satellitePlans = CreateSatelliteSavePlans(context);
     var connection = context.DbContext.Database.GetDbConnection();
     var shouldCloseConnection = connection.State != ConnectionState.Open;
     if (shouldCloseConnection) {
@@ -203,7 +203,11 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     var hashKey = ComputeHash(context, businessKeyFields);
     var row = new Dictionary<string, object> {
       [hashKeyColumnName] = hashKey,
-      [loadTimestampColumnName] = FormatLoadTimestamp(request.LoadTimestamp),
+      [loadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          context.DbContext,
+          tableName,
+          loadTimestampColumnName,
+          request.LoadTimestamp),
       [recordSourceColumnName] = request.RecordSource,
     };
 
@@ -245,7 +249,11 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     var linkHashKey = ComputeHash(context, participantHashKeyFields);
     var row = new Dictionary<string, object> {
       [linkHashKeyColumnName] = linkHashKey,
-      [loadTimestampColumnName] = FormatLoadTimestamp(request.LoadTimestamp),
+      [loadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          context.DbContext,
+          tableName,
+          loadTimestampColumnName,
+          request.LoadTimestamp),
       [recordSourceColumnName] = request.RecordSource,
     };
 
@@ -260,15 +268,16 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
         new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, tableName, linkHashKey));
   }
 
-  private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(IReadOnlyList<DataVaultResolvedSaveRequest> requests) {
-    return requests
+  private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(DataVaultProviderSaveStrategyContext context) {
+    return context.ResolvedRequests
         .SelectMany(request => request.Request.SatelliteOperations
-            .Select(operation => CreateSatelliteSavePlan(request, operation)))
+            .Select(operation => CreateSatelliteSavePlan(context.DbContext, request, operation)))
         .Select((plan, index) => plan with { Ordinal = index })
         .ToArray();
   }
 
   private static SatelliteSavePlan CreateSatelliteSavePlan(
+      DbContext dbContext,
       DataVaultResolvedSaveRequest request,
       DataVaultSatelliteSaveOperation operation) {
     var satellite = operation.Metadata;
@@ -293,7 +302,11 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     var row = new Dictionary<string, object> {
       [parentHashKeyColumnName] = operation.ParentHashKey,
       [hashDiffColumnName] = operation.HashDiff,
-      [loadTimestampColumnName] = FormatLoadTimestamp(request.LoadTimestamp),
+      [loadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          dbContext,
+          tableName,
+          loadTimestampColumnName,
+          request.LoadTimestamp),
       [recordSourceColumnName] = request.RecordSource,
     };
 
@@ -548,35 +561,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   }
 
   private static DateTimeOffset GetRequiredDateTimeOffset(DbDataReader reader, int ordinal) {
-    var value = reader.GetValue(ordinal);
-    if (value is DateTimeOffset dateTimeOffset) {
-      return dateTimeOffset.ToUniversalTime();
-    }
-
-    if (value is DateTime dateTime) {
-      if (dateTime.Kind == DateTimeKind.Unspecified) {
-        dateTime = DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
-      }
-
-      return new DateTimeOffset(dateTime).ToUniversalTime();
-    }
-
-    if (value is string text) {
-      return DateTimeOffset.Parse(
-          text,
-          CultureInfo.InvariantCulture,
-          DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
-    }
-
-    var converted = Convert.ToString(value, CultureInfo.InvariantCulture);
-    if (!string.IsNullOrWhiteSpace(converted)) {
-      return DateTimeOffset.Parse(
-          converted,
-          CultureInfo.InvariantCulture,
-          DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
-    }
-
-    throw new InvalidOperationException("MySQL Data Vault latest satellite lookup returned a null load timestamp.");
+    return DataVaultLoadTimestampValueConverter.ReadProviderValue(reader.GetValue(ordinal));
   }
 
   private static string QuoteMySqlIdentifier(string identifier) {
@@ -585,10 +570,6 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
 
   private static string CreateColumnSignature(IEnumerable<string> columns) {
     return string.Join('\u001f', columns);
-  }
-
-  private static string FormatLoadTimestamp(DateTimeOffset timestamp) {
-    return timestamp.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
   }
 
   private static string ComputeHash(

@@ -34,7 +34,7 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     ArgumentNullException.ThrowIfNull(context);
 
     var uniquePlans = CreateUniqueRowSavePlans(context);
-    var satellitePlans = CreateSatelliteSavePlans(context.ResolvedRequests);
+    var satellitePlans = CreateSatelliteSavePlans(context);
 
     if (uniquePlans.Count == 0 && satellitePlans.Count == 0) {
       return new DataVaultSaveResult(0, []);
@@ -152,7 +152,11 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     var hashKey = ComputeHash(context, businessKeyFields);
     var row = new Dictionary<string, object> {
       [hashKeyColumnName] = hashKey,
-      [loadTimestampColumnName] = request.LoadTimestamp,
+      [loadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          context.DbContext,
+          tableName,
+          loadTimestampColumnName,
+          request.LoadTimestamp),
       [recordSourceColumnName] = request.RecordSource,
     };
 
@@ -194,7 +198,11 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     var linkHashKey = ComputeHash(context, participantHashKeyFields);
     var row = new Dictionary<string, object> {
       [linkHashKeyColumnName] = linkHashKey,
-      [loadTimestampColumnName] = request.LoadTimestamp,
+      [loadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          context.DbContext,
+          tableName,
+          loadTimestampColumnName,
+          request.LoadTimestamp),
       [recordSourceColumnName] = request.RecordSource,
     };
 
@@ -209,15 +217,16 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
         new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, tableName, linkHashKey));
   }
 
-  private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(IReadOnlyList<DataVaultResolvedSaveRequest> requests) {
-    return requests
+  private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(DataVaultProviderSaveStrategyContext context) {
+    return context.ResolvedRequests
         .SelectMany(request => request.Request.SatelliteOperations
-            .Select(operation => CreateSatelliteSavePlan(request, operation)))
+            .Select(operation => CreateSatelliteSavePlan(context.DbContext, request, operation)))
         .Select((plan, index) => plan with { Ordinal = index })
         .ToArray();
   }
 
   private static SatelliteSavePlan CreateSatelliteSavePlan(
+      DbContext dbContext,
       DataVaultResolvedSaveRequest request,
       DataVaultSatelliteSaveOperation operation) {
     var satellite = operation.Metadata;
@@ -242,7 +251,11 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     var row = new Dictionary<string, object> {
       [parentHashKeyColumnName] = operation.ParentHashKey,
       [hashDiffColumnName] = operation.HashDiff,
-      [loadTimestampColumnName] = request.LoadTimestamp,
+      [loadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          dbContext,
+          tableName,
+          loadTimestampColumnName,
+          request.LoadTimestamp),
       [recordSourceColumnName] = request.RecordSource,
     };
 
@@ -551,20 +564,7 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
   }
 
   private static DateTimeOffset ReadDateTimeOffset(DbDataReader reader, int ordinal) {
-    var value = reader.GetValue(ordinal);
-
-    return value switch {
-      DateTimeOffset timestampOffset => timestampOffset.ToUniversalTime(),
-      DateTime timestampValue => new DateTimeOffset(DateTime.SpecifyKind(timestampValue, DateTimeKind.Utc)).ToUniversalTime(),
-      string timestampText => DateTimeOffset.Parse(
-          timestampText,
-          CultureInfo.InvariantCulture,
-          DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal),
-      _ => throw new InvalidOperationException(
-          "PostgreSQL Data Vault save strategy expected a load timestamp value but received '" +
-          value.GetType().FullName +
-          "'."),
-    };
+    return DataVaultLoadTimestampValueConverter.ReadProviderValue(reader.GetValue(ordinal));
   }
 
   private static string CreatePostgresParameterName(int index) {

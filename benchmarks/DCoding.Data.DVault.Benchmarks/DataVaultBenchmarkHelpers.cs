@@ -87,6 +87,10 @@ internal static class DataVaultBenchmarkHelpers {
           dateTime.Kind == DateTimeKind.Unspecified
               ? DateTime.SpecifyKind(dateTime, DateTimeKind.Utc)
               : dateTime).ToUniversalTime(),
+      long ticks => new DateTimeOffset(new DateTime(ticks, DateTimeKind.Utc)),
+      int ticks => new DateTimeOffset(new DateTime(ticks, DateTimeKind.Utc)),
+      decimal ticks when ticks == decimal.Truncate(ticks) && ticks >= long.MinValue && ticks <= long.MaxValue =>
+          new DateTimeOffset(new DateTime((long)ticks, DateTimeKind.Utc)),
       string text => DateTimeOffset.Parse(
           text,
           CultureInfo.InvariantCulture,

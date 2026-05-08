@@ -15,6 +15,9 @@ public static class DVaultPostgresServiceCollectionExtensions {
   public static IServiceCollection AddDVaultPostgres(this IServiceCollection services) {
     ArgumentNullException.ThrowIfNull(services);
 
+    DataVaultProviderCapabilityProfileSelection.Register(
+        PostgresDataVaultSaveStrategy.NpgsqlProviderName,
+        DataVaultProviderCapabilityProfiles.Postgres);
     services.AddDVault();
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBehavior, PostgresDataVaultProviderBehavior>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, PostgresDataVaultSaveStrategy>());
