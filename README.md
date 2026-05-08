@@ -203,7 +203,7 @@ The shared-type table names and columns in this quickstart follow DVault's defau
 
 ## Deferred Capabilities
 
-PIT tables, bridge tables, and multi-active satellites remain opt-in v0.5 capabilities rather than part of ordinary hub, link, and satellite setup. Multi-active satellite support is limited to the driving-key modeling, projection, and explicit-save baseline described above. The current bridge documentation baseline is in `docs/plans/deferred-data-vault-capabilities.md`; it states that the visible source projects no bridge-specific EF metadata output or annotation contract and includes one conceptual many-to-many traversal scenario without defining a bridge runtime API.
+PIT tables, bridge tables, and multi-active satellites remain opt-in v0.5 capabilities rather than part of ordinary hub, link, and satellite setup. Multi-active satellite support is limited to the driving-key modeling, projection, and explicit-save baseline described above. The current bridge documentation baseline is in `docs/plans/deferred-data-vault-capabilities.md`; it reflects the implemented `DataVaultBridgeMetadata`/`DataVaultMetadataModel.Bridges` metadata surface and the bounded `ApplyDataVaultMetadata()` projection for many-to-many endpoint hash-key bridges and hierarchy bridges with `TraversalDepth`. Bridge row population, traversal maintenance, generated EF relationships or navigations, provider-specific DDL, PIT interactions, and multi-active interactions remain future scope.
 
 ## Layout
 

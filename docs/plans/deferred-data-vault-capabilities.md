@@ -1,6 +1,6 @@
 # Deferred Data Vault Capability Decision Record
 
-Status: v0.5 architecture decision with PIT metadata baseline
+Status: v0.5 architecture decision with PIT and bridge metadata baselines
 Ticket: 06EZ0NSHJVC9SD2KS6PWWNHPJM
 Decision date: 2026-05-05
 
@@ -8,7 +8,7 @@ Decision date: 2026-05-05
 
 This record publishes the v0.5 architecture stance for deferred Data Vault capability families. It consolidates the earlier deferred-capabilities note and the optional advanced-configuration hook plan into one governing reference for PIT tables, bridge tables, multi-active satellites, and the hooks those features will need.
 
-The record is intentionally architecture-level. It does not implement runtime behavior, define provider-specific optimization posture, or replace the current MVP hub, link, satellite, and SQLite-oriented baseline. The PIT story now adds one bounded public metadata baseline for opt-in EF table projection while leaving PIT population and refresh behavior deferred.
+The record is intentionally architecture-level. It does not implement runtime row population behavior, define provider-specific optimization posture, or replace the current MVP hub, link, satellite, and SQLite-oriented baseline. The PIT and bridge stories now add bounded public metadata baselines for opt-in EF table projection while leaving PIT refresh, bridge traversal maintenance, and provider-specific physical behavior deferred.
 
 ## Decision
 
@@ -21,7 +21,7 @@ DVault v0.5 keeps the default path small and convention-first. The current basel
 - The explicit `IDataVaultSaveService` write boundary, where callers supply load timestamp, record source, and vault row intent instead of relying on hidden `SaveChanges` interception.
 - SQLite-backed examples, tests, and benchmark expectations as the required local baseline.
 
-PIT table projection, bridge table generation, and multi-active satellites are v0.5 deferred capability families. They are valuable expansion work, but they are opt-in and must not become prerequisites for ordinary hub, link, and satellite setup. For PIT, v0.5 supports only the provider-neutral metadata projection baseline documented below; row population, refresh orchestration, provider-specific physical optimization, link-based PITs, and multi-active PIT semantics remain deferred.
+PIT table projection, bridge metadata projection, and multi-active satellites are v0.5 opt-in capability families. They are valuable expansion work, but they must not become prerequisites for ordinary hub, link, and satellite setup. For PIT, v0.5 supports only the provider-neutral metadata projection baseline documented below; row population, refresh orchestration, provider-specific physical optimization, link-based PITs, and multi-active PIT semantics remain deferred. For bridge tables, v0.5 supports the source-backed provider-neutral metadata and EF shared-type projection baseline documented below; bridge row population, traversal maintenance, provider-specific physical optimization, complex traversal semantics, advanced hierarchy behavior, and PIT or multi-active interactions remain deferred.
 
 Advanced hooks are also opt-in. Naming, hashing, record source, timestamp, and provider behavior may become configurable extension categories, but unset hooks inherit the default behavior. Future hook implementations can wrap or replace only their own category and must not make normal DVault setup require configuration.
 
@@ -34,11 +34,11 @@ The deferred capability families need additional decisions that are not required
 | Capability family | Planning value | Why it stays opt-in for v0.5 | Downstream owner |
 | --- | --- | --- | --- |
 | PIT tables | Point-in-time tables can simplify historical joins across multiple satellites and make time-sliced reads easier for consumers. | The v0.5 PIT story supports only explicit metadata-driven EF projection for one hub plus ordered hub-attached satellite snapshots. Refresh strategy, temporal grain, persisted maintenance, late-arriving reconciliation, link-based PITs, multi-active PITs, and physical optimization stay deferred. | PIT story `06EZ0NSXY2Y1JZ8SSCX177C770` |
-| Bridge tables | Bridge tables can support many-to-many traversal, hierarchy flattening, and downstream relationship query ergonomics. | Bridge generation depends on relationship semantics, hierarchy depth, business rules, consuming workload expectations, and maintenance strategy. Those assumptions are outside ordinary link projection. | Bridge story `06EZ0NTV4SVAKV98C418T8A3CC` |
+| Bridge tables | Bridge tables can support many-to-many traversal, hierarchy flattening, and downstream relationship query ergonomics. | The v0.5 bridge story supports only explicit metadata declarations, validation against declared hubs and links, and provider-neutral EF projection for bounded many-to-many and hierarchy shapes. Row population, traversal maintenance, deeper hierarchy semantics, provider-specific tuning, and PIT or multi-active interactions stay deferred. | Bridge story `06EZ0NTV4SVAKV98C418T8A3CC` |
 | Multi-active satellites | Multi-active satellites can represent multiple simultaneous descriptive records for one parent at the same load window. | Multi-active modeling needs explicit driving-key, uniqueness, ordering, conflict, and example decisions beyond the current parent hash key plus load timestamp satellite shape. | Multi-active story `06EZ0NVN71BN0QWJDCWGVZ2PYG` |
 | Advanced hooks | Hooks let advanced users adapt naming, hashing, lineage, timestamps, and provider behavior without destabilizing defaults. | Hook behavior must be scoped by category, validated clearly, and kept additive. It should not force API or configuration depth into the ordinary setup path before concrete implementation work needs it. | Hooks story `06EZ0NWKC9ZME5BSCJFSQEQ02R` |
 
-The API snapshot task `06EZ0NSQFCD3W4CDCJ44GFSKA0` should use this decision as the architecture guardrail for future public-surface checks. It should not infer concrete bridge, multi-active, or hook API names from this record. The PIT baseline described here is intentionally limited to `DataVaultPitMetadata`, `DataVaultPitSatelliteReferenceMetadata`, and `DataVaultMetadataModel.Pits`.
+The API snapshot task `06EZ0NSQFCD3W4CDCJ44GFSKA0` should use this decision as the architecture guardrail for future public-surface checks. It should not infer multi-active or hook API names from this record. The PIT baseline described here is intentionally limited to `DataVaultPitMetadata`, `DataVaultPitSatelliteReferenceMetadata`, and `DataVaultMetadataModel.Pits`. The bridge baseline described here is intentionally limited to `DataVaultBridgeMetadata`, `DataVaultBridgeKind`, `DataVaultMetadataModel.Bridges`, `DataVaultTableKind.Bridge`, `DataVaultPropertyRole.BridgeDepth`, `DataVaultLogicalPropertyKind.BridgeDepth`, and provider-neutral `ApplyDataVaultMetadata()` projection for many-to-many and hierarchy declarations.
 
 ## Current Support Versus Expansion Points
 
@@ -52,19 +52,21 @@ Supported or assumed now:
 - `ApplyDataVaultMetadata()` remains the convention-first projection path for the current metadata model.
 - `DataVaultMetadataModel.Pits` carries explicit opt-in PIT declarations through `DataVaultPitMetadata` and ordered `DataVaultPitSatelliteReferenceMetadata` items.
 - `ApplyDataVaultMetadata()` projects the supported PIT baseline as provider-aware EF shared-type metadata when a PIT declaration resolves to one declared hub and one or more unique, non-multi-active satellites attached to that hub.
+- `DataVaultMetadataModel.Bridges` carries explicit opt-in bridge declarations through `DataVaultBridgeMetadata` and `DataVaultBridgeKind.ManyToMany` or `DataVaultBridgeKind.Hierarchy`.
+- `ApplyDataVaultMetadata()` projects the supported bridge baseline as provider-aware EF shared-type metadata when a bridge declaration resolves to the declared hubs and source link. Many-to-many bridges project ordered endpoint hash-key columns; hierarchy bridges project ancestor and descendant endpoint hash-key columns plus integer `TraversalDepth`.
 - The explicit save service remains the caller-visible persistence boundary and keeps provider-specific save strategy dispatch separate from the core caller contract.
 - SQLite local execution remains the required example and validation baseline.
 
 Expansion points for later tickets:
 
 - PIT refresh semantics, supported temporal grain, row population, persisted versus computed read models, link-based PITs, and multi-active PIT semantics.
-- Bridge relationship and hierarchy scenarios, validation rules, and maintenance strategy.
+- Advanced bridge traversal semantics, bridge row population, maintenance strategy, hierarchy edge cases, PIT interactions, multi-active interactions, and provider-specific physical behavior.
 - Multi-active satellite driving keys, uniqueness rules, conflict behavior, and examples.
 - Advanced hook implementation depth for naming, hashing, record source, timestamp, and provider behavior.
 - Public API stability, experimental markings, and snapshot expectations for any new hook or deferred-capability surface.
 - Provider-specific physical behavior only where separate provider tickets own it.
 
-Unsupported advanced shapes for the current baseline include automatic PIT population or refresh, link-based PITs, multi-active PIT snapshot semantics, generated bridge tables, multi-active satellite projection or loading behavior, required custom hook configuration, provider-specific hook matrices, and final public APIs for deferred features outside the bounded PIT metadata baseline.
+Unsupported advanced shapes for the current baseline include automatic PIT population or refresh, link-based PITs, multi-active PIT snapshot semantics, bridge row population or maintenance, bridge effectivity-window columns, bridge path payload columns, bridge closure-maintenance state, generated EF bridge relationships or navigations, required custom hook configuration, provider-specific hook matrices, and final public APIs for deferred features outside the bounded PIT and bridge metadata baselines.
 
 ## PIT Metadata Baseline
 
@@ -100,13 +102,41 @@ The repository still contains the older public `DataVaultPointInTimeMetadata` an
 
 ## Bridge Documentation Baseline
 
-Bridge tables remain an opt-in v0.5 deferred capability layered on the current hub, link, and satellite baseline. They are not part of ordinary DVault setup, they are not required by `AddDVault()`, `UseDataVault()`, `ApplyDataVaultMetadata()`, or `IDataVaultSaveService`, and they do not change the current explicit save-service boundary.
+Bridge tables remain an opt-in v0.5 capability layered on the current hub, link, and satellite baseline. They are not part of ordinary DVault setup, they are not required by `AddDVault()`, `UseDataVault()`, or `IDataVaultSaveService`, and they do not change the current explicit save-service boundary. `ApplyDataVaultMetadata()` does support the bounded bridge metadata projection baseline when callers supply explicit bridge declarations.
 
-The visible repository baseline does not expose a bridge runtime surface today. `DataVaultEfMetadataTranslator` creates EF projections for hubs, links, and satellites only. `DataVaultAnnotationNames` exposes provider-neutral annotation names for conventions, produced names, entity kind, metadata name, parent reference, ordinal, property role, technical column role, and provider metadata, but it does not define a bridge-specific annotation contract. This record therefore documents bridge tables as deferred architecture context rather than as implemented EF metadata output, generated table names, save behavior, or a public modeling API.
+The source-backed baseline exposes bridge metadata in `DCoding.Data.DVault.Modeling`. A bridge declaration uses `DataVaultBridgeMetadata` with `DataVaultBridgeKind.ManyToMany` or `DataVaultBridgeKind.Hierarchy`, references one source link, binds the endpoint hubs through ordered participant selectors, and is carried on `DataVaultMetadataModel.Bridges`. Metadata validation requires referenced hubs and links to exist, rejects endpoint selectors that do not match the source link, rejects ambiguous hierarchy role binding, and rejects hierarchy self-cycles where ancestor and descendant use the same participant ordinal.
 
-Conceptual deferred bridge-use-case example: a reporting consumer may need to traverse from Customer to Product when the current Data Vault model stores Customer, Order, and Product as hubs and stores the relationships through ordinary links such as CustomerOrder and OrderProduct. A future opt-in bridge capability could support that many-to-many Customer-to-Product traversal as a relationship-query convenience around the existing hub and link baseline. This is not a source-backed API walkthrough, does not prescribe a bridge table name or shape, and does not imply current runtime support beyond the existing hub, link, satellite, metadata projection, and explicit save-service vocabulary.
+`DataVaultEfMetadataTranslator` translates supported bridge declarations into provider-aware EF shared-type metadata. The produced entity carries `DataVaultTableKind.Bridge`, `MetadataName`, `ProducedName`, provider capability annotations, participant-reference endpoint hash-key properties, and no EF foreign keys or navigations. A many-to-many bridge projects only the ordered endpoint hash-key columns. A hierarchy bridge projects ordered ancestor and descendant hash-key columns plus `TraversalDepth`, where `TraversalDepth` uses `DataVaultPropertyRole.BridgeDepth`, `DataVaultLogicalPropertyKind.BridgeDepth`, CLR `int`, and the active provider capability profile's integer storage mapping.
 
-Bridge hierarchy-specific behavior, including hierarchy flattening depth and recursive traversal behavior, is unsupported in the current baseline. Provider-specific bridge DDL, indexes, migrations, native SQL, and maintenance strategies are deferred to later provider-scoped tickets. PIT interactions and multi-active satellite interactions are also deferred unless later tickets define their contracts explicitly.
+Source-backed many-to-many metadata example:
+
+```csharp
+var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+var customerOrder = new DataVaultLinkMetadata(
+    "CustomerOrder",
+    [customer.ToReference(), order.ToReference()]);
+var customerOrderBridge = DataVaultBridgeMetadata.ManyToMany(
+    "CustomerOrder",
+    customer.ToReference(),
+    customerOrder.ToReference(),
+    order.ToReference(),
+    sourceParticipantOrdinal: 0,
+    targetParticipantOrdinal: 1);
+
+modelBuilder.ApplyDataVaultMetadata(
+    new DataVaultMetadataModel(
+        [customer, order],
+        [customerOrder],
+        [],
+        [customerOrderBridge]));
+```
+
+The default EF projection for that bridge is `BridgeCustomerOrder` with ordered columns `[CustomerHashKey, OrderHashKey]`, primary key `PkBridgeCustomerOrderCustomerHashKeyOrderHashKey`, and traversal index `IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey`. The endpoint properties use participant-reference role annotations, retain produced names equal to the column names, and retain metadata names `Customer` and `Order`.
+
+For the source-backed hierarchy example, `DataVaultBridgeMetadata.Hierarchy("SalesRegionHierarchy", ...)` over a recursive `SalesRegionParentChild` link projects `BridgeSalesRegionHierarchy` with ordered columns `[AncestorSalesRegionHashKey, DescendantSalesRegionHashKey, TraversalDepth]`, primary key `PkBridgeSalesRegionHierarchyAncestorSalesRegionHashKeyDescendantSalesRegionHashKey`, and traversal indexes over `[AncestorSalesRegionHashKey, TraversalDepth]` and `[DescendantSalesRegionHashKey, AncestorSalesRegionHashKey]`. This is schema metadata only; it does not compute transitive closure, flatten hierarchy rows, populate traversal depth values, or enforce provider-specific recursive-query behavior.
+
+Bridge behavior beyond that baseline remains deferred. Unsupported bridge projection features include effectivity windows, path payload columns, closure maintenance state, generated EF relationship graph metadata, provider-specific DDL or SQL, migrations, indexes beyond the provider-neutral metadata baseline, bridge row population, traversal refresh, and PIT or multi-active satellite interactions unless later tickets define those contracts explicitly.
 
 ## Hook Stance
 
@@ -124,7 +154,7 @@ Unset hooks inherit the documented defaults. Users should be able to configure o
 
 Provider-specific save strategies and provider-name capability-profile registration remain separate architecture concerns documented by `docs/architecture/dvault-v1-explicit-save-service.md`. This record references that boundary but does not broaden it.
 
-Future PIT, bridge, multi-active, or hook tickets may identify provider implications, but they must make provider-specific commitments explicitly in their own scope. The PIT metadata baseline uses existing provider capability mappings for logical EF properties, but this record does not promise provider-specific DDL beyond generated EF metadata, indexing, migrations, native SQL, optimization depth, or provider option matrices for deferred capabilities.
+Future PIT, bridge, multi-active, or hook tickets may identify provider implications, but they must make provider-specific commitments explicitly in their own scope. The PIT and bridge metadata baselines use existing provider capability mappings for logical EF properties, including bridge hierarchy depth, but this record does not promise provider-specific DDL beyond generated EF metadata, indexing, migrations, native SQL, optimization depth, or provider option matrices for deferred capabilities.
 
 ## Downstream Ownership
 
@@ -140,9 +170,9 @@ Those owners can proceed without reopening whether PIT, bridge, multi-active, an
 
 ## Guardrails
 
-- Do not treat opt-in PIT metadata projection, bridge table generation, multi-active satellites, or advanced hooks as requirements for ordinary DVault setup.
+- Do not treat opt-in PIT metadata projection, bridge metadata projection, multi-active satellites, or advanced hooks as requirements for ordinary DVault setup.
 - Do not change `AddDVault()`, `UseDataVault()`, or the explicit save-service caller contract merely to satisfy this decision record; keep `ApplyDataVaultMetadata()` limited to explicit metadata projection.
-- Do not infer concrete bridge, multi-active, hook, configuration file, or provider option API shapes from this record.
+- Do not infer bridge behavior outside the source-backed metadata projection baseline, or concrete multi-active, hook, configuration file, or provider option API shapes from this record.
 - Do not require custom configuration for existing hub, link, and satellite modeling.
 - Do not replace SQLite-oriented examples or tests with advanced capability examples.
 - Do not move provider-specific optimization scope into a deferred capability ticket unless that ticket explicitly owns the provider decision.
@@ -152,4 +182,4 @@ Those owners can proceed without reopening whether PIT, bridge, multi-active, an
 - `docs/architecture/mvp-data-vault-concepts.md` remains the concept baseline for hubs, links, satellites, hash keys, hash diffs, load timestamps, record sources, and SQLite-friendly examples.
 - `docs/plans/optional-advanced-configuration-hooks.md` remains the detailed hook planning input. This decision record ratifies its default-first, optional, additive hook stance for v0.5 deferred capability work.
 - `docs/architecture/dvault-v1-explicit-save-service.md` remains the explicit save-service and provider-specific save-strategy boundary. Deferred capabilities must extend around that boundary rather than silently replacing it.
-- Current source evidence keeps `AddDVault()` optionless, routes metadata projection through `UseDataVault()` and `ApplyDataVaultMetadata()`, defaults model metadata to the SQLite capability profile, projects hub, link, and satellite EF shapes, and adds PIT EF projection only when `DataVaultMetadataModel.Pits` contains explicit declarations.
+- Current source evidence keeps `AddDVault()` optionless, routes metadata projection through `UseDataVault()` and `ApplyDataVaultMetadata()`, defaults model metadata to the SQLite capability profile, projects hub, link, satellite, PIT, and bounded bridge EF shapes, and adds PIT or bridge EF projection only when `DataVaultMetadataModel.Pits` or `DataVaultMetadataModel.Bridges` contains explicit declarations.

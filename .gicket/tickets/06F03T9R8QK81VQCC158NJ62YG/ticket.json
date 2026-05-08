@@ -3,19 +3,18 @@
   "ticket-id": "06F03T9R8QK81VQCC158NJ62YG",
   "ticket-type": "task",
   "title": "Task: Reconcile bridge documentation with implemented baseline",
-  "revision": "06F0CG1PVVCYQNYN1YM5GBHK00",
-  "status": "todo",
+  "revision": "06F0CY4HE8CZ5ASQVCM9F0FWK8",
+  "status": "done",
   "labels": [
-    "type/task",
-    "automation/bot-ready",
     "area/bridge",
     "area/docs",
     "area/examples",
-    "needs-dev"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-07T10:08:42.6789921Z",
-  "updated-at": "2026-05-08T06:22:12.1900000Z"
+  "updated-at": "2026-05-08T07:23:45.3941645Z"
 }
