@@ -2,8 +2,10 @@ using System.Data;
 using System.Data.Common;
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DCoding.Data.DVault;
@@ -12,6 +14,7 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
   private const int SqlServerMaxCommandParameterCount = 2000;
   private const int MinimumOptimizedBatchOperationCount = 50;
   private const int MaximumOptimizedSatelliteOperationCount = 500;
+  private const int SqlServerOpenJsonInsertMinimumRowCount = 32;
   private const string OrdinalColumnName = "__dvault_ordinal";
   private const string RowNumberColumnName = "__dvault_row_number";
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
@@ -165,6 +168,37 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
         new SqlServerTableIdentifier(tableName, null),
         columns,
         rowCount);
+  }
+
+  internal static string CreateSqlServerJsonUniqueInsertCommandText(
+      string tableName,
+      IReadOnlyList<string> columns,
+      string hashKeyColumnName,
+      IReadOnlyDictionary<string, string> columnTypes) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
+    ArgumentNullException.ThrowIfNull(columns);
+    ArgumentException.ThrowIfNullOrWhiteSpace(hashKeyColumnName);
+    ArgumentNullException.ThrowIfNull(columnTypes);
+
+    return CreateSqlServerJsonUniqueInsertCommandText(
+        new SqlServerTableIdentifier(tableName, null),
+        columns,
+        hashKeyColumnName,
+        columnTypes);
+  }
+
+  internal static string CreateSqlServerJsonInsertCommandText(
+      string tableName,
+      IReadOnlyList<string> columns,
+      IReadOnlyDictionary<string, string> columnTypes) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
+    ArgumentNullException.ThrowIfNull(columns);
+    ArgumentNullException.ThrowIfNull(columnTypes);
+
+    return CreateSqlServerJsonInsertCommandText(
+        new SqlServerTableIdentifier(tableName, null),
+        columns,
+        columnTypes);
   }
 
   internal static bool CanSaveProvider(string? providerName, bool hasPendingTrackedChanges) {
@@ -364,12 +398,102 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
     return builder.ToString();
   }
 
+  private static string CreateSqlServerJsonUniqueInsertCommandText(
+      SqlServerTableIdentifier table,
+      IReadOnlyList<string> columns,
+      string hashKeyColumnName,
+      IReadOnlyDictionary<string, string> columnTypes) {
+    var sourceColumns = new[] { OrdinalColumnName }.Concat(columns).ToArray();
+    var builder = new StringBuilder();
+
+    builder.Append("WITH ")
+        .Append(QuoteSqlServerIdentifier("source"))
+        .Append(" AS (SELECT ");
+    AppendQualifiedIdentifierList(builder, "payload", sourceColumns);
+    builder.Append(" FROM OPENJSON(@p0) WITH (");
+    AppendOpenJsonColumnList(builder, sourceColumns, columnTypes);
+    builder.Append(") AS ")
+        .Append(QuoteSqlServerIdentifier("payload"))
+        .Append("), ")
+        .Append(QuoteSqlServerIdentifier("deduplicated"))
+        .Append(" AS (SELECT ");
+    AppendQualifiedIdentifierList(builder, "source", columns);
+    builder.Append(", ROW_NUMBER() OVER (PARTITION BY ")
+        .Append(QuoteSqlServerIdentifier("source"))
+        .Append('.')
+        .Append(QuoteSqlServerIdentifier(hashKeyColumnName))
+        .Append(" ORDER BY ")
+        .Append(QuoteSqlServerIdentifier("source"))
+        .Append('.')
+        .Append(QuoteSqlServerIdentifier(OrdinalColumnName))
+        .Append(") AS ")
+        .Append(QuoteSqlServerIdentifier(RowNumberColumnName))
+        .Append(" FROM ")
+        .Append(QuoteSqlServerIdentifier("source"))
+        .Append(") INSERT INTO ")
+        .Append(QuoteSqlServerTable(table))
+        .Append(" (");
+    AppendIdentifierList(builder, columns);
+    builder.Append(") SELECT ");
+    AppendQualifiedIdentifierList(builder, "deduplicated", columns);
+    builder.Append(" FROM ")
+        .Append(QuoteSqlServerIdentifier("deduplicated"))
+        .Append(" WHERE ")
+        .Append(QuoteSqlServerIdentifier("deduplicated"))
+        .Append('.')
+        .Append(QuoteSqlServerIdentifier(RowNumberColumnName))
+        .Append(" = 1 AND NOT EXISTS (SELECT 1 FROM ")
+        .Append(QuoteSqlServerTable(table))
+        .Append(" AS ")
+        .Append(QuoteSqlServerIdentifier("target"))
+        .Append(" WITH (UPDLOCK, HOLDLOCK) WHERE ")
+        .Append(QuoteSqlServerIdentifier("target"))
+        .Append('.')
+        .Append(QuoteSqlServerIdentifier(hashKeyColumnName))
+        .Append(" = ")
+        .Append(QuoteSqlServerIdentifier("deduplicated"))
+        .Append('.')
+        .Append(QuoteSqlServerIdentifier(hashKeyColumnName))
+        .Append(')');
+
+    return builder.ToString();
+  }
+
+  private static string CreateSqlServerJsonInsertCommandText(
+      SqlServerTableIdentifier table,
+      IReadOnlyList<string> columns,
+      IReadOnlyDictionary<string, string> columnTypes) {
+    var builder = new StringBuilder();
+    builder.Append("INSERT INTO ")
+        .Append(QuoteSqlServerTable(table))
+        .Append(" (");
+    AppendIdentifierList(builder, columns);
+    builder.Append(") SELECT ");
+    AppendQualifiedIdentifierList(builder, "payload", columns);
+    builder.Append(" FROM OPENJSON(@p0) WITH (");
+    AppendOpenJsonColumnList(builder, columns, columnTypes);
+    builder.Append(") AS ")
+        .Append(QuoteSqlServerIdentifier("payload"));
+
+    return builder.ToString();
+  }
+
   private static IReadOnlyList<UniqueRowSavePlan> CreateUniqueRowSavePlans(DataVaultProviderSaveStrategyContext context) {
     var plans = new List<UniqueRowSavePlan>();
+    var hubProjections = new Dictionary<DataVaultHubMetadata, HubProjection>();
+    var linkProjections = new Dictionary<DataVaultLinkMetadata, LinkProjection>();
 
     foreach (var request in context.ResolvedRequests) {
-      plans.AddRange(request.Request.HubOperations.Select(operation => CreateHubSavePlan(context, request, operation)));
-      plans.AddRange(request.Request.LinkOperations.Select(operation => CreateLinkSavePlan(context, request, operation)));
+      plans.AddRange(request.Request.HubOperations.Select(operation => CreateHubSavePlan(
+          context,
+          request,
+          operation,
+          GetHubProjection(hubProjections, operation.Metadata))));
+      plans.AddRange(request.Request.LinkOperations.Select(operation => CreateLinkSavePlan(
+          context,
+          request,
+          operation,
+          GetLinkProjection(linkProjections, operation.Metadata))));
     }
 
     return plans
@@ -380,8 +504,8 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
   private static UniqueRowSavePlan CreateHubSavePlan(
       DataVaultProviderSaveStrategyContext context,
       DataVaultResolvedSaveRequest request,
-      DataVaultHubSaveOperation operation) {
-    var projection = CreateHubProjection(operation.Metadata);
+      DataVaultHubSaveOperation operation,
+      HubProjection projection) {
     var businessKeyFields = operation.Metadata.BusinessKeyColumns
         .Select(column => new KeyValuePair<string, string>(
             column.ColumnName,
@@ -413,8 +537,8 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
   private static UniqueRowSavePlan CreateLinkSavePlan(
       DataVaultProviderSaveStrategyContext context,
       DataVaultResolvedSaveRequest request,
-      DataVaultLinkSaveOperation operation) {
-    var projection = CreateLinkProjection(operation.Metadata);
+      DataVaultLinkSaveOperation operation,
+      LinkProjection projection) {
     var participantNames = operation.Metadata.Participants
         .Select(participant => participant.HubReference.Name)
         .ToArray();
@@ -447,17 +571,29 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
   }
 
   private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlansForContext(DataVaultProviderSaveStrategyContext context) {
+    var satelliteProjections = new Dictionary<DataVaultSatelliteMetadata, SatelliteProjection>();
+
     return context.ResolvedRequests
         .SelectMany(request => request.Request.SatelliteOperations
-            .Select(operation => CreateSatelliteSavePlan(context.DbContext, request, operation)))
+            .Select(operation => CreateSatelliteSavePlan(
+                context.DbContext,
+                request,
+                operation,
+                GetSatelliteProjection(satelliteProjections, operation.Metadata))))
         .Select((plan, index) => plan with { Ordinal = index })
         .ToArray();
   }
 
   private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(IReadOnlyList<DataVaultResolvedSaveRequest> requests) {
+    var satelliteProjections = new Dictionary<DataVaultSatelliteMetadata, SatelliteProjection>();
+
     return requests
         .SelectMany(request => request.Request.SatelliteOperations
-            .Select(operation => CreateSatelliteSavePlan(null, request, operation)))
+            .Select(operation => CreateSatelliteSavePlan(
+                null,
+                request,
+                operation,
+                GetSatelliteProjection(satelliteProjections, operation.Metadata))))
         .Select((plan, index) => plan with { Ordinal = index })
         .ToArray();
   }
@@ -465,8 +601,8 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
   private static SatelliteSavePlan CreateSatelliteSavePlan(
       DbContext? dbContext,
       DataVaultResolvedSaveRequest request,
-      DataVaultSatelliteSaveOperation operation) {
-    var projection = CreateSatelliteProjection(operation.Metadata);
+      DataVaultSatelliteSaveOperation operation,
+      SatelliteProjection projection) {
     var payloadFields = operation.Metadata.PayloadColumns
         .Select(column => new KeyValuePair<string, string>(
             column.ColumnName,
@@ -508,6 +644,39 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
         request.LoadTimestamp,
         row,
         savedRecord);
+  }
+
+  private static HubProjection GetHubProjection(
+      Dictionary<DataVaultHubMetadata, HubProjection> projections,
+      DataVaultHubMetadata hub) {
+    if (!projections.TryGetValue(hub, out var projection)) {
+      projection = CreateHubProjection(hub);
+      projections.Add(hub, projection);
+    }
+
+    return projection;
+  }
+
+  private static LinkProjection GetLinkProjection(
+      Dictionary<DataVaultLinkMetadata, LinkProjection> projections,
+      DataVaultLinkMetadata link) {
+    if (!projections.TryGetValue(link, out var projection)) {
+      projection = CreateLinkProjection(link);
+      projections.Add(link, projection);
+    }
+
+    return projection;
+  }
+
+  private static SatelliteProjection GetSatelliteProjection(
+      Dictionary<DataVaultSatelliteMetadata, SatelliteProjection> projections,
+      DataVaultSatelliteMetadata satellite) {
+    if (!projections.TryGetValue(satellite, out var projection)) {
+      projection = CreateSatelliteProjection(satellite);
+      projections.Add(satellite, projection);
+    }
+
+    return projection;
   }
 
   private static async Task<FilteredSatelliteSavePlans> FilterSatellitePlansAsync(
@@ -619,9 +788,11 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
 
       foreach (var chunk in group.Chunk(chunkSize)) {
         rowsWritten += await ExecuteSqlServerUniqueInsertChunkAsync(
+            dbContext,
             connection,
             transaction,
             resolvedTable,
+            group.Key.TableName,
             columns,
             group.Key.HashKeyColumnName,
             chunk,
@@ -633,13 +804,28 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
   }
 
   private static async Task<int> ExecuteSqlServerUniqueInsertChunkAsync(
+      DbContext dbContext,
       DbConnection connection,
       DbTransaction transaction,
       SqlServerTableIdentifier table,
+      string producedTableName,
       IReadOnlyList<string> columns,
       string hashKeyColumnName,
       IReadOnlyList<UniqueRowSavePlan> rows,
       CancellationToken cancellationToken) {
+    if (rows.Count >= SqlServerOpenJsonInsertMinimumRowCount) {
+      return await ExecuteSqlServerUniqueInsertOpenJsonChunkAsync(
+          dbContext,
+          connection,
+          transaction,
+          table,
+          producedTableName,
+          columns,
+          hashKeyColumnName,
+          rows,
+          cancellationToken).ConfigureAwait(false);
+    }
+
     await using var command = connection.CreateCommand();
     command.Transaction = transaction;
     command.CommandText = CreateSqlServerUniqueInsertCommandText(table, columns, hashKeyColumnName, rows.Count);
@@ -650,6 +836,33 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
         AddParameter(command, row.Row[column]);
       }
     }
+
+    return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+  }
+
+  private static async Task<int> ExecuteSqlServerUniqueInsertOpenJsonChunkAsync(
+      DbContext dbContext,
+      DbConnection connection,
+      DbTransaction transaction,
+      SqlServerTableIdentifier table,
+      string producedTableName,
+      IReadOnlyList<string> columns,
+      string hashKeyColumnName,
+      IReadOnlyList<UniqueRowSavePlan> rows,
+      CancellationToken cancellationToken) {
+    var columnTypes = CreateSqlServerOpenJsonColumnTypes(
+        dbContext,
+        producedTableName,
+        new[] { OrdinalColumnName }.Concat(columns),
+        rows.Select(row => row.Row),
+        extraColumnTypes: new Dictionary<string, string>(StringComparer.Ordinal) {
+          [OrdinalColumnName] = "int",
+        });
+
+    await using var command = connection.CreateCommand();
+    command.Transaction = transaction;
+    command.CommandText = CreateSqlServerJsonUniqueInsertCommandText(table, columns, hashKeyColumnName, columnTypes);
+    AddParameter(command, SerializeUniqueRowsAsJson(rows, columns), DbType.String);
 
     return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
   }
@@ -675,9 +888,11 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
 
       foreach (var chunk in group.Chunk(chunkSize)) {
         rowsWritten += await ExecuteSqlServerInsertChunkAsync(
+            dbContext,
             connection,
             transaction,
             resolvedTable,
+            group.Key.TableName,
             columns,
             chunk.Select(row => row.Values).ToArray(),
             cancellationToken).ConfigureAwait(false);
@@ -688,12 +903,26 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
   }
 
   private static async Task<int> ExecuteSqlServerInsertChunkAsync(
+      DbContext dbContext,
       DbConnection connection,
       DbTransaction transaction,
       SqlServerTableIdentifier table,
+      string producedTableName,
       IReadOnlyList<string> columns,
       IReadOnlyList<Dictionary<string, object>> rows,
       CancellationToken cancellationToken) {
+    if (rows.Count >= SqlServerOpenJsonInsertMinimumRowCount) {
+      return await ExecuteSqlServerInsertOpenJsonChunkAsync(
+          dbContext,
+          connection,
+          transaction,
+          table,
+          producedTableName,
+          columns,
+          rows,
+          cancellationToken).ConfigureAwait(false);
+    }
+
     await using var command = connection.CreateCommand();
     command.Transaction = transaction;
     command.CommandText = CreateSqlServerInsertCommandText(table, columns, rows.Count);
@@ -703,6 +932,30 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
         AddParameter(command, row[column]);
       }
     }
+
+    return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+  }
+
+  private static async Task<int> ExecuteSqlServerInsertOpenJsonChunkAsync(
+      DbContext dbContext,
+      DbConnection connection,
+      DbTransaction transaction,
+      SqlServerTableIdentifier table,
+      string producedTableName,
+      IReadOnlyList<string> columns,
+      IReadOnlyList<Dictionary<string, object>> rows,
+      CancellationToken cancellationToken) {
+    var columnTypes = CreateSqlServerOpenJsonColumnTypes(
+        dbContext,
+        producedTableName,
+        columns,
+        rows,
+        extraColumnTypes: null);
+
+    await using var command = connection.CreateCommand();
+    command.Transaction = transaction;
+    command.CommandText = CreateSqlServerJsonInsertCommandText(table, columns, columnTypes);
+    AddParameter(command, SerializeRowsAsJson(rows, columns), DbType.String);
 
     return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
   }
@@ -795,10 +1048,14 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
     throw new ArgumentException("The Data Vault save operation is missing required value '" + name + "'.", parameterName);
   }
 
-  private static DbParameter AddParameter(DbCommand command, object value) {
+  private static DbParameter AddParameter(DbCommand command, object value, DbType? dbType = null) {
     var parameter = command.CreateParameter();
     parameter.ParameterName = CreateSqlServerParameterName(command.Parameters.Count);
     parameter.Value = value;
+    if (dbType.HasValue) {
+      parameter.DbType = dbType.Value;
+    }
+
     command.Parameters.Add(parameter);
 
     return parameter;
@@ -826,6 +1083,79 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
     }
 
     return new SqlServerTableIdentifier(entityType.GetTableName() ?? producedName, entityType.GetSchema());
+  }
+
+  private static IProperty? FindProperty(DbContext dbContext, string producedTableName, string columnName) {
+    var entityType = dbContext.Model
+        .GetEntityTypes()
+        .SingleOrDefault(entity =>
+            string.Equals(entity.FindAnnotation(DataVaultAnnotationNames.ProducedName)?.Value as string, producedTableName, StringComparison.Ordinal) ||
+            string.Equals(entity.GetTableName(), producedTableName, StringComparison.Ordinal) ||
+            string.Equals(entity.Name, producedTableName, StringComparison.Ordinal));
+
+    return entityType?
+        .GetProperties()
+        .FirstOrDefault(property => string.Equals(property.GetColumnName(), columnName, StringComparison.Ordinal));
+  }
+
+  private static IReadOnlyDictionary<string, string> CreateSqlServerOpenJsonColumnTypes(
+      DbContext dbContext,
+      string producedTableName,
+      IEnumerable<string> columns,
+      IEnumerable<Dictionary<string, object>> rows,
+      IReadOnlyDictionary<string, string>? extraColumnTypes) {
+    var rowArray = rows.ToArray();
+    var columnTypes = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    foreach (var column in columns) {
+      if (extraColumnTypes is not null && extraColumnTypes.TryGetValue(column, out var extraColumnType)) {
+        columnTypes[column] = extraColumnType;
+        continue;
+      }
+
+      columnTypes[column] = GetSqlServerOpenJsonColumnType(dbContext, producedTableName, column, rowArray);
+    }
+
+    return columnTypes;
+  }
+
+  private static string GetSqlServerOpenJsonColumnType(
+      DbContext dbContext,
+      string producedTableName,
+      string columnName,
+      IReadOnlyList<Dictionary<string, object>> rows) {
+    var property = FindProperty(dbContext, producedTableName, columnName);
+    var valueFormat = property?.FindAnnotation(DataVaultAnnotationNames.ProviderValueFormat)?.Value;
+    if (valueFormat is DataVaultProviderValueFormat.UtcTicks ||
+        property?.ClrType == typeof(long)) {
+      return "bigint";
+    }
+
+    if (valueFormat is DataVaultProviderValueFormat.NativeInteger ||
+        property?.ClrType == typeof(int)) {
+      return "int";
+    }
+
+    if (valueFormat is DataVaultProviderValueFormat.NativeDateTimeOffset ||
+        property?.ClrType == typeof(DateTimeOffset)) {
+      return "datetimeoffset";
+    }
+
+    var storeType = property?.GetColumnType();
+    if (!string.IsNullOrWhiteSpace(storeType)) {
+      return storeType;
+    }
+
+    var sampleValue = rows
+        .Select(row => row.TryGetValue(columnName, out var value) ? value : null)
+        .FirstOrDefault(value => value is not null and not DBNull);
+
+    return sampleValue switch {
+      long => "bigint",
+      int => "int",
+      DateTimeOffset => "datetimeoffset",
+      _ => "nvarchar(max)",
+    };
   }
 
   private static string QuoteSqlServerTable(SqlServerTableIdentifier table) {
@@ -863,6 +1193,24 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
     }
   }
 
+  private static void AppendOpenJsonColumnList(
+      StringBuilder builder,
+      IReadOnlyList<string> columns,
+      IReadOnlyDictionary<string, string> columnTypes) {
+    for (var index = 0; index < columns.Count; index++) {
+      if (index > 0) {
+        builder.Append(", ");
+      }
+
+      var column = columns[index];
+      builder.Append(QuoteSqlServerIdentifier(column))
+          .Append(' ')
+          .Append(columnTypes[column])
+          .Append(' ');
+      AppendSqlServerStringLiteral(builder, CreateJsonPropertyPath(column));
+    }
+  }
+
   private static void AppendParameterRows(
       StringBuilder builder,
       int rowCount,
@@ -893,6 +1241,60 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
 
   private static string QuoteSqlServerIdentifier(string identifier) {
     return "[" + identifier.Replace("]", "]]", StringComparison.Ordinal) + "]";
+  }
+
+  private static void AppendSqlServerStringLiteral(StringBuilder builder, string value) {
+    builder.Append('\'')
+        .Append(value.Replace("'", "''", StringComparison.Ordinal))
+        .Append('\'');
+  }
+
+  private static string CreateJsonPropertyPath(string propertyName) {
+    return "$.\"" +
+        propertyName
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("\"", "\\\"", StringComparison.Ordinal) +
+        "\"";
+  }
+
+  private static string SerializeUniqueRowsAsJson(
+      IReadOnlyList<UniqueRowSavePlan> rows,
+      IReadOnlyList<string> columns) {
+    var payload = new Dictionary<string, object?>[rows.Count];
+
+    for (var rowIndex = 0; rowIndex < rows.Count; rowIndex++) {
+      var row = rows[rowIndex];
+      var item = new Dictionary<string, object?>(StringComparer.Ordinal) {
+        [OrdinalColumnName] = row.Ordinal,
+      };
+
+      foreach (var column in columns) {
+        item[column] = row.Row[column];
+      }
+
+      payload[rowIndex] = item;
+    }
+
+    return JsonSerializer.Serialize(payload);
+  }
+
+  private static string SerializeRowsAsJson(
+      IReadOnlyList<Dictionary<string, object>> rows,
+      IReadOnlyList<string> columns) {
+    var payload = new Dictionary<string, object?>[rows.Count];
+
+    for (var rowIndex = 0; rowIndex < rows.Count; rowIndex++) {
+      var row = rows[rowIndex];
+      var item = new Dictionary<string, object?>(StringComparer.Ordinal);
+
+      foreach (var column in columns) {
+        item[column] = row[column];
+      }
+
+      payload[rowIndex] = item;
+    }
+
+    return JsonSerializer.Serialize(payload);
   }
 
   private static string CreateColumnSignature(IEnumerable<string> columns) {

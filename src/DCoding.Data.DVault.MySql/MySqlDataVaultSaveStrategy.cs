@@ -13,7 +13,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   internal const string OracleProviderName = "MySql.EntityFrameworkCore";
 
   private const int MySqlMaxCommandParameterCount = 60000;
-  private const int MySqlMaxRowsPerCommand = 100;
+  private const int MySqlMaxRowsPerCommand = 1000;
   private const int MySqlLatestHashDiffBatchSize = 1000;
   private const int MinimumOptimizedBatchOperationCount = 50;
   private const string LatestRowsTableAlias = "__dvault_latest";
@@ -171,10 +171,20 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
 
   private static IReadOnlyList<UniqueRowSavePlan> CreateUniqueRowSavePlans(DataVaultProviderSaveStrategyContext context) {
     var plans = new List<UniqueRowSavePlan>();
+    var hubProjections = new Dictionary<DataVaultHubMetadata, HubProjection>();
+    var linkProjections = new Dictionary<DataVaultLinkMetadata, LinkProjection>();
 
     foreach (var request in context.ResolvedRequests) {
-      plans.AddRange(request.Request.HubOperations.Select(operation => CreateHubSavePlan(context, request, operation)));
-      plans.AddRange(request.Request.LinkOperations.Select(operation => CreateLinkSavePlan(context, request, operation)));
+      plans.AddRange(request.Request.HubOperations.Select(operation => CreateHubSavePlan(
+          context,
+          request,
+          operation,
+          GetHubProjection(hubProjections, operation.Metadata))));
+      plans.AddRange(request.Request.LinkOperations.Select(operation => CreateLinkSavePlan(
+          context,
+          request,
+          operation,
+          GetLinkProjection(linkProjections, operation.Metadata))));
     }
 
     return plans.ToArray();
@@ -183,8 +193,167 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   private static UniqueRowSavePlan CreateHubSavePlan(
       DataVaultProviderSaveStrategyContext context,
       DataVaultResolvedSaveRequest request,
-      DataVaultHubSaveOperation operation) {
+      DataVaultHubSaveOperation operation,
+      HubProjection projection) {
     var hub = operation.Metadata;
+    var businessKeyFields = hub.BusinessKeyColumns
+        .Select(column => new KeyValuePair<string, string>(
+            column.ColumnName,
+            GetRequiredValue(operation.BusinessKeyValues, column.ColumnName, nameof(operation.BusinessKeyValues))))
+        .ToArray();
+    var hashKey = ComputeHash(context, businessKeyFields);
+    var row = new Dictionary<string, object> {
+      [projection.HashKeyColumnName] = hashKey,
+      [projection.LoadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          context.DbContext,
+          projection.TableName,
+          projection.LoadTimestampColumnName,
+          request.LoadTimestamp),
+      [projection.RecordSourceColumnName] = request.RecordSource,
+    };
+
+    for (var index = 0; index < businessKeyFields.Length; index++) {
+      row.Add(projection.BusinessKeyColumnNames[index], businessKeyFields[index].Value);
+    }
+
+    return new UniqueRowSavePlan(
+        new UniqueTableProjection(projection.TableName, projection.HashKeyColumnName),
+        hashKey,
+        row,
+        new DataVaultSavedRecord(DataVaultTableKind.Hub, hub.Name, projection.TableName, hashKey));
+  }
+
+  private static UniqueRowSavePlan CreateLinkSavePlan(
+      DataVaultProviderSaveStrategyContext context,
+      DataVaultResolvedSaveRequest request,
+      DataVaultLinkSaveOperation operation,
+      LinkProjection projection) {
+    var link = operation.Metadata;
+    var participantNames = link.Participants
+        .Select(participant => participant.HubReference.Name)
+        .ToArray();
+    var participantHashKeyFields = participantNames
+        .Select(participantName => new KeyValuePair<string, string>(
+            participantName,
+            GetRequiredValue(operation.ParticipantHashKeyValues, participantName, nameof(operation.ParticipantHashKeyValues))))
+        .ToArray();
+    var linkHashKey = ComputeHash(context, participantHashKeyFields);
+    var row = new Dictionary<string, object> {
+      [projection.LinkHashKeyColumnName] = linkHashKey,
+      [projection.LoadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          context.DbContext,
+          projection.TableName,
+          projection.LoadTimestampColumnName,
+          request.LoadTimestamp),
+      [projection.RecordSourceColumnName] = request.RecordSource,
+    };
+
+    for (var index = 0; index < participantHashKeyFields.Length; index++) {
+      row.Add(projection.ParticipantHashKeyColumnNames[index], participantHashKeyFields[index].Value);
+    }
+
+    return new UniqueRowSavePlan(
+        new UniqueTableProjection(projection.TableName, projection.LinkHashKeyColumnName),
+        linkHashKey,
+        row,
+        new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, projection.TableName, linkHashKey));
+  }
+
+  private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(DataVaultProviderSaveStrategyContext context) {
+    var satelliteProjections = new Dictionary<DataVaultSatelliteMetadata, SatelliteProjection>();
+
+    return context.ResolvedRequests
+        .SelectMany(request => request.Request.SatelliteOperations
+            .Select(operation => CreateSatelliteSavePlan(
+                context.DbContext,
+                request,
+                operation,
+                GetSatelliteProjection(satelliteProjections, operation.Metadata))))
+        .Select((plan, index) => plan with { Ordinal = index })
+        .ToArray();
+  }
+
+  private static SatelliteSavePlan CreateSatelliteSavePlan(
+      DbContext dbContext,
+      DataVaultResolvedSaveRequest request,
+      DataVaultSatelliteSaveOperation operation,
+      SatelliteProjection projection) {
+    var satellite = operation.Metadata;
+    var payloadFields = satellite.PayloadColumns
+        .Select(column => new KeyValuePair<string, string>(
+            column.ColumnName,
+            GetRequiredValue(operation.PayloadValues, column.ColumnName, nameof(operation.PayloadValues))))
+        .ToArray();
+    var row = new Dictionary<string, object> {
+      [projection.ParentHashKeyColumnName] = operation.ParentHashKey,
+      [projection.HashDiffColumnName] = operation.HashDiff,
+      [projection.LoadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          dbContext,
+          projection.TableName,
+          projection.LoadTimestampColumnName,
+          request.LoadTimestamp),
+      [projection.RecordSourceColumnName] = request.RecordSource,
+    };
+
+    for (var index = 0; index < payloadFields.Length; index++) {
+      row.Add(projection.PayloadColumnNames[index], payloadFields[index].Value);
+    }
+
+    var table = new SatelliteTableProjection(
+        projection.TableName,
+        projection.ParentHashKeyColumnName,
+        projection.HashDiffColumnName,
+        projection.LoadTimestampColumnName);
+    var savedRecord = new DataVaultSavedRecord(
+        DataVaultTableKind.Satellite,
+        satellite.Name,
+        projection.TableName,
+        operation.ParentHashKey);
+
+    return new SatelliteSavePlan(
+        -1,
+        table,
+        operation.ParentHashKey,
+        operation.HashDiff,
+        request.LoadTimestamp,
+        row,
+        savedRecord);
+  }
+
+  private static HubProjection GetHubProjection(
+      Dictionary<DataVaultHubMetadata, HubProjection> projections,
+      DataVaultHubMetadata hub) {
+    if (!projections.TryGetValue(hub, out var projection)) {
+      projection = CreateHubProjection(hub);
+      projections.Add(hub, projection);
+    }
+
+    return projection;
+  }
+
+  private static LinkProjection GetLinkProjection(
+      Dictionary<DataVaultLinkMetadata, LinkProjection> projections,
+      DataVaultLinkMetadata link) {
+    if (!projections.TryGetValue(link, out var projection)) {
+      projection = CreateLinkProjection(link);
+      projections.Add(link, projection);
+    }
+
+    return projection;
+  }
+
+  private static SatelliteProjection GetSatelliteProjection(
+      Dictionary<DataVaultSatelliteMetadata, SatelliteProjection> projections,
+      DataVaultSatelliteMetadata satellite) {
+    if (!projections.TryGetValue(satellite, out var projection)) {
+      projection = CreateSatelliteProjection(satellite);
+      projections.Add(satellite, projection);
+    }
+
+    return projection;
+  }
+
+  private static HubProjection CreateHubProjection(DataVaultHubMetadata hub) {
     var tableName = NamingPolicy.GetHubTableName(new DataVaultHubNameContext(hub.Name));
     var hashKeyColumnName = NamingPolicy.GetTechnicalColumnName(
         new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, hub.Name, tableName));
@@ -195,38 +364,16 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     var businessKeyColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
         hub.BusinessKeyColumns.Select(column => column.ColumnName),
         [hashKeyColumnName, loadTimestampColumnName, recordSourceColumnName]);
-    var businessKeyFields = hub.BusinessKeyColumns
-        .Select(column => new KeyValuePair<string, string>(
-            column.ColumnName,
-            GetRequiredValue(operation.BusinessKeyValues, column.ColumnName, nameof(operation.BusinessKeyValues))))
-        .ToArray();
-    var hashKey = ComputeHash(context, businessKeyFields);
-    var row = new Dictionary<string, object> {
-      [hashKeyColumnName] = hashKey,
-      [loadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
-          context.DbContext,
-          tableName,
-          loadTimestampColumnName,
-          request.LoadTimestamp),
-      [recordSourceColumnName] = request.RecordSource,
-    };
 
-    for (var index = 0; index < businessKeyFields.Length; index++) {
-      row.Add(businessKeyColumnNames[index], businessKeyFields[index].Value);
-    }
-
-    return new UniqueRowSavePlan(
-        new UniqueTableProjection(tableName, hashKeyColumnName),
-        hashKey,
-        row,
-        new DataVaultSavedRecord(DataVaultTableKind.Hub, hub.Name, tableName, hashKey));
+    return new HubProjection(
+        tableName,
+        hashKeyColumnName,
+        loadTimestampColumnName,
+        recordSourceColumnName,
+        businessKeyColumnNames);
   }
 
-  private static UniqueRowSavePlan CreateLinkSavePlan(
-      DataVaultProviderSaveStrategyContext context,
-      DataVaultResolvedSaveRequest request,
-      DataVaultLinkSaveOperation operation) {
-    var link = operation.Metadata;
+  private static LinkProjection CreateLinkProjection(DataVaultLinkMetadata link) {
     var participantNames = link.Participants
         .Select(participant => participant.HubReference.Name)
         .ToArray();
@@ -241,46 +388,16 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
         .Select(participantName => NamingPolicy.GetTechnicalColumnName(
             new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, participantName, tableName)))
         .ToArray();
-    var participantHashKeyFields = participantNames
-        .Select(participantName => new KeyValuePair<string, string>(
-            participantName,
-            GetRequiredValue(operation.ParticipantHashKeyValues, participantName, nameof(operation.ParticipantHashKeyValues))))
-        .ToArray();
-    var linkHashKey = ComputeHash(context, participantHashKeyFields);
-    var row = new Dictionary<string, object> {
-      [linkHashKeyColumnName] = linkHashKey,
-      [loadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
-          context.DbContext,
-          tableName,
-          loadTimestampColumnName,
-          request.LoadTimestamp),
-      [recordSourceColumnName] = request.RecordSource,
-    };
 
-    for (var index = 0; index < participantHashKeyFields.Length; index++) {
-      row.Add(participantHashKeyColumnNames[index], participantHashKeyFields[index].Value);
-    }
-
-    return new UniqueRowSavePlan(
-        new UniqueTableProjection(tableName, linkHashKeyColumnName),
-        linkHashKey,
-        row,
-        new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, tableName, linkHashKey));
+    return new LinkProjection(
+        tableName,
+        linkHashKeyColumnName,
+        loadTimestampColumnName,
+        recordSourceColumnName,
+        participantHashKeyColumnNames);
   }
 
-  private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(DataVaultProviderSaveStrategyContext context) {
-    return context.ResolvedRequests
-        .SelectMany(request => request.Request.SatelliteOperations
-            .Select(operation => CreateSatelliteSavePlan(context.DbContext, request, operation)))
-        .Select((plan, index) => plan with { Ordinal = index })
-        .ToArray();
-  }
-
-  private static SatelliteSavePlan CreateSatelliteSavePlan(
-      DbContext dbContext,
-      DataVaultResolvedSaveRequest request,
-      DataVaultSatelliteSaveOperation operation) {
-    var satellite = operation.Metadata;
+  private static SatelliteProjection CreateSatelliteProjection(DataVaultSatelliteMetadata satellite) {
     var tableName = NamingPolicy.GetSatelliteTableName(
         new DataVaultSatelliteNameContext(satellite.Parent.Name, satellite.Name));
     var parentHashKeyColumnName = NamingPolicy.GetTechnicalColumnName(
@@ -294,45 +411,14 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     var payloadColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
         satellite.PayloadColumns.Select(column => column.ColumnName),
         [parentHashKeyColumnName, hashDiffColumnName, loadTimestampColumnName, recordSourceColumnName]);
-    var payloadFields = satellite.PayloadColumns
-        .Select(column => new KeyValuePair<string, string>(
-            column.ColumnName,
-            GetRequiredValue(operation.PayloadValues, column.ColumnName, nameof(operation.PayloadValues))))
-        .ToArray();
-    var row = new Dictionary<string, object> {
-      [parentHashKeyColumnName] = operation.ParentHashKey,
-      [hashDiffColumnName] = operation.HashDiff,
-      [loadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
-          dbContext,
-          tableName,
-          loadTimestampColumnName,
-          request.LoadTimestamp),
-      [recordSourceColumnName] = request.RecordSource,
-    };
 
-    for (var index = 0; index < payloadFields.Length; index++) {
-      row.Add(payloadColumnNames[index], payloadFields[index].Value);
-    }
-
-    var table = new SatelliteTableProjection(
+    return new SatelliteProjection(
         tableName,
         parentHashKeyColumnName,
         hashDiffColumnName,
-        loadTimestampColumnName);
-    var savedRecord = new DataVaultSavedRecord(
-        DataVaultTableKind.Satellite,
-        satellite.Name,
-        tableName,
-        operation.ParentHashKey);
-
-    return new SatelliteSavePlan(
-        -1,
-        table,
-        operation.ParentHashKey,
-        operation.HashDiff,
-        request.LoadTimestamp,
-        row,
-        savedRecord);
+        loadTimestampColumnName,
+        recordSourceColumnName,
+        payloadColumnNames);
   }
 
   private static async Task<FilteredSatelliteSavePlans> FilterSatellitePlansAsync(
@@ -593,6 +679,28 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   }
 
   private sealed record SaveOperationResult(DataVaultSavedRecord SavedRecord, bool RowWritten);
+
+  private sealed record HubProjection(
+      string TableName,
+      string HashKeyColumnName,
+      string LoadTimestampColumnName,
+      string RecordSourceColumnName,
+      IReadOnlyList<string> BusinessKeyColumnNames);
+
+  private sealed record LinkProjection(
+      string TableName,
+      string LinkHashKeyColumnName,
+      string LoadTimestampColumnName,
+      string RecordSourceColumnName,
+      IReadOnlyList<string> ParticipantHashKeyColumnNames);
+
+  private sealed record SatelliteProjection(
+      string TableName,
+      string ParentHashKeyColumnName,
+      string HashDiffColumnName,
+      string LoadTimestampColumnName,
+      string RecordSourceColumnName,
+      IReadOnlyList<string> PayloadColumnNames);
 
   private sealed record UniqueTableProjection(string TableName, string HashKeyColumnName);
 

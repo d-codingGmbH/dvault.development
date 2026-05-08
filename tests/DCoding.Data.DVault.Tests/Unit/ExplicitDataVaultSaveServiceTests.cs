@@ -235,6 +235,54 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   [Fact]
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqlServerProvider)]
+  public void SqlServerJsonUniqueInsertSqlUsesSinglePayloadParameterAndKeepsDeduplicationOrder() {
+    var commandText = InvokeSqlServerCommandTextFactory(
+        "CreateSqlServerJsonUniqueInsertCommandText",
+        "HubCustomer",
+        new[] { "CustomerHashKey", "LoadTimestamp", "RecordSource", "CustomerId" },
+        "CustomerHashKey",
+        new Dictionary<string, string>(StringComparer.Ordinal) {
+          ["__dvault_ordinal"] = "int",
+          ["CustomerHashKey"] = "nvarchar(64)",
+          ["LoadTimestamp"] = "datetimeoffset",
+          ["RecordSource"] = "nvarchar(255)",
+          ["CustomerId"] = "nvarchar(255)",
+        });
+
+    Assert.Contains("FROM OPENJSON(@p0) WITH", commandText, StringComparison.Ordinal);
+    Assert.Contains("[__dvault_ordinal] int '$.\"__dvault_ordinal\"'", commandText, StringComparison.Ordinal);
+    Assert.Contains("[LoadTimestamp] datetimeoffset '$.\"LoadTimestamp\"'", commandText, StringComparison.Ordinal);
+    Assert.Contains("ROW_NUMBER() OVER (PARTITION BY [source].[CustomerHashKey] ORDER BY [source].[__dvault_ordinal])", commandText, StringComparison.Ordinal);
+    Assert.Contains("NOT EXISTS (SELECT 1 FROM [HubCustomer]", commandText, StringComparison.Ordinal);
+    Assert.DoesNotContain("VALUES (@p0", commandText, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqlServerProvider)]
+  public void SqlServerJsonInsertSqlUsesSinglePayloadParameterForLargeSatelliteBatches() {
+    var commandText = InvokeSqlServerCommandTextFactory(
+        "CreateSqlServerJsonInsertCommandText",
+        "SatCustomerContact",
+        new[] { "CustomerHashKey", "HashDiff", "LoadTimestamp", "RecordSource", "EmailAddress" },
+        new Dictionary<string, string>(StringComparer.Ordinal) {
+          ["CustomerHashKey"] = "nvarchar(64)",
+          ["HashDiff"] = "nvarchar(64)",
+          ["LoadTimestamp"] = "datetimeoffset",
+          ["RecordSource"] = "nvarchar(255)",
+          ["EmailAddress"] = "nvarchar(max)",
+        });
+
+    Assert.Contains("INSERT INTO [SatCustomerContact]", commandText, StringComparison.Ordinal);
+    Assert.Contains("SELECT [payload].[CustomerHashKey], [payload].[HashDiff]", commandText, StringComparison.Ordinal);
+    Assert.Contains("FROM OPENJSON(@p0) WITH", commandText, StringComparison.Ordinal);
+    Assert.Contains("[EmailAddress] nvarchar(max) '$.\"EmailAddress\"'", commandText, StringComparison.Ordinal);
+    Assert.DoesNotContain("VALUES (@p0", commandText, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqlServerProvider)]
   public void SqlServerSatelliteLookupSqlRanksLatestHashDiffsByParentBatch() {
     var commandText = InvokeSqlServerCommandTextFactory(
         "CreateSqlServerLatestSatelliteHashDiffCommandText",
