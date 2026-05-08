@@ -11,6 +11,7 @@ namespace DCoding.Data.DVault;
 
 internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStrategy {
   private const int PostgresMaxCommandParameterCount = 30000;
+  private const int PostgresUnnestInsertMinimumRowCount = 32;
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
 
   internal const string NpgsqlProviderName = "Npgsql.EntityFrameworkCore.PostgreSQL";
@@ -408,6 +409,18 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
       IReadOnlyList<Dictionary<string, object>> rows,
       string? conflictTargetColumnName,
       CancellationToken cancellationToken) {
+    if (rows.Count >= PostgresUnnestInsertMinimumRowCount) {
+      return await ExecutePostgresInsertUnnestChunkAsync(
+          connection,
+          transaction,
+          dbContext,
+          tableName,
+          columns,
+          rows,
+          conflictTargetColumnName,
+          cancellationToken).ConfigureAwait(false);
+    }
+
     await using var command = connection.CreateCommand();
     command.Transaction = transaction;
     command.CommandText = CreatePostgresInsertCommandText(
@@ -426,6 +439,34 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
         command.Parameters.Add(parameter);
         parameterIndex++;
       }
+    }
+
+    return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+  }
+
+  private static async Task<int> ExecutePostgresInsertUnnestChunkAsync(
+      DbConnection connection,
+      DbTransaction transaction,
+      DbContext dbContext,
+      string tableName,
+      IReadOnlyList<string> columns,
+      IReadOnlyList<Dictionary<string, object>> rows,
+      string? conflictTargetColumnName,
+      CancellationToken cancellationToken) {
+    await using var command = connection.CreateCommand();
+    command.Transaction = transaction;
+    command.CommandText = CreatePostgresUnnestInsertCommandText(
+        dbContext,
+        tableName,
+        columns,
+        conflictTargetColumnName,
+        command.Parameters.Count);
+
+    foreach (var column in columns) {
+      var parameter = command.CreateParameter();
+      parameter.ParameterName = CreatePostgresParameterName(command.Parameters.Count);
+      parameter.Value = CreatePostgresArrayParameterValue(rows, column);
+      command.Parameters.Add(parameter);
     }
 
     return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -478,6 +519,54 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     }
 
     return builder.ToString();
+  }
+
+  private static string CreatePostgresUnnestInsertCommandText(
+      DbContext dbContext,
+      string tableName,
+      IReadOnlyList<string> columns,
+      string? conflictTargetColumnName,
+      int firstParameterIndex) {
+    var builder = new StringBuilder();
+    builder.Append("INSERT INTO ")
+        .Append(QuotePostgresTableIdentifier(dbContext, tableName))
+        .Append(" (");
+
+    AppendQuotedColumnList(builder, columns);
+
+    builder.Append(") SELECT * FROM unnest(");
+
+    for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++) {
+      if (columnIndex > 0) {
+        builder.Append(", ");
+      }
+
+      builder
+          .Append(CreatePostgresParameterName(firstParameterIndex + columnIndex))
+          .Append("::")
+          .Append(GetPostgresArrayCastType(dbContext, tableName, columns[columnIndex]))
+          .Append("[]");
+    }
+
+    builder.Append(")");
+
+    if (conflictTargetColumnName is not null) {
+      builder.Append(" ON CONFLICT (")
+          .Append(QuotePostgresIdentifier(conflictTargetColumnName))
+          .Append(") DO NOTHING");
+    }
+
+    return builder.ToString();
+  }
+
+  private static void AppendQuotedColumnList(StringBuilder builder, IReadOnlyList<string> columns) {
+    for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++) {
+      if (columnIndex > 0) {
+        builder.Append(", ");
+      }
+
+      builder.Append(QuotePostgresIdentifier(columns[columnIndex]));
+    }
   }
 
   private static string CreateLatestSatelliteHashDiffsCommandText(
@@ -561,6 +650,49 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     }
 
     return null;
+  }
+
+  private static object CreatePostgresArrayParameterValue(
+      IReadOnlyList<Dictionary<string, object>> rows,
+      string columnName) {
+    var firstValue = rows
+        .Select(row => row[columnName])
+        .FirstOrDefault(value => value is not null and not DBNull);
+
+    return firstValue switch {
+      string => rows.Select(row => (string)row[columnName]).ToArray(),
+      DateTimeOffset => rows.Select(row => (DateTimeOffset)row[columnName]).ToArray(),
+      long => rows.Select(row => (long)row[columnName]).ToArray(),
+      int => rows.Select(row => (int)row[columnName]).ToArray(),
+      _ => rows.Select(row => row[columnName]).ToArray(),
+    };
+  }
+
+  private static string GetPostgresArrayCastType(
+      DbContext dbContext,
+      string tableName,
+      string columnName) {
+    var property = FindEntityType(dbContext, tableName)
+        ?.GetProperties()
+        .FirstOrDefault(candidate => string.Equals(candidate.GetColumnName(), columnName, StringComparison.Ordinal));
+    var valueFormat = property?.FindAnnotation(DataVaultAnnotationNames.ProviderValueFormat)?.Value;
+
+    if (valueFormat is DataVaultProviderValueFormat.UtcTicks ||
+        property?.ClrType == typeof(long)) {
+      return "bigint";
+    }
+
+    if (valueFormat is DataVaultProviderValueFormat.NativeInteger ||
+        property?.ClrType == typeof(int)) {
+      return "integer";
+    }
+
+    if (valueFormat is DataVaultProviderValueFormat.NativeDateTimeOffset ||
+        property?.ClrType == typeof(DateTimeOffset)) {
+      return "timestamptz";
+    }
+
+    return "text";
   }
 
   private static DateTimeOffset ReadDateTimeOffset(DbDataReader reader, int ordinal) {
