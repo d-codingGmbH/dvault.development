@@ -482,15 +482,14 @@ public sealed class DataVaultMetadataModel {
           "bridges");
     }
 
-    var recursiveParticipantCount = link.Participants
-        .Count(participant => string.Equals(participant.HubReference.Name, sourceHubName, StringComparison.Ordinal));
-    if (recursiveParticipantCount < 2) {
+    if (link.Participants.Count != 2 ||
+        link.Participants.Any(participant => !string.Equals(participant.HubReference.Name, sourceHubName, StringComparison.Ordinal))) {
       throw new ArgumentException(
           "Hierarchy bridge '" +
           bridge.Name +
-          "' must traverse a recursive link that declares hub '" +
+          "' must traverse a two-participant self-link over hub '" +
           sourceHubName +
-          "' at least twice.",
+          "'.",
           "bridges");
     }
 

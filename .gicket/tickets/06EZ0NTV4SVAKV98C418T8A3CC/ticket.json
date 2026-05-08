@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0NTV4SVAKV98C418T8A3CC",
   "ticket-type": "story",
   "title": "Story: Add bridge table modeling and generation",
-  "revision": "06F03TBZG6MGZQT9J946PCXY5W",
-  "status": "todo",
+  "revision": "06F0DRNEMKW7V40684445BSD1W",
+  "status": "done",
   "labels": [
-    "type/story",
-    "automation/bot-ready",
-    "area/modeling",
     "area/bridge",
-    "needs-po"
+    "area/modeling",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:15:50.1979027Z",
-  "updated-at": "2026-05-07T10:09:00.2890000Z"
+  "updated-at": "2026-05-08T09:19:39.6842528Z"
 }

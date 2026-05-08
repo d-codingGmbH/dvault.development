@@ -1,0 +1,32 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `2` selected relation flow(s) for source ticket `06EZ0NTV4SVAKV98C418T8A3CC`.
+- Role `dev` completed with outcome `dev-workflow-apply` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `6`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `695d3bcadd0f434c831b2822aca8b0f1`
+
+Action plan
+- [queued] `blocked-by-follow-up-comment` -> `06EZ0NSBM3GD7DY11Y4PZMXD28` via `blocks` path `06EZ0NTV4SVAKV98C418T8A3CC -> 06EZ0NSBM3GD7DY11Y4PZMXD28`
+- [queued] `blocked-by-follow-up-comment` -> `06EZ0NWKC9ZME5BSCJFSQEQ02R` via `blocks` path `06EZ0NTV4SVAKV98C418T8A3CC -> 06EZ0NWKC9ZME5BSCJFSQEQ02R`
+- [queued] `child-follow-up-comment` -> `06EZ0NV0Y81AE1Z1Q3223TX2S4` via `parentOf` path `06EZ0NTV4SVAKV98C418T8A3CC -> 06EZ0NV0Y81AE1Z1Q3223TX2S4`
+- [queued] `child-follow-up-comment` -> `06EZ0NV7KG94MTMNXMGVRYVW9C` via `parentOf` path `06EZ0NTV4SVAKV98C418T8A3CC -> 06EZ0NV7KG94MTMNXMGVRYVW9C`
+- [queued] `child-follow-up-comment` -> `06EZ0NVE88WW9PMM04NVAZHRG0` via `parentOf` path `06EZ0NTV4SVAKV98C418T8A3CC -> 06EZ0NVE88WW9PMM04NVAZHRG0`
+- [queued] `child-follow-up-comment` -> `06F03T9R8QK81VQCC158NJ62YG` via `parentOf` path `06EZ0NTV4SVAKV98C418T8A3CC -> 06F03T9R8QK81VQCC158NJ62YG`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06EZ0NTV4SVAKV98C418T8A3CC` owner `ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation` base `develop` source-owner `ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06EZ0NSBM3GD7DY11Y4PZMXD28` owner `ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f` base `develop` source-owner `ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation`: Target ticket owner branch 'ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f' differs from source owner branch 'ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06EZ0NWKC9ZME5BSCJFSQEQ02R` owner `ticket/06EZ0NWKC9ZME5BSCJFSQEQ02R-story-expose-advanced-configuration-hooks-needed` base `develop` source-owner `ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation`: Target ticket owner branch 'ticket/06EZ0NWKC9ZME5BSCJFSQEQ02R-story-expose-advanced-configuration-hooks-needed' differs from source owner branch 'ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06EZ0NV0Y81AE1Z1Q3223TX2S4` owner `ticket/06EZ0NV0Y81AE1Z1Q3223TX2S4-task-define-bridge-metadata-for-many-to-many-and` base `develop` source-owner `ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation`: Target ticket owner branch 'ticket/06EZ0NV0Y81AE1Z1Q3223TX2S4-task-define-bridge-metadata-for-many-to-many-and' differs from source owner branch 'ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06EZ0NV7KG94MTMNXMGVRYVW9C` owner `ticket/06EZ0NV7KG94MTMNXMGVRYVW9C-task-generate-provider-neutral-bridge-ef-model-m` base `develop` source-owner `ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation`: Target ticket owner branch 'ticket/06EZ0NV7KG94MTMNXMGVRYVW9C-task-generate-provider-neutral-bridge-ef-model-m' differs from source owner branch 'ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06EZ0NVE88WW9PMM04NVAZHRG0` owner `ticket/06EZ0NVE88WW9PMM04NVAZHRG0-task-add-bridge-documentation-and-example-scenar` base `develop` source-owner `ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation`: Target ticket owner branch 'ticket/06EZ0NVE88WW9PMM04NVAZHRG0-task-add-bridge-documentation-and-example-scenar' differs from source owner branch 'ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F03T9R8QK81VQCC158NJ62YG` owner `ticket/06F03T9R8QK81VQCC158NJ62YG-task-reconcile-bridge-documentation-with-impleme` base `develop` source-owner `ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation`: Target ticket owner branch 'ticket/06F03T9R8QK81VQCC158NJ62YG-task-reconcile-bridge-documentation-with-impleme' differs from source owner branch 'ticket/06EZ0NTV4SVAKV98C418T8A3CC-story-add-bridge-table-modeling-and-generation'.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-by-follow-up-target` to `06EZ0NSBM3GD7DY11Y4PZMXD28` on owner branch `ticket/06EZ0NSBM3GD7DY11Y4PZMXD28-story-define-capability-extension-architecture-f` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-by-follow-up-target` to `06EZ0NWKC9ZME5BSCJFSQEQ02R` on owner branch `ticket/06EZ0NWKC9ZME5BSCJFSQEQ02R-story-expose-advanced-configuration-hooks-needed` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `child-follow-up-target` to `06EZ0NV0Y81AE1Z1Q3223TX2S4` on owner branch `ticket/06EZ0NV0Y81AE1Z1Q3223TX2S4-task-define-bridge-metadata-for-many-to-many-and` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `child-follow-up-target` to `06EZ0NV7KG94MTMNXMGVRYVW9C` on owner branch `ticket/06EZ0NV7KG94MTMNXMGVRYVW9C-task-generate-provider-neutral-bridge-ef-model-m` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `child-follow-up-target` to `06EZ0NVE88WW9PMM04NVAZHRG0` on owner branch `ticket/06EZ0NVE88WW9PMM04NVAZHRG0-task-add-bridge-documentation-and-example-scenar` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `child-follow-up-target` to `06F03T9R8QK81VQCC158NJ62YG` on owner branch `ticket/06F03T9R8QK81VQCC158NJ62YG-task-reconcile-bridge-documentation-with-impleme` after that branch is refreshed/rebased.

@@ -640,6 +640,53 @@ public sealed class DataVaultMetadataTests {
   }
 
   [Fact]
+  public void MetadataModelRejectsHierarchyBridgeWithExtraMixedHubParticipant() {
+    var employee = new DataVaultHubMetadata("Employee", ["EmployeeId"]);
+    var department = new DataVaultHubMetadata("Department", ["DepartmentId"]);
+    var employeeEmployeeDepartment = new DataVaultLinkMetadata(
+        "EmployeeEmployeeDepartment",
+        [employee.ToReference(), employee.ToReference(), department.ToReference()]);
+    var bridge = DataVaultBridgeMetadata.Hierarchy(
+        "EmployeeHierarchy",
+        employee.ToReference(),
+        employeeEmployeeDepartment.ToReference(),
+        employee.ToReference(),
+        ancestorParticipantOrdinal: 0,
+        descendantParticipantOrdinal: 1);
+
+    AssertBridgeValidationFailure(
+        () => new DataVaultMetadataModel(
+            [employee, department],
+            [employeeEmployeeDepartment],
+            [],
+            [bridge]),
+        "two-participant self-link");
+  }
+
+  [Fact]
+  public void MetadataModelRejectsHierarchyBridgeWithExtraRecursiveParticipant() {
+    var employee = new DataVaultHubMetadata("Employee", ["EmployeeId"]);
+    var employeeEmployeeEmployee = new DataVaultLinkMetadata(
+        "EmployeeEmployeeEmployee",
+        [employee.ToReference(), employee.ToReference(), employee.ToReference()]);
+    var bridge = DataVaultBridgeMetadata.Hierarchy(
+        "EmployeeHierarchy",
+        employee.ToReference(),
+        employeeEmployeeEmployee.ToReference(),
+        employee.ToReference(),
+        ancestorParticipantOrdinal: 0,
+        descendantParticipantOrdinal: 1);
+
+    AssertBridgeValidationFailure(
+        () => new DataVaultMetadataModel(
+            [employee],
+            [employeeEmployeeEmployee],
+            [],
+            [bridge]),
+        "two-participant self-link");
+  }
+
+  [Fact]
   public void MetadataModelRejectsBridgeWithUnknownHubReference() {
     var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
     var product = new DataVaultHubMetadata("Product", ["ProductId"]);
@@ -729,6 +776,13 @@ public sealed class DataVaultMetadataTests {
     var exception = Record.Exception(action);
 
     Assert.IsAssignableFrom<ArgumentException>(exception);
+  }
+
+  private static void AssertBridgeValidationFailure(Action action, string expectedMessage) {
+    var exception = Assert.Throws<ArgumentException>(action);
+
+    Assert.Equal("bridges", exception.ParamName);
+    Assert.Contains(expectedMessage, exception.Message, StringComparison.Ordinal);
   }
 
   private static void AssertPointInTimeValidation(
