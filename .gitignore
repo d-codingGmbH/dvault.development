@@ -6,3 +6,4 @@ TestResults/
 **/obj/
 *.user
 *.dll
+.gicket/.ticket.write.lock

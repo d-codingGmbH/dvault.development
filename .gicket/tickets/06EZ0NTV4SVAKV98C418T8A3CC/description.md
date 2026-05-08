@@ -2,11 +2,11 @@
 ## Delivery Contract
 
 ### PO Summary
-- Refinement incorporates the PO-critic finding into the parent story: one narrow implementation gap remains in hierarchy bridge metadata validation, and it belongs in this story before final closure.
+- Completion alignment: the bridge story is already integrated and done; the former hierarchy-validation gap is completed and the preserved pre-delivery handoff text is historical only.
 
 ### PO Handoff
-- decision: `ready_for_dev`
-- meaning: ticket can move to developer implementation for the remaining hierarchy-validation gap
+- historical-decision: `ready_for_dev` (superseded by status `done` and integration commit `47bef894`)
+- final-meaning: ticket is complete; no active developer handoff remains
 
 ### Clarifications
 - Repository-backed v1 scope is already fixed by docs/plans/06EZ0NV0Y81AE1Z1Q3223TX2S4-bridge-metadata-v1-contract.md and current source: bridge support is opt-in, additive, and limited to many-to-many plus hierarchy bridge metadata over existing hubs and links.
@@ -42,8 +42,8 @@
 - Durable documentation no longer contradicts current bridge source and test behavior and keeps deferred capabilities explicitly out of the implemented baseline.
 
 ## Implementation Notes
-- Current source already reflects the baseline vocabulary: src/DCoding.Data.DVault/DataVaultAnnotationNames.cs contains Bridge and BridgeDepth-related annotation/property-role values, and src/DCoding.Data.DVault/DataVaultEfMetadataTranslator.cs already contains dedicated bridge translation paths for many-to-many and hierarchy bridge projections.
-- Use the bridge contract document as the authoritative naming, role, and ownership reference; it explicitly assigns metadata validation to 06EZ0NV0Y81AE1Z1Q3223TX2S4 and translator-time unsupported-feature failures to 06EZ0NV7KG94MTMNXMGVRYVW9C. The remaining parent-story implementation must tighten DataVaultMetadataModel.ValidateHierarchyBridge so hierarchy bridges only accept exactly two link participants and both participants refer to the same hub type.
+- Final source already reflects the baseline vocabulary: src/DCoding.Data.DVault/DataVaultAnnotationNames.cs contains Bridge and BridgeDepth-related annotation/property-role values, and src/DCoding.Data.DVault/DataVaultEfMetadataTranslator.cs already contains dedicated bridge translation paths for many-to-many and hierarchy bridge projections.
+- Use the bridge contract document as the authoritative naming, role, and ownership reference; it explicitly assigns metadata validation to 06EZ0NV0Y81AE1Z1Q3223TX2S4 and translator-time unsupported-feature failures to 06EZ0NV7KG94MTMNXMGVRYVW9C. The delivered implementation tightens DataVaultMetadataModel.ValidateHierarchyBridge so hierarchy bridges only accept exactly two link participants and both participants refer to the same hub type.
 - Keep bridge work additive to the current hub/link/satellite baseline documented in docs/architecture/mvp-data-vault-concepts.md and the deferred capability record; bridge support must not reopen save-service, provider profile, or runtime maintenance scope under this story.
 - Treat 06F03T9R8QK81VQCC158NJ62YG as the active guardrail for documentation accuracy because the earlier docs child 06EZ0NVE88WW9PMM04NVAZHRG0 captured an older deferred-only snapshot.
 
@@ -55,11 +55,11 @@
 - Which deferred bridge expansions, if any, should be prioritized next: provider-specific physical optimization, effectivity/path payload support, advanced hierarchy semantics, or PIT/multi-active interactions?
 
 ## Risks
-- If hierarchy validation remains broader than the v1 contract, bridge metadata can describe unsupported traversal shapes that the translator would still project.
+- Completion risk was resolved before closure: hierarchy validation now rejects unsupported traversal shapes outside the v1 contract.
 - If documentation drifts back toward a deferred-only description, consumers may misread the implemented baseline or assume unsupported runtime bridge behavior that this story does not deliver.
 
 ## Split Recommendations
-- No additional split is recommended: the parent story can carry the narrow hierarchy-validation correction directly, because all earlier bridge children are already done and the remaining work is a closure gap discovered at parent review.
+- No additional split is recommended: the bridge story is done, and any future runtime bridge population, effectivity/path payload, advanced hierarchy semantics, or PIT/multi-active interactions remain follow-up scope.
 
 <!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
 

@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0NS59T2SW9976HHSGP2GF0",
   "ticket-type": "epic",
   "title": "Epic: Deferred Data Vault capabilities",
-  "revision": "06EZ0Y515HZPQYKZ87W6SKH368",
-  "status": "todo",
+  "revision": "06F0EHD5X0DMEHRJCET76J804W",
+  "status": "done",
   "labels": [
-    "type/epic",
-    "automation/bot-ready",
-    "area/modeling",
     "area/architecture",
-    "needs-po"
+    "area/modeling",
+    "type/epic",
+    "automation/bot-ready"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:15:36.4463660Z",
-  "updated-at": "2026-05-04T00:52:10.6682179Z"
+  "updated-at": "2026-05-08T11:07:45.5120000Z"
 }
