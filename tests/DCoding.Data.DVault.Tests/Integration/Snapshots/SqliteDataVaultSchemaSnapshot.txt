@@ -35,9 +35,9 @@ table LinkCustomerOrderRegion
 table SatCustomerContact
   columns: CustomerHashKey | HashDiff | LoadTimestamp | RecordSource | EmailAddress
   primary-key: PkSatCustomerContactCustomerHashKeyLoadTimestamp (CustomerHashKey | LoadTimestamp)
-  index: IxSatCustomerContactSatelliteParentCustomerHashKeyLoadTimestamp unique=false (CustomerHashKey | LoadTimestamp)
+  index: IxSatCustomerContactSatelliteParentCustomerHashKeyLoadTimestamp unique=false (CustomerHashKey | LoadTimestamp | HashDiff)
 
 table SatCustomerOrderRegionFulfillmentStatu
   columns: CustomerOrderRegionHashKey | HashDiff | LoadTimestamp | RecordSource | StateCode
   primary-key: PkSatCustomerOrderRegionFulfillmentStatuCustomerOrderRegionHashKeyLoadTimestamp (CustomerOrderRegionHashKey | LoadTimestamp)
-  index: IxSatCustomerOrderRegionFulfillmentStatuSatelliteParentCustomerOrderRegionHashKeyLoadTimestamp unique=false (CustomerOrderRegionHashKey | LoadTimestamp)
+  index: IxSatCustomerOrderRegionFulfillmentStatuSatelliteParentCustomerOrderRegionHashKeyLoadTimestamp unique=false (CustomerOrderRegionHashKey | LoadTimestamp | HashDiff)

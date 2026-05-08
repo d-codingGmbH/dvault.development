@@ -209,7 +209,7 @@ public sealed class DataVaultEfMetadataTranslationTests {
     AssertIndex(
         satellite,
         "IxSatCustomerContactSatelliteParentCustomerHashKeyContactTypeRegionCodeLoadTimestamp",
-        ["CustomerHashKey", "ContactType", "RegionCode", "LoadTimestamp"],
+        ["CustomerHashKey", "ContactType", "RegionCode", "LoadTimestamp", "HashDiff"],
         isUnique: false);
   }
 
@@ -411,7 +411,7 @@ public sealed class DataVaultEfMetadataTranslationTests {
     AssertIndex(
         satellite,
         "IxSatCustomerOrderStateSatelliteParentCustomerOrderHashKeyLoadTimestamp",
-        ["CustomerOrderHashKey", "LoadTimestamp"],
+        ["CustomerOrderHashKey", "LoadTimestamp", "HashDiff"],
         isUnique: false);
   }
 
@@ -829,7 +829,7 @@ public sealed class DataVaultEfMetadataTranslationTests {
     AssertIndex(
         satellite,
         "IxSatCustomerContactSatelliteParentCustomerHashKeyLoadTimestamp",
-        ["CustomerHashKey", "LoadTimestamp"],
+        ["CustomerHashKey", "LoadTimestamp", "HashDiff"],
         isUnique: false);
     AssertNoRelationships(satellite);
   }
@@ -930,6 +930,7 @@ public sealed class DataVaultEfMetadataTranslationTests {
         property,
         DataVaultAnnotationNames.ProviderLogicalPropertyKind));
     Assert.Equal(ExpectedStorageType(expectedLogicalPropertyKind), AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderStorageType));
+    Assert.Equal(ExpectedStorageType(expectedLogicalPropertyKind), property.GetColumnType());
     Assert.Equal(ExpectedValueFormat(expectedLogicalPropertyKind), AnnotationValue<DataVaultProviderValueFormat>(
         property,
         DataVaultAnnotationNames.ProviderValueFormat));
@@ -959,6 +960,7 @@ public sealed class DataVaultEfMetadataTranslationTests {
         property,
         DataVaultAnnotationNames.ProviderLogicalPropertyKind));
     Assert.Equal(expectedStorageType, AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderStorageType));
+    Assert.Equal(expectedStorageType, property.GetColumnType());
     Assert.Equal(expectedValueFormat, AnnotationValue<DataVaultProviderValueFormat>(
         property,
         DataVaultAnnotationNames.ProviderValueFormat));

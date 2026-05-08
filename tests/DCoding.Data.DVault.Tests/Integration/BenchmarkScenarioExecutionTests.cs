@@ -265,6 +265,26 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
+  public async Task LocalBenchmarkRunnerCanRunLatestSatelliteIndexMatrixForSqlite() {
+    var text = await RunBenchmarkAndCaptureOutputAsync(new BenchmarkOptions(
+        1,
+        0,
+        LatestIndexMatrix: true,
+        ProviderFilter: BenchmarkProviderFilters.Sqlite)).ConfigureAwait(false);
+
+    Assert.Contains("latest-satellite-lookup-replay", text);
+    Assert.Contains("latest-satellite-lookup-change", text);
+    Assert.Contains("dvault-adddvaultsqlite-optimized/latest-index-default", text);
+    Assert.Contains("dvault-adddvaultsqlite-optimized/latest-index-parent-desc", text);
+    Assert.Contains("dvault-adddvaultsqlite-optimized/latest-index-covering", text);
+    Assert.Contains("2000 profile satellite rows after unchanged replay latest lookup", text);
+    Assert.Contains("2100 profile satellite rows after changed replay latest lookup", text);
+    Assert.Contains("Recorded 6 benchmark report rows.", text);
+    Assert.Contains("Executed 6 benchmark report rows.", text);
+    Assert.DoesNotContain("customer-profile-history", text);
+  }
+
+  [Fact]
   public async Task PostgresDiscoveryTreatsMissingEnvironmentVariableAsNotConfiguredSkip() {
     var availability = await PostgresBenchmarkAvailability
         .DiscoverAsync(

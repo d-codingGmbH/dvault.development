@@ -239,7 +239,9 @@ internal static class DataVaultEfMetadataTranslator {
                 satelliteParentIndexColumnNames,
                 IsUnique: false)),
             satelliteParentIndexColumnNames,
-            IsUnique: false),
+            IsUnique: false,
+            DescendingPropertyNames: [loadTimestampColumnName],
+            IncludedPropertyNames: [hashDiffColumnName]),
     };
     var primaryKey = new KeyProjection(
         NamingPolicy.GetConstraintName(
@@ -590,8 +592,19 @@ internal static class DataVaultEfMetadataTranslator {
           continue;
         }
 
-        var indexBuilder = entityBuilder.HasIndex(index.PropertyNames.ToArray());
+        var indexPropertyNames = GetEffectiveIndexPropertyNames(index, providerCapabilities);
+        var indexBuilder = entityBuilder.HasIndex(indexPropertyNames.ToArray());
         indexBuilder.IsUnique(index.IsUnique);
+        if (index.DescendingPropertyNames.Count > 0) {
+          indexBuilder.IsDescending(indexPropertyNames
+              .Select(propertyName => index.DescendingPropertyNames.Contains(propertyName, StringComparer.Ordinal))
+              .ToArray());
+        }
+
+        if (SupportsIncludedIndexProperties(providerCapabilities) && index.IncludedPropertyNames.Count > 0) {
+          ApplyIncludedIndexProperties(indexBuilder, index.IncludedPropertyNames, providerCapabilities);
+        }
+
         indexBuilder.HasDatabaseName(GetPhysicalIdentifierName(index.Name, providerCapabilities));
         indexBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProducedName, index.Name);
         indexBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.Ordinal, ordinal);
@@ -603,8 +616,76 @@ internal static class DataVaultEfMetadataTranslator {
       IndexProjection index,
       KeyProjection primaryKey,
       DataVaultProviderCapabilityProfile providerCapabilities) {
+    var effectiveIndexPropertyNames = GetEffectiveIndexPropertyNames(index, providerCapabilities);
+
     return !providerCapabilities.AllowsIndexesCoveredByPrimaryKey &&
-        index.PropertyNames.SequenceEqual(primaryKey.PropertyNames, StringComparer.Ordinal);
+        index.DescendingPropertyNames.Count == 0 &&
+        index.IncludedPropertyNames.Count == 0 &&
+        effectiveIndexPropertyNames.SequenceEqual(primaryKey.PropertyNames, StringComparer.Ordinal);
+  }
+
+  private static IReadOnlyList<string> GetEffectiveIndexPropertyNames(
+      IndexProjection index,
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    if (SupportsIncludedIndexProperties(providerCapabilities) || index.IncludedPropertyNames.Count == 0) {
+      return index.PropertyNames;
+    }
+
+    return index.PropertyNames
+        .Concat(index.IncludedPropertyNames)
+        .Distinct(StringComparer.Ordinal)
+        .ToArray();
+  }
+
+  private static bool SupportsIncludedIndexProperties(DataVaultProviderCapabilityProfile providerCapabilities) {
+    return providerCapabilities.ProfileName.StartsWith("sqlserver-", StringComparison.Ordinal) ||
+        providerCapabilities.ProfileName.StartsWith("postgres-", StringComparison.Ordinal);
+  }
+
+  private static void ApplyIncludedIndexProperties(
+      IndexBuilder indexBuilder,
+      IReadOnlyList<string> includedPropertyNames,
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    if (providerCapabilities.ProfileName.StartsWith("sqlserver-", StringComparison.Ordinal)) {
+      InvokeProviderIndexExtension(
+          "Microsoft.EntityFrameworkCore.SqlServerIndexBuilderExtensions, Microsoft.EntityFrameworkCore.SqlServer",
+          indexBuilder,
+          includedPropertyNames);
+      return;
+    }
+
+    if (providerCapabilities.ProfileName.StartsWith("postgres-", StringComparison.Ordinal)) {
+      InvokeProviderIndexExtension(
+          "Microsoft.EntityFrameworkCore.NpgsqlIndexBuilderExtensions, Npgsql.EntityFrameworkCore.PostgreSQL",
+          indexBuilder,
+          includedPropertyNames);
+    }
+  }
+
+  private static void InvokeProviderIndexExtension(
+      string extensionTypeName,
+      IndexBuilder indexBuilder,
+      IReadOnlyList<string> includedPropertyNames) {
+    var extensionType = Type.GetType(extensionTypeName, throwOnError: false);
+    var includePropertiesMethod = extensionType?
+        .GetMethods()
+        .Where(method => string.Equals(method.Name, "IncludeProperties", StringComparison.Ordinal))
+        .Select(method => new {
+          Method = method,
+          Parameters = method.GetParameters(),
+        })
+        .Where(candidate =>
+            candidate.Parameters.Length == 2 &&
+            candidate.Parameters[0].ParameterType.IsAssignableFrom(typeof(IndexBuilder)) &&
+            candidate.Parameters[1].ParameterType == typeof(string[]))
+        .Select(candidate => candidate.Method)
+        .FirstOrDefault();
+
+    if (includePropertiesMethod is null) {
+      return;
+    }
+
+    includePropertiesMethod.Invoke(null, [indexBuilder, includedPropertyNames.ToArray()]);
   }
 
   private static string GetPhysicalIdentifierName(
@@ -633,6 +714,7 @@ internal static class DataVaultEfMetadataTranslator {
     var propertyBuilder = CreateIndexerProperty(entityBuilder, property, providerCapabilities, typeMapping);
 
     propertyBuilder.HasColumnName(property.Name);
+    propertyBuilder.HasColumnType(typeMapping.NativeStoreType);
     propertyBuilder.HasColumnOrder(ordinal);
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProducedName, property.Name);
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.PropertyRole, property.Role);
@@ -723,7 +805,16 @@ internal static class DataVaultEfMetadataTranslator {
 
   private sealed record KeyProjection(string Name, IReadOnlyList<string> PropertyNames);
 
-  private sealed record IndexProjection(string Name, IReadOnlyList<string> PropertyNames, bool IsUnique);
+  private sealed record IndexProjection(
+      string Name,
+      IReadOnlyList<string> PropertyNames,
+      bool IsUnique,
+      IReadOnlyList<string>? DescendingPropertyNames = null,
+      IReadOnlyList<string>? IncludedPropertyNames = null) {
+    public IReadOnlyList<string> DescendingPropertyNames { get; } = DescendingPropertyNames ?? [];
+
+    public IReadOnlyList<string> IncludedPropertyNames { get; } = IncludedPropertyNames ?? [];
+  }
 
   private readonly record struct EndpointColumn(DataVaultBridgeEndpointRole Role, string ColumnName);
 }

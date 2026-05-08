@@ -296,7 +296,7 @@ public sealed class NormalEfOrderProductSqliteTests {
         "PkSatOrderProductFulfillmentOrderProductHashKeyLoadTimestamp",
         ["OrderProductHashKey", "LoadTimestamp"],
         "IxSatOrderProductFulfillmentSatelliteParentOrderProductHashKeyLoadTimestamp",
-        ["OrderProductHashKey", "LoadTimestamp"],
+        ["OrderProductHashKey", "LoadTimestamp", "HashDiff"],
         expectedIndexUnique: false);
   }
 

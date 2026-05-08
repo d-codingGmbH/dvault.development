@@ -5,6 +5,7 @@ internal sealed record BenchmarkOptions(
     int WarmupIterations,
     string? ArtifactOutputDirectory = null,
     bool ScaleMatrix = false,
+    bool LatestIndexMatrix = false,
     DataVaultLoadTimestampStorage LoadTimestampStorage = DataVaultLoadTimestampStorage.ProviderDefault,
     string ProviderFilter = BenchmarkProviderFilters.All) {
   private const int DefaultIterations = 5;
@@ -19,6 +20,7 @@ internal sealed record BenchmarkOptions(
     var warmupIterations = DefaultWarmupIterations;
     string? artifactOutputDirectory = null;
     var scaleMatrix = false;
+    var latestIndexMatrix = false;
     var loadTimestampStorage = DataVaultLoadTimestampStorage.ProviderDefault;
     var providerFilter = BenchmarkProviderFilters.All;
 
@@ -26,6 +28,9 @@ internal sealed record BenchmarkOptions(
       switch (args[index]) {
         case "--scale":
           scaleMatrix = true;
+          break;
+        case "--latest-indexes":
+          latestIndexMatrix = true;
           break;
         case "--iterations":
           iterations = ReadPositiveInt(args, ref index, "--iterations");
@@ -48,11 +53,16 @@ internal sealed record BenchmarkOptions(
       }
     }
 
+    if (scaleMatrix && latestIndexMatrix) {
+      throw new ArgumentException("--scale and --latest-indexes cannot be combined.");
+    }
+
     return new BenchmarkOptions(
         iterations,
         warmupIterations,
         artifactOutputDirectory,
         scaleMatrix,
+        latestIndexMatrix,
         loadTimestampStorage,
         providerFilter);
   }

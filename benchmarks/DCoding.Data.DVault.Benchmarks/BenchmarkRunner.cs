@@ -56,8 +56,13 @@ internal static class BenchmarkRunner {
     ArgumentNullException.ThrowIfNull(optionalProviders);
 
     var summaries = new List<BenchmarkSummary>();
+    var selectedOptionalProviders = optionalProviders
+        .Where(availability => ShouldRunProvider(options, availability.ProviderName))
+        .ToArray();
     var sqliteBenchmarks = ShouldRunProvider(options, BenchmarkArtifacts.RequiredProviderName)
-        ? options.ScaleMatrix
+        ? options.LatestIndexMatrix
+            ? CreateLatestIndexBenchmarks(BenchmarkDatabaseProviders.Sqlite, DataVaultBenchmarkStrategy.SqliteOptimized, options)
+            : options.ScaleMatrix
             ? CreateScaleBenchmarks(BenchmarkDatabaseProviders.Sqlite, DataVaultBenchmarkStrategy.SqliteOptimized, options)
             : CreateSqliteBenchmarks(options)
         : [];
@@ -70,7 +75,7 @@ internal static class BenchmarkRunner {
 
     Console.WriteLine("DVault scenario comparison benchmarks");
     Console.WriteLine("Required provider: " + BenchmarkArtifacts.RequiredProviderName);
-    foreach (var availability in optionalProviders) {
+    foreach (var availability in selectedOptionalProviders) {
       Console.WriteLine(
           availability.ProviderName +
           ": " +
@@ -84,9 +89,11 @@ internal static class BenchmarkRunner {
       summaries.Add(await TryExecuteBenchmarkAsync(benchmark, options, cancellationToken).ConfigureAwait(false));
     }
 
-    foreach (var availability in optionalProviders) {
+    foreach (var availability in selectedOptionalProviders) {
       var strategy = providerStrategies[availability.ProviderName];
-      var providerBenchmarks = options.ScaleMatrix
+      var providerBenchmarks = options.LatestIndexMatrix
+          ? CreateLatestIndexBenchmarks(availability.Provider, strategy, options)
+          : options.ScaleMatrix
           ? CreateScaleBenchmarks(availability.Provider, strategy, options)
           : CreateProviderBenchmarks(availability.Provider, strategy, options);
       if (availability.IsAvailable) {
@@ -114,7 +121,7 @@ internal static class BenchmarkRunner {
     }
 
     if (options.ArtifactOutputDirectory is not null) {
-      var context = BenchmarkRunContext.Create(options, postgresAvailability, optionalProviders);
+      var context = BenchmarkRunContext.Create(options, postgresAvailability, selectedOptionalProviders);
       var artifactPaths = await BenchmarkArtifacts
           .WriteAsync(options.ArtifactOutputDirectory, context, summaries, cancellationToken)
           .ConfigureAwait(false);
@@ -136,6 +143,7 @@ internal static class BenchmarkRunner {
     Console.WriteLine("  --warmup <n>      Number of unreported warmup iterations. Default: 1.");
     Console.WriteLine("  --output <dir>    Directory for benchmark-summary.md, benchmark-summary.csv, and benchmark-summary.json.");
     Console.WriteLine("  --scale           Run only customer profile scale scenarios across configured providers.");
+    Console.WriteLine("  --latest-indexes  Run only seeded latest-satellite lookup scenarios across index variants.");
     Console.WriteLine("  --load-timestamp-storage <provider-default|iso8601-utc-text|utc-ticks>");
     Console.WriteLine("                    Physical Data Vault load-timestamp storage to project. Default: provider-default.");
     Console.WriteLine("  --provider <all|sqlite|postgres|sqlserver|mysql|oracle>");
@@ -271,6 +279,30 @@ internal static class BenchmarkRunner {
           DataVaultBenchmarkStrategy.ProviderNeutralFallback,
           options.LoadTimestampStorage));
       benchmarks.Add(new CustomerProfileBulkDataVaultBenchmark(provider, scenario, optimizedStrategy, options.LoadTimestampStorage));
+    }
+
+    return [.. benchmarks];
+  }
+
+  private static IScenarioBenchmark[] CreateLatestIndexBenchmarks(
+      BenchmarkDatabaseProvider provider,
+      DataVaultBenchmarkStrategy optimizedStrategy,
+      BenchmarkOptions options) {
+    var benchmarks = new List<IScenarioBenchmark>();
+
+    foreach (var variant in LatestSatelliteLookupIndexVariant.GetVariants(provider.ProviderName)) {
+      benchmarks.Add(new LatestSatelliteLookupIndexBenchmark(
+          provider,
+          optimizedStrategy,
+          options.LoadTimestampStorage,
+          variant,
+          LatestSatelliteLookupWorkload.UnchangedReplay));
+      benchmarks.Add(new LatestSatelliteLookupIndexBenchmark(
+          provider,
+          optimizedStrategy,
+          options.LoadTimestampStorage,
+          variant,
+          LatestSatelliteLookupWorkload.ChangedReplay));
     }
 
     return [.. benchmarks];
