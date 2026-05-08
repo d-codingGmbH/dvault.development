@@ -7,24 +7,41 @@ internal static class BenchmarkRunner {
   public static async Task RunAsync(BenchmarkOptions options, CancellationToken cancellationToken) {
     ArgumentNullException.ThrowIfNull(options);
 
-    var postgresAvailability = await PostgresBenchmarkAvailability
-        .DiscoverAsync(cancellationToken)
-        .ConfigureAwait(false);
-    var sqlServerAvailability = await BenchmarkProviderAvailability
-        .DiscoverAsync(BenchmarkExternalProviderDefinitions.SqlServer, cancellationToken)
-        .ConfigureAwait(false);
-    var mySqlAvailability = await BenchmarkProviderAvailability
-        .DiscoverAsync(BenchmarkExternalProviderDefinitions.MySql, cancellationToken)
-        .ConfigureAwait(false);
-    var oracleAvailability = await BenchmarkProviderAvailability
-        .DiscoverAsync(BenchmarkExternalProviderDefinitions.Oracle, cancellationToken)
-        .ConfigureAwait(false);
+    Console.WriteLine("Discovering benchmark providers for filter '" + options.ProviderFilter + "'.");
+    var postgresAvailability = ShouldRunProvider(options, BenchmarkExternalProviderDefinitions.Postgres.ProviderName)
+        ? await PostgresBenchmarkAvailability
+            .DiscoverAsync(cancellationToken)
+            .ConfigureAwait(false)
+        : PostgresBenchmarkAvailability.Skipped(BenchmarkSkipReason.NotConfigured());
+    var sqlServerAvailability = ShouldRunProvider(options, BenchmarkExternalProviderDefinitions.SqlServer.ProviderName)
+        ? await BenchmarkProviderAvailability
+            .DiscoverAsync(BenchmarkExternalProviderDefinitions.SqlServer, cancellationToken)
+            .ConfigureAwait(false)
+        : BenchmarkProviderAvailability.Skipped(
+            BenchmarkExternalProviderDefinitions.SqlServer,
+            BenchmarkSkipReason.NotConfigured(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable));
+    var mySqlAvailability = ShouldRunProvider(options, BenchmarkExternalProviderDefinitions.MySql.ProviderName)
+        ? await BenchmarkProviderAvailability
+            .DiscoverAsync(BenchmarkExternalProviderDefinitions.MySql, cancellationToken)
+            .ConfigureAwait(false)
+        : BenchmarkProviderAvailability.Skipped(
+            BenchmarkExternalProviderDefinitions.MySql,
+            BenchmarkSkipReason.NotConfigured(BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable));
+    var oracleAvailability = ShouldRunProvider(options, BenchmarkExternalProviderDefinitions.Oracle.ProviderName)
+        ? await BenchmarkProviderAvailability
+            .DiscoverAsync(BenchmarkExternalProviderDefinitions.Oracle, cancellationToken)
+            .ConfigureAwait(false)
+        : BenchmarkProviderAvailability.Skipped(
+            BenchmarkExternalProviderDefinitions.Oracle,
+            BenchmarkSkipReason.NotConfigured(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable));
     var optionalProviders = new[] {
         BenchmarkProviderAvailability.FromPostgres(postgresAvailability),
         sqlServerAvailability,
         mySqlAvailability,
         oracleAvailability,
-    };
+    }
+        .Where(availability => ShouldRunProvider(options, availability.ProviderName))
+        .ToArray();
 
     await RunAsync(options, postgresAvailability, optionalProviders, cancellationToken).ConfigureAwait(false);
   }
@@ -39,9 +56,11 @@ internal static class BenchmarkRunner {
     ArgumentNullException.ThrowIfNull(optionalProviders);
 
     var summaries = new List<BenchmarkSummary>();
-    var sqliteBenchmarks = options.ScaleMatrix
-        ? CreateScaleBenchmarks(BenchmarkDatabaseProviders.Sqlite, DataVaultBenchmarkStrategy.SqliteOptimized)
-        : CreateSqliteBenchmarks();
+    var sqliteBenchmarks = ShouldRunProvider(options, BenchmarkArtifacts.RequiredProviderName)
+        ? options.ScaleMatrix
+            ? CreateScaleBenchmarks(BenchmarkDatabaseProviders.Sqlite, DataVaultBenchmarkStrategy.SqliteOptimized, options)
+            : CreateSqliteBenchmarks(options)
+        : [];
     var providerStrategies = new Dictionary<string, DataVaultBenchmarkStrategy>(StringComparer.Ordinal) {
       [BenchmarkExternalProviderDefinitions.Postgres.ProviderName] = DataVaultBenchmarkStrategy.PostgresOptimized,
       [BenchmarkExternalProviderDefinitions.SqlServer.ProviderName] = DataVaultBenchmarkStrategy.SqlServerOptimized,
@@ -68,8 +87,8 @@ internal static class BenchmarkRunner {
     foreach (var availability in optionalProviders) {
       var strategy = providerStrategies[availability.ProviderName];
       var providerBenchmarks = options.ScaleMatrix
-          ? CreateScaleBenchmarks(availability.Provider, strategy)
-          : CreateProviderBenchmarks(availability.Provider, strategy);
+          ? CreateScaleBenchmarks(availability.Provider, strategy, options)
+          : CreateProviderBenchmarks(availability.Provider, strategy, options);
       if (availability.IsAvailable) {
         foreach (var benchmark in providerBenchmarks) {
           summaries.Add(await TryExecuteBenchmarkAsync(benchmark, options, cancellationToken).ConfigureAwait(false));
@@ -117,6 +136,10 @@ internal static class BenchmarkRunner {
     Console.WriteLine("  --warmup <n>      Number of unreported warmup iterations. Default: 1.");
     Console.WriteLine("  --output <dir>    Directory for benchmark-summary.md, benchmark-summary.csv, and benchmark-summary.json.");
     Console.WriteLine("  --scale           Run only customer profile scale scenarios across configured providers.");
+    Console.WriteLine("  --load-timestamp-storage <provider-default|iso8601-utc-text|utc-ticks>");
+    Console.WriteLine("                    Physical Data Vault load-timestamp storage to project. Default: provider-default.");
+    Console.WriteLine("  --provider <all|sqlite|postgres|sqlserver|mysql|oracle>");
+    Console.WriteLine("                    Provider set to execute. Default: all.");
     Console.WriteLine();
     Console.WriteLine("Optional PostgreSQL provider:");
     Console.WriteLine(
@@ -136,69 +159,108 @@ internal static class BenchmarkRunner {
     Console.Write(BenchmarkArtifacts.CreateMarkdownTable(summaries));
   }
 
-  private static IScenarioBenchmark[] CreateSqliteBenchmarks() {
+  private static bool ShouldRunProvider(BenchmarkOptions options, string providerName) {
+    return options.ProviderFilter == BenchmarkProviderFilters.All ||
+        options.ProviderFilter == ProviderFilterFor(providerName);
+  }
+
+  private static string ProviderFilterFor(string providerName) {
+    if (string.Equals(providerName, BenchmarkArtifacts.RequiredProviderName, StringComparison.Ordinal)) {
+      return BenchmarkProviderFilters.Sqlite;
+    }
+
+    if (string.Equals(providerName, BenchmarkExternalProviderDefinitions.Postgres.ProviderName, StringComparison.Ordinal)) {
+      return BenchmarkProviderFilters.Postgres;
+    }
+
+    if (string.Equals(providerName, BenchmarkExternalProviderDefinitions.SqlServer.ProviderName, StringComparison.Ordinal)) {
+      return BenchmarkProviderFilters.SqlServer;
+    }
+
+    if (string.Equals(providerName, BenchmarkExternalProviderDefinitions.MySql.ProviderName, StringComparison.Ordinal)) {
+      return BenchmarkProviderFilters.MySql;
+    }
+
+    if (string.Equals(providerName, BenchmarkExternalProviderDefinitions.Oracle.ProviderName, StringComparison.Ordinal)) {
+      return BenchmarkProviderFilters.Oracle;
+    }
+
+    return BenchmarkProviderFilters.All;
+  }
+
+  private static IScenarioBenchmark[] CreateSqliteBenchmarks(BenchmarkOptions options) {
     var provider = BenchmarkDatabaseProviders.Sqlite;
 
     return
     [
         new CustomerProfilePlainEfBenchmark(),
-        new CustomerProfileDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback),
-        new CustomerProfileDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.SqliteOptimized),
+        new CustomerProfileDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
+        new CustomerProfileDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.SqliteOptimized, options.LoadTimestampStorage),
         new CustomerProfileBulkPlainEfBenchmark(CustomerProfileBulkScenarios.InsertOnly),
         new CustomerProfileBulkDataVaultBenchmark(
             provider,
             CustomerProfileBulkScenarios.InsertOnly,
-            DataVaultBenchmarkStrategy.ProviderNeutralFallback),
+            DataVaultBenchmarkStrategy.ProviderNeutralFallback,
+            options.LoadTimestampStorage),
         new CustomerProfileBulkDataVaultBenchmark(
             provider,
             CustomerProfileBulkScenarios.InsertOnly,
-            DataVaultBenchmarkStrategy.SqliteOptimized),
+            DataVaultBenchmarkStrategy.SqliteOptimized,
+            options.LoadTimestampStorage),
         new CustomerProfileBulkPlainEfBenchmark(CustomerProfileBulkScenarios.ChangeHeavy),
         new CustomerProfileBulkDataVaultBenchmark(
             provider,
             CustomerProfileBulkScenarios.ChangeHeavy,
-            DataVaultBenchmarkStrategy.ProviderNeutralFallback),
+            DataVaultBenchmarkStrategy.ProviderNeutralFallback,
+            options.LoadTimestampStorage),
         new CustomerProfileBulkDataVaultBenchmark(
             provider,
             CustomerProfileBulkScenarios.ChangeHeavy,
-            DataVaultBenchmarkStrategy.SqliteOptimized),
+            DataVaultBenchmarkStrategy.SqliteOptimized,
+            options.LoadTimestampStorage),
         new OrderProductPlainEfBenchmark(),
-        new OrderProductDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback),
-        new OrderProductDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.SqliteOptimized),
+        new OrderProductDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
+        new OrderProductDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.SqliteOptimized, options.LoadTimestampStorage),
     ];
   }
 
   private static IScenarioBenchmark[] CreateProviderBenchmarks(
       BenchmarkDatabaseProvider provider,
-      DataVaultBenchmarkStrategy optimizedStrategy) {
+      DataVaultBenchmarkStrategy optimizedStrategy,
+      BenchmarkOptions options) {
     return
     [
-        new CustomerProfileDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback),
-        new CustomerProfileDataVaultBenchmark(provider, optimizedStrategy),
+        new CustomerProfileDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
+        new CustomerProfileDataVaultBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage),
         new CustomerProfileBulkDataVaultBenchmark(
             provider,
             CustomerProfileBulkScenarios.InsertOnly,
-            DataVaultBenchmarkStrategy.ProviderNeutralFallback),
+            DataVaultBenchmarkStrategy.ProviderNeutralFallback,
+            options.LoadTimestampStorage),
         new CustomerProfileBulkDataVaultBenchmark(
             provider,
             CustomerProfileBulkScenarios.InsertOnly,
-            optimizedStrategy),
+            optimizedStrategy,
+            options.LoadTimestampStorage),
         new CustomerProfileBulkDataVaultBenchmark(
             provider,
             CustomerProfileBulkScenarios.ChangeHeavy,
-            DataVaultBenchmarkStrategy.ProviderNeutralFallback),
+            DataVaultBenchmarkStrategy.ProviderNeutralFallback,
+            options.LoadTimestampStorage),
         new CustomerProfileBulkDataVaultBenchmark(
             provider,
             CustomerProfileBulkScenarios.ChangeHeavy,
-            optimizedStrategy),
-        new OrderProductDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback),
-        new OrderProductDataVaultBenchmark(provider, optimizedStrategy),
+            optimizedStrategy,
+            options.LoadTimestampStorage),
+        new OrderProductDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
+        new OrderProductDataVaultBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage),
     ];
   }
 
   private static IScenarioBenchmark[] CreateScaleBenchmarks(
       BenchmarkDatabaseProvider provider,
-      DataVaultBenchmarkStrategy optimizedStrategy) {
+      DataVaultBenchmarkStrategy optimizedStrategy,
+      BenchmarkOptions options) {
     var benchmarks = new List<IScenarioBenchmark>();
 
     foreach (var scenario in CustomerProfileBulkScenarios.ScaleMatrix) {
@@ -206,8 +268,9 @@ internal static class BenchmarkRunner {
       benchmarks.Add(new CustomerProfileBulkDataVaultBenchmark(
           provider,
           scenario,
-          DataVaultBenchmarkStrategy.ProviderNeutralFallback));
-      benchmarks.Add(new CustomerProfileBulkDataVaultBenchmark(provider, scenario, optimizedStrategy));
+          DataVaultBenchmarkStrategy.ProviderNeutralFallback,
+          options.LoadTimestampStorage));
+      benchmarks.Add(new CustomerProfileBulkDataVaultBenchmark(provider, scenario, optimizedStrategy, options.LoadTimestampStorage));
     }
 
     return [.. benchmarks];
@@ -245,6 +308,16 @@ internal static class BenchmarkRunner {
       BenchmarkOptions options,
       CancellationToken cancellationToken) {
     try {
+      Console.WriteLine(
+          "Running " +
+          benchmark.ProviderName +
+          " / " +
+          benchmark.ScenarioName +
+          " / " +
+          benchmark.StrategyFamily +
+          " / " +
+          options.LoadTimestampStorage +
+          "...");
       return await ExecuteBenchmarkAsync(benchmark, options, cancellationToken).ConfigureAwait(false);
     }
     catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) {

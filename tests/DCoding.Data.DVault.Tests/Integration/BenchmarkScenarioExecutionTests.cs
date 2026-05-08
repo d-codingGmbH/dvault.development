@@ -317,6 +317,26 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
+  public async Task PostgresDiscoveryReportsTimedOutConnectionProbeAsSkippedProvider() {
+    var availability = await PostgresBenchmarkAvailability
+        .DiscoverAsync(
+            _ => "Host=localhost;Database=dvault",
+            () => true,
+            async (_, cancellationToken) => {
+              await Task.Delay(TimeSpan.FromMinutes(1), cancellationToken).ConfigureAwait(false);
+
+              return null;
+            },
+            CancellationToken.None,
+            TimeSpan.FromMilliseconds(10))
+        .ConfigureAwait(false);
+
+    Assert.False(availability.IsAvailable);
+    Assert.Equal("connection unreachable", availability.SkipReason?.Category);
+    Assert.Contains("Timed out after", availability.SkipReason?.DisplayText);
+  }
+
+  [Fact]
   public async Task PostgresDiscoveryReportsConfiguredConnectionAsAvailable() {
     var availability = await PostgresBenchmarkAvailability
         .DiscoverAsync(

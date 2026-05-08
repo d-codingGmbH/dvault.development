@@ -4,7 +4,9 @@ internal sealed record BenchmarkOptions(
     int Iterations,
     int WarmupIterations,
     string? ArtifactOutputDirectory = null,
-    bool ScaleMatrix = false) {
+    bool ScaleMatrix = false,
+    DataVaultLoadTimestampStorage LoadTimestampStorage = DataVaultLoadTimestampStorage.ProviderDefault,
+    string ProviderFilter = BenchmarkProviderFilters.All) {
   private const int DefaultIterations = 5;
   private const int DefaultWarmupIterations = 1;
 
@@ -17,6 +19,8 @@ internal sealed record BenchmarkOptions(
     var warmupIterations = DefaultWarmupIterations;
     string? artifactOutputDirectory = null;
     var scaleMatrix = false;
+    var loadTimestampStorage = DataVaultLoadTimestampStorage.ProviderDefault;
+    var providerFilter = BenchmarkProviderFilters.All;
 
     for (var index = 0; index < args.Count; index++) {
       switch (args[index]) {
@@ -32,13 +36,25 @@ internal sealed record BenchmarkOptions(
         case "--output":
           artifactOutputDirectory = ReadNonEmptyString(args, ref index, "--output");
           break;
+        case "--load-timestamp-storage":
+          loadTimestampStorage = ReadLoadTimestampStorage(args, ref index);
+          break;
+        case "--provider":
+          providerFilter = ReadProviderFilter(args, ref index);
+          break;
         default:
           throw new ArgumentException(
               "Unsupported benchmark argument '" + args[index] + "'. Run with --help for usage.");
       }
     }
 
-    return new BenchmarkOptions(iterations, warmupIterations, artifactOutputDirectory, scaleMatrix);
+    return new BenchmarkOptions(
+        iterations,
+        warmupIterations,
+        artifactOutputDirectory,
+        scaleMatrix,
+        loadTimestampStorage,
+        providerFilter);
   }
 
   private static int ReadPositiveInt(IReadOnlyList<string> args, ref int index, string optionName) {
@@ -84,4 +100,45 @@ internal sealed record BenchmarkOptions(
 
     return args[index];
   }
+
+  private static DataVaultLoadTimestampStorage ReadLoadTimestampStorage(IReadOnlyList<string> args, ref int index) {
+    var value = ReadNonEmptyString(args, ref index, "--load-timestamp-storage");
+
+    return value.ToLowerInvariant() switch {
+      "default" or "provider-default" => DataVaultLoadTimestampStorage.ProviderDefault,
+      "iso" or "iso8601" or "iso8601-utc-text" => DataVaultLoadTimestampStorage.Iso8601UtcText,
+      "ticks" or "utc-ticks" => DataVaultLoadTimestampStorage.UtcTicks,
+      _ => throw new ArgumentException(
+          "Value for --load-timestamp-storage must be provider-default, iso8601-utc-text, or utc-ticks."),
+    };
+  }
+
+  private static string ReadProviderFilter(IReadOnlyList<string> args, ref int index) {
+    var value = ReadNonEmptyString(args, ref index, "--provider").ToLowerInvariant();
+
+    if (BenchmarkProviderFilters.AllProviderFilters.Contains(value, StringComparer.Ordinal)) {
+      return value;
+    }
+
+    throw new ArgumentException("Value for --provider must be all, sqlite, postgres, sqlserver, mysql, or oracle.");
+  }
+}
+
+internal static class BenchmarkProviderFilters {
+  public const string All = "all";
+  public const string Sqlite = "sqlite";
+  public const string Postgres = "postgres";
+  public const string SqlServer = "sqlserver";
+  public const string MySql = "mysql";
+  public const string Oracle = "oracle";
+
+  public static IReadOnlyList<string> AllProviderFilters { get; } =
+  [
+      All,
+      Sqlite,
+      Postgres,
+      SqlServer,
+      MySql,
+      Oracle,
+  ];
 }

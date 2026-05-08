@@ -135,6 +135,12 @@ internal static class BenchmarkArtifacts {
         .Append("- Warmup iterations: ")
         .AppendLine(context.WarmupIterations.ToString(CultureInfo.InvariantCulture));
     builder
+        .Append("- Load timestamp storage: ")
+        .AppendLine(context.LoadTimestampStorage);
+    builder
+        .Append("- Provider filter: ")
+        .AppendLine(context.ProviderFilter);
+    builder
         .Append("- OS description: ")
         .AppendLine(context.OsDescription);
     builder
@@ -234,6 +240,8 @@ internal sealed record BenchmarkRunContext(
     string PostgresSkipReason,
     int Iterations,
     int WarmupIterations,
+    string LoadTimestampStorage,
+    string ProviderFilter,
     string OsDescription,
     string OsArchitecture,
     string ProcessArchitecture,
@@ -265,6 +273,8 @@ internal sealed record BenchmarkRunContext(
         postgresAvailability.SkipReason?.DisplayText ?? string.Empty,
         options.Iterations,
         options.WarmupIterations,
+        options.LoadTimestampStorage.ToString(),
+        options.ProviderFilter,
         RuntimeInformation.OSDescription,
         RuntimeInformation.OSArchitecture.ToString(),
         RuntimeInformation.ProcessArchitecture.ToString(),

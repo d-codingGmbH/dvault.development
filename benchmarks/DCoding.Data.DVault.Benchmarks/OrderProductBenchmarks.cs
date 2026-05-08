@@ -275,14 +275,17 @@ internal sealed class OrderProductPlainEfBenchmark : IScenarioBenchmark {
 internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
   private readonly BenchmarkDatabaseProvider _provider;
   private readonly DataVaultBenchmarkStrategy _strategy;
+  private readonly DataVaultLoadTimestampStorage _loadTimestampStorage;
 
   public OrderProductDataVaultBenchmark(
       BenchmarkDatabaseProvider provider,
-      DataVaultBenchmarkStrategy strategy) {
+      DataVaultBenchmarkStrategy strategy,
+      DataVaultLoadTimestampStorage loadTimestampStorage) {
     ArgumentNullException.ThrowIfNull(provider);
 
     _provider = provider;
     _strategy = strategy;
+    _loadTimestampStorage = loadTimestampStorage;
   }
 
   public string ScenarioName => "order-product-fulfillment-history";
@@ -300,7 +303,7 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
     using var database = _provider.CreateDatabase();
     var options = database.CreateOptions<OrderProductDataVaultContext>();
-    var providerCapabilities = _provider.ProviderCapabilities;
+    var providerCapabilities = _provider.GetProviderCapabilities(_loadTimestampStorage);
     var services = new ServiceCollection();
     DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy);
 

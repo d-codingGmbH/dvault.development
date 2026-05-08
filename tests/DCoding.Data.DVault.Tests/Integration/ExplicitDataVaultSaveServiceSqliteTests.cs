@@ -1,6 +1,7 @@
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -20,6 +21,7 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     using var database = SqliteTestDatabase.CreateTemporaryFile();
     var options = new DbContextOptionsBuilder<ExplicitSaveServiceContext>()
         .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .ReplaceService<IModelCacheKeyFactory, ExplicitSaveServiceModelCacheKeyFactory>()
         .Options;
     var services = new ServiceCollection();
     services.AddDVault();
@@ -99,6 +101,7 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     using var database = SqliteTestDatabase.CreateTemporaryFile();
     var options = new DbContextOptionsBuilder<ExplicitSaveServiceContext>()
         .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .ReplaceService<IModelCacheKeyFactory, ExplicitSaveServiceModelCacheKeyFactory>()
         .Options;
     var services = new ServiceCollection();
     services.AddDVault(configure => configure
@@ -148,6 +151,7 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     using var database = SqliteTestDatabase.CreateTemporaryFile();
     var options = new DbContextOptionsBuilder<ExplicitSaveServiceContext>()
         .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .ReplaceService<IModelCacheKeyFactory, ExplicitSaveServiceModelCacheKeyFactory>()
         .Options;
     var services = new ServiceCollection();
     services.AddDVault();
@@ -899,6 +903,102 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     }
   }
 
+  [Theory]
+  [InlineData(DataVaultLoadTimestampStorage.Iso8601UtcText)]
+  [InlineData(DataVaultLoadTimestampStorage.UtcTicks)]
+  public async Task AddDVaultSqliteOptimizedStrategySupportsConfiguredLoadTimestampStorage(
+      DataVaultLoadTimestampStorage loadTimestampStorage) {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"]);
+    var firstLoadTimestamp = new DateTimeOffset(2026, 5, 8, 8, 0, 0, TimeSpan.Zero);
+    var replayLoadTimestamp = new DateTimeOffset(2026, 5, 8, 8, 30, 0, TimeSpan.Zero);
+    var changedLoadTimestamp = new DateTimeOffset(2026, 5, 8, 9, 0, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<ExplicitSaveServiceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .ReplaceService<IModelCacheKeyFactory, ExplicitSaveServiceModelCacheKeyFactory>()
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    string customerHashKey;
+
+    await using (var context = new ExplicitSaveServiceContext(options, loadTimestampStorage)) {
+      await context.Database.EnsureCreatedAsync();
+
+      var hubResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              firstLoadTimestamp,
+              "sqlite-storage-test",
+              [new(customer, [new("Customer Id", "C-STORAGE")])],
+              []));
+
+      customerHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Customer");
+    }
+
+    DataVaultSaveResult firstResult;
+    await using (var context = new ExplicitSaveServiceContext(options, loadTimestampStorage)) {
+      firstResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              firstLoadTimestamp,
+              "sqlite-storage-test",
+              [],
+              [],
+              [new(contact, customerHashKey, [new("Email Address", "first@example.test")], "contact-hash-1")]));
+    }
+
+    DataVaultSaveResult replayResult;
+    await using (var context = new ExplicitSaveServiceContext(options, loadTimestampStorage)) {
+      replayResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              replayLoadTimestamp,
+              "sqlite-storage-test",
+              [],
+              [],
+              [new(contact, customerHashKey, [new("Email Address", "ignored@example.test")], "contact-hash-1")]));
+    }
+
+    DataVaultSaveResult changedResult;
+    await using (var context = new ExplicitSaveServiceContext(options, loadTimestampStorage)) {
+      changedResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              changedLoadTimestamp,
+              "sqlite-storage-test",
+              [],
+              [],
+              [new(contact, customerHashKey, [new("Email Address", "changed@example.test")], "contact-hash-2")]));
+    }
+
+    Assert.Equal(1, firstResult.RowsWritten);
+    Assert.Equal(0, replayResult.RowsWritten);
+    Assert.Equal(1, changedResult.RowsWritten);
+
+    await using (var context = new ExplicitSaveServiceContext(options, loadTimestampStorage)) {
+      var rows = (await context.Set<Dictionary<string, object>>("SatCustomerContact").AsNoTracking().ToListAsync())
+          .OrderBy(row => DataVaultLoadTimestampValueConverter.ReadProviderValue(row["LoadTimestamp"]))
+          .ToArray();
+
+      Assert.Equal(2, rows.Length);
+      Assert.Equal(firstLoadTimestamp, DataVaultLoadTimestampValueConverter.ReadProviderValue(rows[0]["LoadTimestamp"]));
+      Assert.Equal(changedLoadTimestamp, DataVaultLoadTimestampValueConverter.ReadProviderValue(rows[1]["LoadTimestamp"]));
+      if (loadTimestampStorage == DataVaultLoadTimestampStorage.UtcTicks) {
+        Assert.IsType<long>(rows[0]["LoadTimestamp"]);
+      }
+      else {
+        Assert.IsType<string>(rows[0]["LoadTimestamp"]);
+      }
+    }
+  }
+
   [Fact]
   public async Task DefaultSaveServicePersistsMultiActiveSatelliteRowsByCanonicalDrivingKeysThroughSqlite() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
@@ -1195,9 +1295,24 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
         ]);
   }
 
-  private sealed class ExplicitSaveServiceContext(DbContextOptions<ExplicitSaveServiceContext> options) : DbContext(options) {
+  private sealed class ExplicitSaveServiceContext(
+      DbContextOptions<ExplicitSaveServiceContext> options,
+      DataVaultLoadTimestampStorage loadTimestampStorage = DataVaultLoadTimestampStorage.ProviderDefault) : DbContext(options) {
+    public DataVaultLoadTimestampStorage LoadTimestampStorage { get; } = loadTimestampStorage;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(CreateMetadataModel());
+      modelBuilder.ApplyDataVaultMetadata(
+          CreateMetadataModel(),
+          DataVaultProviderCapabilityProfiles.Sqlite,
+          LoadTimestampStorage);
+    }
+  }
+
+  private sealed class ExplicitSaveServiceModelCacheKeyFactory : IModelCacheKeyFactory {
+    public object Create(DbContext context, bool designTime) {
+      return context is ExplicitSaveServiceContext explicitSaveServiceContext
+          ? (context.GetType(), explicitSaveServiceContext.LoadTimestampStorage, designTime)
+          : (object)(context.GetType(), designTime);
     }
   }
 }

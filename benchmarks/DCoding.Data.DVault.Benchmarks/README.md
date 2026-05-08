@@ -17,6 +17,22 @@ When a provider is configured, the report includes DVault fallback plus provider
 
 Increase `--iterations` and `--warmup` locally when collecting steadier timing numbers.
 
+Use `--provider` to restrict a run to one provider while tuning a specific backend:
+
+```sh
+dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --provider sqlite --iterations 3 --warmup 1 --output artifacts/benchmarks/sqlite
+```
+
+Valid provider filters are `all`, `sqlite`, `postgres`, `sqlserver`, `mysql`, and `oracle`.
+
+Use `--load-timestamp-storage` to compare the physical representation of Data Vault load timestamps:
+
+```sh
+dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --provider sqlite --load-timestamp-storage utc-ticks --iterations 3 --warmup 1 --output artifacts/benchmarks/sqlite-utc-ticks
+```
+
+Valid timestamp storage values are `provider-default`, `iso8601-utc-text`, and `utc-ticks`.
+
 When collecting external-provider comparison rows, set the relevant environment variable before restore/build/run so the benchmark project's conditional provider package references are present. PostgreSQL example:
 
 ```sh

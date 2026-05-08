@@ -18,6 +18,10 @@ internal abstract class BenchmarkDatabaseProvider {
 
   public virtual DataVaultProviderCapabilityProfile ProviderCapabilities => DataVaultProviderCapabilityProfiles.Sqlite;
 
+  public DataVaultProviderCapabilityProfile GetProviderCapabilities(DataVaultLoadTimestampStorage loadTimestampStorage) {
+    return ProviderCapabilities.WithLoadTimestampStorage(loadTimestampStorage);
+  }
+
   public abstract IBenchmarkDatabase CreateDatabase();
 }
 

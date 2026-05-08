@@ -1,6 +1,10 @@
+using System.Globalization;
+
 namespace DCoding.Data.DVault.Benchmarks;
 
 internal sealed class PostgresBenchmarkAvailability {
+  private static readonly TimeSpan DefaultConnectionProbeTimeout = TimeSpan.FromSeconds(15);
+
   public const string ConnectionStringEnvironmentVariable = "DVAULT_TEST_POSTGRES_CONNECTION_STRING";
   public const string ProviderName = "PostgreSQL external provider";
 
@@ -38,7 +42,8 @@ internal sealed class PostgresBenchmarkAvailability {
       Func<string, string?> getEnvironmentVariable,
       Func<bool> isProviderDependencyAvailable,
       Func<string, CancellationToken, Task<string?>> tryOpenConnectionAsync,
-      CancellationToken cancellationToken) {
+      CancellationToken cancellationToken,
+      TimeSpan? connectionProbeTimeout = null) {
     ArgumentNullException.ThrowIfNull(getEnvironmentVariable);
     ArgumentNullException.ThrowIfNull(isProviderDependencyAvailable);
     ArgumentNullException.ThrowIfNull(tryOpenConnectionAsync);
@@ -52,7 +57,12 @@ internal sealed class PostgresBenchmarkAvailability {
       return Skipped(BenchmarkSkipReason.ProviderDependencyUnavailable());
     }
 
-    var connectionFailure = await tryOpenConnectionAsync(connectionString, cancellationToken).ConfigureAwait(false);
+    var connectionFailure = await TryOpenConnectionWithTimeoutAsync(
+        connectionString,
+        tryOpenConnectionAsync,
+        connectionProbeTimeout ?? DefaultConnectionProbeTimeout,
+        cancellationToken)
+        .ConfigureAwait(false);
     if (connectionFailure is not null) {
       return Skipped(BenchmarkSkipReason.ConnectionUnreachable(connectionFailure));
     }
@@ -73,6 +83,31 @@ internal sealed class PostgresBenchmarkAvailability {
     catch (Exception exception) when (exception is not OperationCanceledException) {
       return NormalizeExceptionMessage(exception);
     }
+  }
+
+  private static async Task<string?> TryOpenConnectionWithTimeoutAsync(
+      string connectionString,
+      Func<string, CancellationToken, Task<string?>> tryOpenConnectionAsync,
+      TimeSpan timeout,
+      CancellationToken cancellationToken) {
+    using var timeoutCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+    timeoutCancellation.CancelAfter(timeout);
+
+    try {
+      return await tryOpenConnectionAsync(connectionString, timeoutCancellation.Token)
+          .WaitAsync(timeout, cancellationToken)
+          .ConfigureAwait(false);
+    }
+    catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested && timeoutCancellation.IsCancellationRequested) {
+      return CreateConnectionProbeTimeoutMessage(timeout);
+    }
+    catch (TimeoutException) {
+      return CreateConnectionProbeTimeoutMessage(timeout);
+    }
+  }
+
+  private static string CreateConnectionProbeTimeoutMessage(TimeSpan timeout) {
+    return "Timed out after " + timeout.TotalSeconds.ToString("0", CultureInfo.InvariantCulture) + " seconds while opening the connection.";
   }
 
   private static string? Normalize(string? value) {

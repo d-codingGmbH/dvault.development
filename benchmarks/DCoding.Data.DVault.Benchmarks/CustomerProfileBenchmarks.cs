@@ -121,14 +121,17 @@ internal sealed class CustomerProfilePlainEfBenchmark : IScenarioBenchmark {
 internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
   private readonly BenchmarkDatabaseProvider _provider;
   private readonly DataVaultBenchmarkStrategy _strategy;
+  private readonly DataVaultLoadTimestampStorage _loadTimestampStorage;
 
   public CustomerProfileDataVaultBenchmark(
       BenchmarkDatabaseProvider provider,
-      DataVaultBenchmarkStrategy strategy) {
+      DataVaultBenchmarkStrategy strategy,
+      DataVaultLoadTimestampStorage loadTimestampStorage) {
     ArgumentNullException.ThrowIfNull(provider);
 
     _provider = provider;
     _strategy = strategy;
+    _loadTimestampStorage = loadTimestampStorage;
   }
 
   public string ScenarioName => "customer-profile-history";
@@ -146,7 +149,7 @@ internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
     using var database = _provider.CreateDatabase();
     var options = database.CreateOptions<CustomerProfileDataVaultContext>();
-    var providerCapabilities = _provider.ProviderCapabilities;
+    var providerCapabilities = _provider.GetProviderCapabilities(_loadTimestampStorage);
     var services = new ServiceCollection();
     DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy);
 
@@ -432,17 +435,20 @@ internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark
   private readonly BenchmarkDatabaseProvider _provider;
   private readonly CustomerProfileBulkScenarioDefinition _scenario;
   private readonly DataVaultBenchmarkStrategy _strategy;
+  private readonly DataVaultLoadTimestampStorage _loadTimestampStorage;
 
   public CustomerProfileBulkDataVaultBenchmark(
       BenchmarkDatabaseProvider provider,
       CustomerProfileBulkScenarioDefinition scenario,
-      DataVaultBenchmarkStrategy strategy) {
+      DataVaultBenchmarkStrategy strategy,
+      DataVaultLoadTimestampStorage loadTimestampStorage) {
     ArgumentNullException.ThrowIfNull(provider);
     ArgumentNullException.ThrowIfNull(scenario);
 
     _provider = provider;
     _scenario = scenario;
     _strategy = strategy;
+    _loadTimestampStorage = loadTimestampStorage;
   }
 
   public string ScenarioName => _scenario.ScenarioName;
@@ -460,7 +466,7 @@ internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
     using var database = _provider.CreateDatabase();
     var options = database.CreateOptions<CustomerProfileBulkDataVaultContext>();
-    var providerCapabilities = _provider.ProviderCapabilities;
+    var providerCapabilities = _provider.GetProviderCapabilities(_loadTimestampStorage);
     var services = new ServiceCollection();
     DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy);
 

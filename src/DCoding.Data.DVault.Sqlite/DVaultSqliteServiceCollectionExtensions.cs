@@ -58,7 +58,7 @@ internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     ArgumentNullException.ThrowIfNull(context);
 
     var uniquePlans = CreateUniqueRowSavePlans(context);
-    var satellitePlans = CreateSatelliteSavePlans(context.ResolvedRequests);
+    var satellitePlans = CreateSatelliteSavePlans(context);
     var filteredSatellitePlans = await FilterSatellitePlansAsync(
         context.DbContext,
         satellitePlans,
@@ -120,7 +120,11 @@ internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     var hashKey = ComputeHash(context, businessKeyFields);
     var row = new Dictionary<string, object> {
       [hashKeyColumnName] = hashKey,
-      [loadTimestampColumnName] = request.LoadTimestamp,
+      [loadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          context.DbContext,
+          tableName,
+          loadTimestampColumnName,
+          request.LoadTimestamp),
       [recordSourceColumnName] = request.RecordSource,
     };
 
@@ -162,7 +166,11 @@ internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     var linkHashKey = ComputeHash(context, participantHashKeyFields);
     var row = new Dictionary<string, object> {
       [linkHashKeyColumnName] = linkHashKey,
-      [loadTimestampColumnName] = request.LoadTimestamp,
+      [loadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          context.DbContext,
+          tableName,
+          loadTimestampColumnName,
+          request.LoadTimestamp),
       [recordSourceColumnName] = request.RecordSource,
     };
 
@@ -177,15 +185,16 @@ internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrate
         new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, tableName, linkHashKey));
   }
 
-  private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(IReadOnlyList<DataVaultResolvedSaveRequest> requests) {
-    return requests
+  private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(DataVaultProviderSaveStrategyContext context) {
+    return context.ResolvedRequests
         .SelectMany(request => request.Request.SatelliteOperations
-            .Select(operation => CreateSatelliteSavePlan(request, operation)))
+            .Select(operation => CreateSatelliteSavePlan(context.DbContext, request, operation)))
         .Select((plan, index) => plan with { Ordinal = index })
         .ToArray();
   }
 
   private static SatelliteSavePlan CreateSatelliteSavePlan(
+      DbContext dbContext,
       DataVaultResolvedSaveRequest request,
       DataVaultSatelliteSaveOperation operation) {
     var satellite = operation.Metadata;
@@ -210,7 +219,11 @@ internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     var row = new Dictionary<string, object> {
       [parentHashKeyColumnName] = operation.ParentHashKey,
       [hashDiffColumnName] = operation.HashDiff,
-      [loadTimestampColumnName] = request.LoadTimestamp,
+      [loadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          dbContext,
+          tableName,
+          loadTimestampColumnName,
+          request.LoadTimestamp),
       [recordSourceColumnName] = request.RecordSource,
     };
 
@@ -279,14 +292,14 @@ internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrate
       var batchRows = await rows
           .AsNoTracking()
           .Where(existingRow => parentHashKeyBatch.Contains(EF.Property<string>(existingRow, table.ParentHashKeyColumnName)))
-          .Select(existingRow => new LatestSatelliteHashDiff(
-              EF.Property<string>(existingRow, table.ParentHashKeyColumnName),
-              EF.Property<string>(existingRow, table.HashDiffColumnName),
-              EF.Property<DateTimeOffset>(existingRow, table.LoadTimestampColumnName)))
           .ToListAsync(cancellationToken)
           .ConfigureAwait(false);
 
       latestRows.AddRange(batchRows
+          .Select(row => new LatestSatelliteHashDiff(
+              (string)row[table.ParentHashKeyColumnName],
+              (string)row[table.HashDiffColumnName],
+              DataVaultLoadTimestampValueConverter.ReadProviderValue(row[table.LoadTimestampColumnName])))
           .GroupBy(row => row.ParentHashKey, StringComparer.Ordinal)
           .Select(group => group.OrderByDescending(row => row.LoadTimestamp).First()));
     }
