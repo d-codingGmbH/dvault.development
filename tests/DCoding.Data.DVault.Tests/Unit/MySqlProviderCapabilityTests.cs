@@ -64,6 +64,24 @@ public sealed class MySqlProviderCapabilityTests {
   }
 
   [Fact]
+  public void MySqlStrategyUsesWindowFunctionForLatestSatelliteHashDiffLookup() {
+    var commandText = MySqlDataVaultSaveStrategy.CreateLatestSatelliteHashDiffsCommandText(
+        "Sat`CustomerProfile",
+        "CustomerHashKey",
+        "HashDiff",
+        "LoadTimestamp",
+        ["@p0", "@p1"]);
+
+    Assert.Equal(
+        "SELECT `CustomerHashKey`, `HashDiff`, `LoadTimestamp` FROM " +
+        "(SELECT `CustomerHashKey`, `HashDiff`, `LoadTimestamp`, " +
+        "ROW_NUMBER() OVER (PARTITION BY `CustomerHashKey` ORDER BY `LoadTimestamp` DESC) AS `__dvault_row_number` " +
+        "FROM `Sat``CustomerProfile` WHERE `CustomerHashKey` IN (@p0, @p1)) AS `__dvault_latest` " +
+        "WHERE `__dvault_row_number` = 1",
+        commandText);
+  }
+
+  [Fact]
   public void AddDVaultMySqlDoesNotSwitchBareModelBuildersWithoutPomeloProviderEvidence() {
     try {
       var services = new ServiceCollection();

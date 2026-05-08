@@ -13,7 +13,11 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   internal const string OracleProviderName = "MySql.EntityFrameworkCore";
 
   private const int MySqlMaxCommandParameterCount = 60000;
+  private const int MySqlMaxRowsPerCommand = 100;
+  private const int MySqlLatestHashDiffBatchSize = 1000;
   private const int MinimumOptimizedBatchOperationCount = 50;
+  private const string LatestRowsTableAlias = "__dvault_latest";
+  private const string RowNumberColumnName = "__dvault_row_number";
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
 
   public int Priority => 100;
@@ -37,27 +41,65 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
 
     var uniquePlans = CreateUniqueRowSavePlans(context);
     var satellitePlans = CreateSatelliteSavePlans(context.ResolvedRequests);
-    var filteredSatellitePlans = await FilterSatellitePlansAsync(
-        context.DbContext,
-        satellitePlans,
-        cancellationToken).ConfigureAwait(false);
-    var savedRecords = uniquePlans
-        .Select(plan => plan.SavedRecord)
-        .Concat(filteredSatellitePlans.Results.Select(result => result.SavedRecord))
-        .ToArray();
-    var rowsWritten = await ExecuteMySqlInsertRowsAsync(
-        context.DbContext,
-        uniquePlans.Select(plan => new MySqlInsertRow(plan.Table.TableName, plan.Row)),
-        MySqlInsertConflictBehavior.Ignore,
-        cancellationToken).ConfigureAwait(false);
+    var connection = context.DbContext.Database.GetDbConnection();
+    var shouldCloseConnection = connection.State != ConnectionState.Open;
+    if (shouldCloseConnection) {
+      await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+    }
 
-    rowsWritten += await ExecuteMySqlInsertRowsAsync(
-        context.DbContext,
-        filteredSatellitePlans.RowsToWrite.Select(plan => new MySqlInsertRow(plan.Table.TableName, plan.Row)),
-        MySqlInsertConflictBehavior.Fail,
-        cancellationToken).ConfigureAwait(false);
+    DbTransaction? localTransaction = null;
+    var transaction = context.DbContext.Database.CurrentTransaction?.GetDbTransaction();
+    if (transaction is null) {
+      localTransaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+      transaction = localTransaction;
+    }
 
-    return new DataVaultSaveResult(rowsWritten, savedRecords);
+    try {
+      var filteredSatellitePlans = await FilterSatellitePlansAsync(
+          connection,
+          transaction,
+          satellitePlans,
+          cancellationToken).ConfigureAwait(false);
+      var savedRecords = uniquePlans
+          .Select(plan => plan.SavedRecord)
+          .Concat(filteredSatellitePlans.Results.Select(result => result.SavedRecord))
+          .ToArray();
+      var rowsWritten = await ExecuteMySqlInsertRowsAsync(
+          connection,
+          transaction,
+          uniquePlans.Select(plan => new MySqlInsertRow(plan.Table.TableName, plan.Row)),
+          MySqlInsertConflictBehavior.Ignore,
+          cancellationToken).ConfigureAwait(false);
+
+      rowsWritten += await ExecuteMySqlInsertRowsAsync(
+          connection,
+          transaction,
+          filteredSatellitePlans.RowsToWrite.Select(plan => new MySqlInsertRow(plan.Table.TableName, plan.Row)),
+          MySqlInsertConflictBehavior.Fail,
+          cancellationToken).ConfigureAwait(false);
+
+      if (localTransaction is not null) {
+        await localTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+      }
+
+      return new DataVaultSaveResult(rowsWritten, savedRecords);
+    }
+    catch {
+      if (localTransaction is not null) {
+        await localTransaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+      }
+
+      throw;
+    }
+    finally {
+      if (localTransaction is not null) {
+        await localTransaction.DisposeAsync().ConfigureAwait(false);
+      }
+
+      if (shouldCloseConnection) {
+        await connection.CloseAsync().ConfigureAwait(false);
+      }
+    }
   }
 
   internal static bool IsSupportedProviderName(string? providerName) {
@@ -161,7 +203,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     var hashKey = ComputeHash(context, businessKeyFields);
     var row = new Dictionary<string, object> {
       [hashKeyColumnName] = hashKey,
-      [loadTimestampColumnName] = request.LoadTimestamp,
+      [loadTimestampColumnName] = FormatLoadTimestamp(request.LoadTimestamp),
       [recordSourceColumnName] = request.RecordSource,
     };
 
@@ -203,7 +245,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     var linkHashKey = ComputeHash(context, participantHashKeyFields);
     var row = new Dictionary<string, object> {
       [linkHashKeyColumnName] = linkHashKey,
-      [loadTimestampColumnName] = request.LoadTimestamp,
+      [loadTimestampColumnName] = FormatLoadTimestamp(request.LoadTimestamp),
       [recordSourceColumnName] = request.RecordSource,
     };
 
@@ -251,7 +293,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     var row = new Dictionary<string, object> {
       [parentHashKeyColumnName] = operation.ParentHashKey,
       [hashDiffColumnName] = operation.HashDiff,
-      [loadTimestampColumnName] = request.LoadTimestamp,
+      [loadTimestampColumnName] = FormatLoadTimestamp(request.LoadTimestamp),
       [recordSourceColumnName] = request.RecordSource,
     };
 
@@ -281,7 +323,8 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   }
 
   private static async Task<FilteredSatelliteSavePlans> FilterSatellitePlansAsync(
-      DbContext dbContext,
+      DbConnection connection,
+      DbTransaction transaction,
       IReadOnlyList<SatelliteSavePlan> plans,
       CancellationToken cancellationToken) {
     var results = new SaveOperationResult[plans.Count];
@@ -289,7 +332,8 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
 
     foreach (var group in plans.GroupBy(plan => plan.Table)) {
       var latestHashDiffs = await LoadLatestSatelliteHashDiffsAsync(
-          dbContext,
+          connection,
+          transaction,
           group.Key,
           group.Select(plan => plan.ParentHashKey),
           cancellationToken).ConfigureAwait(false);
@@ -309,45 +353,33 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   }
 
   private static async Task<Dictionary<string, LatestSatelliteHashDiff>> LoadLatestSatelliteHashDiffsAsync(
-      DbContext dbContext,
+      DbConnection connection,
+      DbTransaction transaction,
       SatelliteTableProjection table,
       IEnumerable<string> parentHashKeys,
       CancellationToken cancellationToken) {
-    var connection = dbContext.Database.GetDbConnection();
-    var shouldCloseConnection = connection.State != ConnectionState.Open;
-    if (shouldCloseConnection) {
-      await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-    }
+    var latestRows = new Dictionary<string, LatestSatelliteHashDiff>(StringComparer.Ordinal);
 
-    var latestRows = new List<LatestSatelliteHashDiff>();
+    foreach (var parentHashKeyBatch in parentHashKeys
+        .Distinct(StringComparer.Ordinal)
+        .Chunk(MySqlLatestHashDiffBatchSize)) {
+      await using var command = connection.CreateCommand();
+      command.Transaction = transaction;
 
-    try {
-      foreach (var parentHashKeyBatch in parentHashKeys.Distinct(StringComparer.Ordinal).Chunk(500)) {
-        await using var command = connection.CreateCommand();
-        command.Transaction = dbContext.Database.CurrentTransaction?.GetDbTransaction();
+      var parameterNames = AddCommandParameters(command, parentHashKeyBatch);
+      command.CommandText = CreateLatestSatelliteHashDiffsCommandText(table, parameterNames);
 
-        var parameterNames = AddCommandParameters(command, parentHashKeyBatch);
-        command.CommandText = CreateLatestSatelliteHashDiffsCommandText(table, parameterNames);
-
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
-          latestRows.Add(new LatestSatelliteHashDiff(
-              GetRequiredString(reader, ordinal: 0),
-              GetRequiredString(reader, ordinal: 1),
-              GetRequiredDateTimeOffset(reader, ordinal: 2)));
-        }
-      }
-    }
-    finally {
-      if (shouldCloseConnection) {
-        await connection.CloseAsync().ConfigureAwait(false);
+      await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+      while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
+        var parentHashKey = GetRequiredString(reader, ordinal: 0);
+        latestRows[parentHashKey] = new LatestSatelliteHashDiff(
+            parentHashKey,
+            GetRequiredString(reader, ordinal: 1),
+            GetRequiredDateTimeOffset(reader, ordinal: 2));
       }
     }
 
-    return latestRows
-        .GroupBy(row => row.ParentHashKey, StringComparer.Ordinal)
-        .Select(group => group.OrderByDescending(row => row.LoadTimestamp).First())
-        .ToDictionary(row => row.ParentHashKey, StringComparer.Ordinal);
+    return latestRows;
   }
 
   private static bool ShouldWriteSatelliteRow(
@@ -370,7 +402,8 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   }
 
   private static async Task<int> ExecuteMySqlInsertRowsAsync(
-      DbContext dbContext,
+      DbConnection connection,
+      DbTransaction transaction,
       IEnumerable<MySqlInsertRow> rows,
       MySqlInsertConflictBehavior conflictBehavior,
       CancellationToken cancellationToken) {
@@ -379,62 +412,27 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
       return 0;
     }
 
-    var connection = dbContext.Database.GetDbConnection();
-    var shouldCloseConnection = connection.State != ConnectionState.Open;
-    if (shouldCloseConnection) {
-      await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-    }
+    var rowsWritten = 0;
 
-    DbTransaction? localTransaction = null;
-    var transaction = dbContext.Database.CurrentTransaction?.GetDbTransaction();
-    if (transaction is null) {
-      localTransaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
-      transaction = localTransaction;
-    }
+    foreach (var group in rowArray.GroupBy(row => new MySqlInsertRowShape(
+        row.TableName,
+        CreateColumnSignature(row.Values.Keys)))) {
+      var columns = group.First().Values.Keys.ToArray();
+      var chunkSize = Math.Min(MySqlMaxRowsPerCommand, Math.Max(1, MySqlMaxCommandParameterCount / columns.Length));
 
-    try {
-      var rowsWritten = 0;
-
-      foreach (var group in rowArray.GroupBy(row => new MySqlInsertRowShape(
-          row.TableName,
-          CreateColumnSignature(row.Values.Keys)))) {
-        var columns = group.First().Values.Keys.ToArray();
-        var chunkSize = Math.Max(1, MySqlMaxCommandParameterCount / columns.Length);
-
-        foreach (var chunk in group.Chunk(chunkSize)) {
-          rowsWritten += await ExecuteMySqlInsertChunkAsync(
-              connection,
-              transaction,
-              group.Key.TableName,
-              columns,
-              chunk.Select(row => row.Values).ToArray(),
-              conflictBehavior,
-              cancellationToken).ConfigureAwait(false);
-        }
-      }
-
-      if (localTransaction is not null) {
-        await localTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-      }
-
-      return rowsWritten;
-    }
-    catch {
-      if (localTransaction is not null) {
-        await localTransaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
-      }
-
-      throw;
-    }
-    finally {
-      if (localTransaction is not null) {
-        await localTransaction.DisposeAsync().ConfigureAwait(false);
-      }
-
-      if (shouldCloseConnection) {
-        await connection.CloseAsync().ConfigureAwait(false);
+      foreach (var chunk in group.Chunk(chunkSize)) {
+        rowsWritten += await ExecuteMySqlInsertChunkAsync(
+            connection,
+            transaction,
+            group.Key.TableName,
+            columns,
+            chunk.Select(row => row.Values).ToArray(),
+            conflictBehavior,
+            cancellationToken).ConfigureAwait(false);
       }
     }
+
+    return rowsWritten;
   }
 
   private static async Task<int> ExecuteMySqlInsertChunkAsync(
@@ -470,17 +468,43 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   private static string CreateLatestSatelliteHashDiffsCommandText(
       SatelliteTableProjection table,
       IReadOnlyList<string> parentHashKeyParameterNames) {
+    return CreateLatestSatelliteHashDiffsCommandText(
+        table.TableName,
+        table.ParentHashKeyColumnName,
+        table.HashDiffColumnName,
+        table.LoadTimestampColumnName,
+        parentHashKeyParameterNames);
+  }
+
+  internal static string CreateLatestSatelliteHashDiffsCommandText(
+      string tableName,
+      string parentHashKeyColumnName,
+      string hashDiffColumnName,
+      string loadTimestampColumnName,
+      IReadOnlyList<string> parentHashKeyParameterNames) {
     var builder = new StringBuilder();
     builder.Append("SELECT ")
-        .Append(QuoteMySqlIdentifier(table.ParentHashKeyColumnName))
+        .Append(QuoteMySqlIdentifier(parentHashKeyColumnName))
         .Append(", ")
-        .Append(QuoteMySqlIdentifier(table.HashDiffColumnName))
+        .Append(QuoteMySqlIdentifier(hashDiffColumnName))
         .Append(", ")
-        .Append(QuoteMySqlIdentifier(table.LoadTimestampColumnName))
+        .Append(QuoteMySqlIdentifier(loadTimestampColumnName))
+        .Append(" FROM (SELECT ")
+        .Append(QuoteMySqlIdentifier(parentHashKeyColumnName))
+        .Append(", ")
+        .Append(QuoteMySqlIdentifier(hashDiffColumnName))
+        .Append(", ")
+        .Append(QuoteMySqlIdentifier(loadTimestampColumnName))
+        .Append(", ROW_NUMBER() OVER (PARTITION BY ")
+        .Append(QuoteMySqlIdentifier(parentHashKeyColumnName))
+        .Append(" ORDER BY ")
+        .Append(QuoteMySqlIdentifier(loadTimestampColumnName))
+        .Append(" DESC) AS ")
+        .Append(QuoteMySqlIdentifier(RowNumberColumnName))
         .Append(" FROM ")
-        .Append(QuoteMySqlIdentifier(table.TableName))
+        .Append(QuoteMySqlIdentifier(tableName))
         .Append(" WHERE ")
-        .Append(QuoteMySqlIdentifier(table.ParentHashKeyColumnName))
+        .Append(QuoteMySqlIdentifier(parentHashKeyColumnName))
         .Append(" IN (");
 
     for (var index = 0; index < parentHashKeyParameterNames.Count; index++) {
@@ -491,11 +515,11 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
       builder.Append(parentHashKeyParameterNames[index]);
     }
 
-    builder.Append(") ORDER BY ")
-        .Append(QuoteMySqlIdentifier(table.ParentHashKeyColumnName))
-        .Append(", ")
-        .Append(QuoteMySqlIdentifier(table.LoadTimestampColumnName))
-        .Append(" DESC");
+    builder.Append(")) AS ")
+        .Append(QuoteMySqlIdentifier(LatestRowsTableAlias))
+        .Append(" WHERE ")
+        .Append(QuoteMySqlIdentifier(RowNumberColumnName))
+        .Append(" = 1");
 
     return builder.ToString();
   }
@@ -561,6 +585,10 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
 
   private static string CreateColumnSignature(IEnumerable<string> columns) {
     return string.Join('\u001f', columns);
+  }
+
+  private static string FormatLoadTimestamp(DateTimeOffset timestamp) {
+    return timestamp.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
   }
 
   private static string ComputeHash(
