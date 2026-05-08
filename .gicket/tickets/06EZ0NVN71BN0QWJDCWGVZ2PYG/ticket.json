@@ -3,18 +3,17 @@
   "ticket-id": "06EZ0NVN71BN0QWJDCWGVZ2PYG",
   "ticket-type": "story",
   "title": "Story: Add multi-active satellite modeling",
-  "revision": "06EZ0Y59PPBD5SXJVE4QGW09J0",
-  "status": "todo",
+  "revision": "06F0CDTCDDADMD4WSPHAM524Q4",
+  "status": "done",
   "labels": [
-    "type/story",
-    "automation/bot-ready",
     "area/modeling",
     "area/multi-active-satellite",
-    "needs-po"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:15:56.9716890Z",
-  "updated-at": "2026-05-04T00:52:12.8530947Z"
+  "updated-at": "2026-05-08T06:12:27.8839233Z"
 }

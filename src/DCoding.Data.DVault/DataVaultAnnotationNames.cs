@@ -1,4 +1,4 @@
-﻿namespace DCoding.Data.DVault;
+namespace DCoding.Data.DVault;
 
 /// <summary>
 /// Defines DVault-owned provider-neutral annotation names used on Entity Framework metadata.

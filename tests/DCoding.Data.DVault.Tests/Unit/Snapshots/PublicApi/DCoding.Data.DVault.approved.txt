@@ -1,4 +1,4 @@
-﻿# DVault public API snapshot
+# DVault public API snapshot
 # Package: DCoding.Data.DVault
 # Assembly: DCoding.Data.DVault
 # Generated from built assembly output.

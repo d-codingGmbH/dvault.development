@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
