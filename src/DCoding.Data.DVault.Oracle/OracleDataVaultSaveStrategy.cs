@@ -9,8 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage;
 namespace DCoding.Data.DVault;
 
 internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrategy {
+  private const int OracleMaxCommandParameterCount = 60000;
+  private const int OracleMaxRowsPerCommand = 250;
   private const int MinimumOptimizedBatchOperationCount = 50;
-  private const int MaximumOptimizedSatelliteOperationCount = 200;
+  private const string OrdinalColumnName = "__dvault_ordinal";
+  private const string RowNumberColumnName = "__dvault_row_number";
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
 
   internal const string OracleProviderName = "Oracle.EntityFrameworkCore";
@@ -44,22 +47,17 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
         .ToArray();
     var rowsWritten = await ExecuteOracleInsertRowsAsync(
         context.DbContext,
-        uniquePlans.Select(plan => new OracleInsertRow(
-            plan.Table.TableName,
-            plan.Table.HashKeyColumnName,
-            plan.HashKey,
-            plan.Row,
-            OracleInsertConflictBehavior.Ignore)),
-        cancellationToken).ConfigureAwait(false);
-
-    rowsWritten += await ExecuteOracleInsertRowsAsync(
-        context.DbContext,
-        filteredSatellitePlans.RowsToWrite.Select(plan => new OracleInsertRow(
-            plan.Table.TableName,
-            HashKeyColumnName: null,
-            HashKey: null,
-            plan.Row,
-            OracleInsertConflictBehavior.Fail)),
+        uniquePlans
+            .Select(plan => new OracleInsertRow(
+                plan.Table.TableName,
+                plan.Table.HashKeyColumnName,
+                plan.Row,
+                OracleInsertConflictBehavior.Ignore))
+            .Concat(filteredSatellitePlans.RowsToWrite.Select(plan => new OracleInsertRow(
+                plan.Table.TableName,
+                HashKeyColumnName: null,
+                plan.Row,
+                OracleInsertConflictBehavior.Fail))),
         cancellationToken).ConfigureAwait(false);
 
     return new DataVaultSaveResult(rowsWritten, savedRecords);
@@ -75,14 +73,11 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     ArgumentNullException.ThrowIfNull(requests);
 
     var operationCount = 0;
-    var satelliteOperationCount = 0;
     foreach (var request in requests) {
       operationCount += request.HubOperations.Count + request.LinkOperations.Count + request.SatelliteOperations.Count;
-      satelliteOperationCount += request.SatelliteOperations.Count;
     }
 
-    return operationCount >= MinimumOptimizedBatchOperationCount &&
-        satelliteOperationCount <= MaximumOptimizedSatelliteOperationCount;
+    return operationCount >= MinimumOptimizedBatchOperationCount;
   }
 
   private static bool ContainsMultiActiveSatelliteOperations(IReadOnlyList<DataVaultSaveRequest> requests) {
@@ -335,7 +330,9 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
       DbContext dbContext,
       IEnumerable<OracleInsertRow> rows,
       CancellationToken cancellationToken) {
-    var rowArray = rows.ToArray();
+    var rowArray = rows
+        .Select((row, index) => row with { Ordinal = index })
+        .ToArray();
     if (rowArray.Length == 0) {
       return 0;
     }
@@ -355,12 +352,37 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
 
     try {
       var rowsWritten = 0;
-      foreach (var row in rowArray) {
-        rowsWritten += await ExecuteOracleInsertRowAsync(
-            connection,
-            transaction,
-            row,
-            cancellationToken).ConfigureAwait(false);
+      foreach (var group in rowArray.GroupBy(row => new OracleInsertRowShape(
+          row.TableName,
+          row.HashKeyColumnName,
+          CreateColumnSignature(row.Values.Keys),
+          row.ConflictBehavior))) {
+        var columns = group.First().Values.Keys.ToArray();
+        var parameterCountPerRow = columns.Length +
+            (group.Key.ConflictBehavior == OracleInsertConflictBehavior.Ignore ? 1 : 0);
+        var chunkSize = Math.Min(
+            OracleMaxRowsPerCommand,
+            Math.Max(1, OracleMaxCommandParameterCount / parameterCountPerRow));
+
+        foreach (var chunk in group.Chunk(chunkSize)) {
+          rowsWritten += group.Key.ConflictBehavior == OracleInsertConflictBehavior.Ignore
+              ? await ExecuteOracleUniqueInsertChunkAsync(
+                  connection,
+                  transaction,
+                  group.Key.TableName,
+                  columns,
+                  group.Key.HashKeyColumnName
+                      ?? throw new InvalidOperationException("Oracle unique insert rows require a hash key column."),
+                  chunk,
+                  cancellationToken).ConfigureAwait(false)
+              : await ExecuteOracleInsertAllChunkAsync(
+                  connection,
+                  transaction,
+                  group.Key.TableName,
+                  columns,
+                  chunk.Select(row => row.Values).ToArray(),
+                  cancellationToken).ConfigureAwait(false);
+        }
       }
 
       if (localTransaction is not null) {
@@ -387,44 +409,117 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     }
   }
 
-  private static async Task<int> ExecuteOracleInsertRowAsync(
+  private static async Task<int> ExecuteOracleUniqueInsertChunkAsync(
       DbConnection connection,
       DbTransaction transaction,
-      OracleInsertRow row,
+      string tableName,
+      IReadOnlyList<string> columns,
+      string hashKeyColumnName,
+      IReadOnlyList<OracleInsertRow> rows,
       CancellationToken cancellationToken) {
     await using var command = connection.CreateCommand();
     command.Transaction = transaction;
 
-    var columns = row.Values.Keys.ToArray();
-    command.CommandText = CreateOracleInsertCommandText(row, columns);
+    if (HasDistinctHashKeys(rows, hashKeyColumnName) && TrySetOracleArrayBindCount(command, rows.Count)) {
+      command.CommandText = CreateOracleArrayUniqueInsertCommandText(tableName, columns, hashKeyColumnName);
+      foreach (var column in columns) {
+        AddParameter(command, CreateOracleArrayParameterValue(rows.Select(row => row.Values[column])));
+      }
 
-    for (var index = 0; index < columns.Length; index++) {
-      AddParameter(command, row.Values[columns[index]]);
+      AddParameter(command, CreateOracleArrayParameterValue(rows.Select(row => row.Values[hashKeyColumnName])));
+
+      var arrayAffectedRows = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+
+      return arrayAffectedRows >= 0 ? arrayAffectedRows : rows.Count;
     }
 
-    if (row.ConflictBehavior == OracleInsertConflictBehavior.Ignore) {
-      AddParameter(command, row.HashKey!);
+    command.CommandText = CreateOracleUniqueInsertCommandText(tableName, columns, hashKeyColumnName, rows.Count);
+
+    foreach (var row in rows) {
+      AddParameter(command, row.Ordinal);
+      foreach (var column in columns) {
+        AddParameter(command, row.Values[column]);
+      }
     }
 
-    return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    var affectedRows = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+
+    return affectedRows >= 0 ? affectedRows : rows.Count;
   }
 
-  private static string CreateOracleInsertCommandText(
-      OracleInsertRow row,
+  private static async Task<int> ExecuteOracleInsertAllChunkAsync(
+      DbConnection connection,
+      DbTransaction transaction,
+      string tableName,
+      IReadOnlyList<string> columns,
+      IReadOnlyList<Dictionary<string, object>> rows,
+      CancellationToken cancellationToken) {
+    await using var command = connection.CreateCommand();
+    command.Transaction = transaction;
+
+    if (TrySetOracleArrayBindCount(command, rows.Count)) {
+      command.CommandText = CreateOracleArrayInsertCommandText(tableName, columns);
+      foreach (var column in columns) {
+        AddParameter(command, CreateOracleArrayParameterValue(rows.Select(row => row[column])));
+      }
+
+      var arrayAffectedRows = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+
+      return arrayAffectedRows >= 0 ? arrayAffectedRows : rows.Count;
+    }
+
+    command.CommandText = CreateOracleInsertAllCommandText(tableName, columns, rows.Count);
+
+    foreach (var row in rows) {
+      foreach (var column in columns) {
+        AddParameter(command, row[column]);
+      }
+    }
+
+    var affectedRows = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+
+    return affectedRows >= 0 ? affectedRows : rows.Count;
+  }
+
+  internal static string CreateOracleArrayInsertCommandText(
+      string tableName,
       IReadOnlyList<string> columns) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
+    ArgumentNullException.ThrowIfNull(columns);
+
     var builder = new StringBuilder();
     builder.Append("INSERT INTO ")
-        .Append(QuoteOracleIdentifier(row.TableName))
+        .Append(QuoteOracleIdentifier(tableName))
         .Append(" (");
+    AppendIdentifierList(builder, columns);
+    builder.Append(") VALUES (");
 
     for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++) {
       if (columnIndex > 0) {
         builder.Append(", ");
       }
 
-      builder.Append(QuoteOracleIdentifier(columns[columnIndex]));
+      builder.Append(CreateOracleParameterPlaceholder(columnIndex));
     }
 
+    builder.Append(')');
+
+    return builder.ToString();
+  }
+
+  internal static string CreateOracleArrayUniqueInsertCommandText(
+      string tableName,
+      IReadOnlyList<string> columns,
+      string hashKeyColumnName) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
+    ArgumentNullException.ThrowIfNull(columns);
+    ArgumentException.ThrowIfNullOrWhiteSpace(hashKeyColumnName);
+
+    var builder = new StringBuilder();
+    builder.Append("INSERT INTO ")
+        .Append(QuoteOracleIdentifier(tableName))
+        .Append(" (");
+    AppendIdentifierList(builder, columns);
     builder.Append(") SELECT ");
 
     for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++) {
@@ -435,20 +530,150 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
       builder.Append(CreateOracleParameterPlaceholder(columnIndex));
     }
 
-    if (row.ConflictBehavior == OracleInsertConflictBehavior.Ignore) {
-      builder.Append(" FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM ")
-          .Append(QuoteOracleIdentifier(row.TableName))
-          .Append(" WHERE ")
-          .Append(QuoteOracleIdentifier(row.HashKeyColumnName!))
-          .Append(" = ")
-          .Append(CreateOracleParameterPlaceholder(columns.Count))
-          .Append(')');
-    }
-    else {
-      builder.Append(" FROM DUAL");
-    }
+    builder.Append(" FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM ")
+        .Append(QuoteOracleIdentifier(tableName))
+        .Append(" WHERE ")
+        .Append(QuoteOracleIdentifier(hashKeyColumnName))
+        .Append(" = ")
+        .Append(CreateOracleParameterPlaceholder(columns.Count))
+        .Append(')');
 
     return builder.ToString();
+  }
+
+  internal static string CreateOracleInsertAllCommandText(
+      string tableName,
+      IReadOnlyList<string> columns,
+      int rowCount) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
+    ArgumentNullException.ThrowIfNull(columns);
+    if (rowCount <= 0) {
+      throw new ArgumentOutOfRangeException(nameof(rowCount));
+    }
+
+    var builder = new StringBuilder();
+    builder.Append("INSERT ALL");
+
+    var parameterIndex = 0;
+    for (var rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+      builder.Append(" INTO ")
+          .Append(QuoteOracleIdentifier(tableName))
+          .Append(" (");
+      AppendIdentifierList(builder, columns);
+      builder.Append(") VALUES (");
+
+      for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++) {
+        if (columnIndex > 0) {
+          builder.Append(", ");
+        }
+
+        builder.Append(CreateOracleParameterPlaceholder(parameterIndex));
+        parameterIndex++;
+      }
+
+      builder.Append(')');
+    }
+
+    builder.Append(" SELECT 1 FROM DUAL");
+
+    return builder.ToString();
+  }
+
+  internal static string CreateOracleUniqueInsertCommandText(
+      string tableName,
+      IReadOnlyList<string> columns,
+      string hashKeyColumnName,
+      int rowCount) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
+    ArgumentNullException.ThrowIfNull(columns);
+    ArgumentException.ThrowIfNullOrWhiteSpace(hashKeyColumnName);
+    if (rowCount <= 0) {
+      throw new ArgumentOutOfRangeException(nameof(rowCount));
+    }
+
+    var builder = new StringBuilder();
+    builder.Append("INSERT INTO ")
+        .Append(QuoteOracleIdentifier(tableName))
+        .Append(" (");
+    AppendIdentifierList(builder, columns);
+    builder.Append(") SELECT ");
+    AppendQualifiedIdentifierList(builder, "source", columns);
+    builder.Append(" FROM (SELECT ");
+    AppendQualifiedIdentifierList(builder, "ranked", columns);
+    builder.Append(" FROM (SELECT ");
+    AppendQualifiedIdentifierList(builder, "source", columns);
+    builder.Append(", ROW_NUMBER() OVER (PARTITION BY ")
+        .Append(QuoteOracleIdentifier("source"))
+        .Append('.')
+        .Append(QuoteOracleIdentifier(hashKeyColumnName))
+        .Append(" ORDER BY ")
+        .Append(QuoteOracleIdentifier("source"))
+        .Append('.')
+        .Append(QuoteOracleIdentifier(OrdinalColumnName))
+        .Append(") ")
+        .Append(QuoteOracleIdentifier(RowNumberColumnName))
+        .Append(" FROM (");
+    AppendOracleSourceRows(builder, columns, rowCount, includeOrdinal: true);
+    builder.Append(") ")
+        .Append(QuoteOracleIdentifier("source"))
+        .Append(") ")
+        .Append(QuoteOracleIdentifier("ranked"))
+        .Append(" WHERE ")
+        .Append(QuoteOracleIdentifier("ranked"))
+        .Append('.')
+        .Append(QuoteOracleIdentifier(RowNumberColumnName))
+        .Append(" = 1) ")
+        .Append(QuoteOracleIdentifier("source"))
+        .Append(" WHERE NOT EXISTS (SELECT 1 FROM ")
+        .Append(QuoteOracleIdentifier(tableName))
+        .Append(" ")
+        .Append(QuoteOracleIdentifier("target"))
+        .Append(" WHERE ")
+        .Append(QuoteOracleIdentifier("target"))
+        .Append('.')
+        .Append(QuoteOracleIdentifier(hashKeyColumnName))
+        .Append(" = ")
+        .Append(QuoteOracleIdentifier("source"))
+        .Append('.')
+        .Append(QuoteOracleIdentifier(hashKeyColumnName))
+        .Append(')');
+
+    return builder.ToString();
+  }
+
+  private static void AppendOracleSourceRows(
+      StringBuilder builder,
+      IReadOnlyList<string> columns,
+      int rowCount,
+      bool includeOrdinal) {
+    var parameterIndex = 0;
+
+    for (var rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+      if (rowIndex > 0) {
+        builder.Append(" UNION ALL ");
+      }
+
+      builder.Append("SELECT ");
+      if (includeOrdinal) {
+        builder.Append(CreateOracleParameterPlaceholder(parameterIndex))
+            .Append(' ')
+            .Append(QuoteOracleIdentifier(OrdinalColumnName));
+        parameterIndex++;
+      }
+
+      for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++) {
+        if (columnIndex > 0 || includeOrdinal) {
+          builder.Append(", ");
+        }
+
+        builder.Append(CreateOracleParameterPlaceholder(parameterIndex))
+            .Append(' ')
+            .Append(QuoteOracleIdentifier(columns[columnIndex]));
+        parameterIndex++;
+      }
+
+      builder.Append(" FROM DUAL");
+    }
   }
 
   private static string CreateLatestSatelliteHashDiffsCommandText(
@@ -515,6 +740,57 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     command.Parameters.Add(parameter);
   }
 
+  private static bool HasDistinctHashKeys(IReadOnlyList<OracleInsertRow> rows, string hashKeyColumnName) {
+    var hashKeys = new HashSet<string>(StringComparer.Ordinal);
+    foreach (var row in rows) {
+      if (!row.Values.TryGetValue(hashKeyColumnName, out var hashKeyValue) ||
+          hashKeyValue is not string hashKey ||
+          !hashKeys.Add(hashKey)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private static object CreateOracleArrayParameterValue(IEnumerable<object> values) {
+    var valueArray = values.ToArray();
+    if (valueArray.All(value => value is string)) {
+      return valueArray.Cast<string>().ToArray();
+    }
+
+    if (valueArray.All(value => value is int)) {
+      return valueArray.Cast<int>().ToArray();
+    }
+
+    if (valueArray.All(value => value is long)) {
+      return valueArray.Cast<long>().ToArray();
+    }
+
+    if (valueArray.All(value => value is DateTime)) {
+      return valueArray.Cast<DateTime>().ToArray();
+    }
+
+    if (valueArray.All(value => value is DateTimeOffset)) {
+      return valueArray.Cast<DateTimeOffset>().ToArray();
+    }
+
+    return valueArray;
+  }
+
+  private static bool TrySetOracleArrayBindCount(DbCommand command, int rowCount) {
+    var arrayBindCountProperty = command.GetType().GetProperty("ArrayBindCount");
+    if (arrayBindCountProperty is null ||
+        arrayBindCountProperty.PropertyType != typeof(int) ||
+        !arrayBindCountProperty.CanWrite) {
+      return false;
+    }
+
+    arrayBindCountProperty.SetValue(command, rowCount);
+
+    return true;
+  }
+
   private static string GetRequiredString(DbDataReader reader, int ordinal) {
     return reader.GetValue(ordinal) as string ??
         Convert.ToString(reader.GetValue(ordinal), CultureInfo.InvariantCulture) ??
@@ -531,6 +807,37 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
 
   private static string QuoteOracleIdentifier(string identifier) {
     return "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+  }
+
+  private static void AppendIdentifierList(
+      StringBuilder builder,
+      IReadOnlyList<string> identifiers) {
+    for (var index = 0; index < identifiers.Count; index++) {
+      if (index > 0) {
+        builder.Append(", ");
+      }
+
+      builder.Append(QuoteOracleIdentifier(identifiers[index]));
+    }
+  }
+
+  private static void AppendQualifiedIdentifierList(
+      StringBuilder builder,
+      string qualifier,
+      IReadOnlyList<string> identifiers) {
+    for (var index = 0; index < identifiers.Count; index++) {
+      if (index > 0) {
+        builder.Append(", ");
+      }
+
+      builder.Append(QuoteOracleIdentifier(qualifier))
+          .Append('.')
+          .Append(QuoteOracleIdentifier(identifiers[index]));
+    }
+  }
+
+  private static string CreateColumnSignature(IEnumerable<string> columns) {
+    return string.Join('\u001f', columns);
   }
 
   private static string FormatLoadTimestamp(DateTimeOffset timestamp) {
@@ -598,8 +905,15 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
   private sealed record OracleInsertRow(
       string TableName,
       string? HashKeyColumnName,
-      string? HashKey,
       Dictionary<string, object> Values,
+      OracleInsertConflictBehavior ConflictBehavior) {
+    public int Ordinal { get; init; }
+  }
+
+  private sealed record OracleInsertRowShape(
+      string TableName,
+      string? HashKeyColumnName,
+      string ColumnSignature,
       OracleInsertConflictBehavior ConflictBehavior);
 
   private enum OracleInsertConflictBehavior {
