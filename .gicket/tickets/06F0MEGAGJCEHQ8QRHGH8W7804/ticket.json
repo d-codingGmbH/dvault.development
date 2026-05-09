@@ -3,7 +3,7 @@
   "ticket-id": "06F0MEGAGJCEHQ8QRHGH8W7804",
   "ticket-type": "task",
   "title": "Task: Document model-first governance workflow",
-  "revision": "06F0MFBQ0Y24V16V8DRS07VTDG",
+  "revision": "06F0QH3Z8KS980C4JS8CHT1180",
   "status": "todo",
   "labels": [
     "type/task",
@@ -11,11 +11,12 @@
     "area/model-first",
     "area/governance",
     "area/developer-experience",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F0ME831E6DZ661QMTG5Q77J0",
   "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
   "created-at": "2026-05-09T00:53:58.0057011Z",
-  "updated-at": "2026-05-09T00:57:40.8713047Z"
+  "updated-at": "2026-05-09T08:04:47.5560167Z"
 }

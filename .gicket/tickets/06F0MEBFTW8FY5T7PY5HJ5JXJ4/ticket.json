@@ -3,7 +3,7 @@
   "ticket-id": "06F0MEBFTW8FY5T7PY5HJ5JXJ4",
   "ticket-type": "task",
   "title": "Task: Refactor save and read services to consume registry metadata when available",
-  "revision": "06F0MFB65GF0EHQCZWT04N0KZW",
+  "revision": "06F0QH0VBWSCTSNZR2959EEMTG",
   "status": "todo",
   "labels": [
     "type/task",
@@ -11,11 +11,12 @@
     "area/read-models",
     "area/api",
     "area/modeling",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F0ME8172WBQKE9528PS68SY0",
   "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
   "created-at": "2026-05-09T00:53:17.2816968Z",
-  "updated-at": "2026-05-09T00:57:36.5563413Z"
+  "updated-at": "2026-05-09T08:04:21.9835265Z"
 }

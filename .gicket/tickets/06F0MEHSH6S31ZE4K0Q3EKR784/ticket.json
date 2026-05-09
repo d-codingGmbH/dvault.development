@@ -3,7 +3,7 @@
   "ticket-id": "06F0MEHSH6S31ZE4K0Q3EKR784",
   "ticket-type": "story",
   "title": "Story: Add provider-aware read optimization follow-up",
-  "revision": "06F0MFCPD8YE1K9X84E9F2S4C8",
+  "revision": "06F0QH35AQKCK34FBJ0Q36MJFW",
   "status": "todo",
   "labels": [
     "type/story",
@@ -11,11 +11,12 @@
     "area/provider-support",
     "area/read-models",
     "area/benchmarks",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F0ME83T78Z32RA39SD0JT85W",
   "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
   "created-at": "2026-05-09T00:54:08.6884318Z",
-  "updated-at": "2026-05-09T00:57:48.9068242Z"
+  "updated-at": "2026-05-09T08:04:40.9178504Z"
 }

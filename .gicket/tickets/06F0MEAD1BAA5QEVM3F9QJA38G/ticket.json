@@ -3,7 +3,7 @@
   "ticket-id": "06F0MEAD1BAA5QEVM3F9QJA38G",
   "ticket-type": "task",
   "title": "Task: Add Code-First migration and schema parity tests",
-  "revision": "06F0MF9H5CATN6RD6Q2AJ85DZ8",
+  "revision": "06F0QH2AW7RP4DET2YCSV8VQQW",
   "status": "todo",
   "labels": [
     "type/task",
@@ -11,11 +11,12 @@
     "area/ef-core",
     "area/modeling",
     "area/provider-support",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F0ME8172WBQKE9528PS68SY0",
   "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
   "created-at": "2026-05-09T00:53:08.2501860Z",
-  "updated-at": "2026-05-09T00:57:22.9875201Z"
+  "updated-at": "2026-05-09T08:04:34.1456721Z"
 }

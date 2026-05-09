@@ -3,19 +3,20 @@
   "ticket-id": "06F0ME84YSZ62WRX1SJQE7BMTC",
   "ticket-type": "epic",
   "title": "Epic: Code-First and typed workflow usability",
-  "revision": "06F0MF90H1SGTJ1JBCZPWYB2HW",
+  "revision": "06F0QH2QCGVZ2PAGMM0DMB4CWM",
   "status": "todo",
   "labels": [
     "type/epic",
     "area/developer-experience",
     "area/modeling",
     "area/api",
-    "automation/bot-ready"
+    "automation/bot-ready",
+    "needs-po"
   ],
   "assignees": [],
   "has-attachments": true,
   "milestoneId": "06F0ME8172WBQKE9528PS68SY0",
   "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
   "created-at": "2026-05-09T00:52:50.5117528Z",
-  "updated-at": "2026-05-09T00:57:18.7280324Z"
+  "updated-at": "2026-05-09T08:04:37.3488367Z"
 }
