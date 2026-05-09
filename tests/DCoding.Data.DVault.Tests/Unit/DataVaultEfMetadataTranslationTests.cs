@@ -16,12 +16,30 @@ public sealed class DataVaultEfMetadataTranslationTests {
         .GetMethods(BindingFlags.Public | BindingFlags.Static)
         .Single(methodInfo =>
             methodInfo.Name == "ApplyDataVaultMetadata" &&
-            methodInfo.GetParameters().Length == 2);
+            methodInfo.GetParameters().Length == 2 &&
+            methodInfo.GetParameters()[1].ParameterType == typeof(DataVaultMetadataModel));
     var parameters = method.GetParameters();
 
     Assert.Equal("DCoding.Data.DVault", method.DeclaringType?.Namespace);
     Assert.Equal(typeof(ModelBuilder), parameters[0].ParameterType);
     Assert.Equal(typeof(DataVaultMetadataModel), parameters[1].ParameterType);
+    Assert.Equal(typeof(ModelBuilder), method.ReturnType);
+    Assert.True(method.IsDefined(typeof(ExtensionAttribute), inherit: false));
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataCodeFirstIsExplicitRootNamespaceTranslationExtension() {
+    var method = typeof(DCoding.Data.DVault.DataVaultModelBuilderExtensions)
+        .GetMethods(BindingFlags.Public | BindingFlags.Static)
+        .Single(methodInfo =>
+            methodInfo.Name == "ApplyDataVaultMetadata" &&
+            methodInfo.GetParameters().Length == 2 &&
+            methodInfo.GetParameters()[1].ParameterType == typeof(Action<DataVaultCodeFirstModelBuilder>));
+    var parameters = method.GetParameters();
+
+    Assert.Equal("DCoding.Data.DVault", method.DeclaringType?.Namespace);
+    Assert.Equal(typeof(ModelBuilder), parameters[0].ParameterType);
+    Assert.Equal(typeof(Action<DataVaultCodeFirstModelBuilder>), parameters[1].ParameterType);
     Assert.Equal(typeof(ModelBuilder), method.ReturnType);
     Assert.True(method.IsDefined(typeof(ExtensionAttribute), inherit: false));
   }
@@ -49,12 +67,16 @@ public sealed class DataVaultEfMetadataTranslationTests {
     ModelBuilder? modelBuilder = null;
 
     var modelBuilderException = Assert.Throws<ArgumentNullException>(() => modelBuilder!.ApplyDataVaultMetadata(metadataModel));
-    var metadataException = Assert.Throws<ArgumentNullException>(() => CreateModelBuilder().ApplyDataVaultMetadata(null!));
+    var metadataException = Assert.Throws<ArgumentNullException>(() =>
+        CreateModelBuilder().ApplyDataVaultMetadata((DataVaultMetadataModel)null!));
+    var configureModelException = Assert.Throws<ArgumentNullException>(() =>
+        CreateModelBuilder().ApplyDataVaultMetadata((Action<DataVaultCodeFirstModelBuilder>)null!));
     var profileException = Assert.Throws<ArgumentNullException>(() =>
         CreateModelBuilder().ApplyDataVaultMetadata(metadataModel, null!));
 
     Assert.Equal("modelBuilder", modelBuilderException.ParamName);
     Assert.Equal("metadataModel", metadataException.ParamName);
+    Assert.Equal("configureModel", configureModelException.ParamName);
     Assert.Equal("providerCapabilities", profileException.ParamName);
   }
 

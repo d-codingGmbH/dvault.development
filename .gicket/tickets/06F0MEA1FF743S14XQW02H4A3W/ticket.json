@@ -3,21 +3,20 @@
   "ticket-id": "06F0MEA1FF743S14XQW02H4A3W",
   "ticket-type": "task",
   "title": "Task: Implement fluent link and relationship projection",
-  "revision": "06F0QZ4EK1Z8SW68JK7F8YGKT0",
-  "status": "todo",
+  "revision": "06F0T02EHVD3YP2DB7XCPG2CVW",
+  "status": "done",
   "labels": [
-    "type/task",
-    "area/modeling",
-    "area/ef-core",
     "area/api",
+    "area/ef-core",
+    "area/modeling",
     "area/tests",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "has-attachments": true,
   "milestoneId": "06F0ME8172WBQKE9528PS68SY0",
   "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
   "created-at": "2026-05-09T00:53:05.7639244Z",
-  "updated-at": "2026-05-09T09:06:01.4960000Z"
+  "updated-at": "2026-05-09T13:49:44.4622117Z"
 }

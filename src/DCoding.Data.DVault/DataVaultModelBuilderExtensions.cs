@@ -69,6 +69,24 @@ public static class DataVaultModelBuilderExtensions {
   }
 
   /// <summary>
+  /// Builds provider-neutral Data Vault metadata from fluent code-first declarations and translates it into Entity Framework metadata.
+  /// </summary>
+  /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
+  /// <param name="configureModel">The code-first Data Vault model configuration callback.</param>
+  /// <returns>The same model builder so Entity Framework model configuration can continue fluently.</returns>
+  public static ModelBuilder ApplyDataVaultMetadata(
+      this ModelBuilder modelBuilder,
+      Action<DataVaultCodeFirstModelBuilder> configureModel) {
+    ArgumentNullException.ThrowIfNull(modelBuilder);
+    ArgumentNullException.ThrowIfNull(configureModel);
+
+    var codeFirstModelBuilder = new DataVaultCodeFirstModelBuilder();
+    configureModel(codeFirstModelBuilder);
+
+    return modelBuilder.ApplyDataVaultMetadata(codeFirstModelBuilder.BuildMetadataModel());
+  }
+
+  /// <summary>
   /// Translates provider-neutral Data Vault metadata declarations into Entity Framework metadata for one provider profile.
   /// </summary>
   /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
