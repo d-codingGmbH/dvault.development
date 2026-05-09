@@ -3,20 +3,19 @@
   "ticket-id": "06F0MEANEV00QSYHMSGWX1X0R4",
   "ticket-type": "story",
   "title": "Story: Introduce Data Vault model registry",
-  "revision": "06F0QH12AF8X9B2XPADB5RYHQG",
-  "status": "todo",
+  "revision": "06F0XZYWA2QZ4JA0G64XZ4PK54",
+  "status": "done",
   "labels": [
-    "type/story",
-    "area/architecture",
-    "area/modeling",
-    "area/developer-experience",
     "area/api",
+    "area/architecture",
+    "area/developer-experience",
+    "area/modeling",
     "automation/bot-ready",
-    "needs-po"
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06F0ME8172WBQKE9528PS68SY0",
   "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
   "created-at": "2026-05-09T00:53:10.3758087Z",
-  "updated-at": "2026-05-09T08:04:23.7637683Z"
+  "updated-at": "2026-05-09T23:08:29.6481775Z"
 }
