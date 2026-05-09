@@ -36,6 +36,364 @@ public interface IDataVaultSaveService {
 }
 
 /// <summary>
+/// Provides registry-backed save adapters over the explicit DVault save service.
+/// </summary>
+public static class DataVaultSaveServiceRegistryExtensions {
+  /// <summary>
+  /// Resolves hub, link, and satellite metadata from the authoritative DbContext registry and persists the resulting explicit request.
+  /// </summary>
+  /// <param name="saveService">The explicit save service that performs the validated write pipeline.</param>
+  /// <param name="dbContext">The context whose options selected the authoritative Data Vault metadata source.</param>
+  /// <param name="request">The registry-backed save request containing logical metadata names and row operations.</param>
+  /// <param name="cancellationToken">A token used to observe cancellation while saving changes.</param>
+  /// <returns>The persisted row summary, including saved hash-key values.</returns>
+  /// <exception cref="InvalidOperationException">
+  /// Thrown before write orchestration starts when the DbContext has no authoritative registry source or a required metadata
+  /// declaration is missing from that source.
+  /// </exception>
+  /// <remarks>
+  /// This adapter resolves metadata once and then delegates to the existing explicit request pipeline. Callers that invoke
+  /// <see cref="IDataVaultSaveService.SaveAsync(DbContext, DataVaultSaveRequest, CancellationToken)" /> or
+  /// <see cref="IDataVaultSaveService.SaveAsync(DbContext, DataVaultBulkSaveRequest, CancellationToken)" /> keep explicit
+  /// caller-supplied metadata precedence and bypass registry resolution.
+  /// </remarks>
+  public static Task<DataVaultSaveResult> SaveAsync(
+      this IDataVaultSaveService saveService,
+      DbContext dbContext,
+      DataVaultRegistrySaveRequest request,
+      CancellationToken cancellationToken = default) {
+    ArgumentNullException.ThrowIfNull(saveService);
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(request);
+
+    var registry = DataVaultRegistryMetadataResolver.ResolveRequiredRegistry(dbContext);
+    return saveService.SaveAsync(
+        dbContext,
+        ResolveRequest(registry, request),
+        cancellationToken);
+  }
+
+  /// <summary>
+  /// Resolves all registry-backed save requests from the authoritative DbContext registry and persists them as one ordered batch.
+  /// </summary>
+  /// <param name="saveService">The explicit save service that performs the validated write pipeline.</param>
+  /// <param name="dbContext">The context whose options selected the authoritative Data Vault metadata source.</param>
+  /// <param name="request">The registry-backed bulk save request containing ordered logical-name requests.</param>
+  /// <param name="cancellationToken">A token used to observe cancellation while saving changes.</param>
+  /// <returns>The persisted row summary, including saved hash-key values.</returns>
+  /// <exception cref="InvalidOperationException">
+  /// Thrown before write orchestration starts when the DbContext has no authoritative registry source or a required metadata
+  /// declaration is missing from that source.
+  /// </exception>
+  /// <remarks>
+  /// All metadata declarations are resolved before the underlying explicit save service is called, so missing registry entries
+  /// fail deterministically without partial persistence. Explicit request overloads remain the advanced path when the caller
+  /// wants supplied metadata to take precedence over the registry.
+  /// </remarks>
+  public static Task<DataVaultSaveResult> SaveAsync(
+      this IDataVaultSaveService saveService,
+      DbContext dbContext,
+      DataVaultRegistryBulkSaveRequest request,
+      CancellationToken cancellationToken = default) {
+    ArgumentNullException.ThrowIfNull(saveService);
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(request);
+
+    var registry = DataVaultRegistryMetadataResolver.ResolveRequiredRegistry(dbContext);
+    var resolvedRequests = request.Requests
+        .Select(current => ResolveRequest(registry, current))
+        .ToArray();
+
+    return saveService.SaveAsync(
+        dbContext,
+        new DataVaultBulkSaveRequest(resolvedRequests),
+        cancellationToken);
+  }
+
+  private static DataVaultSaveRequest ResolveRequest(
+      DataVaultMetadataRegistry registry,
+      DataVaultRegistrySaveRequest request) {
+    var hubOperations = request.HubOperations
+        .Select(operation => new DataVaultHubSaveOperation(
+            DataVaultRegistryMetadataResolver.GetRequiredHub(registry, operation.HubName),
+            operation.BusinessKeyValues))
+        .ToArray();
+    var linkOperations = request.LinkOperations
+        .Select(operation => new DataVaultLinkSaveOperation(
+            DataVaultRegistryMetadataResolver.GetRequiredLink(registry, operation.LinkName),
+            operation.ParticipantHashKeyValues))
+        .ToArray();
+    var satelliteOperations = request.SatelliteOperations
+        .Select(operation => new DataVaultSatelliteSaveOperation(
+            DataVaultRegistryMetadataResolver.GetRequiredSatellite(registry, operation.Parent, operation.SatelliteName),
+            operation.ParentHashKey,
+            operation.DrivingKeyValues,
+            operation.PayloadValues,
+            operation.HashDiff))
+        .ToArray();
+
+    return new DataVaultSaveRequest(
+        request.LoadTimestamp,
+        request.RecordSource,
+        hubOperations,
+        linkOperations,
+        satelliteOperations);
+  }
+}
+
+/// <summary>
+/// Groups registry-backed DVault save operations that share one load timestamp and record source.
+/// </summary>
+public sealed class DataVaultRegistrySaveRequest {
+  /// <summary>
+  /// Initializes a new registry-backed save request.
+  /// </summary>
+  /// <param name="loadTimestamp">The caller-visible load timestamp to persist as UTC metadata.</param>
+  /// <param name="recordSource">The caller-visible record source to persist as lineage metadata.</param>
+  /// <param name="hubOperations">The hub rows whose metadata should be resolved by logical hub name.</param>
+  /// <param name="linkOperations">The link rows whose metadata should be resolved by logical link name.</param>
+  public DataVaultRegistrySaveRequest(
+      DateTimeOffset loadTimestamp,
+      string recordSource,
+      IEnumerable<DataVaultRegistryHubSaveOperation> hubOperations,
+      IEnumerable<DataVaultRegistryLinkSaveOperation> linkOperations)
+      : this(loadTimestamp, recordSource, hubOperations, linkOperations, []) {
+  }
+
+  /// <summary>
+  /// Initializes a new registry-backed save request.
+  /// </summary>
+  /// <param name="loadTimestamp">The caller-visible load timestamp to persist as UTC metadata.</param>
+  /// <param name="recordSource">The caller-visible record source to persist as lineage metadata.</param>
+  /// <param name="hubOperations">The hub rows whose metadata should be resolved by logical hub name.</param>
+  /// <param name="linkOperations">The link rows whose metadata should be resolved by logical link name.</param>
+  /// <param name="satelliteOperations">The satellite rows whose metadata should be resolved by parent and logical satellite name.</param>
+  public DataVaultRegistrySaveRequest(
+      DateTimeOffset loadTimestamp,
+      string recordSource,
+      IEnumerable<DataVaultRegistryHubSaveOperation> hubOperations,
+      IEnumerable<DataVaultRegistryLinkSaveOperation> linkOperations,
+      IEnumerable<DataVaultRegistrySatelliteSaveOperation> satelliteOperations) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(recordSource);
+    ArgumentNullException.ThrowIfNull(hubOperations);
+    ArgumentNullException.ThrowIfNull(linkOperations);
+    ArgumentNullException.ThrowIfNull(satelliteOperations);
+
+    LoadTimestamp = loadTimestamp.ToUniversalTime();
+    RecordSource = recordSource;
+    HubOperations = RequireOperations(hubOperations, nameof(hubOperations));
+    LinkOperations = RequireOperations(linkOperations, nameof(linkOperations));
+    SatelliteOperations = RequireOperations(satelliteOperations, nameof(satelliteOperations));
+  }
+
+  /// <summary>
+  /// Gets the caller-supplied load timestamp normalized to a UTC instant.
+  /// </summary>
+  public DateTimeOffset LoadTimestamp { get; }
+
+  /// <summary>
+  /// Gets the caller-supplied record source used for every operation in the request.
+  /// </summary>
+  public string RecordSource { get; }
+
+  /// <summary>
+  /// Gets the hub rows whose metadata should be resolved by logical hub name before the explicit save pipeline runs.
+  /// </summary>
+  public IReadOnlyList<DataVaultRegistryHubSaveOperation> HubOperations { get; }
+
+  /// <summary>
+  /// Gets the link rows whose metadata should be resolved by logical link name before the explicit save pipeline runs.
+  /// </summary>
+  public IReadOnlyList<DataVaultRegistryLinkSaveOperation> LinkOperations { get; }
+
+  /// <summary>
+  /// Gets the satellite rows whose metadata should be resolved by parent and logical satellite name before the explicit save pipeline runs.
+  /// </summary>
+  public IReadOnlyList<DataVaultRegistrySatelliteSaveOperation> SatelliteOperations { get; }
+
+  private static IReadOnlyList<T> RequireOperations<T>(IEnumerable<T> operations, string parameterName)
+      where T : class {
+    var values = operations.ToArray();
+    foreach (var value in values) {
+      if (value is null) {
+        throw new ArgumentException("Data Vault registry save operation collections must not contain null values.", parameterName);
+      }
+    }
+
+    return values;
+  }
+}
+
+/// <summary>
+/// Groups multiple registry-backed DVault save requests that should be processed as one ordered batch.
+/// </summary>
+public sealed class DataVaultRegistryBulkSaveRequest {
+  /// <summary>
+  /// Initializes a new registry-backed bulk save request.
+  /// </summary>
+  /// <param name="requests">The registry-backed save requests to resolve and process in caller-supplied order.</param>
+  public DataVaultRegistryBulkSaveRequest(IEnumerable<DataVaultRegistrySaveRequest> requests) {
+    ArgumentNullException.ThrowIfNull(requests);
+
+    Requests = RequireRequests(requests, nameof(requests));
+  }
+
+  /// <summary>
+  /// Gets the registry-backed save requests processed in caller-supplied order.
+  /// </summary>
+  public IReadOnlyList<DataVaultRegistrySaveRequest> Requests { get; }
+
+  private static IReadOnlyList<DataVaultRegistrySaveRequest> RequireRequests(
+      IEnumerable<DataVaultRegistrySaveRequest> requests,
+      string parameterName) {
+    var values = requests.ToArray();
+    foreach (var value in values) {
+      if (value is null) {
+        throw new ArgumentException("Data Vault registry bulk save request collections must not contain null values.", parameterName);
+      }
+    }
+
+    return values;
+  }
+}
+
+/// <summary>
+/// Describes one hub row whose metadata should be resolved from the authoritative registry by logical hub name.
+/// </summary>
+public sealed class DataVaultRegistryHubSaveOperation {
+  /// <summary>
+  /// Initializes a new registry-backed hub save operation.
+  /// </summary>
+  /// <param name="hubName">The exact logical hub metadata name to resolve from the authoritative registry.</param>
+  /// <param name="businessKeyValues">Business-key values keyed by the resolved hub metadata business-key names.</param>
+  public DataVaultRegistryHubSaveOperation(
+      string hubName,
+      IEnumerable<KeyValuePair<string, string>> businessKeyValues) {
+    HubName = DataVaultMetadataValidation.RequireName(hubName, nameof(hubName));
+    BusinessKeyValues = DataVaultHubSaveOperation.RequireValues(businessKeyValues, nameof(businessKeyValues));
+  }
+
+  /// <summary>
+  /// Gets the exact logical hub metadata name to resolve from the authoritative registry.
+  /// </summary>
+  public string HubName { get; }
+
+  /// <summary>
+  /// Gets business-key values keyed by the resolved hub metadata business-key names.
+  /// </summary>
+  public IReadOnlyDictionary<string, string> BusinessKeyValues { get; }
+}
+
+/// <summary>
+/// Describes one link row whose metadata should be resolved from the authoritative registry by logical link name.
+/// </summary>
+public sealed class DataVaultRegistryLinkSaveOperation {
+  /// <summary>
+  /// Initializes a new registry-backed link save operation.
+  /// </summary>
+  /// <param name="linkName">The exact logical link metadata name to resolve from the authoritative registry.</param>
+  /// <param name="participantHashKeyValues">Participant hash keys keyed by the resolved link participant hub metadata names.</param>
+  public DataVaultRegistryLinkSaveOperation(
+      string linkName,
+      IEnumerable<KeyValuePair<string, string>> participantHashKeyValues) {
+    LinkName = DataVaultMetadataValidation.RequireName(linkName, nameof(linkName));
+    ParticipantHashKeyValues = DataVaultHubSaveOperation.RequireValues(
+        participantHashKeyValues,
+        nameof(participantHashKeyValues));
+  }
+
+  /// <summary>
+  /// Gets the exact logical link metadata name to resolve from the authoritative registry.
+  /// </summary>
+  public string LinkName { get; }
+
+  /// <summary>
+  /// Gets participant hash keys keyed by the resolved link participant hub metadata names.
+  /// </summary>
+  public IReadOnlyDictionary<string, string> ParticipantHashKeyValues { get; }
+}
+
+/// <summary>
+/// Describes one satellite row whose metadata should be resolved from the authoritative registry by parent and logical satellite name.
+/// </summary>
+public sealed class DataVaultRegistrySatelliteSaveOperation {
+  /// <summary>
+  /// Initializes a new registry-backed satellite save operation.
+  /// </summary>
+  /// <param name="parent">The exact parent hub or link metadata reference used to resolve the satellite.</param>
+  /// <param name="satelliteName">The exact logical satellite metadata name to resolve from the authoritative registry.</param>
+  /// <param name="parentHashKey">The explicit parent hub or link hash key associated with this satellite row.</param>
+  /// <param name="payloadValues">Payload values keyed by the resolved satellite metadata payload names.</param>
+  /// <param name="hashDiff">The caller-supplied deterministic hash diff for this payload state.</param>
+  public DataVaultRegistrySatelliteSaveOperation(
+      DataVaultMetadataReference parent,
+      string satelliteName,
+      string parentHashKey,
+      IEnumerable<KeyValuePair<string, string>> payloadValues,
+      string hashDiff)
+      : this(parent, satelliteName, parentHashKey, [], payloadValues, hashDiff) {
+  }
+
+  /// <summary>
+  /// Initializes a new registry-backed multi-active satellite save operation.
+  /// </summary>
+  /// <param name="parent">The exact parent hub or link metadata reference used to resolve the satellite.</param>
+  /// <param name="satelliteName">The exact logical satellite metadata name to resolve from the authoritative registry.</param>
+  /// <param name="parentHashKey">The explicit parent hub or link hash key associated with this satellite row.</param>
+  /// <param name="drivingKeyValues">Driving-key values keyed by the resolved satellite metadata driving-key names.</param>
+  /// <param name="payloadValues">Payload values keyed by the resolved satellite metadata payload names.</param>
+  /// <param name="hashDiff">The caller-supplied deterministic hash diff for this payload state.</param>
+  public DataVaultRegistrySatelliteSaveOperation(
+      DataVaultMetadataReference parent,
+      string satelliteName,
+      string parentHashKey,
+      IEnumerable<KeyValuePair<string, string>> drivingKeyValues,
+      IEnumerable<KeyValuePair<string, string>> payloadValues,
+      string hashDiff) {
+    ArgumentNullException.ThrowIfNull(parent);
+    ArgumentException.ThrowIfNullOrWhiteSpace(parentHashKey);
+    ArgumentException.ThrowIfNullOrWhiteSpace(hashDiff);
+
+    Parent = parent;
+    SatelliteName = DataVaultMetadataValidation.RequireName(satelliteName, nameof(satelliteName));
+    ParentHashKey = parentHashKey;
+    DrivingKeyValues = DataVaultHubSaveOperation.RequireValues(drivingKeyValues, nameof(drivingKeyValues));
+    PayloadValues = DataVaultHubSaveOperation.RequireValues(payloadValues, nameof(payloadValues));
+    HashDiff = hashDiff;
+  }
+
+  /// <summary>
+  /// Gets the exact parent hub or link metadata reference used to resolve the satellite.
+  /// </summary>
+  public DataVaultMetadataReference Parent { get; }
+
+  /// <summary>
+  /// Gets the exact logical satellite metadata name to resolve from the authoritative registry.
+  /// </summary>
+  public string SatelliteName { get; }
+
+  /// <summary>
+  /// Gets the explicit parent hub or link hash key associated with this satellite row.
+  /// </summary>
+  public string ParentHashKey { get; }
+
+  /// <summary>
+  /// Gets driving-key values keyed by the resolved satellite metadata driving-key names.
+  /// </summary>
+  public IReadOnlyDictionary<string, string> DrivingKeyValues { get; }
+
+  /// <summary>
+  /// Gets payload values keyed by the resolved satellite metadata payload names.
+  /// </summary>
+  public IReadOnlyDictionary<string, string> PayloadValues { get; }
+
+  /// <summary>
+  /// Gets the caller-supplied deterministic hash diff for this payload state.
+  /// </summary>
+  public string HashDiff { get; }
+}
+
+/// <summary>
 /// Groups explicit DVault save operations that share one load timestamp and record source.
 /// </summary>
 public sealed class DataVaultSaveRequest {

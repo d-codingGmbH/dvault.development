@@ -50,7 +50,7 @@ public sealed class DataVaultLatestSatelliteReadRequest {
   /// </summary>
   public DateTimeOffset? AsOf { get; }
 
-  private static IReadOnlyList<string> RequireParentHashKeys(IEnumerable<string> parentHashKeys) {
+  internal static IReadOnlyList<string> RequireParentHashKeys(IEnumerable<string> parentHashKeys) {
     var values = parentHashKeys
         .Distinct(StringComparer.Ordinal)
         .ToArray();

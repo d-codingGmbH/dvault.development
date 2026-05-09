@@ -953,6 +953,218 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
   }
 
   [Fact]
+  public async Task RegistryBackedSaveAndReadResolveAppDefaultMetadataThroughDbContextOptions() {
+    var firstLoadTimestamp = new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero);
+    var secondLoadTimestamp = new DateTimeOffset(2026, 4, 29, 11, 30, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var services = new ServiceCollection();
+    services.AddDVault(options => options.UseMetadataModel(CreateMetadataModel()));
+    services.AddDVaultSqlite();
+    services.AddDbContext<RegistryBackedSaveServiceContext>(
+        options => options
+            .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+            .UseDataVaultMetadata());
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var readService = provider.GetRequiredService<IDataVaultReadService>();
+    string customerHashKey;
+    string orderHashKey;
+
+    using (var scope = provider.CreateScope()) {
+      var context = scope.ServiceProvider.GetRequiredService<RegistryBackedSaveServiceContext>();
+      await context.Database.EnsureCreatedAsync();
+
+      var hubResult = await saveService.SaveAsync(
+          context,
+          new DataVaultRegistrySaveRequest(
+              firstLoadTimestamp,
+              "crm-import",
+              [
+                  new("Customer", [new("Customer Id", "C-100")]),
+                  new("Order", [new("Order Id", "O-200")]),
+              ],
+              []));
+
+      customerHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Customer");
+      orderHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Order");
+
+      var detailResult = await saveService.SaveAsync(
+          context,
+          new DataVaultRegistrySaveRequest(
+              firstLoadTimestamp,
+              "crm-import",
+              [],
+              [
+                  new("CustomerOrder", [new("Customer", customerHashKey), new("Order", orderHashKey)]),
+              ],
+              [
+                  new(
+                      DataVaultMetadataReference.Hub("Customer"),
+                      "Profile",
+                      customerHashKey,
+                      [new("customer_name", "Alice Adams"), new("customer_status", "prospect")],
+                      "profile-hash-1"),
+              ]));
+
+      var changedProfileResult = await saveService.SaveAsync(
+          context,
+          new DataVaultRegistrySaveRequest(
+              secondLoadTimestamp,
+              "crm-change",
+              [],
+              [],
+              [
+                  new(
+                      DataVaultMetadataReference.Hub("Customer"),
+                      "Profile",
+                      customerHashKey,
+                      [new("customer_name", "Alice Baker"), new("customer_status", "active")],
+                      "profile-hash-2"),
+              ]));
+
+      Assert.Equal(2, hubResult.RowsWritten);
+      Assert.Equal(2, detailResult.RowsWritten);
+      Assert.Equal(1, changedProfileResult.RowsWritten);
+    }
+
+    using (var scope = provider.CreateScope()) {
+      var context = scope.ServiceProvider.GetRequiredService<RegistryBackedSaveServiceContext>();
+      var latestRows = await readService.ReadLatestSatelliteRowsAsync(
+          context,
+          new DataVaultRegistryLatestSatelliteReadRequest(
+              DataVaultMetadataReference.Hub("Customer"),
+              "Profile",
+              [customerHashKey]));
+      var asOfRows = await readService.ReadLatestSatelliteRowsAsync(
+          context,
+          new DataVaultRegistryLatestSatelliteReadRequest(
+              DataVaultMetadataReference.Hub("Customer"),
+              "Profile",
+              [customerHashKey],
+              firstLoadTimestamp));
+      var linkRow = await context.Set<Dictionary<string, object>>("LinkCustomerOrder").AsNoTracking().SingleAsync();
+      var latestRow = Assert.Single(latestRows);
+      var asOfRow = Assert.Single(asOfRows);
+
+      Assert.Equal(customerHashKey, linkRow["CustomerHashKey"]);
+      Assert.Equal(orderHashKey, linkRow["OrderHashKey"]);
+      Assert.Equal("profile-hash-2", latestRow.HashDiff);
+      Assert.Equal("active", latestRow.PayloadValues["customer_status"]);
+      Assert.Equal("profile-hash-1", asOfRow.HashDiff);
+      Assert.Equal("prospect", asOfRow.PayloadValues["customer_status"]);
+    }
+  }
+
+  [Fact]
+  public async Task RegistryBackedSaveUsesContextScopedRegistryOverride() {
+    var loadTimestamp = new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var services = new ServiceCollection();
+    services.AddDVault(options => options.UseMetadataModel(CreateCustomerOnlyMetadataModel()));
+    services.AddDVaultSqlite();
+    services.AddDbContext<RegistryBackedSaveServiceContext>(
+        options => options
+            .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+            .UseDataVaultMetadata(DataVaultMetadataRegistry.Create(CreateOrderOnlyMetadataModel())));
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+
+    using (var scope = provider.CreateScope()) {
+      var context = scope.ServiceProvider.GetRequiredService<RegistryBackedSaveServiceContext>();
+      await context.Database.EnsureCreatedAsync();
+
+      var result = await saveService.SaveAsync(
+          context,
+          new DataVaultRegistrySaveRequest(
+              loadTimestamp,
+              "order-import",
+              [new("Order", [new("Order Id", "O-200")])],
+              []));
+
+      AssertSingleSavedRecord(
+          result,
+          DataVaultTableKind.Hub,
+          "Order",
+          "HubOrder",
+          GetHashKey(result, DataVaultTableKind.Hub, "Order"));
+      Assert.Contains("HubOrder", context.Model.GetEntityTypes().Select(entity => entity.Name));
+      Assert.DoesNotContain("HubCustomer", context.Model.GetEntityTypes().Select(entity => entity.Name));
+    }
+  }
+
+  [Fact]
+  public async Task RegistryBackedSaveFailsBeforeWritesWhenDbContextHasNoAuthoritativeRegistry() {
+    var loadTimestamp = new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<ExplicitSaveServiceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+
+    await using var context = new ExplicitSaveServiceContext(options);
+    await context.Database.EnsureCreatedAsync();
+
+    var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        saveService.SaveAsync(
+            context,
+            new DataVaultRegistrySaveRequest(
+                loadTimestamp,
+                "crm-import",
+                [new("Customer", [new("Customer Id", "C-100")])],
+                [])));
+
+    Assert.Contains("UseDataVaultMetadata", exception.Message, StringComparison.Ordinal);
+    Assert.Empty(await context.Set<Dictionary<string, object>>("HubCustomer").AsNoTracking().ToListAsync());
+  }
+
+  [Fact]
+  public async Task RegistryBackedSaveAndReadFailBeforeOrchestrationWhenMetadataEntryIsMissing() {
+    var loadTimestamp = new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var services = new ServiceCollection();
+    services.AddDVault(options => options.UseMetadataModel(CreateCustomerOnlyMetadataModel()));
+    services.AddDVaultSqlite();
+    services.AddDbContext<RegistryBackedSaveServiceContext>(
+        options => options
+            .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+            .UseDataVaultMetadata());
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var readService = provider.GetRequiredService<IDataVaultReadService>();
+
+    using var scope = provider.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<RegistryBackedSaveServiceContext>();
+    await context.Database.EnsureCreatedAsync();
+
+    var saveException = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        saveService.SaveAsync(
+            context,
+            new DataVaultRegistrySaveRequest(
+                loadTimestamp,
+                "crm-import",
+                [new("Customer", [new("Customer Id", "C-100")])],
+                [new("MissingLink", [new("Customer", "customer-hash")])])));
+    var readException = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        readService.ReadLatestSatelliteRowsAsync(
+            context,
+            new DataVaultRegistryLatestSatelliteReadRequest(
+                DataVaultMetadataReference.Hub("Customer"),
+                "MissingProfile",
+                ["customer-hash"])));
+
+    Assert.Contains("link metadata 'MissingLink'", saveException.Message, StringComparison.Ordinal);
+    Assert.Contains("satellite metadata 'MissingProfile'", readException.Message, StringComparison.Ordinal);
+    Assert.Empty(await context.Set<Dictionary<string, object>>("HubCustomer").AsNoTracking().ToListAsync());
+  }
+
+  [Fact]
   public async Task AddDVaultSqliteRegistersOptimizedStrategyForCleanSqliteContexts() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var loadTimestamp = new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero);
@@ -1387,6 +1599,24 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
                 DataVaultMetadataReference.Link("CustomerOrder"),
                 ["State Code"]),
         ]);
+  }
+
+  private static DataVaultMetadataModel CreateCustomerOnlyMetadataModel() {
+    return new DataVaultMetadataModel(
+        [new DataVaultHubMetadata("Customer", ["Customer Id"])],
+        [],
+        []);
+  }
+
+  private static DataVaultMetadataModel CreateOrderOnlyMetadataModel() {
+    return new DataVaultMetadataModel(
+        [new DataVaultHubMetadata("Order", ["Order Id"])],
+        [],
+        []);
+  }
+
+  private sealed class RegistryBackedSaveServiceContext(
+      DbContextOptions<RegistryBackedSaveServiceContext> options) : DbContext(options) {
   }
 
   private sealed class ExplicitSaveServiceContext(

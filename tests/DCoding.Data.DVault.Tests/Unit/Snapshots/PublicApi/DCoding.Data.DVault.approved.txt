@@ -191,10 +191,54 @@ type public enum DCoding.Data.DVault.DataVaultProviderValueFormat
   value NativeInteger = 3
   value UtcTicks = 4
 
+type public static class DCoding.Data.DVault.DataVaultReadServiceRegistryExtensions
+  method public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSatelliteReadRecord>> ReadLatestSatelliteRowsAsync(this DCoding.Data.DVault.IDataVaultReadService readService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryLatestSatelliteReadRequest request, System.Threading.CancellationToken cancellationToken = default)
+
 type public sealed class DCoding.Data.DVault.DataVaultRecordSourceResolutionContext
   ctor public DataVaultRecordSourceResolutionContext(DCoding.Data.DVault.DataVaultSaveRequest request, System.DateTimeOffset loadTimestamp)
   property public DCoding.Data.DVault.DataVaultSaveRequest Request { get; }
   property public System.DateTimeOffset LoadTimestamp { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultRegistryBulkSaveRequest
+  ctor public DataVaultRegistryBulkSaveRequest(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultRegistrySaveRequest> requests)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultRegistrySaveRequest> Requests { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultRegistryHubSaveOperation
+  ctor public DataVaultRegistryHubSaveOperation(string hubName, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> businessKeyValues)
+  property public System.Collections.Generic.IReadOnlyDictionary<string, string> BusinessKeyValues { get; }
+  property public string HubName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultRegistryLatestSatelliteReadRequest
+  ctor public DataVaultRegistryLatestSatelliteReadRequest(DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, string satelliteName, System.Collections.Generic.IEnumerable<string> parentHashKeys)
+  ctor public DataVaultRegistryLatestSatelliteReadRequest(DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, string satelliteName, System.Collections.Generic.IEnumerable<string> parentHashKeys, System.DateTimeOffset? asOf)
+  property public DCoding.Data.DVault.Modeling.DataVaultMetadataReference Parent { get; }
+  property public System.Collections.Generic.IReadOnlyList<string> ParentHashKeys { get; }
+  property public System.DateTimeOffset? AsOf { get; }
+  property public string SatelliteName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultRegistryLinkSaveOperation
+  ctor public DataVaultRegistryLinkSaveOperation(string linkName, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> participantHashKeyValues)
+  property public System.Collections.Generic.IReadOnlyDictionary<string, string> ParticipantHashKeyValues { get; }
+  property public string LinkName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultRegistrySatelliteSaveOperation
+  ctor public DataVaultRegistrySatelliteSaveOperation(DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, string satelliteName, string parentHashKey, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> drivingKeyValues, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> payloadValues, string hashDiff)
+  ctor public DataVaultRegistrySatelliteSaveOperation(DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, string satelliteName, string parentHashKey, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> payloadValues, string hashDiff)
+  property public DCoding.Data.DVault.Modeling.DataVaultMetadataReference Parent { get; }
+  property public System.Collections.Generic.IReadOnlyDictionary<string, string> DrivingKeyValues { get; }
+  property public System.Collections.Generic.IReadOnlyDictionary<string, string> PayloadValues { get; }
+  property public string HashDiff { get; }
+  property public string ParentHashKey { get; }
+  property public string SatelliteName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultRegistrySaveRequest
+  ctor public DataVaultRegistrySaveRequest(System.DateTimeOffset loadTimestamp, string recordSource, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultRegistryHubSaveOperation> hubOperations, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultRegistryLinkSaveOperation> linkOperations)
+  ctor public DataVaultRegistrySaveRequest(System.DateTimeOffset loadTimestamp, string recordSource, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultRegistryHubSaveOperation> hubOperations, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultRegistryLinkSaveOperation> linkOperations, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultRegistrySatelliteSaveOperation> satelliteOperations)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultRegistryHubSaveOperation> HubOperations { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultRegistryLinkSaveOperation> LinkOperations { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultRegistrySatelliteSaveOperation> SatelliteOperations { get; }
+  property public System.DateTimeOffset LoadTimestamp { get; }
+  property public string RecordSource { get; }
 
 type public sealed class DCoding.Data.DVault.DataVaultResolvedSaveRequest
   ctor public DataVaultResolvedSaveRequest(DCoding.Data.DVault.DataVaultSaveRequest request, System.DateTimeOffset loadTimestamp, string recordSource)
@@ -234,6 +278,10 @@ type public sealed class DCoding.Data.DVault.DataVaultSaveResult
   ctor public DataVaultSaveResult(int rowsWritten, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSavedRecord> savedRecords)
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSavedRecord> SavedRecords { get; }
   property public int RowsWritten { get; }
+
+type public static class DCoding.Data.DVault.DataVaultSaveServiceRegistryExtensions
+  method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(this DCoding.Data.DVault.IDataVaultSaveService saveService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryBulkSaveRequest request, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(this DCoding.Data.DVault.IDataVaultSaveService saveService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistrySaveRequest request, System.Threading.CancellationToken cancellationToken = default)
 
 type public sealed class DCoding.Data.DVault.DataVaultSavedRecord
   ctor public DataVaultSavedRecord(DCoding.Data.DVault.Modeling.DataVaultTableKind kind, string metadataName, string tableName, string hashKey)

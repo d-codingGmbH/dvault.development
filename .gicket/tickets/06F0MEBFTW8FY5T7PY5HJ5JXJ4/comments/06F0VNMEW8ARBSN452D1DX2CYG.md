@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Verified the ticket snapshot, comments, live relation state, and current registry/model baseline. The ticket is bounded as registry-backed save/read consumption work on top of the existing explicit services, and no child-ticket, relation, or planning-document writes were needed.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Registry-backed behavior should use the same authoritative metadata source already selected for the DbContext through AddDVault(...)/UseDataVaultMetadata(...), including a context-level metadata model or registry override when one is configured.
 - Explicit request-based save/read APIs remain the advanced path and must keep their current source-compatible contract and deterministic behavior when callers provide metadata directly.
 - This ticket removes duplicate caller-side metadata construction for ordinary service usage; it does not introduce typed object mapping.
@@ -16,74 +15,42 @@
 - Live relation state was verified and left unchanged: parent 06F0MEANEV00QSYHMSGWX1X0R4, incoming blocks from 06F0MEAXT99V0P115P0WEJD4P0 and 06F0MEB634X6CTBZ00W108G3FG.
 - No child tickets, relation edits, or planning documents were materialized because the current evidence already keeps this ticket bounded.
 
-### Scope In
+Scope In
 - Registry-backed overloads or companion adapters for existing save-service flows that resolve hub/link/satellite metadata from the authoritative DVault metadata registry when the caller chooses the ordinary path.
 - Registry-backed overloads or companion adapters for existing read-service flows that resolve the same metadata from the authoritative registry for common latest/as-of style reads without changing the existing low-level result model.
 - Deterministic precedence and validation rules between registry-resolved metadata and explicit caller-supplied metadata.
 - Regression coverage proving explicit low-level APIs keep their current behavior and registry-backed paths fail before write orchestration starts when required metadata is missing.
 
-### Scope Out
+Scope Out
 - Typed object mapping or DTO projection work.
 - The typed helper tickets already tracked separately in 06F0MECFNF42NK9PND9DWVW9VW and 06F0MECPFAVBFBNC5XMVDZRQ6M.
 - Provider-specific save or read optimization changes.
 - Changes to the existing metadata-source conflict rules owned by AddDVault(...)/UseDataVaultMetadata(...).
 
-## Acceptance Criteria
-- Ordinary callers can use registry-backed save and read entry points that consume the authoritative metadata source already bound to the DbContext, so they no longer need to rebuild equivalent hub/link/satellite metadata objects for common flows.
-- Existing request-based save/read APIs remain source-compatible and preserve current results, validation, and explicit-metadata behavior when callers continue to supply metadata directly.
-- If a registry-backed call targets a context with no authoritative metadata source or with missing required hub/link/satellite entries, the operation fails deterministically before any write work begins and without partial persistence.
-- When a DbContext overrides the application-level registry with an explicit DataVaultMetadataModel or DataVaultMetadataRegistry, registry-backed save/read flows use that overridden authoritative source.
-- Automated tests cover registry-backed and explicit paths for save and read services and prove no behavioral regression in the existing low-level APIs.
-
-## Definition of Done
-- The save and read service implementation resolves registry metadata from the same authoritative source used by model configuration instead of duplicating metadata construction in ordinary callers.
-- Explicit APIs remain available for advanced callers and keep the established low-level contract.
-- Missing-registry and missing-entry failures are deterministic, happen before partial writes, and are covered by automated tests.
-- Any new public overloads, adapters, or XML docs clearly state registry resolution, explicit-metadata precedence, and failure behavior.
-
-## Implementation Notes
-- Developer freedom is acceptable on the public shape: interface overloads or companion adapters are both in bounds as long as the existing request-based APIs are preserved unchanged for current callers.
-- Use the authoritative metadata source already selected by AddDVault(...)/UseDataVaultMetadata(...) rather than introducing a second ambient registry lookup path.
-- Keep registry-backed entry points thin: resolve metadata once, hand off to the existing explicit request pipeline, and reuse current save/read validation and result shaping wherever possible.
-- Read-side work should keep the current low-level read records and query semantics; typed DTO projection remains separate work.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After this refactor lands, should the README quickstart switch its ordinary save/read examples to the registry-backed entry points while keeping explicit request examples for advanced usage?
 - Once the separate typed helper tickets land, should they build directly on these registry-backed entry points or continue to compose the explicit request APIs themselves?
 
-## Risks
+Risks
 - The live ticket still has incoming blocks relations from 06F0MEAXT99V0P115P0WEJD4P0 and 06F0MEB634X6CTBZ00W108G3FG, so implementation sequencing depends on those upstream tickets or later relation cleanup.
 - If registry-backed calls accidentally diverge from the explicit validation path, ordinary and advanced callers could see inconsistent diagnostics or write ordering; regression tests need to pin this down.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended now; the current ticket is already bounded to registry-backed metadata consumption, while typed save-helper and typed read-projection work is already separated into neighboring tickets.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Goal
-
-Let existing save/read services use registry metadata for ordinary workflows while preserving explicit request-based APIs for advanced callers.
-
-## Scope In
-
-- Registry-backed overloads or adapters for save and read services.
-- Deterministic behavior when explicit metadata is still supplied.
-- Tests that prove no behavior change for low-level APIs.
-
-## Scope Out
-
-- Typed object mappers.
-- Provider-specific optimization changes.
-
-## Acceptance Criteria
-
-- Existing request-based APIs remain source-compatible.
-- Registry-backed flows remove duplicate metadata creation from ordinary save/read code.
-- Missing registry entries fail before partial writes occur.
+Run mode
+- apply: planned updates are applied after this comment
