@@ -32,6 +32,13 @@ type public sealed class DCoding.Data.DVault.DataVaultHubSaveOperation
   property public DCoding.Data.DVault.Modeling.DataVaultHubMetadata Metadata { get; }
   property public System.Collections.Generic.IReadOnlyDictionary<string, string> BusinessKeyValues { get; }
 
+type public sealed class DCoding.Data.DVault.DataVaultLatestSatelliteReadRequest
+  ctor public DataVaultLatestSatelliteReadRequest(DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata satellite, System.Collections.Generic.IEnumerable<string> parentHashKeys)
+  ctor public DataVaultLatestSatelliteReadRequest(DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata satellite, System.Collections.Generic.IEnumerable<string> parentHashKeys, System.DateTimeOffset? asOf)
+  property public DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata Satellite { get; }
+  property public System.Collections.Generic.IReadOnlyList<string> ParentHashKeys { get; }
+  property public System.DateTimeOffset? AsOf { get; }
+
 type public sealed class DCoding.Data.DVault.DataVaultLinkSaveOperation
   ctor public DataVaultLinkSaveOperation(DCoding.Data.DVault.Modeling.DataVaultLinkMetadata metadata, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> participantHashKeyValues)
   property public DCoding.Data.DVault.Modeling.DataVaultLinkMetadata Metadata { get; }
@@ -98,9 +105,10 @@ type public static class DCoding.Data.DVault.DataVaultProviderBehaviorProfiles
   property public static DCoding.Data.DVault.DataVaultProviderBehaviorProfile ProviderNeutral { get; }
 
 type public sealed class DCoding.Data.DVault.DataVaultProviderCapabilityProfile
-  ctor public DataVaultProviderCapabilityProfile(string profileName, DCoding.Data.DVault.DataVaultProviderSqlFunctionSupport sqlFunctionSupport, DCoding.Data.DVault.DataVaultProviderConcurrencySupport concurrencySupport, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultProviderTypeMapping> typeMappings, int? maximumIdentifierLength = null, bool allowsIndexesCoveredByPrimaryKey = true)
+  ctor public DataVaultProviderCapabilityProfile(string profileName, DCoding.Data.DVault.DataVaultProviderSqlFunctionSupport sqlFunctionSupport, DCoding.Data.DVault.DataVaultProviderConcurrencySupport concurrencySupport, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultProviderTypeMapping> typeMappings, int? maximumIdentifierLength = null, bool allowsIndexesCoveredByPrimaryKey = true, DCoding.Data.DVault.DataVaultUnsupportedIncludedIndexColumnMode unsupportedIncludedIndexColumnMode = 1)
   property public DCoding.Data.DVault.DataVaultProviderConcurrencySupport ConcurrencySupport { get; }
   property public DCoding.Data.DVault.DataVaultProviderSqlFunctionSupport SqlFunctionSupport { get; }
+  property public DCoding.Data.DVault.DataVaultUnsupportedIncludedIndexColumnMode UnsupportedIncludedIndexColumnMode { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultProviderTypeMapping> TypeMappings { get; }
   property public bool AllowsIndexesCoveredByPrimaryKey { get; }
   property public int? MaximumIdentifierLength { get; }
@@ -163,6 +171,16 @@ type public sealed class DCoding.Data.DVault.DataVaultResolvedSaveRequest
   property public System.DateTimeOffset LoadTimestamp { get; }
   property public string RecordSource { get; }
 
+type public sealed class DCoding.Data.DVault.DataVaultSatelliteReadRecord
+  property public System.Collections.Generic.IReadOnlyDictionary<string, string> DrivingKeyValues { get; }
+  property public System.Collections.Generic.IReadOnlyDictionary<string, string> PayloadValues { get; }
+  property public System.DateTimeOffset LoadTimestamp { get; }
+  property public string HashDiff { get; }
+  property public string MetadataName { get; }
+  property public string ParentHashKey { get; }
+  property public string RecordSource { get; }
+  property public string TableName { get; }
+
 type public sealed class DCoding.Data.DVault.DataVaultSatelliteSaveOperation
   ctor public DataVaultSatelliteSaveOperation(DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata metadata, string parentHashKey, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> drivingKeyValues, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> payloadValues, string hashDiff)
   ctor public DataVaultSatelliteSaveOperation(DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata metadata, string parentHashKey, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> payloadValues, string hashDiff)
@@ -195,6 +213,10 @@ type public sealed class DCoding.Data.DVault.DataVaultSavedRecord
   property public string MetadataName { get; }
   property public string TableName { get; }
 
+type public enum DCoding.Data.DVault.DataVaultUnsupportedIncludedIndexColumnMode
+  value Ignore = 0
+  value AppendToKey = 1
+
 type public interface DCoding.Data.DVault.IDataVaultLoadTimestampResolver
   method public abstract System.DateTimeOffset? ResolveLoadTimestamp(DCoding.Data.DVault.DataVaultLoadTimestampResolutionContext context)
 
@@ -211,6 +233,9 @@ type public interface DCoding.Data.DVault.IDataVaultProviderSaveStrategy
   property public int Priority { get; }
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(DCoding.Data.DVault.DataVaultProviderSaveStrategyContext context, System.Threading.CancellationToken cancellationToken = default)
   method public abstract bool CanSave(Microsoft.EntityFrameworkCore.DbContext dbContext, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> requests)
+
+type public interface DCoding.Data.DVault.IDataVaultReadService
+  method public abstract System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSatelliteReadRecord>> ReadLatestSatelliteRowsAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultLatestSatelliteReadRequest request, System.Threading.CancellationToken cancellationToken = default)
 
 type public interface DCoding.Data.DVault.IDataVaultRecordSourceResolver
   method public abstract string? ResolveRecordSource(DCoding.Data.DVault.DataVaultRecordSourceResolutionContext context)

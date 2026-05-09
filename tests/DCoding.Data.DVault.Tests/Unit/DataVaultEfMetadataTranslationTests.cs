@@ -382,6 +382,21 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataWithMySqlProfileDoesNotPromoteSatelliteHashDiffIncludeToIndexKey() {
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.ApplyDataVaultMetadata(CreateMetadataModel(), DataVaultProviderCapabilityProfiles.MySql);
+
+    var satellite = FindEntity(modelBuilder.Model, "SatCustomerContact");
+
+    AssertIndex(
+        satellite,
+        "IxSatCustomerContactSatelliteParentCustomerHashKeyLoadTimestamp",
+        ["CustomerHashKey", "LoadTimestamp"],
+        isUnique: false);
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataTranslatesLinkParentSatellites() {
     var modelBuilder = CreateModelBuilder();
     var metadataModel = new DataVaultMetadataModel(

@@ -617,10 +617,14 @@ internal static class DataVaultEfMetadataTranslator {
       KeyProjection primaryKey,
       DataVaultProviderCapabilityProfile providerCapabilities) {
     var effectiveIndexPropertyNames = GetEffectiveIndexPropertyNames(index, providerCapabilities);
+    var hasEffectiveIncludedProperties =
+        index.IncludedPropertyNames.Count > 0 &&
+        (SupportsIncludedIndexProperties(providerCapabilities) ||
+            providerCapabilities.UnsupportedIncludedIndexColumnMode == DataVaultUnsupportedIncludedIndexColumnMode.AppendToKey);
 
     return !providerCapabilities.AllowsIndexesCoveredByPrimaryKey &&
         index.DescendingPropertyNames.Count == 0 &&
-        index.IncludedPropertyNames.Count == 0 &&
+        !hasEffectiveIncludedProperties &&
         effectiveIndexPropertyNames.SequenceEqual(primaryKey.PropertyNames, StringComparer.Ordinal);
   }
 
@@ -628,6 +632,10 @@ internal static class DataVaultEfMetadataTranslator {
       IndexProjection index,
       DataVaultProviderCapabilityProfile providerCapabilities) {
     if (SupportsIncludedIndexProperties(providerCapabilities) || index.IncludedPropertyNames.Count == 0) {
+      return index.PropertyNames;
+    }
+
+    if (providerCapabilities.UnsupportedIncludedIndexColumnMode == DataVaultUnsupportedIncludedIndexColumnMode.Ignore) {
       return index.PropertyNames;
     }
 

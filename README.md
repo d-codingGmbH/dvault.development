@@ -7,29 +7,29 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.4.1
+dotnet add package DCoding.Data.DVault --version 0.5.0
 ```
 
 For provider-specific startup extensions, add the matching provider package as well. For example, SQLite users should install:
 
 ```sh
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.4.1
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.5.0
 ```
 
 The provider package family is version-aligned:
 
 ```sh
-dotnet add package DCoding.Data.DVault.MySql --version 0.4.1
-dotnet add package DCoding.Data.DVault.Oracle --version 0.4.1
-dotnet add package DCoding.Data.DVault.Postgres --version 0.4.1
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.4.1
+dotnet add package DCoding.Data.DVault.MySql --version 0.5.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.5.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.5.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.5.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Pomelo.EntityFrameworkCore.MySql` for the DVault MySQL v1 path, or the relevant provider for PostgreSQL, SQL Server, or Oracle.
 
 ## Quickstart
 
-Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has an Entity Framework Core provider configured. The v1 path is convention-first: register DVault without options, declare Data Vault metadata on the EF model, save explicitly through `IDataVaultSaveService`, and read the generated shared-type tables through EF.
+Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has an Entity Framework Core provider configured. The v1 path is convention-first: register DVault without options, declare Data Vault metadata on the EF model, save explicitly through `IDataVaultSaveService`, and read generated vault rows either through `IDataVaultReadService` for common latest/as-of satellite access or through ordinary EF shared-type table queries.
 
 ### Register DVault services
 
@@ -182,6 +182,35 @@ services.AddDVaultMySql();
 
 Provider-specific save-strategy registration and provider-name capability-profile auto-registration are separate startup surfaces. The current startup extensions visibly auto-register provider names for SQLite and MySQL only. PostgreSQL, SQL Server, and Oracle still provide provider-specific save strategies and keep the provider-neutral fallback as the caller-visible safety net, but their startup extensions do not currently auto-register provider-name capability profiles.
 
+### Read latest satellite rows
+
+`IDataVaultReadService` provides a provider-neutral helper for common latest and as-of satellite reads. It keeps the same explicit metadata boundary as the save service and uses parent-hash-key filtering so generated satellite parent indexes can be used by the database:
+
+```csharp
+using DCoding.Data.DVault;
+using DCoding.Data.DVault.Modeling;
+using Microsoft.Extensions.DependencyInjection;
+
+var readService = serviceProvider.GetRequiredService<IDataVaultReadService>();
+var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+var profile = new DataVaultSatelliteMetadata(
+    "Profile",
+    customer.ToReference(),
+    ["customer_name", "customer_status"]);
+
+var latestRows = await readService.ReadLatestSatelliteRowsAsync(
+    context,
+    new DataVaultLatestSatelliteReadRequest(profile, [customerHashKey]),
+    cancellationToken);
+
+var asOfRows = await readService.ReadLatestSatelliteRowsAsync(
+    context,
+    new DataVaultLatestSatelliteReadRequest(profile, [customerHashKey], asOfTimestamp),
+    cancellationToken);
+```
+
+The read service returns `DataVaultSatelliteReadRecord` values containing the parent hash key, driving-key values, hash diff, load timestamp, record source, and payload values. It is intentionally narrow in v0.5.0: PIT-backed read models, bridge traversal helpers, and provider-specific read strategies remain future extension points.
+
 ### Query generated tables
 
 ```csharp
@@ -201,9 +230,25 @@ public static class SalesVaultReader {
 
 The shared-type table names and columns in this quickstart follow DVault's default naming conventions, for example `HubCustomer`, `HubOrder`, `LinkCustomerOrder`, `CustomerHashKey`, `OrderHashKey`, `LoadTimestamp`, and `RecordSource`. This Customer/Order/CustomerOrder flow is mirrored by the SQLite explicit-save integration tests in `tests/DCoding.Data.DVault.Tests`.
 
+Direct EF queries remain available for table-specific projections, custom joins, diagnostics, and cases outside the v0.5 read-service baseline.
+
+## v0.5.0 Release Notes
+
+The v0.5.0 release expands DVault from the SQLite-first v0.4.x baseline into a coordinated six-package release covering the provider-neutral package plus SQLite, PostgreSQL, SQL Server, Oracle, and MySQL provider packages. The release focuses on provider-specific write optimizations, deferred Data Vault capability baselines, read access for latest/as-of satellite rows, and package-publication readiness.
+
+Notable user-facing changes:
+
+- Provider packages for MySQL, Oracle, PostgreSQL, SQLite, and SQL Server are version-aligned with the core package.
+- Provider-specific save strategies optimize clean-context write paths for the supported provider shapes, with provider-neutral fallback when a strategy declines.
+- Load-timestamp storage can be projected as provider default, ISO 8601 UTC text, or UTC ticks.
+- Satellite latest-state indexes now respect provider capabilities for included columns, avoiding MySQL hash-diff key expansion where measurements showed it to be counterproductive.
+- `IDataVaultReadService` adds latest/as-of satellite reads over generated Data Vault tables.
+- The provider-neutral fallback writer now filters persisted satellite latest-state checks by parent hash key instead of loading whole satellite tables.
+- Deferred capability baselines cover multi-active satellite driving keys, PIT metadata projection, bridge metadata projection, provider capability profiles, and explicit API snapshots.
+
 ## Deferred Capabilities
 
-PIT tables, bridge tables, and multi-active satellites remain opt-in v0.5 capabilities rather than part of ordinary hub, link, and satellite setup. Multi-active satellite support is limited to the driving-key modeling, projection, and explicit-save baseline described above. The current bridge documentation baseline is in `docs/plans/deferred-data-vault-capabilities.md`; it reflects the implemented `DataVaultBridgeMetadata`/`DataVaultMetadataModel.Bridges` metadata surface and the bounded `ApplyDataVaultMetadata()` projection for many-to-many endpoint hash-key bridges and hierarchy bridges with `TraversalDepth`. Bridge row population, traversal maintenance, generated EF relationships or navigations, provider-specific DDL, PIT interactions, and multi-active interactions remain future scope.
+PIT tables, bridge tables, and multi-active satellites remain opt-in v0.5 capabilities rather than part of ordinary hub, link, and satellite setup. Multi-active satellite support is limited to the driving-key modeling, projection, and explicit-save baseline described above. The current bridge documentation baseline is in `docs/plans/deferred-data-vault-capabilities.md`; it reflects the implemented `DataVaultBridgeMetadata`/`DataVaultMetadataModel.Bridges` metadata surface and the bounded `ApplyDataVaultMetadata()` projection for many-to-many endpoint hash-key bridges and hierarchy bridges with `TraversalDepth`. Bridge row population, traversal maintenance, generated EF relationships or navigations, provider-specific DDL beyond the generated EF model, PIT interactions, and multi-active interactions remain future scope.
 
 ## Layout
 

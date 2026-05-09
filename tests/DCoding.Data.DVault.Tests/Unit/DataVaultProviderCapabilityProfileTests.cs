@@ -59,6 +59,9 @@ public sealed class DataVaultProviderCapabilityProfileTests {
     Assert.Equal(DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported, profile.SqlFunctionSupport);
     Assert.Equal(DataVaultProviderConcurrencySupport.NoneInV1Unsupported, profile.ConcurrencySupport);
     Assert.False(profile.AllowsIndexesCoveredByPrimaryKey);
+    Assert.Equal(
+        DataVaultUnsupportedIncludedIndexColumnMode.AppendToKey,
+        profile.UnsupportedIncludedIndexColumnMode);
 
     var functionException = Assert.Throws<NotSupportedException>(() => profile.RequireSqlFunction("computed_hash"));
     var concurrencyException = Assert.Throws<NotSupportedException>(() => profile.RequireConcurrencySignal("rowversion"));
@@ -157,6 +160,9 @@ public sealed class DataVaultProviderCapabilityProfileTests {
     Assert.Equal(DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported, profile.SqlFunctionSupport);
     Assert.Equal(DataVaultProviderConcurrencySupport.NoneInV1Unsupported, profile.ConcurrencySupport);
     Assert.Equal(64, profile.MaximumIdentifierLength);
+    Assert.Equal(
+        DataVaultUnsupportedIncludedIndexColumnMode.Ignore,
+        profile.UnsupportedIncludedIndexColumnMode);
     Assert.Equal(
         [
             DataVaultLogicalPropertyKind.HashKey,
@@ -280,6 +286,9 @@ public sealed class DataVaultProviderCapabilityProfileTests {
 
     Assert.Same(profile, providerDefault);
     Assert.Equal("oracle-v1-loadts-utc-ticks", ticksProfile.ProfileName);
+    Assert.Equal(
+        DataVaultUnsupportedIncludedIndexColumnMode.AppendToKey,
+        ticksProfile.UnsupportedIncludedIndexColumnMode);
     AssertMapping(
         ticksProfile,
         DataVaultLogicalPropertyKind.LoadTimestamp,

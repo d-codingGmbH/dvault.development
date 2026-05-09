@@ -859,6 +859,100 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
   }
 
   [Fact]
+  public async Task ReadServiceReadsLatestAndAsOfCustomerProfileSatelliteRowsThroughSqlite() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["customer_name", "customer_status"]);
+    var firstLoadTimestamp = new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero);
+    var secondLoadTimestamp = new DateTimeOffset(2026, 4, 29, 11, 30, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<ExplicitSaveServiceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var readService = provider.GetRequiredService<IDataVaultReadService>();
+    string customerHashKey;
+
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+
+      var hubResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              firstLoadTimestamp,
+              "crm-import",
+              [new(customer, [new("Customer Id", "C-100")])],
+              []));
+      customerHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Customer");
+
+      await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              firstLoadTimestamp,
+              "crm-import",
+              [],
+              [],
+              [
+                  new(
+                      profile,
+                      customerHashKey,
+                      [new("customer_name", "Alice Adams"), new("customer_status", "prospect")],
+                      "profile-hash-1"),
+              ]));
+      await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              secondLoadTimestamp,
+              "crm-change",
+              [],
+              [],
+              [
+                  new(
+                      profile,
+                      customerHashKey,
+                      [new("customer_name", "Alice Baker"), new("customer_status", "active")],
+                      "profile-hash-2"),
+              ]));
+    }
+
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      var latestRows = await readService.ReadLatestSatelliteRowsAsync(
+          context,
+          new DataVaultLatestSatelliteReadRequest(profile, [customerHashKey]));
+      var latestRow = Assert.Single(latestRows);
+
+      Assert.Equal("Profile", latestRow.MetadataName);
+      Assert.Equal("SatCustomerProfile", latestRow.TableName);
+      Assert.Equal(customerHashKey, latestRow.ParentHashKey);
+      Assert.Empty(latestRow.DrivingKeyValues);
+      Assert.Equal("profile-hash-2", latestRow.HashDiff);
+      Assert.Equal(secondLoadTimestamp, latestRow.LoadTimestamp);
+      Assert.Equal("crm-change", latestRow.RecordSource);
+      Assert.Equal("Alice Baker", latestRow.PayloadValues["customer_name"]);
+      Assert.Equal("active", latestRow.PayloadValues["customer_status"]);
+
+      var asOfRows = await readService.ReadLatestSatelliteRowsAsync(
+          context,
+          new DataVaultLatestSatelliteReadRequest(profile, [customerHashKey], firstLoadTimestamp));
+      var asOfRow = Assert.Single(asOfRows);
+
+      Assert.Equal("profile-hash-1", asOfRow.HashDiff);
+      Assert.Equal(firstLoadTimestamp, asOfRow.LoadTimestamp);
+      Assert.Equal("prospect", asOfRow.PayloadValues["customer_status"]);
+
+      Assert.Empty(await readService.ReadLatestSatelliteRowsAsync(
+          context,
+          new DataVaultLatestSatelliteReadRequest(profile, ["missing-hash-key"])));
+    }
+  }
+
+  [Fact]
   public async Task AddDVaultSqliteRegistersOptimizedStrategyForCleanSqliteContexts() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var loadTimestamp = new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero);

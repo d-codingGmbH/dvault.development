@@ -19,6 +19,7 @@ public sealed class ExplicitDataVaultSaveServiceTests {
     using var provider = services.BuildServiceProvider(validateScopes: true);
 
     Assert.NotNull(provider.GetRequiredService<IDataVaultSaveService>());
+    Assert.NotNull(provider.GetRequiredService<IDataVaultReadService>());
     Assert.Empty(provider.GetServices<ISaveChangesInterceptor>());
   }
 

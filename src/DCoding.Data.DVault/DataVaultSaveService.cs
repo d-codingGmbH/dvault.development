@@ -901,18 +901,18 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       CancellationToken cancellationToken) {
     var rows = dbContext.Set<Dictionary<string, object>>(table.TableName);
     var latestRows = new List<LatestSatelliteHashDiff>();
-    var persistedRows = await rows
-        .AsNoTracking()
-        .ToListAsync(cancellationToken)
-        .ConfigureAwait(false);
 
     foreach (var parentHashKeyBatch in parentHashKeys.Distinct(StringComparer.Ordinal).Chunk(500)) {
-      var parentHashKeySet = parentHashKeyBatch.ToHashSet(StringComparer.Ordinal);
+      var persistedRows = await rows
+          .AsNoTracking()
+          .Where(row => parentHashKeyBatch.Contains(EF.Property<string>(row, table.ParentHashKeyColumnName)))
+          .ToListAsync(cancellationToken)
+          .ConfigureAwait(false);
       var batchRows = persistedRows
           .Select(row => TryCreateLatestSatelliteHashDiff(row, table, out var latestHashDiff)
               ? latestHashDiff
               : null)
-          .Where(row => row is not null && parentHashKeySet.Contains(row.SeriesKey.ParentHashKey))
+          .Where(row => row is not null)
           .Cast<LatestSatelliteHashDiff>()
           .ToArray();
 

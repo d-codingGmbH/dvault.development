@@ -128,6 +128,21 @@ public enum DataVaultLoadTimestampStorage {
 }
 
 /// <summary>
+/// Identifies how a provider profile should handle index include columns when the provider has no native include support.
+/// </summary>
+public enum DataVaultUnsupportedIncludedIndexColumnMode {
+  /// <summary>
+  /// Drops include columns for providers that cannot persist them as native include columns.
+  /// </summary>
+  Ignore,
+
+  /// <summary>
+  /// Appends include columns to the index key for providers that cannot persist native include columns.
+  /// </summary>
+  AppendToKey,
+}
+
+/// <summary>
 /// Describes one provider-specific native storage mapping for a Data Vault logical property kind.
 /// </summary>
 public sealed record DataVaultProviderTypeMapping {
@@ -190,17 +205,26 @@ public sealed class DataVaultProviderCapabilityProfile {
   /// <param name="allowsIndexesCoveredByPrimaryKey">
   /// A value indicating whether the provider accepts secondary indexes whose column list matches the primary key.
   /// </param>
+  /// <param name="unsupportedIncludedIndexColumnMode">
+  /// How include columns are projected when the provider has no native included-index-column support.
+  /// </param>
   public DataVaultProviderCapabilityProfile(
       string profileName,
       DataVaultProviderSqlFunctionSupport sqlFunctionSupport,
       DataVaultProviderConcurrencySupport concurrencySupport,
       IEnumerable<DataVaultProviderTypeMapping> typeMappings,
       int? maximumIdentifierLength = null,
-      bool allowsIndexesCoveredByPrimaryKey = true) {
+      bool allowsIndexesCoveredByPrimaryKey = true,
+      DataVaultUnsupportedIncludedIndexColumnMode unsupportedIncludedIndexColumnMode =
+          DataVaultUnsupportedIncludedIndexColumnMode.AppendToKey) {
     ArgumentException.ThrowIfNullOrWhiteSpace(profileName);
     ArgumentNullException.ThrowIfNull(typeMappings);
     if (maximumIdentifierLength <= 0) {
       throw new ArgumentOutOfRangeException(nameof(maximumIdentifierLength));
+    }
+
+    if (!Enum.IsDefined(unsupportedIncludedIndexColumnMode)) {
+      throw new ArgumentOutOfRangeException(nameof(unsupportedIncludedIndexColumnMode));
     }
 
     var mappings = typeMappings.ToArray();
@@ -219,6 +243,7 @@ public sealed class DataVaultProviderCapabilityProfile {
     TypeMappings = new ReadOnlyCollection<DataVaultProviderTypeMapping>(mappings);
     MaximumIdentifierLength = maximumIdentifierLength;
     AllowsIndexesCoveredByPrimaryKey = allowsIndexesCoveredByPrimaryKey;
+    UnsupportedIncludedIndexColumnMode = unsupportedIncludedIndexColumnMode;
     _typeMappingsByKind = mappingsByKind;
   }
 
@@ -253,6 +278,11 @@ public sealed class DataVaultProviderCapabilityProfile {
   public bool AllowsIndexesCoveredByPrimaryKey { get; }
 
   /// <summary>
+  /// Gets how include columns are projected when the provider has no native included-index-column support.
+  /// </summary>
+  public DataVaultUnsupportedIncludedIndexColumnMode UnsupportedIncludedIndexColumnMode { get; }
+
+  /// <summary>
   /// Returns the required type mapping for one logical property kind.
   /// </summary>
   /// <param name="logicalPropertyKind">The logical property kind required by the caller.</param>
@@ -284,7 +314,8 @@ public sealed class DataVaultProviderCapabilityProfile {
             ? CreateLoadTimestampMapping(mapping.LogicalPropertyKind, storage)
             : mapping),
         MaximumIdentifierLength,
-        AllowsIndexesCoveredByPrimaryKey);
+        AllowsIndexesCoveredByPrimaryKey,
+        UnsupportedIncludedIndexColumnMode);
   }
 
   /// <summary>
@@ -523,7 +554,8 @@ public static class DataVaultProviderCapabilityProfiles {
           Integer(DataVaultLogicalPropertyKind.BridgeDepth, "int"),
           Text(DataVaultLogicalPropertyKind.DrivingKey, "varchar(255)"),
       ],
-      maximumIdentifierLength: 64);
+      maximumIdentifierLength: 64,
+      unsupportedIncludedIndexColumnMode: DataVaultUnsupportedIncludedIndexColumnMode.Ignore);
 
   private static DataVaultProviderTypeMapping Text(
       DataVaultLogicalPropertyKind logicalPropertyKind,
