@@ -67,6 +67,39 @@ public sealed class SalesVaultContext(DbContextOptions<SalesVaultContext> option
 }
 ```
 
+### Register metadata once and opt in a DbContext
+
+Applications that want one authoritative metadata source can register a model or prebuilt registry during service setup and opt selected contexts into registry-backed projection through `DbContextOptionsBuilder`.
+
+```csharp
+using DCoding.Data.DVault;
+using DCoding.Data.DVault.Modeling;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+var customerOrder = new DataVaultLinkMetadata(
+    "CustomerOrder",
+    [customer.ToReference(), order.ToReference()]);
+var salesVaultMetadata = new DataVaultMetadataModel(
+    [customer, order],
+    [customerOrder],
+    []);
+
+var services = new ServiceCollection();
+services.AddDVault(options => options.UseMetadataModel(salesVaultMetadata));
+services.AddDbContext<SalesVaultContext>(options => {
+  options.UseSqlite(connectionString);
+  options.UseDataVaultMetadata();
+});
+
+public sealed class SalesVaultContext(DbContextOptions<SalesVaultContext> options) : DbContext(options) {
+}
+```
+
+`UseDataVaultMetadata()` consumes the app-level registry registered by `AddDVault(...)`. A context can override that default by passing an explicit `DataVaultMetadataModel` or `DataVaultMetadataRegistry` to `UseDataVaultMetadata(...)`. If the same EF model receives two different DVault metadata sources, model building fails with a DVault source-conflict diagnostic instead of merging or duplicating projection.
+
 ### Save explicitly
 
 ```csharp

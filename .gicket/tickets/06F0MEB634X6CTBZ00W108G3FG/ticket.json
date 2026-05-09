@@ -3,20 +3,19 @@
   "ticket-id": "06F0MEB634X6CTBZ00W108G3FG",
   "ticket-type": "task",
   "title": "Task: Register metadata model through AddDVault and DbContext integration",
-  "revision": "06F0QH1V5BMMYSMSFVW2765A74",
-  "status": "todo",
+  "revision": "06F0VKTZ00X9JQTWSHE7KVZQAW",
+  "status": "done",
   "labels": [
-    "type/task",
     "area/configuration",
     "area/developer-experience",
     "area/ef-core",
     "area/modeling",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F0ME8172WBQKE9528PS68SY0",
   "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
   "created-at": "2026-05-09T00:53:14.8645319Z",
-  "updated-at": "2026-05-09T08:04:30.1223215Z"
+  "updated-at": "2026-05-09T17:35:54.6242232Z"
 }

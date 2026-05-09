@@ -1,3 +1,4 @@
+using DCoding.Data.DVault.Modeling;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DCoding.Data.DVault;
@@ -8,6 +9,7 @@ namespace DCoding.Data.DVault;
 public sealed class DataVaultOptions {
   private ServiceDescriptor? _loadTimestampResolverDescriptor;
   private ServiceDescriptor? _recordSourceResolverDescriptor;
+  private ServiceDescriptor? _metadataRegistryDescriptor;
   private readonly List<ServiceDescriptor> _providerBehaviorDescriptors = [];
 
   /// <summary>
@@ -57,6 +59,29 @@ public sealed class DataVaultOptions {
   }
 
   /// <summary>
+  /// Configures the app-level default Data Vault metadata model used by opted-in DbContext instances.
+  /// </summary>
+  /// <param name="metadataModel">The provider-neutral metadata model to convert once into the app-level registry.</param>
+  /// <returns>The current options instance.</returns>
+  public DataVaultOptions UseMetadataModel(DataVaultMetadataModel metadataModel) {
+    ArgumentNullException.ThrowIfNull(metadataModel);
+
+    return UseMetadataRegistry(DataVaultMetadataRegistry.Create(metadataModel));
+  }
+
+  /// <summary>
+  /// Configures the app-level default Data Vault metadata registry used by opted-in DbContext instances.
+  /// </summary>
+  /// <param name="metadataRegistry">The immutable metadata registry to expose as the app-level default source.</param>
+  /// <returns>The current options instance.</returns>
+  public DataVaultOptions UseMetadataRegistry(DataVaultMetadataRegistry metadataRegistry) {
+    ArgumentNullException.ThrowIfNull(metadataRegistry);
+
+    _metadataRegistryDescriptor = ServiceDescriptor.Singleton(metadataRegistry);
+    return this;
+  }
+
+  /// <summary>
   /// Adds an explicit provider-behavior override while preserving the provider-neutral baseline when it does not apply.
   /// </summary>
   /// <param name="providerBehavior">The provider-behavior override instance to register.</param>
@@ -84,6 +109,7 @@ public sealed class DataVaultOptions {
 
     ReplaceDescriptor(services, _loadTimestampResolverDescriptor);
     ReplaceDescriptor(services, _recordSourceResolverDescriptor);
+    ReplaceDescriptor(services, _metadataRegistryDescriptor);
     foreach (var providerBehaviorDescriptor in _providerBehaviorDescriptors) {
       services.Add(providerBehaviorDescriptor);
     }

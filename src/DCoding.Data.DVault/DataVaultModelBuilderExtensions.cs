@@ -69,6 +69,24 @@ public static class DataVaultModelBuilderExtensions {
   }
 
   /// <summary>
+  /// Translates an immutable Data Vault metadata registry into provider-aware Entity Framework model metadata.
+  /// </summary>
+  /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
+  /// <param name="metadataRegistry">The authoritative metadata registry to project.</param>
+  /// <returns>The same model builder so Entity Framework model configuration can continue fluently.</returns>
+  public static ModelBuilder ApplyDataVaultMetadata(
+      this ModelBuilder modelBuilder,
+      DataVaultMetadataRegistry metadataRegistry) {
+    ArgumentNullException.ThrowIfNull(modelBuilder);
+    ArgumentNullException.ThrowIfNull(metadataRegistry);
+
+    return ApplyDataVaultMetadataRegistry(
+        modelBuilder,
+        metadataRegistry,
+        DataVaultMetadataSourceKinds.ModelRegistry);
+  }
+
+  /// <summary>
   /// Builds provider-neutral Data Vault metadata from fluent code-first declarations and translates it into Entity Framework metadata.
   /// </summary>
   /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
@@ -101,6 +119,14 @@ public static class DataVaultModelBuilderExtensions {
     ArgumentNullException.ThrowIfNull(metadataModel);
     ArgumentNullException.ThrowIfNull(providerCapabilities);
 
+    var shouldProject = DataVaultMetadataSourceAnnotations.TryRecordSource(
+        modelBuilder,
+        DataVaultMetadataSourceKinds.ModelMetadata,
+        DataVaultMetadataSourceAnnotations.CreateFingerprint(metadataModel));
+    if (!shouldProject) {
+      return modelBuilder;
+    }
+
     modelBuilder.UseDataVault(providerCapabilities);
     DataVaultEfMetadataTranslator.Apply(modelBuilder, metadataModel, providerCapabilities);
 
@@ -127,4 +153,28 @@ public static class DataVaultModelBuilderExtensions {
         providerCapabilities.WithLoadTimestampStorage(loadTimestampStorage));
   }
 
+  internal static ModelBuilder ApplyDataVaultMetadataRegistry(
+      ModelBuilder modelBuilder,
+      DataVaultMetadataRegistry metadataRegistry,
+      string sourceKind) {
+    ArgumentNullException.ThrowIfNull(modelBuilder);
+    ArgumentNullException.ThrowIfNull(metadataRegistry);
+    ArgumentException.ThrowIfNullOrWhiteSpace(sourceKind);
+
+    var shouldProject = DataVaultMetadataSourceAnnotations.TryRecordSource(
+        modelBuilder,
+        sourceKind,
+        DataVaultMetadataSourceAnnotations.CreateFingerprint(metadataRegistry));
+    if (!shouldProject) {
+      return modelBuilder;
+    }
+
+    var providerCapabilities = DataVaultMetadataSourceAnnotations.SelectProviderCapabilities(modelBuilder, metadataRegistry);
+    var metadataModel = DataVaultMetadataSourceAnnotations.CreateMetadataModel(metadataRegistry);
+
+    modelBuilder.UseDataVault(providerCapabilities);
+    DataVaultEfMetadataTranslator.Apply(modelBuilder, metadataModel, providerCapabilities);
+
+    return modelBuilder;
+  }
 }

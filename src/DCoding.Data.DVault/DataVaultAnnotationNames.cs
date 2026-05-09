@@ -68,6 +68,16 @@ public static class DataVaultAnnotationNames {
   /// Identifies the annotation that stores the provider value format declared by the capability profile.
   /// </summary>
   public const string ProviderValueFormat = "DCoding.Data.DVault:ProviderValueFormat";
+
+  /// <summary>
+  /// Identifies the annotation that stores the authoritative Data Vault metadata source kind for an Entity Framework model.
+  /// </summary>
+  public const string MetadataSourceKind = "DCoding.Data.DVault:MetadataSourceKind";
+
+  /// <summary>
+  /// Identifies the annotation that stores the deterministic fingerprint of the authoritative Data Vault metadata source.
+  /// </summary>
+  public const string MetadataSourceFingerprint = "DCoding.Data.DVault:MetadataSourceFingerprint";
 }
 
 /// <summary>

@@ -1,4 +1,4 @@
-﻿using DCoding.Data.DVault.Modeling;
+using DCoding.Data.DVault.Modeling;
 
 namespace DCoding.Data.DVault;
 
@@ -183,7 +183,7 @@ public sealed class DataVaultCodeFirstModelBuilder {
     public string Name { get; } = name;
 
     public List<string> BusinessKeyNames { get; } = [];
-    
+
     public List<SatelliteDeclaration> Satellites { get; } = [];
   }
 
