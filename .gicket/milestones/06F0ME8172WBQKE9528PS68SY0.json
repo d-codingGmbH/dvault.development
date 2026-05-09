@@ -3,6 +3,6 @@
   "milestoneId": "06F0ME8172WBQKE9528PS68SY0",
   "name": "v0.6.0 - Fluent Code-First and registry",
   "description": "Fluent EF Code-First modeling surface and a reusable Data Vault model registry that removes duplicated metadata declarations from schema, save, and read paths.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-09T00:52:48.5681156Z"
 }
