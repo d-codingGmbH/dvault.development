@@ -98,6 +98,24 @@ public sealed class DataVaultCodeFirstLinkTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataRejectsParticipantHubDeclaredAfterLink() {
+    var exception = Assert.Throws<ArgumentException>(() =>
+        CreateCodeFirstMetadata(vault => {
+          vault.Hub<Customer>(hub => hub.BusinessKey(customer => customer.CustomerId));
+          vault.Link("CustomerOrder", link => {
+            link.Participant<Customer>();
+            link.Participant<Order>();
+          });
+          vault.Hub<Order>(hub => hub.BusinessKey(order => order.OrderId));
+        }));
+
+    Assert.Equal("configureModel", exception.ParamName);
+    Assert.Contains("CustomerOrder", exception.Message, StringComparison.Ordinal);
+    Assert.Contains(typeof(Order).FullName!, exception.Message, StringComparison.Ordinal);
+    Assert.Contains("before this link declaration", exception.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataRejectsAmbiguousParticipantHub() {
     var exception = Assert.Throws<ArgumentException>(() =>
         CreateCodeFirstMetadata(vault => {

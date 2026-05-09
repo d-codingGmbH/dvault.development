@@ -3,20 +3,19 @@
   "ticket-id": "06F0ME8NFJX6CD20MEA10J761R",
   "ticket-type": "story",
   "title": "Story: Add fluent EF Code-First modeling API",
-  "revision": "06F0QH0YZXSNJTZKSZHGAMHGHR",
-  "status": "todo",
+  "revision": "06F0Y5A2TKV2BWPH5HT27H9VFM",
+  "status": "done",
   "labels": [
-    "type/story",
-    "area/developer-experience",
-    "area/modeling",
-    "area/ef-core",
     "area/api",
+    "area/developer-experience",
+    "area/ef-core",
+    "area/modeling",
     "automation/bot-ready",
-    "needs-po"
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06F0ME8172WBQKE9528PS68SY0",
   "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
   "created-at": "2026-05-09T00:52:54.5057281Z",
-  "updated-at": "2026-05-09T08:04:22.9117885Z"
+  "updated-at": "2026-05-09T23:31:52.1489126Z"
 }

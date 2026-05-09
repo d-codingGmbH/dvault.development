@@ -76,7 +76,7 @@ public sealed class DataVaultCodeFirstModelBuilder {
       Action<DataVaultCodeFirstLinkBuilder> configure) {
     ArgumentNullException.ThrowIfNull(configure);
 
-    var declaration = new LinkDeclaration(relationshipName);
+    var declaration = new LinkDeclaration(relationshipName, _hubs.Count);
     _links.Add(declaration);
 
     var builder = new DataVaultCodeFirstLinkBuilder(declaration);
@@ -137,6 +137,7 @@ public sealed class DataVaultCodeFirstModelBuilder {
 
   private HubDeclaration ResolveParticipantHub(LinkDeclaration link, Type participantClrType) {
     var matchingHubs = _hubs
+        .Take(link.PrecedingHubCount)
         .Where(hub => hub.ClrType == participantClrType)
         .ToArray();
 
@@ -145,7 +146,7 @@ public sealed class DataVaultCodeFirstModelBuilder {
           link,
           "participant CLR type '" +
           FormatClrType(participantClrType) +
-          "' has not been configured as a hub in the same code-first model.");
+          "' has not been configured as a hub before this link declaration in the same code-first model.");
     }
 
     if (matchingHubs.Length > 1) {
@@ -187,8 +188,10 @@ public sealed class DataVaultCodeFirstModelBuilder {
     public List<SatelliteDeclaration> Satellites { get; } = [];
   }
 
-  internal sealed class LinkDeclaration(string? relationshipName) {
+  internal sealed class LinkDeclaration(string? relationshipName, int precedingHubCount) {
     public string? RelationshipName { get; } = relationshipName;
+
+    public int PrecedingHubCount { get; } = precedingHubCount;
 
     public List<Type> ParticipantClrTypes { get; } = [];
   }
