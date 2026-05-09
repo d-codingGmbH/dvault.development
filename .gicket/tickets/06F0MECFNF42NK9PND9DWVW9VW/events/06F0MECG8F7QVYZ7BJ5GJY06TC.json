@@ -1,0 +1,13 @@
+{
+  "event-id": "06F0MECG8F7QVYZ7BJ5GJY06TC",
+  "occurred-at": "2026-05-09T00:53:25.1871262Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Implement typed explicit save helpers without SaveChanges interception",
+    "status": "todo"
+  }
+}

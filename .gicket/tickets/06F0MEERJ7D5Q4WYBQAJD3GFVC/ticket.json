@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MEERJ7D5Q4WYBQAJD3GFVC",
+  "ticket-type": "task",
+  "title": "Task: Decide and implement YAML ingestion boundary",
+  "revision": "06F0MFD6ATNBA80SKJK4E1W9DC",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "area/model-first",
+    "area/tooling",
+    "area/docs",
+    "area/architecture",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME831E6DZ661QMTG5Q77J0",
+  "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
+  "created-at": "2026-05-09T00:53:44.0811562Z",
+  "updated-at": "2026-05-09T00:57:52.9825202Z"
+}

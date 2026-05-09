@@ -1,0 +1,19 @@
+﻿# v0.7.0 Planning Attachment
+
+Release focus: model-first artifacts and advanced read-model behavior after the v0.6 registry and typed workflows are in place.
+
+Recommended execution order:
+
+1. Define the model-first schema and validation rules.
+2. Implement JSON import and decide the YAML boundary.
+3. Project imported models into the registry and EF metadata.
+4. Add export and drift reporting.
+5. Implement PIT and bridge read helper contracts and baselines.
+6. Benchmark read paths and implement the highest-impact provider optimization.
+7. Update documentation and release notes.
+
+Guardrails:
+
+- Model-first must reuse the registry/metadata semantics rather than creating a parallel model engine.
+- PIT/bridge helpers must distinguish implemented baseline behavior from future graph semantics.
+- Provider-specific read optimizations require benchmark evidence and fallback correctness.

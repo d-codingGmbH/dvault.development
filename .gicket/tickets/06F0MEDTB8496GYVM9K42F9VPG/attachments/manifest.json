@@ -1,0 +1,13 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/attachment-manifest/v1",
+  "attachments": [
+    {
+      "attachmentId": "06F0MES6APM2QSJRP6PXH9X3MC",
+      "sha256": "cf1e74fe265a80dc8de01efe2f2ee7b6c55c773fa45441eb658822a189ad582f",
+      "fileName": "v0.7.0-model-first-planning.md",
+      "contentType": "text/markdown",
+      "size": 894,
+      "addedAt": "2026-05-09T00:55:09.1410000Z"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "event-id": "06F0MEHE3K68HXXWW6VZP63KHG",
+  "occurred-at": "2026-05-09T00:54:05.5961763Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Define bridge traversal query helper contract",
+    "status": "todo"
+  }
+}

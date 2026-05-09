@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
+  "name": "v0.7.0 - Model-First and Advanced Read Models",
+  "description": "Follow-up release for durable model-first specifications, import/export/drift tooling, and advanced PIT/bridge read-model helpers after the v0.6 Code-First usability baseline is stable.",
+  "status": "planned",
+  "createdAt": "2026-05-09T00:52:48.2140947Z"
+}

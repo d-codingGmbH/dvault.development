@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MEHKYTBJEJH2DVZ2CFH9Z0",
+  "ticket-type": "task",
+  "title": "Task: Implement provider-neutral bridge traversal read baseline",
+  "revision": "06F0MFBHAG7QAH7ADRK1Y30238",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "area/read-models",
+    "area/bridge",
+    "area/ef-core",
+    "area/tests",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME83T78Z32RA39SD0JT85W",
+  "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
+  "created-at": "2026-05-09T00:54:07.2575404Z",
+  "updated-at": "2026-05-09T00:57:39.4121878Z"
+}

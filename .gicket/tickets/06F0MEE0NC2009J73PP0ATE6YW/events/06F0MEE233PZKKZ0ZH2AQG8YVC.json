@@ -1,0 +1,13 @@
+{
+  "event-id": "06F0MEE233PZKKZ0ZH2AQG8YVC",
+  "occurred-at": "2026-05-09T00:53:37.9448144Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add model-first specification import",
+    "status": "todo"
+  }
+}

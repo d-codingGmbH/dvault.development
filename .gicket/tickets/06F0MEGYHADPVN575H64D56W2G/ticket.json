@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MEGYHADPVN575H64D56W2G",
+  "ticket-type": "task",
+  "title": "Task: Define PIT-backed as-of read API contract",
+  "revision": "06F0MFC2RWXCJSDYEQ0EX993FG",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "area/api",
+    "area/read-models",
+    "area/pit",
+    "area/docs",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME83T78Z32RA39SD0JT85W",
+  "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
+  "created-at": "2026-05-09T00:54:02.3092473Z",
+  "updated-at": "2026-05-09T00:57:43.8794563Z"
+}

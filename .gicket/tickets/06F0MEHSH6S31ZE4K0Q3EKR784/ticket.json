@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MEHSH6S31ZE4K0Q3EKR784",
+  "ticket-type": "story",
+  "title": "Story: Add provider-aware read optimization follow-up",
+  "revision": "06F0MFCPD8YE1K9X84E9F2S4C8",
+  "status": "todo",
+  "labels": [
+    "type/story",
+    "area/performance",
+    "area/provider-support",
+    "area/read-models",
+    "area/benchmarks",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME83T78Z32RA39SD0JT85W",
+  "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
+  "created-at": "2026-05-09T00:54:08.6884318Z",
+  "updated-at": "2026-05-09T00:57:48.9068242Z"
+}

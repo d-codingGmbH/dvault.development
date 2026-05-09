@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MEF08AJ1K52STF42T74B04",
+  "ticket-type": "task",
+  "title": "Task: Project imported model into EF metadata and registry",
+  "revision": "06F0MFCGB7VJW1CNZ2BYSYRBK4",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "area/model-first",
+    "area/ef-core",
+    "area/modeling",
+    "area/tests",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME831E6DZ661QMTG5Q77J0",
+  "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
+  "created-at": "2026-05-09T00:53:46.0627503Z",
+  "updated-at": "2026-05-09T00:57:47.3534408Z"
+}

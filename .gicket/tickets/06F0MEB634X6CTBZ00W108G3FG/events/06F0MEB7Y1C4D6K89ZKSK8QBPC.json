@@ -1,0 +1,13 @@
+{
+  "event-id": "06F0MEB7Y1C4D6K89ZKSK8QBPC",
+  "occurred-at": "2026-05-09T00:53:14.8645319Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Register metadata model through AddDVault and DbContext integration",
+    "status": "todo"
+  }
+}

@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MEHDFYCVK42FFY77FXHXBR",
+  "ticket-type": "task",
+  "title": "Task: Define bridge traversal query helper contract",
+  "revision": "06F0MFC056FPTX09SQ1X1G52K0",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "area/api",
+    "area/read-models",
+    "area/bridge",
+    "area/docs",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME83T78Z32RA39SD0JT85W",
+  "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
+  "created-at": "2026-05-09T00:54:05.5961763Z",
+  "updated-at": "2026-05-09T00:57:43.2096346Z"
+}

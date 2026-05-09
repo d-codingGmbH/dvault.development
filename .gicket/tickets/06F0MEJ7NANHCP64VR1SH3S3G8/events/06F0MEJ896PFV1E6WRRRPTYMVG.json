@@ -1,0 +1,13 @@
+{
+  "event-id": "06F0MEJ896PFV1E6WRRRPTYMVG",
+  "occurred-at": "2026-05-09T00:54:12.2970193Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add provider-specific read strategy selection hooks",
+    "status": "todo"
+  }
+}

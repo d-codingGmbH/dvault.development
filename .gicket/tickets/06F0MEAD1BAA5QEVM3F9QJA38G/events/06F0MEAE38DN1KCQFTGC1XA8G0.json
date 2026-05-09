@@ -1,0 +1,13 @@
+{
+  "event-id": "06F0MEAE38DN1KCQFTGC1XA8G0",
+  "occurred-at": "2026-05-09T00:53:08.2501860Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add Code-First migration and schema parity tests",
+    "status": "todo"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "event-id": "06F0MEH8M37A7XKG2SAGMM6WD4",
+  "occurred-at": "2026-05-09T00:54:04.1925340Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Implement provider-neutral PIT snapshot read service",
+    "status": "todo"
+  }
+}

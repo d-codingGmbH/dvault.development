@@ -1,0 +1,13 @@
+{
+  "event-id": "06F0MEJ1JKYZYMM7D7M4NG3RTR",
+  "occurred-at": "2026-05-09T00:54:10.5807461Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Benchmark latest, PIT, and bridge reads across providers",
+    "status": "todo"
+  }
+}

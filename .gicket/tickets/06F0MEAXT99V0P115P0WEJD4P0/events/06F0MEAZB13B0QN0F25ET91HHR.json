@@ -1,0 +1,13 @@
+{
+  "event-id": "06F0MEAZB13B0QN0F25ET91HHR",
+  "occurred-at": "2026-05-09T00:53:12.6648267Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Define immutable model registry and lookup API",
+    "status": "todo"
+  }
+}

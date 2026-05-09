@@ -1,0 +1,13 @@
+{
+  "event-id": "06F0MED59BFDFHYSAGYXWSMN00",
+  "occurred-at": "2026-05-09T00:53:30.5702908Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Implement Data Vault model validation and explain output",
+    "status": "todo"
+  }
+}

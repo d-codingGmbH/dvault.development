@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0ME9PM8KXH3VP59TQR0ETA8",
+  "ticket-type": "task",
+  "title": "Task: Implement fluent hub and satellite metadata projection",
+  "revision": "06F0MF9Y86G45H79V13ZFEHXQW",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "area/modeling",
+    "area/ef-core",
+    "area/api",
+    "area/tests",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME8172WBQKE9528PS68SY0",
+  "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
+  "created-at": "2026-05-09T00:53:02.8184602Z",
+  "updated-at": "2026-05-09T00:57:26.3373969Z"
+}

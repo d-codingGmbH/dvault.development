@@ -1,0 +1,13 @@
+{
+  "event-id": "06F0MEFZA1W7AWSNYE60H4Y1XR",
+  "occurred-at": "2026-05-09T00:53:53.6168864Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add model diff and drift report for generated tables",
+    "status": "todo"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "event-id": "06F0MEH18M852AE1DXXGQMNM2R",
+  "occurred-at": "2026-05-09T00:54:02.3092473Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Define PIT-backed as-of read API contract",
+    "status": "todo"
+  }
+}

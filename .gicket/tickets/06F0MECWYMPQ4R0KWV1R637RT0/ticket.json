@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MECWYMPQ4R0KWV1R637RT0",
+  "ticket-type": "story",
+  "title": "Story: Add developer diagnostics and starter examples",
+  "revision": "06F0MFA7RE3T301A2RZ72HBDS0",
+  "status": "todo",
+  "labels": [
+    "type/story",
+    "area/developer-experience",
+    "area/diagnostics",
+    "area/docs",
+    "area/examples",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME828FPDN00QBA6HT6S0FR",
+  "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
+  "created-at": "2026-05-09T00:53:28.9074412Z",
+  "updated-at": "2026-05-09T00:57:28.7717348Z"
+}

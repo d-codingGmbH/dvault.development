@@ -1,0 +1,13 @@
+{
+  "event-id": "06F0MEE9D0ED8WJZ5MJ5XPR1BW",
+  "occurred-at": "2026-05-09T00:53:39.8166150Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Define versioned dvault.model schema and validation rules",
+    "status": "todo"
+  }
+}

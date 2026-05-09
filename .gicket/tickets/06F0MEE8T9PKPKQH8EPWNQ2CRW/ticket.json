@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MEE8T9PKPKQH8EPWNQ2CRW",
+  "ticket-type": "task",
+  "title": "Task: Define versioned dvault.model schema and validation rules",
+  "revision": "06F0MFCC5AM2PM8RVYNJ1CVWC4",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "area/model-first",
+    "area/api",
+    "area/validation",
+    "area/docs",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME831E6DZ661QMTG5Q77J0",
+  "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
+  "created-at": "2026-05-09T00:53:39.8166150Z",
+  "updated-at": "2026-05-09T00:57:46.2827774Z"
+}

@@ -1,0 +1,13 @@
+{
+  "event-id": "06F0MEJG05R80R34J8QN5CVSGW",
+  "occurred-at": "2026-05-09T00:54:14.2736875Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Implement highest-impact provider read optimization",
+    "status": "todo"
+  }
+}

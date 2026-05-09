@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MEGAGJCEHQ8QRHGH8W7804",
+  "ticket-type": "task",
+  "title": "Task: Document model-first governance workflow",
+  "revision": "06F0MFBQ0Y24V16V8DRS07VTDG",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "area/docs",
+    "area/model-first",
+    "area/governance",
+    "area/developer-experience",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME831E6DZ661QMTG5Q77J0",
+  "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
+  "created-at": "2026-05-09T00:53:58.0057011Z",
+  "updated-at": "2026-05-09T00:57:40.8713047Z"
+}

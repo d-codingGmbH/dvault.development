@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MEBV90FB8TQMRXJNH078BM",
+  "ticket-type": "story",
+  "title": "Story: Add typed explicit save and read helpers",
+  "revision": "06F0MFAB5MWNDBHR1KBS19Y67G",
+  "status": "todo",
+  "labels": [
+    "type/story",
+    "area/developer-experience",
+    "area/persistence",
+    "area/read-models",
+    "area/api",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME828FPDN00QBA6HT6S0FR",
+  "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
+  "created-at": "2026-05-09T00:53:21.4235492Z",
+  "updated-at": "2026-05-09T00:57:29.6458079Z"
+}

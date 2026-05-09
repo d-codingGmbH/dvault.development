@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MEJPGG7JBFEXD693BHY07W",
+  "ticket-type": "task",
+  "title": "Task: Update docs and release notes for v0.7.0 model-first and read flows",
+  "revision": "06F0MFD2ZSVM429VKHKD4M5XSC",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "area/docs",
+    "area/release",
+    "area/model-first",
+    "area/read-models",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME83T78Z32RA39SD0JT85W",
+  "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
+  "created-at": "2026-05-09T00:54:16.1007076Z",
+  "updated-at": "2026-05-09T00:57:52.1262551Z"
+}

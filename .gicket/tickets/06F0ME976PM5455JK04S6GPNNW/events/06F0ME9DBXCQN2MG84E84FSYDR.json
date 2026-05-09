@@ -1,0 +1,13 @@
+{
+  "event-id": "06F0ME9DBXCQN2MG84E84FSYDR",
+  "occurred-at": "2026-05-09T00:52:59.8719444Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Design fluent hub, satellite, and link API contract",
+    "status": "todo"
+  }
+}

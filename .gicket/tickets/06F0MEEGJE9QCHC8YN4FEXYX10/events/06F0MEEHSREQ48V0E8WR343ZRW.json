@@ -1,0 +1,13 @@
+{
+  "event-id": "06F0MEEHSREQ48V0E8WR343ZRW",
+  "occurred-at": "2026-05-09T00:53:41.9667860Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Implement JSON model parser and validation diagnostics",
+    "status": "todo"
+  }
+}

@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MEE0NC2009J73PP0ATE6YW",
+  "ticket-type": "story",
+  "title": "Story: Add model-first specification import",
+  "revision": "06F0MFCZQSN7VCS45FE8TF8100",
+  "status": "todo",
+  "labels": [
+    "type/story",
+    "area/model-first",
+    "area/modeling",
+    "area/tooling",
+    "area/api",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME831E6DZ661QMTG5Q77J0",
+  "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
+  "created-at": "2026-05-09T00:53:37.9448144Z",
+  "updated-at": "2026-05-09T00:57:51.2940361Z"
+}

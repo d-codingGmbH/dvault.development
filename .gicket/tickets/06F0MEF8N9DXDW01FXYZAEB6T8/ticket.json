@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MEF8N9DXDW01FXYZAEB6T8",
+  "ticket-type": "story",
+  "title": "Story: Add model export and drift tooling",
+  "revision": "06F0MFCWXM8FGP3BMNX3F0YTVG",
+  "status": "todo",
+  "labels": [
+    "type/story",
+    "area/model-first",
+    "area/tooling",
+    "area/governance",
+    "area/diagnostics",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME831E6DZ661QMTG5Q77J0",
+  "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
+  "created-at": "2026-05-09T00:53:47.9702823Z",
+  "updated-at": "2026-05-09T00:57:50.5735865Z"
+}

@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MEJ7NANHCP64VR1SH3S3G8",
+  "ticket-type": "task",
+  "title": "Task: Add provider-specific read strategy selection hooks",
+  "revision": "06F0MFBSGEW3K3FWX2TRXSD5R0",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "area/api",
+    "area/provider-support",
+    "area/read-models",
+    "area/architecture",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME83T78Z32RA39SD0JT85W",
+  "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
+  "created-at": "2026-05-09T00:54:12.2970193Z",
+  "updated-at": "2026-05-09T00:57:41.5076968Z"
+}

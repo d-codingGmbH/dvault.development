@@ -1,0 +1,19 @@
+﻿# v0.6.0 Planning Attachment
+
+Release focus: make the existing v0.5 Data Vault API easier to use without hiding Data Vault semantics.
+
+Recommended execution order:
+
+1. Design the fluent Code-First API contract.
+2. Implement hub/satellite/link projection and schema parity tests.
+3. Add the immutable model registry and service integration.
+4. Add typed explicit save/read helpers.
+5. Add diagnostics and examples.
+6. Update README and release notes.
+
+Guardrails:
+
+- Do not introduce SaveChanges interception in v0.6.0.
+- Preserve all v0.5 public APIs.
+- Keep load timestamp and record source explicit.
+- Use provider-neutral behavior first; provider-specific enhancements must remain optional.

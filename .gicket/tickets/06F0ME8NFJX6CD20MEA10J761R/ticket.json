@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0ME8NFJX6CD20MEA10J761R",
+  "ticket-type": "story",
+  "title": "Story: Add fluent EF Code-First modeling API",
+  "revision": "06F0MFB068PRNF0C45C8VA8XFM",
+  "status": "todo",
+  "labels": [
+    "type/story",
+    "area/developer-experience",
+    "area/modeling",
+    "area/ef-core",
+    "area/api",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME8172WBQKE9528PS68SY0",
+  "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
+  "created-at": "2026-05-09T00:52:54.5057281Z",
+  "updated-at": "2026-05-09T00:57:35.0261221Z"
+}

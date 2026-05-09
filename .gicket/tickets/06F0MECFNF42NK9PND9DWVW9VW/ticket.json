@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MECFNF42NK9PND9DWVW9VW",
+  "ticket-type": "task",
+  "title": "Task: Implement typed explicit save helpers without SaveChanges interception",
+  "revision": "06F0MF9DBDYM25T5ZGHJY21Q3R",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "area/persistence",
+    "area/developer-experience",
+    "area/api",
+    "area/tests",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME828FPDN00QBA6HT6S0FR",
+  "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
+  "created-at": "2026-05-09T00:53:25.1871262Z",
+  "updated-at": "2026-05-09T00:57:22.0119359Z"
+}

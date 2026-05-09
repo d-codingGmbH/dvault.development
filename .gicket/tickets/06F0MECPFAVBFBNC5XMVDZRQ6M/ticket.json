@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MECPFAVBFBNC5XMVDZRQ6M",
+  "ticket-type": "task",
+  "title": "Task: Add typed latest and as-of satellite read projections",
+  "revision": "06F0MF93QW00998ZTMY4W4EVTG",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "area/read-models",
+    "area/developer-experience",
+    "area/api",
+    "area/tests",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME828FPDN00QBA6HT6S0FR",
+  "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
+  "created-at": "2026-05-09T00:53:27.0045383Z",
+  "updated-at": "2026-05-09T00:57:19.5519029Z"
+}

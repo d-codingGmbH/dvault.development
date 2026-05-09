@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F0MEFX5M9V9SA25N76CPGT4M",
+  "ticket-type": "task",
+  "title": "Task: Add model diff and drift report for generated tables",
+  "revision": "06F0MFC5BX663FW1SH3F94S138",
+  "status": "todo",
+  "labels": [
+    "type/task",
+    "area/diagnostics",
+    "area/model-first",
+    "area/tooling",
+    "area/testing",
+    "automation/bot-ready"
+  ],
+  "assignees": [],
+  "milestoneId": "06F0ME831E6DZ661QMTG5Q77J0",
+  "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
+  "created-at": "2026-05-09T00:53:53.6168864Z",
+  "updated-at": "2026-05-09T00:57:44.5433344Z"
+}
