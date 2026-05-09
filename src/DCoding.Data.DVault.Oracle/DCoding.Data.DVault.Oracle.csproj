@@ -8,7 +8,7 @@
     <PackageId>DCoding.Data.DVault.Oracle</PackageId>
     <Title>DVault Oracle Provider Extensions</Title>
     <Authors>d-coding GmbH</Authors>
-    <Description>Oracle provider extension package for DCoding.Data.DVault.</Description>
+    <Description>Oracle provider extensions and optimized write strategies for DCoding.Data.DVault.</Description>
     <PackageTags>dvault;data-vault;oracle;ef-core;persistence</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

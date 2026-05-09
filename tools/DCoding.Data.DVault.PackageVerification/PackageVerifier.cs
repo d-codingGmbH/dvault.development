@@ -22,19 +22,19 @@ public sealed class PackageVerifier {
       new(
           "DCoding.Data.DVault.MySql",
           "DVault MySQL Provider Extensions",
-          "MySQL provider extension package for DCoding.Data.DVault.",
+          "MySQL provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "mysql", "ef-core", "persistence"],
           true),
       new(
           "DCoding.Data.DVault.Oracle",
           "DVault Oracle Provider Extensions",
-          "Oracle provider extension package for DCoding.Data.DVault.",
+          "Oracle provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "oracle", "ef-core", "persistence"],
           true),
       new(
           "DCoding.Data.DVault.Postgres",
           "DVault PostgreSQL Provider Extensions",
-          "PostgreSQL provider extension package for DCoding.Data.DVault.",
+          "PostgreSQL provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "postgresql", "postgres", "ef-core", "persistence"],
           true),
       new(
@@ -46,7 +46,7 @@ public sealed class PackageVerifier {
       new(
           "DCoding.Data.DVault.SqlServer",
           "DVault SQL Server Provider Extensions",
-          "SQL Server provider extension package for DCoding.Data.DVault.",
+          "SQL Server provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "sql-server", "ef-core", "persistence"],
           true),
   ];
@@ -352,8 +352,8 @@ public sealed class PackageVerifier {
     }
 
     if (archive.ReadmeText is null ||
-        !archive.ReadmeText.Contains("dotnet add package DCoding.Data.DVault --version 0.4.1", StringComparison.Ordinal) ||
-        !archive.ReadmeText.Contains("dotnet add package DCoding.Data.DVault.Sqlite --version 0.4.1", StringComparison.Ordinal)) {
+        !archive.ReadmeText.Contains("dotnet add package DCoding.Data.DVault --version 0.5.0", StringComparison.Ordinal) ||
+        !archive.ReadmeText.Contains("dotnet add package DCoding.Data.DVault.Sqlite --version 0.5.0", StringComparison.Ordinal)) {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
           "Packaged README.md does not contain the current NuGet installation guidance."));

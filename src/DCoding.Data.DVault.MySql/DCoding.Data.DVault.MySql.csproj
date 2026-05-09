@@ -8,7 +8,7 @@
     <PackageId>DCoding.Data.DVault.MySql</PackageId>
     <Title>DVault MySQL Provider Extensions</Title>
     <Authors>d-coding GmbH</Authors>
-    <Description>MySQL provider extension package for DCoding.Data.DVault.</Description>
+    <Description>MySQL provider extensions and optimized write strategies for DCoding.Data.DVault.</Description>
     <PackageTags>dvault;data-vault;mysql;ef-core;persistence</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

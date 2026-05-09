@@ -24,19 +24,19 @@ public sealed class PackageVerifierTests {
       new(
           "DCoding.Data.DVault.MySql",
           "DVault MySQL Provider Extensions",
-          "MySQL provider extension package for DCoding.Data.DVault.",
+          "MySQL provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "mysql", "ef-core", "persistence"],
           true),
       new(
           "DCoding.Data.DVault.Oracle",
           "DVault Oracle Provider Extensions",
-          "Oracle provider extension package for DCoding.Data.DVault.",
+          "Oracle provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "oracle", "ef-core", "persistence"],
           true),
       new(
           "DCoding.Data.DVault.Postgres",
           "DVault PostgreSQL Provider Extensions",
-          "PostgreSQL provider extension package for DCoding.Data.DVault.",
+          "PostgreSQL provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "postgresql", "postgres", "ef-core", "persistence"],
           true),
       new(
@@ -48,7 +48,7 @@ public sealed class PackageVerifierTests {
       new(
           "DCoding.Data.DVault.SqlServer",
           "DVault SQL Server Provider Extensions",
-          "SQL Server provider extension package for DCoding.Data.DVault.",
+          "SQL Server provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "sql-server", "ef-core", "persistence"],
           true),
   ];
@@ -276,8 +276,8 @@ public sealed class PackageVerifierTests {
       WriteTextEntry(
           archive,
           "README.md",
-          "dotnet add package DCoding.Data.DVault --version 0.4.1\n\n" +
-          "dotnet add package DCoding.Data.DVault.Sqlite --version 0.4.1\n");
+          "dotnet add package DCoding.Data.DVault --version 0.5.0\n\n" +
+          "dotnet add package DCoding.Data.DVault.Sqlite --version 0.5.0\n");
     }
 
     if (options.IncludeXmlDocumentation) {
