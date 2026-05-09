@@ -419,12 +419,31 @@ type public sealed class DCoding.Data.DVault.Modeling.DataVaultLinkParticipantMe
   property public DCoding.Data.DVault.Modeling.DataVaultMetadataReference HubReference { get; }
   property public DCoding.Data.DVault.TechnicalMetadataColumnContract HashKeyMetadata { get; }
 
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultMetadataClrMapping
+  property public DCoding.Data.DVault.Modeling.DataVaultMetadataReference? Parent { get; }
+  property public DCoding.Data.DVault.Modeling.DataVaultMetadataRegistryKind Kind { get; }
+  property public System.Type ClrType { get; }
+  property public string Name { get; }
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataClrMapping Bridge(string name, System.Type clrType)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataClrMapping Bridge<T>(string name)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataClrMapping Hub(string name, System.Type clrType)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataClrMapping Hub<T>(string name)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataClrMapping Link(string name, System.Type clrType)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataClrMapping Link<T>(string name)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataClrMapping Pit(string name, System.Type clrType)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataClrMapping Pit<T>(string name)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataClrMapping PointInTimeTable(string name, System.Type clrType)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataClrMapping PointInTimeTable<T>(string name)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataClrMapping Satellite(DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, string name, System.Type clrType)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataClrMapping Satellite<T>(DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, string name)
+
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultMetadataModel
   ctor public DataVaultMetadataModel(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> hubs, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> links, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> satellites)
   ctor public DataVaultMetadataModel(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> hubs, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> links, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> satellites, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata> bridges)
   ctor public DataVaultMetadataModel(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> hubs, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> links, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> satellites, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultPitMetadata> pits)
   ctor public DataVaultMetadataModel(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> hubs, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> links, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> satellites, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultPointInTimeMetadata> pointInTimeTables)
   ctor public DataVaultMetadataModel(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> hubs, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> links, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> satellites, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultPointInTimeMetadata> pointInTimeTables, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata> bridges)
+  ctor public DataVaultMetadataModel(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> hubs, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> links, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> satellites, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultPointInTimeMetadata> pointInTimeTables, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata> bridges, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultPitMetadata> pits)
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata> Bridges { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> Hubs { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> Links { get; }
@@ -436,6 +455,7 @@ type public sealed class DCoding.Data.DVault.Modeling.DataVaultMetadataModel
   method public static DCoding.Data.DVault.Modeling.DataVaultMetadataModel Create(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> hubs, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> links, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> satellites, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultPitMetadata> pits)
   method public static DCoding.Data.DVault.Modeling.DataVaultMetadataModel Create(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> hubs, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> links, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> satellites, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultPointInTimeMetadata> pointInTimeTables)
   method public static DCoding.Data.DVault.Modeling.DataVaultMetadataModel Create(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> hubs, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> links, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> satellites, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultPointInTimeMetadata> pointInTimeTables, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata> bridges)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataModel Create(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> hubs, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> links, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> satellites, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultPointInTimeMetadata> pointInTimeTables, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata> bridges, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultPitMetadata> pits)
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultMetadataReference
   property public DCoding.Data.DVault.Modeling.DataVaultMetadataReferenceKind Kind { get; }
@@ -448,6 +468,48 @@ type public enum DCoding.Data.DVault.Modeling.DataVaultMetadataReferenceKind
   value Hub = 0
   value Link = 1
   value Satellite = 2
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultMetadataRegistry
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultProviderCapabilityProfile> ProviderCapabilityProfiles { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata> Bridges { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultHubMetadata> Hubs { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultLinkMetadata> Links { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultPitMetadata> Pits { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultPointInTimeMetadata> PointInTimeTables { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> Satellites { get; }
+  method public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata> GetSatellites(DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent)
+  method public bool TryGetBridge(System.Type clrType, out DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata? bridge)
+  method public bool TryGetBridge(string name, out DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata? bridge)
+  method public bool TryGetHub(System.Type clrType, out DCoding.Data.DVault.Modeling.DataVaultHubMetadata? hub)
+  method public bool TryGetHub(string name, out DCoding.Data.DVault.Modeling.DataVaultHubMetadata? hub)
+  method public bool TryGetLink(System.Type clrType, out DCoding.Data.DVault.Modeling.DataVaultLinkMetadata? link)
+  method public bool TryGetLink(string name, out DCoding.Data.DVault.Modeling.DataVaultLinkMetadata? link)
+  method public bool TryGetPit(System.Type clrType, out DCoding.Data.DVault.Modeling.DataVaultPitMetadata? pit)
+  method public bool TryGetPit(string name, out DCoding.Data.DVault.Modeling.DataVaultPitMetadata? pit)
+  method public bool TryGetPointInTimeTable(System.Type clrType, out DCoding.Data.DVault.Modeling.DataVaultPointInTimeMetadata? pointInTimeTable)
+  method public bool TryGetPointInTimeTable(string name, out DCoding.Data.DVault.Modeling.DataVaultPointInTimeMetadata? pointInTimeTable)
+  method public bool TryGetProviderCapabilityProfile(string profileName, out DCoding.Data.DVault.DataVaultProviderCapabilityProfile? providerCapabilityProfile)
+  method public bool TryGetSatellite(DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, System.Type clrType, out DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata? satellite)
+  method public bool TryGetSatellite(DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, string name, out DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata? satellite)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataRegistry Create(DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataRegistry Create(DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultProviderCapabilityProfile> providerCapabilityProfiles)
+  method public static DCoding.Data.DVault.Modeling.DataVaultMetadataRegistry Create(DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultProviderCapabilityProfile> providerCapabilityProfiles, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultMetadataClrMapping> clrMappings)
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultMetadataRegistryBuilder
+  ctor public DataVaultMetadataRegistryBuilder(DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel)
+  method public DCoding.Data.DVault.Modeling.DataVaultMetadataRegistry Build()
+  method public DCoding.Data.DVault.Modeling.DataVaultMetadataRegistryBuilder AddClrMapping(DCoding.Data.DVault.Modeling.DataVaultMetadataClrMapping clrMapping)
+  method public DCoding.Data.DVault.Modeling.DataVaultMetadataRegistryBuilder AddClrMappings(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultMetadataClrMapping> clrMappings)
+  method public DCoding.Data.DVault.Modeling.DataVaultMetadataRegistryBuilder AddProviderCapabilityProfile(DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilityProfile)
+  method public DCoding.Data.DVault.Modeling.DataVaultMetadataRegistryBuilder AddProviderCapabilityProfiles(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultProviderCapabilityProfile> providerCapabilityProfiles)
+
+type public enum DCoding.Data.DVault.Modeling.DataVaultMetadataRegistryKind
+  value Hub = 0
+  value Link = 1
+  value Satellite = 2
+  value PointInTimeTable = 3
+  value Bridge = 4
+  value Pit = 5
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultModel
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultTable> Tables { get; }

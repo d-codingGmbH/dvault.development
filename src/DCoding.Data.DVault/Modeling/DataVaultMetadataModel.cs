@@ -103,7 +103,16 @@ public sealed class DataVaultMetadataModel {
       : this(hubs, links, satellites, pointInTimeTables, bridges, Array.Empty<DataVaultPitMetadata>()) {
   }
 
-  private DataVaultMetadataModel(
+  /// <summary>
+  /// Initializes a new aggregate metadata model with optional point-in-time, bridge, and PIT declarations.
+  /// </summary>
+  /// <param name="hubs">The hub metadata declarations to translate.</param>
+  /// <param name="links">The link metadata declarations to translate.</param>
+  /// <param name="satellites">The satellite metadata declarations to translate.</param>
+  /// <param name="pointInTimeTables">The point-in-time metadata declarations to validate and expose.</param>
+  /// <param name="bridges">The bridge metadata declarations to validate and expose.</param>
+  /// <param name="pits">The PIT metadata declarations to translate.</param>
+  public DataVaultMetadataModel(
       IEnumerable<DataVaultHubMetadata> hubs,
       IEnumerable<DataVaultLinkMetadata> links,
       IEnumerable<DataVaultSatelliteMetadata> satellites,
@@ -228,6 +237,26 @@ public sealed class DataVaultMetadataModel {
       IEnumerable<DataVaultPointInTimeMetadata> pointInTimeTables,
       IEnumerable<DataVaultBridgeMetadata> bridges) {
     return new DataVaultMetadataModel(hubs, links, satellites, pointInTimeTables, bridges);
+  }
+
+  /// <summary>
+  /// Creates a new aggregate metadata model from provider-neutral Data Vault declarations with point-in-time, bridge, and PIT declarations.
+  /// </summary>
+  /// <param name="hubs">The hub metadata declarations to translate.</param>
+  /// <param name="links">The link metadata declarations to translate.</param>
+  /// <param name="satellites">The satellite metadata declarations to translate.</param>
+  /// <param name="pointInTimeTables">The point-in-time metadata declarations to validate and expose.</param>
+  /// <param name="bridges">The bridge metadata declarations to validate and expose.</param>
+  /// <param name="pits">The PIT metadata declarations to translate.</param>
+  /// <returns>The aggregate metadata model.</returns>
+  public static DataVaultMetadataModel Create(
+      IEnumerable<DataVaultHubMetadata> hubs,
+      IEnumerable<DataVaultLinkMetadata> links,
+      IEnumerable<DataVaultSatelliteMetadata> satellites,
+      IEnumerable<DataVaultPointInTimeMetadata> pointInTimeTables,
+      IEnumerable<DataVaultBridgeMetadata> bridges,
+      IEnumerable<DataVaultPitMetadata> pits) {
+    return new DataVaultMetadataModel(hubs, links, satellites, pointInTimeTables, bridges, pits);
   }
 
   private void ValidatePointInTimeTables() {

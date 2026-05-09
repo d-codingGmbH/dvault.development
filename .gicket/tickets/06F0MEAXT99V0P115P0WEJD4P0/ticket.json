@@ -3,20 +3,19 @@
   "ticket-id": "06F0MEAXT99V0P115P0WEJD4P0",
   "ticket-type": "task",
   "title": "Task: Define immutable model registry and lookup API",
-  "revision": "06F0QH27SFNBZT8XFR6APA6CEC",
-  "status": "todo",
+  "revision": "06F0RW29GE9CS9A3R720VWAQMG",
+  "status": "done",
   "labels": [
-    "type/task",
     "area/api",
     "area/architecture",
     "area/modeling",
     "area/validation",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F0ME8172WBQKE9528PS68SY0",
   "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
   "created-at": "2026-05-09T00:53:12.6648267Z",
-  "updated-at": "2026-05-09T08:04:33.3559644Z"
+  "updated-at": "2026-05-09T11:12:25.9879498Z"
 }
