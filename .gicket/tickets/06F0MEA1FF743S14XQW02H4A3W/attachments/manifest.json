@@ -1,0 +1,13 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/attachment-manifest/v1",
+  "attachments": [
+    {
+      "attachmentId": "06F0QZ4EK1EK9QR74R6FYM97C0",
+      "sha256": "78f899e7e0a453cda3c1828f3371a70fd98f55d072836ea4bee2ff901835343b",
+      "fileName": "06F0MEA1FF743S14XQW02H4A3W-fluent-link-child-boundary.md",
+      "contentType": "text/markdown",
+      "size": 1282,
+      "addedAt": "2026-05-09T09:06:01.4960000Z"
+    }
+  ]
+}

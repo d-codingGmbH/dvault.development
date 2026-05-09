@@ -3,20 +3,19 @@
   "ticket-id": "06F0ME976PM5455JK04S6GPNNW",
   "ticket-type": "task",
   "title": "Task: Design fluent hub, satellite, and link API contract",
-  "revision": "06F0QH1F460RRWJYNFNHR8NME0",
-  "status": "todo",
+  "revision": "06F0RBNQGTTG5ZYR73J1ACY24G",
+  "status": "done",
   "labels": [
-    "type/task",
     "area/api",
     "area/developer-experience",
-    "area/modeling",
     "area/docs",
+    "area/modeling",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F0ME8172WBQKE9528PS68SY0",
   "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
   "created-at": "2026-05-09T00:52:59.8719444Z",
-  "updated-at": "2026-05-09T08:04:27.0412278Z"
+  "updated-at": "2026-05-09T10:00:48.7747747Z"
 }

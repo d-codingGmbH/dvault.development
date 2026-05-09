@@ -1,0 +1,13 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/attachment-manifest/v1",
+  "attachments": [
+    {
+      "attachmentId": "06F0QZ2RY42FAZRSGAVRJ3B6P4",
+      "sha256": "7c9de7b5cde0d9a1d858d8ce2ff84df33e0046e7beb7d5b8b15312adfc745e67",
+      "fileName": "06F0ME9PM8KXH3VP59TQR0ETA8-fluent-hub-satellite-child-boundary.md",
+      "contentType": "text/markdown",
+      "size": 1592,
+      "addedAt": "2026-05-09T09:05:47.7610000Z"
+    }
+  ]
+}

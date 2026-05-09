@@ -1,0 +1,13 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/attachment-manifest/v1",
+  "attachments": [
+    {
+      "attachmentId": "06F0QZ638VFK39W54CN9NHTAZ0",
+      "sha256": "aea652ab401379b67c2750eca232f6aa4640bc9c5cd260f1df6cdbfed1d61bcc",
+      "fileName": "06F0MEAD1BAA5QEVM3F9QJA38G-fluent-parity-child-boundary.md",
+      "contentType": "text/markdown",
+      "size": 1379,
+      "addedAt": "2026-05-09T09:06:14.9820000Z"
+    }
+  ]
+}

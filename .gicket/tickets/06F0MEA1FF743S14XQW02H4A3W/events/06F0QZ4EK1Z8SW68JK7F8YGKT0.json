@@ -1,0 +1,16 @@
+{
+  "event-id": "06F0QZ4EK1Z8SW68JK7F8YGKT0",
+  "occurred-at": "2026-05-09T09:06:01.4960000Z",
+  "event-type": "TicketAttachmentAdded",
+  "actor": {
+    "name": "system",
+    "email": "system@example.invalid"
+  },
+  "payload": {
+    "attachment-id": "06F0QZ4EK1EK9QR74R6FYM97C0",
+    "sha256": "78f899e7e0a453cda3c1828f3371a70fd98f55d072836ea4bee2ff901835343b",
+    "file-name": "06F0MEA1FF743S14XQW02H4A3W-fluent-link-child-boundary.md",
+    "content-type": "text/markdown",
+    "size": 1282
+  }
+}

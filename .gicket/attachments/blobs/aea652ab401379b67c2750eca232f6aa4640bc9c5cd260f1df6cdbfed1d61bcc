@@ -1,0 +1,23 @@
+# Fluent Code-First parity child boundary addendum
+
+Status: authoritative child addendum
+Child ticket: 06F0MEAD1BAA5QEVM3F9QJA38G
+Parent ticket: 06F0ME976PM5455JK04S6GPNNW
+Parent contract: docs/plans/06F0ME976PM5455JK04S6GPNNW-fluent-code-first-api-contract.md
+Driving-key contract: docs/plans/multi-active-satellite-driving-key-contract-06EZ0NVX3R-06EZ0NW61G.md
+
+## Boundary
+
+- Ticket 06F0ME976PM5455JK04S6GPNNW and docs/plans/06F0ME976PM5455JK04S6GPNNW-fluent-code-first-api-contract.md are the authoritative boundary for this child.
+- This child owns parity coverage for the bounded shapes implemented by 06F0ME9PM8KXH3VP59TQR0ETA8 and 06F0MEA1FF743S14XQW02H4A3W, including the covered `DrivingKey(...)` multi-active hub-parent satellite shape.
+
+## Required scope
+
+- Cover hub, link, ordinary satellite, and hub-parent multi-active satellite parity for the bounded parent contract.
+- Verify one or more `DrivingKey(...)` calls preserve canonical driving-key ordering and produce equivalent table, column, key, and index shape versus the metadata-first baseline for the covered scenario.
+- Keep provider-profile-aware drift visible in tests for naming, declaration ordering, and multi-active projection behavior.
+
+## Scope guardrails
+
+- Do not implement the fluent builders in this child.
+- Link-parent satellites and other shapes outside the parent contract stay out of scope.
