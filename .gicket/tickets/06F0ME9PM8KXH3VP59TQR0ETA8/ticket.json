@@ -3,21 +3,20 @@
   "ticket-id": "06F0ME9PM8KXH3VP59TQR0ETA8",
   "ticket-type": "task",
   "title": "Task: Implement fluent hub and satellite metadata projection",
-  "revision": "06F0QZ2RY7ZJ6R4EFJ4ZM0BTRM",
-  "status": "todo",
+  "revision": "06F0TE19EVFY20VW6VBTYDAAT4",
+  "status": "done",
   "labels": [
-    "type/task",
-    "area/modeling",
-    "area/ef-core",
     "area/api",
+    "area/ef-core",
+    "area/modeling",
     "area/tests",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "has-attachments": true,
   "milestoneId": "06F0ME8172WBQKE9528PS68SY0",
   "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
   "created-at": "2026-05-09T00:53:02.8184602Z",
-  "updated-at": "2026-05-09T09:05:47.7610000Z"
+  "updated-at": "2026-05-09T14:50:44.9828015Z"
 }

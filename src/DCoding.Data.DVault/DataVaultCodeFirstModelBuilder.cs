@@ -1,4 +1,4 @@
-using DCoding.Data.DVault.Modeling;
+﻿using DCoding.Data.DVault.Modeling;
 
 namespace DCoding.Data.DVault;
 
@@ -64,8 +64,11 @@ public sealed class DataVaultCodeFirstModelBuilder {
     var hubs = _hubs
         .Select(hub => new DataVaultHubMetadata(hub.Name, hub.BusinessKeyNames))
         .ToArray();
+    var satellites = _hubs
+        .SelectMany(hub => hub.Satellites.Select(satellite => CreateSatelliteMetadata(hub, satellite)))
+        .ToArray();
 
-    return new DataVaultMetadataModel(hubs, links, []);
+    return new DataVaultMetadataModel(hubs, links, satellites);
   }
 
   private DataVaultCodeFirstLinkBuilder AddLink(
@@ -91,6 +94,19 @@ public sealed class DataVaultCodeFirstModelBuilder {
             "configureModel");
       }
     }
+  }
+
+  private static DataVaultSatelliteMetadata CreateSatelliteMetadata(
+      HubDeclaration hub,
+      SatelliteDeclaration satellite) {
+    var hubReference = DataVaultMetadataReference.Hub(hub.Name);
+    return satellite.DrivingKeyNames.Count == 0
+        ? new DataVaultSatelliteMetadata(satellite.Name, hubReference, satellite.PayloadNames)
+        : new DataVaultSatelliteMetadata(
+            satellite.Name,
+            hubReference,
+            satellite.PayloadNames,
+            satellite.DrivingKeyNames);
   }
 
   private DataVaultLinkMetadata BuildLinkMetadata(LinkDeclaration link) {
@@ -167,11 +183,21 @@ public sealed class DataVaultCodeFirstModelBuilder {
     public string Name { get; } = name;
 
     public List<string> BusinessKeyNames { get; } = [];
+    
+    public List<SatelliteDeclaration> Satellites { get; } = [];
   }
 
   internal sealed class LinkDeclaration(string? relationshipName) {
     public string? RelationshipName { get; } = relationshipName;
 
     public List<Type> ParticipantClrTypes { get; } = [];
+  }
+
+  internal sealed class SatelliteDeclaration(string name) {
+    public string Name { get; } = name;
+
+    public List<string> DrivingKeyNames { get; } = [];
+
+    public List<string> PayloadNames { get; } = [];
   }
 }

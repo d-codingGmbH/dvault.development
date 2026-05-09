@@ -126,4 +126,5 @@ public static class DataVaultModelBuilderExtensions {
         metadataModel,
         providerCapabilities.WithLoadTimestampStorage(loadTimestampStorage));
   }
+
 }

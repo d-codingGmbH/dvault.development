@@ -1,4 +1,4 @@
-# DVault public API snapshot
+﻿# DVault public API snapshot
 # Package: DCoding.Data.DVault
 # Assembly: DCoding.Data.DVault
 # Generated from built assembly output.
@@ -29,6 +29,7 @@ type public sealed class DCoding.Data.DVault.DataVaultBulkSaveRequest
 
 type public sealed class DCoding.Data.DVault.DataVaultCodeFirstHubBuilder where TEntity : class
   method public DCoding.Data.DVault.DataVaultCodeFirstHubBuilder<TEntity> BusinessKey<TProperty>(System.Linq.Expressions.Expression<System.Func<TEntity, TProperty?>> propertySelector)
+  method public DCoding.Data.DVault.DataVaultCodeFirstHubBuilder<TEntity> Satellite(string satelliteName, System.Action<DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TEntity>>? configure = null)
 
 type public sealed class DCoding.Data.DVault.DataVaultCodeFirstLinkBuilder
   method public DCoding.Data.DVault.DataVaultCodeFirstLinkBuilder Participant<TEntity>() where TEntity : class
@@ -37,6 +38,14 @@ type public sealed class DCoding.Data.DVault.DataVaultCodeFirstModelBuilder
   method public DCoding.Data.DVault.DataVaultCodeFirstHubBuilder<TEntity> Hub<TEntity>(System.Action<DCoding.Data.DVault.DataVaultCodeFirstHubBuilder<TEntity>>? configure = null) where TEntity : class
   method public DCoding.Data.DVault.DataVaultCodeFirstLinkBuilder Link(System.Action<DCoding.Data.DVault.DataVaultCodeFirstLinkBuilder> configure)
   method public DCoding.Data.DVault.DataVaultCodeFirstLinkBuilder Link(string relationshipName, System.Action<DCoding.Data.DVault.DataVaultCodeFirstLinkBuilder> configure)
+
+type public static class DCoding.Data.DVault.DataVaultCodeFirstModelBuilderExtensions
+  method public static Microsoft.EntityFrameworkCore.ModelBuilder ApplyDataVaultMetadata(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, System.Action<DCoding.Data.DVault.DataVaultCodeFirstModelBuilder> configureModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities, DCoding.Data.DVault.DataVaultLoadTimestampStorage loadTimestampStorage)
+  method public static Microsoft.EntityFrameworkCore.ModelBuilder ApplyDataVaultMetadata(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, System.Action<DCoding.Data.DVault.DataVaultCodeFirstModelBuilder> configureModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile? providerCapabilities = null)
+
+type public sealed class DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder
+  method public DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TEntity?> DrivingKey<TProperty>(System.Linq.Expressions.Expression<System.Func<TEntity?, TProperty?>> selector)
+  method public DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TEntity?> Payload<TProperty>(System.Linq.Expressions.Expression<System.Func<TEntity?, TProperty?>> selector)
 
 type public sealed class DCoding.Data.DVault.DataVaultHubSaveOperation
   ctor public DataVaultHubSaveOperation(DCoding.Data.DVault.Modeling.DataVaultHubMetadata metadata, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> businessKeyValues)
@@ -535,7 +544,7 @@ type public sealed class DCoding.Data.DVault.Modeling.DataVaultModelBuilder
   method public DCoding.Data.DVault.Modeling.DataVaultModel Build()
   method public DCoding.Data.DVault.Modeling.DataVaultModelBuilder Link(System.Collections.Generic.IEnumerable<string> participantNames)
   method public DCoding.Data.DVault.Modeling.DataVaultModelBuilder Link(string? relationshipName, System.Collections.Generic.IEnumerable<string> participantNames)
-  method public DCoding.Data.DVault.Modeling.DataVaultModelBuilder PointInTime(string pointInTimeName, string hubName, System.Collections.Generic.IEnumerable<string> satelliteNames)
+  method public DCoding.Data.DVault.Modeling.DataVaultModelBuilder PointInTime(string pointInTimeName, string hubName, System.Collections.Generic.IReadOnlyList<string> satelliteNames)
   method public DCoding.Data.DVault.Modeling.DataVaultPointInTimeBuilder PointInTime(string pointInTimeName, string hubName, System.Action<DCoding.Data.DVault.Modeling.DataVaultPointInTimeBuilder>? configure = null)
 
 type public static class DCoding.Data.DVault.Modeling.DataVaultModelBuilderExtensions
