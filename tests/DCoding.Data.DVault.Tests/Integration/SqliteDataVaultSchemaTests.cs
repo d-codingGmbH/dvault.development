@@ -119,6 +119,55 @@ public sealed class SqliteDataVaultSchemaTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataCodeFirstCreatesSameSqliteSchemaAsMetadataBaseline() {
+    using var metadataFirstDatabase = SqliteTestDatabase.CreateTemporaryFile();
+    using var codeFirstDatabase = SqliteTestDatabase.CreateTemporaryFile();
+
+    var metadataFirstOptions = new DbContextOptionsBuilder<MetadataFirstParityDataVaultSchemaContext>()
+        .UseSqlite(CreateConnectionString(metadataFirstDatabase))
+        .Options;
+    var codeFirstOptions = new DbContextOptionsBuilder<CodeFirstParityDataVaultSchemaContext>()
+        .UseSqlite(CreateConnectionString(codeFirstDatabase))
+        .Options;
+
+    using (var context = new MetadataFirstParityDataVaultSchemaContext(metadataFirstOptions)) {
+      context.Database.EnsureCreated();
+    }
+
+    using (var context = new CodeFirstParityDataVaultSchemaContext(codeFirstOptions)) {
+      context.Database.EnsureCreated();
+    }
+
+    using var metadataFirstConnection = metadataFirstDatabase.CreateOpenConnection();
+    using var codeFirstConnection = codeFirstDatabase.CreateOpenConnection();
+
+    Assert.Equal(
+        CreateCanonicalSchemaSnapshot(metadataFirstConnection),
+        CreateCanonicalSchemaSnapshot(codeFirstConnection));
+    Assert.Equal(
+        "HubCustomer|HubOrder|LinkCustomerOrder|SatCustomerContact|SatCustomerContactChannel",
+        TableNames(codeFirstConnection));
+    AssertTable(
+        codeFirstConnection,
+        "HubCustomer",
+        ["CustomerHashKey", "LoadTimestamp", "RecordSource", "CustomerHashKeyValue", "CustomerId"],
+        "PkHubCustomerCustomerHashKey",
+        ["CustomerHashKey"],
+        "IxHubCustomerBusinessKeyCustomerHashKeyValueCustomerId",
+        ["CustomerHashKeyValue", "CustomerId"],
+        expectedIndexUnique: true);
+    AssertTable(
+        codeFirstConnection,
+        "SatCustomerContactChannel",
+        ["CustomerHashKey", "ContactType", "RegionCode", "HashDiff", "LoadTimestamp", "RecordSource", "HashDiffValue", "RecordSourceValue"],
+        "PkSatCustomerContactChannelCustomerHashKeyContactTypeRegionCodeLoadTimestamp",
+        ["CustomerHashKey", "ContactType", "RegionCode", "LoadTimestamp"],
+        "IxSatCustomerContactChannelSatelliteParentCustomerHashKeyContactTypeRegionCodeLoadTimestamp",
+        ["CustomerHashKey", "ContactType", "RegionCode", "LoadTimestamp", "HashDiff"],
+        expectedIndexUnique: false);
+  }
+
+  [Fact]
   public async Task ApplyDataVaultMetadataCreatesAndReadsBaselinePitSqliteTable() {
     using var database = SqliteTestDatabase.CreateTemporaryFile();
 
@@ -331,6 +380,48 @@ public sealed class SqliteDataVaultSchemaTests {
         ]);
   }
 
+  private static DataVaultMetadataModel CreateCodeFirstParityMetadataModel() {
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerHashKey", "CustomerId"]);
+    var order = new DataVaultHubMetadata("Order", ["OrderId"]);
+
+    return new DataVaultMetadataModel(
+        [customer, order],
+        [new DataVaultLinkMetadata("CustomerOrder", [customer.ToReference(), order.ToReference()])],
+        [
+            new DataVaultSatelliteMetadata(
+                "Contact",
+                customer.ToReference(),
+                ["LoadTimestamp", "EmailAddress"]),
+            new DataVaultSatelliteMetadata(
+                "ContactChannel",
+                customer.ToReference(),
+                ["HashDiff", "RecordSource"],
+                ["ContactType", "RegionCode"]),
+        ]);
+  }
+
+  private static void ConfigureCodeFirstParityModel(DataVaultCodeFirstModelBuilder vault) {
+    vault.Hub<Customer>(hub => {
+      hub.BusinessKey(customer => customer.CustomerHashKey);
+      hub.BusinessKey(customer => customer.CustomerId);
+      hub.Satellite("Contact", satellite => {
+        satellite.Payload(customer => customer.LoadTimestamp);
+        satellite.Payload(customer => customer.EmailAddress);
+      });
+      hub.Satellite("ContactChannel", satellite => {
+        satellite.DrivingKey(customer => customer.ContactType);
+        satellite.DrivingKey(customer => customer.RegionCode);
+        satellite.Payload(customer => customer.HashDiff);
+        satellite.Payload(customer => customer.RecordSource);
+      });
+    });
+    vault.Hub<Order>(hub => hub.BusinessKey(order => order.OrderId));
+    vault.Link("CustomerOrder", link => {
+      link.Participant<Customer>();
+      link.Participant<Order>();
+    });
+  }
+
   private static DataVaultMetadataModel CreateSnapshotMetadataModel() {
     return new DataVaultMetadataModel(
         [
@@ -510,6 +601,20 @@ public sealed class SqliteDataVaultSchemaTests {
     }
   }
 
+  private sealed class MetadataFirstParityDataVaultSchemaContext(
+      DbContextOptions<MetadataFirstParityDataVaultSchemaContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(CreateCodeFirstParityMetadataModel());
+    }
+  }
+
+  private sealed class CodeFirstParityDataVaultSchemaContext(
+      DbContextOptions<CodeFirstParityDataVaultSchemaContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(ConfigureCodeFirstParityModel);
+    }
+  }
+
   private sealed class SnapshotDataVaultSchemaContext(
       DbContextOptions<SnapshotDataVaultSchemaContext> options) : DbContext(options) {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
@@ -527,5 +632,27 @@ public sealed class SqliteDataVaultSchemaTests {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
       modelBuilder.UseDataVault();
     }
+  }
+
+  private sealed class Customer {
+    public string ContactType { get; init; } = string.Empty;
+
+    public string CustomerHashKey { get; init; } = string.Empty;
+
+    public string CustomerId { get; init; } = string.Empty;
+
+    public string EmailAddress { get; init; } = string.Empty;
+
+    public string HashDiff { get; init; } = string.Empty;
+
+    public string LoadTimestamp { get; init; } = string.Empty;
+
+    public string RecordSource { get; init; } = string.Empty;
+
+    public string RegionCode { get; init; } = string.Empty;
+  }
+
+  private sealed class Order {
+    public string OrderId { get; init; } = string.Empty;
   }
 }
