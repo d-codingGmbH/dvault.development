@@ -3,20 +3,19 @@
   "ticket-id": "06F0MECPFAVBFBNC5XMVDZRQ6M",
   "ticket-type": "task",
   "title": "Task: Add typed latest and as-of satellite read projections",
-  "revision": "06F0QH2NPAVYYRGE8SWM84YDEC",
-  "status": "todo",
+  "revision": "06F17P37JBJCNFWBVMJAC4ME0G",
+  "status": "done",
   "labels": [
-    "type/task",
-    "area/read-models",
-    "area/developer-experience",
     "area/api",
+    "area/developer-experience",
+    "area/read-models",
     "area/tests",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F0ME828FPDN00QBA6HT6S0FR",
   "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
   "created-at": "2026-05-09T00:53:27.0045383Z",
-  "updated-at": "2026-05-09T08:04:36.9143130Z"
+  "updated-at": "2026-05-10T21:43:29.9382955Z"
 }

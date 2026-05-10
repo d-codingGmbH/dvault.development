@@ -336,6 +336,10 @@ type public enum DCoding.Data.DVault.DataVaultProviderValueFormat
 
 type public static class DCoding.Data.DVault.DataVaultReadServiceRegistryExtensions
   method public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSatelliteReadRecord>> ReadLatestSatelliteRowsAsync(this DCoding.Data.DVault.IDataVaultReadService readService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryLatestSatelliteReadRequest request, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TProjection?>> ReadLatestSatelliteAsync<TProjection>(this DCoding.Data.DVault.IDataVaultReadService readService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryLatestSatelliteReadRequest request, System.Func<DCoding.Data.DVault.DataVaultSatelliteProjectionRow, TProjection?> projector, System.Threading.CancellationToken cancellationToken = default)
+
+type public static class DCoding.Data.DVault.DataVaultReadServiceTypedProjectionExtensions
+  method public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TProjection?>> ReadLatestSatelliteAsync<TProjection>(this DCoding.Data.DVault.IDataVaultReadService readService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultLatestSatelliteReadRequest request, System.Func<DCoding.Data.DVault.DataVaultSatelliteProjectionRow, TProjection?> projector, System.Threading.CancellationToken cancellationToken = default)
 
 type public sealed class DCoding.Data.DVault.DataVaultRecordSourceResolutionContext
   ctor public DataVaultRecordSourceResolutionContext(DCoding.Data.DVault.DataVaultSaveRequest request, System.DateTimeOffset loadTimestamp)
@@ -388,6 +392,11 @@ type public sealed class DCoding.Data.DVault.DataVaultResolvedSaveRequest
   property public DCoding.Data.DVault.DataVaultSaveRequest Request { get; }
   property public System.DateTimeOffset LoadTimestamp { get; }
   property public string RecordSource { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultSatelliteProjectionRow
+  method public System.DateTimeOffset RequiredDateTimeOffset(string name)
+  method public string RequiredString(string name)
+  method public string? NullableString(string name)
 
 type public sealed class DCoding.Data.DVault.DataVaultSatelliteReadRecord
   property public System.Collections.Generic.IReadOnlyDictionary<string, string> DrivingKeyValues { get; }

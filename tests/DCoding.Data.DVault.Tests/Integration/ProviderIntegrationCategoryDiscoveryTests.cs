@@ -11,6 +11,7 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
       typeof(DataVaultMetadataRegistrationIntegrationTests),
       typeof(DataVaultSaveStrategySelectionTests),
       typeof(DataVaultTypedMapperSaveServiceSqliteTests),
+      typeof(DataVaultTypedSatelliteReadServiceSqliteTests),
       typeof(ExplicitDataVaultSaveServiceSqliteTests),
       typeof(NormalEfOrderProductSqliteTests),
       typeof(PlainEfCustomerProfileHistorySqliteTests),
