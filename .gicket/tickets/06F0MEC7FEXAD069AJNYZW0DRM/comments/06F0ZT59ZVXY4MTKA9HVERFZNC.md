@@ -1,0 +1,23 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `2` selected relation flow(s) for source ticket `06F0MEC7FEXAD069AJNYZW0DRM`.
+- Role `dev` completed with outcome `dev-workflow-apply` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `3`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `8ad7d91bdcba4901beff58ed652c0cce`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06F0MECFNF42NK9PND9DWVW9VW` via `blocks` path `06F0MEC7FEXAD069AJNYZW0DRM -> 06F0MECFNF42NK9PND9DWVW9VW`
+- [queued] `blocked-follow-up-comment` -> `06F0MECPFAVBFBNC5XMVDZRQ6M` via `blocks` path `06F0MEC7FEXAD069AJNYZW0DRM -> 06F0MECPFAVBFBNC5XMVDZRQ6M`
+- [queued] `blocked-by-follow-up-comment` -> `06F0MEAXT99V0P115P0WEJD4P0` via `blocks` path `06F0MEC7FEXAD069AJNYZW0DRM -> 06F0MEAXT99V0P115P0WEJD4P0`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06F0MEC7FEXAD069AJNYZW0DRM` owner `ticket/06F0MEC7FEXAD069AJNYZW0DRM-task-define-typed-hub-link-and-satellite-mapper` base `develop` source-owner `ticket/06F0MEC7FEXAD069AJNYZW0DRM-task-define-typed-hub-link-and-satellite-mapper`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F0MECFNF42NK9PND9DWVW9VW` owner `ticket/06F0MECFNF42NK9PND9DWVW9VW-task-implement-typed-explicit-save-helpers-witho` base `develop` source-owner `ticket/06F0MEC7FEXAD069AJNYZW0DRM-task-define-typed-hub-link-and-satellite-mapper`: Target ticket owner branch 'ticket/06F0MECFNF42NK9PND9DWVW9VW-task-implement-typed-explicit-save-helpers-witho' differs from source owner branch 'ticket/06F0MEC7FEXAD069AJNYZW0DRM-task-define-typed-hub-link-and-satellite-mapper'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F0MECPFAVBFBNC5XMVDZRQ6M` owner `ticket/06F0MECPFAVBFBNC5XMVDZRQ6M-task-add-typed-latest-and-as-of-satellite-read-p` base `develop` source-owner `ticket/06F0MEC7FEXAD069AJNYZW0DRM-task-define-typed-hub-link-and-satellite-mapper`: Target ticket owner branch 'ticket/06F0MECPFAVBFBNC5XMVDZRQ6M-task-add-typed-latest-and-as-of-satellite-read-p' differs from source owner branch 'ticket/06F0MEC7FEXAD069AJNYZW0DRM-task-define-typed-hub-link-and-satellite-mapper'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F0MEAXT99V0P115P0WEJD4P0` owner `ticket/06F0MEAXT99V0P115P0WEJD4P0-task-define-immutable-model-registry-and-lookup` base `develop` source-owner `ticket/06F0MEC7FEXAD069AJNYZW0DRM-task-define-typed-hub-link-and-satellite-mapper`: Target ticket owner branch 'ticket/06F0MEAXT99V0P115P0WEJD4P0-task-define-immutable-model-registry-and-lookup' differs from source owner branch 'ticket/06F0MEC7FEXAD069AJNYZW0DRM-task-define-typed-hub-link-and-satellite-mapper'.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F0MECFNF42NK9PND9DWVW9VW` on owner branch `ticket/06F0MECFNF42NK9PND9DWVW9VW-task-implement-typed-explicit-save-helpers-witho` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F0MECPFAVBFBNC5XMVDZRQ6M` on owner branch `ticket/06F0MECPFAVBFBNC5XMVDZRQ6M-task-add-typed-latest-and-as-of-satellite-read-p` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-by-follow-up-target` to `06F0MEAXT99V0P115P0WEJD4P0` on owner branch `ticket/06F0MEAXT99V0P115P0WEJD4P0-task-define-immutable-model-registry-and-lookup` after that branch is refreshed/rebased.

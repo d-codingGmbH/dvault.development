@@ -296,6 +296,12 @@ type public enum DCoding.Data.DVault.DataVaultUnsupportedIncludedIndexColumnMode
   value Ignore = 0
   value AppendToKey = 1
 
+type public interface DCoding.Data.DVault.IDataVaultHubMapper
+  method public abstract DCoding.Data.DVault.DataVaultRegistryHubSaveOperation Map(TSource source)
+
+type public interface DCoding.Data.DVault.IDataVaultLinkMapper
+  method public abstract DCoding.Data.DVault.DataVaultRegistryLinkSaveOperation Map(TSource source)
+
 type public interface DCoding.Data.DVault.IDataVaultLoadTimestampResolver
   method public abstract System.DateTimeOffset? ResolveLoadTimestamp(DCoding.Data.DVault.DataVaultLoadTimestampResolutionContext context)
 
@@ -318,6 +324,9 @@ type public interface DCoding.Data.DVault.IDataVaultReadService
 
 type public interface DCoding.Data.DVault.IDataVaultRecordSourceResolver
   method public abstract string? ResolveRecordSource(DCoding.Data.DVault.DataVaultRecordSourceResolutionContext context)
+
+type public interface DCoding.Data.DVault.IDataVaultSatelliteMapper
+  method public abstract DCoding.Data.DVault.DataVaultRegistrySatelliteSaveOperation Map(TSource source)
 
 type public interface DCoding.Data.DVault.IDataVaultSaveService
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultBulkSaveRequest request, System.Threading.CancellationToken cancellationToken = default)

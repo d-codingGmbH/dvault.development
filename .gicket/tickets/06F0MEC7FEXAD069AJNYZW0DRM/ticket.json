@@ -3,20 +3,19 @@
   "ticket-id": "06F0MEC7FEXAD069AJNYZW0DRM",
   "ticket-type": "task",
   "title": "Task: Define typed hub, link, and satellite mapper contracts",
-  "revision": "06F0QH1ZWJFX0WMED34H4JKN68",
-  "status": "todo",
+  "revision": "06F0ZXZXEXYT5DMAGA4JE506SM",
+  "status": "done",
   "labels": [
-    "type/task",
     "area/api",
     "area/developer-experience",
-    "area/persistence",
     "area/modeling",
+    "area/persistence",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F0ME828FPDN00QBA6HT6S0FR",
   "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
   "created-at": "2026-05-09T00:53:23.4866041Z",
-  "updated-at": "2026-05-09T08:04:31.3326286Z"
+  "updated-at": "2026-05-10T03:39:31.0631961Z"
 }
