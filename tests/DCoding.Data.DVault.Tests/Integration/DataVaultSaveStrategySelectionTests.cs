@@ -112,6 +112,33 @@ public sealed class DataVaultSaveStrategySelectionTests {
   }
 
   [Fact]
+  public async Task TypedHubSaveHelperPreservesSqliteOptimizedStrategyDispatch() {
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateRegistryOptions(database);
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+
+    await using var context = new StrategySelectionContext(options);
+    await context.Database.EnsureCreatedAsync();
+
+    var result = await saveService.SaveHubAsync(
+        context,
+        new CustomerSource("C-100"),
+        new CustomerHubMapper(),
+        new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero),
+        "typed-sqlite-optimized");
+
+    AssertSavedCustomer(result);
+    await AssertCustomerRowAsync(context, "C-100", "typed-sqlite-optimized");
+    AssertOptimizedPathObserved(
+        context,
+        SqliteOptimizedPathDiagnostic);
+  }
+
+  [Fact]
   public async Task SqliteContextFallsBackWhenSqliteCapabilityRegistrationIsMissing() {
     using var database = SqliteTestDatabase.CreateTemporaryFile();
     var options = CreateOptions(database);
@@ -435,6 +462,14 @@ public sealed class DataVaultSaveStrategySelectionTests {
         .Options;
   }
 
+  private static DbContextOptions<StrategySelectionContext> CreateRegistryOptions(SqliteTestDatabase database) {
+    var optionsBuilder = new DbContextOptionsBuilder<StrategySelectionContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False");
+    optionsBuilder.UseDataVaultMetadata(CreateMetadataModel());
+
+    return optionsBuilder.Options;
+  }
+
   private static DataVaultSaveRequest CreateCustomerSaveRequest(string recordSource) {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
 
@@ -583,6 +618,18 @@ public sealed class DataVaultSaveStrategySelectionTests {
         [],
         []);
   }
+
+  private sealed class CustomerHubMapper : IDataVaultHubMapper<CustomerSource> {
+    public DataVaultRegistryHubSaveOperation Map(CustomerSource source) {
+      ArgumentNullException.ThrowIfNull(source);
+
+      return new DataVaultRegistryHubSaveOperation(
+          "Customer",
+          [new("Customer Id", source.CustomerId)]);
+    }
+  }
+
+  private sealed record CustomerSource(string CustomerId);
 
   private sealed class StrategySelectionContext(DbContextOptions<StrategySelectionContext> options) : DbContext(options) {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {

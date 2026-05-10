@@ -3,20 +3,19 @@
   "ticket-id": "06F0MECFNF42NK9PND9DWVW9VW",
   "ticket-type": "task",
   "title": "Task: Implement typed explicit save helpers without SaveChanges interception",
-  "revision": "06F0QH2DJZXQRB0YP9EQVQ98PR",
-  "status": "todo",
+  "revision": "06F17TRYVT069KB4KPMTKYAMAC",
+  "status": "done",
   "labels": [
-    "type/task",
-    "area/persistence",
-    "area/developer-experience",
     "area/api",
+    "area/developer-experience",
+    "area/persistence",
     "area/tests",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F0ME828FPDN00QBA6HT6S0FR",
   "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
   "created-at": "2026-05-09T00:53:25.1871262Z",
-  "updated-at": "2026-05-09T08:04:34.8397469Z"
+  "updated-at": "2026-05-10T22:03:56.5101682Z"
 }

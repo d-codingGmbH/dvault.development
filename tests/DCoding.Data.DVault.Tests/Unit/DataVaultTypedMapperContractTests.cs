@@ -171,6 +171,149 @@ public sealed class DataVaultTypedMapperContractTests {
         "customer_status");
   }
 
+  [Fact]
+  public void TypedSaveHelpersAssembleHubLinkAndOrdinarySatelliteRegistryRequests() {
+    var loadTimestamp = new DateTimeOffset(2026, 5, 10, 10, 0, 0, TimeSpan.Zero);
+
+    var hubRequest = DataVaultSaveServiceTypedExtensions.CreateHubRegistrySaveRequest(
+        new CustomerSource("C-100", "DE"),
+        new CustomerHubMapper(),
+        loadTimestamp,
+        "typed-import");
+
+    Assert.Equal(loadTimestamp, hubRequest.LoadTimestamp);
+    Assert.Equal("typed-import", hubRequest.RecordSource);
+    var hubOperation = Assert.Single(hubRequest.HubOperations);
+    Assert.Equal("Customer", hubOperation.HubName);
+    Assert.Equal("C-100", hubOperation.BusinessKeyValues["Customer Id"]);
+    Assert.Equal("DE", hubOperation.BusinessKeyValues["Region Code"]);
+    Assert.Empty(hubRequest.LinkOperations);
+    Assert.Empty(hubRequest.SatelliteOperations);
+
+    var linkRequest = DataVaultSaveServiceTypedExtensions.CreateLinkRegistrySaveRequest(
+        new CustomerOrderSource("customer-hash", "order-hash"),
+        new CustomerOrderLinkMapper(),
+        loadTimestamp.AddMinutes(1),
+        "typed-import");
+
+    var linkOperation = Assert.Single(linkRequest.LinkOperations);
+    Assert.Equal("CustomerOrder", linkOperation.LinkName);
+    Assert.Equal("customer-hash", linkOperation.ParticipantHashKeyValues["Customer"]);
+    Assert.Equal("order-hash", linkOperation.ParticipantHashKeyValues["Order"]);
+    Assert.Empty(linkRequest.HubOperations);
+    Assert.Empty(linkRequest.SatelliteOperations);
+
+    var satelliteRequest = DataVaultSaveServiceTypedExtensions.CreateOrdinaryHubSatelliteRegistrySaveRequest(
+        new CustomerProfileSource("customer-hash", "Alice Adams", "active", "profile-hash"),
+        new CustomerProfileSatelliteMapper(),
+        loadTimestamp.AddMinutes(2),
+        "typed-import");
+
+    var satelliteOperation = Assert.Single(satelliteRequest.SatelliteOperations);
+    Assert.Equal("Profile", satelliteOperation.SatelliteName);
+    Assert.Equal(DataVaultMetadataReferenceKind.Hub, satelliteOperation.Parent.Kind);
+    Assert.Equal("Customer", satelliteOperation.Parent.Name);
+    Assert.Equal("customer-hash", satelliteOperation.ParentHashKey);
+    Assert.Equal("Alice Adams", satelliteOperation.PayloadValues["customer_name"]);
+    Assert.Equal("active", satelliteOperation.PayloadValues["customer_status"]);
+    Assert.Equal("profile-hash", satelliteOperation.HashDiff);
+    Assert.Empty(satelliteOperation.DrivingKeyValues);
+    Assert.Empty(satelliteRequest.HubOperations);
+    Assert.Empty(satelliteRequest.LinkOperations);
+  }
+
+  [Fact]
+  public void TypedBulkSaveHelpersPreserveCallerOrder() {
+    var loadTimestamp = new DateTimeOffset(2026, 5, 10, 10, 0, 0, TimeSpan.Zero);
+
+    var bulkRequest = DataVaultSaveServiceTypedExtensions.CreateHubRegistryBulkSaveRequest(
+        [
+            new CustomerSource("C-100", "DE"),
+            new CustomerSource("C-200", "US"),
+            new CustomerSource("C-300", "FR"),
+        ],
+        new CustomerHubMapper(),
+        loadTimestamp,
+        "bulk-import");
+
+    Assert.Equal(
+        ["C-100", "C-200", "C-300"],
+        bulkRequest.Requests
+            .Select(request => Assert.Single(request.HubOperations).BusinessKeyValues["Customer Id"])
+            .ToArray());
+    Assert.All(
+        bulkRequest.Requests,
+        request => {
+          Assert.Equal(loadTimestamp, request.LoadTimestamp);
+          Assert.Equal("bulk-import", request.RecordSource);
+          Assert.Empty(request.LinkOperations);
+          Assert.Empty(request.SatelliteOperations);
+        });
+  }
+
+  [Fact]
+  public void TypedSaveHelperDiagnosticsWrapMapperFailuresWithStableSourceContext() {
+    var loadTimestamp = new DateTimeOffset(2026, 5, 10, 10, 0, 0, TimeSpan.Zero);
+
+    var exception = Assert.Throws<InvalidOperationException>(() => DataVaultSaveServiceTypedExtensions.CreateHubRegistryBulkSaveRequest(
+        [
+            new CustomerSource("C-100", "DE"),
+            new CustomerSource("C-200", "US"),
+        ],
+        new FailingSecondCustomerHubMapper(),
+        loadTimestamp,
+        "bulk-import"));
+
+    Assert.Contains("hub", exception.Message, StringComparison.Ordinal);
+    Assert.Contains(typeof(CustomerSource).FullName!, exception.Message, StringComparison.Ordinal);
+    Assert.Contains("batch index 1", exception.Message, StringComparison.Ordinal);
+    Assert.Contains("mapped failure reason", exception.Message, StringComparison.Ordinal);
+    Assert.IsType<ArgumentException>(exception.InnerException);
+
+    var linkException = Assert.Throws<InvalidOperationException>(() => DataVaultSaveServiceTypedExtensions.CreateLinkRegistrySaveRequest(
+        new EmployeeReportsToSource("manager-hash", "employee-hash"),
+        new EmployeeReportsToLinkMapper(),
+        loadTimestamp,
+        "typed-import"));
+
+    Assert.Contains("link", linkException.Message, StringComparison.Ordinal);
+    Assert.Contains(typeof(EmployeeReportsToSource).FullName!, linkException.Message, StringComparison.Ordinal);
+    Assert.Contains("duplicate names", linkException.Message, StringComparison.Ordinal);
+    Assert.IsType<ArgumentException>(linkException.InnerException);
+  }
+
+  [Fact]
+  public void HubSatelliteHelpersRejectOutOfScopeSatelliteShapesWithDiagnostics() {
+    var loadTimestamp = new DateTimeOffset(2026, 5, 10, 10, 0, 0, TimeSpan.Zero);
+
+    var linkParentException = Assert.Throws<InvalidOperationException>(() => DataVaultSaveServiceTypedExtensions.CreateOrdinaryHubSatelliteRegistrySaveRequest(
+        new CustomerOrderStateSource("customer-order-hash", "submitted", "state-hash"),
+        new CustomerOrderStateSatelliteMapper(),
+        loadTimestamp,
+        "typed-import"));
+
+    Assert.Contains("satellite 'CustomerOrder.State'", linkParentException.Message, StringComparison.Ordinal);
+    Assert.Contains("hub-parent", linkParentException.Message, StringComparison.Ordinal);
+    Assert.Contains("link parent 'CustomerOrder'", linkParentException.Message, StringComparison.Ordinal);
+    Assert.IsType<ArgumentException>(linkParentException.InnerException);
+
+    var multiActiveException = Assert.Throws<InvalidOperationException>(() => DataVaultSaveServiceTypedExtensions.CreateOrdinaryHubSatelliteRegistrySaveRequest(
+        new CustomerContactSource(
+            "customer-hash",
+            "billing",
+            "DE",
+            "billing@example.test",
+            "contact-hash"),
+        new CustomerContactSatelliteMapper(),
+        loadTimestamp,
+        "typed-import"));
+
+    Assert.Contains("satellite 'Customer.ContactChannel'", multiActiveException.Message, StringComparison.Ordinal);
+    Assert.Contains("hub-parent", multiActiveException.Message, StringComparison.Ordinal);
+    Assert.Contains("driving-key values", multiActiveException.Message, StringComparison.Ordinal);
+    Assert.IsType<ArgumentException>(multiActiveException.InnerException);
+  }
+
   private static async Task AssertMissingRequiredValueAtSaveBoundaryAsync(
       DataVaultSaveRequest request,
       string expectedMissingName) {
@@ -266,6 +409,18 @@ public sealed class DataVaultTypedMapperContractTests {
           source.CustomerOrderHashKey,
           [new("State Code", source.StateCode)],
           source.HashDiff);
+    }
+  }
+
+  private sealed class FailingSecondCustomerHubMapper : IDataVaultHubMapper<CustomerSource> {
+    public DataVaultRegistryHubSaveOperation Map(CustomerSource source) {
+      ArgumentNullException.ThrowIfNull(source);
+
+      if (source.CustomerId == "C-200") {
+        throw new ArgumentException("mapped failure reason", nameof(source));
+      }
+
+      return new CustomerHubMapper().Map(source);
     }
   }
 

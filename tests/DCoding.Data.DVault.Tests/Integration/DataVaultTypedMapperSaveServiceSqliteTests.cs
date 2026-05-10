@@ -10,7 +10,7 @@ namespace DCoding.Data.DVault.Tests.Integration;
 [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqliteProvider)]
 public sealed class DataVaultTypedMapperSaveServiceSqliteTests {
   [Fact]
-  public async Task ManualTypedMappersFeedRegistryBackedSavePathWithExplicitRequestMetadata() {
+  public async Task TypedSaveHelpersPersistHubThenOrdinarySatelliteThroughSqlite() {
     var loadTimestamp = new DateTimeOffset(2026, 5, 10, 10, 0, 0, TimeSpan.Zero);
     using var database = SqliteTestDatabase.CreateTemporaryFile();
     var services = new ServiceCollection();
@@ -31,29 +31,24 @@ public sealed class DataVaultTypedMapperSaveServiceSqliteTests {
     var context = scope.ServiceProvider.GetRequiredService<TypedMapperSaveServiceContext>();
     await context.Database.EnsureCreatedAsync();
 
-    var hubResult = await saveService.SaveAsync(
+    var hubResult = await saveService.SaveHubAsync(
         context,
-        new DataVaultRegistrySaveRequest(
-            loadTimestamp,
-            "typed-import",
-            [hubMapper.Map(new CustomerSource("C-100", "DE"))],
-            []));
+        new CustomerSource("C-100", "DE"),
+        hubMapper,
+        loadTimestamp,
+        "typed-import");
     var customerHashKey = Assert.Single(hubResult.SavedRecords).HashKey;
 
-    var profileResult = await saveService.SaveAsync(
+    var profileResult = await saveService.SaveOrdinaryHubSatelliteAsync(
         context,
-        new DataVaultRegistrySaveRequest(
-            loadTimestamp.AddMinutes(1),
-            "typed-import",
-            [],
-            [],
-            [
-                profileMapper.Map(new CustomerProfileSource(
-                    customerHashKey,
-                    "Alice Adams",
-                    "active",
-                    "profile-hash")),
-            ]));
+        new CustomerProfileSource(
+            customerHashKey,
+            "Alice Adams",
+            "active",
+            "profile-hash"),
+        profileMapper,
+        loadTimestamp.AddMinutes(1),
+        "typed-import");
     var latestRows = await readService.ReadLatestSatelliteRowsAsync(
         context,
         new DataVaultRegistryLatestSatelliteReadRequest(
