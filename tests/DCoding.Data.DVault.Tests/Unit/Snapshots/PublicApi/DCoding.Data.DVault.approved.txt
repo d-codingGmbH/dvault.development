@@ -49,15 +49,127 @@ type public sealed class DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder
   method public DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TEntity?> DrivingKey<TProperty>(System.Linq.Expressions.Expression<System.Func<TEntity?, TProperty?>> selector)
   method public DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TEntity?> Payload<TProperty>(System.Linq.Expressions.Expression<System.Func<TEntity?, TProperty?>> selector)
 
+type public sealed class DCoding.Data.DVault.DataVaultConstraintExplain : System.IEquatable<DCoding.Data.DVault.DataVaultConstraintExplain>
+  ctor public DataVaultConstraintExplain(string Name, DCoding.Data.DVault.Modeling.DataVaultConstraintKind Kind, System.Collections.Generic.IReadOnlyList<string> PropertyNames)
+  property public DCoding.Data.DVault.Modeling.DataVaultConstraintKind Kind { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<string> PropertyNames { get; init; }
+  property public string Name { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultConstraintExplain? left, DCoding.Data.DVault.DataVaultConstraintExplain? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultConstraintExplain? left, DCoding.Data.DVault.DataVaultConstraintExplain? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultConstraintExplain? other)
+  method public void Deconstruct(out string Name, out DCoding.Data.DVault.Modeling.DataVaultConstraintKind Kind, out System.Collections.Generic.IReadOnlyList<string> PropertyNames)
+
 type public static class DCoding.Data.DVault.DataVaultDbContextOptionsBuilderExtensions
   method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultMetadata(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder)
   method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultMetadata(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel)
   method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultMetadata(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, DCoding.Data.DVault.Modeling.DataVaultMetadataRegistry metadataRegistry)
 
+type public sealed class DCoding.Data.DVault.DataVaultDiagnosticsIssue : System.IEquatable<DCoding.Data.DVault.DataVaultDiagnosticsIssue>
+  ctor public DataVaultDiagnosticsIssue(DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity Severity, string Code, string Message, string? Path = null)
+  property public DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity Severity { get; init; }
+  property public string Code { get; init; }
+  property public string Message { get; init; }
+  property public string? Path { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultDiagnosticsIssue? left, DCoding.Data.DVault.DataVaultDiagnosticsIssue? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultDiagnosticsIssue? left, DCoding.Data.DVault.DataVaultDiagnosticsIssue? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultDiagnosticsIssue? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity Severity, out string Code, out string Message, out string? Path)
+
+type public enum DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity
+  value Info = 0
+  value Warning = 1
+  value Error = 2
+
+type public sealed class DCoding.Data.DVault.DataVaultDiagnosticsResult : System.IEquatable<DCoding.Data.DVault.DataVaultDiagnosticsResult>
+  ctor public DataVaultDiagnosticsResult(DCoding.Data.DVault.DataVaultValidationDiagnostics Validation, DCoding.Data.DVault.DataVaultExplainDiagnostics Explain, DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics SaveStrategy, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultDiagnosticsIssue> Issues)
+  property public DCoding.Data.DVault.DataVaultExplainDiagnostics Explain { get; init; }
+  property public DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics SaveStrategy { get; init; }
+  property public DCoding.Data.DVault.DataVaultValidationDiagnostics Validation { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultDiagnosticsIssue> Issues { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultDiagnosticsResult? left, DCoding.Data.DVault.DataVaultDiagnosticsResult? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultDiagnosticsResult? left, DCoding.Data.DVault.DataVaultDiagnosticsResult? right)
+  method public string ToDisplayString()
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultDiagnosticsResult? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultValidationDiagnostics Validation, out DCoding.Data.DVault.DataVaultExplainDiagnostics Explain, out DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics SaveStrategy, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultDiagnosticsIssue> Issues)
+
+type public sealed class DCoding.Data.DVault.DataVaultEntityExplain : System.IEquatable<DCoding.Data.DVault.DataVaultEntityExplain>
+  ctor public DataVaultEntityExplain(string TableName, DCoding.Data.DVault.Modeling.DataVaultTableKind TableKind, string MetadataName, DCoding.Data.DVault.DataVaultParentReferenceExplain? ParentReference, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPropertyExplain> Properties, DCoding.Data.DVault.DataVaultKeyExplain PrimaryKey, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultIndexExplain> Indexes, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultConstraintExplain> Constraints)
+  property public DCoding.Data.DVault.DataVaultKeyExplain PrimaryKey { get; init; }
+  property public DCoding.Data.DVault.DataVaultParentReferenceExplain? ParentReference { get; init; }
+  property public DCoding.Data.DVault.Modeling.DataVaultTableKind TableKind { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultConstraintExplain> Constraints { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultIndexExplain> Indexes { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPropertyExplain> Properties { get; init; }
+  property public string MetadataName { get; init; }
+  property public string TableName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultEntityExplain? left, DCoding.Data.DVault.DataVaultEntityExplain? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultEntityExplain? left, DCoding.Data.DVault.DataVaultEntityExplain? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultEntityExplain? other)
+  method public void Deconstruct(out string TableName, out DCoding.Data.DVault.Modeling.DataVaultTableKind TableKind, out string MetadataName, out DCoding.Data.DVault.DataVaultParentReferenceExplain? ParentReference, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPropertyExplain> Properties, out DCoding.Data.DVault.DataVaultKeyExplain PrimaryKey, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultIndexExplain> Indexes, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultConstraintExplain> Constraints)
+
+type public sealed class DCoding.Data.DVault.DataVaultExplainDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultExplainDiagnostics>
+  ctor public DataVaultExplainDiagnostics(string MetadataSourceKind, string? MetadataSourceFingerprint, string? ProviderName, string CapabilityProfileName, bool CapabilityProfileDefaulted, DCoding.Data.DVault.DataVaultProviderValueFormat LoadTimestampValueFormat, string LoadTimestampStoreType, string ProviderBehaviorProfileName, bool ProviderBehaviorDefaulted, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultEntityExplain> Entities)
+  property public DCoding.Data.DVault.DataVaultProviderValueFormat LoadTimestampValueFormat { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultEntityExplain> Entities { get; init; }
+  property public bool CapabilityProfileDefaulted { get; init; }
+  property public bool ProviderBehaviorDefaulted { get; init; }
+  property public string CapabilityProfileName { get; init; }
+  property public string LoadTimestampStoreType { get; init; }
+  property public string MetadataSourceKind { get; init; }
+  property public string ProviderBehaviorProfileName { get; init; }
+  property public string? MetadataSourceFingerprint { get; init; }
+  property public string? ProviderName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultExplainDiagnostics? left, DCoding.Data.DVault.DataVaultExplainDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultExplainDiagnostics? left, DCoding.Data.DVault.DataVaultExplainDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultExplainDiagnostics? other)
+  method public void Deconstruct(out string MetadataSourceKind, out string? MetadataSourceFingerprint, out string? ProviderName, out string CapabilityProfileName, out bool CapabilityProfileDefaulted, out DCoding.Data.DVault.DataVaultProviderValueFormat LoadTimestampValueFormat, out string LoadTimestampStoreType, out string ProviderBehaviorProfileName, out bool ProviderBehaviorDefaulted, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultEntityExplain> Entities)
+
 type public sealed class DCoding.Data.DVault.DataVaultHubSaveOperation
   ctor public DataVaultHubSaveOperation(DCoding.Data.DVault.Modeling.DataVaultHubMetadata metadata, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> businessKeyValues)
   property public DCoding.Data.DVault.Modeling.DataVaultHubMetadata Metadata { get; }
   property public System.Collections.Generic.IReadOnlyDictionary<string, string> BusinessKeyValues { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultIndexExplain : System.IEquatable<DCoding.Data.DVault.DataVaultIndexExplain>
+  ctor public DataVaultIndexExplain(string Name, System.Collections.Generic.IReadOnlyList<string> PropertyNames, bool IsUnique, System.Collections.Generic.IReadOnlyList<string> DescendingPropertyNames, System.Collections.Generic.IReadOnlyList<string> IncludedPropertyNames)
+  property public System.Collections.Generic.IReadOnlyList<string> DescendingPropertyNames { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<string> IncludedPropertyNames { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<string> PropertyNames { get; init; }
+  property public bool IsUnique { get; init; }
+  property public string Name { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultIndexExplain? left, DCoding.Data.DVault.DataVaultIndexExplain? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultIndexExplain? left, DCoding.Data.DVault.DataVaultIndexExplain? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultIndexExplain? other)
+  method public void Deconstruct(out string Name, out System.Collections.Generic.IReadOnlyList<string> PropertyNames, out bool IsUnique, out System.Collections.Generic.IReadOnlyList<string> DescendingPropertyNames, out System.Collections.Generic.IReadOnlyList<string> IncludedPropertyNames)
+
+type public sealed class DCoding.Data.DVault.DataVaultKeyExplain : System.IEquatable<DCoding.Data.DVault.DataVaultKeyExplain>
+  ctor public DataVaultKeyExplain(string Name, System.Collections.Generic.IReadOnlyList<string> PropertyNames)
+  property public System.Collections.Generic.IReadOnlyList<string> PropertyNames { get; init; }
+  property public string Name { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultKeyExplain? left, DCoding.Data.DVault.DataVaultKeyExplain? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultKeyExplain? left, DCoding.Data.DVault.DataVaultKeyExplain? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultKeyExplain? other)
+  method public void Deconstruct(out string Name, out System.Collections.Generic.IReadOnlyList<string> PropertyNames)
 
 type public sealed class DCoding.Data.DVault.DataVaultLatestSatelliteReadRequest
   ctor public DataVaultLatestSatelliteReadRequest(DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata satellite, System.Collections.Generic.IEnumerable<string> parentHashKeys)
@@ -112,6 +224,37 @@ type public sealed class DCoding.Data.DVault.DataVaultOptions
   method public DCoding.Data.DVault.DataVaultOptions UseProviderBehavior<TProviderBehavior>() where TProviderBehavior : class, DCoding.Data.DVault.IDataVaultProviderBehavior
   method public DCoding.Data.DVault.DataVaultOptions UseRecordSourceResolver(DCoding.Data.DVault.IDataVaultRecordSourceResolver resolver)
   method public DCoding.Data.DVault.DataVaultOptions UseRecordSourceResolver<TResolver>() where TResolver : class, DCoding.Data.DVault.IDataVaultRecordSourceResolver
+
+type public sealed class DCoding.Data.DVault.DataVaultParentReferenceExplain : System.IEquatable<DCoding.Data.DVault.DataVaultParentReferenceExplain>
+  ctor public DataVaultParentReferenceExplain(DCoding.Data.DVault.Modeling.DataVaultMetadataReferenceKind Kind, string Name)
+  property public DCoding.Data.DVault.Modeling.DataVaultMetadataReferenceKind Kind { get; init; }
+  property public string Name { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultParentReferenceExplain? left, DCoding.Data.DVault.DataVaultParentReferenceExplain? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultParentReferenceExplain? left, DCoding.Data.DVault.DataVaultParentReferenceExplain? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultParentReferenceExplain? other)
+  method public void Deconstruct(out DCoding.Data.DVault.Modeling.DataVaultMetadataReferenceKind Kind, out string Name)
+
+type public sealed class DCoding.Data.DVault.DataVaultPropertyExplain : System.IEquatable<DCoding.Data.DVault.DataVaultPropertyExplain>
+  ctor public DataVaultPropertyExplain(string Name, DCoding.Data.DVault.DataVaultPropertyRole Role, DCoding.Data.DVault.TechnicalMetadataColumnRole? TechnicalRole, string MetadataName, int Ordinal, DCoding.Data.DVault.DataVaultLogicalPropertyKind LogicalPropertyKind, string ProviderProfileName, string StoreType, DCoding.Data.DVault.DataVaultProviderValueFormat ValueFormat)
+  property public DCoding.Data.DVault.DataVaultLogicalPropertyKind LogicalPropertyKind { get; init; }
+  property public DCoding.Data.DVault.DataVaultPropertyRole Role { get; init; }
+  property public DCoding.Data.DVault.DataVaultProviderValueFormat ValueFormat { get; init; }
+  property public DCoding.Data.DVault.TechnicalMetadataColumnRole? TechnicalRole { get; init; }
+  property public int Ordinal { get; init; }
+  property public string MetadataName { get; init; }
+  property public string Name { get; init; }
+  property public string ProviderProfileName { get; init; }
+  property public string StoreType { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultPropertyExplain? left, DCoding.Data.DVault.DataVaultPropertyExplain? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultPropertyExplain? left, DCoding.Data.DVault.DataVaultPropertyExplain? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultPropertyExplain? other)
+  method public void Deconstruct(out string Name, out DCoding.Data.DVault.DataVaultPropertyRole Role, out DCoding.Data.DVault.TechnicalMetadataColumnRole? TechnicalRole, out string MetadataName, out int Ordinal, out DCoding.Data.DVault.DataVaultLogicalPropertyKind LogicalPropertyKind, out string ProviderProfileName, out string StoreType, out DCoding.Data.DVault.DataVaultProviderValueFormat ValueFormat)
 
 type public enum DCoding.Data.DVault.DataVaultPropertyRole
   value Technical = 0
@@ -283,6 +426,66 @@ type public static class DCoding.Data.DVault.DataVaultSaveServiceRegistryExtensi
   method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(this DCoding.Data.DVault.IDataVaultSaveService saveService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryBulkSaveRequest request, System.Threading.CancellationToken cancellationToken = default)
   method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(this DCoding.Data.DVault.IDataVaultSaveService saveService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistrySaveRequest request, System.Threading.CancellationToken cancellationToken = default)
 
+type public sealed class DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics>
+  ctor public DataVaultSaveStrategyCandidateDiagnostics(int Ordinal, string StrategyName, int Priority, bool CanSave, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause> FallbackCauses)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause> FallbackCauses { get; init; }
+  property public bool CanSave { get; init; }
+  property public int Ordinal { get; init; }
+  property public int Priority { get; init; }
+  property public string StrategyName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics? left, DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics? left, DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics? other)
+  method public void Deconstruct(out int Ordinal, out string StrategyName, out int Priority, out bool CanSave, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause> FallbackCauses)
+
+type public sealed class DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics>
+  ctor public DataVaultSaveStrategyDiagnostics(DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus Status, string? ProviderName, string? SelectedStrategyName, int? SelectedStrategyPriority, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics> Candidates, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause> FallbackCauses)
+  property public DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus Status { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics> Candidates { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause> FallbackCauses { get; init; }
+  property public int? SelectedStrategyPriority { get; init; }
+  property public string? ProviderName { get; init; }
+  property public string? SelectedStrategyName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics? left, DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics? left, DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus Status, out string? ProviderName, out string? SelectedStrategyName, out int? SelectedStrategyPriority, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics> Candidates, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause> FallbackCauses)
+
+type public enum DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus
+  value NotEvaluated = 0
+  value ProviderStrategySelected = 1
+  value ProviderNeutralFallback = 2
+
+type public sealed class DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause : System.IEquatable<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause>
+  ctor public DataVaultSaveStrategyFallbackCause(DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind Kind, string Message)
+  property public DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind Kind { get; init; }
+  property public string Message { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause? left, DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause? left, DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind Kind, out string Message)
+
+type public enum DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind
+  value ProviderNameMismatch = 0
+  value UnknownOrUnregisteredProviderName = 1
+  value NoProviderSpecificStrategyRegistered = 2
+  value DirtyDbContext = 3
+  value MultiActiveSatelliteOperations = 4
+  value SqlServerMinimumOperationThreshold = 5
+  value SqlServerMaximumSatelliteOperationThreshold = 6
+  value MySqlMinimumOperationThreshold = 7
+  value OracleMinimumOperationThreshold = 8
+  value StrategyDeclined = 9
+
 type public sealed class DCoding.Data.DVault.DataVaultSavedRecord
   ctor public DataVaultSavedRecord(DCoding.Data.DVault.Modeling.DataVaultTableKind kind, string metadataName, string tableName, string hashKey)
   ctor public DataVaultSavedRecord(DCoding.Data.DVault.Modeling.DataVaultTableKind kind, string metadataName, string tableName, string hashKey, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> drivingKeyValues)
@@ -295,6 +498,31 @@ type public sealed class DCoding.Data.DVault.DataVaultSavedRecord
 type public enum DCoding.Data.DVault.DataVaultUnsupportedIncludedIndexColumnMode
   value Ignore = 0
   value AppendToKey = 1
+
+type public sealed class DCoding.Data.DVault.DataVaultValidationDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultValidationDiagnostics>
+  ctor public DataVaultValidationDiagnostics(bool IsValid, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultDiagnosticsIssue> Issues)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultDiagnosticsIssue> Issues { get; init; }
+  property public bool IsValid { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultValidationDiagnostics? left, DCoding.Data.DVault.DataVaultValidationDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultValidationDiagnostics? left, DCoding.Data.DVault.DataVaultValidationDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultValidationDiagnostics? other)
+  method public void Deconstruct(out bool IsValid, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultDiagnosticsIssue> Issues)
+
+type public interface DCoding.Data.DVault.IDataVaultDiagnosticsService
+  method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel)
+  method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
+  method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(DCoding.Data.DVault.Modeling.DataVaultMetadataRegistry metadataRegistry)
+  method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(DCoding.Data.DVault.Modeling.DataVaultMetadataRegistry metadataRegistry, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
+  method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(Microsoft.EntityFrameworkCore.DbContext dbContext)
+  method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultBulkSaveRequest request)
+  method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryBulkSaveRequest request)
+  method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistrySaveRequest request)
+  method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultSaveRequest request)
+  method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(System.Action<DCoding.Data.DVault.DataVaultCodeFirstModelBuilder> configureModel)
+  method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(System.Action<DCoding.Data.DVault.DataVaultCodeFirstModelBuilder> configureModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
 
 type public interface DCoding.Data.DVault.IDataVaultHubMapper
   method public abstract DCoding.Data.DVault.DataVaultRegistryHubSaveOperation Map(TSource source)

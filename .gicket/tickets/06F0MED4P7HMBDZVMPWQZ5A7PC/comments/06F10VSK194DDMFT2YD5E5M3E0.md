@@ -1,0 +1,10 @@
+﻿[gicket-bot] transactional writeback linkage
+
+- ticket-id: `06F0MED4P7HMBDZVMPWQZ5A7PC`
+- transaction-point: `TP3`
+- write-group: `wg-handover-test`
+- source-role: `dev`
+- target-role: `test`
+- branch: `ticket/06F0MED4P7HMBDZVMPWQZ5A7PC-task-implement-data-vault-model-validation-and-e`
+- commit: `ed1109691af9`
+- push-mode: `commit-only-on-write`

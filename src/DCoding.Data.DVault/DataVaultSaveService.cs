@@ -110,7 +110,7 @@ public static class DataVaultSaveServiceRegistryExtensions {
         cancellationToken);
   }
 
-  private static DataVaultSaveRequest ResolveRequest(
+  internal static DataVaultSaveRequest ResolveRequest(
       DataVaultMetadataRegistry registry,
       DataVaultRegistrySaveRequest request) {
     var hubOperations = request.HubOperations

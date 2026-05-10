@@ -23,6 +23,7 @@ public static class DVaultServiceCollectionExtensions {
     TryAddSingleton(services, typeof(IDataVaultLoadTimestampResolver), DefaultDataVaultLoadTimestampResolver.Instance);
     TryAddSingleton(services, typeof(IDataVaultRecordSourceResolver), DefaultDataVaultRecordSourceResolver.Instance);
     TryAddSingleton(services, typeof(IDataVaultProviderBehaviorSelector), typeof(DefaultDataVaultProviderBehaviorSelector));
+    TryAddSingleton(services, typeof(IDataVaultDiagnosticsService), typeof(DefaultDataVaultDiagnosticsService));
     TryAddSingleton(services, typeof(IDataVaultSaveService), typeof(DefaultDataVaultSaveService));
     TryAddSingleton(services, typeof(IDataVaultReadService), typeof(DefaultDataVaultReadService));
 

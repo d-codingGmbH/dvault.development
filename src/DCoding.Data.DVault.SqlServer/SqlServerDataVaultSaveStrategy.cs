@@ -27,13 +27,7 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(requests);
 
-    var hasPendingTrackedChanges = dbContext.ChangeTracker
-        .Entries()
-        .Any(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
-
-    return CanSaveProvider(dbContext.Database.ProviderName, hasPendingTrackedChanges) &&
-        !ContainsMultiActiveSatelliteOperations(requests) &&
-        IsOptimizedBatchShape(requests);
+    return DataVaultProviderSaveStrategyGateEvaluator.EvaluateSqlServer(dbContext, requests).CanSave;
   }
 
   public async Task<DataVaultSaveResult> SaveAsync(

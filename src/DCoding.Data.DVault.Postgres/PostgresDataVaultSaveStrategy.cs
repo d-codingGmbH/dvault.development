@@ -22,11 +22,7 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(requests);
 
-    return string.Equals(dbContext.Database.ProviderName, NpgsqlProviderName, StringComparison.Ordinal) &&
-        !ContainsMultiActiveSatelliteOperations(requests) &&
-        !dbContext.ChangeTracker
-            .Entries()
-            .Any(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
+    return DataVaultProviderSaveStrategyGateEvaluator.EvaluatePostgres(dbContext, requests).CanSave;
   }
 
   public async Task<DataVaultSaveResult> SaveAsync(

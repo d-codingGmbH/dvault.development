@@ -43,6 +43,19 @@ internal static class DataVaultProviderCapabilityProfileSelection {
     return DataVaultProviderCapabilityProfiles.Sqlite;
   }
 
+  internal static bool TrySelectRegistered(
+      string? providerName,
+      out DataVaultProviderCapabilityProfile? providerCapabilities) {
+    if (!string.IsNullOrWhiteSpace(providerName)) {
+      lock (SyncRoot) {
+        return ProfilesByProviderName.TryGetValue(providerName, out providerCapabilities);
+      }
+    }
+
+    providerCapabilities = null;
+    return false;
+  }
+
   private static string? TryGetActiveProviderName(ModelBuilder modelBuilder) {
     try {
       var conventionModelBuilder = ((IInfrastructure<IConventionModelBuilder>)modelBuilder).Instance;

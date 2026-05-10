@@ -24,10 +24,7 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(requests);
 
-    return string.Equals(dbContext.Database.ProviderName, OracleProviderName, StringComparison.Ordinal) &&
-        IsCleanContext(dbContext) &&
-        !ContainsMultiActiveSatelliteOperations(requests) &&
-        IsOptimizedBatchShape(requests);
+    return DataVaultProviderSaveStrategyGateEvaluator.EvaluateOracle(dbContext, requests).CanSave;
   }
 
   public async Task<DataVaultSaveResult> SaveAsync(

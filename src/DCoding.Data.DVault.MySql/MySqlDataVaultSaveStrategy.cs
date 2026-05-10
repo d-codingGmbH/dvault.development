@@ -26,12 +26,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(requests);
 
-    return IsSupportedProviderName(dbContext.Database.ProviderName) &&
-        IsOptimizedBatchShape(requests) &&
-        !ContainsMultiActiveSatelliteOperations(requests) &&
-        !dbContext.ChangeTracker
-            .Entries()
-            .Any(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
+    return DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySql(dbContext, requests).CanSave;
   }
 
   public async Task<DataVaultSaveResult> SaveAsync(

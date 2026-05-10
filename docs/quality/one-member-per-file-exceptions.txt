@@ -1,6 +1,7 @@
 # Documented public/protected one-member-per-file exceptions.
 # One repository-relative C# source path per non-comment line.
 src/DCoding.Data.DVault/DataVaultAnnotationNames.cs
+src/DCoding.Data.DVault/DataVaultDiagnostics.cs
 src/DCoding.Data.DVault/DataVaultProviderCapabilities.cs
 src/DCoding.Data.DVault/DataVaultProviderSaveStrategy.cs
 src/DCoding.Data.DVault/DataVaultSaveService.cs
