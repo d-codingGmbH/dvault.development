@@ -3,6 +3,6 @@
   "milestoneId": "06F0ME828FPDN00QBA6HT6S0FR",
   "name": "v0.6.0 - Typed workflows and diagnostics",
   "description": "Typed explicit save/read helper APIs, model validation/explain output, and runnable examples that make ordinary DVault usage easier without hiding Data Vault semantics.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-09T00:52:48.8350290Z"
 }
