@@ -3,20 +3,19 @@
   "ticket-id": "06F0MEGYHADPVN575H64D56W2G",
   "ticket-type": "task",
   "title": "Task: Define PIT-backed as-of read API contract",
-  "revision": "06F0QH3ME0NBKNK8FEC7SQDNHG",
-  "status": "todo",
+  "revision": "06F1GD221P6ZRSBX8N2G3VKGYR",
+  "status": "done",
   "labels": [
-    "type/task",
     "area/api",
-    "area/read-models",
-    "area/pit",
     "area/docs",
+    "area/pit",
+    "area/read-models",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F0ME83T78Z32RA39SD0JT85W",
   "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
   "created-at": "2026-05-09T00:54:02.3092473Z",
-  "updated-at": "2026-05-09T08:04:44.7848410Z"
+  "updated-at": "2026-05-11T18:02:18.5093237Z"
 }
