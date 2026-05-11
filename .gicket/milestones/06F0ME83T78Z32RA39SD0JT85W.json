@@ -3,6 +3,6 @@
   "milestoneId": "06F0ME83T78Z32RA39SD0JT85W",
   "name": "v0.7.0 - Advanced read models and read optimization",
   "description": "PIT-backed as-of reads, bridge traversal helpers, provider-aware read strategy hooks, and benchmark-driven read optimizations.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-09T00:52:49.2332921Z"
 }

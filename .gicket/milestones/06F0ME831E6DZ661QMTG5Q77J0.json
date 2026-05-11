@@ -3,6 +3,6 @@
   "milestoneId": "06F0ME831E6DZ661QMTG5Q77J0",
   "name": "v0.7.0 - Model-First specification and drift tooling",
   "description": "Versioned model-first specification import/export, validation, projection, and drift reports for teams that want a durable Data Vault model artifact outside C# code.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-09T00:52:49.0355401Z"
 }
