@@ -3,7 +3,7 @@
   "ticket-id": "06EZ0NT4FDPC7XTQH40PQS942M",
   "ticket-type": "task",
   "title": "Task: Define PIT metadata model and builder API",
-  "revision": "06EZR65ZR7R04BD1WVH0RENEM4",
+  "revision": "06EZRZ7HZX7DD7Q3T7VJ5HW1JG",
   "status": "done",
   "labels": [
     "area/api",
@@ -16,5 +16,5 @@
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:15:44.4961929Z",
-  "updated-at": "2026-05-06T07:02:53.6334959Z"
+  "updated-at": "2026-05-06T08:52:20.0957100Z"
 }

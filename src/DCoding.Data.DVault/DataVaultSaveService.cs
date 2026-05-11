@@ -1263,7 +1263,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     foreach (var parentHashKeyBatch in parentHashKeys.Distinct(StringComparer.Ordinal).Chunk(500)) {
       var persistedRows = await rows
           .AsNoTracking()
-          .Where(row => parentHashKeyBatch.Contains(EF.Property<string>(row, table.ParentHashKeyColumnName)))
+          .WhereStringPropertyEqualsAny(table.ParentHashKeyColumnName, parentHashKeyBatch)
           .ToListAsync(cancellationToken)
           .ConfigureAwait(false);
       var batchRows = persistedRows

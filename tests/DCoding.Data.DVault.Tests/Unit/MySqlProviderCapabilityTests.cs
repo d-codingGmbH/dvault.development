@@ -43,6 +43,15 @@ public sealed class MySqlProviderCapabilityTests {
   }
 
   [Fact]
+  public void OfficialMySqlProviderNameResolvesBuiltInMySqlProfileWithoutStartupRegistration() {
+    DataVaultProviderCapabilityProfileSelection.Reset();
+
+    Assert.Same(
+        DataVaultProviderCapabilityProfiles.MySql,
+        DataVaultProviderCapabilityProfileSelection.Select("MySql.EntityFrameworkCore"));
+  }
+
+  [Fact]
   public void MySqlStrategyBuildsParameterizedMySqlInsertSqlInsideProviderPackage() {
     var ignoreCommandText = MySqlDataVaultSaveStrategy.CreateMySqlInsertCommandText(
         "Hub`Customer",

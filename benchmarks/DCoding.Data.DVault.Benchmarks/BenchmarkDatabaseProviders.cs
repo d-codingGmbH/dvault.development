@@ -173,6 +173,7 @@ internal abstract class SharedExternalBenchmarkDatabase : IBenchmarkDatabase {
   public abstract Task CleanupAsync(DbContext context, CancellationToken cancellationToken);
 
   public void Dispose() {
+    NpgsqlReflection.ClearAllPools();
   }
 
   protected static IReadOnlyList<string> GetProducedTableNames() {
@@ -297,9 +298,9 @@ internal sealed class TempPostgresSchemaDatabase : IBenchmarkDatabase {
   public TempPostgresSchemaDatabase(string connectionString) {
     ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
-    _baseConnectionString = connectionString;
+    _baseConnectionString = DisablePooling(connectionString);
     _schemaName = "dvault_bench_" + Guid.NewGuid().ToString("N");
-    _schemaConnectionString = AppendSearchPath(connectionString, _schemaName);
+    _schemaConnectionString = AppendSearchPath(_baseConnectionString, _schemaName);
   }
 
   public DbContextOptions<TContext> CreateOptions<TContext>()
@@ -339,9 +340,21 @@ internal sealed class TempPostgresSchemaDatabase : IBenchmarkDatabase {
   }
 
   private static string AppendSearchPath(string connectionString, string schemaName) {
-    var separator = connectionString.EndsWith(';') ? string.Empty : ";";
+    var builder = new DbConnectionStringBuilder {
+      ConnectionString = connectionString,
+      ["Search Path"] = schemaName,
+    };
 
-    return connectionString + separator + "Search Path=" + schemaName;
+    return builder.ConnectionString;
+  }
+
+  private static string DisablePooling(string connectionString) {
+    var builder = new DbConnectionStringBuilder {
+      ConnectionString = connectionString,
+      ["Pooling"] = "false",
+    };
+
+    return builder.ConnectionString;
   }
 
   private static string QuotePostgresIdentifier(string identifier) {
@@ -386,6 +399,15 @@ internal static class NpgsqlReflection {
     arguments[1] = connectionString;
 
     method.Invoke(null, arguments);
+  }
+
+  public static void ClearAllPools() {
+    var connectionType = GetConnectionType();
+    var method = connectionType?.GetMethod(
+        "ClearAllPools",
+        BindingFlags.Public | BindingFlags.Static,
+        Type.EmptyTypes);
+    method?.Invoke(null, null);
   }
 
   private static Type? GetConnectionType() {

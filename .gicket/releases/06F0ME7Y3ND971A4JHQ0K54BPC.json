@@ -3,6 +3,6 @@
   "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
   "name": "v0.6.0 - Usability and Code-First Modeling",
   "description": "Usability-focused release that turns the v0.5 metadata-in-code baseline into a friendlier Code-First workflow with a shared model registry, typed explicit save/read helpers, diagnostics, and runnable starter examples.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-09T00:52:47.7734192Z"
 }

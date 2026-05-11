@@ -60,7 +60,7 @@ internal static class DataVaultSatelliteReadPipeline {
     foreach (var parentHashKeyBatch in request.ParentHashKeys.Chunk(ParentHashKeyBatchSize)) {
       var persistedRows = await rows
           .AsNoTracking()
-          .Where(row => parentHashKeyBatch.Contains(EF.Property<string>(row, projection.ParentHashKeyColumnName)))
+          .WhereStringPropertyEqualsAny(projection.ParentHashKeyColumnName, parentHashKeyBatch)
           .ToListAsync(cancellationToken)
           .ConfigureAwait(false);
 

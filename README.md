@@ -15,13 +15,13 @@ dotnet add package DCoding.Data.DVault.Oracle --version 0.6.0
 dotnet add package DCoding.Data.DVault.SqlServer --version 0.6.0
 ```
 
-Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Pomelo.EntityFrameworkCore.MySql` for the DVault MySQL v1 path, or the relevant provider for SQL Server or Oracle.
+Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
 
 Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
 
 ## Quickstart
 
-Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has an Entity Framework Core provider configured. The recommended v0.6.0 path is convention-first: register DVault, declare the Data Vault model through EF Code-First metadata, save explicitly through `IDataVaultSaveService`, and read common satellite views through typed latest/as-of projector helpers.
+Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has an Entity Framework Core provider configured. v0.6.0 adds two additive usability paths: declare schema metadata through EF Code-First declarations when the bounded hub, hub-parent satellite, driving-key, and ordered hub-link surface fits the application model; use registry-backed metadata when one authoritative model should drive schema projection, explicit saves, and latest/as-of reads.
 
 ### Register DVault services
 
@@ -91,11 +91,13 @@ public sealed class Order {
 }
 ```
 
-Code-First metadata is additive. It does not ask callers to put DVault hash-key, load-timestamp, or record-source technical fields on domain entities, and it does not create a public Code-First-to-registry bridge.
+Code-First metadata is additive. It does not ask callers to put DVault hash-key, load-timestamp, or record-source technical fields on domain entities, and it does not create a public Code-First-to-registry bridge. In v0.6.0, callers that want the same public metadata object reused by schema, save, and read paths should use the registry-backed metadata path shown below.
 
 ### Save explicitly
 
 Persistence remains an explicit service boundary. `DataVaultSaveRequest` carries the load timestamp and record source, and callers choose when to write vault rows through `IDataVaultSaveService`. DVault does not intercept `SaveChanges` or hide persistence behind ordinary EF entity tracking.
+
+The raw request example below uses explicit metadata objects. Applications that want to avoid repeating those metadata declarations in loaders can opt the `DbContext` into a `DataVaultMetadataRegistry` with `UseDataVaultMetadata()` and then use registry-backed requests or the typed mapper helpers such as `SaveHubAsync(...)`, `SaveLinkAsync(...)`, and `SaveOrdinaryHubSatelliteAsync(...)`.
 
 ```csharp
 using DCoding.Data.DVault;
@@ -292,9 +294,9 @@ The provider-neutral projection stores driving-key columns immediately after the
 
 `DCoding.Data.DVault` contains the provider-neutral API, metadata model, naming conventions, stable hashing, read helpers, diagnostics, and EF fallback writer. Provider packages extend that base registration without changing the explicit save or read APIs.
 
-`DCoding.Data.DVault.Sqlite` registers the optimized SQLite set-based save strategy and registers the SQLite EF provider name for the existing `ApplyDataVaultMetadata(...)` capability-profile selection path. `DCoding.Data.DVault.Postgres` registers an optimized Npgsql/PostgreSQL strategy for clean contexts that use set-based `INSERT ... ON CONFLICT DO NOTHING` hub and link writes plus latest-state satellite checks. `DCoding.Data.DVault.SqlServer` registers an optimized SQL Server strategy for clean contexts with set-based unique-row inserts and latest-state satellite checks. `DCoding.Data.DVault.Oracle` registers an Oracle-gated insert-only strategy for clean `Oracle.EntityFrameworkCore` hub/link batches and declines unsupported shapes, including dirty tracked contexts and request batches that contain satellite operations, so the provider-neutral fallback writer handles them. `DCoding.Data.DVault.MySql` targets `Pomelo.EntityFrameworkCore.MySql`, registers that Pomelo provider name for the existing `ApplyDataVaultMetadata(...)` capability-profile selection path, and registers an optimized MySQL strategy for clean Pomelo contexts.
+`DCoding.Data.DVault.Sqlite` registers the optimized SQLite set-based save strategy. `DCoding.Data.DVault.Postgres` registers an optimized Npgsql/PostgreSQL strategy for clean contexts that use set-based `INSERT ... ON CONFLICT DO NOTHING` hub and link writes plus latest-state satellite checks. `DCoding.Data.DVault.SqlServer` registers an optimized SQL Server strategy for clean contexts with set-based unique-row inserts and latest-state satellite checks. `DCoding.Data.DVault.Oracle` registers an Oracle-gated insert-only strategy for clean `Oracle.EntityFrameworkCore` hub/link batches and declines unsupported shapes, including dirty tracked contexts and request batches that contain satellite operations, so the provider-neutral fallback writer handles them. `DCoding.Data.DVault.MySql` supports `Pomelo.EntityFrameworkCore.MySql` and `MySql.EntityFrameworkCore`, and registers an optimized MySQL strategy for clean supported MySQL contexts.
 
-Provider-specific save-strategy registration and provider-name capability-profile auto-registration are separate startup surfaces. The current startup extensions visibly auto-register provider names for SQLite and MySQL only. PostgreSQL, SQL Server, and Oracle still provide provider-specific save strategies and keep the provider-neutral fallback as the caller-visible safety net, but their startup extensions do not currently auto-register provider-name capability profiles.
+Provider-specific save-strategy registration and provider capability-profile selection are separate surfaces. The core package includes built-in capability profiles for the known SQLite, PostgreSQL, SQL Server, Oracle, Pomelo MySQL, and official MySQL EF provider names. Direct `ApplyDataVaultMetadata(...)` calls can pass an explicit `DataVaultProviderCapabilityProfile` when an application wants deterministic provider-specific schema projection at model-building time. Registry-backed `UseDataVaultMetadata(...)` remains the easiest path when one metadata source should drive schema, save, and read usage.
 
 ### Migration from v0.5
 
@@ -393,13 +395,13 @@ Postgres integration tests are opt-in and are skipped by default. Normal `dotnet
 To run the Postgres-backed integration tests, provide a developer-managed PostgreSQL database connection string in `DVAULT_TEST_POSTGRES_CONNECTION_STRING`:
 
 ```sh
-DVAULT_TEST_POSTGRES_CONNECTION_STRING='Host=localhost;Port=5432;Database=dvault_tests;Username=dvault;Password=local-secret' dotnet test DVault.slnx --nologo
+DVAULT_TEST_POSTGRES_CONNECTION_STRING='Host=localhost;Port=5432;Database=dvault_tests;Username=dvault;Password=local-secret' dotnet test DVault.slnx --nologo -p:DVAULT_TEST_POSTGRES_CONNECTION_STRING=Configured
 ```
 
 To select only the live Postgres integration category, use the same configured connection string with the provider category filter:
 
 ```sh
-DVAULT_TEST_POSTGRES_CONNECTION_STRING='Host=localhost;Port=5432;Database=dvault_tests;Username=dvault;Password=local-secret' dotnet test DVault.slnx --nologo --filter "Category=ProviderIntegration.ExternalOptIn&Provider=Postgres"
+DVAULT_TEST_POSTGRES_CONNECTION_STRING='Host=localhost;Port=5432;Database=dvault_tests;Username=dvault;Password=local-secret' dotnet test DVault.slnx --nologo --filter "Category=ProviderIntegration.ExternalOptIn&Provider=Postgres" -p:DVAULT_TEST_POSTGRES_CONNECTION_STRING=Configured
 ```
 
 DVault does not provision Docker containers or databases for these tests. The configured database must already exist, and the configured user must be allowed to create and drop temporary schemas. Keep credentials in local environment variables or another untracked secret store, not in repository files.
@@ -411,7 +413,7 @@ SQL Server integration tests are opt-in and are skipped by default. Normal `dotn
 To run the SQL Server smoke lane, provide a developer-managed SQL Server database connection string in `DVAULT_TEST_SQLSERVER_CONNECTION_STRING` and run the representative repo-root command:
 
 ```sh
-DVAULT_TEST_SQLSERVER_CONNECTION_STRING='Server=localhost;Database=dvault_tests;User Id=dvault;Password=local-secret;TrustServerCertificate=True' dotnet test DVault.slnx --filter FullyQualifiedName~SqlServer
+DVAULT_TEST_SQLSERVER_CONNECTION_STRING='Server=localhost;Database=dvault_tests;User Id=dvault;Password=local-secret;TrustServerCertificate=True' dotnet test DVault.slnx --filter FullyQualifiedName~SqlServer -p:DVAULT_TEST_SQLSERVER_CONNECTION_STRING=Configured
 ```
 
 The configured SQL Server principal must be able to create and drop temporary `dvault_test_*` schemas and tables in the target database. The tests create isolated schemas, validate one hub save, one link save, and one satellite save through the optimized SQL Server provider strategy, then drop the generated schema. Missing `DVAULT_TEST_SQLSERVER_CONNECTION_STRING` produces a deterministic skip message instead of loading the conditional SQL Server provider package.
@@ -425,13 +427,13 @@ Oracle integration tests are opt-in and are skipped by default. Normal `dotnet t
 To run the Oracle-backed smoke test, provide a developer-managed Oracle database connection string in `DVAULT_TEST_ORACLE_CONNECTION_STRING`:
 
 ```sh
-DVAULT_TEST_ORACLE_CONNECTION_STRING='User Id=dvault;Password=local-secret;Data Source=localhost:1521/FREEPDB1' dotnet test DVault.slnx --nologo
+DVAULT_TEST_ORACLE_CONNECTION_STRING='User Id=dvault;Password=local-secret;Data Source=localhost:1521/FREEPDB1' dotnet test DVault.slnx --nologo -p:DVAULT_TEST_ORACLE_CONNECTION_STRING=Configured
 ```
 
 To select only the live Oracle integration category, use the same configured connection string with the provider category filter:
 
 ```sh
-DVAULT_TEST_ORACLE_CONNECTION_STRING='User Id=dvault;Password=local-secret;Data Source=localhost:1521/FREEPDB1' dotnet test DVault.slnx --nologo --filter "Category=ProviderIntegration.ExternalOptIn&Provider=Oracle"
+DVAULT_TEST_ORACLE_CONNECTION_STRING='User Id=dvault;Password=local-secret;Data Source=localhost:1521/FREEPDB1' dotnet test DVault.slnx --nologo --filter "Category=ProviderIntegration.ExternalOptIn&Provider=Oracle" -p:DVAULT_TEST_ORACLE_CONNECTION_STRING=Configured
 ```
 
 DVault does not provision Docker containers, Oracle databases, or Oracle users for these tests. The configured database and user must already exist, and the configured user must be allowed to create and drop temporary tables. Keep credentials in local environment variables or another untracked secret store, not in repository files.
@@ -443,16 +445,16 @@ MySQL integration tests are opt-in and are skipped by default. Normal `dotnet te
 To run the MySQL-backed integration test, provide a developer-managed MySQL database connection string in `DVAULT_TEST_MYSQL_CONNECTION_STRING`:
 
 ```sh
-DVAULT_TEST_MYSQL_CONNECTION_STRING='Server=localhost;Port=3306;Database=dvault_tests;User=dvault;Password=local-secret' dotnet test DVault.slnx --nologo
+DVAULT_TEST_MYSQL_CONNECTION_STRING='Server=localhost;Port=3306;Database=dvault_tests;User=dvault;Password=local-secret;AllowPublicKeyRetrieval=True;SslMode=Disabled' dotnet test DVault.slnx --nologo -p:DVAULT_TEST_MYSQL_CONNECTION_STRING=Configured
 ```
 
 To select only the live MySQL integration category, use the same configured connection string with the provider category filter:
 
 ```sh
-DVAULT_TEST_MYSQL_CONNECTION_STRING='Server=localhost;Port=3306;Database=dvault_tests;User=dvault;Password=local-secret' dotnet test DVault.slnx --nologo --filter "Category=ProviderIntegration.ExternalOptIn&Provider=MySQL"
+DVAULT_TEST_MYSQL_CONNECTION_STRING='Server=localhost;Port=3306;Database=dvault_tests;User=dvault;Password=local-secret;AllowPublicKeyRetrieval=True;SslMode=Disabled' dotnet test DVault.slnx --nologo --filter "Category=ProviderIntegration.ExternalOptIn&Provider=MySQL" -p:DVAULT_TEST_MYSQL_CONNECTION_STRING=Configured
 ```
 
-The integration project conditionally restores `Pomelo.EntityFrameworkCore.MySql` only when `DVAULT_TEST_MYSQL_CONNECTION_STRING` is non-empty. When running the live MySQL path, keep the variable set for restore, build, and test so the conditional provider package is available. DVault does not provision Docker containers or databases for these tests. The configured database must already exist, and the configured user must be allowed to create and drop the smoke-test table. Keep credentials in local environment variables or another untracked secret store, not in repository files.
+The integration project conditionally restores `MySql.EntityFrameworkCore` only when the MySQL opt-in property is non-empty. When running the live MySQL path, keep the environment variable set for test execution and pass the non-secret MSBuild marker property shown above so the conditional provider package is available during restore and build. DVault does not provision Docker containers or databases for these tests. The configured database must already exist, and the configured user must be allowed to create and drop the smoke-test table. Keep credentials in local environment variables or another untracked secret store, not in repository files.
 
 ## License
 

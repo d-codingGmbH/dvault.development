@@ -8,6 +8,15 @@ namespace DCoding.Data.DVault;
 
 internal static class DataVaultProviderCapabilityProfileSelection {
   private static readonly object SyncRoot = new();
+  private static readonly IReadOnlyDictionary<string, DataVaultProviderCapabilityProfile> BuiltInProfilesByProviderName =
+      new Dictionary<string, DataVaultProviderCapabilityProfile>(StringComparer.Ordinal) {
+        ["Microsoft.EntityFrameworkCore.Sqlite"] = DataVaultProviderCapabilityProfiles.Sqlite,
+        ["Microsoft.EntityFrameworkCore.SqlServer"] = DataVaultProviderCapabilityProfiles.SqlServer,
+        ["Npgsql.EntityFrameworkCore.PostgreSQL"] = DataVaultProviderCapabilityProfiles.Postgres,
+        ["Oracle.EntityFrameworkCore"] = DataVaultProviderCapabilityProfiles.Oracle,
+        ["MySql.EntityFrameworkCore"] = DataVaultProviderCapabilityProfiles.MySql,
+        ["Pomelo.EntityFrameworkCore.MySql"] = DataVaultProviderCapabilityProfiles.MySql,
+      };
   private static readonly Dictionary<string, DataVaultProviderCapabilityProfile> ProfilesByProviderName = new(StringComparer.Ordinal);
 
   public static DataVaultProviderCapabilityProfile Select(ModelBuilder modelBuilder) {
@@ -38,6 +47,10 @@ internal static class DataVaultProviderCapabilityProfileSelection {
           return providerCapabilities;
         }
       }
+
+      if (BuiltInProfilesByProviderName.TryGetValue(providerName, out var builtInProviderCapabilities)) {
+        return builtInProviderCapabilities;
+      }
     }
 
     return DataVaultProviderCapabilityProfiles.Sqlite;
@@ -48,7 +61,13 @@ internal static class DataVaultProviderCapabilityProfileSelection {
       out DataVaultProviderCapabilityProfile? providerCapabilities) {
     if (!string.IsNullOrWhiteSpace(providerName)) {
       lock (SyncRoot) {
-        return ProfilesByProviderName.TryGetValue(providerName, out providerCapabilities);
+        if (ProfilesByProviderName.TryGetValue(providerName, out providerCapabilities)) {
+          return true;
+        }
+      }
+
+      if (BuiltInProfilesByProviderName.TryGetValue(providerName, out providerCapabilities)) {
+        return true;
       }
     }
 
@@ -88,7 +107,10 @@ internal static class DataVaultProviderCapabilityProfileSelection {
 
   private static IReadOnlyCollection<string> GetRegisteredProviderNames() {
     lock (SyncRoot) {
-      return ProfilesByProviderName.Keys.ToArray();
+      return ProfilesByProviderName.Keys
+          .Concat(BuiltInProfilesByProviderName.Keys)
+          .Distinct(StringComparer.Ordinal)
+          .ToArray();
     }
   }
 
@@ -126,10 +148,23 @@ internal static class DataVaultProviderCapabilityProfileSelection {
       }
 
       var assemblyName = convention.GetType().Assembly.GetName().Name;
-      if (assemblyName is not null && registeredProviderNames.Contains(assemblyName)) {
-        yield return assemblyName;
+      if (assemblyName is null) {
+        continue;
+      }
+
+      foreach (var providerName in registeredProviderNames) {
+        if (ProviderNameMatchesAssemblyName(providerName, assemblyName)) {
+          yield return providerName;
+          break;
+        }
       }
     }
+  }
+
+  private static bool ProviderNameMatchesAssemblyName(string providerName, string assemblyName) {
+    return string.Equals(assemblyName, providerName, StringComparison.Ordinal) ||
+        assemblyName.StartsWith(providerName + ".", StringComparison.Ordinal) ||
+        providerName.StartsWith(assemblyName + ".", StringComparison.Ordinal);
   }
 
   private static string? TryGetStringMemberValue(object instance, string memberName) {

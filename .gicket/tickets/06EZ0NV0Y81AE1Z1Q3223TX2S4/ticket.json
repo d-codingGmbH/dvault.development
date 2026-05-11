@@ -3,7 +3,7 @@
   "ticket-id": "06EZ0NV0Y81AE1Z1Q3223TX2S4",
   "ticket-type": "task",
   "title": "Task: Define bridge metadata for many-to-many and hierarchy traversal",
-  "revision": "06EZSCMCCHN90A817W8TS5Y17C",
+  "revision": "06EZSK9Q423EMQ538S99AGW378",
   "status": "done",
   "labels": [
     "area/api",
@@ -17,5 +17,5 @@
   "milestoneId": "06EZ0MF8WZ2NVR4N230PKSQKPG",
   "releaseId": "06EZ0MF64VMB5C8ZJK2KJT4W2C",
   "created-at": "2026-05-04T00:15:51.7129957Z",
-  "updated-at": "2026-05-06T09:50:53.0288278Z"
+  "updated-at": "2026-05-06T10:20:00.6720000Z"
 }
