@@ -1,96 +1,61 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Verified the ticket store, relation events, completed child tickets, README/release docs, diagnostics source/tests, and runnable quickstart examples. The parent story is an aggregation/closure refinement: all scoped work is already represented by persisted done child tickets, so no new child tickets, relation edits, attachments, or planning documents were materialized.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Diagnostics scope is delivered by child 06F0MED4P7HMBDZVMPWQZ5A7PC: IDataVaultDiagnosticsService exposes structured validation/explain output for metadata models, registries, Code-First declarations, and DbContexts, with save-strategy diagnostics request-bound and NotEvaluated when no save request is supplied.
 - Starter examples scope is delivered by child 06F0MEDBFZ25YA1M7RJ71Z7ZCM: examples/ contains SQLite and PostgreSQL quickstarts using one shared registry-backed DataVaultMetadataModel, explicit IDataVaultSaveService writes, and typed latest/as-of reads; PostgreSQL uses DVAULT_TEST_POSTGRES_CONNECTION_STRING and exits successfully with the documented skip message when absent.
 - README.md and docs/releases/v0.6.0.md are delivered by child 06F0MEDJC732GDD77H60R259P0 and now document the v0.6.0 usability flow, including Code-First as the recommended bounded happy path and metadata-first/registry APIs as compatible advanced/shared-metadata paths.
 - The repository already fixes the v1 defaults for this story: Code-First covers hubs, hub-parent satellites, multi-active driving keys, and ordered hub links; registry-backed metadata remains the authoritative quickstart/shared-metadata path; no public Code-First-to-registry bridge is part of this release.
 
-### Scope In
+Scope In
 - Parent-level aggregation of completed diagnostics, examples, and documentation work for the v0.6.0 developer usability story.
 - Diagnostics/explain output that lets callers inspect generated tables/entities, columns/properties, indexes, constraints, primary keys, parent references, metadata source, provider capability/behavior profile, load-timestamp storage, and request-bound save-strategy selection/fallback.
 - Runnable SQLite local quickstart and PostgreSQL quickstart with environment-variable configuration, no committed secrets, explicit saves, and typed latest/as-of reads over a small history flow.
 - README and release documentation that compare the recommended bounded Code-First path with metadata-first/registry APIs and explain when to use low-level/raw APIs versus convenience typed helpers.
 
-### Scope Out
+Scope Out
 - New parent-level product-code implementation; the story is already split into completed child implementation/documentation tickets.
 - CI-driven package publishing automation, final NuGet publication, release tag creation, and release-operator approval.
 - Full database provisioning automation for every provider or mandatory external PostgreSQL infrastructure.
 - Public Code-First-to-registry conversion API, model-first import/export specs, PIT-backed read APIs, bridge traversal helpers, PIT/bridge row maintenance, provider-specific read optimizations, and additional provider quickstarts.
 - CLI diagnostics command implementation or provider optimization behavior changes beyond the delivered structured diagnostics payload.
 
-## Acceptance Criteria
-- A user can inspect generated Data Vault structure and provider/runtime diagnostics through the structured diagnostics API, including table/entity shape, ordered properties, keys, indexes, constraints, provider profile, provider behavior, and save-strategy status/candidates when a concrete save request is supplied.
-- Diagnostics validation/explain calls without a save request return validation and explain information while reporting save-strategy status as NotEvaluated rather than inventing a dispatch result.
-- The SQLite quickstart builds and runs from the documented command, creates its schema with no external infrastructure, writes at least two profile versions through the explicit save service, and prints visibly distinct latest and as-of typed read results.
-- The PostgreSQL quickstart builds from the documented command, uses AddDVaultPostgres plus the same registry-backed UseDataVaultMetadata path as SQLite, reads only DVAULT_TEST_POSTGRES_CONNECTION_STRING for connection input, and exits successfully with the documented skip message when the variable is missing.
-- README.md and docs/releases/v0.6.0.md document the recommended Code-First happy path, preserve metadata-first/registry-backed usage for shared metadata and advanced cases, identify low-level/raw escape hatches versus typed convenience helpers, and list the v0.6.0 limitations.
-- The existing parentOf child tickets remain linked and completed, so the parent story can be reviewed as an aggregation of those delivered surfaces.
-
-## Definition of Done
-- No unresolved parent-level architectural or scope decision remains after aggregating the done child tickets and current repository evidence.
-- Diagnostics public API, structured DTO shape, provider profile coverage, fallback-cause coverage, and public API snapshots are represented in the repository tests.
-- Example-local docs and root README expose exact build/run commands and prerequisites without credentials, absolute machine paths, or repository-external assumptions.
-- Release notes cover the six-package v0.6.0 scope, highlights, compatibility notes, known limitations, and validation boundary.
-- No new child ticket, relation update, planning document, or attachment is required for this refinement pass.
-
-## Implementation Notes
-- Treat this ticket as the parent aggregation story for completed children 06F0MED4P7HMBDZVMPWQZ5A7PC, 06F0MEDBFZ25YA1M7RJ71Z7ZCM, and 06F0MEDJC732GDD77H60R259P0; do not reimplement child work unless a new regression is found.
-- IDataVaultDiagnosticsService lives in DCoding.Data.DVault and is registered by AddDVault; provider-specific save-strategy evaluation is request-bound to the same explicit save inputs used by IDataVaultSaveService.
-- Quickstarts intentionally use shared registry-backed metadata through AddDVault(options => options.UseMetadataModel(...)) plus UseDataVaultMetadata(); only provider wiring and connection bootstrap differ between SQLite and PostgreSQL.
-- The bounded Code-First default remains hub, hub-parent satellite, multi-active driving-key opt-in, and ordered hub-link declarations; unsupported naming, link-parent satellite, bridge/PIT, or shared-registry scenarios stay on metadata-first/advanced paths for v0.6.0.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the v0.6.0 tag exists, the release operator should rerun the manual NuGet publication checklist from the tagged checkout and record final audited 0.6.0 package evidence before publication.
 - Should a future CLI wrapper expose the same structured diagnostics payload directly, or should CLI shaping remain outside the core library?
 - Should a later release add a public Code-First-to-DataVaultMetadataModel/DataVaultMetadataRegistry bridge for examples or shared metadata scenarios?
 - Should optional CI or a documented local harness later exercise the PostgreSQL quickstart automatically when a developer-managed connection string is available?
 - Should later tickets add additional provider quickstarts after the SQLite/PostgreSQL baseline is proven useful?
 
-## Risks
+Risks
 - Final package publication remains outside this story and still depends on release-operator validation and approval.
 - Diagnostics fallback-cause reporting can drift from runtime dispatch behavior if provider strategy gates change without updating shared tests and docs.
 - Reviewers may confuse README v0.6.0 install guidance with pre-tag MinVer artifact evidence; the completed docs child separates those concerns, but the distinction should remain visible through release validation.
 - Provider capability auto-registration and provider-specific save-strategy registration are separate surfaces; future provider docs should keep that distinction explicit.
 
-## Split Recommendations
+Split recommendations
 - No new split is recommended. The story already has the needed persisted child split and all three children are done: diagnostics 06F0MED4P7HMBDZVMPWQZ5A7PC, quickstart examples 06F0MEDBFZ25YA1M7RJ71Z7ZCM, and README/release docs 06F0MEDJC732GDD77H60R259P0.
 - Future work should be split only for concrete new scope such as CLI diagnostics, Code-First-to-registry bridging, additional provider quickstarts, or post-tag package publication defects; none blocks this PO-critic handoff.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 5
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Goal
-
-Help users understand what DVault generated, which strategy is active, and how to start from a working sample without reading the whole test suite.
-
-## Scope In
-
-- Model validation/explain output.
-- Runnable starter examples for Code-First and typed workflows.
-- README/release docs that compare metadata-first and Code-First paths.
-
-## Scope Out
-
-- CI-driven package publishing automation.
-- Full database provisioning automation for every provider.
-
-## Acceptance Criteria
-
-- Users can inspect generated tables, columns, indexes, constraints, provider profile, and selected strategies.
-- Examples can be run locally with minimal setup and no secrets committed.
-- Documentation states when to use low-level metadata APIs versus convenience APIs.
+Run mode
+- apply: planned updates are applied after this comment
