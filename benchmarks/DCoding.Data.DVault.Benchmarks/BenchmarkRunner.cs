@@ -229,6 +229,12 @@ internal static class BenchmarkRunner {
         new OrderProductPlainEfBenchmark(),
         new OrderProductDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
         new OrderProductDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.SqliteOptimized, options.LoadTimestampStorage),
+        new LatestSatelliteReadBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
+        new LatestSatelliteReadBenchmark(provider, DataVaultBenchmarkStrategy.SqliteOptimized, options.LoadTimestampStorage),
+        new PitAsOfReadBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
+        new PitAsOfReadBenchmark(provider, DataVaultBenchmarkStrategy.SqliteOptimized, options.LoadTimestampStorage),
+        new BridgeTraversalReadBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
+        new BridgeTraversalReadBenchmark(provider, DataVaultBenchmarkStrategy.SqliteOptimized, options.LoadTimestampStorage),
     ];
   }
 
@@ -262,6 +268,12 @@ internal static class BenchmarkRunner {
             options.LoadTimestampStorage),
         new OrderProductDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
         new OrderProductDataVaultBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage),
+        new LatestSatelliteReadBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
+        new LatestSatelliteReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage),
+        new PitAsOfReadBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
+        new PitAsOfReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage),
+        new BridgeTraversalReadBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
+        new BridgeTraversalReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage),
     ];
   }
 

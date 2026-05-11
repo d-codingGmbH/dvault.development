@@ -1,93 +1,57 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the benchmark ticket around one bounded goal: add comparable read-performance benchmark coverage for latest satellite, PIT as-of, and bridge traversal reads using the existing provider package/read-model baseline. The ticket is ready for PO-critic because current docs and source establish the provider family, read-service contracts, and deterministic skip posture.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The v1 provider matrix is the visible DVault provider package family: SQLite, MySQL, Postgres, SQL Server, and Oracle. SQLite is the required local baseline; the others may run when configured or be skipped deterministically with the missing configuration named in output.
 - The benchmarks are for read baselines only and should not implement provider-specific read optimizations, PIT refresh, bridge maintenance, or persistent database provisioning.
 - Latest satellite reads should benchmark the existing IDataVaultReadService latest/as-of satellite path. PIT reads should follow the DataVaultPitAsOfReadRequest/DataVaultPitReadRecord planning contract. Bridge reads should follow the existing provider-neutral DataVaultBridgeReadRequest/DataVaultBridgeReadRecord pipeline.
 
-### Scope In
+Scope In
 - Add or extend benchmark scenarios for latest satellite read performance using the established read-service path.
 - Add PIT as-of read benchmark coverage against the planned v1 PIT read contract shape, using provider-neutral seeded data suitable for repeatable measurement.
 - Add bridge traversal read benchmark coverage for the existing provider-neutral bridge read shape, including hierarchy depth behavior where supported by the benchmark fixture.
 - Run each scenario across the visible provider package matrix when local configuration is present, and emit deterministic skip rows when configuration is absent.
 - Summarize results so baseline comparisons and optimization candidates are visible per scenario and provider.
 
-### Scope Out
+Scope Out
 - Provider-specific read optimization implementation.
 - PIT refresh orchestration, bridge traversal maintenance, or new read-model semantics beyond the documented read contracts.
 - Provisioning secrets, containers, cloud databases, or persistent local database state.
 - Changing public API contracts except for benchmark-only plumbing needed to exercise existing or already-planned read paths.
 - Creating subtickets or expanding this into release posture/documentation alignment work.
 
-## Acceptance Criteria
-- Benchmark output includes rows for latest satellite, PIT as-of, and bridge traversal scenarios.
-- The provider matrix covers SQLite, MySQL, Postgres, SQL Server, and Oracle, with each provider either measured or skipped with the exact missing configuration named.
-- SQLite latest satellite read coverage remains runnable without external secrets as the local baseline.
-- Where a classic/provider-neutral or previously expected baseline exists, benchmark output labels it clearly enough to compare later optimized implementations against it.
-- Results are summarized in a human-readable artifact or console output that identifies scenario, provider, configuration/skip reason, and measured baseline values.
-
-## Definition of Done
-- Benchmarks build with the solution in Release configuration.
-- At least one deterministic local smoke run proves the benchmark entry point can execute without external provider secrets.
-- Skipped-provider behavior is covered by deterministic configuration detection rather than runtime crashes or ambiguous no-op output.
-- Benchmark README or equivalent benchmark documentation explains how to run the read benchmarks, how provider configuration is discovered, and how skips are reported.
-- No provider-specific read optimization behavior is added as part of this ticket.
-
-## Implementation Notes
-- Prefer extending the existing benchmark project rather than introducing a second benchmark host.
-- Use the visible provider package set as the v1 provider matrix: SQLite, MySQL, Postgres, SQL Server, and Oracle.
-- Keep benchmark fixtures disposable and repeatable; avoid relying on state left behind by previous runs.
-- For PIT and bridge scenarios, use the documented provider-neutral metadata/read contracts as the measurement target. Unsupported provider-specific physical behavior should be represented as benchmark scope limitations, not as optimization work.
-- Provider configuration checks should produce exact skip reasons such as the missing connection-string setting or provider prerequisite, so CI/local output remains actionable.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After baseline numbers exist, decide which read path and provider combinations should receive provider-specific optimization tickets first.
 - Decide later whether benchmark artifacts should be archived in release notes or CI build artifacts for trend comparison.
 - Decide later whether non-SQLite providers should gain standardized local container profiles for easier manual benchmarking.
 
-## Risks
+Risks
 - Non-SQLite providers may produce sparse measured data on machines without local configuration, so the summary must distinguish measured results from deterministic skips.
 - PIT and bridge read baselines are provider-neutral and may expose fixture/setup costs if the benchmark does not separate seeding from measured operations.
 - Provider differences in timestamp storage or query translation can make raw numbers hard to compare unless scenario labels and fixture sizes are consistent.
 
-## Split Recommendations
+Split recommendations
 - none
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 5
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Goal
-
-Establish comparable read-performance baselines before implementing provider-specific read optimizations.
-
-## Scope In
-
-- Latest satellite read benchmark.
-- PIT as-of read benchmark.
-- Bridge traversal read benchmark.
-- Provider matrix for all providers that can be run locally or skipped deterministically.
-
-## Scope Out
-
-- Implementing optimizations.
-- Provisioning secrets or persistent local database state.
-
-## Acceptance Criteria
-
-- Benchmark output includes classic or expected baselines where meaningful.
-- Skipped providers explain exactly which configuration is missing.
-- Results are summarized so optimization choices are visible.
+Run mode
+- apply: planned updates are applied after this comment

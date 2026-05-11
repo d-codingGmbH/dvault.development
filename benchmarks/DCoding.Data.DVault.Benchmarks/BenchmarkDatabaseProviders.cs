@@ -154,9 +154,14 @@ internal static class BenchmarkDatabaseProviders {
 
 internal abstract class SharedExternalBenchmarkDatabase : IBenchmarkDatabase {
   private static readonly string[] ProducedTableNames = [
+      "BridgeSalesRegionHierarchy",
+      "PitCustomerProfileStatus",
       "SatOrderProductFulfillment",
-      "LinkOrderProduct",
+      "SatCustomerStatus",
       "SatCustomerProfile",
+      "LinkSalesRegionParentChild",
+      "LinkOrderProduct",
+      "HubSalesRegion",
       "HubOrder",
       "HubProduct",
       "HubCustomer",

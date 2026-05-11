@@ -3,20 +3,19 @@
   "ticket-id": "06F0MEJ0NE80R7CNS982S3PKVR",
   "ticket-type": "task",
   "title": "Task: Benchmark latest, PIT, and bridge reads across providers",
-  "revision": "06F0QH3SPXTJE3M0RXFKCV0P6G",
-  "status": "todo",
+  "revision": "06F1HRX8M3WD6HQZ20N6Q6RYAR",
+  "status": "done",
   "labels": [
-    "type/task",
     "area/benchmarks",
     "area/performance",
-    "area/read-models",
     "area/provider-support",
+    "area/read-models",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F0ME83T78Z32RA39SD0JT85W",
   "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
   "created-at": "2026-05-09T00:54:10.5807461Z",
-  "updated-at": "2026-05-09T08:04:46.1350784Z"
+  "updated-at": "2026-05-11T21:13:53.5689900Z"
 }

@@ -101,6 +101,33 @@ internal static class DataVaultBenchmarkHelpers {
           DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal),
     };
   }
+
+  public static object ToStoredTimestamp(
+      DataVaultLoadTimestampStorage loadTimestampStorage,
+      DateTimeOffset timestamp) {
+    var utcTimestamp = timestamp.ToUniversalTime();
+    return loadTimestampStorage switch {
+      DataVaultLoadTimestampStorage.Iso8601UtcText => utcTimestamp.ToString("O", CultureInfo.InvariantCulture),
+      DataVaultLoadTimestampStorage.UtcTicks => utcTimestamp.UtcDateTime.Ticks,
+      _ => utcTimestamp,
+    };
+  }
+
+  public static object ToStoredTimestamp(
+      DataVaultProviderCapabilityProfile providerCapabilities,
+      DataVaultLogicalPropertyKind logicalPropertyKind,
+      DateTimeOffset timestamp) {
+    ArgumentNullException.ThrowIfNull(providerCapabilities);
+
+    var mapping = providerCapabilities.GetRequiredTypeMapping(logicalPropertyKind);
+    var utcTimestamp = timestamp.ToUniversalTime();
+    return mapping.ValueFormat switch {
+      DataVaultProviderValueFormat.UtcTicks => utcTimestamp.UtcDateTime.Ticks,
+      DataVaultProviderValueFormat.Iso8601UtcText when mapping.ModelClrType == typeof(string) =>
+          utcTimestamp.ToString("O", CultureInfo.InvariantCulture),
+      _ => utcTimestamp,
+    };
+  }
 }
 
 internal enum DataVaultBenchmarkStrategy {

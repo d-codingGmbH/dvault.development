@@ -86,6 +86,42 @@ public sealed class BenchmarkScenarioExecutionTests {
           "sqlite-optimized-dvault",
           "1 order-product relationship, 2 fulfillment states",
           "50% repeat-change history"),
+      CompletedSqlite(
+          "latest-satellite-read",
+          "dvault-adddvault-fallback",
+          "provider-neutral-dvault-fallback",
+          "100 customers, 10 profile states each",
+          "90% repeat-change history latest read"),
+      CompletedSqlite(
+          "latest-satellite-read",
+          "dvault-adddvaultsqlite-optimized",
+          "sqlite-optimized-dvault",
+          "100 customers, 10 profile states each",
+          "90% repeat-change history latest read"),
+      CompletedSqlite(
+          "pit-as-of-read",
+          "dvault-adddvault-fallback",
+          "provider-neutral-dvault-fallback",
+          "100 customers, 100 PIT rows, 2 satellite segments",
+          "as-of read after latest profile/status snapshots"),
+      CompletedSqlite(
+          "pit-as-of-read",
+          "dvault-adddvaultsqlite-optimized",
+          "sqlite-optimized-dvault",
+          "100 customers, 100 PIT rows, 2 satellite segments",
+          "as-of read after latest profile/status snapshots"),
+      CompletedSqlite(
+          "bridge-traversal-read",
+          "dvault-adddvault-fallback",
+          "provider-neutral-dvault-fallback",
+          "1 hierarchy ancestor with 100 descendant bridge rows",
+          "maximum depth 3 of 5"),
+      CompletedSqlite(
+          "bridge-traversal-read",
+          "dvault-adddvaultsqlite-optimized",
+          "sqlite-optimized-dvault",
+          "1 hierarchy ancestor with 100 descendant bridge rows",
+          "maximum depth 3 of 5"),
       SkippedPostgres(
           "customer-profile-history",
           "dvault-adddvault-fallback",
@@ -134,6 +170,42 @@ public sealed class BenchmarkScenarioExecutionTests {
           "postgres-optimized-dvault",
           "1 order-product relationship, 2 fulfillment states",
           "50% repeat-change history"),
+      SkippedPostgres(
+          "latest-satellite-read",
+          "dvault-adddvault-fallback",
+          "provider-neutral-dvault-fallback",
+          "100 customers, 10 profile states each",
+          "90% repeat-change history latest read"),
+      SkippedPostgres(
+          "latest-satellite-read",
+          "dvault-adddvaultpostgres-optimized",
+          "postgres-optimized-dvault",
+          "100 customers, 10 profile states each",
+          "90% repeat-change history latest read"),
+      SkippedPostgres(
+          "pit-as-of-read",
+          "dvault-adddvault-fallback",
+          "provider-neutral-dvault-fallback",
+          "100 customers, 100 PIT rows, 2 satellite segments",
+          "as-of read after latest profile/status snapshots"),
+      SkippedPostgres(
+          "pit-as-of-read",
+          "dvault-adddvaultpostgres-optimized",
+          "postgres-optimized-dvault",
+          "100 customers, 100 PIT rows, 2 satellite segments",
+          "as-of read after latest profile/status snapshots"),
+      SkippedPostgres(
+          "bridge-traversal-read",
+          "dvault-adddvault-fallback",
+          "provider-neutral-dvault-fallback",
+          "1 hierarchy ancestor with 100 descendant bridge rows",
+          "maximum depth 3 of 5"),
+      SkippedPostgres(
+          "bridge-traversal-read",
+          "dvault-adddvaultpostgres-optimized",
+          "postgres-optimized-dvault",
+          "1 hierarchy ancestor with 100 descendant bridge rows",
+          "maximum depth 3 of 5"),
   ];
 
   [Fact]
@@ -159,9 +231,12 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Contains(
         "1 order hub, 1 product hub, 1 link, and 2 fulfillment satellite rows for O-1000/SKU-COFFEE",
         text);
-    Assert.Contains("Recorded 44 benchmark report rows.", text);
-    Assert.Contains("Executed 12 benchmark report rows.", text);
-    Assert.Contains("Skipped 32 benchmark report rows.", text);
+    Assert.Contains("100 latest profile satellite rows read from 1000 seeded profile states", text);
+    Assert.Contains("100 PIT as-of rows read across profile and status satellite snapshots", text);
+    Assert.Contains("60 bridge traversal rows read from 100 seeded hierarchy rows", text);
+    Assert.Contains("Recorded 74 benchmark report rows.", text);
+    Assert.Contains("Executed 18 benchmark report rows.", text);
+    Assert.Contains("Skipped 56 benchmark report rows.", text);
   }
 
   [Fact]
@@ -205,7 +280,7 @@ public sealed class BenchmarkScenarioExecutionTests {
 
       var csv = await File.ReadAllTextAsync(csvPath).ConfigureAwait(false);
       var csvLines = csv.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
-      Assert.Equal(45, csvLines.Length);
+      Assert.Equal(75, csvLines.Length);
       Assert.Equal(
           "scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,persistedOutcome",
           csvLines[0]);
@@ -232,7 +307,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.False(string.IsNullOrWhiteSpace(context.GetProperty("dotNetRuntimeVersion").GetString()));
 
       var results = json.RootElement.GetProperty("results").EnumerateArray().ToArray();
-      Assert.Equal(44, results.Length);
+      Assert.Equal(74, results.Length);
 
       foreach (var expectedRow in ExpectedRows) {
         var matchingResults = results.Where(result =>
