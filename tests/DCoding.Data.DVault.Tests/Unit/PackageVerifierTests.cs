@@ -9,6 +9,7 @@ namespace DCoding.Data.DVault.Tests.Unit;
 public sealed class PackageVerifierTests {
   private const string CorePackageId = "DCoding.Data.DVault";
   private const string PackageVersion = "1.2.3";
+  private const string ReadmeInstallVersion = "0.6.0";
   private const string TargetFramework = "net10.0";
   private const string Authors = "d-coding GmbH";
   private const string RepositoryUrl = "https://github.com/d-codingGmbH/dvault.development.git";
@@ -276,8 +277,10 @@ public sealed class PackageVerifierTests {
       WriteTextEntry(
           archive,
           "README.md",
-          "dotnet add package DCoding.Data.DVault --version 0.5.0\n\n" +
-          "dotnet add package DCoding.Data.DVault.Sqlite --version 0.5.0\n");
+          string.Join(
+              "\n",
+              PackageDefinitions.Select(package =>
+                  "dotnet add package " + package.Id + " --version " + ReadmeInstallVersion)) + "\n");
     }
 
     if (options.IncludeXmlDocumentation) {

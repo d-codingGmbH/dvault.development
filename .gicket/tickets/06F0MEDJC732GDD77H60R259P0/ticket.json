@@ -3,20 +3,19 @@
   "ticket-id": "06F0MEDJC732GDD77H60R259P0",
   "ticket-type": "task",
   "title": "Task: Update README and release docs for v0.6.0 usability flow",
-  "revision": "06F0QH0QGP2XZ6BYBBCFFCJ1XC",
-  "status": "todo",
+  "revision": "06F1DF38R76PSBX99Z5JH2YCHM",
+  "status": "done",
   "labels": [
-    "type/task",
-    "area/docs",
-    "area/release",
     "area/developer-experience",
+    "area/docs",
     "area/packaging",
+    "area/release",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F0ME828FPDN00QBA6HT6S0FR",
   "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
   "created-at": "2026-05-09T00:53:34.1584287Z",
-  "updated-at": "2026-05-09T08:04:20.9972480Z"
+  "updated-at": "2026-05-11T11:11:46.8813245Z"
 }

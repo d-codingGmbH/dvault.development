@@ -1,0 +1,32 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `2` selected relation flow(s) for source ticket `06F0MEDJC732GDD77H60R259P0`.
+- Role `dev` completed with outcome `dev-workflow-returned` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `6`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `54c21314129f4ce3aa9a23e0c603d566`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06F0MEHDFYCVK42FFY77FXHXBR` via `blocks` path `06F0MEDJC732GDD77H60R259P0 -> 06F0MEHDFYCVK42FFY77FXHXBR`
+- [queued] `blocked-follow-up-comment` -> `06F0MEE8T9PKPKQH8EPWNQ2CRW` via `blocks` path `06F0MEDJC732GDD77H60R259P0 -> 06F0MEE8T9PKPKQH8EPWNQ2CRW`
+- [queued] `blocked-follow-up-comment` -> `06F0MEGYHADPVN575H64D56W2G` via `blocks` path `06F0MEDJC732GDD77H60R259P0 -> 06F0MEGYHADPVN575H64D56W2G`
+- [queued] `blocked-by-follow-up-comment` -> `06F0MED4P7HMBDZVMPWQZ5A7PC` via `blocks` path `06F0MEDJC732GDD77H60R259P0 -> 06F0MED4P7HMBDZVMPWQZ5A7PC`
+- [queued] `blocked-by-follow-up-comment` -> `06F0MEDBFZ25YA1M7RJ71Z7ZCM` via `blocks` path `06F0MEDJC732GDD77H60R259P0 -> 06F0MEDBFZ25YA1M7RJ71Z7ZCM`
+- [queued] `blocked-by-follow-up-comment` -> `06F0MECPFAVBFBNC5XMVDZRQ6M` via `blocks` path `06F0MEDJC732GDD77H60R259P0 -> 06F0MECPFAVBFBNC5XMVDZRQ6M`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06F0MEDJC732GDD77H60R259P0` owner `ticket/06F0MEDJC732GDD77H60R259P0-task-update-readme-and-release-docs-for-v0-6-0-u` base `develop` source-owner `ticket/06F0MEDJC732GDD77H60R259P0-task-update-readme-and-release-docs-for-v0-6-0-u`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F0MEHDFYCVK42FFY77FXHXBR` owner `ticket/06F0MEHDFYCVK42FFY77FXHXBR-task-define-bridge-traversal-query-helper-contra` base `develop` source-owner `ticket/06F0MEDJC732GDD77H60R259P0-task-update-readme-and-release-docs-for-v0-6-0-u`: Target ticket owner branch 'ticket/06F0MEHDFYCVK42FFY77FXHXBR-task-define-bridge-traversal-query-helper-contra' differs from source owner branch 'ticket/06F0MEDJC732GDD77H60R259P0-task-update-readme-and-release-docs-for-v0-6-0-u'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F0MEE8T9PKPKQH8EPWNQ2CRW` owner `ticket/06F0MEE8T9PKPKQH8EPWNQ2CRW-task-define-versioned-dvault-model-schema-and-va` base `develop` source-owner `ticket/06F0MEDJC732GDD77H60R259P0-task-update-readme-and-release-docs-for-v0-6-0-u`: Target ticket owner branch 'ticket/06F0MEE8T9PKPKQH8EPWNQ2CRW-task-define-versioned-dvault-model-schema-and-va' differs from source owner branch 'ticket/06F0MEDJC732GDD77H60R259P0-task-update-readme-and-release-docs-for-v0-6-0-u'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F0MEGYHADPVN575H64D56W2G` owner `ticket/06F0MEGYHADPVN575H64D56W2G-task-define-pit-backed-as-of-read-api-contract` base `develop` source-owner `ticket/06F0MEDJC732GDD77H60R259P0-task-update-readme-and-release-docs-for-v0-6-0-u`: Target ticket owner branch 'ticket/06F0MEGYHADPVN575H64D56W2G-task-define-pit-backed-as-of-read-api-contract' differs from source owner branch 'ticket/06F0MEDJC732GDD77H60R259P0-task-update-readme-and-release-docs-for-v0-6-0-u'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F0MED4P7HMBDZVMPWQZ5A7PC` owner `ticket/06F0MED4P7HMBDZVMPWQZ5A7PC-task-implement-data-vault-model-validation-and-e` base `develop` source-owner `ticket/06F0MEDJC732GDD77H60R259P0-task-update-readme-and-release-docs-for-v0-6-0-u`: Target ticket owner branch 'ticket/06F0MED4P7HMBDZVMPWQZ5A7PC-task-implement-data-vault-model-validation-and-e' differs from source owner branch 'ticket/06F0MEDJC732GDD77H60R259P0-task-update-readme-and-release-docs-for-v0-6-0-u'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F0MEDBFZ25YA1M7RJ71Z7ZCM` owner `ticket/06F0MEDBFZ25YA1M7RJ71Z7ZCM-task-add-runnable-sqlite-and-postgresql-quicksta` base `develop` source-owner `ticket/06F0MEDJC732GDD77H60R259P0-task-update-readme-and-release-docs-for-v0-6-0-u`: Target ticket owner branch 'ticket/06F0MEDBFZ25YA1M7RJ71Z7ZCM-task-add-runnable-sqlite-and-postgresql-quicksta' differs from source owner branch 'ticket/06F0MEDJC732GDD77H60R259P0-task-update-readme-and-release-docs-for-v0-6-0-u'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F0MECPFAVBFBNC5XMVDZRQ6M` owner `ticket/06F0MECPFAVBFBNC5XMVDZRQ6M-task-add-typed-latest-and-as-of-satellite-read-p` base `develop` source-owner `ticket/06F0MEDJC732GDD77H60R259P0-task-update-readme-and-release-docs-for-v0-6-0-u`: Target ticket owner branch 'ticket/06F0MECPFAVBFBNC5XMVDZRQ6M-task-add-typed-latest-and-as-of-satellite-read-p' differs from source owner branch 'ticket/06F0MEDJC732GDD77H60R259P0-task-update-readme-and-release-docs-for-v0-6-0-u'.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F0MEHDFYCVK42FFY77FXHXBR` on owner branch `ticket/06F0MEHDFYCVK42FFY77FXHXBR-task-define-bridge-traversal-query-helper-contra` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F0MEE8T9PKPKQH8EPWNQ2CRW` on owner branch `ticket/06F0MEE8T9PKPKQH8EPWNQ2CRW-task-define-versioned-dvault-model-schema-and-va` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F0MEGYHADPVN575H64D56W2G` on owner branch `ticket/06F0MEGYHADPVN575H64D56W2G-task-define-pit-backed-as-of-read-api-contract` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-by-follow-up-target` to `06F0MED4P7HMBDZVMPWQZ5A7PC` on owner branch `ticket/06F0MED4P7HMBDZVMPWQZ5A7PC-task-implement-data-vault-model-validation-and-e` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-by-follow-up-target` to `06F0MEDBFZ25YA1M7RJ71Z7ZCM` on owner branch `ticket/06F0MEDBFZ25YA1M7RJ71Z7ZCM-task-add-runnable-sqlite-and-postgresql-quicksta` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-by-follow-up-target` to `06F0MECPFAVBFBNC5XMVDZRQ6M` on owner branch `ticket/06F0MECPFAVBFBNC5XMVDZRQ6M-task-add-typed-latest-and-as-of-satellite-read-p` after that branch is refreshed/rebased.

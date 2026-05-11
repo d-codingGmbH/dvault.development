@@ -4,34 +4,24 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 
 ## Installation
 
-Install the provider-neutral DVault package from NuGet:
+Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.5.0
+dotnet add package DCoding.Data.DVault --version 0.6.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.6.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.6.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.6.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.6.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.6.0
 ```
 
-For provider-specific startup extensions, add the matching provider package as well. For example, SQLite users should install:
-
-```sh
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.5.0
-```
-
-The provider package family is version-aligned:
-
-```sh
-dotnet add package DCoding.Data.DVault.MySql --version 0.5.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.5.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.5.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.5.0
-```
-
-Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Pomelo.EntityFrameworkCore.MySql` for the DVault MySQL v1 path, or the relevant provider for PostgreSQL, SQL Server, or Oracle.
+Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Pomelo.EntityFrameworkCore.MySql` for the DVault MySQL v1 path, or the relevant provider for SQL Server or Oracle.
 
 Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
 
 ## Quickstart
 
-Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has an Entity Framework Core provider configured. The v1 path is convention-first: register DVault without options, declare Data Vault metadata on the EF model, save explicitly through `IDataVaultSaveService`, and read generated vault rows either through `IDataVaultReadService` for common latest/as-of satellite access or through ordinary EF shared-type table queries.
+Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has an Entity Framework Core provider configured. The recommended v0.6.0 path is convention-first: register DVault, declare the Data Vault model through EF Code-First metadata, save explicitly through `IDataVaultSaveService`, and read common satellite views through typed latest/as-of projector helpers.
 
 ### Register DVault services
 
@@ -45,64 +35,67 @@ services.AddDVault();
 using var serviceProvider = services.BuildServiceProvider(validateScopes: true);
 ```
 
-### Configure the EF model
+Provider packages can register provider-specific startup extensions alongside the provider-neutral services:
+
+```csharp
+services.AddDVaultSqlite();
+services.AddDVaultPostgres();
+services.AddDVaultSqlServer();
+services.AddDVaultOracle();
+services.AddDVaultMySql();
+```
+
+### Declare the EF model with Code-First metadata
+
+Declare hubs, satellites, and links in `OnModelCreating` with `ApplyDataVaultMetadata(vault => ...)`. Business keys, driving keys, payload fields, and link participants use direct scalar member selectors. Composite keys use repeated calls in their canonical order.
 
 ```csharp
 using DCoding.Data.DVault;
-using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
 
 public sealed class SalesVaultContext(DbContextOptions<SalesVaultContext> options) : DbContext(options) {
   protected override void OnModelCreating(ModelBuilder modelBuilder) {
-    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
-    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
-    var customerOrder = new DataVaultLinkMetadata(
-        "CustomerOrder",
-        [customer.ToReference(), order.ToReference()]);
+    modelBuilder.ApplyDataVaultMetadata(vault => {
+      vault.Hub<Customer>(hub => {
+        hub.BusinessKey(customer => customer.CustomerId);
+        hub.Satellite("Profile", satellite => {
+          satellite.Payload(customer => customer.CustomerName);
+          satellite.Payload(customer => customer.CustomerStatus);
+        });
+        hub.Satellite("ContactByType", satellite => {
+          satellite.DrivingKey(customer => customer.ContactType);
+          satellite.Payload(customer => customer.EmailAddress);
+        });
+      });
 
-    modelBuilder.ApplyDataVaultMetadata(
-        new DataVaultMetadataModel(
-            [customer, order],
-            [customerOrder],
-            []));
+      vault.Hub<Order>(hub => hub.BusinessKey(order => order.OrderId));
+
+      vault.Link("CustomerOrder", link => {
+        link.Participant<Customer>();
+        link.Participant<Order>();
+      });
+    });
   }
 }
-```
 
-### Register metadata once and opt in a DbContext
+public sealed class Customer {
+  public string CustomerId { get; set; } = string.Empty;
+  public string CustomerName { get; set; } = string.Empty;
+  public string CustomerStatus { get; set; } = string.Empty;
+  public string ContactType { get; set; } = string.Empty;
+  public string EmailAddress { get; set; } = string.Empty;
+}
 
-Applications that want one authoritative metadata source can register a model or prebuilt registry during service setup and opt selected contexts into registry-backed projection through `DbContextOptionsBuilder`.
-
-```csharp
-using DCoding.Data.DVault;
-using DCoding.Data.DVault.Modeling;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-
-var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
-var order = new DataVaultHubMetadata("Order", ["Order Id"]);
-var customerOrder = new DataVaultLinkMetadata(
-    "CustomerOrder",
-    [customer.ToReference(), order.ToReference()]);
-var salesVaultMetadata = new DataVaultMetadataModel(
-    [customer, order],
-    [customerOrder],
-    []);
-
-var services = new ServiceCollection();
-services.AddDVault(options => options.UseMetadataModel(salesVaultMetadata));
-services.AddDbContext<SalesVaultContext>(options => {
-  options.UseSqlite(connectionString);
-  options.UseDataVaultMetadata();
-});
-
-public sealed class SalesVaultContext(DbContextOptions<SalesVaultContext> options) : DbContext(options) {
+public sealed class Order {
+  public string OrderId { get; set; } = string.Empty;
 }
 ```
 
-`UseDataVaultMetadata()` consumes the app-level registry registered by `AddDVault(...)`. A context can override that default by passing an explicit `DataVaultMetadataModel` or `DataVaultMetadataRegistry` to `UseDataVaultMetadata(...)`. If the same EF model receives two different DVault metadata sources, model building fails with a DVault source-conflict diagnostic instead of merging or duplicating projection.
+Code-First metadata is additive. It does not ask callers to put DVault hash-key, load-timestamp, or record-source technical fields on domain entities, and it does not create a public Code-First-to-registry bridge.
 
 ### Save explicitly
+
+Persistence remains an explicit service boundary. `DataVaultSaveRequest` carries the load timestamp and record source, and callers choose when to write vault rows through `IDataVaultSaveService`. DVault does not intercept `SaveChanges` or hide persistence behind ordinary EF entity tracking.
 
 ```csharp
 using DCoding.Data.DVault;
@@ -114,12 +107,17 @@ public static class SalesVaultWriter {
       SalesVaultContext context,
       IServiceProvider serviceProvider,
       CancellationToken cancellationToken = default) {
-    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
-    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
+    var order = new DataVaultHubMetadata("Order", ["OrderId"]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["CustomerName", "CustomerStatus"]);
     var customerOrder = new DataVaultLinkMetadata(
         "CustomerOrder",
         [customer.ToReference(), order.ToReference()]);
-    var loadTimestamp = new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero);
+
+    var loadTimestamp = new DateTimeOffset(2026, 5, 11, 10, 15, 0, TimeSpan.Zero);
     var saveService = serviceProvider.GetRequiredService<IDataVaultSaveService>();
 
     var hubResult = await saveService.SaveAsync(
@@ -128,8 +126,8 @@ public static class SalesVaultWriter {
             loadTimestamp,
             "crm-import",
             [
-                new(customer, [new("Customer Id", "C-100")]),
-                new(order, [new("Order Id", "O-200")]),
+                new(customer, [new("CustomerId", "C-100")]),
+                new(order, [new("OrderId", "O-200")]),
             ],
             []),
         cancellationToken);
@@ -147,38 +145,129 @@ public static class SalesVaultWriter {
             [],
             [
                 new(customerOrder, [new("Customer", customerHashKey), new("Order", orderHashKey)]),
+            ],
+            [
+                new(
+                    profile,
+                    customerHashKey,
+                    [new("CustomerName", "Alice Adams"), new("CustomerStatus", "Active")],
+                    "customer-profile-active"),
             ]),
         cancellationToken);
   }
 }
 ```
 
-`DataVaultSaveRequest` keeps the load timestamp and record source explicit. DVault does not intercept `SaveChanges`; callers choose when to write vault rows. For loaders that already have multiple source batches prepared, `DataVaultBulkSaveRequest` processes ordered save requests through the same service and keeps satellite HashDiff state in memory across the batch.
+For loaders that already have multiple source batches prepared, `DataVaultBulkSaveRequest` processes ordered save requests through the same service and keeps satellite HashDiff state in memory across the batch.
+
+### Read typed latest and as-of satellite projections
+
+`IDataVaultReadService` provides provider-neutral latest and as-of satellite reads. The common path maps selected rows through a caller-owned projector delegate so application code can return typed read models without binding DTOs through reflection. Passing an `asOf` timestamp to `DataVaultLatestSatelliteReadRequest` selects the latest row visible at that point in time.
+
+```csharp
+using DCoding.Data.DVault;
+using DCoding.Data.DVault.Modeling;
+using Microsoft.Extensions.DependencyInjection;
+
+var readService = serviceProvider.GetRequiredService<IDataVaultReadService>();
+var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
+var profile = new DataVaultSatelliteMetadata(
+    "Profile",
+    customer.ToReference(),
+    ["CustomerName", "CustomerStatus"]);
+
+var latestProfiles = await readService.ReadLatestSatelliteAsync(
+    context,
+    new DataVaultLatestSatelliteReadRequest(profile, [customerHashKey]),
+    row => new CustomerProfileRead(
+        row.RequiredString("ParentHashKey"),
+        row.RequiredString("CustomerName"),
+        row.RequiredString("CustomerStatus"),
+        row.RequiredDateTimeOffset("LoadTimestamp")),
+    cancellationToken);
+
+var asOfProfiles = await readService.ReadLatestSatelliteAsync(
+    context,
+    new DataVaultLatestSatelliteReadRequest(profile, [customerHashKey], asOfTimestamp),
+    row => new CustomerProfileRead(
+        row.RequiredString("ParentHashKey"),
+        row.RequiredString("CustomerName"),
+        row.RequiredString("CustomerStatus"),
+        row.RequiredDateTimeOffset("LoadTimestamp")),
+    cancellationToken);
+
+public sealed record CustomerProfileRead(
+    string ParentHashKey,
+    string CustomerName,
+    string CustomerStatus,
+    DateTimeOffset LoadTimestamp);
+```
+
+The lower-level `ReadLatestSatelliteRowsAsync(...)` API remains available as the advanced escape hatch. It returns `DataVaultSatelliteReadRecord` values containing the parent hash key, driving-key values, hash diff, load timestamp, record source, and payload values for callers that need row-level dictionaries or custom projections. PIT-backed read models, bridge traversal helpers, and provider-specific read strategies remain future extension points.
+
+### Register metadata once and opt in a DbContext
+
+The metadata-first `DataVaultMetadataModel` path remains supported and compatible for v0.5 users, shared metadata, examples, and advanced scenarios. Applications that want one authoritative metadata source can register a model or prebuilt registry during service setup and opt selected contexts into registry-backed projection through `DbContextOptionsBuilder`.
+
+```csharp
+using DCoding.Data.DVault;
+using DCoding.Data.DVault.Modeling;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+var customerProfile = new DataVaultSatelliteMetadata(
+    "CustomerProfile",
+    customer.ToReference(),
+    ["Profile Name", "Customer Status"]);
+var salesVaultMetadata = new DataVaultMetadataModel(
+    [customer],
+    [],
+    [customerProfile]);
+
+var services = new ServiceCollection();
+services.AddDVault(options => options.UseMetadataModel(salesVaultMetadata));
+services.AddDbContext<SalesVaultContext>(options => {
+  options.UseSqlite(connectionString);
+  options.UseDataVaultMetadata();
+});
+
+public sealed class SalesVaultContext(DbContextOptions<SalesVaultContext> options) : DbContext(options) {
+}
+```
+
+`UseDataVaultMetadata()` consumes the app-level registry registered by `AddDVault(...)`. A context can override that default by passing an explicit `DataVaultMetadataModel` or `DataVaultMetadataRegistry` to `UseDataVaultMetadata(...)`. If the same EF model receives two different DVault metadata sources, model building fails with a DVault source-conflict diagnostic instead of merging or duplicating projection. The SQLite and PostgreSQL quickstarts intentionally use this registry-backed path; see `examples/README.md` for exact commands and provider setup.
+
+### Diagnostics and explain output
+
+`IDataVaultDiagnosticsService` can analyze metadata models, registries, Code-First declarations, and configured DbContexts. Validation and explain output can run without a save request. Provider-specific save-strategy dispatch diagnostics are request-bound, so strategy status remains not evaluated until a single save request or ordered bulk save request is supplied.
 
 ### Multi-active satellite opt-in
 
 Ordinary satellites remain the default. A satellite becomes multi-active only when it declares one or more driving keys, and those names define the canonical identity tuple for each active satellite row. Driving-key values stay separate from payload values, and `hashDiff` continues to represent payload state for change detection rather than driving-key identity.
 
-The minimal shape below declares a customer contact satellite with payload `Email Address` and driving keys `Contact Type` then `Region Code`:
-
 ```csharp
-var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
-var contact = new DataVaultSatelliteMetadata(
-    "Contact",
-    customer.ToReference(),
-    ["Email Address"],
-    ["Contact Type", "Region Code"]);
-
-modelBuilder.ApplyDataVaultMetadata(
-    new DataVaultMetadataModel(
-        [customer],
-        [],
-        [contact]));
+modelBuilder.ApplyDataVaultMetadata(vault => {
+  vault.Hub<Customer>(hub => {
+    hub.BusinessKey(customer => customer.CustomerId);
+    hub.Satellite("ContactByType", satellite => {
+      satellite.DrivingKey(customer => customer.ContactType);
+      satellite.DrivingKey(customer => customer.RegionCode);
+      satellite.Payload(customer => customer.EmailAddress);
+    });
+  });
+});
 ```
 
-The save operation supplies driving-key values by logical name. Caller enumeration order does not matter; the values below are matched by name and persisted in the declared canonical order `Contact Type`, then `Region Code`:
+The save operation supplies driving-key values by logical name. Caller enumeration order does not matter; the values below are matched by name and persisted in the declared canonical order `ContactType`, then `RegionCode`:
 
 ```csharp
+var contact = new DataVaultSatelliteMetadata(
+    "ContactByType",
+    customer.ToReference(),
+    ["EmailAddress"],
+    ["ContactType", "RegionCode"]);
+
 await saveService.SaveAsync(
     context,
     new DataVaultSaveRequest(
@@ -189,62 +278,29 @@ await saveService.SaveAsync(
         [
             new(
                 contact,
-                "customer-hash",
-                [new("Region Code", "DE"), new("Contact Type", "billing")],
-                [new("Email Address", "billing-de@example.test")],
+                customerHashKey,
+                [new("RegionCode", "DE"), new("ContactType", "billing")],
+                [new("EmailAddress", "billing-de@example.test")],
                 "contact-payload-hash"),
         ]),
     cancellationToken);
 ```
 
-The provider-neutral projection stores driving-key columns immediately after the parent hash-key column and before `HashDiff`, `LoadTimestamp`, `RecordSource`, and payload columns. For the example above, the satellite row shape is `CustomerHashKey`, `ContactType`, `RegionCode`, `HashDiff`, `LoadTimestamp`, `RecordSource`, then `EmailAddress`. The satellite primary key and parent/latest-state index expand to `(CustomerHashKey, ContactType, RegionCode, LoadTimestamp)`, so different driving-key tuples for the same parent can coexist. Re-saving the same parent plus driving-key tuple with the same `hashDiff` reuses the latest state; changing the `hashDiff` writes a new history row for that tuple.
-
-Current multi-active support is intentionally narrow and opt-in. Future work includes PIT over multi-active satellites, bridge interactions involving multi-active state, link-based PIT support, and provider-specific optimized multi-active save behavior. Provider-specific save strategies may decline multi-active batches so the provider-neutral writer handles the documented baseline.
+The provider-neutral projection stores driving-key columns immediately after the parent hash-key column and before `HashDiff`, `LoadTimestamp`, `RecordSource`, and payload columns. The satellite primary key and parent/latest-state index expand to include the driving-key tuple, so different driving-key tuples for the same parent can coexist. Current multi-active support is intentionally narrow and opt-in; future work includes PIT over multi-active satellites, bridge interactions involving multi-active state, link-based PIT support, and provider-specific optimized multi-active save behavior. Provider-specific save strategies may decline multi-active batches so the provider-neutral writer handles the documented baseline.
 
 ### Provider Packages
 
-`DCoding.Data.DVault` contains the provider-neutral API, metadata model, naming conventions, stable hashing, and EF fallback writer. Provider packages extend that base registration without changing the write API:
-
-```csharp
-services.AddDVaultSqlite();
-services.AddDVaultPostgres();
-services.AddDVaultSqlServer();
-services.AddDVaultOracle();
-services.AddDVaultMySql();
-```
+`DCoding.Data.DVault` contains the provider-neutral API, metadata model, naming conventions, stable hashing, read helpers, diagnostics, and EF fallback writer. Provider packages extend that base registration without changing the explicit save or read APIs.
 
 `DCoding.Data.DVault.Sqlite` registers the optimized SQLite set-based save strategy and registers the SQLite EF provider name for the existing `ApplyDataVaultMetadata(...)` capability-profile selection path. `DCoding.Data.DVault.Postgres` registers an optimized Npgsql/PostgreSQL strategy for clean contexts that use set-based `INSERT ... ON CONFLICT DO NOTHING` hub and link writes plus latest-state satellite checks. `DCoding.Data.DVault.SqlServer` registers an optimized SQL Server strategy for clean contexts with set-based unique-row inserts and latest-state satellite checks. `DCoding.Data.DVault.Oracle` registers an Oracle-gated insert-only strategy for clean `Oracle.EntityFrameworkCore` hub/link batches and declines unsupported shapes, including dirty tracked contexts and request batches that contain satellite operations, so the provider-neutral fallback writer handles them. `DCoding.Data.DVault.MySql` targets `Pomelo.EntityFrameworkCore.MySql`, registers that Pomelo provider name for the existing `ApplyDataVaultMetadata(...)` capability-profile selection path, and registers an optimized MySQL strategy for clean Pomelo contexts.
 
 Provider-specific save-strategy registration and provider-name capability-profile auto-registration are separate startup surfaces. The current startup extensions visibly auto-register provider names for SQLite and MySQL only. PostgreSQL, SQL Server, and Oracle still provide provider-specific save strategies and keep the provider-neutral fallback as the caller-visible safety net, but their startup extensions do not currently auto-register provider-name capability profiles.
 
-### Read latest satellite rows
+### Migration from v0.5
 
-`IDataVaultReadService` provides a provider-neutral helper for common latest and as-of satellite reads. It keeps the same explicit metadata boundary as the save service and uses parent-hash-key filtering so generated satellite parent indexes can be used by the database:
+v0.5 metadata-first `DataVaultMetadataModel` usage remains valid in v0.6.0. Existing applications can keep constructing metadata models, registering them with `AddDVault(options => options.UseMetadataModel(...))`, and opting DbContexts into `UseDataVaultMetadata()`.
 
-```csharp
-using DCoding.Data.DVault;
-using DCoding.Data.DVault.Modeling;
-using Microsoft.Extensions.DependencyInjection;
-
-var readService = serviceProvider.GetRequiredService<IDataVaultReadService>();
-var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
-var profile = new DataVaultSatelliteMetadata(
-    "Profile",
-    customer.ToReference(),
-    ["customer_name", "customer_status"]);
-
-var latestRows = await readService.ReadLatestSatelliteRowsAsync(
-    context,
-    new DataVaultLatestSatelliteReadRequest(profile, [customerHashKey]),
-    cancellationToken);
-
-var asOfRows = await readService.ReadLatestSatelliteRowsAsync(
-    context,
-    new DataVaultLatestSatelliteReadRequest(profile, [customerHashKey], asOfTimestamp),
-    cancellationToken);
-```
-
-The read service returns `DataVaultSatelliteReadRecord` values containing the parent hash key, driving-key values, hash diff, load timestamp, record source, and payload values. It is intentionally narrow in v0.5.0: PIT-backed read models, bridge traversal helpers, and provider-specific read strategies remain future extension points.
+New application code can prefer Code-First declarations when the Data Vault model fits the implemented hub-parent satellite and ordered hub-link surface. Keep metadata-first declarations for shared metadata registries, example-local quickstarts, link-parent satellite shapes, bridge/PIT metadata baselines, or naming requirements outside the bounded Code-First API.
 
 ### Query generated tables
 
@@ -263,27 +319,22 @@ public static class SalesVaultReader {
 }
 ```
 
-The shared-type table names and columns in this quickstart follow DVault's default naming conventions, for example `HubCustomer`, `HubOrder`, `LinkCustomerOrder`, `CustomerHashKey`, `OrderHashKey`, `LoadTimestamp`, and `RecordSource`. This Customer/Order/CustomerOrder flow is mirrored by the SQLite explicit-save integration tests in `tests/DCoding.Data.DVault.Tests`.
+The shared-type table names and columns in this quickstart follow DVault's default naming conventions, for example `HubCustomer`, `HubOrder`, `LinkCustomerOrder`, `CustomerHashKey`, `OrderHashKey`, `LoadTimestamp`, and `RecordSource`. Direct EF queries remain available for table-specific projections, custom joins, diagnostics, and cases outside the typed read helper baseline.
 
-Direct EF queries remain available for table-specific projections, custom joins, diagnostics, and cases outside the v0.5 read-service baseline.
+## v0.6.0 Release Notes
 
-## v0.5.0 Release Notes
-
-The v0.5.0 release expands DVault from the SQLite-first v0.4.x baseline into a coordinated six-package release covering the provider-neutral package plus SQLite, PostgreSQL, SQL Server, Oracle, and MySQL provider packages. The release focuses on provider-specific write optimizations, deferred Data Vault capability baselines, read access for latest/as-of satellite rows, and package-publication readiness.
+The v0.6.0 release updates the recommended usability flow for the coordinated six-package DVault family. See `docs/releases/v0.6.0.md` for the full release-note record, package scope, compatibility notes, known limitations, and validation evidence.
 
 Notable user-facing changes:
 
-- Provider packages for MySQL, Oracle, PostgreSQL, SQLite, and SQL Server are version-aligned with the core package.
-- Provider-specific save strategies optimize clean-context write paths for the supported provider shapes, with provider-neutral fallback when a strategy declines.
-- Load-timestamp storage can be projected as provider default, ISO 8601 UTC text, or UTC ticks.
-- Satellite latest-state indexes now respect provider capabilities for included columns, avoiding MySQL hash-diff key expansion where measurements showed it to be counterproductive.
-- `IDataVaultReadService` adds latest/as-of satellite reads over generated Data Vault tables.
-- The provider-neutral fallback writer now filters persisted satellite latest-state checks by parent hash key instead of loading whole satellite tables.
-- Deferred capability baselines cover multi-active satellite driving keys, PIT metadata projection, bridge metadata projection, provider capability profiles, and explicit API snapshots.
+- Code-First EF model declarations are now the README happy path for hubs, hub-parent satellites, multi-active driving keys, and ordered hub links.
+- Metadata-first `DataVaultMetadataModel` and registry-backed `UseDataVaultMetadata()` remain supported and are still used by the runnable SQLite and PostgreSQL quickstarts.
+- Typed latest/as-of satellite projector helpers provide the common read experience, while raw row reads remain available for advanced callers.
+- Diagnostics and explain output cover metadata, registry, Code-First, and DbContext analysis, with save-strategy dispatch evaluated only when a save request is supplied.
 
 ## Deferred Capabilities
 
-PIT tables, bridge tables, and multi-active satellites remain opt-in v0.5 capabilities rather than part of ordinary hub, link, and satellite setup. Multi-active satellite support is limited to the driving-key modeling, projection, and explicit-save baseline described above. The current bridge documentation baseline is in `docs/plans/deferred-data-vault-capabilities.md`; it reflects the implemented `DataVaultBridgeMetadata`/`DataVaultMetadataModel.Bridges` metadata surface and the bounded `ApplyDataVaultMetadata()` projection for many-to-many endpoint hash-key bridges and hierarchy bridges with `TraversalDepth`. Bridge row population, traversal maintenance, generated EF relationships or navigations, provider-specific DDL beyond the generated EF model, PIT interactions, and multi-active interactions remain future scope.
+Model-first import/export specs, PIT-backed read APIs, bridge traversal helpers, PIT/bridge row maintenance, provider-specific read optimizations, and a public Code-First-to-registry bridge remain future work. Existing PIT and bridge metadata projection baselines remain advanced metadata surfaces rather than the recommended v0.6.0 README happy path.
 
 ## Layout
 
@@ -292,7 +343,7 @@ PIT tables, bridge tables, and multi-active satellites remain opt-in v0.5 capabi
 - `src/DCoding.Data.DVault/`: Main library project. The NuGet package id and root namespace are `DCoding.Data.DVault`.
 - `src/DCoding.Data.DVault.*`: Provider extension packages for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL.
 - `tests/DCoding.Data.DVault.Tests/`: Unit, integration, and shared test projects for DVault.
-- `examples/`: Future runnable examples for DVault APIs.
+- `examples/`: Runnable SQLite and PostgreSQL quickstart projects.
 - `benchmarks/`: Local performance benchmark projects.
 - `docs/`: Documentation and design notes.
 

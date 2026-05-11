@@ -11,6 +11,7 @@ public sealed class PackageVerifier {
   private const string ExpectedRepositoryType = "git";
   private const string ExpectedRepositoryUrl = "https://github.com/d-codingGmbH/dvault.development.git";
   private const string ExpectedReadmeFile = "README.md";
+  private const string ExpectedReadmeInstallVersion = "0.6.0";
 
   private static readonly IReadOnlyList<ExpectedPackage> ExpectedPackages = [
       new(
@@ -351,12 +352,22 @@ public sealed class PackageVerifier {
       return;
     }
 
-    if (archive.ReadmeText is null ||
-        !archive.ReadmeText.Contains("dotnet add package DCoding.Data.DVault --version 0.5.0", StringComparison.Ordinal) ||
-        !archive.ReadmeText.Contains("dotnet add package DCoding.Data.DVault.Sqlite --version 0.5.0", StringComparison.Ordinal)) {
+    if (archive.ReadmeText is null) {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
           "Packaged README.md does not contain the current NuGet installation guidance."));
+      return;
+    }
+
+    foreach (var expectedPackage in ExpectedPackages) {
+      var expectedInstallCommand =
+          "dotnet add package " + expectedPackage.Id + " --version " + ExpectedReadmeInstallVersion;
+      if (!archive.ReadmeText.Contains(expectedInstallCommand, StringComparison.Ordinal)) {
+        issues.Add(new PackageVerificationIssue(
+            archive.Id,
+            "Packaged README.md does not contain the current NuGet installation guidance."));
+        return;
+      }
     }
   }
 
