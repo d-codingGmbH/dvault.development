@@ -3,20 +3,19 @@
   "ticket-id": "06F0MEEGJE9QCHC8YN4FEXYX10",
   "ticket-type": "task",
   "title": "Task: Implement JSON model parser and validation diagnostics",
-  "revision": "06F0QH371KRXB30GHMXH8F3VRC",
-  "status": "todo",
+  "revision": "06F1GGRMM00P18J1CWRQ1ZB1JW",
+  "status": "done",
   "labels": [
-    "type/task",
     "area/model-first",
+    "area/tests",
     "area/tooling",
     "area/validation",
-    "area/tests",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F0ME831E6DZ661QMTG5Q77J0",
   "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
   "created-at": "2026-05-09T00:53:41.9667860Z",
-  "updated-at": "2026-05-09T08:04:41.3569502Z"
+  "updated-at": "2026-05-11T18:18:29.9205469Z"
 }
