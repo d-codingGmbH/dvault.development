@@ -3,20 +3,19 @@
   "ticket-id": "06F0MEHDFYCVK42FFY77FXHXBR",
   "ticket-type": "task",
   "title": "Task: Define bridge traversal query helper contract",
-  "revision": "06F0QH3Q2BGD2NWNC1YB4J264G",
-  "status": "todo",
+  "revision": "06F1FENHB95REKRYVT4AKCE98R",
+  "status": "done",
   "labels": [
-    "type/task",
     "area/api",
-    "area/read-models",
     "area/bridge",
     "area/docs",
+    "area/read-models",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F0ME83T78Z32RA39SD0JT85W",
   "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
   "created-at": "2026-05-09T00:54:05.5961763Z",
-  "updated-at": "2026-05-09T08:04:45.4588918Z"
+  "updated-at": "2026-05-11T15:49:31.6100000Z"
 }
