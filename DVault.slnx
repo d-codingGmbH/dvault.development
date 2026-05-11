@@ -2,6 +2,11 @@
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj" />
   </Folder>
+  <Folder Name="/examples/">
+    <Project Path="examples/DCoding.Data.DVault.PostgresQuickstart/DCoding.Data.DVault.PostgresQuickstart.csproj" />
+    <Project Path="examples/DCoding.Data.DVault.Quickstarts.Shared/DCoding.Data.DVault.Quickstarts.Shared.csproj" />
+    <Project Path="examples/DCoding.Data.DVault.SqliteQuickstart/DCoding.Data.DVault.SqliteQuickstart.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/DCoding.Data/DCoding.Data.csproj" />
     <Project Path="src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />

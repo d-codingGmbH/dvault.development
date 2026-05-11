@@ -27,6 +27,8 @@ dotnet add package DCoding.Data.DVault.SqlServer --version 0.5.0
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Pomelo.EntityFrameworkCore.MySql` for the DVault MySQL v1 path, or the relevant provider for PostgreSQL, SQL Server, or Oracle.
 
+Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
+
 ## Quickstart
 
 Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has an Entity Framework Core provider configured. The v1 path is convention-first: register DVault without options, declare Data Vault metadata on the EF model, save explicitly through `IDataVaultSaveService`, and read generated vault rows either through `IDataVaultReadService` for common latest/as-of satellite access or through ordinary EF shared-type table queries.

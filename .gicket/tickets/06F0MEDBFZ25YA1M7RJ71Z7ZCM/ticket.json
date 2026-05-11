@@ -3,21 +3,20 @@
   "ticket-id": "06F0MEDBFZ25YA1M7RJ71Z7ZCM",
   "ticket-type": "task",
   "title": "Task: Add runnable SQLite and PostgreSQL quickstart examples",
-  "revision": "06F0QH2KD966VSSFH2E3G7XH1G",
-  "status": "todo",
+  "revision": "06F18QKJFQ0JRK8FWFCN807RMW",
+  "status": "done",
   "labels": [
-    "type/task",
-    "area/examples",
-    "area/docs",
-    "area/sqlite",
-    "area/postgres",
     "area/developer-experience",
+    "area/docs",
+    "area/examples",
+    "area/postgres",
+    "area/sqlite",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F0ME828FPDN00QBA6HT6S0FR",
   "releaseId": "06F0ME7Y3ND971A4JHQ0K54BPC",
   "created-at": "2026-05-09T00:53:32.3261880Z",
-  "updated-at": "2026-05-09T08:04:36.3304896Z"
+  "updated-at": "2026-05-11T00:09:54.5577835Z"
 }

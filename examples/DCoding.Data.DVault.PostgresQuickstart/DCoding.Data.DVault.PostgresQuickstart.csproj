@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../DCoding.Data.DVault.Quickstarts.Shared/DCoding.Data.DVault.Quickstarts.Shared.csproj" />
+    <ProjectReference Include="../../src/DCoding.Data.DVault.Postgres/DCoding.Data.DVault.Postgres.csproj" />
+  </ItemGroup>
+</Project>
