@@ -10,6 +10,7 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
       typeof(DataVaultBridgeReadServiceSqliteTests),
       typeof(DataVaultDiagnosticsIntegrationTests),
       typeof(DataVaultMetadataRegistrationIntegrationTests),
+      typeof(DataVaultPitReadServiceSqliteTests),
       typeof(DataVaultSaveStrategySelectionTests),
       typeof(DataVaultTypedMapperSaveServiceSqliteTests),
       typeof(DataVaultTypedSatelliteReadServiceSqliteTests),

@@ -1045,7 +1045,7 @@ public sealed class DataVaultEfMetadataTranslationTests {
   private static Type ExpectedClrType(DataVaultLogicalPropertyKind logicalPropertyKind) {
     return logicalPropertyKind switch {
       DataVaultLogicalPropertyKind.LoadTimestamp => typeof(DateTimeOffset),
-      DataVaultLogicalPropertyKind.SatelliteSnapshotReference => typeof(DateTimeOffset),
+      DataVaultLogicalPropertyKind.SatelliteSnapshotReference => typeof(DateTimeOffset?),
       DataVaultLogicalPropertyKind.BridgeDepth => typeof(int),
       _ => typeof(string),
     };

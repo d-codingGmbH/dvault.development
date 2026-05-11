@@ -721,6 +721,10 @@ internal static class DataVaultEfMetadataTranslator {
     var typeMapping = providerCapabilities.GetRequiredTypeMapping(logicalPropertyKind);
     var propertyBuilder = CreateIndexerProperty(entityBuilder, property, providerCapabilities, typeMapping);
 
+    if (property.Role == DataVaultPropertyRole.SnapshotReference) {
+      propertyBuilder.IsRequired(false);
+    }
+
     propertyBuilder.HasColumnName(property.Name);
     propertyBuilder.HasColumnType(typeMapping.NativeStoreType);
     propertyBuilder.HasColumnOrder(ordinal);
@@ -744,7 +748,9 @@ internal static class DataVaultEfMetadataTranslator {
       DataVaultProviderCapabilityProfile providerCapabilities,
       DataVaultProviderTypeMapping typeMapping) {
     if (typeMapping.ModelClrType == typeof(DateTimeOffset)) {
-      return entityBuilder.IndexerProperty<DateTimeOffset>(property.Name);
+      return property.Role == DataVaultPropertyRole.SnapshotReference
+          ? entityBuilder.IndexerProperty<DateTimeOffset?>(property.Name)
+          : entityBuilder.IndexerProperty<DateTimeOffset>(property.Name);
     }
 
     if (typeMapping.ModelClrType == typeof(string)) {
@@ -752,11 +758,15 @@ internal static class DataVaultEfMetadataTranslator {
     }
 
     if (typeMapping.ModelClrType == typeof(int)) {
-      return entityBuilder.IndexerProperty<int>(property.Name);
+      return property.Role == DataVaultPropertyRole.SnapshotReference
+          ? entityBuilder.IndexerProperty<int?>(property.Name)
+          : entityBuilder.IndexerProperty<int>(property.Name);
     }
 
     if (typeMapping.ModelClrType == typeof(long)) {
-      return entityBuilder.IndexerProperty<long>(property.Name);
+      return property.Role == DataVaultPropertyRole.SnapshotReference
+          ? entityBuilder.IndexerProperty<long?>(property.Name)
+          : entityBuilder.IndexerProperty<long>(property.Name);
     }
 
     throw new NotSupportedException(

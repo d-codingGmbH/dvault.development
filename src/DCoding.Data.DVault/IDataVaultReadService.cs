@@ -17,4 +17,16 @@ public interface IDataVaultReadService {
       DbContext dbContext,
       DataVaultLatestSatelliteReadRequest request,
       CancellationToken cancellationToken = default);
+
+  /// <summary>
+  /// Reads PIT-backed as-of rows for requested parent hub hash keys.
+  /// </summary>
+  /// <param name="dbContext">The context whose model has been configured with Data Vault metadata.</param>
+  /// <param name="request">The PIT-backed as-of read request.</param>
+  /// <param name="cancellationToken">A token used to observe cancellation while reading rows.</param>
+  /// <returns>The PIT rows that have a visible matched PIT row at or before the requested as-of timestamp.</returns>
+  Task<IReadOnlyList<DataVaultPitReadRecord>> ReadPitRowsAsync(
+      DbContext dbContext,
+      DataVaultPitAsOfReadRequest request,
+      CancellationToken cancellationToken = default);
 }

@@ -16,6 +16,19 @@ internal sealed class DefaultDataVaultReadService : IDataVaultReadService, IData
         cancellationToken);
   }
 
+  public Task<IReadOnlyList<DataVaultPitReadRecord>> ReadPitRowsAsync(
+      DbContext dbContext,
+      DataVaultPitAsOfReadRequest request,
+      CancellationToken cancellationToken = default) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(request);
+
+    return DataVaultPitReadPipeline.ReadPitReadRecordsAsync(
+        dbContext,
+        request,
+        cancellationToken);
+  }
+
   Task<IReadOnlyList<DataVaultSatelliteProjectionRow>> IDataVaultSatelliteProjectionReadService.ReadLatestSatelliteProjectionRowsAsync(
       DbContext dbContext,
       DataVaultLatestSatelliteReadRequest request,
