@@ -3,20 +3,19 @@
   "ticket-id": "06F0MEHKYTBJEJH2DVZ2CFH9Z0",
   "ticket-type": "task",
   "title": "Task: Implement provider-neutral bridge traversal read baseline",
-  "revision": "06F0QH43FQA9SE2ACRPEMJ5540",
-  "status": "todo",
+  "revision": "06F1GAQBKSFA3JJJJ32YR53JWR",
+  "status": "done",
   "labels": [
-    "type/task",
-    "area/read-models",
     "area/bridge",
     "area/ef-core",
+    "area/read-models",
     "area/tests",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F0ME83T78Z32RA39SD0JT85W",
   "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
   "created-at": "2026-05-09T00:54:07.2575404Z",
-  "updated-at": "2026-05-09T08:04:48.6373166Z"
+  "updated-at": "2026-05-11T17:52:06.5587403Z"
 }

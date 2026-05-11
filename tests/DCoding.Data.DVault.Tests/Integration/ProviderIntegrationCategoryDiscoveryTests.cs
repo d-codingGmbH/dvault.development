@@ -7,6 +7,7 @@ namespace DCoding.Data.DVault.Tests.Integration;
 public sealed class ProviderIntegrationCategoryDiscoveryTests {
   private static readonly Type[] RequiredLocalSqliteCoverageTypes = [
       typeof(BenchmarkScenarioExecutionTests),
+      typeof(DataVaultBridgeReadServiceSqliteTests),
       typeof(DataVaultDiagnosticsIntegrationTests),
       typeof(DataVaultMetadataRegistrationIntegrationTests),
       typeof(DataVaultSaveStrategySelectionTests),

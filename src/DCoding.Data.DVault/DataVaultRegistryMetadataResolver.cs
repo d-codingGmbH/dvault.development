@@ -63,6 +63,19 @@ internal static class DataVaultRegistryMetadataResolver {
         ".");
   }
 
+  public static DataVaultBridgeMetadata GetRequiredBridge(
+      DataVaultMetadataRegistry registry,
+      string bridgeName) {
+    ArgumentNullException.ThrowIfNull(registry);
+
+    if (registry.TryGetBridge(bridgeName, out var bridge) && bridge is not null) {
+      return bridge;
+    }
+
+    throw new InvalidOperationException(
+        "The authoritative Data Vault metadata registry does not contain bridge metadata '" + bridgeName + "'.");
+  }
+
   private static string FormatParent(DataVaultMetadataReference parent) {
     return parent.Kind.ToString().ToLowerInvariant() + " '" + parent.Name + "'";
   }

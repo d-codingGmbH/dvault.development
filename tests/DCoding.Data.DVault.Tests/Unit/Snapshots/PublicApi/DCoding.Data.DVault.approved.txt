@@ -25,6 +25,36 @@ type public static class DCoding.Data.DVault.DataVaultAnnotationNames
   field public const string ProviderValueFormat = "DCoding.Data.DVault:ProviderValueFormat"
   field public const string TechnicalColumnRole = "DCoding.Data.DVault:TechnicalColumnRole"
 
+type public sealed class DCoding.Data.DVault.DataVaultBridgeEndpointReadValue
+  property public DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint Endpoint { get; }
+  property public string ColumnName { get; }
+  property public string EndpointName { get; }
+  property public string HashKey { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultBridgeProjectionRow
+  method public int RequiredInt32(string name)
+  method public string RequiredString(string name)
+
+type public sealed class DCoding.Data.DVault.DataVaultBridgeReadRecord
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultBridgeEndpointReadValue> EndpointHashKeys { get; }
+  property public int? TraversalDepth { get; }
+  property public string MetadataName { get; }
+  property public string TableName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultBridgeReadRequest
+  ctor public DataVaultBridgeReadRequest(DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata bridge, DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint endpoint, System.Collections.Generic.IEnumerable<string> endpointHashKeys)
+  ctor public DataVaultBridgeReadRequest(DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata bridge, DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint endpoint, System.Collections.Generic.IEnumerable<string> endpointHashKeys, int? maximumDepth)
+  property public DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint Endpoint { get; }
+  property public DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata Bridge { get; }
+  property public System.Collections.Generic.IReadOnlyList<string> EndpointHashKeys { get; }
+  property public int? MaximumDepth { get; }
+
+type public enum DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint
+  value From = 0
+  value To = 1
+  value Ancestor = 2
+  value Descendant = 3
+
 type public sealed class DCoding.Data.DVault.DataVaultBulkSaveRequest
   ctor public DataVaultBulkSaveRequest(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveRequest> requests)
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> Requests { get; }
@@ -334,8 +364,14 @@ type public enum DCoding.Data.DVault.DataVaultProviderValueFormat
   value NativeInteger = 3
   value UtcTicks = 4
 
+type public static class DCoding.Data.DVault.DataVaultReadServiceBridgeExtensions
+  method public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultBridgeReadRecord>> ReadBridgeRowsAsync(this DCoding.Data.DVault.IDataVaultReadService readService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultBridgeReadRequest request, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TProjection?>> ReadBridgeAsync<TProjection>(this DCoding.Data.DVault.IDataVaultReadService readService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultBridgeReadRequest request, System.Func<DCoding.Data.DVault.DataVaultBridgeProjectionRow, TProjection?> projector, System.Threading.CancellationToken cancellationToken = default)
+
 type public static class DCoding.Data.DVault.DataVaultReadServiceRegistryExtensions
+  method public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultBridgeReadRecord>> ReadBridgeRowsAsync(this DCoding.Data.DVault.IDataVaultReadService readService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryBridgeReadRequest request, System.Threading.CancellationToken cancellationToken = default)
   method public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSatelliteReadRecord>> ReadLatestSatelliteRowsAsync(this DCoding.Data.DVault.IDataVaultReadService readService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryLatestSatelliteReadRequest request, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TProjection?>> ReadBridgeAsync<TProjection>(this DCoding.Data.DVault.IDataVaultReadService readService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryBridgeReadRequest request, System.Func<DCoding.Data.DVault.DataVaultBridgeProjectionRow, TProjection?> projector, System.Threading.CancellationToken cancellationToken = default)
   method public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TProjection?>> ReadLatestSatelliteAsync<TProjection>(this DCoding.Data.DVault.IDataVaultReadService readService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryLatestSatelliteReadRequest request, System.Func<DCoding.Data.DVault.DataVaultSatelliteProjectionRow, TProjection?> projector, System.Threading.CancellationToken cancellationToken = default)
 
 type public static class DCoding.Data.DVault.DataVaultReadServiceTypedProjectionExtensions
@@ -345,6 +381,14 @@ type public sealed class DCoding.Data.DVault.DataVaultRecordSourceResolutionCont
   ctor public DataVaultRecordSourceResolutionContext(DCoding.Data.DVault.DataVaultSaveRequest request, System.DateTimeOffset loadTimestamp)
   property public DCoding.Data.DVault.DataVaultSaveRequest Request { get; }
   property public System.DateTimeOffset LoadTimestamp { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultRegistryBridgeReadRequest
+  ctor public DataVaultRegistryBridgeReadRequest(string bridgeName, DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint endpoint, System.Collections.Generic.IEnumerable<string> endpointHashKeys)
+  ctor public DataVaultRegistryBridgeReadRequest(string bridgeName, DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint endpoint, System.Collections.Generic.IEnumerable<string> endpointHashKeys, int? maximumDepth)
+  property public DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint Endpoint { get; }
+  property public System.Collections.Generic.IReadOnlyList<string> EndpointHashKeys { get; }
+  property public int? MaximumDepth { get; }
+  property public string BridgeName { get; }
 
 type public sealed class DCoding.Data.DVault.DataVaultRegistryBulkSaveRequest
   ctor public DataVaultRegistryBulkSaveRequest(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultRegistrySaveRequest> requests)
