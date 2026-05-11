@@ -49,6 +49,14 @@ The artifact is a JSON object. The only required top-level field is `schemaVersi
 
 Version compatibility is strict for v1. A consumer that only implements this contract must reject any `schemaVersion` other than `dvault.model.v1` and must not silently accept `dvault.model`, `dvault.model.v1.0`, `dvault.model.v2`, or vendor-prefixed dialect names.
 
+## YAML Authoring Boundary
+
+`dvault.model.v1` ingestion is JSON-first. DVault v1 accepts the canonical JSON artifact described by this contract and does not define a direct YAML parser, YAML ingestion API, YAML fixture contract, or core package YAML dependency.
+
+YAML may be used as an authoring convenience only when conversion happens outside DVault before ingestion. The converted artifact must be the same JSON object shape described in the document envelope and must use the exact `schemaVersion` value `dvault.model.v1`. After conversion, the JSON artifact uses the same token values, declaration ordering, default values, unknown-field behavior, ordinal string comparisons, diagnostics, and validation-to-projection path as hand-authored JSON.
+
+YAML-specific behavior is outside the v1 contract. Conversion must not add YAML-only fields, merge semantics, anchors, tags, comment preservation, duplicate-key handling rules, or YAML-specific diagnostics to DVault. If a future release adds first-party YAML ingestion, it must do so through a separate additive contract instead of changing the authoritative v1 JSON artifact shape.
+
 ## Token Registry
 
 All token comparisons and declaration-name comparisons use ordinal string semantics.
@@ -236,6 +244,8 @@ Unsupported values are provider-choice errors. The document must not contain arb
 ## Unknown Field Policy
 
 Unknown fields are errors at every object level. This includes top-level objects, declaration objects, participant objects, parent reference objects, bridge endpoint objects, and nested `naming` objects. Validators must not ignore unknown fields because misspelled model-first artifacts would otherwise drift from intended metadata.
+
+Externally converted authoring input is subject to the same unknown-field policy after conversion to JSON. YAML comments or YAML-only metadata that do not appear in the converted JSON artifact have no DVault model semantics.
 
 ## Diagnostic Contract
 
@@ -451,6 +461,8 @@ Downstream parser and diagnostics tests should assert the primary category and c
 | `invalid/unsupported-provider-field.json` | The document includes a provider-specific section such as `providers` or native store-type options. | `provider-choice` | `DMV1502` |
 | `invalid/unsupported-load-timestamp-storage.json` | `loadTimestampStorage` uses a token outside the supported set. | `provider-choice` | `DMV1502` |
 
+No YAML fixture family is required for v1. If downstream tests cover pre-conversion authoring examples, they should assert only the resulting JSON artifact and the ordinary JSON diagnostics listed above.
+
 ## Mapping Summary
 
 | Model-first declaration | Existing visible semantics | Additive surface allowed when needed |
@@ -465,4 +477,4 @@ Downstream parser and diagnostics tests should assert the primary category and c
 
 ## Completion Boundary
 
-This contract is complete when parser and projection implementers can build against the token registry, declaration shapes, diagnostic taxonomy, and fixture expectations above without reopening top-level field names, compatibility policy, provider-choice policy, or recursive participant binding rules.
+This contract is complete when parser and projection implementers can build against the token registry, declaration shapes, diagnostic taxonomy, fixture expectations, and JSON-first YAML authoring boundary above without reopening top-level field names, compatibility policy, provider-choice policy, direct YAML ingestion, or recursive participant binding rules.
