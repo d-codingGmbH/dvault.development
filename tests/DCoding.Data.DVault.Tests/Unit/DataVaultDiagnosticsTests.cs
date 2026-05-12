@@ -15,6 +15,7 @@ public sealed class DataVaultDiagnosticsTests {
 
     Assert.True(result.Validation.IsValid);
     Assert.Equal(DataVaultSaveStrategyDiagnosticsStatus.NotEvaluated, result.SaveStrategy.Status);
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.NotEvaluated, result.ReadStrategy.Status);
     Assert.Equal("sqlite-v1", result.Explain.CapabilityProfileName);
     Assert.Equal("provider-neutral-v1", result.Explain.ProviderBehaviorProfileName);
     Assert.Equal(
@@ -86,6 +87,49 @@ public sealed class DataVaultDiagnosticsTests {
             property => Assert.Equal(selectedProfile.ProfileName, property.ProviderProfileName));
       }
     }
+  }
+
+  [Fact]
+  public void ProviderReadStrategyGateReportsMaterialFallbackCauses() {
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerNumber"]);
+    var supportedSatellite = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["Name"]);
+    var linkParentSatellite = new DataVaultSatelliteMetadata(
+        "Fulfillment",
+        DataVaultMetadataReference.Link("OrderProduct"),
+        ["State"]);
+    var multiActiveSatellite = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["EmailAddress"],
+        ["ContactType"]);
+
+    var supported = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlite(
+        KnownProviderNames.Sqlite,
+        new DataVaultLatestSatelliteReadRequest(supportedSatellite, ["customer-hk"]));
+    var unknownProvider = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlite(
+        "Contoso.UnknownProvider",
+        new DataVaultLatestSatelliteReadRequest(supportedSatellite, ["customer-hk"]));
+    var unsupportedParent = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlite(
+        KnownProviderNames.Sqlite,
+        new DataVaultLatestSatelliteReadRequest(linkParentSatellite, ["link-hk"]));
+    var multiActive = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlite(
+        KnownProviderNames.Sqlite,
+        new DataVaultLatestSatelliteReadRequest(multiActiveSatellite, ["customer-hk"]));
+
+    Assert.True(supported.CanRead);
+    Assert.Empty(supported.FallbackCauses);
+    Assert.Contains(
+        unknownProvider.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch);
+    Assert.Contains(
+        unsupportedParent.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent);
+    Assert.Contains(
+        multiActive.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
   }
 
   [Fact]

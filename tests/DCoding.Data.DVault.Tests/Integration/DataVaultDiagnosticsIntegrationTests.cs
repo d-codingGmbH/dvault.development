@@ -23,8 +23,11 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
 
     Assert.True(result.Validation.IsValid);
     Assert.Equal(DataVaultSaveStrategyDiagnosticsStatus.NotEvaluated, result.SaveStrategy.Status);
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.NotEvaluated, result.ReadStrategy.Status);
     Assert.Equal(KnownProviderNames.Sqlite, result.SaveStrategy.ProviderName);
+    Assert.Equal(KnownProviderNames.Sqlite, result.ReadStrategy.ProviderName);
     Assert.Empty(result.SaveStrategy.Candidates);
+    Assert.Empty(result.ReadStrategy.Candidates);
     Assert.Equal("sqlite-v1", result.Explain.CapabilityProfileName);
     Assert.Equal("sqlite-provider-v1", result.Explain.ProviderBehaviorProfileName);
     Assert.Equal(["HubCustomer", "SatCustomerProfile"], result.Explain.Entities.Select(entity => entity.TableName).ToArray());
@@ -54,6 +57,66 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
     Assert.True(candidate.CanSave);
     Assert.Empty(candidate.FallbackCauses);
     Assert.Empty(result.SaveStrategy.FallbackCauses);
+  }
+
+  [Fact]
+  public void AnalyzeSqliteDbContextLatestSatelliteReadRequestSelectsSqliteStrategy() {
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+    using var context = new DiagnosticsContext(CreateOptions(database));
+
+    var result = diagnostics.Analyze(context, CreateProfileReadRequest(["customer-hk"]));
+
+    Assert.True(result.Validation.IsValid);
+    Assert.Equal(DataVaultSaveStrategyDiagnosticsStatus.NotEvaluated, result.SaveStrategy.Status);
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected, result.ReadStrategy.Status);
+    Assert.Equal(KnownProviderNames.Sqlite, result.ReadStrategy.ProviderName);
+    Assert.Equal("SqliteDataVaultReadStrategy", result.ReadStrategy.SelectedStrategyName);
+    Assert.Equal(100, result.ReadStrategy.SelectedStrategyPriority);
+
+    var candidate = Assert.Single(result.ReadStrategy.Candidates);
+    Assert.Equal(0, candidate.Ordinal);
+    Assert.Equal("SqliteDataVaultReadStrategy", candidate.StrategyName);
+    Assert.True(candidate.CanRead);
+    Assert.Empty(candidate.FallbackCauses);
+    Assert.Empty(result.ReadStrategy.FallbackCauses);
+  }
+
+  [Fact]
+  public void AnalyzeSqliteDbContextReadRequestReportsDeclineFallbackCause() {
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+    using var context = new DiagnosticsContext(CreateOptions(database));
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerNumber"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["EmailAddress"],
+        ["ContactType"]);
+
+    var result = diagnostics.Analyze(
+        context,
+        new DataVaultLatestSatelliteReadRequest(contact, ["customer-hk"]));
+
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback, result.ReadStrategy.Status);
+    Assert.Null(result.ReadStrategy.SelectedStrategyName);
+
+    var candidate = Assert.Single(result.ReadStrategy.Candidates);
+    Assert.False(candidate.CanRead);
+    Assert.Contains(
+        candidate.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
+    Assert.Contains(
+        result.ReadStrategy.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
   }
 
   [Fact]
@@ -191,6 +254,16 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
         ["Name"]);
 
     return new DataVaultMetadataModel([customerHub], [], [customerSatellite]);
+  }
+
+  private static DataVaultLatestSatelliteReadRequest CreateProfileReadRequest(IEnumerable<string> parentHashKeys) {
+    var customerHub = new DataVaultHubMetadata("Customer", ["CustomerNumber"]);
+    var customerSatellite = new DataVaultSatelliteMetadata(
+        "Profile",
+        customerHub.ToReference(),
+        ["Name"]);
+
+    return new DataVaultLatestSatelliteReadRequest(customerSatellite, parentHashKeys);
   }
 
   private static DataVaultSaveRequest CreateCustomerSaveRequest(

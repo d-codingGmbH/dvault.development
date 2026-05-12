@@ -3,20 +3,19 @@
   "ticket-id": "06F0MEJE5WC51MFQ3CWDRATCWC",
   "ticket-type": "task",
   "title": "Task: Implement highest-impact provider read optimization",
-  "revision": "06F0QH46E2K6F3N6RKZ0JGKAHM",
-  "status": "todo",
+  "revision": "06F1S9VS7MGB2JTWEJSJ4Z53CG",
+  "status": "done",
   "labels": [
-    "type/task",
     "area/performance",
     "area/provider-support",
     "area/read-models",
     "area/tests",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F0ME83T78Z32RA39SD0JT85W",
   "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
   "created-at": "2026-05-09T00:54:14.2736875Z",
-  "updated-at": "2026-05-09T08:04:49.3926479Z"
+  "updated-at": "2026-05-12T14:46:38.1411643Z"
 }

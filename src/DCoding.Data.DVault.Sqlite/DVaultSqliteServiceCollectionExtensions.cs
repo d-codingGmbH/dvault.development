@@ -15,7 +15,7 @@ namespace DCoding.Data.DVault;
 /// </summary>
 public static class DVaultSqliteServiceCollectionExtensions {
   /// <summary>
-  /// Adds DVault defaults plus the SQLite optimized save strategy.
+  /// Adds DVault defaults plus the SQLite optimized save and read strategies.
   /// </summary>
   /// <param name="services">The service collection used by the application startup pipeline.</param>
   /// <returns>The same service collection so startup configuration can continue fluently.</returns>
@@ -28,6 +28,7 @@ public static class DVaultSqliteServiceCollectionExtensions {
     services.AddDVault();
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBehavior, SqliteDataVaultProviderBehavior>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, SqliteDataVaultSaveStrategy>());
+    services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderReadStrategy, SqliteDataVaultReadStrategy>());
 
     return services;
   }

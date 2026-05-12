@@ -120,6 +120,7 @@ type public enum DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity
 type public sealed class DCoding.Data.DVault.DataVaultDiagnosticsResult : System.IEquatable<DCoding.Data.DVault.DataVaultDiagnosticsResult>
   ctor public DataVaultDiagnosticsResult(DCoding.Data.DVault.DataVaultValidationDiagnostics Validation, DCoding.Data.DVault.DataVaultExplainDiagnostics Explain, DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics SaveStrategy, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultDiagnosticsIssue> Issues)
   property public DCoding.Data.DVault.DataVaultExplainDiagnostics Explain { get; init; }
+  property public DCoding.Data.DVault.DataVaultReadStrategyDiagnostics ReadStrategy { get; init; }
   property public DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics SaveStrategy { get; init; }
   property public DCoding.Data.DVault.DataVaultValidationDiagnostics Validation { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultDiagnosticsIssue> Issues { get; init; }
@@ -390,6 +391,11 @@ type public static class DCoding.Data.DVault.DataVaultProviderCapabilityProfiles
 type public enum DCoding.Data.DVault.DataVaultProviderConcurrencySupport
   value NoneInV1Unsupported = 0
 
+type public sealed class DCoding.Data.DVault.DataVaultProviderReadStrategyContext
+  ctor public DataVaultProviderReadStrategyContext(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultLatestSatelliteReadRequest request)
+  property public DCoding.Data.DVault.DataVaultLatestSatelliteReadRequest Request { get; }
+  property public Microsoft.EntityFrameworkCore.DbContext DbContext { get; }
+
 type public sealed class DCoding.Data.DVault.DataVaultProviderSaveStrategyContext
   ctor public DataVaultProviderSaveStrategyContext(Microsoft.EntityFrameworkCore.DbContext dbContext, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> requests, DCoding.Data.DVault.IStableHashService stableHashService, DCoding.Data.DVault.IStableHashNormalizer stableHashNormalizer)
   ctor public DataVaultProviderSaveStrategyContext(Microsoft.EntityFrameworkCore.DbContext dbContext, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> requests, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultResolvedSaveRequest> resolvedRequests, DCoding.Data.DVault.IStableHashService stableHashService, DCoding.Data.DVault.IStableHashNormalizer stableHashNormalizer)
@@ -437,6 +443,62 @@ type public static class DCoding.Data.DVault.DataVaultReadServiceRegistryExtensi
 
 type public static class DCoding.Data.DVault.DataVaultReadServiceTypedProjectionExtensions
   method public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TProjection?>> ReadLatestSatelliteAsync<TProjection>(this DCoding.Data.DVault.IDataVaultReadService readService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultLatestSatelliteReadRequest request, System.Func<DCoding.Data.DVault.DataVaultSatelliteProjectionRow, TProjection?> projector, System.Threading.CancellationToken cancellationToken = default)
+
+type public sealed class DCoding.Data.DVault.DataVaultReadStrategyCandidateDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultReadStrategyCandidateDiagnostics>
+  ctor public DataVaultReadStrategyCandidateDiagnostics(int Ordinal, string StrategyName, int Priority, bool CanRead, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyFallbackCause> FallbackCauses)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyFallbackCause> FallbackCauses { get; init; }
+  property public bool CanRead { get; init; }
+  property public int Ordinal { get; init; }
+  property public int Priority { get; init; }
+  property public string StrategyName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultReadStrategyCandidateDiagnostics? left, DCoding.Data.DVault.DataVaultReadStrategyCandidateDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultReadStrategyCandidateDiagnostics? left, DCoding.Data.DVault.DataVaultReadStrategyCandidateDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultReadStrategyCandidateDiagnostics? other)
+  method public void Deconstruct(out int Ordinal, out string StrategyName, out int Priority, out bool CanRead, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyFallbackCause> FallbackCauses)
+
+type public sealed class DCoding.Data.DVault.DataVaultReadStrategyDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultReadStrategyDiagnostics>
+  ctor public DataVaultReadStrategyDiagnostics(DCoding.Data.DVault.DataVaultReadStrategyDiagnosticsStatus Status, string? ProviderName, string? SelectedStrategyName, int? SelectedStrategyPriority, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyCandidateDiagnostics> Candidates, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyFallbackCause> FallbackCauses)
+  property public DCoding.Data.DVault.DataVaultReadStrategyDiagnosticsStatus Status { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyCandidateDiagnostics> Candidates { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyFallbackCause> FallbackCauses { get; init; }
+  property public int? SelectedStrategyPriority { get; init; }
+  property public string? ProviderName { get; init; }
+  property public string? SelectedStrategyName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultReadStrategyDiagnostics? left, DCoding.Data.DVault.DataVaultReadStrategyDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultReadStrategyDiagnostics? left, DCoding.Data.DVault.DataVaultReadStrategyDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultReadStrategyDiagnostics? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultReadStrategyDiagnosticsStatus Status, out string? ProviderName, out string? SelectedStrategyName, out int? SelectedStrategyPriority, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyCandidateDiagnostics> Candidates, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyFallbackCause> FallbackCauses)
+
+type public enum DCoding.Data.DVault.DataVaultReadStrategyDiagnosticsStatus
+  value NotEvaluated = 0
+  value ProviderStrategySelected = 1
+  value ProviderNeutralFallback = 2
+
+type public sealed class DCoding.Data.DVault.DataVaultReadStrategyFallbackCause : System.IEquatable<DCoding.Data.DVault.DataVaultReadStrategyFallbackCause>
+  ctor public DataVaultReadStrategyFallbackCause(DCoding.Data.DVault.DataVaultReadStrategyFallbackCauseKind Kind, string Message)
+  property public DCoding.Data.DVault.DataVaultReadStrategyFallbackCauseKind Kind { get; init; }
+  property public string Message { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultReadStrategyFallbackCause? left, DCoding.Data.DVault.DataVaultReadStrategyFallbackCause? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultReadStrategyFallbackCause? left, DCoding.Data.DVault.DataVaultReadStrategyFallbackCause? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultReadStrategyFallbackCause? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultReadStrategyFallbackCauseKind Kind, out string Message)
+
+type public enum DCoding.Data.DVault.DataVaultReadStrategyFallbackCauseKind
+  value ProviderNameMismatch = 0
+  value UnknownOrUnregisteredProviderName = 1
+  value NoProviderSpecificStrategyRegistered = 2
+  value UnsupportedSatelliteParent = 3
+  value MultiActiveSatelliteUnsupported = 4
+  value StrategyDeclined = 5
 
 type public sealed class DCoding.Data.DVault.DataVaultRecordSourceResolutionContext
   ctor public DataVaultRecordSourceResolutionContext(DCoding.Data.DVault.DataVaultSaveRequest request, System.DateTimeOffset loadTimestamp)
@@ -664,10 +726,20 @@ type public interface DCoding.Data.DVault.IDataVaultProviderBehaviorSelector
   method public abstract DCoding.Data.DVault.DataVaultProviderBehaviorProfile SelectBehavior(DCoding.Data.DVault.DataVaultProviderBehaviorContext context)
   method public abstract DCoding.Data.DVault.DataVaultProviderBehaviorProfile SelectBehavior(Microsoft.EntityFrameworkCore.DbContext dbContext)
 
+type public interface DCoding.Data.DVault.IDataVaultProviderReadStrategy
+  property public int Priority { get; }
+  method public abstract System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSatelliteProjectionRow>> ReadLatestSatelliteProjectionRowsAsync(DCoding.Data.DVault.DataVaultProviderReadStrategyContext context, System.Threading.CancellationToken cancellationToken = default)
+  method public abstract System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSatelliteReadRecord>> ReadLatestSatelliteRowsAsync(DCoding.Data.DVault.DataVaultProviderReadStrategyContext context, System.Threading.CancellationToken cancellationToken = default)
+  method public abstract bool CanReadLatestSatelliteRows(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultLatestSatelliteReadRequest request)
+
 type public interface DCoding.Data.DVault.IDataVaultProviderSaveStrategy
   property public int Priority { get; }
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(DCoding.Data.DVault.DataVaultProviderSaveStrategyContext context, System.Threading.CancellationToken cancellationToken = default)
   method public abstract bool CanSave(Microsoft.EntityFrameworkCore.DbContext dbContext, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> requests)
+
+type public interface DCoding.Data.DVault.IDataVaultReadDiagnosticsService
+  method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultLatestSatelliteReadRequest request)
+  method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryLatestSatelliteReadRequest request)
 
 type public interface DCoding.Data.DVault.IDataVaultReadService
   method public abstract System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPitReadRecord>> ReadPitRowsAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultPitAsOfReadRequest request, System.Threading.CancellationToken cancellationToken = default)

@@ -104,6 +104,61 @@ public enum DataVaultSaveStrategyFallbackCauseKind {
 }
 
 /// <summary>
+/// Status of request-bound Data Vault read-strategy evaluation.
+/// </summary>
+public enum DataVaultReadStrategyDiagnosticsStatus {
+  /// <summary>
+  /// Strategy evaluation was not requested because no latest/as-of satellite read request was supplied.
+  /// </summary>
+  NotEvaluated,
+
+  /// <summary>
+  /// A provider-specific read strategy accepted the supplied context and latest/as-of satellite read request.
+  /// </summary>
+  ProviderStrategySelected,
+
+  /// <summary>
+  /// No provider-specific read strategy accepted the supplied context and latest/as-of satellite read request.
+  /// </summary>
+  ProviderNeutralFallback,
+}
+
+/// <summary>
+/// Identifies a material reason provider-specific Data Vault read dispatch was not selected.
+/// </summary>
+public enum DataVaultReadStrategyFallbackCauseKind {
+  /// <summary>
+  /// The context provider name did not match a provider-specific strategy.
+  /// </summary>
+  ProviderNameMismatch,
+
+  /// <summary>
+  /// The provider name is unknown or has no registered provider capability mapping.
+  /// </summary>
+  UnknownOrUnregisteredProviderName,
+
+  /// <summary>
+  /// No provider-specific read strategy was registered.
+  /// </summary>
+  NoProviderSpecificStrategyRegistered,
+
+  /// <summary>
+  /// The read request targets a satellite parent shape not supported by the provider strategy.
+  /// </summary>
+  UnsupportedSatelliteParent,
+
+  /// <summary>
+  /// The read request targets a multi-active satellite shape not supported by the provider strategy.
+  /// </summary>
+  MultiActiveSatelliteUnsupported,
+
+  /// <summary>
+  /// A custom or unclassified strategy declined the read request.
+  /// </summary>
+  StrategyDeclined,
+}
+
+/// <summary>
 /// Machine-readable issue emitted by Data Vault diagnostics.
 /// </summary>
 public sealed record DataVaultDiagnosticsIssue(
@@ -222,6 +277,34 @@ public sealed record DataVaultSaveStrategyDiagnostics(
     IReadOnlyList<DataVaultSaveStrategyFallbackCause> FallbackCauses);
 
 /// <summary>
+/// Machine-readable cause explaining provider-specific read-strategy fallback.
+/// </summary>
+public sealed record DataVaultReadStrategyFallbackCause(
+    DataVaultReadStrategyFallbackCauseKind Kind,
+    string Message);
+
+/// <summary>
+/// Machine-readable diagnostics for one provider-specific read-strategy candidate.
+/// </summary>
+public sealed record DataVaultReadStrategyCandidateDiagnostics(
+    int Ordinal,
+    string StrategyName,
+    int Priority,
+    bool CanRead,
+    IReadOnlyList<DataVaultReadStrategyFallbackCause> FallbackCauses);
+
+/// <summary>
+/// Machine-readable diagnostics for request-bound provider-specific read-strategy dispatch.
+/// </summary>
+public sealed record DataVaultReadStrategyDiagnostics(
+    DataVaultReadStrategyDiagnosticsStatus Status,
+    string? ProviderName,
+    string? SelectedStrategyName,
+    int? SelectedStrategyPriority,
+    IReadOnlyList<DataVaultReadStrategyCandidateDiagnostics> Candidates,
+    IReadOnlyList<DataVaultReadStrategyFallbackCause> FallbackCauses);
+
+/// <summary>
 /// Stable structured Data Vault diagnostics payload.
 /// </summary>
 public sealed record DataVaultDiagnosticsResult(
@@ -229,6 +312,17 @@ public sealed record DataVaultDiagnosticsResult(
     DataVaultExplainDiagnostics Explain,
     DataVaultSaveStrategyDiagnostics SaveStrategy,
     IReadOnlyList<DataVaultDiagnosticsIssue> Issues) {
+  /// <summary>
+  /// Gets request-bound provider-specific read-strategy diagnostics.
+  /// </summary>
+  public DataVaultReadStrategyDiagnostics ReadStrategy { get; init; } = new(
+      DataVaultReadStrategyDiagnosticsStatus.NotEvaluated,
+      ProviderName: null,
+      SelectedStrategyName: null,
+      SelectedStrategyPriority: null,
+      Candidates: Array.Empty<DataVaultReadStrategyCandidateDiagnostics>(),
+      FallbackCauses: Array.Empty<DataVaultReadStrategyFallbackCause>());
+
   /// <summary>
   /// Produces a concise human-readable rendering of the structured diagnostics payload.
   /// </summary>
@@ -250,11 +344,19 @@ public sealed record DataVaultDiagnosticsResult(
 
     builder.Append(", entities ");
     builder.Append(Explain.Entities.Count.ToString(CultureInfo.InvariantCulture));
-    builder.Append(", strategy ");
+    builder.Append(", save strategy ");
     builder.Append(SaveStrategy.Status.ToString());
     if (!string.IsNullOrWhiteSpace(SaveStrategy.SelectedStrategyName)) {
       builder.Append(" (");
       builder.Append(SaveStrategy.SelectedStrategyName);
+      builder.Append(')');
+    }
+
+    builder.Append(", read strategy ");
+    builder.Append(ReadStrategy.Status.ToString());
+    if (!string.IsNullOrWhiteSpace(ReadStrategy.SelectedStrategyName)) {
+      builder.Append(" (");
+      builder.Append(ReadStrategy.SelectedStrategyName);
       builder.Append(')');
     }
 
@@ -316,7 +418,7 @@ public interface IDataVaultDiagnosticsService {
       DataVaultProviderCapabilityProfile providerCapabilities);
 
   /// <summary>
-  /// Analyzes the Data Vault metadata already projected on a DbContext without evaluating save-strategy dispatch.
+  /// Analyzes the Data Vault metadata already projected on a DbContext without evaluating request-bound strategy dispatch.
   /// </summary>
   DataVaultDiagnosticsResult Analyze(DbContext dbContext);
 
@@ -349,7 +451,26 @@ public interface IDataVaultDiagnosticsService {
       DataVaultRegistryBulkSaveRequest request);
 }
 
-internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnosticsService {
+/// <summary>
+/// Produces request-bound Data Vault read-strategy diagnostics.
+/// </summary>
+public interface IDataVaultReadDiagnosticsService {
+  /// <summary>
+  /// Analyzes a DbContext and evaluates provider-specific read-strategy dispatch for one latest/as-of satellite request.
+  /// </summary>
+  DataVaultDiagnosticsResult Analyze(
+      DbContext dbContext,
+      DataVaultLatestSatelliteReadRequest request);
+
+  /// <summary>
+  /// Resolves one registry-backed latest/as-of satellite read request and evaluates provider-specific read-strategy dispatch.
+  /// </summary>
+  DataVaultDiagnosticsResult Analyze(
+      DbContext dbContext,
+      DataVaultRegistryLatestSatelliteReadRequest request);
+}
+
+internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnosticsService, IDataVaultReadDiagnosticsService {
   private static readonly DataVaultSaveStrategyDiagnostics NotEvaluatedStrategy = new(
       DataVaultSaveStrategyDiagnosticsStatus.NotEvaluated,
       ProviderName: null,
@@ -357,17 +478,28 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       SelectedStrategyPriority: null,
       Candidates: Array.Empty<DataVaultSaveStrategyCandidateDiagnostics>(),
       FallbackCauses: Array.Empty<DataVaultSaveStrategyFallbackCause>());
+  private static readonly DataVaultReadStrategyDiagnostics NotEvaluatedReadStrategy = new(
+      DataVaultReadStrategyDiagnosticsStatus.NotEvaluated,
+      ProviderName: null,
+      SelectedStrategyName: null,
+      SelectedStrategyPriority: null,
+      Candidates: Array.Empty<DataVaultReadStrategyCandidateDiagnostics>(),
+      FallbackCauses: Array.Empty<DataVaultReadStrategyFallbackCause>());
 
   private readonly IDataVaultProviderBehaviorSelector _providerBehaviorSelector;
+  private readonly IReadOnlyList<IDataVaultProviderReadStrategy> _providerReadStrategies;
   private readonly IReadOnlyList<IDataVaultProviderSaveStrategy> _providerSaveStrategies;
 
   public DefaultDataVaultDiagnosticsService(
       IEnumerable<IDataVaultProviderSaveStrategy> providerSaveStrategies,
+      IEnumerable<IDataVaultProviderReadStrategy> providerReadStrategies,
       IDataVaultProviderBehaviorSelector providerBehaviorSelector) {
     ArgumentNullException.ThrowIfNull(providerSaveStrategies);
+    ArgumentNullException.ThrowIfNull(providerReadStrategies);
     ArgumentNullException.ThrowIfNull(providerBehaviorSelector);
 
     _providerSaveStrategies = providerSaveStrategies.ToArray();
+    _providerReadStrategies = providerReadStrategies.ToArray();
     _providerBehaviorSelector = providerBehaviorSelector;
   }
 
@@ -459,7 +591,33 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
   public DataVaultDiagnosticsResult Analyze(DbContext dbContext) {
     ArgumentNullException.ThrowIfNull(dbContext);
 
-    return AnalyzeDbContext(dbContext, requests: null);
+    return AnalyzeDbContext(dbContext, requests: null, readRequest: null);
+  }
+
+  public DataVaultDiagnosticsResult Analyze(
+      DbContext dbContext,
+      DataVaultLatestSatelliteReadRequest request) {
+    ArgumentNullException.ThrowIfNull(request);
+
+    return AnalyzeDbContext(dbContext, requests: null, readRequest: request);
+  }
+
+  public DataVaultDiagnosticsResult Analyze(
+      DbContext dbContext,
+      DataVaultRegistryLatestSatelliteReadRequest request) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(request);
+
+    var registry = DataVaultRegistryMetadataResolver.ResolveRequiredRegistry(dbContext);
+    var satellite = DataVaultRegistryMetadataResolver.GetRequiredSatellite(
+        registry,
+        request.Parent,
+        request.SatelliteName);
+
+    return AnalyzeDbContext(
+        dbContext,
+        requests: null,
+        readRequest: new DataVaultLatestSatelliteReadRequest(satellite, request.ParentHashKeys, request.AsOf));
   }
 
   public DataVaultDiagnosticsResult Analyze(
@@ -467,7 +625,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       DataVaultSaveRequest request) {
     ArgumentNullException.ThrowIfNull(request);
 
-    return AnalyzeDbContext(dbContext, [request]);
+    return AnalyzeDbContext(dbContext, [request], readRequest: null);
   }
 
   public DataVaultDiagnosticsResult Analyze(
@@ -475,7 +633,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       DataVaultBulkSaveRequest request) {
     ArgumentNullException.ThrowIfNull(request);
 
-    return AnalyzeDbContext(dbContext, request.Requests);
+    return AnalyzeDbContext(dbContext, request.Requests, readRequest: null);
   }
 
   public DataVaultDiagnosticsResult Analyze(
@@ -487,7 +645,8 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     var registry = DataVaultRegistryMetadataResolver.ResolveRequiredRegistry(dbContext);
     return AnalyzeDbContext(
         dbContext,
-        [DataVaultSaveServiceRegistryExtensions.ResolveRequest(registry, request)]);
+        [DataVaultSaveServiceRegistryExtensions.ResolveRequest(registry, request)],
+        readRequest: null);
   }
 
   public DataVaultDiagnosticsResult Analyze(
@@ -501,7 +660,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         .Select(current => DataVaultSaveServiceRegistryExtensions.ResolveRequest(registry, current))
         .ToArray();
 
-    return AnalyzeDbContext(dbContext, requests);
+    return AnalyzeDbContext(dbContext, requests, readRequest: null);
   }
 
   private DataVaultDiagnosticsResult AnalyzeMetadataModel(
@@ -553,12 +712,13 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
             capabilityProfileDefaulted,
             providerBehaviorDefaulted);
 
-    return CreateResult(explain, NotEvaluatedStrategy, issues);
+    return CreateResult(explain, NotEvaluatedStrategy, NotEvaluatedReadStrategy, issues);
   }
 
   private DataVaultDiagnosticsResult AnalyzeDbContext(
       DbContext dbContext,
-      IReadOnlyList<DataVaultSaveRequest>? requests) {
+      IReadOnlyList<DataVaultSaveRequest>? requests,
+      DataVaultLatestSatelliteReadRequest? readRequest) {
     ArgumentNullException.ThrowIfNull(dbContext);
 
     var providerName = dbContext.Database.ProviderName;
@@ -623,8 +783,11 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     var strategy = requests is null
         ? NotEvaluatedStrategy with { ProviderName = providerName }
         : EvaluateSaveStrategy(dbContext, requests, capabilityProfileDefaulted);
+    var readStrategy = readRequest is null
+        ? NotEvaluatedReadStrategy with { ProviderName = providerName }
+        : EvaluateReadStrategy(dbContext, readRequest, capabilityProfileDefaulted);
 
-    return CreateResult(explain, strategy, issues);
+    return CreateResult(explain, strategy, readStrategy, issues);
   }
 
   private DataVaultSaveStrategyDiagnostics EvaluateSaveStrategy(
@@ -633,7 +796,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       bool capabilityProfileDefaulted) {
     var providerName = dbContext.Database.ProviderName;
     var orderedStrategies = _providerSaveStrategies
-        .Select((strategy, registrationOrdinal) => new StrategyRegistration(strategy, registrationOrdinal))
+        .Select((strategy, registrationOrdinal) => new SaveStrategyRegistration(strategy, registrationOrdinal))
         .OrderByDescending(registration => registration.Strategy.Priority)
         .ToArray();
     var candidates = new List<DataVaultSaveStrategyCandidateDiagnostics>();
@@ -714,9 +877,97 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         DistinctFallbackCauses(fallbackCauseList));
   }
 
+  private DataVaultReadStrategyDiagnostics EvaluateReadStrategy(
+      DbContext dbContext,
+      DataVaultLatestSatelliteReadRequest request,
+      bool capabilityProfileDefaulted) {
+    var providerName = dbContext.Database.ProviderName;
+    var orderedStrategies = _providerReadStrategies
+        .Select((strategy, registrationOrdinal) => new ReadStrategyRegistration(strategy, registrationOrdinal))
+        .OrderByDescending(registration => registration.Strategy.Priority)
+        .ToArray();
+    var candidates = new List<DataVaultReadStrategyCandidateDiagnostics>();
+
+    for (var ordinal = 0; ordinal < orderedStrategies.Length; ordinal++) {
+      var strategy = orderedStrategies[ordinal].Strategy;
+      bool canRead;
+      IReadOnlyList<DataVaultReadStrategyFallbackCause> fallbackCauses;
+      try {
+        canRead = strategy.CanReadLatestSatelliteRows(dbContext, request);
+        fallbackCauses = canRead
+            ? Array.Empty<DataVaultReadStrategyFallbackCause>()
+            : DataVaultProviderReadStrategyGateEvaluator.TryEvaluateKnownStrategy(
+                strategy,
+                dbContext,
+                request,
+                out var evaluation)
+                ? evaluation.FallbackCauses
+                : [new DataVaultReadStrategyFallbackCause(
+                    DataVaultReadStrategyFallbackCauseKind.StrategyDeclined,
+                    "Provider read strategy '" + strategy.GetType().Name + "' declined the latest/as-of satellite read request.")];
+      }
+      catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or NotSupportedException) {
+        canRead = false;
+        fallbackCauses = [new DataVaultReadStrategyFallbackCause(
+            DataVaultReadStrategyFallbackCauseKind.StrategyDeclined,
+            "Provider read strategy '" + strategy.GetType().Name + "' failed compatibility evaluation: " + exception.Message)];
+      }
+
+      var candidate = new DataVaultReadStrategyCandidateDiagnostics(
+          ordinal,
+          strategy.GetType().Name,
+          strategy.Priority,
+          canRead,
+          fallbackCauses);
+      candidates.Add(candidate);
+
+      if (canRead) {
+        return new DataVaultReadStrategyDiagnostics(
+            DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected,
+            providerName,
+            candidate.StrategyName,
+            candidate.Priority,
+            candidates,
+            Array.Empty<DataVaultReadStrategyFallbackCause>());
+      }
+    }
+
+    var fallbackCauseList = candidates
+        .SelectMany(candidate => candidate.FallbackCauses)
+        .ToList();
+
+    if (orderedStrategies.Length == 0) {
+      fallbackCauseList.Add(new DataVaultReadStrategyFallbackCause(
+          DataVaultReadStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered,
+          "No provider-specific Data Vault read strategy is registered."));
+    }
+
+    if (capabilityProfileDefaulted &&
+        !fallbackCauseList.Any(cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnknownOrUnregisteredProviderName)) {
+      fallbackCauseList.Insert(0, new DataVaultReadStrategyFallbackCause(
+          DataVaultReadStrategyFallbackCauseKind.UnknownOrUnregisteredProviderName,
+          "Provider name '" + (providerName ?? "<null>") + "' is unknown or unregistered for Data Vault provider capability selection."));
+    }
+
+    if (fallbackCauseList.Count == 0) {
+      fallbackCauseList.Add(new DataVaultReadStrategyFallbackCause(
+          DataVaultReadStrategyFallbackCauseKind.StrategyDeclined,
+          "Every registered provider-specific Data Vault read strategy declined the latest/as-of satellite read request."));
+    }
+
+    return new DataVaultReadStrategyDiagnostics(
+        DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback,
+        providerName,
+        SelectedStrategyName: null,
+        SelectedStrategyPriority: null,
+        candidates,
+        DistinctFallbackCauses(fallbackCauseList));
+  }
+
   private static DataVaultDiagnosticsResult CreateResult(
       DataVaultExplainDiagnostics explain,
       DataVaultSaveStrategyDiagnostics strategy,
+      DataVaultReadStrategyDiagnostics readStrategy,
       IReadOnlyList<DataVaultDiagnosticsIssue> issues) {
     var issueArray = issues.ToArray();
     var validationIssues = issueArray
@@ -724,7 +975,9 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         .ToArray();
     var validation = new DataVaultValidationDiagnostics(validationIssues.Length == 0, validationIssues);
 
-    return new DataVaultDiagnosticsResult(validation, explain, strategy, issueArray);
+    return new DataVaultDiagnosticsResult(validation, explain, strategy, issueArray) {
+      ReadStrategy = readStrategy,
+    };
   }
 
   private static DataVaultDiagnosticsResult CreateFailureResult(
@@ -741,6 +994,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
             capabilityProfileDefaulted: false,
             providerBehaviorDefaulted: false),
         NotEvaluatedStrategy,
+        NotEvaluatedReadStrategy,
         [issue]);
   }
 
@@ -1092,6 +1346,20 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     return values;
   }
 
+  private static IReadOnlyList<DataVaultReadStrategyFallbackCause> DistinctFallbackCauses(
+      IEnumerable<DataVaultReadStrategyFallbackCause> causes) {
+    var values = new List<DataVaultReadStrategyFallbackCause>();
+    var keys = new HashSet<string>(StringComparer.Ordinal);
+    foreach (var cause in causes) {
+      var key = cause.Kind + "" + cause.Message;
+      if (keys.Add(key)) {
+        values.Add(cause);
+      }
+    }
+
+    return values;
+  }
+
   private static DataVaultProviderTypeMapping GetLoadTimestampMapping(
       DataVaultProviderCapabilityProfile providerCapabilities) {
     try {
@@ -1138,8 +1406,12 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     return value is T typed ? typed : null;
   }
 
-  private readonly record struct StrategyRegistration(
+  private readonly record struct SaveStrategyRegistration(
       IDataVaultProviderSaveStrategy Strategy,
+      int RegistrationOrdinal);
+
+  private readonly record struct ReadStrategyRegistration(
+      IDataVaultProviderReadStrategy Strategy,
       int RegistrationOrdinal);
 }
 
@@ -1400,6 +1672,83 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
       DataVaultKnownProviderSaveStrategy.SqlServer => "SQL Server",
       DataVaultKnownProviderSaveStrategy.MySql => "MySQL",
       DataVaultKnownProviderSaveStrategy.Oracle => "Oracle",
+      _ => strategy.ToString(),
+    };
+  }
+}
+
+internal enum DataVaultKnownProviderReadStrategy {
+  Sqlite,
+}
+
+internal sealed record DataVaultProviderReadStrategyGateEvaluation(
+    bool CanRead,
+    IReadOnlyList<DataVaultReadStrategyFallbackCause> FallbackCauses);
+
+internal static class DataVaultProviderReadStrategyGateEvaluator {
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlite(
+      DbContext dbContext,
+      DataVaultLatestSatelliteReadRequest request) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    return EvaluateSqlite(dbContext.Database.ProviderName, request);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlite(
+      string? providerName,
+      DataVaultLatestSatelliteReadRequest request) {
+    return Evaluate(
+        DataVaultKnownProviderReadStrategy.Sqlite,
+        providerName,
+        request,
+        supportedProviderNames: [KnownProviderNames.Sqlite]);
+  }
+
+  public static bool TryEvaluateKnownStrategy(
+      IDataVaultProviderReadStrategy strategy,
+      DbContext dbContext,
+      DataVaultLatestSatelliteReadRequest request,
+      out DataVaultProviderReadStrategyGateEvaluation evaluation) {
+    evaluation = strategy.GetType().Name switch {
+      "SqliteDataVaultReadStrategy" => EvaluateSqlite(dbContext, request),
+      _ => new DataVaultProviderReadStrategyGateEvaluation(false, Array.Empty<DataVaultReadStrategyFallbackCause>()),
+    };
+
+    return evaluation.FallbackCauses.Count > 0 || evaluation.CanRead;
+  }
+
+  private static DataVaultProviderReadStrategyGateEvaluation Evaluate(
+      DataVaultKnownProviderReadStrategy strategy,
+      string? providerName,
+      DataVaultLatestSatelliteReadRequest request,
+      IReadOnlyList<string> supportedProviderNames) {
+    ArgumentNullException.ThrowIfNull(request);
+
+    var causes = new List<DataVaultReadStrategyFallbackCause>();
+    if (!supportedProviderNames.Contains(providerName, StringComparer.Ordinal)) {
+      causes.Add(new DataVaultReadStrategyFallbackCause(
+          DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch,
+          "Provider name '" + (providerName ?? "<null>") + "' does not match " + FormatStrategyName(strategy) + "."));
+    }
+
+    if (request.Satellite.Parent.Kind != DataVaultMetadataReferenceKind.Hub) {
+      causes.Add(new DataVaultReadStrategyFallbackCause(
+          DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent,
+          FormatStrategyName(strategy) + " optimized latest/as-of satellite reads support hub-parent satellites only."));
+    }
+
+    if (request.Satellite.DrivingKeyNames.Count > 0) {
+      causes.Add(new DataVaultReadStrategyFallbackCause(
+          DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported,
+          FormatStrategyName(strategy) + " optimized latest/as-of satellite reads do not support multi-active driving keys."));
+    }
+
+    return new DataVaultProviderReadStrategyGateEvaluation(causes.Count == 0, causes);
+  }
+
+  private static string FormatStrategyName(DataVaultKnownProviderReadStrategy strategy) {
+    return strategy switch {
+      DataVaultKnownProviderReadStrategy.Sqlite => "SQLite",
       _ => strategy.ToString(),
     };
   }

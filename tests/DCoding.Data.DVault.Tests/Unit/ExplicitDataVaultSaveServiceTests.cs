@@ -192,6 +192,23 @@ public sealed class ExplicitDataVaultSaveServiceTests {
 
   [Fact]
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqliteProvider)]
+  public void SqliteProviderPackageRegistersOptimizedReadStrategyWithoutChangingAddDVaultFallback() {
+    var fallbackServices = new ServiceCollection();
+    fallbackServices.AddDVault();
+    using var fallbackProvider = fallbackServices.BuildServiceProvider(validateScopes: true);
+
+    Assert.Empty(fallbackProvider.GetServices<IDataVaultProviderReadStrategy>());
+
+    var sqliteServices = new ServiceCollection();
+    sqliteServices.AddDVaultSqlite();
+    using var sqliteProvider = sqliteServices.BuildServiceProvider(validateScopes: true);
+
+    Assert.Single(sqliteProvider.GetServices<IDataVaultProviderReadStrategy>());
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqlServerProvider)]
   public void SqlServerProviderPackageRegistersOptimizedSaveStrategy() {
     AssertProviderRegistration(services => services.AddDVaultSqlServer(), expectProviderStrategy: true);

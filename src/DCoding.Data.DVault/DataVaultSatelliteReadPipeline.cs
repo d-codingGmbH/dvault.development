@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace DCoding.Data.DVault;
 
 internal static class DataVaultSatelliteReadPipeline {
-  private const int ParentHashKeyBatchSize = 500;
+  internal const int ParentHashKeyBatchSize = 500;
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
 
   public static Task<IReadOnlyList<DataVaultSatelliteReadRecord>> ReadLatestReadRecordsAsync(
@@ -85,7 +85,7 @@ internal static class DataVaultSatelliteReadPipeline {
         .ToArray();
   }
 
-  private static SatelliteReadProjection CreateSatelliteProjection(DataVaultSatelliteMetadata satellite) {
+  internal static SatelliteReadProjection CreateSatelliteProjection(DataVaultSatelliteMetadata satellite) {
     var tableName = NamingPolicy.GetSatelliteTableName(
         new DataVaultSatelliteNameContext(satellite.Parent.Name, satellite.Name));
     var parentHashKeyColumnName = NamingPolicy.GetTechnicalColumnName(
@@ -116,7 +116,7 @@ internal static class DataVaultSatelliteReadPipeline {
         payloadColumnNames);
   }
 
-  private static DataVaultSatelliteReadRecord? TryCreateReadRecord(
+  internal static DataVaultSatelliteReadRecord? TryCreateReadRecord(
       SatelliteReadProjection projection,
       Dictionary<string, object> row) {
     if (!TryReadString(row, projection.ParentHashKeyColumnName, out var parentHashKey) ||
@@ -138,6 +138,12 @@ internal static class DataVaultSatelliteReadPipeline {
         loadTimestamp,
         recordSource,
         payloadValues);
+  }
+
+  internal static DataVaultSatelliteProjectionRow CreateProjectionRow(
+      SatelliteReadProjection projection,
+      Dictionary<string, object> row) {
+    return CreateProjectionReadRow(projection, row).ProjectionRow;
   }
 
   private static SatelliteProjectionReadRow CreateProjectionReadRow(
@@ -247,7 +253,7 @@ internal static class DataVaultSatelliteReadPipeline {
     return string.Join('\u001f', values);
   }
 
-  private sealed record SatelliteReadProjection(
+  internal sealed record SatelliteReadProjection(
       string MetadataName,
       string TableName,
       string ParentHashKeyColumnName,

@@ -15,7 +15,7 @@ The executable always uses SQLite temporary files as the required local baseline
 
 When a provider is configured, the report includes DVault fallback plus provider-specific optimized rows for the same Data Vault scenarios. When a provider is not configured, its dependency is unavailable, or the connection cannot be opened, the command still emits provider rows with `executionStatus=skipped` and a normalized `skipReason`.
 
-The default matrix includes read baselines for latest satellite, PIT as-of, and bridge traversal scenarios. Fixture creation and seeding run before the timed operation so the measured read rows focus on the `IDataVaultReadService` latest satellite path, the `DataVaultPitAsOfReadRequest`/`DataVaultPitReadRecord` path, and the provider-neutral `DataVaultBridgeReadRequest`/`DataVaultBridgeReadRecord` path. These rows intentionally do not add provider-specific read optimizations; provider-specific package rows are labeled so later optimized read implementations can be compared against the current provider-neutral baseline.
+The default matrix includes read baselines for latest satellite, PIT as-of, and bridge traversal scenarios. Fixture creation and seeding run before the timed operation so the measured read rows focus on the `IDataVaultReadService` latest satellite path, the `DataVaultPitAsOfReadRequest`/`DataVaultPitReadRecord` path, and the provider-neutral `DataVaultBridgeReadRequest`/`DataVaultBridgeReadRecord` path. SQLite latest-satellite read rows now compare the provider-neutral `AddDVault()` fallback with the `AddDVaultSqlite()` optimized provider read strategy. PIT and bridge read rows remain provider-neutral baselines.
 
 Increase `--iterations` and `--warmup` locally when collecting steadier timing numbers.
 
@@ -79,7 +79,7 @@ For write-history scenarios, SQLite emits one row for each strategy family:
 - `provider-neutral-dvault-fallback`
 - `sqlite-optimized-dvault`
 
-Read baselines emit the current provider-neutral read-service path through the DVault fallback registration and the selected provider package registration. When PostgreSQL, SQL Server, MySQL, or Oracle is configured and reachable, each Data Vault scenario emits:
+Read baselines emit the current provider-neutral read-service path through the DVault fallback registration and the selected provider package registration. For SQLite latest-satellite reads, the provider package row uses the SQLite optimized read strategy for the supported hub-parent, non-multi-active latest/as-of satellite shape. When PostgreSQL, SQL Server, MySQL, or Oracle is configured and reachable, each Data Vault scenario emits:
 
 - `provider-neutral-dvault-fallback`
 - the provider-specific optimized DVault strategy family
