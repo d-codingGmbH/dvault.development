@@ -3,20 +3,19 @@
   "ticket-id": "06F0MEGPPETJD4ZDEN5ESGR7JW",
   "ticket-type": "story",
   "title": "Story: Add PIT and bridge read/query helpers",
-  "revision": "06F0QH32B69Z6DPG0BHPSKYC2C",
-  "status": "todo",
+  "revision": "06F1NASYT1MT5DX3TZ0F9MP3RR",
+  "status": "done",
   "labels": [
-    "type/story",
-    "area/read-models",
-    "area/pit",
-    "area/bridge",
     "area/api",
+    "area/bridge",
+    "area/pit",
+    "area/read-models",
     "automation/bot-ready",
-    "needs-po"
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06F0ME83T78Z32RA39SD0JT85W",
   "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
   "created-at": "2026-05-09T00:54:00.0642774Z",
-  "updated-at": "2026-05-09T08:04:40.1531235Z"
+  "updated-at": "2026-05-12T05:31:30.8967518Z"
 }

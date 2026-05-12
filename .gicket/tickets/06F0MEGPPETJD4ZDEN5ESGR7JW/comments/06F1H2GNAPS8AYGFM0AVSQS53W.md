@@ -1,0 +1,26 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `1` selected relation flow(s) for source ticket `06F0MEGPPETJD4ZDEN5ESGR7JW`.
+- Role `po` completed with outcome `po-refinement-ready` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `4`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `56c2fe044fed4c82ad158120434134ad`
+
+Action plan
+- [queued] `child-follow-up-comment` -> `06F0MEGYHADPVN575H64D56W2G` via `parentOf` path `06F0MEGPPETJD4ZDEN5ESGR7JW -> 06F0MEGYHADPVN575H64D56W2G`
+- [queued] `child-follow-up-comment` -> `06F0MEH660Y5QTNR5P8JPS2QXC` via `parentOf` path `06F0MEGPPETJD4ZDEN5ESGR7JW -> 06F0MEH660Y5QTNR5P8JPS2QXC`
+- [queued] `child-follow-up-comment` -> `06F0MEHDFYCVK42FFY77FXHXBR` via `parentOf` path `06F0MEGPPETJD4ZDEN5ESGR7JW -> 06F0MEHDFYCVK42FFY77FXHXBR`
+- [queued] `child-follow-up-comment` -> `06F0MEHKYTBJEJH2DVZ2CFH9Z0` via `parentOf` path `06F0MEGPPETJD4ZDEN5ESGR7JW -> 06F0MEHKYTBJEJH2DVZ2CFH9Z0`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06F0MEGPPETJD4ZDEN5ESGR7JW` owner `ticket/06F0MEGPPETJD4ZDEN5ESGR7JW-story-add-pit-and-bridge-read-query-helpers` base `develop` source-owner `ticket/06F0MEGPPETJD4ZDEN5ESGR7JW-story-add-pit-and-bridge-read-query-helpers`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F0MEGYHADPVN575H64D56W2G` owner `ticket/06F0MEGYHADPVN575H64D56W2G-task-define-pit-backed-as-of-read-api-contract` base `develop` source-owner `ticket/06F0MEGPPETJD4ZDEN5ESGR7JW-story-add-pit-and-bridge-read-query-helpers`: Target ticket owner branch 'ticket/06F0MEGYHADPVN575H64D56W2G-task-define-pit-backed-as-of-read-api-contract' differs from source owner branch 'ticket/06F0MEGPPETJD4ZDEN5ESGR7JW-story-add-pit-and-bridge-read-query-helpers'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F0MEH660Y5QTNR5P8JPS2QXC` owner `ticket/06F0MEH660Y5QTNR5P8JPS2QXC-task-implement-provider-neutral-pit-snapshot-rea` base `develop` source-owner `ticket/06F0MEGPPETJD4ZDEN5ESGR7JW-story-add-pit-and-bridge-read-query-helpers`: Target ticket owner branch 'ticket/06F0MEH660Y5QTNR5P8JPS2QXC-task-implement-provider-neutral-pit-snapshot-rea' differs from source owner branch 'ticket/06F0MEGPPETJD4ZDEN5ESGR7JW-story-add-pit-and-bridge-read-query-helpers'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F0MEHDFYCVK42FFY77FXHXBR` owner `ticket/06F0MEHDFYCVK42FFY77FXHXBR-task-define-bridge-traversal-query-helper-contra` base `develop` source-owner `ticket/06F0MEGPPETJD4ZDEN5ESGR7JW-story-add-pit-and-bridge-read-query-helpers`: Target ticket owner branch 'ticket/06F0MEHDFYCVK42FFY77FXHXBR-task-define-bridge-traversal-query-helper-contra' differs from source owner branch 'ticket/06F0MEGPPETJD4ZDEN5ESGR7JW-story-add-pit-and-bridge-read-query-helpers'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F0MEHKYTBJEJH2DVZ2CFH9Z0` owner `ticket/06F0MEHKYTBJEJH2DVZ2CFH9Z0-task-implement-provider-neutral-bridge-traversal` base `develop` source-owner `ticket/06F0MEGPPETJD4ZDEN5ESGR7JW-story-add-pit-and-bridge-read-query-helpers`: Target ticket owner branch 'ticket/06F0MEHKYTBJEJH2DVZ2CFH9Z0-task-implement-provider-neutral-bridge-traversal' differs from source owner branch 'ticket/06F0MEGPPETJD4ZDEN5ESGR7JW-story-add-pit-and-bridge-read-query-helpers'.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `child-follow-up-target` to `06F0MEGYHADPVN575H64D56W2G` on owner branch `ticket/06F0MEGYHADPVN575H64D56W2G-task-define-pit-backed-as-of-read-api-contract` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `child-follow-up-target` to `06F0MEH660Y5QTNR5P8JPS2QXC` on owner branch `ticket/06F0MEH660Y5QTNR5P8JPS2QXC-task-implement-provider-neutral-pit-snapshot-rea` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `child-follow-up-target` to `06F0MEHDFYCVK42FFY77FXHXBR` on owner branch `ticket/06F0MEHDFYCVK42FFY77FXHXBR-task-define-bridge-traversal-query-helper-contra` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `child-follow-up-target` to `06F0MEHKYTBJEJH2DVZ2CFH9Z0` on owner branch `ticket/06F0MEHKYTBJEJH2DVZ2CFH9Z0-task-implement-provider-neutral-bridge-traversal` after that branch is refreshed/rebased.
