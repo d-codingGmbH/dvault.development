@@ -3,20 +3,19 @@
   "ticket-id": "06F0MEFX5M9V9SA25N76CPGT4M",
   "ticket-type": "task",
   "title": "Task: Add model diff and drift report for generated tables",
-  "revision": "06F0QH3JC4SGFQQWW4P8TQ88RM",
-  "status": "todo",
+  "revision": "06F1TFXRGF8JVKB807V1YZWMX0",
+  "status": "done",
   "labels": [
-    "type/task",
     "area/diagnostics",
     "area/model-first",
-    "area/tooling",
     "area/testing",
+    "area/tooling",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F0ME831E6DZ661QMTG5Q77J0",
   "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
   "created-at": "2026-05-09T00:53:53.6168864Z",
-  "updated-at": "2026-05-09T08:04:44.2577166Z"
+  "updated-at": "2026-05-12T17:32:55.8114922Z"
 }

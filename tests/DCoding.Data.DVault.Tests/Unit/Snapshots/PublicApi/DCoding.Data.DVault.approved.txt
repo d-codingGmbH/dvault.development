@@ -251,6 +251,56 @@ type public static class DCoding.Data.DVault.DataVaultModelBuilderExtensions
   method public static Microsoft.EntityFrameworkCore.ModelBuilder UseDataVault(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
   method public static Microsoft.EntityFrameworkCore.ModelBuilder UseDataVault(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities, DCoding.Data.DVault.DataVaultLoadTimestampStorage loadTimestampStorage)
 
+type public sealed class DCoding.Data.DVault.DataVaultModelDriftDifference : System.IEquatable<DCoding.Data.DVault.DataVaultModelDriftDifference>
+  ctor public DataVaultModelDriftDifference(DCoding.Data.DVault.DataVaultModelDriftSeverity Severity, string Code, DCoding.Data.DVault.DataVaultModelDriftElementKind ElementKind, string LogicalName, string? ProducedName, string PropertyPath, string? ExpectedValue, string? ActualValue, string Message)
+  property public DCoding.Data.DVault.DataVaultModelDriftElementKind ElementKind { get; init; }
+  property public DCoding.Data.DVault.DataVaultModelDriftSeverity Severity { get; init; }
+  property public string Code { get; init; }
+  property public string LogicalName { get; init; }
+  property public string Message { get; init; }
+  property public string PropertyPath { get; init; }
+  property public string? ActualValue { get; init; }
+  property public string? ExpectedValue { get; init; }
+  property public string? ProducedName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultModelDriftDifference? left, DCoding.Data.DVault.DataVaultModelDriftDifference? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultModelDriftDifference? left, DCoding.Data.DVault.DataVaultModelDriftDifference? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultModelDriftDifference? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultModelDriftSeverity Severity, out string Code, out DCoding.Data.DVault.DataVaultModelDriftElementKind ElementKind, out string LogicalName, out string? ProducedName, out string PropertyPath, out string? ExpectedValue, out string? ActualValue, out string Message)
+
+type public enum DCoding.Data.DVault.DataVaultModelDriftElementKind
+  value Model = 0
+  value Entity = 1
+  value Property = 2
+  value Key = 3
+  value Index = 4
+
+type public sealed class DCoding.Data.DVault.DataVaultModelDriftReport : System.IEquatable<DCoding.Data.DVault.DataVaultModelDriftReport>
+  ctor public DataVaultModelDriftReport(System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultModelDriftDifference> Differences)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultModelDriftDifference> Differences { get; init; }
+  property public bool HasBlockingDifferences { get; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultModelDriftReport? left, DCoding.Data.DVault.DataVaultModelDriftReport? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultModelDriftReport? left, DCoding.Data.DVault.DataVaultModelDriftReport? right)
+  method public string ToDisplayString()
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultModelDriftReport? other)
+  method public void Deconstruct(out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultModelDriftDifference> Differences)
+
+type public static class DCoding.Data.DVault.DataVaultModelDriftReporter
+  method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.DataVaultModelImportResult expectedImport, Microsoft.EntityFrameworkCore.DbContext currentContext)
+  method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.DataVaultModelImportResult expectedImport, Microsoft.EntityFrameworkCore.Metadata.IReadOnlyModel currentModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
+  method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, Microsoft.EntityFrameworkCore.DbContext currentContext)
+  method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, Microsoft.EntityFrameworkCore.Metadata.IReadOnlyModel currentModel)
+  method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, Microsoft.EntityFrameworkCore.Metadata.IReadOnlyModel currentModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
+
+type public enum DCoding.Data.DVault.DataVaultModelDriftSeverity
+  value Informational = 0
+  value Blocking = 1
+
 type public sealed class DCoding.Data.DVault.DataVaultModelImportDiagnostic
   property public string Category { get; }
   property public string Code { get; }
