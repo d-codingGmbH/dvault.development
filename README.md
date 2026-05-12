@@ -7,12 +7,12 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.6.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.6.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.6.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.6.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.6.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.6.0
+dotnet add package DCoding.Data.DVault --version 0.7.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.7.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.7.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.7.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.7.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.7.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
@@ -21,7 +21,13 @@ Runnable SQLite and PostgreSQL quickstart projects are available under `examples
 
 ## Quickstart
 
-Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has an Entity Framework Core provider configured. v0.6.0 adds two additive usability paths: declare schema metadata through EF Code-First declarations when the bounded hub, hub-parent satellite, driving-key, and ordered hub-link surface fits the application model; use registry-backed metadata when one authoritative model should drive schema projection, explicit saves, and latest/as-of reads. The current v0.7.0 branch also documents model-first governance for reviewed `dvault.model.v1` JSON artifacts through public import, export, projection, and drift comparison APIs; see [Model-First Governance Workflow](docs/model-first-governance.md).
+Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has an Entity Framework Core provider configured. DVault supports three additive declaration paths:
+
+- Code-First declarations for app-local EF models that fit the fluent hub, hub-parent satellite, multi-active driving-key, and ordered hub-link surface.
+- Metadata-first declarations through a shared `DataVaultMetadataModel` or `DataVaultMetadataRegistry` when one public metadata object should drive schema projection, explicit saves, typed latest/as-of reads, diagnostics, examples, or provider setup.
+- Model-first governance for reviewed `dvault.model.v1` JSON artifacts that should be imported, projected into EF metadata, exported canonically, and compared against generated metadata for drift evidence.
+
+Choose one authoritative path for a model boundary and keep the others as compatible alternatives for different ownership needs. See [Model-First Governance Workflow](docs/model-first-governance.md) for the current v0.7.0 JSON artifact contract.
 
 ### Register DVault services
 
@@ -91,7 +97,7 @@ public sealed class Order {
 }
 ```
 
-Code-First metadata is additive. It does not ask callers to put DVault hash-key, load-timestamp, or record-source technical fields on domain entities, and it does not create a public Code-First-to-registry bridge. In v0.6.0, callers that want the same public metadata object reused by schema, save, and read paths should use the registry-backed metadata path shown below.
+Code-First metadata is additive. It does not ask callers to put DVault hash-key, load-timestamp, or record-source technical fields on domain entities, and it does not create a public Code-First-to-registry bridge. Callers that want the same public metadata object reused by schema, save, and read paths should use the registry-backed metadata path shown below.
 
 ### Save explicitly
 
@@ -205,7 +211,76 @@ public sealed record CustomerProfileRead(
     DateTimeOffset LoadTimestamp);
 ```
 
-The lower-level `ReadLatestSatelliteRowsAsync(...)` API remains available as the advanced escape hatch. It returns `DataVaultSatelliteReadRecord` values containing the parent hash key, driving-key values, hash diff, load timestamp, record source, and payload values for callers that need row-level dictionaries or custom projections. PIT-backed read models, bridge traversal helpers, and provider-specific read strategies remain future extension points.
+The lower-level `ReadLatestSatelliteRowsAsync(...)` API remains available as the advanced escape hatch. It returns `DataVaultSatelliteReadRecord` values containing the parent hash key, driving-key values, hash diff, load timestamp, record source, and payload values for callers that need row-level dictionaries or custom projections.
+
+### Read PIT and bridge projections
+
+PIT-backed as-of reads and bridge reads are provider-neutral read-service helpers over already materialized tables. They do not refresh PIT rows, maintain bridge rows, infer graph closure, or add provider-specific PIT/bridge optimization. Use them when the current model already projects the PIT or bridge table and application loading has populated the rows.
+
+PIT-backed reads target one `DataVaultPitMetadata` declaration, explicit parent hash keys, and an `asOf` timestamp. `ReadPitRowsAsync(...)` returns raw `DataVaultPitReadRecord` rows; `ReadPitAsync(...)` maps selected rows through a caller-owned projection delegate with exact-name access to `ParentHashKey`, `LoadTimestamp`, and declared satellite segments.
+
+```csharp
+var pit = new DataVaultPitMetadata(customer.ToReference(), ["Profile", "Status"]);
+var snapshots = await readService.ReadPitAsync(
+    context,
+    new DataVaultPitAsOfReadRequest(pit, [customerHashKey], asOfTimestamp),
+    row => {
+      var profile = row.RequiredSatellite("Profile");
+      var status = row.OptionalSatellite("Status");
+
+      return new CustomerSnapshotRead(
+          row.RequiredString("ParentHashKey"),
+          row.RequiredDateTimeOffset("LoadTimestamp"),
+          profile.RequiredString("CustomerName"),
+          profile.RequiredString("CustomerStatus"),
+          status?.NullableString("StatusCode"));
+    },
+    cancellationToken);
+```
+
+Bridge reads target one `DataVaultBridgeMetadata` declaration and filter by endpoint hash keys. Many-to-many bridges support `DataVaultBridgeTraversalEndpoint.From` and `DataVaultBridgeTraversalEndpoint.To`. Hierarchy bridges support `DataVaultBridgeTraversalEndpoint.Ancestor` and `DataVaultBridgeTraversalEndpoint.Descendant`, require a bounded `maximumDepth`, and expose `TraversalDepth` on hierarchy rows.
+
+```csharp
+var customerOrder = new DataVaultLinkMetadata(
+    "CustomerOrder",
+    [customer.ToReference(), order.ToReference()]);
+var customerOrderBridge = DataVaultBridgeMetadata.ManyToMany(
+    "CustomerOrder",
+    customer.ToReference(),
+    customerOrder.ToReference(),
+    order.ToReference());
+
+var orderHashKeys = await readService.ReadBridgeAsync(
+    context,
+    new DataVaultBridgeReadRequest(
+        customerOrderBridge,
+        DataVaultBridgeTraversalEndpoint.From,
+        [customerHashKey]),
+    row => row.RequiredString("OrderHashKey"),
+    cancellationToken);
+
+var regionHierarchy = DataVaultBridgeMetadata.Hierarchy(
+    "SalesRegionHierarchy",
+    DataVaultMetadataReference.Hub("SalesRegion"),
+    DataVaultMetadataReference.Link("SalesRegionParentChild"),
+    DataVaultMetadataReference.Hub("SalesRegion"),
+    ancestorParticipantOrdinal: 0,
+    descendantParticipantOrdinal: 1);
+
+var descendantRegions = await readService.ReadBridgeAsync(
+    context,
+    new DataVaultBridgeReadRequest(
+        regionHierarchy,
+        DataVaultBridgeTraversalEndpoint.Ancestor,
+        ["region-a"],
+        maximumDepth: 2),
+    row => new SalesRegionPathRead(
+        row.RequiredString("DescendantSalesRegionHashKey"),
+        row.RequiredInt32("TraversalDepth")),
+    cancellationToken);
+```
+
+`ReadBridgeRowsAsync(...)` returns `DataVaultBridgeReadRecord` values with endpoint hash keys in generated column order. Each endpoint value carries the public endpoint role, endpoint name, generated column name, and hash key. Typed bridge projectors use exact generated column names such as `OrderHashKey`, `AncestorSalesRegionHashKey`, `DescendantSalesRegionHashKey`, and `TraversalDepth`.
 
 ### Register metadata once and opt in a DbContext
 
@@ -354,22 +429,23 @@ public static class SalesVaultReader {
 
 The shared-type table names and columns in this quickstart follow DVault's default naming conventions, for example `HubCustomer`, `HubOrder`, `LinkCustomerOrder`, `CustomerHashKey`, `OrderHashKey`, `LoadTimestamp`, and `RecordSource`. Direct EF queries remain available for table-specific projections, custom joins, diagnostics, and cases outside the typed read helper baseline.
 
-## v0.6.0 Release Notes
+## v0.7.0 Release Notes
 
-The v0.6.0 release updates the recommended usability flow for the coordinated six-package DVault family. See `docs/releases/v0.6.0.md` for the full release-note record, package scope, compatibility notes, known limitations, and validation evidence. Those release notes are historical context for the published v0.6.0 package baseline; current v0.7.0 branch model-first governance is documented in [Model-First Governance Workflow](docs/model-first-governance.md).
+The v0.7.0 release prepares the coordinated six-package DVault family for model-first governance and advanced read-model usage. See `docs/releases/v0.7.0.md` for the release-note record, package scope, compatibility notes, read-flow boundaries, benchmark evidence guidance, and package verification posture.
 
 Notable user-facing changes:
 
-- Code-First EF model declarations are now the README happy path for hubs, hub-parent satellites, multi-active driving keys, and ordered hub links.
-- Metadata-first `DataVaultMetadataModel` and registry-backed `UseDataVaultMetadata()` remain supported and are still used by the runnable SQLite and PostgreSQL quickstarts.
-- Typed latest/as-of satellite projector helpers provide the common read experience, while raw row reads remain available for advanced callers.
-- Diagnostics and explain output cover metadata, registry, Code-First, and DbContext analysis, with save-strategy dispatch evaluated only when a save request is supplied.
+- Code-First, metadata-first, and model-first are documented as distinct supported declaration paths rather than replacements for one another.
+- Model-first governance uses exact-versioned `dvault.model.v1` JSON artifacts, strict unknown-field rejection, canonical import/export ordering, EF metadata projection, and drift comparison review evidence.
+- Typed latest/as-of satellite reads remain the common read-service path, with raw satellite rows still available for dictionary-shaped projections.
+- Provider-neutral PIT-backed as-of reads and bridge reads are documented for already materialized PIT and bridge tables, including typed projector helpers.
+- Benchmark documentation covers latest satellite, PIT as-of, and bridge read baselines only where the repository benchmark harness records measured evidence.
 
-## Current Model-First Limitations
+## Current v0.7.0 Limitations
 
-The v0.6.0 release notes are historical for model-first capabilities. On the current v0.7.0 branch, JSON import, JSON export, model-first projection, and drift comparison APIs are implemented through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. The remaining model-first governance limitations are no first-party CLI commands, no documented CI gate snippets, no direct YAML ingestion, no live database drift introspection, and no public raw Code-First fluent/EF `ModelBuilder` to registry export bridge.
+Model-first APIs operate on JSON artifacts and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. Current limitations remain no first-party CLI commands, no documented CI gate snippets, no direct YAML ingestion, no live database drift introspection, and no public raw Code-First fluent/EF `ModelBuilder` to registry export bridge.
 
-PIT-backed read APIs, bridge traversal helpers, PIT/bridge row maintenance, and provider-specific read optimizations remain future product capabilities outside the model-first governance workflow.
+PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization. Current provider-specific read optimization evidence is limited to the latest-satellite read benchmark surface documented under `benchmarks/DCoding.Data.DVault.Benchmarks/README.md`.
 
 ## Layout
 
