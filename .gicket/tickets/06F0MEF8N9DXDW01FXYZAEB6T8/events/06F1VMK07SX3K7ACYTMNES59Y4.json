@@ -1,0 +1,12 @@
+{
+  "event-id": "06F1VMK07SX3K7ACYTMNES59Y4",
+  "occurred-at": "2026-05-12T20:13:07.0060000Z",
+  "event-type": "TicketCommentAdded",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "comment-id": "06F1VMK07T2P5DM120HA72EWQM"
+  }
+}

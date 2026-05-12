@@ -5,12 +5,12 @@ using DCoding.Data.DVault.Modeling;
 namespace DCoding.Data.DVault;
 
 /// <summary>
-/// Exports already-materialized Data Vault metadata to provider-neutral strict JSON <c>dvault.model.v1</c> artifacts.
+/// Exports Data Vault declarations and metadata to provider-neutral strict JSON <c>dvault.model.v1</c> artifacts.
 /// </summary>
 /// <remarks>
-/// The exporter accepts metadata models and registries only. It does not accept raw Code-First fluent declarations,
-/// Entity Framework <c>ModelBuilder</c> state, or runtime save/read state. Legacy <c>PointInTimeTables</c> metadata is
-/// not part of the <c>dvault.model.v1</c> artifact contract and is rejected deterministically.
+/// The exporter accepts fluent Code-First declaration callbacks, metadata models, and registries. It does not accept
+/// Entity Framework <c>ModelBuilder</c> state or runtime save/read state. Legacy <c>PointInTimeTables</c> metadata is not
+/// part of the <c>dvault.model.v1</c> artifact contract and is rejected deterministically.
 /// </remarks>
 public static class DataVaultModelArtifactExporter {
   private const string SchemaVersion = "dvault.model.v1";
@@ -32,6 +32,26 @@ public static class DataVaultModelArtifactExporter {
       DataVaultProviderCapabilityProfiles.SqlServer.ProfileName,
       DataVaultProviderCapabilityProfiles.MySql.ProfileName,
   };
+
+  /// <summary>
+  /// Exports fluent Code-First Data Vault declarations to deterministic strict JSON matching the
+  /// <c>dvault.model.v1</c> contract.
+  /// </summary>
+  /// <param name="configureModel">The fluent Code-First Data Vault metadata declarations to export.</param>
+  /// <returns>The deterministic JSON artifact.</returns>
+  /// <exception cref="ArgumentNullException"><paramref name="configureModel" /> is <see langword="null" />.</exception>
+  /// <exception cref="ArgumentException">The Code-First declaration set is invalid.</exception>
+  /// <exception cref="NotSupportedException">
+  /// The built Code-First metadata contains a shape that cannot be represented by <c>dvault.model.v1</c>.
+  /// </exception>
+  public static string ExportJson(Action<DataVaultCodeFirstModelBuilder> configureModel) {
+    ArgumentNullException.ThrowIfNull(configureModel);
+
+    var builder = new DataVaultCodeFirstModelBuilder();
+    configureModel(builder);
+
+    return ExportJson(builder.BuildMetadataModel());
+  }
 
   /// <summary>
   /// Exports an existing metadata registry to deterministic strict JSON matching the <c>dvault.model.v1</c> contract.

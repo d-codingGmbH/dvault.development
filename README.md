@@ -1,4 +1,4 @@
-# DVault
+﻿# DVault
 
 DVault is the repository for the `DCoding.Data.DVault` .NET library.
 
@@ -317,7 +317,7 @@ public sealed class SalesVaultContext(DbContextOptions<SalesVaultContext> option
 
 ### Model-first governed artifacts
 
-Use model-first governance when a source-controlled `dvault.model.v1` JSON artifact should be the reviewed authority for a Data Vault model. This path is separate from app-local Code-First declarations and from registry-backed metadata-first setup: JSON artifacts are imported with `DataVaultModelArtifactImporter.ImportJson`, projected through `UseDataVaultMetadata(DataVaultModelImportResult)`, exported from already-materialized metadata with `DataVaultModelArtifactExporter.ExportJson`, and compared against generated EF metadata with `DataVaultModelDriftReporter.Compare`.
+Use model-first governance when a source-controlled `dvault.model.v1` JSON artifact should be the reviewed authority for a Data Vault model. This path is separate from app-local Code-First declarations and from registry-backed metadata-first setup: JSON artifacts are imported with `DataVaultModelArtifactImporter.ImportJson`, projected through `UseDataVaultMetadata(DataVaultModelImportResult)`, exported from fluent Code-First declaration callbacks or already-materialized metadata with `DataVaultModelArtifactExporter.ExportJson`, and compared against generated EF metadata with `DataVaultModelDriftReporter.Compare`.
 
 ```csharp
 using DCoding.Data.DVault;
@@ -339,6 +339,10 @@ services.AddDbContext<SalesVaultContext>(options => {
 if (importResult.MetadataRegistry is not null) {
   var canonicalJson = DataVaultModelArtifactExporter.ExportJson(importResult.MetadataRegistry);
 }
+
+var codeFirstJson = DataVaultModelArtifactExporter.ExportJson(vault => {
+  vault.Hub<Customer>(hub => hub.BusinessKey(customer => customer.CustomerId));
+});
 
 using var context = new SalesVaultContext(options);
 var driftReport = DataVaultModelDriftReporter.Compare(importResult, context);
@@ -443,7 +447,7 @@ Notable user-facing changes:
 
 ## Current v0.7.0 Limitations
 
-Model-first APIs operate on JSON artifacts and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. Current limitations remain no first-party CLI commands, no documented CI gate snippets, no direct YAML ingestion, no live database drift introspection, and no public raw Code-First fluent/EF `ModelBuilder` to registry export bridge.
+Model-first APIs operate on JSON artifacts and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. `DataVaultModelArtifactExporter.ExportJson` supports fluent Code-First declaration callbacks, `DataVaultMetadataModel`, and `DataVaultMetadataRegistry`. Current limitations remain no first-party CLI commands, no documented CI gate snippets, no direct YAML ingestion, no live database drift introspection, and no public raw Code-First fluent/EF `ModelBuilder` to registry export bridge.
 
 PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization. Current provider-specific read optimization evidence is limited to the latest-satellite read benchmark surface documented under `benchmarks/DCoding.Data.DVault.Benchmarks/README.md`.
 

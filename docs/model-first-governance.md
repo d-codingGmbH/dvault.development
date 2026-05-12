@@ -10,7 +10,7 @@ Use Code-First declarations when the Data Vault model is local to one EF model a
 
 Use metadata-first registry-backed metadata when one shared authoritative `DataVaultMetadataModel` or `DataVaultMetadataRegistry` should drive EF projection, explicit save requests, typed latest/as-of reads, diagnostics, examples, or provider setup. Register that model or registry through `AddDVault(...)` and opt DbContexts into it with `UseDataVaultMetadata()`.
 
-Use model-first governance when the authoritative model should be a reviewed, versioned `dvault.model.v1` JSON artifact. This path is intended for source-controlled artifact reviews, strict JSON import diagnostics, projection into EF metadata, canonical JSON export from already-materialized metadata, and drift reports used as review evidence.
+Use model-first governance when the authoritative model should be a reviewed, versioned `dvault.model.v1` JSON artifact. This path is intended for source-controlled artifact reviews, strict JSON import diagnostics, projection into EF metadata, canonical JSON export from fluent Code-First declaration callbacks or already-materialized metadata, and drift reports used as review evidence.
 
 ## Artifact Baseline
 
@@ -113,11 +113,20 @@ services.AddDbContext<SalesVaultContext>(options => {
 });
 ```
 
-Export canonical JSON from already-materialized metadata with `DataVaultModelArtifactExporter.ExportJson`. The exporter accepts `DataVaultMetadataModel` and `DataVaultMetadataRegistry`; it does not export raw Code-First fluent declarations, EF `ModelBuilder` state, runtime save/read state, or legacy `PointInTimeTables` metadata.
+Export canonical JSON from fluent Code-First declarations or already-materialized metadata with `DataVaultModelArtifactExporter.ExportJson`. The exporter accepts a Code-First declaration callback, `DataVaultMetadataModel`, and `DataVaultMetadataRegistry`; it does not export EF `ModelBuilder` state, runtime save/read state, or legacy `PointInTimeTables` metadata.
 
 ```csharp
 using DCoding.Data.DVault;
 using DCoding.Data.DVault.Modeling;
+
+string jsonFromCodeFirst = DataVaultModelArtifactExporter.ExportJson(vault => {
+  vault.Hub<Customer>(hub => hub.BusinessKey(customer => customer.CustomerId));
+  vault.Hub<Order>(hub => hub.BusinessKey(order => order.OrderId));
+  vault.Link("CustomerOrder", link => {
+    link.Participant<Customer>();
+    link.Participant<Order>();
+  });
+});
 
 DataVaultMetadataRegistry registry = DataVaultMetadataRegistry.Create(metadataModel);
 string jsonFromRegistry = DataVaultModelArtifactExporter.ExportJson(registry);
@@ -145,6 +154,6 @@ Do not use unknown fields for comments, vendor metadata, experimental parser hin
 
 ## Current Limitations
 
-The current branch does not provide first-party CLI commands, documented CI gate snippets, direct YAML ingestion, live database drift introspection, or a public raw Code-First fluent/EF `ModelBuilder` to registry export bridge.
+The current branch does not provide first-party CLI commands, documented CI gate snippets, direct YAML ingestion, live database drift introspection, or extraction from arbitrary EF `ModelBuilder` state into a model artifact.
 
-The model-first APIs operate on JSON artifacts and already-materialized metadata. Keep command-line automation, CI policy examples, YAML semantics, database schema inspection, and raw Code-First export as separate future contracts instead of implying support in current examples.
+The model-first APIs operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata. Keep command-line automation, CI policy examples, YAML semantics, database schema inspection, and EF model reverse-engineering as separate future contracts instead of implying support in current examples.

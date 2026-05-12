@@ -36,6 +36,53 @@ public sealed class DataVaultModelArtifactExporterTests {
   }
 
   [Fact]
+  public void ExportJsonFromCodeFirstDeclarationsUsesCanonicalSectionsAndRoundTripsThroughImporter() {
+    var json = DataVaultModelArtifactExporter.ExportJson(ConfigureSharedCodeFirstModel);
+    var repeatedJson = DataVaultModelArtifactExporter.ExportJson(ConfigureSharedCodeFirstModel);
+
+    Assert.Equal(repeatedJson, json);
+    Assert.Equal(
+        ["schemaVersion", "naming", "loadTimestampStorage", "hubs", "links", "satellites", "pits", "bridges"],
+        TopLevelPropertyNames(json));
+    Assert.Contains("\"loadTimestampStorage\": \"provider-default\"", json, StringComparison.Ordinal);
+
+    var importResult = DataVaultModelArtifactImporter.ImportJson(json);
+
+    AssertValid(importResult);
+    Assert.Equal(DataVaultLoadTimestampStorage.ProviderDefault, importResult.LoadTimestampStorage);
+    Assert.Equal(["Customer", "Order"], importResult.MetadataModel!.Hubs.Select(hub => hub.Name));
+    Assert.Equal(["CustomerOrder"], importResult.MetadataModel.Links.Select(link => link.Name));
+    Assert.Equal(["Contact"], importResult.MetadataModel.Satellites.Select(satellite => satellite.Name));
+    Assert.Equal(["ContactType"], importResult.MetadataModel.Satellites.Single().DrivingKeyNames);
+    Assert.Empty(importResult.MetadataModel.Pits);
+    Assert.Empty(importResult.MetadataModel.Bridges);
+  }
+
+  [Fact]
+  public void ExportJsonFromEmptyMetadataModelEmitsDefaultCanonicalEnvelopeAndRoundTripsThroughImporter() {
+    var metadataModel = new DataVaultMetadataModel([], [], []);
+
+    var json = DataVaultModelArtifactExporter.ExportJson(metadataModel);
+
+    Assert.Equal(
+        ["schemaVersion", "naming", "loadTimestampStorage", "hubs", "links", "satellites", "pits", "bridges"],
+        TopLevelPropertyNames(json));
+    Assert.Contains("\"schemaVersion\": \"dvault.model.v1\"", json, StringComparison.Ordinal);
+    Assert.Contains("\"loadTimestampStorage\": \"provider-default\"", json, StringComparison.Ordinal);
+
+    var importResult = DataVaultModelArtifactImporter.ImportJson(json);
+
+    AssertValid(importResult);
+    Assert.Equal(DataVaultLoadTimestampStorage.ProviderDefault, importResult.LoadTimestampStorage);
+    Assert.Empty(importResult.MetadataModel!.Hubs);
+    Assert.Empty(importResult.MetadataModel.Links);
+    Assert.Empty(importResult.MetadataModel.Satellites);
+    Assert.Empty(importResult.MetadataModel.PointInTimeTables);
+    Assert.Empty(importResult.MetadataModel.Pits);
+    Assert.Empty(importResult.MetadataModel.Bridges);
+  }
+
+  [Fact]
   public void ExportJsonFromMetadataModelUsesProviderDefaultAndSameCanonicalSectionsAsRegistry() {
     var metadataModel = CreateSharedCodeFirstProducedMetadataModel();
     var modelJson = DataVaultModelArtifactExporter.ExportJson(metadataModel);
@@ -101,6 +148,12 @@ public sealed class DataVaultModelArtifactExporterTests {
 
   private static DataVaultMetadataModel CreateSharedCodeFirstProducedMetadataModel() {
     var builder = new DataVaultCodeFirstModelBuilder();
+    ConfigureSharedCodeFirstModel(builder);
+
+    return builder.BuildMetadataModel();
+  }
+
+  private static void ConfigureSharedCodeFirstModel(DataVaultCodeFirstModelBuilder builder) {
     builder.Hub<Customer>(hub => {
       hub.BusinessKey(customer => customer.CustomerId);
       hub.Satellite("Contact", satellite => {
@@ -113,8 +166,6 @@ public sealed class DataVaultModelArtifactExporterTests {
       link.Participant<Customer>();
       link.Participant<Order>();
     });
-
-    return builder.BuildMetadataModel();
   }
 
   private static DataVaultMetadataModel CreateAdvancedMetadataModel() {

@@ -161,6 +161,91 @@ public sealed class DataVaultModelDriftReporterTests {
     Assert.Contains("ContactType=>ContactType", indexDifference.ActualValue!);
   }
 
+  [Fact]
+  public void CompareReportsRepresentativeDriftCategoriesWithStableOrdering() {
+    var expectedModel = CreateCustomerContactMetadataModel();
+    var currentModel = new DataVaultMetadataModel(
+        [new DataVaultHubMetadata("Customer", ["CustomerId"]), new DataVaultHubMetadata("Order", ["OrderId"])],
+        [],
+        [new DataVaultSatelliteMetadata(
+            "Contact",
+            DataVaultMetadataReference.Hub("Customer"),
+            ["PhoneNumber"],
+            ["ContactType"])]);
+    var modelBuilder = CreateModel(
+        currentModel,
+        DataVaultProviderCapabilityProfiles.Sqlite.WithLoadTimestampStorage(DataVaultLoadTimestampStorage.UtcTicks));
+    var hub = FindEntity(modelBuilder.Model, "HubCustomer");
+    hub.SetAnnotation(DataVaultAnnotationNames.ProducedName, "HubCustomerArchive");
+    hub.FindProperty("CustomerId")!.SetAnnotation(DataVaultAnnotationNames.PropertyRole, DataVaultPropertyRole.Technical);
+
+    var report = DataVaultModelDriftReporter.Compare(
+        expectedModel,
+        modelBuilder.Model,
+        DataVaultProviderCapabilityProfiles.Sqlite);
+    var repeatedReport = DataVaultModelDriftReporter.Compare(
+        expectedModel,
+        modelBuilder.Model,
+        DataVaultProviderCapabilityProfiles.Sqlite);
+
+    Assert.True(report.HasBlockingDifferences);
+    Assert.Equal(
+        report.Differences.Select(CreateDifferenceSignature).ToArray(),
+        repeatedReport.Differences.Select(CreateDifferenceSignature).ToArray());
+    Assert.Equal(
+        report.Differences
+            .OrderBy(difference => difference.ElementKind)
+            .ThenBy(difference => difference.LogicalName, StringComparer.Ordinal)
+            .ThenBy(difference => difference.ProducedName ?? string.Empty, StringComparer.Ordinal)
+            .ThenBy(difference => difference.Code, StringComparer.Ordinal)
+            .ThenBy(difference => difference.PropertyPath, StringComparer.Ordinal)
+            .Select(CreateDifferenceSignature)
+            .ToArray(),
+        report.Differences.Select(CreateDifferenceSignature).ToArray());
+    Assert.Contains(
+        report.Differences,
+        difference => difference.Code == "unexpected-entity" &&
+            difference.LogicalName == "Hub:Order" &&
+            difference.Severity == DataVaultModelDriftSeverity.Informational);
+    Assert.Contains(
+        report.Differences,
+        difference => difference.Code == "missing-property" &&
+            difference.LogicalName == "Satellite:Contact.EmailAddress" &&
+            difference.Severity == DataVaultModelDriftSeverity.Blocking);
+    Assert.Contains(
+        report.Differences,
+        difference => difference.Code == "unexpected-property" &&
+            difference.LogicalName == "Satellite:Contact.PhoneNumber" &&
+            difference.Severity == DataVaultModelDriftSeverity.Informational);
+    Assert.Contains(
+        report.Differences,
+        difference => difference.Code == "entity-produced-name-mismatch" &&
+            difference.LogicalName == "Hub:Customer" &&
+            difference.ExpectedValue == "HubCustomer" &&
+            difference.ActualValue == "HubCustomerArchive");
+    Assert.Contains(
+        report.Differences,
+        difference => difference.Code == "property-role-mismatch" &&
+            difference.LogicalName == "Hub:Customer.CustomerId" &&
+            difference.ExpectedValue == DataVaultPropertyRole.BusinessKey.ToString() &&
+            difference.ActualValue == DataVaultPropertyRole.Technical.ToString());
+    Assert.Contains(
+        report.Differences,
+        difference => difference.Code == "timestamp-storage-mismatch" &&
+            difference.LogicalName == "Hub:Customer.LoadTimestamp" &&
+            difference.Severity == DataVaultModelDriftSeverity.Blocking);
+    Assert.Contains(
+        report.Differences,
+        difference => difference.Code == "primary-key-property-mismatch" &&
+            difference.ElementKind == DataVaultModelDriftElementKind.Key &&
+            difference.Severity == DataVaultModelDriftSeverity.Blocking);
+    Assert.Contains(
+        report.Differences,
+        difference => difference.Code == "index-property-mismatch" &&
+            difference.ElementKind == DataVaultModelDriftElementKind.Index &&
+            difference.Severity == DataVaultModelDriftSeverity.Blocking);
+  }
+
   private static ModelBuilder CreateModel(
       DataVaultMetadataModel metadataModel,
       DataVaultProviderCapabilityProfile? providerCapabilities = null) {
@@ -174,6 +259,18 @@ public sealed class DataVaultModelDriftReporterTests {
 
   private static IMutableEntityType FindEntity(IMutableModel model, string entityName) {
     return model.GetEntityTypes().Single(entity => string.Equals(entity.Name, entityName, StringComparison.Ordinal));
+  }
+
+  private static string CreateDifferenceSignature(DataVaultModelDriftDifference difference) {
+    return string.Join(
+        "|",
+        difference.ElementKind,
+        difference.LogicalName,
+        difference.ProducedName ?? string.Empty,
+        difference.Code,
+        difference.PropertyPath,
+        difference.ExpectedValue ?? string.Empty,
+        difference.ActualValue ?? string.Empty);
   }
 
   private static DataVaultMetadataModel CreateCustomerContactMetadataModel() {

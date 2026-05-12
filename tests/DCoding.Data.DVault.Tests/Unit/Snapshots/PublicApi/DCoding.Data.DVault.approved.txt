@@ -239,6 +239,7 @@ type public enum DCoding.Data.DVault.DataVaultLogicalPropertyKind
 type public static class DCoding.Data.DVault.DataVaultModelArtifactExporter
   method public static string ExportJson(DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel)
   method public static string ExportJson(DCoding.Data.DVault.Modeling.DataVaultMetadataRegistry metadataRegistry)
+  method public static string ExportJson(System.Action<DCoding.Data.DVault.DataVaultCodeFirstModelBuilder> configureModel)
 
 type public static class DCoding.Data.DVault.DataVaultModelArtifactImporter
   method public static DCoding.Data.DVault.DataVaultModelImportResult ImportJson(string json, string? logicalSourcePath = null)

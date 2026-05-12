@@ -3,20 +3,19 @@
   "ticket-id": "06F0MEF8N9DXDW01FXYZAEB6T8",
   "ticket-type": "story",
   "title": "Story: Add model export and drift tooling",
-  "revision": "06F0QH30B7VVAA6TSCNPQBZ1C0",
-  "status": "todo",
+  "revision": "06F1X7MRN2G08GZ4QWMRR4WK04",
+  "status": "done",
   "labels": [
-    "type/story",
+    "area/diagnostics",
+    "area/governance",
     "area/model-first",
     "area/tooling",
-    "area/governance",
-    "area/diagnostics",
     "automation/bot-ready",
-    "needs-po"
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06F0ME831E6DZ661QMTG5Q77J0",
   "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
   "created-at": "2026-05-09T00:53:47.9702823Z",
-  "updated-at": "2026-05-09T08:04:39.6414989Z"
+  "updated-at": "2026-05-12T23:56:10.7922408Z"
 }
