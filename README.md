@@ -21,7 +21,7 @@ Runnable SQLite and PostgreSQL quickstart projects are available under `examples
 
 ## Quickstart
 
-Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has an Entity Framework Core provider configured. v0.6.0 adds two additive usability paths: declare schema metadata through EF Code-First declarations when the bounded hub, hub-parent satellite, driving-key, and ordered hub-link surface fits the application model; use registry-backed metadata when one authoritative model should drive schema projection, explicit saves, and latest/as-of reads.
+Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has an Entity Framework Core provider configured. v0.6.0 adds two additive usability paths: declare schema metadata through EF Code-First declarations when the bounded hub, hub-parent satellite, driving-key, and ordered hub-link surface fits the application model; use registry-backed metadata when one authoritative model should drive schema projection, explicit saves, and latest/as-of reads. The current v0.7.0 branch also documents model-first governance for reviewed `dvault.model.v1` JSON artifacts through public import, export, projection, and drift comparison APIs; see [Model-First Governance Workflow](docs/model-first-governance.md).
 
 ### Register DVault services
 
@@ -240,6 +240,37 @@ public sealed class SalesVaultContext(DbContextOptions<SalesVaultContext> option
 
 `UseDataVaultMetadata()` consumes the app-level registry registered by `AddDVault(...)`. A context can override that default by passing an explicit `DataVaultMetadataModel` or `DataVaultMetadataRegistry` to `UseDataVaultMetadata(...)`. If the same EF model receives two different DVault metadata sources, model building fails with a DVault source-conflict diagnostic instead of merging or duplicating projection. The SQLite and PostgreSQL quickstarts intentionally use this registry-backed path; see `examples/README.md` for exact commands and provider setup.
 
+### Model-first governed artifacts
+
+Use model-first governance when a source-controlled `dvault.model.v1` JSON artifact should be the reviewed authority for a Data Vault model. This path is separate from app-local Code-First declarations and from registry-backed metadata-first setup: JSON artifacts are imported with `DataVaultModelArtifactImporter.ImportJson`, projected through `UseDataVaultMetadata(DataVaultModelImportResult)`, exported from already-materialized metadata with `DataVaultModelArtifactExporter.ExportJson`, and compared against generated EF metadata with `DataVaultModelDriftReporter.Compare`.
+
+```csharp
+using DCoding.Data.DVault;
+
+var json = await File.ReadAllTextAsync("models/sales-vault.json", cancellationToken);
+var importResult = DataVaultModelArtifactImporter.ImportJson(json, "models/sales-vault.json");
+
+if (!importResult.IsValid) {
+  throw new InvalidOperationException(
+      string.Join(Environment.NewLine, importResult.Diagnostics.Select(diagnostic => diagnostic.Message)));
+}
+
+services.AddDVault(options => options.UseMetadataModel(importResult));
+services.AddDbContext<SalesVaultContext>(options => {
+  options.UseSqlite(connectionString);
+  options.UseDataVaultMetadata(importResult);
+});
+
+if (importResult.MetadataRegistry is not null) {
+  var canonicalJson = DataVaultModelArtifactExporter.ExportJson(importResult.MetadataRegistry);
+}
+
+using var context = new SalesVaultContext(options);
+var driftReport = DataVaultModelDriftReporter.Compare(importResult, context);
+```
+
+Treat the JSON artifact and any drift report as review evidence. `dvault.model.v1` artifacts use exact `schemaVersion` handling, canonical JSON declaration ordering, the `default` `naming.policy`, strict unknown-field rejection, `loadTimestampStorage` tokens `provider-default`, `iso-8601-utc-text`, and `utc-ticks`, and stable `hubs`, `links`, `satellites`, `pits`, and `bridges` declaration categories. See [Model-First Governance Workflow](docs/model-first-governance.md) for the full workflow, versioning rules, YAML boundary, and current limitations.
+
 ### Diagnostics and explain output
 
 `IDataVaultDiagnosticsService` can analyze metadata models, registries, Code-First declarations, and configured DbContexts. Validation and explain output can run without a save request. Provider-specific save-strategy dispatch diagnostics are request-bound, so strategy status remains not evaluated until a single save request or ordered bulk save request is supplied.
@@ -325,7 +356,7 @@ The shared-type table names and columns in this quickstart follow DVault's defau
 
 ## v0.6.0 Release Notes
 
-The v0.6.0 release updates the recommended usability flow for the coordinated six-package DVault family. See `docs/releases/v0.6.0.md` for the full release-note record, package scope, compatibility notes, known limitations, and validation evidence.
+The v0.6.0 release updates the recommended usability flow for the coordinated six-package DVault family. See `docs/releases/v0.6.0.md` for the full release-note record, package scope, compatibility notes, known limitations, and validation evidence. Those release notes are historical context for the published v0.6.0 package baseline; current v0.7.0 branch model-first governance is documented in [Model-First Governance Workflow](docs/model-first-governance.md).
 
 Notable user-facing changes:
 
@@ -334,9 +365,11 @@ Notable user-facing changes:
 - Typed latest/as-of satellite projector helpers provide the common read experience, while raw row reads remain available for advanced callers.
 - Diagnostics and explain output cover metadata, registry, Code-First, and DbContext analysis, with save-strategy dispatch evaluated only when a save request is supplied.
 
-## Deferred Capabilities
+## Current Model-First Limitations
 
-Model-first import/export specs, PIT-backed read APIs, bridge traversal helpers, PIT/bridge row maintenance, provider-specific read optimizations, and a public Code-First-to-registry bridge remain future work. Existing PIT and bridge metadata projection baselines remain advanced metadata surfaces rather than the recommended v0.6.0 README happy path.
+The v0.6.0 release notes are historical for model-first capabilities. On the current v0.7.0 branch, JSON import, JSON export, model-first projection, and drift comparison APIs are implemented through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. The remaining model-first governance limitations are no first-party CLI commands, no documented CI gate snippets, no direct YAML ingestion, no live database drift introspection, and no public raw Code-First fluent/EF `ModelBuilder` to registry export bridge.
+
+PIT-backed read APIs, bridge traversal helpers, PIT/bridge row maintenance, and provider-specific read optimizations remain future product capabilities outside the model-first governance workflow.
 
 ## Layout
 
