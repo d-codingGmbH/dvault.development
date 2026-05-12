@@ -87,6 +87,45 @@ public static class DataVaultModelBuilderExtensions {
   }
 
   /// <summary>
+  /// Translates a successful model-first import result into provider-aware Entity Framework model metadata.
+  /// </summary>
+  /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
+  /// <param name="importResult">The successful model-first import result to project.</param>
+  /// <returns>The same model builder so Entity Framework model configuration can continue fluently.</returns>
+  public static ModelBuilder ApplyDataVaultMetadata(
+      this ModelBuilder modelBuilder,
+      DataVaultModelImportResult importResult) {
+    ArgumentNullException.ThrowIfNull(modelBuilder);
+    ArgumentNullException.ThrowIfNull(importResult);
+
+    var projectionResult = importResult.ApplyTo(modelBuilder);
+    projectionResult.ThrowIfInvalid();
+
+    return modelBuilder;
+  }
+
+  /// <summary>
+  /// Translates a successful model-first import result into Entity Framework metadata for one provider profile.
+  /// </summary>
+  /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
+  /// <param name="importResult">The successful model-first import result to project.</param>
+  /// <param name="providerCapabilities">The provider capability profile used to project storage metadata.</param>
+  /// <returns>The same model builder so Entity Framework model configuration can continue fluently.</returns>
+  public static ModelBuilder ApplyDataVaultMetadata(
+      this ModelBuilder modelBuilder,
+      DataVaultModelImportResult importResult,
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    ArgumentNullException.ThrowIfNull(modelBuilder);
+    ArgumentNullException.ThrowIfNull(importResult);
+    ArgumentNullException.ThrowIfNull(providerCapabilities);
+
+    var projectionResult = importResult.ApplyTo(modelBuilder, providerCapabilities);
+    projectionResult.ThrowIfInvalid();
+
+    return modelBuilder;
+  }
+
+  /// <summary>
   /// Builds provider-neutral Data Vault metadata from fluent code-first declarations and translates it into Entity Framework metadata.
   /// </summary>
   /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
@@ -156,7 +195,8 @@ public static class DataVaultModelBuilderExtensions {
   internal static ModelBuilder ApplyDataVaultMetadataRegistry(
       ModelBuilder modelBuilder,
       DataVaultMetadataRegistry metadataRegistry,
-      string sourceKind) {
+      string sourceKind,
+      DataVaultProviderCapabilityProfile? providerCapabilities = null) {
     ArgumentNullException.ThrowIfNull(modelBuilder);
     ArgumentNullException.ThrowIfNull(metadataRegistry);
     ArgumentException.ThrowIfNullOrWhiteSpace(sourceKind);
@@ -169,7 +209,9 @@ public static class DataVaultModelBuilderExtensions {
       return modelBuilder;
     }
 
-    var providerCapabilities = DataVaultMetadataSourceAnnotations.SelectProviderCapabilities(modelBuilder, metadataRegistry);
+    providerCapabilities = providerCapabilities is null
+        ? DataVaultMetadataSourceAnnotations.SelectProviderCapabilities(modelBuilder, metadataRegistry)
+        : DataVaultMetadataSourceAnnotations.SelectProviderCapabilities(providerCapabilities, metadataRegistry);
     var metadataModel = DataVaultMetadataSourceAnnotations.CreateMetadataModel(metadataRegistry);
 
     modelBuilder.UseDataVault(providerCapabilities);

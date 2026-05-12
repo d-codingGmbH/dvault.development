@@ -70,6 +70,17 @@ public sealed class DataVaultOptions {
   }
 
   /// <summary>
+  /// Configures a successful model-first import result as the app-level default Data Vault metadata registry.
+  /// </summary>
+  /// <param name="importResult">The successful model-first import result to expose as the app-level default source.</param>
+  /// <returns>The current options instance.</returns>
+  public DataVaultOptions UseMetadataModel(DataVaultModelImportResult importResult) {
+    ArgumentNullException.ThrowIfNull(importResult);
+
+    return UseMetadataRegistry(importResult.RequireMetadataRegistry());
+  }
+
+  /// <summary>
   /// Configures the app-level default Data Vault metadata registry used by opted-in DbContext instances.
   /// </summary>
   /// <param name="metadataRegistry">The immutable metadata registry to expose as the app-level default source.</param>

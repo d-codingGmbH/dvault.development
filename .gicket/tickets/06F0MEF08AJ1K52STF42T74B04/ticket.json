@@ -3,20 +3,19 @@
   "ticket-id": "06F0MEF08AJ1K52STF42T74B04",
   "ticket-type": "task",
   "title": "Task: Project imported model into EF metadata and registry",
-  "revision": "06F0QH39K0RAMYZ3DXNRDAG4QM",
-  "status": "todo",
+  "revision": "06F1S379HX82V43GTYK2HQR458",
+  "status": "done",
   "labels": [
-    "type/task",
-    "area/model-first",
     "area/ef-core",
+    "area/model-first",
     "area/modeling",
     "area/tests",
     "automation/bot-ready",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F0ME831E6DZ661QMTG5Q77J0",
   "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
   "created-at": "2026-05-09T00:53:46.0627503Z",
-  "updated-at": "2026-05-09T08:04:42.0083577Z"
+  "updated-at": "2026-05-12T14:17:37.4236745Z"
 }

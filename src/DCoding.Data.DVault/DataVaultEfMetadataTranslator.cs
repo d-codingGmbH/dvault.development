@@ -110,7 +110,7 @@ internal static class DataVaultEfMetadataTranslator {
 
   private static EntityProjection CreateLinkEntity(DataVaultLinkMetadata link) {
     var participantNames = link.Participants
-        .Select(participant => participant.HubReference.Name)
+        .Select(participant => participant.SourceEndpointName)
         .ToArray();
     var tableName = NamingPolicy.GetLinkTableName(new DataVaultLinkNameContext(link.Name, participantNames));
     var linkHashKeyColumnName = NamingPolicy.GetTechnicalColumnName(
@@ -404,7 +404,7 @@ internal static class DataVaultEfMetadataTranslator {
       DataVaultMetadataModel metadataModel) {
     var hub = ResolvePitHub(pit, metadataModel.Hubs);
     var satellites = ResolvePitSatellites(pit, metadataModel.Satellites, hub);
-    var tableName = GetPitTableName(hub.Name, satellites);
+    var tableName = GetPitTableName(pit.Name);
     var parentHashKeyColumnName = NamingPolicy.GetTechnicalColumnName(
         new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, hub.Name, tableName));
     var loadTimestampColumnName = NamingPolicy.GetTechnicalColumnName(
@@ -534,13 +534,8 @@ internal static class DataVaultEfMetadataTranslator {
     return resolvedSatellites;
   }
 
-  private static string GetPitTableName(
-      string hubName,
-      IEnumerable<DataVaultSatelliteMetadata> satellites) {
-    var namingPolicy = DefaultNamingPolicy.Instance;
-
-    return "Pit" + namingPolicy.NormalizeProducedIdentifier(hubName) +
-        string.Concat(satellites.Select(satellite => namingPolicy.NormalizeProducedIdentifier(satellite.Name)));
+  private static string GetPitTableName(string pitName) {
+    return "Pit" + DefaultNamingPolicy.Instance.NormalizeProducedIdentifier(pitName);
   }
 
   private static NotSupportedException PitTranslationFailure(string message) {

@@ -243,7 +243,7 @@ internal static class DataVaultPitReadPipeline {
     var pit = request.Pit;
     ValidatePitShape(pit);
 
-    var tableName = GetPitTableName(pit.Parent.Name, pit.Satellites.Select(satellite => satellite.SatelliteName));
+    var tableName = GetPitTableName(pit.Name);
     var entityType = dbContext.Model.FindEntityType(tableName);
     if (entityType is null) {
       throw PitReadFailure(
@@ -622,13 +622,8 @@ internal static class DataVaultPitReadPipeline {
         "' on table/entity '" + tableName + "' to contain a readable load timestamp value or null");
   }
 
-  private static string GetPitTableName(
-      string hubName,
-      IEnumerable<string> satelliteNames) {
-    var namingPolicy = DefaultNamingPolicy.Instance;
-
-    return "Pit" + namingPolicy.NormalizeProducedIdentifier(hubName) +
-        string.Concat(satelliteNames.Select(namingPolicy.NormalizeProducedIdentifier));
+  private static string GetPitTableName(string pitName) {
+    return "Pit" + DefaultNamingPolicy.Instance.NormalizeProducedIdentifier(pitName);
   }
 
   private static InvalidOperationException PitReadFailure(string pitName, string detail) {

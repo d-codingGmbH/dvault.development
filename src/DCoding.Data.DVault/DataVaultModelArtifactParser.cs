@@ -151,7 +151,9 @@ internal static class DataVaultModelArtifactParser {
 
       try {
         var metadataModel = CreateMetadataModel(artifact);
-        var metadataRegistry = DataVaultMetadataRegistry.Create(metadataModel);
+        var metadataRegistry = DataVaultMetadataRegistry.Create(
+            metadataModel,
+            DataVaultModelArtifactImporter.CreateProviderCapabilityProfiles(loadTimestampStorage));
         return new DataVaultModelArtifactParseResult(
             artifact,
             metadataModel,
@@ -164,7 +166,7 @@ internal static class DataVaultModelArtifactParser {
             "capability",
             "DMV1501",
             "The artifact could not be mapped to the current Data Vault metadata surface: " + exception.Message,
-            string.Empty);
+            ResolveDeclarationPath(artifact, exception));
         return CreateFailure(diagnostics);
       }
     }
@@ -982,6 +984,50 @@ internal static class DataVaultModelArtifactParser {
         path);
   }
 
+  internal static string ResolveDeclarationPath(DataVaultModelArtifact? artifact, Exception exception) {
+    if (artifact is null) {
+      return string.Empty;
+    }
+
+    var message = exception.Message;
+    foreach (var pit in artifact.Pits) {
+      if (ContainsQuotedName(message, pit.Name)) {
+        return pit.Path;
+      }
+    }
+
+    foreach (var bridge in artifact.Bridges) {
+      if (ContainsQuotedName(message, bridge.Name)) {
+        return bridge.Path;
+      }
+    }
+
+    foreach (var satellite in artifact.Satellites) {
+      if (ContainsQuotedName(message, satellite.Name)) {
+        return satellite.Path;
+      }
+    }
+
+    foreach (var link in artifact.Links) {
+      if (ContainsQuotedName(message, link.Name)) {
+        return link.Path;
+      }
+    }
+
+    foreach (var hub in artifact.Hubs) {
+      if (ContainsQuotedName(message, hub.Name)) {
+        return hub.Path;
+      }
+    }
+
+    return string.Empty;
+  }
+
+  private static bool ContainsQuotedName(string message, string name) {
+    return !string.IsNullOrWhiteSpace(name) &&
+        message.Contains("'" + name + "'", StringComparison.Ordinal);
+  }
+
   private static DataVaultMetadataModel CreateMetadataModel(DataVaultModelArtifact artifact) {
     var hubs = artifact.Hubs
         .Select(hub => new DataVaultHubMetadata(hub.Name, hub.BusinessKeys))
@@ -989,22 +1035,25 @@ internal static class DataVaultModelArtifactParser {
     var links = artifact.Links
         .Select(link => new DataVaultLinkMetadata(
             link.Name,
-            link.Participants.Select(participant => DataVaultMetadataReference.Hub(participant.Hub))))
+            link.Participants.Select(participant => new DataVaultLinkParticipantMetadata(
+                DataVaultMetadataReference.Hub(participant.Hub),
+                GetParticipantProducedBaseName(participant)))))
         .ToArray();
     var satellites = artifact.Satellites
         .Select(CreateSatelliteMetadata)
         .ToArray();
-    var pointInTimeTables = artifact.Pits
-        .Select(pit => new DataVaultPointInTimeMetadata(
-            pit.Name,
-            DataVaultMetadataReference.Hub(pit.Hub),
-            pit.Satellites.Select(DataVaultMetadataReference.Satellite)))
-        .ToArray();
+    var pointInTimeTables = Array.Empty<DataVaultPointInTimeMetadata>();
     var bridges = artifact.Bridges
         .Select(CreateBridgeMetadata)
         .ToArray();
+    var pits = artifact.Pits
+        .Select(pit => new DataVaultPitMetadata(
+            pit.Name,
+            DataVaultMetadataReference.Hub(pit.Hub),
+            pit.Satellites))
+        .ToArray();
 
-    return new DataVaultMetadataModel(hubs, links, satellites, pointInTimeTables, bridges);
+    return new DataVaultMetadataModel(hubs, links, satellites, pointInTimeTables, bridges, pits);
   }
 
   private static DataVaultSatelliteMetadata CreateSatelliteMetadata(DataVaultModelSatelliteDeclaration satellite) {

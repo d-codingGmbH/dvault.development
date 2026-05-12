@@ -471,8 +471,12 @@ public sealed class DataVaultMetadataTests {
   public void RequiredMetadataCollectionsRejectNullAndEmpty() {
     ThrowsArgumentException(() => new DataVaultHubMetadata("Customer", null!));
     ThrowsArgumentException(() => new DataVaultHubMetadata("Customer", []));
-    ThrowsArgumentException(() => new DataVaultLinkMetadata("CustomerOrder", null!));
-    ThrowsArgumentException(() => new DataVaultLinkMetadata("CustomerOrder", []));
+    ThrowsArgumentException(() => new DataVaultLinkMetadata(
+        "CustomerOrder",
+        (IEnumerable<DataVaultMetadataReference>)null!));
+    ThrowsArgumentException(() => new DataVaultLinkMetadata(
+        "CustomerOrder",
+        Array.Empty<DataVaultMetadataReference>()));
     ThrowsArgumentException(() => new DataVaultBridgeMetadata(
         "CustomerOrder",
         DataVaultBridgeKind.ManyToMany,

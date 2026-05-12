@@ -40,6 +40,20 @@ public static class DataVaultDbContextOptionsBuilderExtensions {
   }
 
   /// <summary>
+  /// Opts a DbContext into projecting a successful model-first import result.
+  /// </summary>
+  /// <param name="optionsBuilder">The Entity Framework DbContext options builder.</param>
+  /// <param name="importResult">The successful model-first import result to project for this DbContext configuration.</param>
+  /// <returns>The same options builder so DbContext configuration can continue fluently.</returns>
+  public static DbContextOptionsBuilder UseDataVaultMetadata(
+      this DbContextOptionsBuilder optionsBuilder,
+      DataVaultModelImportResult importResult) {
+    ArgumentNullException.ThrowIfNull(importResult);
+
+    return optionsBuilder.UseDataVaultMetadata(importResult.RequireMetadataRegistry());
+  }
+
+  /// <summary>
   /// Opts a DbContext into projecting an explicit context-scoped Data Vault metadata registry.
   /// </summary>
   /// <param name="optionsBuilder">The Entity Framework DbContext options builder.</param>

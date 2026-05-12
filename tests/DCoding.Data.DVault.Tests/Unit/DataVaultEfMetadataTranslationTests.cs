@@ -50,7 +50,9 @@ public sealed class DataVaultEfMetadataTranslationTests {
         .GetMethods(BindingFlags.Public | BindingFlags.Static)
         .Single(methodInfo =>
             methodInfo.Name == "ApplyDataVaultMetadata" &&
-            methodInfo.GetParameters().Length == 3);
+            methodInfo.GetParameters().Length == 3 &&
+            methodInfo.GetParameters()[1].ParameterType == typeof(DataVaultMetadataModel) &&
+            methodInfo.GetParameters()[2].ParameterType == typeof(DataVaultProviderCapabilityProfile));
     var parameters = method.GetParameters();
 
     Assert.Equal("DCoding.Data.DVault", method.DeclaringType?.Namespace);

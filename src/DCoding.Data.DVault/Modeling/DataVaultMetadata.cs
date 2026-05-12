@@ -110,8 +110,15 @@ public sealed class DataVaultLinkParticipantMetadata {
   /// Initializes a new link participant metadata declaration.
   /// </summary>
   /// <param name="hubReference">The hub referenced by this link participant.</param>
-  public DataVaultLinkParticipantMetadata(DataVaultMetadataReference hubReference) {
+  public DataVaultLinkParticipantMetadata(DataVaultMetadataReference hubReference)
+      : this(hubReference, hubReference?.Name ?? string.Empty) {
+  }
+
+  internal DataVaultLinkParticipantMetadata(
+      DataVaultMetadataReference hubReference,
+      string sourceEndpointName) {
     HubReference = DataVaultMetadataValidation.RequireHubReference(hubReference, nameof(hubReference));
+    SourceEndpointName = DataVaultMetadataValidation.RequireName(sourceEndpointName, nameof(sourceEndpointName));
     HashKeyMetadata = TechnicalMetadataColumnContract.ForRole(TechnicalMetadataColumnRole.HashKey);
   }
 
@@ -119,6 +126,8 @@ public sealed class DataVaultLinkParticipantMetadata {
   /// Gets the participating hub reference.
   /// </summary>
   public DataVaultMetadataReference HubReference { get; }
+
+  internal string SourceEndpointName { get; }
 
   /// <summary>
   /// Gets the technical hash-key metadata used to reference the participating hub key.
@@ -641,9 +650,15 @@ public sealed class DataVaultLinkMetadata {
   /// <summary>
   /// Initializes a new link metadata declaration.
   /// </summary>
-  public DataVaultLinkMetadata(string name, IEnumerable<DataVaultMetadataReference> endpoints) {
+  public DataVaultLinkMetadata(string name, IEnumerable<DataVaultMetadataReference> endpoints)
+      : this(name, CreateHubParticipants(endpoints)) {
+  }
+
+  internal DataVaultLinkMetadata(
+      string name,
+      IEnumerable<DataVaultLinkParticipantMetadata> participants) {
     Name = DataVaultMetadataValidation.RequireName(name, nameof(name));
-    Participants = RequireHubParticipants(endpoints);
+    Participants = RequireHubParticipants(participants);
     Endpoints = Participants.Select(participant => participant.HubReference).ToArray();
     HashKeyMetadata = TechnicalMetadataColumnContract.ForRole(TechnicalMetadataColumnRole.HashKey);
     LoadTimestampMetadata = TechnicalMetadataColumnContract.ForRole(TechnicalMetadataColumnRole.LoadTimestamp);
@@ -698,21 +713,27 @@ public sealed class DataVaultLinkMetadata {
     return DataVaultMetadataReference.Link(Name);
   }
 
-  private static IReadOnlyList<DataVaultLinkParticipantMetadata> RequireHubParticipants(IEnumerable<DataVaultMetadataReference> endpoints) {
+  private static IReadOnlyList<DataVaultLinkParticipantMetadata> CreateHubParticipants(
+      IEnumerable<DataVaultMetadataReference> endpoints) {
     ArgumentNullException.ThrowIfNull(endpoints);
 
-    var values = endpoints.ToArray();
-    if (values.Length < 2) {
-      throw new ArgumentException("A link requires at least two hub endpoints.", nameof(endpoints));
-    }
-
-    foreach (var endpoint in values) {
-      DataVaultMetadataValidation.RequireHubReference(endpoint, nameof(endpoints));
-    }
-
-    return values
+    return endpoints
         .Select(endpoint => new DataVaultLinkParticipantMetadata(endpoint))
         .ToArray();
+  }
+
+  private static IReadOnlyList<DataVaultLinkParticipantMetadata> RequireHubParticipants(
+      IEnumerable<DataVaultLinkParticipantMetadata> participants) {
+    var values = DataVaultMetadataValidation.RequireItems(
+        participants,
+        nameof(participants),
+        "A link requires at least two hub endpoints.");
+
+    if (values.Count < 2) {
+      throw new ArgumentException("A link requires at least two hub endpoints.", nameof(participants));
+    }
+
+    return values;
   }
 }
 
@@ -913,12 +934,34 @@ public sealed class DataVaultPitMetadata {
   /// <param name="satellites">The satellite metadata references included in declaration order.</param>
   public DataVaultPitMetadata(
       DataVaultMetadataReference parent,
+      IEnumerable<DataVaultPitSatelliteReferenceMetadata> satellites)
+      : this(
+          parent,
+          DataVaultMetadataValidation.RequireItems(satellites, nameof(satellites))) {
+  }
+
+  private DataVaultPitMetadata(
+      DataVaultMetadataReference parent,
+      IReadOnlyList<DataVaultPitSatelliteReferenceMetadata> satellites)
+      : this(CreateDefaultName(parent, satellites), parent, satellites) {
+  }
+
+  internal DataVaultPitMetadata(
+      string name,
+      DataVaultMetadataReference parent,
+      IEnumerable<string> satelliteNames)
+      : this(name, parent, CreateSatelliteReferences(satelliteNames)) {
+  }
+
+  internal DataVaultPitMetadata(
+      string name,
+      DataVaultMetadataReference parent,
       IEnumerable<DataVaultPitSatelliteReferenceMetadata> satellites) {
+    Name = DataVaultMetadataValidation.RequireName(name, nameof(name));
     ArgumentNullException.ThrowIfNull(parent);
 
     Parent = parent;
     Satellites = DataVaultMetadataValidation.RequireItems(satellites, nameof(satellites));
-    Name = CreateDefaultName(parent.Name, Satellites);
     HashKeyMetadata = TechnicalMetadataColumnContract.ForRole(TechnicalMetadataColumnRole.HashKey);
     LoadTimestampMetadata = TechnicalMetadataColumnContract.ForRole(TechnicalMetadataColumnRole.LoadTimestamp);
     TechnicalMetadataColumns =
@@ -965,6 +1008,14 @@ public sealed class DataVaultPitMetadata {
     return satelliteNames
         .Select(satelliteName => new DataVaultPitSatelliteReferenceMetadata(satelliteName))
         .ToArray();
+  }
+
+  private static string CreateDefaultName(
+      DataVaultMetadataReference parent,
+      IEnumerable<DataVaultPitSatelliteReferenceMetadata> satellites) {
+    ArgumentNullException.ThrowIfNull(parent);
+
+    return CreateDefaultName(parent.Name, satellites);
   }
 
   private static string CreateDefaultName(

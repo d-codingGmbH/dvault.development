@@ -106,9 +106,14 @@ public sealed class DataVaultModelArtifactParserTests {
     Assert.Equal(["Customer", "Order"], result.MetadataModel!.Hubs.Select(hub => hub.Name));
     Assert.Equal(["CustomerOrder"], result.MetadataModel.Links.Select(link => link.Name));
     Assert.Equal(["CustomerProfile", "CustomerContactByType"], result.MetadataModel.Satellites.Select(satellite => satellite.Name));
-    Assert.Equal(["CustomerPit"], result.MetadataModel.PointInTimeTables.Select(pit => pit.Name));
+    Assert.Empty(result.MetadataModel.PointInTimeTables);
+    Assert.Equal(["CustomerPit"], result.MetadataModel.Pits.Select(pit => pit.Name));
     Assert.Equal(["CustomerOrderBridge"], result.MetadataModel.Bridges.Select(bridge => bridge.Name));
     Assert.Equal(["ContactType", "SourceSystem"], result.MetadataModel.Satellites[1].DrivingKeyNames);
+    Assert.True(result.MetadataRegistry!.TryGetProviderCapabilityProfile("sqlite-v1-loadts-iso8601", out var providerProfile));
+    Assert.Equal(
+        DataVaultProviderValueFormat.Iso8601UtcText,
+        providerProfile!.GetRequiredTypeMapping(DataVaultLogicalPropertyKind.LoadTimestamp).ValueFormat);
   }
 
   [Fact]

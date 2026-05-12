@@ -10,6 +10,7 @@ internal static class DataVaultMetadataSourceKinds {
   public const string DbContextRegistry = "dbcontext-registry";
   public const string ModelMetadata = "model-metadata";
   public const string ModelRegistry = "model-registry";
+  public const string ModelArtifact = "model-artifact";
 }
 
 internal static class DataVaultMetadataSourceAnnotations {
@@ -85,11 +86,28 @@ internal static class DataVaultMetadataSourceAnnotations {
     ArgumentNullException.ThrowIfNull(modelBuilder);
     ArgumentNullException.ThrowIfNull(metadataRegistry);
 
-    var selectedProfile = DataVaultProviderCapabilityProfileSelection.Select(modelBuilder);
-    return metadataRegistry.TryGetProviderCapabilityProfile(selectedProfile.ProfileName, out var registryProfile) &&
-        registryProfile is not null
-        ? registryProfile
-        : selectedProfile;
+    return SelectProviderCapabilities(
+        DataVaultProviderCapabilityProfileSelection.Select(modelBuilder),
+        metadataRegistry);
+  }
+
+  public static DataVaultProviderCapabilityProfile SelectProviderCapabilities(
+      DataVaultProviderCapabilityProfile selectedProfile,
+      DataVaultMetadataRegistry metadataRegistry) {
+    ArgumentNullException.ThrowIfNull(selectedProfile);
+    ArgumentNullException.ThrowIfNull(metadataRegistry);
+
+    if (metadataRegistry.TryGetProviderCapabilityProfile(selectedProfile.ProfileName, out var registryProfile) &&
+        registryProfile is not null) {
+      return registryProfile;
+    }
+
+    var importedStorageProfilePrefix = selectedProfile.ProfileName + "-loadts-";
+    var importedStorageProfiles = metadataRegistry.ProviderCapabilityProfiles
+        .Where(profile => profile.ProfileName.StartsWith(importedStorageProfilePrefix, StringComparison.Ordinal))
+        .ToArray();
+
+    return importedStorageProfiles.Length == 1 ? importedStorageProfiles[0] : selectedProfile;
   }
 
   private static void AppendMetadataModel(StringBuilder builder, DataVaultMetadataModel metadataModel) {
@@ -102,7 +120,10 @@ internal static class DataVaultMetadataSourceAnnotations {
     AppendValue(builder, "links");
     foreach (var link in metadataModel.Links) {
       AppendValue(builder, link.Name);
-      AppendReferences(builder, link.Endpoints);
+      foreach (var participant in link.Participants) {
+        AppendReference(builder, participant.HubReference);
+        AppendValue(builder, participant.SourceEndpointName);
+      }
     }
 
     AppendValue(builder, "satellites");
