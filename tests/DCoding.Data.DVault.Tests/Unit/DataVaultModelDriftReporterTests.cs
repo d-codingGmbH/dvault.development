@@ -246,12 +246,134 @@ public sealed class DataVaultModelDriftReporterTests {
             difference.Severity == DataVaultModelDriftSeverity.Blocking);
   }
 
+  [Fact]
+  public void CompareReportsPitSnapshotReferenceDriftAsBlocking() {
+    var metadataModel = CreateRepresentativeMetadataModel();
+    var modelBuilder = CreateModel(metadataModel);
+    var pit = FindEntity(modelBuilder.Model, "PitCustomerContact");
+    var snapshotReference = pit.FindProperty("ContactLoadTimestamp")!;
+    snapshotReference.SetAnnotation(
+        DataVaultAnnotationNames.ProviderLogicalPropertyKind,
+        DataVaultLogicalPropertyKind.PayloadText);
+
+    var report = DataVaultModelDriftReporter.Compare(metadataModel, modelBuilder.Model);
+
+    Assert.True(report.HasBlockingDifferences);
+    Assert.Contains(
+        report.Differences,
+        difference => difference.Code == "provider-logical-property-kind-mismatch" &&
+            difference.LogicalName == "Pit:CustomerContact.Contact" &&
+            difference.ExpectedValue == DataVaultLogicalPropertyKind.SatelliteSnapshotReference.ToString() &&
+            difference.ActualValue == DataVaultLogicalPropertyKind.PayloadText.ToString());
+  }
+
+  [Fact]
+  public void CompareModelFirstArtifactReturnsNoDifferencesForHierarchyBridgeSnapshot() {
+    var importResult = DataVaultModelArtifactImporter.ImportJson(HierarchyBridgeArtifactJson);
+    var currentModel = CreateModel(importResult).Model;
+
+    var report = DataVaultModelDriftReporter.Compare(
+        importResult,
+        currentModel,
+        DataVaultProviderCapabilityProfiles.Sqlite);
+
+    Assert.True(importResult.IsValid);
+    Assert.False(report.HasBlockingDifferences);
+    Assert.Empty(report.Differences);
+  }
+
+  [Fact]
+  public void CompareModelFirstArtifactReportsHierarchyBridgeTraversalDepthDrift() {
+    var importResult = DataVaultModelArtifactImporter.ImportJson(HierarchyBridgeArtifactJson);
+    var modelBuilder = CreateModel(importResult);
+    var bridge = FindEntity(modelBuilder.Model, "BridgeSalesRegionHierarchy");
+    var traversalDepth = bridge.FindProperty("TraversalDepth")!;
+    traversalDepth.SetAnnotation(DataVaultAnnotationNames.PropertyRole, DataVaultPropertyRole.Payload);
+    traversalDepth.SetAnnotation(
+        DataVaultAnnotationNames.ProviderLogicalPropertyKind,
+        DataVaultLogicalPropertyKind.PayloadText);
+
+    var report = DataVaultModelDriftReporter.Compare(
+        importResult,
+        modelBuilder.Model,
+        DataVaultProviderCapabilityProfiles.Sqlite);
+
+    Assert.True(importResult.IsValid);
+    Assert.True(report.HasBlockingDifferences);
+    Assert.Contains(
+        report.Differences,
+        difference => difference.Code == "property-role-mismatch" &&
+            difference.LogicalName == "Bridge:SalesRegionHierarchy.TraversalDepth" &&
+            difference.ExpectedValue == DataVaultPropertyRole.BridgeDepth.ToString() &&
+            difference.ActualValue == DataVaultPropertyRole.Payload.ToString());
+    Assert.Contains(
+        report.Differences,
+        difference => difference.Code == "provider-logical-property-kind-mismatch" &&
+            difference.LogicalName == "Bridge:SalesRegionHierarchy.TraversalDepth" &&
+            difference.ExpectedValue == DataVaultLogicalPropertyKind.BridgeDepth.ToString() &&
+            difference.ActualValue == DataVaultLogicalPropertyKind.PayloadText.ToString());
+  }
+
+  [Fact]
+  public void CompareReportsUnsupportedGapsWhenRequiredEfAnnotationsAreMissing() {
+    var metadataModel = new DataVaultMetadataModel(
+        [new DataVaultHubMetadata("Customer", ["CustomerId"])],
+        [],
+        []);
+    var modelBuilder = CreateModel(metadataModel);
+    var hub = FindEntity(modelBuilder.Model, "HubCustomer");
+    var hashKey = hub.FindProperty("CustomerHashKey")!;
+    hashKey.SetAnnotation(DataVaultAnnotationNames.PropertyRole, null);
+    hashKey.SetAnnotation(DataVaultAnnotationNames.TechnicalColumnRole, null);
+    hashKey.SetAnnotation(DataVaultAnnotationNames.ProviderLogicalPropertyKind, null);
+    hashKey.SetAnnotation(DataVaultAnnotationNames.ProviderValueFormat, null);
+
+    var report = DataVaultModelDriftReporter.Compare(metadataModel, modelBuilder.Model);
+
+    Assert.True(report.HasBlockingDifferences);
+    Assert.Contains(
+        report.Differences,
+        difference => difference.Code == "property-role-unsupported-gap" &&
+            difference.LogicalName == "Hub:Customer.HashKey" &&
+            difference.ExpectedValue == DataVaultPropertyRole.Technical.ToString() &&
+            difference.ActualValue == "<none>");
+    Assert.Contains(
+        report.Differences,
+        difference => difference.Code == "technical-column-role-unsupported-gap" &&
+            difference.LogicalName == "Hub:Customer.HashKey" &&
+            difference.ExpectedValue == TechnicalMetadataColumnRole.HashKey.ToString() &&
+            difference.ActualValue == "<none>");
+    Assert.Contains(
+        report.Differences,
+        difference => difference.Code == "provider-logical-property-kind-unsupported-gap" &&
+            difference.LogicalName == "Hub:Customer.HashKey" &&
+            difference.ExpectedValue == DataVaultLogicalPropertyKind.HashKey.ToString() &&
+            difference.ActualValue == "<none>");
+    Assert.Contains(
+        report.Differences,
+        difference => difference.Code == "property-value-format-unsupported-gap" &&
+            difference.LogicalName == "Hub:Customer.HashKey" &&
+            difference.ExpectedValue == DataVaultProviderValueFormat.Text.ToString() &&
+            difference.ActualValue == "<none>");
+  }
+
   private static ModelBuilder CreateModel(
       DataVaultMetadataModel metadataModel,
       DataVaultProviderCapabilityProfile? providerCapabilities = null) {
     var modelBuilder = new ModelBuilder(new ConventionSet());
     modelBuilder.ApplyDataVaultMetadata(
         metadataModel,
+        providerCapabilities ?? DataVaultProviderCapabilityProfiles.Sqlite);
+
+    return modelBuilder;
+  }
+
+  private static ModelBuilder CreateModel(
+      DataVaultModelImportResult importResult,
+      DataVaultProviderCapabilityProfile? providerCapabilities = null) {
+    var modelBuilder = new ModelBuilder(new ConventionSet());
+    modelBuilder.ApplyDataVaultMetadata(
+        importResult,
         providerCapabilities ?? DataVaultProviderCapabilityProfiles.Sqlite);
 
     return modelBuilder;
@@ -307,4 +429,38 @@ public sealed class DataVaultModelDriftReporterTests {
         [bridge],
         [pit]);
   }
+
+  private const string HierarchyBridgeArtifactJson =
+      """
+      {
+        "schemaVersion": "dvault.model.v1",
+        "hubs": [
+          {
+            "name": "SalesRegion",
+            "businessKeys": ["RegionId"]
+          }
+        ],
+        "links": [
+          {
+            "name": "SalesRegionParentChild",
+            "participants": [
+              { "hub": "SalesRegion", "role": "ParentRegion" },
+              { "hub": "SalesRegion", "role": "ChildRegion" }
+            ]
+          }
+        ],
+        "bridges": [
+          {
+            "name": "SalesRegionHierarchy",
+            "kind": "hierarchy",
+            "source": "SalesRegionParentChild",
+            "endpoints": {
+              "ancestor": { "hub": "SalesRegion", "role": "ParentRegion" },
+              "descendant": { "hub": "SalesRegion", "role": "ChildRegion" }
+            }
+          }
+        ]
+      }
+      """;
+
 }

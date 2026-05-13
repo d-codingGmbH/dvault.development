@@ -3,19 +3,18 @@
   "ticket-id": "06F1XPWNAWWMDBRK315S66P7AM",
   "ticket-type": "task",
   "title": "Task: Add EF ModelSnapshot drift adapter",
-  "revision": "06F1XTPDPQF86Q7VJ9ARMYSY98",
-  "status": "todo",
+  "revision": "06F22TVA8RB0SM51WB2XDANF5R",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/task",
     "area/drift",
     "area/ef-core",
     "area/testing",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRST21T8Z9RXCDP286A4R",
   "releaseId": "06F1XPRJZBEZFGF8XMH6RCPSS4",
   "created-at": "2026-05-13T01:02:47.8059905Z",
-  "updated-at": "2026-05-13T01:19:25.1092477Z"
+  "updated-at": "2026-05-13T12:59:08.2302014Z"
 }

@@ -54,17 +54,18 @@ public static class DataVaultModelDriftReporter {
       IReadOnlyModel currentModel,
       DataVaultProviderCapabilityProfile providerCapabilities) {
     ArgumentNullException.ThrowIfNull(expectedImport);
+    ArgumentNullException.ThrowIfNull(currentModel);
     ArgumentNullException.ThrowIfNull(providerCapabilities);
 
     expectedImport.ThrowIfInvalid();
-    if (expectedImport.MetadataModel is null) {
-      throw new InvalidOperationException("The Data Vault model import result does not contain an expected metadata model.");
+    if (expectedImport.MetadataRegistry is null) {
+      throw new InvalidOperationException("The Data Vault model import result does not contain an expected metadata registry.");
     }
 
-    return Compare(
-        expectedImport.MetadataModel,
-        currentModel,
+    var expectedModel = BuildExpectedModel(
+        expectedImport,
         providerCapabilities.WithLoadTimestampStorage(expectedImport.LoadTimestampStorage));
+    return CompareSnapshots(CreateSnapshot(expectedModel), CreateSnapshot(currentModel));
   }
 
   /// <summary>
@@ -106,6 +107,15 @@ public static class DataVaultModelDriftReporter {
       DataVaultProviderCapabilityProfile providerCapabilities) {
     var modelBuilder = new ModelBuilder(new ConventionSet());
     modelBuilder.ApplyDataVaultMetadata(metadataModel, providerCapabilities);
+
+    return modelBuilder.Model;
+  }
+
+  private static IReadOnlyModel BuildExpectedModel(
+      DataVaultModelImportResult importResult,
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    var modelBuilder = new ModelBuilder(new ConventionSet());
+    modelBuilder.ApplyDataVaultMetadata(importResult, providerCapabilities);
 
     return modelBuilder.Model;
   }
@@ -254,7 +264,7 @@ public static class DataVaultModelDriftReporter {
             expectedEntity.LogicalName + "." + expectedProperty.MetadataName,
             expectedProperty.ProducedName,
             "properties." + expectedProperty.MetadataName,
-            expectedProperty.Role.ToString(),
+            FormatNullable(expectedProperty.Role),
             "<missing>",
             "The expected Data Vault property is missing from the current EF entity.");
         continue;
@@ -279,7 +289,7 @@ public static class DataVaultModelDriftReporter {
           actualProperty.ProducedName,
           "properties." + actualProperty.MetadataName,
           "<missing>",
-          actualProperty.Role.ToString(),
+          FormatNullable(actualProperty.Role),
           "The current EF entity contains an additional Data Vault property that is not in the expected model.");
     }
   }
@@ -312,28 +322,32 @@ public static class DataVaultModelDriftReporter {
         expected.MetadataName,
         actual.MetadataName,
         "The current EF property carries a different logical metadata name annotation.");
-    AddScalarDifference(
+    AddNullableScalarDifference(
         differences,
         DataVaultModelDriftSeverity.Blocking,
         "property-role-mismatch",
+        "property-role-unsupported-gap",
         DataVaultModelDriftElementKind.Property,
         logicalName,
         expected.ProducedName,
         "properties." + expected.MetadataName + ".role",
-        expected.Role.ToString(),
-        actual.Role.ToString(),
-        "The current EF property has an incompatible Data Vault property role.");
-    AddScalarDifference(
+        expected.Role,
+        actual.Role,
+        "The current EF property has an incompatible Data Vault property role.",
+        "The current EF property does not expose the required Data Vault property role annotation.");
+    AddNullableScalarDifference(
         differences,
         DataVaultModelDriftSeverity.Blocking,
         "technical-column-role-mismatch",
+        "technical-column-role-unsupported-gap",
         DataVaultModelDriftElementKind.Property,
         logicalName,
         expected.ProducedName,
         "properties." + expected.MetadataName + ".technicalRole",
-        FormatNullable(expected.TechnicalRole),
-        FormatNullable(actual.TechnicalRole),
-        "The current EF property has an incompatible Data Vault technical column role.");
+        expected.TechnicalRole,
+        actual.TechnicalRole,
+        "The current EF property has an incompatible Data Vault technical column role.",
+        "The current EF property does not expose the required Data Vault technical column role annotation.");
     AddScalarDifference(
         differences,
         DataVaultModelDriftSeverity.Informational,
@@ -345,17 +359,19 @@ public static class DataVaultModelDriftReporter {
         expected.Ordinal.ToString(CultureInfo.InvariantCulture),
         actual.Ordinal.ToString(CultureInfo.InvariantCulture),
         "The current EF property has a different declaration ordinal.");
-    AddScalarDifference(
+    AddNullableScalarDifference(
         differences,
         DataVaultModelDriftSeverity.Blocking,
         "provider-logical-property-kind-mismatch",
+        "provider-logical-property-kind-unsupported-gap",
         DataVaultModelDriftElementKind.Property,
         logicalName,
         expected.ProducedName,
         "properties." + expected.MetadataName + ".providerLogicalPropertyKind",
-        expected.LogicalPropertyKind.ToString(),
-        actual.LogicalPropertyKind.ToString(),
-        "The current EF property has an incompatible provider logical property kind.");
+        expected.LogicalPropertyKind,
+        actual.LogicalPropertyKind,
+        "The current EF property has an incompatible provider logical property kind.",
+        "The current EF property does not expose the required provider logical property kind annotation.");
     AddScalarDifference(
         differences,
         DataVaultModelDriftSeverity.Blocking,
@@ -367,17 +383,19 @@ public static class DataVaultModelDriftReporter {
         expected.ProviderStorageType,
         actual.ProviderStorageType,
         "The current EF property has an incompatible provider storage type.");
-    AddScalarDifference(
+    AddNullableScalarDifference(
         differences,
         DataVaultModelDriftSeverity.Blocking,
         GetValueFormatMismatchCode(expected, actual),
+        GetValueFormatGapCode(expected, actual),
         DataVaultModelDriftElementKind.Property,
         logicalName,
         expected.ProducedName,
         "properties." + expected.MetadataName + ".providerValueFormat",
-        expected.ProviderValueFormat.ToString(),
-        actual.ProviderValueFormat.ToString(),
-        "The current EF property has an incompatible provider value format.");
+        expected.ProviderValueFormat,
+        actual.ProviderValueFormat,
+        "The current EF property has an incompatible provider value format.",
+        "The current EF property does not expose the required provider value format annotation.");
     AddScalarDifference(
         differences,
         DataVaultModelDriftSeverity.Blocking,
@@ -696,14 +714,14 @@ public static class DataVaultModelDriftReporter {
   private static PropertySnapshot CreatePropertySnapshot(IReadOnlyProperty property) {
     return new PropertySnapshot(
         GetStringAnnotation(property, DataVaultAnnotationNames.ProducedName) ?? property.Name,
-        GetAnnotationValue<DataVaultPropertyRole>(property, DataVaultAnnotationNames.PropertyRole),
+        GetNullableAnnotationValue<DataVaultPropertyRole>(property, DataVaultAnnotationNames.PropertyRole),
         GetNullableAnnotationValue<TechnicalMetadataColumnRole>(property, DataVaultAnnotationNames.TechnicalColumnRole),
         GetStringAnnotation(property, DataVaultAnnotationNames.MetadataName) ?? property.Name,
         GetNullableAnnotationValue<int>(property, DataVaultAnnotationNames.Ordinal) ?? property.GetColumnOrder() ?? 0,
-        GetAnnotationValue<DataVaultLogicalPropertyKind>(property, DataVaultAnnotationNames.ProviderLogicalPropertyKind),
+        GetNullableAnnotationValue<DataVaultLogicalPropertyKind>(property, DataVaultAnnotationNames.ProviderLogicalPropertyKind),
         GetStringAnnotation(property, DataVaultAnnotationNames.ProviderProfile) ?? string.Empty,
         GetStringAnnotation(property, DataVaultAnnotationNames.ProviderStorageType) ?? property.GetColumnType() ?? string.Empty,
-        GetAnnotationValue<DataVaultProviderValueFormat>(property, DataVaultAnnotationNames.ProviderValueFormat));
+        GetNullableAnnotationValue<DataVaultProviderValueFormat>(property, DataVaultAnnotationNames.ProviderValueFormat));
   }
 
   private static IndexSnapshot CreateIndexSnapshot(IReadOnlyIndex index) {
@@ -723,7 +741,7 @@ public static class DataVaultModelDriftReporter {
     return new PropertyReferenceSnapshot(
         GetStringAnnotation(property, DataVaultAnnotationNames.MetadataName) ?? property.Name,
         GetStringAnnotation(property, DataVaultAnnotationNames.ProducedName) ?? property.Name,
-        GetAnnotationValue<DataVaultPropertyRole>(property, DataVaultAnnotationNames.PropertyRole),
+        GetNullableAnnotationValue<DataVaultPropertyRole>(property, DataVaultAnnotationNames.PropertyRole),
         GetNullableAnnotationValue<TechnicalMetadataColumnRole>(property, DataVaultAnnotationNames.TechnicalColumnRole));
   }
 
@@ -757,7 +775,7 @@ public static class DataVaultModelDriftReporter {
   private static PropertyReferenceSnapshot CreateIncludedPropertyReference(IReadOnlyIndex index, string propertyName) {
     var property = index.DeclaringEntityType.FindProperty(propertyName);
     return property is null
-        ? new PropertyReferenceSnapshot(propertyName, propertyName, default, null)
+        ? new PropertyReferenceSnapshot(propertyName, propertyName, null, null)
         : CreatePropertyReferenceSnapshot(property);
   }
 
@@ -819,6 +837,38 @@ public static class DataVaultModelDriftReporter {
         expectedValue,
         actualValue,
         message);
+  }
+
+  private static void AddNullableScalarDifference<T>(
+      ICollection<DataVaultModelDriftDifference> differences,
+      DataVaultModelDriftSeverity severity,
+      string mismatchCode,
+      string unsupportedGapCode,
+      DataVaultModelDriftElementKind elementKind,
+      string logicalName,
+      string? producedName,
+      string propertyPath,
+      T? expectedValue,
+      T? actualValue,
+      string mismatchMessage,
+      string unsupportedGapMessage)
+      where T : struct {
+    if (EqualityComparer<T?>.Default.Equals(expectedValue, actualValue)) {
+      return;
+    }
+
+    var isUnsupportedGap = expectedValue.HasValue && !actualValue.HasValue;
+    AddDifference(
+        differences,
+        severity,
+        isUnsupportedGap ? unsupportedGapCode : mismatchCode,
+        elementKind,
+        logicalName,
+        producedName,
+        propertyPath,
+        FormatNullable(expectedValue),
+        FormatNullable(actualValue),
+        isUnsupportedGap ? unsupportedGapMessage : mismatchMessage);
   }
 
   private static void AddPropertyReferenceDifference(
@@ -911,6 +961,12 @@ public static class DataVaultModelDriftReporter {
         : "property-value-format-mismatch";
   }
 
+  private static string GetValueFormatGapCode(PropertySnapshot expected, PropertySnapshot actual) {
+    return IsTimestampProperty(expected) || IsTimestampProperty(actual)
+        ? "timestamp-value-format-unsupported-gap"
+        : "property-value-format-unsupported-gap";
+  }
+
   private static bool IsTimestampProperty(PropertySnapshot property) {
     return property.LogicalPropertyKind is
         DataVaultLogicalPropertyKind.LoadTimestamp or
@@ -986,19 +1042,19 @@ public static class DataVaultModelDriftReporter {
 
   private sealed record PropertySnapshot(
       string ProducedName,
-      DataVaultPropertyRole Role,
+      DataVaultPropertyRole? Role,
       TechnicalMetadataColumnRole? TechnicalRole,
       string MetadataName,
       int Ordinal,
-      DataVaultLogicalPropertyKind LogicalPropertyKind,
+      DataVaultLogicalPropertyKind? LogicalPropertyKind,
       string ProviderProfile,
       string ProviderStorageType,
-      DataVaultProviderValueFormat ProviderValueFormat);
+      DataVaultProviderValueFormat? ProviderValueFormat);
 
   private sealed record PropertyReferenceSnapshot(
       string MetadataName,
       string ProducedName,
-      DataVaultPropertyRole Role,
+      DataVaultPropertyRole? Role,
       TechnicalMetadataColumnRole? TechnicalRole) {
     public bool HasSameLogicalIdentity(PropertyReferenceSnapshot other) {
       return string.Equals(MetadataName, other.MetadataName, StringComparison.Ordinal) &&
