@@ -1,0 +1,11 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/relation/v1",
+  "type": "parentOf",
+  "source-ticket-id": "06F1XPRY3ZDB6W1WQ9ABRRJ2V4",
+  "target-ticket-id": "06F23Z08K0W49K5JMEHP60WZC0",
+  "created-at": "2026-05-13T15:59:12.4610521Z",
+  "actor": {
+    "name": "system",
+    "email": "system@example.invalid"
+  }
+}
