@@ -3,7 +3,7 @@
   "ticket-id": "06F1XPS7KGKBP5SVMQPJC49J2G",
   "ticket-type": "story",
   "title": "Story: Establish stable DVault diagnostic codes",
-  "revision": "06F1Z3R25B743VPRE88BHHBM2C",
+  "revision": "06F23MZ8KYSD670MD7C0G11J4R",
   "status": "done",
   "labels": [
     "area/developer-experience",
@@ -16,5 +16,5 @@
   "milestoneId": "06F1XPRRJZAM9R6YWNR8K0M1T4",
   "releaseId": "06F1XPRJZBEZFGF8XMH6RCPSS4",
   "created-at": "2026-05-13T01:02:20.1626699Z",
-  "updated-at": "2026-05-13T04:18:46.4424161Z"
+  "updated-at": "2026-05-13T14:53:16.3197853Z"
 }

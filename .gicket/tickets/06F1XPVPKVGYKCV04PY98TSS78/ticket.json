@@ -3,7 +3,7 @@
   "ticket-id": "06F1XPVPKVGYKCV04PY98TSS78",
   "ticket-type": "story",
   "title": "Story: Add DVault design-time services for dotnet ef workflows",
-  "revision": "06F225GHKAPMZVNTHY4XH5DMJR",
+  "revision": "06F23N10XW0X0D3WW7A40B919G",
   "status": "done",
   "labels": [
     "area/design-time",
@@ -16,5 +16,5 @@
   "milestoneId": "06F1XPRST21T8Z9RXCDP286A4R",
   "releaseId": "06F1XPRJZBEZFGF8XMH6RCPSS4",
   "created-at": "2026-05-13T01:02:39.9546433Z",
-  "updated-at": "2026-05-13T11:25:54.9709170Z"
+  "updated-at": "2026-05-13T14:53:30.7357188Z"
 }

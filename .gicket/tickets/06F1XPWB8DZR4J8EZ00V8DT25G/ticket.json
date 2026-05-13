@@ -3,20 +3,19 @@
   "ticket-id": "06F1XPWB8DZR4J8EZ00V8DT25G",
   "ticket-type": "story",
   "title": "Story: Compare model artifacts with EF ModelSnapshot and live schema",
-  "revision": "06F1XTPB81YJ1VHN832NKDBPNW",
-  "status": "todo",
+  "revision": "06F23RGGY8T93X27WZSZAX5BEW",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/story",
     "area/drift",
-    "area/model-first",
     "area/ef-core",
+    "area/model-first",
     "area/provider-support",
-    "needs-po"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRST21T8Z9RXCDP286A4R",
   "releaseId": "06F1XPRJZBEZFGF8XMH6RCPSS4",
   "created-at": "2026-05-13T01:02:45.3488805Z",
-  "updated-at": "2026-05-13T01:19:24.4808422Z"
+  "updated-at": "2026-05-13T15:08:44.1460000Z"
 }
