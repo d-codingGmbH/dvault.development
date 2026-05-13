@@ -1,0 +1,32 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `3` selected relation flow(s) for source ticket `06F1XPVPKVGYKCV04PY98TSS78`.
+- Role `po-critic` completed with outcome `po-critic-non-blocking-apply` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `6`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `64188004c95740f0bc0a92936ea48fd9`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06F1XPWB8DZR4J8EZ00V8DT25G` via `blocks` path `06F1XPVPKVGYKCV04PY98TSS78 -> 06F1XPWB8DZR4J8EZ00V8DT25G`
+- [queued] `blocked-follow-up-comment` -> `06F1XPWNAWWMDBRK315S66P7AM` via `blocks` path `06F1XPVPKVGYKCV04PY98TSS78 -> 06F1XPWNAWWMDBRK315S66P7AM`
+- [queued] `blocked-follow-up-comment` -> `06F1XPWYZTWE9E46GNPFB8F804` via `blocks` path `06F1XPVPKVGYKCV04PY98TSS78 -> 06F1XPWYZTWE9E46GNPFB8F804`
+- [queued] `blocked-by-follow-up-comment` -> `06F1XPS7KGKBP5SVMQPJC49J2G` via `blocks` path `06F1XPVPKVGYKCV04PY98TSS78 -> 06F1XPS7KGKBP5SVMQPJC49J2G`
+- [queued] `blocked-by-follow-up-comment` -> `06F1XPTCGWTJHHQVNPN13KANMG` via `blocks` path `06F1XPVPKVGYKCV04PY98TSS78 -> 06F1XPTCGWTJHHQVNPN13KANMG`
+- [queued] `child-follow-up-comment` -> `06F1XPW1N9PATP3R6YG53ZNGV0` via `parentOf` path `06F1XPVPKVGYKCV04PY98TSS78 -> 06F1XPW1N9PATP3R6YG53ZNGV0`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06F1XPVPKVGYKCV04PY98TSS78` owner `ticket/06F1XPVPKVGYKCV04PY98TSS78-story-add-dvault-design-time-services-for-dotnet` base `develop` source-owner `ticket/06F1XPVPKVGYKCV04PY98TSS78-story-add-dvault-design-time-services-for-dotnet`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F1XPWB8DZR4J8EZ00V8DT25G` owner `ticket/06F1XPWB8DZR4J8EZ00V8DT25G-story-compare-model-artifacts-with-ef-modelsnaps` base `develop` source-owner `ticket/06F1XPVPKVGYKCV04PY98TSS78-story-add-dvault-design-time-services-for-dotnet`: Target ticket owner branch 'ticket/06F1XPWB8DZR4J8EZ00V8DT25G-story-compare-model-artifacts-with-ef-modelsnaps' differs from source owner branch 'ticket/06F1XPVPKVGYKCV04PY98TSS78-story-add-dvault-design-time-services-for-dotnet'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F1XPWNAWWMDBRK315S66P7AM` owner `ticket/06F1XPWNAWWMDBRK315S66P7AM-task-add-ef-modelsnapshot-drift-adapter` base `develop` source-owner `ticket/06F1XPVPKVGYKCV04PY98TSS78-story-add-dvault-design-time-services-for-dotnet`: Target ticket owner branch 'ticket/06F1XPWNAWWMDBRK315S66P7AM-task-add-ef-modelsnapshot-drift-adapter' differs from source owner branch 'ticket/06F1XPVPKVGYKCV04PY98TSS78-story-add-dvault-design-time-services-for-dotnet'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F1XPWYZTWE9E46GNPFB8F804` owner `ticket/06F1XPWYZTWE9E46GNPFB8F804-task-add-live-database-schema-drift-abstraction` base `develop` source-owner `ticket/06F1XPVPKVGYKCV04PY98TSS78-story-add-dvault-design-time-services-for-dotnet`: Target ticket owner branch 'ticket/06F1XPWYZTWE9E46GNPFB8F804-task-add-live-database-schema-drift-abstraction' differs from source owner branch 'ticket/06F1XPVPKVGYKCV04PY98TSS78-story-add-dvault-design-time-services-for-dotnet'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F1XPS7KGKBP5SVMQPJC49J2G` owner `ticket/06F1XPS7KGKBP5SVMQPJC49J2G-story-establish-stable-dvault-diagnostic-codes` base `develop` source-owner `ticket/06F1XPVPKVGYKCV04PY98TSS78-story-add-dvault-design-time-services-for-dotnet`: Target ticket owner branch 'ticket/06F1XPS7KGKBP5SVMQPJC49J2G-story-establish-stable-dvault-diagnostic-codes' differs from source owner branch 'ticket/06F1XPVPKVGYKCV04PY98TSS78-story-add-dvault-design-time-services-for-dotnet'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F1XPTCGWTJHHQVNPN13KANMG` owner `ticket/06F1XPTCGWTJHHQVNPN13KANMG-story-add-ef-migration-guardrails-for-data-vault` base `develop` source-owner `ticket/06F1XPVPKVGYKCV04PY98TSS78-story-add-dvault-design-time-services-for-dotnet`: Target ticket owner branch 'ticket/06F1XPTCGWTJHHQVNPN13KANMG-story-add-ef-migration-guardrails-for-data-vault' differs from source owner branch 'ticket/06F1XPVPKVGYKCV04PY98TSS78-story-add-dvault-design-time-services-for-dotnet'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F1XPW1N9PATP3R6YG53ZNGV0` owner `ticket/06F1XPW1N9PATP3R6YG53ZNGV0-task-wire-design-time-validation-into-a-sample-w` base `develop` source-owner `ticket/06F1XPVPKVGYKCV04PY98TSS78-story-add-dvault-design-time-services-for-dotnet`: Target ticket owner branch 'ticket/06F1XPW1N9PATP3R6YG53ZNGV0-task-wire-design-time-validation-into-a-sample-w' differs from source owner branch 'ticket/06F1XPVPKVGYKCV04PY98TSS78-story-add-dvault-design-time-services-for-dotnet'.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F1XPWB8DZR4J8EZ00V8DT25G` on owner branch `ticket/06F1XPWB8DZR4J8EZ00V8DT25G-story-compare-model-artifacts-with-ef-modelsnaps` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F1XPWNAWWMDBRK315S66P7AM` on owner branch `ticket/06F1XPWNAWWMDBRK315S66P7AM-task-add-ef-modelsnapshot-drift-adapter` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F1XPWYZTWE9E46GNPFB8F804` on owner branch `ticket/06F1XPWYZTWE9E46GNPFB8F804-task-add-live-database-schema-drift-abstraction` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-by-follow-up-target` to `06F1XPS7KGKBP5SVMQPJC49J2G` on owner branch `ticket/06F1XPS7KGKBP5SVMQPJC49J2G-story-establish-stable-dvault-diagnostic-codes` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-by-follow-up-target` to `06F1XPTCGWTJHHQVNPN13KANMG` on owner branch `ticket/06F1XPTCGWTJHHQVNPN13KANMG-story-add-ef-migration-guardrails-for-data-vault` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `child-follow-up-target` to `06F1XPW1N9PATP3R6YG53ZNGV0` on owner branch `ticket/06F1XPW1N9PATP3R6YG53ZNGV0-task-wire-design-time-validation-into-a-sample-w` after that branch is refreshed/rebased.
