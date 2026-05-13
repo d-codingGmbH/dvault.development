@@ -142,6 +142,23 @@ public sealed class DataVaultModelArtifactImporterTests {
   }
 
   [Fact]
+  public void FormatDiagnosticsIncludesParseDiagnosticCodeCategoryAndAffectedLocation() {
+    var result = DataVaultModelArtifactImporter.ImportJson(
+        """
+        {
+          "schemaVersion": "dvault.model.v2"
+        }
+        """,
+        "models/sales-vault.json");
+
+    var diagnosticText = DataVaultModelImportResult.FormatDiagnostics(result.Diagnostics);
+
+    Assert.Equal(
+        "error schema-version DMV1002 models/sales-vault.json/schemaVersion: Unsupported schemaVersion 'dvault.model.v2'. Expected 'dvault.model.v1'.",
+        diagnosticText);
+  }
+
+  [Fact]
   public void ApplyToProjectsImportedRegistryThroughModelArtifactSourceAndTimestampStorageProfile() {
     var result = DataVaultModelArtifactImporter.ImportJson(
         """
@@ -224,6 +241,52 @@ public sealed class DataVaultModelArtifactImporterTests {
     Assert.Equal("models/customer.json", diagnostic.LogicalSourcePath);
     Assert.Equal("/pits/0", diagnostic.JsonPointer);
     Assert.Contains("multi-active satellite 'CustomerContactByType'", diagnostic.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void FormatDiagnosticsIncludesProjectionDiagnosticCodeCategoryAndAffectedLocation() {
+    var result = DataVaultModelArtifactImporter.ImportJson(
+        """
+        {
+          "schemaVersion": "dvault.model.v1",
+          "hubs": [
+            {
+              "name": "Customer",
+              "businessKeys": ["CustomerNumber"]
+            }
+          ],
+          "satellites": [
+            {
+              "name": "CustomerContactByType",
+              "parent": {
+                "kind": "hub",
+                "name": "Customer"
+              },
+              "drivingKeys": ["ContactType"],
+              "payload": ["ContactValue"]
+            }
+          ],
+          "pits": [
+            {
+              "name": "CustomerPit",
+              "hub": "Customer",
+              "satellites": ["CustomerContactByType"]
+            }
+          ]
+        }
+        """,
+        "models/sales-vault.json");
+    AssertValid(result);
+
+    var projection = result.ApplyTo(CreateModelBuilder());
+
+    Assert.False(projection.IsValid);
+    var diagnostic = Assert.Single(projection.Diagnostics);
+    var diagnosticText = DataVaultModelImportResult.FormatDiagnostics(projection.Diagnostics);
+
+    Assert.Equal(
+        "error projection DMV1801 models/sales-vault.json/pits/0: " + diagnostic.Message,
+        diagnosticText);
   }
 
   [Fact]

@@ -94,7 +94,7 @@ if (!importResult.IsValid) {
   var diagnostics = string.Join(
       Environment.NewLine,
       importResult.Diagnostics.Select(diagnostic =>
-          $"{diagnostic.Severity} {diagnostic.Code} {diagnostic.LogicalSourcePath}{diagnostic.JsonPointer}: {diagnostic.Message}"));
+          $"{diagnostic.Severity} {diagnostic.Category} {diagnostic.Code} {diagnostic.LogicalSourcePath}{diagnostic.JsonPointer}: {diagnostic.Message}"));
   throw new InvalidOperationException(diagnostics);
 }
 ```
@@ -145,6 +145,51 @@ if (report.HasBlockingDifferences) {
   throw new InvalidOperationException(report.ToDisplayString());
 }
 ```
+
+## Diagnostic Contract
+
+Model-first import and projection diagnostics use the stable `DMV####` id format. The `DMV` prefix is the v1 DVault model-artifact diagnostic family, and the four-digit numeric suffix is compared and reported as an ordinal string. Existing `DMV####` ids are stable once shipped; do not rename them to a different prefix or reuse an existing code for a different meaning.
+
+The central catalog in `DCoding.Data.DVault` is the source of truth for model-artifact diagnostic definitions. Every catalog entry must store these fields on the definition itself: `Code`, `Severity`, `Category`, `Summary`, `Explanation`, and `Remediation`. Affected locations are emitted per diagnostic instance, not stored as catalog metadata. Import diagnostics use JSON Pointer values when the parser can identify the artifact element, and APIs that receive a logical source path preserve that path separately as `LogicalSourcePath`.
+
+The seeded v1 baseline is the importer/projection family below, in ascending code order. All current entries are `error` severity.
+
+| Code | Category | Summary | Remediation |
+| --- | --- | --- | --- |
+| `DMV1001` | `schema-version` | Missing schema version | Add `schemaVersion` with the supported value `dvault.model.v1`. |
+| `DMV1002` | `schema-version` | Unsupported schema version | Change `schemaVersion` to `dvault.model.v1` or process the artifact with a compatible importer. |
+| `DMV1101` | `shape` | Unknown artifact field | Remove the unknown field or move the information into a supported artifact field. |
+| `DMV1102` | `shape` | Invalid artifact shape | Correct the JSON shape so required objects, arrays, and string values use the documented structure. |
+| `DMV1103` | `shape` | Empty required collection | Add the required entries to the collection before importing the artifact. |
+| `DMV1201` | `duplicate` | Duplicate declaration name | Rename or remove the duplicate declaration so each logical name is unique within its declaration kind. |
+| `DMV1202` | `duplicate` | Duplicate member or participant name | Remove the repeated value or choose a distinct name for each member in the affected declaration. |
+| `DMV1203` | `duplicate` | Duplicate PIT or bridge binding | Use each satellite reference once and bind bridge endpoints to distinct source-link participants. |
+| `DMV1301` | `reference` | Missing model reference | Declare the referenced model element or update the reference to an existing element of the required kind. |
+| `DMV1302` | `reference` | Wrong reference kind | Point the reference at an element of the expected kind or correct the declaration's reference kind. |
+| `DMV1303` | `reference` | PIT satellite parent mismatch | Reference only satellites whose parent hub matches the PIT hub. |
+| `DMV1401` | `naming` | Default naming collision | Rename one of the colliding declarations or roles so default naming produces unique names. |
+| `DMV1501` | `capability` | Unsupported metadata capability | Use only supported `dvault.model.v1` capabilities or split the model into declarations the current runtime can map. |
+| `DMV1502` | `provider-choice` | Unsupported provider-specific choice | Remove provider-specific fields or use one of the provider-neutral choices supported by the importer. |
+| `DMV1601` | `recursive-participant-binding` | Ambiguous recursive participant binding | Declare distinct participant roles and bind hierarchy endpoints to unambiguous role-specific participants. |
+| `DMV1602` | `recursive-participant-binding` | Recursive link role required | Assign explicit roles to each repeated participant so the recursive link can be resolved deterministically. |
+| `DMV1701` | `shape` | Driving key overlaps payload | Remove the overlapping field from either `drivingKeys` or `payload` so each field has one satellite role. |
+| `DMV1801` | `projection` | Artifact projection failed | Review the projection error, adjust the affected declaration, and retry the import before applying metadata. |
+
+For a parse diagnostic, an unsupported schema version in `models/sales-vault.json` reports the catalog-backed code and category while preserving the JSON Pointer to the value:
+
+```text
+error schema-version DMV1002 models/sales-vault.json/schemaVersion: Unsupported schemaVersion 'dvault.model.v2'. Expected 'dvault.model.v1'.
+```
+
+The remediation comes from the `DMV1002` catalog definition: change `schemaVersion` to `dvault.model.v1` or process the artifact with a compatible importer.
+
+For a projection diagnostic, the logical source path stays instance-bound alongside the offending declaration pointer. A projection failure for the first PIT declaration in `models/sales-vault.json` reports `LogicalSourcePath` as `models/sales-vault.json`, `JsonPointer` as `/pits/0`, and formats the affected location as `models/sales-vault.json/pits/0`:
+
+```text
+error projection DMV1801 models/sales-vault.json/pits/0: The imported artifact could not be projected to Entity Framework metadata: <projection error>
+```
+
+The remediation comes from the `DMV1801` catalog definition: review the projection error, adjust the affected declaration, and retry the import before applying metadata.
 
 ## Versioning Rules
 
