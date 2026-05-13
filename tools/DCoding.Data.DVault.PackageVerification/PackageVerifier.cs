@@ -11,7 +11,6 @@ public sealed class PackageVerifier {
   private const string ExpectedRepositoryType = "git";
   private const string ExpectedRepositoryUrl = "https://github.com/d-codingGmbH/dvault.development.git";
   private const string ExpectedReadmeFile = "README.md";
-  private const string ExpectedReadmeInstallVersion = "0.6.0";
 
   private static readonly IReadOnlyList<ExpectedPackage> ExpectedPackages = [
       new(
@@ -251,7 +250,7 @@ public sealed class PackageVerifier {
     ValidateTags(archive, metadata, expectedPackage, issues);
     ValidateLicense(archive, metadata, issues);
     ValidateRepository(archive, metadata, issues);
-    ValidateReadme(archive, issues);
+    ValidateReadme(archive, coreVersion, issues);
     ValidateXmlDocumentation(archive, expectedPackage, issues);
 
     if (expectedPackage.IsProvider) {
@@ -344,7 +343,10 @@ public sealed class PackageVerifier {
     }
   }
 
-  private static void ValidateReadme(PackageArchive archive, List<PackageVerificationIssue> issues) {
+  private static void ValidateReadme(
+      PackageArchive archive,
+      string expectedInstallVersion,
+      List<PackageVerificationIssue> issues) {
     if (!archive.Entries.Contains(ExpectedReadmeFile)) {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
@@ -361,7 +363,7 @@ public sealed class PackageVerifier {
 
     foreach (var expectedPackage in ExpectedPackages) {
       var expectedInstallCommand =
-          "dotnet add package " + expectedPackage.Id + " --version " + ExpectedReadmeInstallVersion;
+          "dotnet add package " + expectedPackage.Id + " --version " + expectedInstallVersion;
       if (!archive.ReadmeText.Contains(expectedInstallCommand, StringComparison.Ordinal)) {
         issues.Add(new PackageVerificationIssue(
             archive.Id,

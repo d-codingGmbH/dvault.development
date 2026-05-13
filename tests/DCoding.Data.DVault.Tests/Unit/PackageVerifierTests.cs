@@ -9,7 +9,7 @@ namespace DCoding.Data.DVault.Tests.Unit;
 public sealed class PackageVerifierTests {
   private const string CorePackageId = "DCoding.Data.DVault";
   private const string PackageVersion = "1.2.3";
-  private const string ReadmeInstallVersion = "0.6.0";
+  private const string ReadmeInstallVersion = PackageVersion;
   private const string TargetFramework = "net10.0";
   private const string Authors = "d-coding GmbH";
   private const string RepositoryUrl = "https://github.com/d-codingGmbH/dvault.development.git";
