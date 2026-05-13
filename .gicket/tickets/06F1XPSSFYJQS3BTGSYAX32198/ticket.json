@@ -3,18 +3,17 @@
   "ticket-id": "06F1XPSSFYJQS3BTGSYAX32198",
   "ticket-type": "task",
   "title": "Task: Implement diagnostic catalog infrastructure",
-  "revision": "06F1XTP2K4VA35NE4V706W6DQC",
-  "status": "todo",
+  "revision": "06F1YDEMBFXKM65J6R2491Q3R0",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/task",
     "area/diagnostics",
     "area/testing",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRRJZAM9R6YWNR8K0M1T4",
   "releaseId": "06F1XPRJZBEZFGF8XMH6RCPSS4",
   "created-at": "2026-05-13T01:02:24.5106380Z",
-  "updated-at": "2026-05-13T01:19:22.2652288Z"
+  "updated-at": "2026-05-13T02:41:22.0111331Z"
 }

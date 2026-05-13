@@ -9,6 +9,90 @@ using Xunit;
 namespace DCoding.Data.DVault.Tests.Unit;
 
 public sealed class DataVaultModelArtifactImporterTests {
+  private static readonly string[] ApprovedModelArtifactDiagnosticCodes =
+  [
+      "DMV1001",
+      "DMV1002",
+      "DMV1101",
+      "DMV1102",
+      "DMV1103",
+      "DMV1201",
+      "DMV1202",
+      "DMV1203",
+      "DMV1301",
+      "DMV1302",
+      "DMV1303",
+      "DMV1401",
+      "DMV1501",
+      "DMV1502",
+      "DMV1601",
+      "DMV1602",
+      "DMV1701",
+      "DMV1801",
+  ];
+
+  private static readonly IReadOnlyDictionary<string, (string Severity, string Category)> ApprovedModelArtifactDiagnosticMetadata =
+      new Dictionary<string, (string Severity, string Category)>(StringComparer.Ordinal) {
+        ["DMV1001"] = ("error", "schema-version"),
+        ["DMV1002"] = ("error", "schema-version"),
+        ["DMV1101"] = ("error", "shape"),
+        ["DMV1102"] = ("error", "shape"),
+        ["DMV1103"] = ("error", "shape"),
+        ["DMV1201"] = ("error", "duplicate"),
+        ["DMV1202"] = ("error", "duplicate"),
+        ["DMV1203"] = ("error", "duplicate"),
+        ["DMV1301"] = ("error", "reference"),
+        ["DMV1302"] = ("error", "reference"),
+        ["DMV1303"] = ("error", "reference"),
+        ["DMV1401"] = ("error", "naming"),
+        ["DMV1501"] = ("error", "capability"),
+        ["DMV1502"] = ("error", "provider-choice"),
+        ["DMV1601"] = ("error", "recursive-participant-binding"),
+        ["DMV1602"] = ("error", "recursive-participant-binding"),
+        ["DMV1701"] = ("error", "shape"),
+        ["DMV1801"] = ("error", "projection"),
+      };
+
+  [Fact]
+  public void DiagnosticCatalogExposesApprovedModelArtifactSeedSetInAscendingCodeOrder() {
+    var definitions = DataVaultDiagnosticCatalog.ModelArtifactDefinitions;
+
+    Assert.Equal(ApprovedModelArtifactDiagnosticCodes, definitions.Select(definition => definition.Code));
+    Assert.Equal(
+        ApprovedModelArtifactDiagnosticCodes,
+        definitions.Select(definition => definition.Code).OrderBy(code => code, StringComparer.Ordinal));
+  }
+
+  [Fact]
+  public void DiagnosticCatalogEntriesHaveUniqueCodesAndRequiredDocumentation() {
+    var definitions = DataVaultDiagnosticCatalog.ModelArtifactDefinitions;
+
+    Assert.Equal(
+        definitions.Count,
+        definitions.Select(definition => definition.Code).Distinct(StringComparer.Ordinal).Count());
+
+    foreach (var definition in definitions) {
+      Assert.False(string.IsNullOrWhiteSpace(definition.Summary), definition.Code + " summary should be documented.");
+      Assert.False(string.IsNullOrWhiteSpace(definition.Explanation), definition.Code + " explanation should be documented.");
+      Assert.False(string.IsNullOrWhiteSpace(definition.Remediation), definition.Code + " remediation should be documented.");
+    }
+  }
+
+  [Fact]
+  public void DiagnosticCatalogPreservesApprovedModelArtifactSeverityAndCategoryBaseline() {
+    var definitions = DataVaultDiagnosticCatalog.ModelArtifactDefinitions;
+
+    Assert.Equal(
+        ApprovedModelArtifactDiagnosticMetadata.Keys.OrderBy(code => code, StringComparer.Ordinal),
+        definitions.Select(definition => definition.Code));
+    foreach (var definition in definitions) {
+      var expected = ApprovedModelArtifactDiagnosticMetadata[definition.Code];
+
+      Assert.Equal(expected.Severity, definition.Severity);
+      Assert.Equal(expected.Category, definition.Category);
+    }
+  }
+
   [Fact]
   public void ImportJsonReturnsPublicResultWithSourceScopedDiagnosticsAndRegistryProfiles() {
     var result = DataVaultModelArtifactImporter.ImportJson(
@@ -50,6 +134,8 @@ public sealed class DataVaultModelArtifactImporterTests {
     Assert.False(result.IsValid);
     var diagnostic = Assert.Single(result.Diagnostics);
 
+    Assert.Equal("error", diagnostic.Severity);
+    Assert.Equal("schema-version", diagnostic.Category);
     Assert.Equal("models/invalid.json", diagnostic.LogicalSourcePath);
     Assert.Equal("/schemaVersion", diagnostic.JsonPointer);
     Assert.Equal("DMV1002", diagnostic.Code);
@@ -132,6 +218,7 @@ public sealed class DataVaultModelArtifactImporterTests {
     Assert.False(projection.IsValid);
     var diagnostic = Assert.Single(projection.Diagnostics);
 
+    Assert.Equal("error", diagnostic.Severity);
     Assert.Equal("projection", diagnostic.Category);
     Assert.Equal("DMV1801", diagnostic.Code);
     Assert.Equal("models/customer.json", diagnostic.LogicalSourcePath);

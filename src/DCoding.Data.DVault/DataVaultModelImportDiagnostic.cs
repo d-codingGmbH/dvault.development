@@ -5,34 +5,34 @@ namespace DCoding.Data.DVault;
 /// </summary>
 public sealed class DataVaultModelImportDiagnostic {
   internal DataVaultModelImportDiagnostic(
-      string severity,
-      string category,
-      string code,
+      DataVaultDiagnosticDefinition definition,
       string message,
       string jsonPointer,
       string? logicalSourcePath) {
-    Severity = severity;
-    Category = category;
-    Code = code;
+    ArgumentNullException.ThrowIfNull(definition);
+
+    Definition = definition;
     Message = message;
     JsonPointer = jsonPointer;
     LogicalSourcePath = string.IsNullOrWhiteSpace(logicalSourcePath) ? null : logicalSourcePath;
   }
 
+  internal DataVaultDiagnosticDefinition Definition { get; }
+
   /// <summary>
   /// Gets the diagnostic severity.
   /// </summary>
-  public string Severity { get; }
+  public string Severity => Definition.Severity;
 
   /// <summary>
   /// Gets the stable diagnostic category.
   /// </summary>
-  public string Category { get; }
+  public string Category => Definition.Category;
 
   /// <summary>
   /// Gets the stable diagnostic code.
   /// </summary>
-  public string Code { get; }
+  public string Code => Definition.Code;
 
   /// <summary>
   /// Gets the diagnostic message.

@@ -18,9 +18,7 @@ public static class DataVaultModelArtifactImporter {
     var parseResult = DataVaultModelArtifactParser.Parse(json);
     var diagnostics = parseResult.Diagnostics
         .Select(diagnostic => new DataVaultModelImportDiagnostic(
-            diagnostic.Severity,
-            diagnostic.Category,
-            diagnostic.Code,
+            diagnostic.Definition,
             diagnostic.Message,
             diagnostic.Path,
             logicalSourcePath))

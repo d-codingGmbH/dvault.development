@@ -5,7 +5,6 @@ namespace DCoding.Data.DVault;
 
 internal static class DataVaultModelArtifactParser {
   private const string ExpectedSchemaVersion = "dvault.model.v1";
-  private const string SeverityError = "error";
 
   private static readonly JsonDocumentOptions DocumentOptions = new() {
     AllowTrailingCommas = false,
@@ -102,12 +101,11 @@ internal static class DataVaultModelArtifactParser {
       document = JsonDocument.Parse(json, DocumentOptions);
     }
     catch (JsonException exception) {
-      diagnostics.Add(new DataVaultModelArtifactDiagnostic(
-          SeverityError,
-          "shape",
+      AddIssue(
+          diagnostics,
           "DMV1102",
           "The artifact must be strict JSON: " + exception.Message,
-          exception.Path ?? string.Empty));
+          exception.Path ?? string.Empty);
       return CreateFailure(diagnostics);
     }
 
@@ -116,7 +114,6 @@ internal static class DataVaultModelArtifactParser {
       if (root.ValueKind != JsonValueKind.Object) {
         AddIssue(
             diagnostics,
-            "shape",
             "DMV1102",
             "The artifact root must be a JSON object.",
             string.Empty);
@@ -163,7 +160,6 @@ internal static class DataVaultModelArtifactParser {
       catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or NotSupportedException) {
         AddIssue(
             diagnostics,
-            "capability",
             "DMV1501",
             "The artifact could not be mapped to the current Data Vault metadata surface: " + exception.Message,
             ResolveDeclarationPath(artifact, exception));
@@ -190,7 +186,6 @@ internal static class DataVaultModelArtifactParser {
         string.IsNullOrWhiteSpace(schemaVersion.GetString())) {
       AddIssue(
           diagnostics,
-          "schema-version",
           "DMV1001",
           "The artifact requires a non-blank string schemaVersion.",
           path);
@@ -201,7 +196,6 @@ internal static class DataVaultModelArtifactParser {
     if (!string.Equals(value, ExpectedSchemaVersion, StringComparison.Ordinal)) {
       AddIssue(
           diagnostics,
-          "schema-version",
           "DMV1002",
           "Unsupported schemaVersion '" + value + "'. Expected '" + ExpectedSchemaVersion + "'.",
           path);
@@ -219,7 +213,7 @@ internal static class DataVaultModelArtifactParser {
 
     var namingPath = PropertyPath(string.Empty, "naming");
     if (naming.ValueKind != JsonValueKind.Object) {
-      AddIssue(diagnostics, "shape", "DMV1102", "The naming value must be an object.", namingPath);
+      AddIssue(diagnostics, "DMV1102", "The naming value must be an object.", namingPath);
       return new DataVaultModelArtifactNaming("default");
     }
 
@@ -230,7 +224,7 @@ internal static class DataVaultModelArtifactParser {
 
     var policyPath = PropertyPath(namingPath, "policy");
     if (policy.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(policy.GetString())) {
-      AddIssue(diagnostics, "shape", "DMV1102", "The naming.policy value must be a non-blank string.", policyPath);
+      AddIssue(diagnostics, "DMV1102", "The naming.policy value must be a non-blank string.", policyPath);
       return new DataVaultModelArtifactNaming("default");
     }
 
@@ -238,7 +232,6 @@ internal static class DataVaultModelArtifactParser {
     if (!string.Equals(policyValue, "default", StringComparison.Ordinal)) {
       AddIssue(
           diagnostics,
-          "provider-choice",
           "DMV1502",
           "Unsupported naming.policy '" + policyValue + "'. The only v1 policy is 'default'.",
           policyPath);
@@ -258,7 +251,6 @@ internal static class DataVaultModelArtifactParser {
     if (storage.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(storage.GetString())) {
       AddIssue(
           diagnostics,
-          "shape",
           "DMV1102",
           "The loadTimestampStorage value must be a non-blank string.",
           path);
@@ -280,7 +272,6 @@ internal static class DataVaultModelArtifactParser {
       ICollection<DataVaultModelArtifactDiagnostic> diagnostics) {
     AddIssue(
         diagnostics,
-        "provider-choice",
         "DMV1502",
         "Unsupported loadTimestampStorage '" + value + "'.",
         path);
@@ -299,7 +290,7 @@ internal static class DataVaultModelArtifactParser {
     foreach (var hub in hubs.EnumerateArray()) {
       var path = IndexPath(PropertyPath(string.Empty, "hubs"), index++);
       if (hub.ValueKind != JsonValueKind.Object) {
-        AddIssue(diagnostics, "shape", "DMV1102", "Each hub declaration must be an object.", path);
+        AddIssue(diagnostics, "DMV1102", "Each hub declaration must be an object.", path);
         continue;
       }
 
@@ -325,7 +316,7 @@ internal static class DataVaultModelArtifactParser {
     foreach (var link in links.EnumerateArray()) {
       var path = IndexPath(PropertyPath(string.Empty, "links"), index++);
       if (link.ValueKind != JsonValueKind.Object) {
-        AddIssue(diagnostics, "shape", "DMV1102", "Each link declaration must be an object.", path);
+        AddIssue(diagnostics, "DMV1102", "Each link declaration must be an object.", path);
         continue;
       }
 
@@ -351,7 +342,6 @@ internal static class DataVaultModelArtifactParser {
     if (participants.GetArrayLength() < 2) {
       AddIssue(
           diagnostics,
-          "shape",
           "DMV1103",
           "A link requires at least two participants.",
           participantsPath);
@@ -362,7 +352,7 @@ internal static class DataVaultModelArtifactParser {
     foreach (var participant in participants.EnumerateArray()) {
       var path = IndexPath(participantsPath, index++);
       if (participant.ValueKind != JsonValueKind.Object) {
-        AddIssue(diagnostics, "shape", "DMV1102", "Each link participant must be an object.", path);
+        AddIssue(diagnostics, "DMV1102", "Each link participant must be an object.", path);
         continue;
       }
 
@@ -388,7 +378,7 @@ internal static class DataVaultModelArtifactParser {
     foreach (var satellite in satellites.EnumerateArray()) {
       var path = IndexPath(PropertyPath(string.Empty, "satellites"), index++);
       if (satellite.ValueKind != JsonValueKind.Object) {
-        AddIssue(diagnostics, "shape", "DMV1102", "Each satellite declaration must be an object.", path);
+        AddIssue(diagnostics, "DMV1102", "Each satellite declaration must be an object.", path);
         continue;
       }
 
@@ -410,7 +400,7 @@ internal static class DataVaultModelArtifactParser {
       ICollection<DataVaultModelArtifactDiagnostic> diagnostics) {
     var parentPath = PropertyPath(satellitePath, "parent");
     if (!satellite.TryGetProperty("parent", out var parent) || parent.ValueKind != JsonValueKind.Object) {
-      AddIssue(diagnostics, "shape", "DMV1102", "A satellite requires an object parent reference.", parentPath);
+      AddIssue(diagnostics, "DMV1102", "A satellite requires an object parent reference.", parentPath);
       return new DataVaultModelParentReferenceDeclaration(string.Empty, string.Empty, parentPath);
     }
 
@@ -433,7 +423,7 @@ internal static class DataVaultModelArtifactParser {
     foreach (var pit in pits.EnumerateArray()) {
       var path = IndexPath(PropertyPath(string.Empty, "pits"), index++);
       if (pit.ValueKind != JsonValueKind.Object) {
-        AddIssue(diagnostics, "shape", "DMV1102", "Each PIT declaration must be an object.", path);
+        AddIssue(diagnostics, "DMV1102", "Each PIT declaration must be an object.", path);
         continue;
       }
 
@@ -460,7 +450,7 @@ internal static class DataVaultModelArtifactParser {
     foreach (var bridge in bridges.EnumerateArray()) {
       var path = IndexPath(PropertyPath(string.Empty, "bridges"), index++);
       if (bridge.ValueKind != JsonValueKind.Object) {
-        AddIssue(diagnostics, "shape", "DMV1102", "Each bridge declaration must be an object.", path);
+        AddIssue(diagnostics, "DMV1102", "Each bridge declaration must be an object.", path);
         continue;
       }
 
@@ -484,7 +474,7 @@ internal static class DataVaultModelArtifactParser {
       ICollection<DataVaultModelArtifactDiagnostic> diagnostics) {
     var endpointsPath = PropertyPath(bridgePath, "endpoints");
     if (!bridge.TryGetProperty("endpoints", out var endpoints) || endpoints.ValueKind != JsonValueKind.Object) {
-      AddIssue(diagnostics, "shape", "DMV1102", "A bridge requires an object endpoints value.", endpointsPath);
+      AddIssue(diagnostics, "DMV1102", "A bridge requires an object endpoints value.", endpointsPath);
       return new Dictionary<string, DataVaultModelBridgeEndpointDeclaration>(StringComparer.Ordinal);
     }
 
@@ -497,7 +487,7 @@ internal static class DataVaultModelArtifactParser {
     foreach (var propertyName in requiredProperties) {
       var endpointPath = PropertyPath(endpointsPath, propertyName);
       if (!endpoints.TryGetProperty(propertyName, out var endpoint) || endpoint.ValueKind != JsonValueKind.Object) {
-        AddIssue(diagnostics, "shape", "DMV1102", "Bridge endpoint '" + propertyName + "' must be an object.", endpointPath);
+        AddIssue(diagnostics, "DMV1102", "Bridge endpoint '" + propertyName + "' must be an object.", endpointPath);
         continue;
       }
 
@@ -542,7 +532,6 @@ internal static class DataVaultModelArtifactParser {
       if (!names.Add(name)) {
         AddIssue(
             diagnostics,
-            "duplicate",
             "DMV1201",
             "Duplicate " + kind + " declaration name '" + name + "'.",
             PropertyPath(getPath(declaration), "name"));
@@ -560,7 +549,6 @@ internal static class DataVaultModelArtifactParser {
         if (!string.IsNullOrWhiteSpace(participant.Role) && !roles.Add(participant.Role)) {
           AddIssue(
               diagnostics,
-              "duplicate",
               "DMV1202",
               "Link '" + link.Name + "' declares participant role '" + participant.Role + "' more than once.",
               PropertyPath(participant.Path, "role"));
@@ -584,7 +572,6 @@ internal static class DataVaultModelArtifactParser {
         if (group.Count() > 1 && group.Any(participant => string.IsNullOrWhiteSpace(participant.Role))) {
           AddIssue(
               diagnostics,
-              "recursive-participant-binding",
               "DMV1602",
               "Link '" + link.Name + "' repeats hub '" + group.Key + "' without roles on every occurrence.",
               PropertyPath(link.Path, "participants"));
@@ -602,7 +589,6 @@ internal static class DataVaultModelArtifactParser {
           !string.IsNullOrWhiteSpace(satellite.Parent.Kind)) {
         AddIssue(
             diagnostics,
-            "reference",
             "DMV1302",
             "Satellite '" + satellite.Name + "' declares unsupported parent kind '" + satellite.Parent.Kind + "'.",
             PropertyPath(satellite.Parent.Path, "kind"));
@@ -636,7 +622,6 @@ internal static class DataVaultModelArtifactParser {
         if (payloadNames.Contains(drivingKey)) {
           AddIssue(
               diagnostics,
-              "shape",
               "DMV1701",
               "Satellite '" + satellite.Name + "' driving key '" + drivingKey + "' overlaps payload.",
               PropertyPath(satellite.Path, "drivingKeys"));
@@ -672,7 +657,6 @@ internal static class DataVaultModelArtifactParser {
             !string.Equals(satellite.Parent.Name, pit.Hub, StringComparison.Ordinal)) {
           AddIssue(
               diagnostics,
-              "reference",
               "DMV1303",
               "PIT '" + pit.Name + "' references satellite '" + satelliteName + "' that does not belong to hub '" + pit.Hub + "'.",
               PropertyPath(pit.Path, "satellites"));
@@ -690,7 +674,6 @@ internal static class DataVaultModelArtifactParser {
           !string.IsNullOrWhiteSpace(bridge.Kind)) {
         AddIssue(
             diagnostics,
-            "capability",
             "DMV1501",
             "Bridge '" + bridge.Name + "' declares unsupported kind '" + bridge.Kind + "'.",
             PropertyPath(bridge.Path, "kind"));
@@ -727,7 +710,6 @@ internal static class DataVaultModelArtifactParser {
     if (from.HasValue && to.HasValue && from.Value == to.Value) {
       AddIssue(
           diagnostics,
-          "duplicate",
           "DMV1203",
           "Bridge '" + bridge.Name + "' binds both endpoints to the same source-link participant.",
           PropertyPath(bridge.Path, "endpoints"));
@@ -744,7 +726,6 @@ internal static class DataVaultModelArtifactParser {
         participants.Select(participant => participant.Hub).Distinct(StringComparer.Ordinal).Count() != 1) {
       AddIssue(
           diagnostics,
-          "recursive-participant-binding",
           "DMV1601",
           "Hierarchy bridge '" + bridge.Name + "' must traverse a two-participant self-link.",
           bridge.Path);
@@ -755,7 +736,6 @@ internal static class DataVaultModelArtifactParser {
         participants.Select(participant => participant.Role).Distinct(StringComparer.Ordinal).Count() != 2) {
       AddIssue(
           diagnostics,
-          "recursive-participant-binding",
           "DMV1601",
           "Hierarchy bridge '" + bridge.Name + "' requires distinct source-link participant roles.",
           PropertyPath(sourceLink.Path, "participants"));
@@ -771,7 +751,6 @@ internal static class DataVaultModelArtifactParser {
     if (ancestor.HasValue && descendant.HasValue && ancestor.Value == descendant.Value) {
       AddIssue(
           diagnostics,
-          "recursive-participant-binding",
           "DMV1601",
           "Hierarchy bridge '" + bridge.Name + "' resolves ancestor and descendant to the same source-link participant.",
           PropertyPath(bridge.Path, "endpoints"));
@@ -787,7 +766,6 @@ internal static class DataVaultModelArtifactParser {
     if (string.IsNullOrWhiteSpace(endpoint.Role)) {
       AddIssue(
           diagnostics,
-          "recursive-participant-binding",
           "DMV1601",
           "Bridge endpoint for hub '" + endpoint.Hub + "' requires a role to bind a recursive participant.",
           PropertyPath(endpoint.Path, "role"));
@@ -815,7 +793,6 @@ internal static class DataVaultModelArtifactParser {
     if (matchingHubParticipants.Length == 0) {
       AddIssue(
           diagnostics,
-          "reference",
           "DMV1301",
           "Bridge '" + bridge.Name + "' endpoint hub '" + endpoint.Hub + "' does not resolve to source link '" + sourceLink.Name + "'.",
           PropertyPath(endpoint.Path, "hub"));
@@ -829,7 +806,6 @@ internal static class DataVaultModelArtifactParser {
       if (matchingRoleParticipants.Length == 0) {
         AddIssue(
             diagnostics,
-            "reference",
             "DMV1301",
             "Bridge '" + bridge.Name + "' endpoint role '" + endpoint.Role + "' does not resolve to source link '" + sourceLink.Name + "'.",
             PropertyPath(endpoint.Path, "role"));
@@ -842,7 +818,6 @@ internal static class DataVaultModelArtifactParser {
     if (matchingHubParticipants.Length > 1) {
       AddIssue(
           diagnostics,
-          "recursive-participant-binding",
           "DMV1601",
           "Bridge '" + bridge.Name + "' endpoint hub '" + endpoint.Hub + "' is ambiguous and requires a role.",
           endpoint.Path);
@@ -951,7 +926,6 @@ internal static class DataVaultModelArtifactParser {
     if (!producedNames.TryAdd(producedName, sourceDescription)) {
       AddIssue(
           diagnostics,
-          "naming",
           "DMV1401",
           "Default naming collision for produced name '" + producedName + "' between " + producedNames[producedName] + " and " + sourceDescription + ".",
           path);
@@ -978,7 +952,6 @@ internal static class DataVaultModelArtifactParser {
 
     AddIssue(
         diagnostics,
-        "reference",
         wrongKind ? "DMV1302" : "DMV1301",
         sourceKind + " '" + sourceName + "' references " + (wrongKind ? "wrong-kind" : "missing") + " " + targetKind + " '" + targetName + "'.",
         path);
@@ -1107,7 +1080,6 @@ internal static class DataVaultModelArtifactParser {
     if (value.ValueKind != JsonValueKind.Array) {
       AddIssue(
           diagnostics,
-          "shape",
           "DMV1102",
           "The '" + propertyName + "' value must be an array.",
           PropertyPath(elementPath, propertyName));
@@ -1128,7 +1100,6 @@ internal static class DataVaultModelArtifactParser {
     if (!element.TryGetProperty(propertyName, out var value) || value.ValueKind != JsonValueKind.Array) {
       AddIssue(
           diagnostics,
-          "shape",
           "DMV1102",
           "The '" + propertyName + "' value must be an array.",
           PropertyPath(elementPath, propertyName));
@@ -1149,7 +1120,7 @@ internal static class DataVaultModelArtifactParser {
     if (!element.TryGetProperty(propertyName, out var value) ||
         value.ValueKind != JsonValueKind.String ||
         string.IsNullOrWhiteSpace(value.GetString())) {
-      AddIssue(diagnostics, "shape", "DMV1102", label + " must be a non-blank string.", path);
+      AddIssue(diagnostics, "DMV1102", label + " must be a non-blank string.", path);
       return string.Empty;
     }
 
@@ -1167,7 +1138,7 @@ internal static class DataVaultModelArtifactParser {
 
     var path = PropertyPath(elementPath, propertyName);
     if (value.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(value.GetString())) {
-      AddIssue(diagnostics, "shape", "DMV1102", "The '" + propertyName + "' value must be a non-blank string.", path);
+      AddIssue(diagnostics, "DMV1102", "The '" + propertyName + "' value must be a non-blank string.", path);
       return null;
     }
 
@@ -1186,7 +1157,7 @@ internal static class DataVaultModelArtifactParser {
     }
 
     if (array.GetArrayLength() == 0) {
-      AddIssue(diagnostics, "shape", "DMV1103", emptyMessage, PropertyPath(elementPath, propertyName));
+      AddIssue(diagnostics, "DMV1103", emptyMessage, PropertyPath(elementPath, propertyName));
     }
 
     return ReadStringArrayValues(array, PropertyPath(elementPath, propertyName), duplicateCode, diagnostics);
@@ -1216,7 +1187,7 @@ internal static class DataVaultModelArtifactParser {
     foreach (var item in array.EnumerateArray()) {
       var itemPath = IndexPath(arrayPath, index++);
       if (item.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(item.GetString())) {
-        AddIssue(diagnostics, "shape", "DMV1102", "Array values must be non-blank strings.", itemPath);
+        AddIssue(diagnostics, "DMV1102", "Array values must be non-blank strings.", itemPath);
         continue;
       }
 
@@ -1224,7 +1195,6 @@ internal static class DataVaultModelArtifactParser {
       if (!seen.Add(value)) {
         AddIssue(
             diagnostics,
-            "duplicate",
             duplicateCode,
             "Duplicate name '" + value + "'.",
             itemPath);
@@ -1250,7 +1220,6 @@ internal static class DataVaultModelArtifactParser {
       if (ProviderSpecificFieldNames.Contains(property.Name)) {
         AddIssue(
             diagnostics,
-            "provider-choice",
             "DMV1502",
             "Provider-specific field '" + property.Name + "' is not supported by dvault.model.v1.",
             path);
@@ -1259,7 +1228,6 @@ internal static class DataVaultModelArtifactParser {
 
       AddIssue(
           diagnostics,
-          "shape",
           "DMV1101",
           "Unknown field '" + property.Name + "'.",
           path);
@@ -1267,16 +1235,18 @@ internal static class DataVaultModelArtifactParser {
   }
 
   private static bool HasErrors(IEnumerable<DataVaultModelArtifactDiagnostic> diagnostics) {
-    return diagnostics.Any(diagnostic => string.Equals(diagnostic.Severity, SeverityError, StringComparison.Ordinal));
+    return diagnostics.Any(diagnostic => string.Equals(diagnostic.Severity, "error", StringComparison.Ordinal));
   }
 
   private static void AddIssue(
       ICollection<DataVaultModelArtifactDiagnostic> diagnostics,
-      string category,
       string code,
       string message,
       string path) {
-    diagnostics.Add(new DataVaultModelArtifactDiagnostic(SeverityError, category, code, message, path));
+    diagnostics.Add(new DataVaultModelArtifactDiagnostic(
+        DataVaultDiagnosticCatalog.GetModelArtifactDefinition(code),
+        message,
+        path));
   }
 
   private static string PropertyPath(string elementPath, string propertyName) {
@@ -1311,11 +1281,15 @@ internal sealed record DataVaultModelArtifactParseResult(
 }
 
 internal sealed record DataVaultModelArtifactDiagnostic(
-    string Severity,
-    string Category,
-    string Code,
+    DataVaultDiagnosticDefinition Definition,
     string Message,
-    string Path);
+    string Path) {
+  public string Severity => Definition.Severity;
+
+  public string Category => Definition.Category;
+
+  public string Code => Definition.Code;
+}
 
 internal sealed record DataVaultModelArtifact(
     string SchemaVersion,

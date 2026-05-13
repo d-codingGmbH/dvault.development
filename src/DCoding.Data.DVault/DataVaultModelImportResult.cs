@@ -96,9 +96,7 @@ public sealed class DataVaultModelImportResult {
     }
     catch (Exception exception) when (IsProjectionException(exception)) {
       var diagnostic = new DataVaultModelImportDiagnostic(
-          "error",
-          "projection",
-          "DMV1801",
+          DataVaultDiagnosticCatalog.GetModelArtifactDefinition("DMV1801"),
           "The imported artifact could not be projected to Entity Framework metadata: " + exception.Message,
           DataVaultModelArtifactParser.ResolveDeclarationPath(Artifact, exception),
           LogicalSourcePath);
