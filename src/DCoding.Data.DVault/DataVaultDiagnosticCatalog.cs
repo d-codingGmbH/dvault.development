@@ -2,6 +2,7 @@ namespace DCoding.Data.DVault;
 
 internal static class DataVaultDiagnosticCatalog {
   private const string ErrorSeverity = "error";
+  private const string WarningSeverity = "warning";
 
   private static readonly IReadOnlyList<DataVaultDiagnosticDefinition> ModelArtifactSeedDefinitions =
   [
@@ -135,8 +136,58 @@ internal static class DataVaultDiagnosticCatalog {
 
   private static readonly IReadOnlyDictionary<string, DataVaultDiagnosticDefinition> ModelArtifactSeedDefinitionsByCode =
       ModelArtifactSeedDefinitions.ToDictionary(definition => definition.Code, StringComparer.Ordinal);
+  private static readonly IReadOnlyList<DataVaultDiagnosticDefinition> MigrationOperationSeedDefinitions =
+  [
+      new DataVaultDiagnosticDefinition(
+          "DVM2001",
+          ErrorSeverity,
+          "migration-guardrail",
+          "Hub or link payload column added",
+          "Raised when a migration adds a descriptive payload column to a Data Vault hub or link table.",
+          "Move descriptive values to a satellite or exclude the payload column from the Data Vault-produced hub or link table."),
+      new DataVaultDiagnosticDefinition(
+          "DVM2002",
+          ErrorSeverity,
+          "migration-guardrail",
+          "Required technical column changed",
+          "Raised when a migration drops or alters LoadTimestamp, RecordSource, or satellite HashDiff.",
+          "Keep required technical columns aligned with the Data Vault metadata translator output."),
+      new DataVaultDiagnosticDefinition(
+          "DVM2003",
+          ErrorSeverity,
+          "migration-guardrail",
+          "Data Vault key or parent shape changed",
+          "Raised when a migration drops or alters a hash key, participant reference, parent hash key, or satellite driving key.",
+          "Preserve the translated key, parent, participant, and driving-key columns or update the Data Vault model intentionally."),
+      new DataVaultDiagnosticDefinition(
+          "DVM2004",
+          WarningSeverity,
+          "migration-guardrail",
+          "Default index coverage changed",
+          "Raised when a migration reuses a Data Vault default index name with different uniqueness, column order, or target columns.",
+          "Keep default index definitions aligned with the Data Vault naming policy and translated schema baseline."),
+      new DataVaultDiagnosticDefinition(
+          "DVM2005",
+          WarningSeverity,
+          "migration-guardrail",
+          "Data Vault-owned column renamed",
+          "Raised when a migration renames a Data Vault-owned technical, key, participant, or driving-key column away from its produced name.",
+          "Keep Data Vault-owned column names aligned with the current naming policy output."),
+      new DataVaultDiagnosticDefinition(
+          "DVM2006",
+          ErrorSeverity,
+          "migration-guardrail",
+          "Data Vault-owned table dropped",
+          "Raised when a migration drops a hub, link, or satellite table produced by Data Vault metadata translation.",
+          "Do not drop Data Vault-produced hub, link, or satellite tables unless the owning metadata declaration is intentionally removed."),
+  ];
+
+  private static readonly IReadOnlyDictionary<string, DataVaultDiagnosticDefinition> MigrationOperationSeedDefinitionsByCode =
+      MigrationOperationSeedDefinitions.ToDictionary(definition => definition.Code, StringComparer.Ordinal);
 
   internal static IReadOnlyList<DataVaultDiagnosticDefinition> ModelArtifactDefinitions => ModelArtifactSeedDefinitions;
+
+  internal static IReadOnlyList<DataVaultDiagnosticDefinition> MigrationOperationDefinitions => MigrationOperationSeedDefinitions;
 
   internal static DataVaultDiagnosticDefinition GetModelArtifactDefinition(string code) {
     ArgumentException.ThrowIfNullOrWhiteSpace(code);
@@ -146,5 +197,15 @@ internal static class DataVaultDiagnosticCatalog {
     }
 
     throw new InvalidOperationException("Diagnostic code '" + code + "' is not part of the model-artifact diagnostic catalog.");
+  }
+
+  internal static DataVaultDiagnosticDefinition GetMigrationOperationDefinition(string code) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(code);
+
+    if (MigrationOperationSeedDefinitionsByCode.TryGetValue(code, out var definition)) {
+      return definition;
+    }
+
+    throw new InvalidOperationException("Diagnostic code '" + code + "' is not part of the migration-operation diagnostic catalog.");
   }
 }

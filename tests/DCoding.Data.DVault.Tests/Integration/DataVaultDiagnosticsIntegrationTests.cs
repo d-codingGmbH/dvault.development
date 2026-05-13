@@ -1,6 +1,7 @@
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -31,6 +32,34 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
     Assert.Equal("sqlite-v1", result.Explain.CapabilityProfileName);
     Assert.Equal("sqlite-provider-v1", result.Explain.ProviderBehaviorProfileName);
     Assert.Equal(["HubCustomer", "SatCustomerProfile"], result.Explain.Entities.Select(entity => entity.TableName).ToArray());
+  }
+
+  [Fact]
+  public void AnalyzeSqliteDbContextMigrationOperationsSurfacesFindingsThroughResultIssues() {
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    using var context = new DiagnosticsContext(CreateOptions(database));
+
+    var baseline = diagnostics.Analyze(context);
+    var result = DataVaultMigrationOperationDiagnostics.Analyze(
+        baseline,
+        [
+            new DropTableOperation {
+              Name = "HubCustomer",
+            },
+        ]);
+
+    var issue = Assert.Single(result.Issues);
+    Assert.Equal("DVM2006", issue.Code);
+    Assert.Equal(DataVaultDiagnosticsIssueSeverity.Error, issue.Severity);
+    Assert.Equal("migration/DropTable/HubCustomer", issue.Path);
+    Assert.False(result.Validation.IsValid);
+    Assert.Same(issue, Assert.Single(result.Validation.Issues));
+    Assert.NotEmpty(DataVaultDiagnosticCatalog.GetMigrationOperationDefinition(issue.Code).Remediation);
   }
 
   [Fact]

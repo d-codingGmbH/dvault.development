@@ -3,18 +3,17 @@
   "ticket-id": "06F1XPV0YJ8Z9HQVT6BYR397Q8",
   "ticket-type": "task",
   "title": "Task: Validate migration operations and report guardrail findings",
-  "revision": "06F1XTP6CXJ6AK69BGPKFDH7GW",
-  "status": "todo",
+  "revision": "06F1ZRYYJC0KPDQQCNKKKP11K8",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/task",
     "area/migrations",
     "area/testing",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRRJZAM9R6YWNR8K0M1T4",
   "releaseId": "06F1XPRJZBEZFGF8XMH6RCPSS4",
   "created-at": "2026-05-13T01:02:34.8602629Z",
-  "updated-at": "2026-05-13T01:19:23.2392819Z"
+  "updated-at": "2026-05-13T05:51:27.8911699Z"
 }
