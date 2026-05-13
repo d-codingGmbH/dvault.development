@@ -1,0 +1,15 @@
+{
+  "event-id": "06F244269QA7NQ3SET2FP2PJER",
+  "occurred-at": "2026-05-13T15:59:12.4610521Z",
+  "event-type": "TicketRelationAdded",
+  "actor": {
+    "name": "system",
+    "email": "system@example.invalid"
+  },
+  "payload": {
+    "relation-id": "06F1XPRY3ZDB6W1WQ9ABRRJ2V4--06F23Z08K0W49K5JMEHP60WZC0--parentOf",
+    "relation-type": "parentOf",
+    "source-ticket-id": "06F1XPRY3ZDB6W1WQ9ABRRJ2V4",
+    "target-ticket-id": "06F23Z08K0W49K5JMEHP60WZC0"
+  }
+}
