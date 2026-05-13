@@ -44,22 +44,23 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
     var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
     using var context = new DiagnosticsContext(CreateOptions(database));
 
-    var baseline = diagnostics.Analyze(context);
-    var result = DataVaultMigrationOperationDiagnostics.Analyze(
-        baseline,
+    var report = DataVaultMigrationOperationDiagnostics.AnalyzeReport(
+        diagnostics,
+        context,
         [
             new DropTableOperation {
               Name = "HubCustomer",
             },
         ]);
 
-    var issue = Assert.Single(result.Issues);
+    var issue = Assert.Single(report.Issues);
     Assert.Equal("DVM2006", issue.Code);
     Assert.Equal(DataVaultDiagnosticsIssueSeverity.Error, issue.Severity);
     Assert.Equal("migration/DropTable/HubCustomer", issue.Path);
-    Assert.False(result.Validation.IsValid);
-    Assert.Same(issue, Assert.Single(result.Validation.Issues));
-    Assert.NotEmpty(DataVaultDiagnosticCatalog.GetMigrationOperationDefinition(issue.Code).Remediation);
+    Assert.False(report.IsValid);
+    Assert.Same(report.Diagnostics.Issues.Single(), Assert.Single(report.Diagnostics.Validation.Issues));
+    Assert.NotEmpty(issue.Remediation);
+    Assert.Contains("DVault migration guardrails: invalid", report.ToDisplayString(), StringComparison.Ordinal);
   }
 
   [Fact]

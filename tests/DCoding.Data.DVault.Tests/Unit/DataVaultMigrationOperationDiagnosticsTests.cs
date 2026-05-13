@@ -67,7 +67,7 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
   }
 
   [Fact]
-  public void AnalyzeMigrationOperationsReportsDeterministicFindingsForSixOperationMatrix() {
+  public void AnalyzeMigrationOperationsReportsDeterministicFindingsForDataVaultOperationMatrix() {
     using var provider = CreateServiceProvider();
     var baseline = provider
         .GetRequiredService<IDataVaultDiagnosticsService>()
@@ -113,6 +113,40 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
             new DropTableOperation {
               Name = "HubCustomer",
             },
+            new AddColumnOperation {
+              Table = "PitCustomerContact",
+              Name = "UnauthorizedSnapshot",
+              ClrType = typeof(DateTimeOffset),
+            },
+            new DropColumnOperation {
+              Table = "PitCustomerContact",
+              Name = "ContactLoadTimestamp",
+            },
+            new AlterColumnOperation {
+              Table = "BridgeCustomerOrder",
+              Name = "OrderHashKey",
+              ClrType = typeof(string),
+            },
+            new DropColumnOperation {
+              Table = "BridgeSalesRegionHierarchy",
+              Name = "TraversalDepth",
+            },
+            new DropIndexOperation {
+              Table = "BridgeCustomerOrder",
+              Name = "IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey",
+            },
+            new AddPrimaryKeyOperation {
+              Table = "HubCustomer",
+              Name = "PkHubCustomerWrongName",
+              Columns = ["CustomerHashKey"],
+            },
+            new DropPrimaryKeyOperation {
+              Table = "PitCustomerContact",
+              Name = "PkPitCustomerContactCustomerHashKeyLoadTimestamp",
+            },
+            new DropTableOperation {
+              Name = "BridgeCustomerOrder",
+            },
         ]);
 
     Assert.False(result.Validation.IsValid);
@@ -125,10 +159,62 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
         issue => AssertIssue(issue, "DVM2005", DataVaultDiagnosticsIssueSeverity.Warning, "migration/RenameColumn/HubCustomer/LoadTimestamp", "MI-5"),
         issue => AssertIssue(issue, "DVM2002", DataVaultDiagnosticsIssueSeverity.Error, "migration/AlterColumn/HubCustomer/RecordSource", "MI-2"),
         issue => AssertIssue(issue, "DVM2003", DataVaultDiagnosticsIssueSeverity.Error, "migration/AlterColumn/LinkCustomerOrder/OrderHashKey", "MI-3"),
-        issue => AssertIssue(issue, "DVM2006", DataVaultDiagnosticsIssueSeverity.Error, "migration/DropTable/HubCustomer", "MI-5"));
+        issue => AssertIssue(issue, "DVM2006", DataVaultDiagnosticsIssueSeverity.Error, "migration/DropTable/HubCustomer", "MI-5"),
+        issue => AssertIssue(issue, "DVM2003", DataVaultDiagnosticsIssueSeverity.Error, "migration/AddColumn/PitCustomerContact/UnauthorizedSnapshot", "MI-3"),
+        issue => AssertIssue(issue, "DVM2003", DataVaultDiagnosticsIssueSeverity.Error, "migration/DropColumn/PitCustomerContact/ContactLoadTimestamp", "MI-3"),
+        issue => AssertIssue(issue, "DVM2003", DataVaultDiagnosticsIssueSeverity.Error, "migration/AlterColumn/BridgeCustomerOrder/OrderHashKey", "MI-3"),
+        issue => AssertIssue(issue, "DVM2003", DataVaultDiagnosticsIssueSeverity.Error, "migration/DropColumn/BridgeSalesRegionHierarchy/TraversalDepth", "MI-3"),
+        issue => AssertIssue(issue, "DVM2004", DataVaultDiagnosticsIssueSeverity.Warning, "migration/DropIndex/BridgeCustomerOrder/IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey", "MI-4"),
+        issue => AssertIssue(issue, "DVM2004", DataVaultDiagnosticsIssueSeverity.Warning, "migration/AddPrimaryKey/HubCustomer/PkHubCustomerWrongName", "MI-4"),
+        issue => AssertIssue(issue, "DVM2004", DataVaultDiagnosticsIssueSeverity.Warning, "migration/DropPrimaryKey/PitCustomerContact/PkPitCustomerContactCustomerHashKeyLoadTimestamp", "MI-4"),
+        issue => AssertIssue(issue, "DVM2006", DataVaultDiagnosticsIssueSeverity.Error, "migration/DropTable/BridgeCustomerOrder", "MI-5"));
     Assert.Equal(
-        ["DVM2001", "DVM2002", "DVM2003", "DVM2002", "DVM2003", "DVM2006"],
+        [
+            "DVM2001",
+            "DVM2002",
+            "DVM2003",
+            "DVM2002",
+            "DVM2003",
+            "DVM2006",
+            "DVM2003",
+            "DVM2003",
+            "DVM2003",
+            "DVM2003",
+            "DVM2006",
+        ],
         result.Validation.Issues.Select(issue => issue.Code));
+  }
+
+  [Fact]
+  public void AnalyzeMigrationOperationsReportIncludesRemediationAndDeterministicDisplayString() {
+    using var provider = CreateServiceProvider();
+    var baseline = provider
+        .GetRequiredService<IDataVaultDiagnosticsService>()
+        .Analyze(CreateMigrationGuardrailMetadataModel());
+
+    var report = DataVaultMigrationOperationDiagnostics.AnalyzeReport(
+        baseline,
+        [
+            new DropTableOperation {
+              Name = "BridgeCustomerOrder",
+            },
+        ]);
+
+    Assert.False(report.IsValid);
+    Assert.True(report.HasFindings);
+    Assert.Same(report.Diagnostics.Explain, baseline.Explain);
+
+    var issue = Assert.Single(report.Issues);
+    Assert.Equal("DVM2006", issue.Code);
+    Assert.Equal("migration/DropTable/BridgeCustomerOrder", issue.Path);
+    Assert.Equal(
+        DataVaultDiagnosticCatalog.GetMigrationOperationDefinition("DVM2006").Remediation,
+        issue.Remediation);
+    Assert.Equal(
+        "DVault migration guardrails: invalid, findings 1" + Environment.NewLine +
+        "- Error DVM2006 migration/DropTable/BridgeCustomerOrder: MI-5 violation: migration drops Data Vault-produced table 'BridgeCustomerOrder'. Remediation: " +
+        issue.Remediation,
+        report.ToDisplayString());
   }
 
   private static void AssertIssue(
@@ -154,9 +240,16 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
   private static DataVaultMetadataModel CreateMigrationGuardrailMetadataModel() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+    var salesRegion = new DataVaultHubMetadata("SalesRegion", ["Region Code"]);
     var customerOrder = new DataVaultLinkMetadata(
         "CustomerOrder",
         [customer.ToReference(), order.ToReference()]);
+    var salesRegionParentChild = new DataVaultLinkMetadata(
+        "SalesRegionParentChild",
+        [
+            new DataVaultLinkParticipantMetadata(salesRegion.ToReference(), "ParentRegion"),
+            new DataVaultLinkParticipantMetadata(salesRegion.ToReference(), "ChildRegion"),
+        ]);
     var contact = new DataVaultSatelliteMetadata(
         "Contact",
         customer.ToReference(),
@@ -166,7 +259,33 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
         customer.ToReference(),
         ["Email Address"],
         ["Contact Type"]);
+    var customerOrderBridge = DataVaultBridgeMetadata.ManyToMany(
+        "CustomerOrder",
+        customer.ToReference(),
+        customerOrder.ToReference(),
+        order.ToReference());
+    var salesRegionHierarchyBridge = new DataVaultBridgeMetadata(
+        "SalesRegionHierarchy",
+        DataVaultBridgeKind.Hierarchy,
+        DataVaultMetadataReference.Link("SalesRegionParentChild"),
+        [
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.Ancestor,
+                salesRegion.ToReference(),
+                "ParentRegion"),
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.Descendant,
+                salesRegion.ToReference(),
+                "ChildRegion"),
+        ]);
+    var customerContactPit = new DataVaultPitMetadata(customer.ToReference(), ["Contact"]);
 
-    return new DataVaultMetadataModel([customer, order], [customerOrder], [contact, channel]);
+    return new DataVaultMetadataModel(
+        [customer, order, salesRegion],
+        [customerOrder, salesRegionParentChild],
+        [contact, channel],
+        Array.Empty<DataVaultPointInTimeMetadata>(),
+        [customerOrderBridge, salesRegionHierarchyBridge],
+        [customerContactPit]);
   }
 }

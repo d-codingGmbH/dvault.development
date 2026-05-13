@@ -138,6 +138,34 @@ For the source-backed hierarchy example, `DataVaultBridgeMetadata.Hierarchy("Sal
 
 Bridge behavior beyond that baseline remains deferred. Unsupported bridge projection features include effectivity windows, path payload columns, closure maintenance state, generated EF relationship graph metadata, provider-specific DDL or SQL, migrations, indexes beyond the provider-neutral metadata baseline, bridge row population, traversal refresh, and PIT or multi-active satellite interactions unless later tickets define those contracts explicitly.
 
+## Migration Guardrail Pre-Apply Example
+
+Consumers can run migration guardrails before applying a generated migration by pairing EF Core `MigrationOperation` input with the same Data Vault diagnostics explain baseline used elsewhere. The check is metadata-only and does not require a live database connection or SQL parsing.
+
+```csharp
+using DCoding.Data.DVault;
+using DCoding.Data.DVault.Modeling;
+using Microsoft.EntityFrameworkCore.Migrations.Operations;
+using Microsoft.Extensions.DependencyInjection;
+
+using var serviceProvider = new ServiceCollection()
+    .AddDVault()
+    .BuildServiceProvider();
+
+var diagnostics = serviceProvider.GetRequiredService<IDataVaultDiagnosticsService>();
+DataVaultDiagnosticsResult baseline = diagnostics.Analyze(metadataModel);
+IReadOnlyList<MigrationOperation> generatedOperations = migration.UpOperations;
+
+var report = DataVaultMigrationOperationDiagnostics.AnalyzeReport(baseline, generatedOperations);
+Console.WriteLine(report.ToDisplayString());
+
+if (report.HasFindings) {
+  Environment.ExitCode = 1;
+}
+```
+
+`metadataModel` can also be replaced with an existing `DataVaultMetadataRegistry`, a code-first declaration callback, or a configured `DbContext` passed to the matching `AnalyzeReport` overload. DbContext analysis reads the configured model metadata and does not apply the migration. The report keeps stable DVM codes, paths, severities, messages, and remediation text for local scripts, CI/build steps, or tests.
+
 ## Hook Stance
 
 Advanced hooks are additive overrides. They must preserve the ordinary default path:

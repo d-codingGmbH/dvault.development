@@ -236,6 +236,42 @@ type public enum DCoding.Data.DVault.DataVaultLogicalPropertyKind
   value BridgeDepth = 8
   value DrivingKey = 9
 
+type public sealed class DCoding.Data.DVault.DataVaultMigrationGuardrailIssue : System.IEquatable<DCoding.Data.DVault.DataVaultMigrationGuardrailIssue>
+  ctor public DataVaultMigrationGuardrailIssue(DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity Severity, string Code, string Path, string Message, string Remediation)
+  property public DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity Severity { get; init; }
+  property public string Code { get; init; }
+  property public string Message { get; init; }
+  property public string Path { get; init; }
+  property public string Remediation { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultMigrationGuardrailIssue? left, DCoding.Data.DVault.DataVaultMigrationGuardrailIssue? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultMigrationGuardrailIssue? left, DCoding.Data.DVault.DataVaultMigrationGuardrailIssue? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultMigrationGuardrailIssue? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity Severity, out string Code, out string Path, out string Message, out string Remediation)
+
+type public sealed class DCoding.Data.DVault.DataVaultMigrationGuardrailReport : System.IEquatable<DCoding.Data.DVault.DataVaultMigrationGuardrailReport>
+  property public DCoding.Data.DVault.DataVaultDiagnosticsResult Diagnostics { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultMigrationGuardrailIssue> Issues { get; }
+  property public bool HasFindings { get; }
+  property public bool IsValid { get; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultMigrationGuardrailReport? left, DCoding.Data.DVault.DataVaultMigrationGuardrailReport? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultMigrationGuardrailReport? left, DCoding.Data.DVault.DataVaultMigrationGuardrailReport? right)
+  method public string ToDisplayString()
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultMigrationGuardrailReport? other)
+
+type public static class DCoding.Data.DVault.DataVaultMigrationOperationDiagnostics
+  method public static DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(DCoding.Data.DVault.DataVaultDiagnosticsResult baseline, System.Collections.Generic.IEnumerable<Microsoft.EntityFrameworkCore.Migrations.Operations.MigrationOperation> operations)
+  method public static DCoding.Data.DVault.DataVaultMigrationGuardrailReport AnalyzeReport(DCoding.Data.DVault.DataVaultDiagnosticsResult baseline, System.Collections.Generic.IEnumerable<Microsoft.EntityFrameworkCore.Migrations.Operations.MigrationOperation> operations)
+  method public static DCoding.Data.DVault.DataVaultMigrationGuardrailReport AnalyzeReport(DCoding.Data.DVault.IDataVaultDiagnosticsService diagnostics, DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel, System.Collections.Generic.IEnumerable<Microsoft.EntityFrameworkCore.Migrations.Operations.MigrationOperation> operations)
+  method public static DCoding.Data.DVault.DataVaultMigrationGuardrailReport AnalyzeReport(DCoding.Data.DVault.IDataVaultDiagnosticsService diagnostics, DCoding.Data.DVault.Modeling.DataVaultMetadataRegistry metadataRegistry, System.Collections.Generic.IEnumerable<Microsoft.EntityFrameworkCore.Migrations.Operations.MigrationOperation> operations)
+  method public static DCoding.Data.DVault.DataVaultMigrationGuardrailReport AnalyzeReport(DCoding.Data.DVault.IDataVaultDiagnosticsService diagnostics, Microsoft.EntityFrameworkCore.DbContext dbContext, System.Collections.Generic.IEnumerable<Microsoft.EntityFrameworkCore.Migrations.Operations.MigrationOperation> operations)
+  method public static DCoding.Data.DVault.DataVaultMigrationGuardrailReport AnalyzeReport(DCoding.Data.DVault.IDataVaultDiagnosticsService diagnostics, System.Action<DCoding.Data.DVault.DataVaultCodeFirstModelBuilder> configureModel, System.Collections.Generic.IEnumerable<Microsoft.EntityFrameworkCore.Migrations.Operations.MigrationOperation> operations)
+
 type public static class DCoding.Data.DVault.DataVaultModelArtifactExporter
   method public static string ExportJson(DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel)
   method public static string ExportJson(DCoding.Data.DVault.Modeling.DataVaultMetadataRegistry metadataRegistry)

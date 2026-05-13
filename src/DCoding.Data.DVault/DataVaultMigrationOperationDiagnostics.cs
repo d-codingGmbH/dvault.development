@@ -1,9 +1,19 @@
 using DCoding.Data.DVault.Modeling;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 
 namespace DCoding.Data.DVault;
 
-internal static class DataVaultMigrationOperationDiagnostics {
+/// <summary>
+/// Analyzes generated EF Core migration operations against a Data Vault diagnostics explain baseline.
+/// </summary>
+public static class DataVaultMigrationOperationDiagnostics {
+  /// <summary>
+  /// Analyzes EF Core migration operations and returns the diagnostics result with migration guardrail findings appended.
+  /// </summary>
+  /// <param name="baseline">The Data Vault diagnostics baseline produced from metadata, registry, code-first declarations, or a DbContext.</param>
+  /// <param name="operations">The generated EF Core migration operations to inspect before applying a migration.</param>
+  /// <returns>The diagnostics result containing baseline and migration-operation issues.</returns>
   public static DataVaultDiagnosticsResult Analyze(
       DataVaultDiagnosticsResult baseline,
       IEnumerable<MigrationOperation> operations) {
@@ -25,6 +35,82 @@ internal static class DataVaultMigrationOperationDiagnostics {
         issues) {
       ReadStrategy = baseline.ReadStrategy,
     };
+  }
+
+  /// <summary>
+  /// Analyzes EF Core migration operations and returns an automation-friendly guardrail report with remediation guidance.
+  /// </summary>
+  /// <param name="baseline">The Data Vault diagnostics baseline produced from metadata, registry, code-first declarations, or a DbContext.</param>
+  /// <param name="operations">The generated EF Core migration operations to inspect before applying a migration.</param>
+  /// <returns>A structured guardrail report for local scripts, tests, or build steps.</returns>
+  public static DataVaultMigrationGuardrailReport AnalyzeReport(
+      DataVaultDiagnosticsResult baseline,
+      IEnumerable<MigrationOperation> operations) {
+    return DataVaultMigrationGuardrailReport.Create(Analyze(baseline, operations));
+  }
+
+  /// <summary>
+  /// Builds a metadata-model baseline, analyzes EF Core migration operations, and returns a guardrail report.
+  /// </summary>
+  /// <param name="diagnostics">The diagnostics service used to build the Data Vault explain baseline.</param>
+  /// <param name="metadataModel">The provider-neutral Data Vault metadata model to use as the schema baseline.</param>
+  /// <param name="operations">The generated EF Core migration operations to inspect before applying a migration.</param>
+  /// <returns>A structured guardrail report for local scripts, tests, or build steps.</returns>
+  public static DataVaultMigrationGuardrailReport AnalyzeReport(
+      IDataVaultDiagnosticsService diagnostics,
+      DataVaultMetadataModel metadataModel,
+      IEnumerable<MigrationOperation> operations) {
+    ArgumentNullException.ThrowIfNull(diagnostics);
+
+    return AnalyzeReport(diagnostics.Analyze(metadataModel), operations);
+  }
+
+  /// <summary>
+  /// Builds a metadata-registry baseline, analyzes EF Core migration operations, and returns a guardrail report.
+  /// </summary>
+  /// <param name="diagnostics">The diagnostics service used to build the Data Vault explain baseline.</param>
+  /// <param name="metadataRegistry">The Data Vault metadata registry to use as the schema baseline.</param>
+  /// <param name="operations">The generated EF Core migration operations to inspect before applying a migration.</param>
+  /// <returns>A structured guardrail report for local scripts, tests, or build steps.</returns>
+  public static DataVaultMigrationGuardrailReport AnalyzeReport(
+      IDataVaultDiagnosticsService diagnostics,
+      DataVaultMetadataRegistry metadataRegistry,
+      IEnumerable<MigrationOperation> operations) {
+    ArgumentNullException.ThrowIfNull(diagnostics);
+
+    return AnalyzeReport(diagnostics.Analyze(metadataRegistry), operations);
+  }
+
+  /// <summary>
+  /// Builds a code-first metadata baseline, analyzes EF Core migration operations, and returns a guardrail report.
+  /// </summary>
+  /// <param name="diagnostics">The diagnostics service used to build the Data Vault explain baseline.</param>
+  /// <param name="configureModel">The code-first Data Vault metadata declaration callback to use as the schema baseline.</param>
+  /// <param name="operations">The generated EF Core migration operations to inspect before applying a migration.</param>
+  /// <returns>A structured guardrail report for local scripts, tests, or build steps.</returns>
+  public static DataVaultMigrationGuardrailReport AnalyzeReport(
+      IDataVaultDiagnosticsService diagnostics,
+      Action<DataVaultCodeFirstModelBuilder> configureModel,
+      IEnumerable<MigrationOperation> operations) {
+    ArgumentNullException.ThrowIfNull(diagnostics);
+
+    return AnalyzeReport(diagnostics.Analyze(configureModel), operations);
+  }
+
+  /// <summary>
+  /// Builds a configured DbContext baseline, analyzes EF Core migration operations, and returns a guardrail report.
+  /// </summary>
+  /// <param name="diagnostics">The diagnostics service used to read the Data Vault explain baseline from the DbContext model.</param>
+  /// <param name="dbContext">The configured DbContext whose design-time model carries the Data Vault schema baseline.</param>
+  /// <param name="operations">The generated EF Core migration operations to inspect before applying a migration.</param>
+  /// <returns>A structured guardrail report for local scripts, tests, or build steps.</returns>
+  public static DataVaultMigrationGuardrailReport AnalyzeReport(
+      IDataVaultDiagnosticsService diagnostics,
+      DbContext dbContext,
+      IEnumerable<MigrationOperation> operations) {
+    ArgumentNullException.ThrowIfNull(diagnostics);
+
+    return AnalyzeReport(diagnostics.Analyze(dbContext), operations);
   }
 
   private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeOperation(
@@ -53,6 +139,14 @@ internal static class DataVaultMigrationOperationDiagnostics {
         return AnalyzeRenameColumn(schema, renameColumn);
       case CreateIndexOperation createIndex:
         return AnalyzeCreateIndex(schema, createIndex);
+      case DropIndexOperation dropIndex:
+        return AnalyzeDropIndex(schema, dropIndex);
+      case RenameIndexOperation renameIndex:
+        return AnalyzeRenameIndex(schema, renameIndex);
+      case AddPrimaryKeyOperation addPrimaryKey:
+        return AnalyzeAddPrimaryKey(schema, addPrimaryKey);
+      case DropPrimaryKeyOperation dropPrimaryKey:
+        return AnalyzeDropPrimaryKey(schema, dropPrimaryKey);
       case DropTableOperation dropTable:
         return AnalyzeDropTable(schema, dropTable);
       default:
@@ -64,15 +158,27 @@ internal static class DataVaultMigrationOperationDiagnostics {
       DataVaultMigrationSchemaBaseline schema,
       AddColumnOperation operation) {
     if (!schema.TryGetEntity(operation.Table, out var entity) ||
-        entity.Columns.ContainsKey(operation.Name) ||
-        entity.Kind is not (DataVaultTableKind.Hub or DataVaultTableKind.Link)) {
+        entity.Columns.ContainsKey(operation.Name)) {
+      return [];
+    }
+
+    if (entity.Kind is DataVaultTableKind.Hub or DataVaultTableKind.Link) {
+      return [CreateIssue(
+          "DVM2001",
+          "MI-1 violation: migration adds payload column '" + operation.Name +
+          "' to Data Vault " + FormatTableKind(entity.Kind) + " table '" + entity.TableName + "'.",
+          CreatePath("AddColumn", entity.TableName, operation.Name))];
+    }
+
+    if (entity.Kind is not (DataVaultTableKind.Pit or DataVaultTableKind.Bridge)) {
       return [];
     }
 
     return [CreateIssue(
-        "DVM2001",
-        "MI-1 violation: migration adds payload column '" + operation.Name +
-        "' to Data Vault " + FormatTableKind(entity.Kind) + " table '" + entity.TableName + "'.",
+        "DVM2003",
+        "MI-3 violation: migration adds unsupported structural column '" +
+        operation.Name + "' to Data Vault " + FormatTableKind(entity.Kind) +
+        " table '" + entity.TableName + "'.",
         CreatePath("AddColumn", entity.TableName, operation.Name))];
   }
 
@@ -93,7 +199,9 @@ internal static class DataVaultMigrationOperationDiagnostics {
     }
 
     var invariant = code == "DVM2002" ? "MI-2" : "MI-3";
-    var shape = code == "DVM2002" ? "required technical column" : "stable key, parent, participant, or driving-key column";
+    var shape = code == "DVM2002"
+        ? "required technical column"
+        : "stable key, parent, participant, driving-key, snapshot-reference, or bridge-depth column";
 
     return [CreateIssue(
         code,
@@ -113,7 +221,9 @@ internal static class DataVaultMigrationOperationDiagnostics {
 
     return column.Role is DataVaultPropertyRole.BusinessKey or
         DataVaultPropertyRole.ParticipantReference or
-        DataVaultPropertyRole.DrivingKey
+        DataVaultPropertyRole.DrivingKey or
+        DataVaultPropertyRole.SnapshotReference or
+        DataVaultPropertyRole.BridgeDepth
         ? "DVM2003"
         : null;
   }
@@ -151,11 +261,83 @@ internal static class DataVaultMigrationOperationDiagnostics {
         CreatePath("CreateIndex", entity.TableName, index.Name))];
   }
 
+  private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeDropIndex(
+      DataVaultMigrationSchemaBaseline schema,
+      DropIndexOperation operation) {
+    if (string.IsNullOrWhiteSpace(operation.Table) ||
+        !schema.TryGetEntity(operation.Table, out var entity) ||
+        !entity.Indexes.TryGetValue(operation.Name, out var index)) {
+      return [];
+    }
+
+    return [CreateIssue(
+        "DVM2004",
+        "MI-4 violation: migration drops Data Vault default index '" + index.Name +
+        "' from table '" + entity.TableName + "'.",
+        CreatePath("DropIndex", entity.TableName, index.Name))];
+  }
+
+  private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeRenameIndex(
+      DataVaultMigrationSchemaBaseline schema,
+      RenameIndexOperation operation) {
+    if (string.IsNullOrWhiteSpace(operation.Table) ||
+        !schema.TryGetEntity(operation.Table, out var entity) ||
+        !entity.Indexes.TryGetValue(operation.Name, out var index)) {
+      return [];
+    }
+
+    return [CreateIssue(
+        "DVM2004",
+        "MI-4 violation: migration renames Data Vault default index '" + index.Name +
+        "' on table '" + entity.TableName + "' away from the produced name.",
+        CreatePath("RenameIndex", entity.TableName, index.Name))];
+  }
+
+  private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeAddPrimaryKey(
+      DataVaultMigrationSchemaBaseline schema,
+      AddPrimaryKeyOperation operation) {
+    if (!schema.TryGetEntity(operation.Table, out var entity)) {
+      return [];
+    }
+
+    var operationColumns = operation.Columns ?? Array.Empty<string>();
+    if (string.Equals(operation.Name, entity.PrimaryKey.Name, StringComparison.Ordinal) &&
+        entity.PrimaryKey.PropertyNames.SequenceEqual(operationColumns, StringComparer.Ordinal)) {
+      return [];
+    }
+
+    var operationName = string.IsNullOrWhiteSpace(operation.Name)
+        ? "<unnamed>"
+        : operation.Name;
+
+    return [CreateIssue(
+        "DVM2004",
+        "MI-4 violation: migration creates Data Vault primary key '" + operationName +
+        "' on table '" + entity.TableName + "' with wrong name or columns; expected '" +
+        entity.PrimaryKey.Name + "' on columns [" +
+        string.Join(", ", entity.PrimaryKey.PropertyNames) + "].",
+        CreatePath("AddPrimaryKey", entity.TableName, operationName))];
+  }
+
+  private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeDropPrimaryKey(
+      DataVaultMigrationSchemaBaseline schema,
+      DropPrimaryKeyOperation operation) {
+    if (!schema.TryGetEntity(operation.Table, out var entity) ||
+        !string.Equals(operation.Name, entity.PrimaryKey.Name, StringComparison.Ordinal)) {
+      return [];
+    }
+
+    return [CreateIssue(
+        "DVM2004",
+        "MI-4 violation: migration drops Data Vault primary key '" + entity.PrimaryKey.Name +
+        "' from table '" + entity.TableName + "'.",
+        CreatePath("DropPrimaryKey", entity.TableName, entity.PrimaryKey.Name))];
+  }
+
   private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeDropTable(
       DataVaultMigrationSchemaBaseline schema,
       DropTableOperation operation) {
-    if (!schema.TryGetEntity(operation.Name, out var entity) ||
-        entity.Kind is not (DataVaultTableKind.Hub or DataVaultTableKind.Link or DataVaultTableKind.Satellite)) {
+    if (!schema.TryGetEntity(operation.Name, out var entity)) {
       return [];
     }
 
@@ -202,7 +384,12 @@ internal static class DataVaultMigrationOperationDiagnostics {
       ArgumentNullException.ThrowIfNull(explain);
 
       var entities = explain.Entities
-          .Where(entity => entity.TableKind is DataVaultTableKind.Hub or DataVaultTableKind.Link or DataVaultTableKind.Satellite)
+          .Where(entity => entity.TableKind is
+              DataVaultTableKind.Hub or
+              DataVaultTableKind.Link or
+              DataVaultTableKind.Satellite or
+              DataVaultTableKind.Pit or
+              DataVaultTableKind.Bridge)
           .Select(DataVaultMigrationEntityBaseline.Create)
           .ToDictionary(entity => entity.TableName, StringComparer.Ordinal);
 
@@ -221,10 +408,12 @@ internal static class DataVaultMigrationOperationDiagnostics {
         string tableName,
         DataVaultTableKind kind,
         IReadOnlyDictionary<string, DataVaultMigrationColumnBaseline> columns,
+        DataVaultMigrationKeyBaseline primaryKey,
         IReadOnlyDictionary<string, DataVaultMigrationIndexBaseline> indexes) {
       TableName = tableName;
       Kind = kind;
       Columns = columns;
+      PrimaryKey = primaryKey;
       Indexes = indexes;
     }
 
@@ -234,17 +423,20 @@ internal static class DataVaultMigrationOperationDiagnostics {
 
     public IReadOnlyDictionary<string, DataVaultMigrationColumnBaseline> Columns { get; }
 
+    public DataVaultMigrationKeyBaseline PrimaryKey { get; }
+
     public IReadOnlyDictionary<string, DataVaultMigrationIndexBaseline> Indexes { get; }
 
     public static DataVaultMigrationEntityBaseline Create(DataVaultEntityExplain entity) {
       var columns = entity.Properties
           .Select(DataVaultMigrationColumnBaseline.Create)
           .ToDictionary(column => column.Name, StringComparer.Ordinal);
+      var primaryKey = DataVaultMigrationKeyBaseline.Create(entity.PrimaryKey);
       var indexes = entity.Indexes
           .Select(DataVaultMigrationIndexBaseline.Create)
           .ToDictionary(index => index.Name, StringComparer.Ordinal);
 
-      return new DataVaultMigrationEntityBaseline(entity.TableName, entity.TableKind, columns, indexes);
+      return new DataVaultMigrationEntityBaseline(entity.TableName, entity.TableKind, columns, primaryKey, indexes);
     }
   }
 
@@ -254,6 +446,14 @@ internal static class DataVaultMigrationOperationDiagnostics {
       TechnicalMetadataColumnRole? TechnicalRole) {
     public static DataVaultMigrationColumnBaseline Create(DataVaultPropertyExplain property) {
       return new DataVaultMigrationColumnBaseline(property.Name, property.Role, property.TechnicalRole);
+    }
+  }
+
+  private sealed record DataVaultMigrationKeyBaseline(
+      string Name,
+      IReadOnlyList<string> PropertyNames) {
+    public static DataVaultMigrationKeyBaseline Create(DataVaultKeyExplain key) {
+      return new DataVaultMigrationKeyBaseline(key.Name, key.PropertyNames);
     }
   }
 
