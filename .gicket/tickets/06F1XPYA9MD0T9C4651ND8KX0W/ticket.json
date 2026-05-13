@@ -3,19 +3,18 @@
   "ticket-id": "06F1XPYA9MD0T9C4651ND8KX0W",
   "ticket-type": "story",
   "title": "Story: Prove compiled model and compiled query compatibility",
-  "revision": "06F1XTPRCMER74T88MBT51Y2NM",
-  "status": "todo",
+  "revision": "06F26G93D1Z3N1F73CGRBS0J9C",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/story",
-    "area/performance",
     "area/ef-core",
+    "area/performance",
     "area/read-models",
-    "needs-po"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRTTRNS5DF3BZJ7SJ9HT0",
   "releaseId": "06F1XPRP3Y5G2B9HAYGP870V8W",
   "created-at": "2026-05-13T01:03:01.7108899Z",
-  "updated-at": "2026-05-13T01:19:27.8458154Z"
+  "updated-at": "2026-05-13T21:32:12.0085730Z"
 }
