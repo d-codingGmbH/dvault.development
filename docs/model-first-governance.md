@@ -133,7 +133,9 @@ string jsonFromRegistry = DataVaultModelArtifactExporter.ExportJson(registry);
 string jsonFromModel = DataVaultModelArtifactExporter.ExportJson(metadataModel);
 ```
 
-Compare the expected artifact or metadata model against generated/current EF metadata with `DataVaultModelDriftReporter.Compare`. Use the structured differences and `ToDisplayString()` as review evidence before accepting a model change. Drift comparison is design-time EF metadata comparison; it does not inspect a live database.
+Compare the expected artifact or metadata model against generated/current EF metadata with `DataVaultModelDriftReporter.Compare`. Use the structured differences and `ToDisplayString()` as review evidence before accepting a model change. This comparison path remains design-time EF metadata comparison and does not open a database connection.
+
+When a reachable database must be checked, use the separate bounded live-schema path: `DataVaultLiveSchemaReader.ReadAsync(context)` captures DVault-owned tables, ordered columns, named primary-key constraints, and secondary indexes, and `DataVaultLiveSchemaDriftReporter.Compare` compares that result with expected metadata or an imported model. SQLite is the supported v1 live-schema reader. Providers without a live reader return `UnsupportedProvider`, and reachable-provider failures return `Unavailable`, so requested live checks do not silently pass.
 
 ```csharp
 using DCoding.Data.DVault;
@@ -146,6 +148,14 @@ if (report.HasBlockingDifferences) {
 }
 ```
 
+```csharp
+using DCoding.Data.DVault;
+
+using var context = new SalesVaultContext(options);
+var liveSchema = await DataVaultLiveSchemaReader.ReadAsync(context);
+var liveReport = DataVaultLiveSchemaDriftReporter.Compare(importResult, liveSchema, DataVaultProviderCapabilityProfiles.Sqlite);
+```
+
 ## Workflow Test Evidence
 
 Run the focused design-time workflow coverage from the repository root with:
@@ -156,7 +166,7 @@ dotnet test DVault.slnx --nologo --filter FullyQualifiedName~DataVaultModelFirst
 
 The valid workflow imports the representative `models/sales-vault.json` `dvault.model.v1` fixture with `DataVaultModelArtifactImporter.ImportJson`, configures a SQLite-backed design-time context with `UseDataVaultMetadata(importResult)`, and compares the imported model against generated EF metadata with `DataVaultModelDriftReporter.Compare(importResult, context)`. The expected valid outcome is `report.HasBlockingDifferences == false` and `report.ToDisplayString()` reporting no differences. SQLite is used only for provider selection and EF metadata shape; the workflow does not open a database connection or initialize schema.
 
-The invalid workflow imports the same logical source path, `models/sales-vault.json`, with unsupported `schemaVersion` value `dvault.model.v2`. The expected invalid outcome is one import diagnostic with code `DMV1002`, category `schema-version`, logical source path `models/sales-vault.json`, and JSON Pointer `/schemaVersion`.
+The live-schema workflow is separate from the design-time workflow above. Required local live-schema coverage uses SQLite and does initialize a test database; external provider schema evidence remains opt-in behind the existing provider connection-string environment variables. The invalid workflow imports the same logical source path, `models/sales-vault.json`, with unsupported `schemaVersion` value `dvault.model.v2`. The expected invalid outcome is one import diagnostic with code `DMV1002`, category `schema-version`, logical source path `models/sales-vault.json`, and JSON Pointer `/schemaVersion`.
 
 ## Diagnostic Contract
 
@@ -211,6 +221,6 @@ Do not use unknown fields for comments, vendor metadata, experimental parser hin
 
 ## Current Limitations
 
-The current branch does not provide first-party CLI commands, documented CI gate snippets, direct YAML ingestion, live database drift introspection, or extraction from arbitrary EF `ModelBuilder` state into a model artifact.
+The current branch does not provide first-party CLI commands, documented CI gate snippets, direct YAML ingestion, broad multi-provider live database drift introspection beyond the bounded SQLite live-schema reader, or extraction from arbitrary EF `ModelBuilder` state into a model artifact.
 
 The model-first APIs operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata. Keep command-line automation, CI policy examples, YAML semantics, database schema inspection, and EF model reverse-engineering as separate future contracts instead of implying support in current examples.

@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the live-schema drift task to a SQLite-first, provider-neutral schema snapshot abstraction with deterministic drift reporting, explicit unsupported-provider handling, and bounded optional external-provider evidence.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - This task is only the live-schema branch of story 06F1XPWB8DZR4J8EZ00V8DT25G; sibling task 06F1XPWNAWWMDBRK315S66P7AM owns the EF ModelSnapshot adapter and stays out of scope here.
 - Blocking prerequisite stories 06F1XPVPKVGYKCV04PY98TSS78 and 06F1XPS7KGKBP5SVMQPJC49J2G are already done, so this ticket can rely on the existing design-time workflow boundary and stable diagnostic-code conventions.
 - Current branch evidence already has design-time-only drift via DataVaultModelDriftReporter.Compare; this ticket adds optional live-database schema introspection without reopening or replacing that design-time baseline.
@@ -16,92 +15,48 @@
 - If optional external-provider evidence is added, reuse the existing connection-string contracts DVAULT_TEST_POSTGRES_CONNECTION_STRING, DVAULT_TEST_SQLSERVER_CONNECTION_STRING, DVAULT_TEST_ORACLE_CONNECTION_STRING, and DVAULT_TEST_MYSQL_CONNECTION_STRING rather than inventing new configuration keys.
 - The bounded v1 live-schema contract should match the DVault physical surface the source currently emits today: tables, ordered columns, named primary-key constraints, and secondary indexes; foreign-key graph diffing is not part of this ticket because the current core source does not generate DVault foreign keys.
 
-### Scope In
+Scope In
 - Define a provider-neutral live schema snapshot/reader contract for DVault-owned tables, ordered columns, named primary-key constraints, and secondary indexes.
 - Wire the live schema snapshot into drift comparison/reporting so a supported live database can be compared against the expected DVault metadata or artifact baseline.
 - Implement one reliable supported provider path in the default local lane, with SQLite as the required v1 baseline.
 - Add deterministic tests for the supported provider plus explicit unsupported/unavailable-provider coverage for providers that do not implement the live reader in this slice.
 - Update repository documentation to explain the bounded live-schema drift support, provider evidence limits, and existing optional connection-string conventions for any external live-provider lanes.
 
-### Scope Out
+Scope Out
 - No EF ModelSnapshot adapter or ModelSnapshot comparison work; that belongs to sibling task 06F1XPWNAWWMDBRK315S66P7AM.
 - No destructive migration, repair, or schema rewrite behavior.
 - No full provider-specific SQL diff engine or arbitrary catalog/object comparison outside the DVault-owned schema surface.
 - No requirement that Postgres, SQL Server, Oracle, and MySQL all ship first-class live-schema readers in this first slice.
 - No expansion into foreign-key graph diffing, arbitrary non-DVault database objects, or workflow automation beyond code, tests, and docs.
 
-## Acceptance Criteria
-- A provider-neutral live schema contract exists that can represent DVault tables, ordered columns, named primary-key constraints, and secondary indexes with deterministic ordering suitable for drift comparison.
-- SQLite live-schema reading is implemented and covered in required-local tests that compare a generated DVault schema against the expected baseline and report no drift for a matching schema.
-- Supported live-schema drift tests cover at least one intentional mismatch and surface stable machine-readable differences for missing, renamed, or incompatible tables, columns, indexes, or primary-key constraints.
-- Providers without a live-schema implementation, or live-provider lanes that are unavailable in the current environment, return a clear documented unsupported/unavailable result instead of silently passing or throwing an unclassified failure.
-- Default test execution does not require external databases; any Postgres, SQL Server, Oracle, or MySQL evidence remains opt-in behind the repository's existing connection-string conventions.
-- Documentation states which live-schema provider evidence is actually supported in this slice and how optional external-provider configuration works when such lanes are used.
-
-## Definition of Done
-- The live-schema abstraction and its supported provider implementation are integrated into the existing solution without changing default non-live design-time behavior.
-- Required-local tests cover both the matching SQLite path and at least one drifting or unsupported-path assertion with deterministic results.
-- Any current documentation that says DVault has no live database drift introspection is updated or narrowed so it matches the bounded support actually delivered by this ticket.
-- The ticket leaves the done design-time workflow and diagnostic-code baselines intact and does not absorb sibling ModelSnapshot scope.
-- External live-provider behavior, when not implemented, is explicitly documented as unsupported or opt-in rather than implied.
-
-## Implementation Notes
-- Keep the API and report shape aligned with existing drift/diagnostics conventions instead of inventing ad hoc string diffs; exact helper and method names remain developer choice within those conventions.
-- Use the current ad hoc schema-query evidence in tests such as SqliteDataVaultSchemaTests and PostgresDataVaultSchemaTests as the bounded source material for the new abstraction, extracting common schema-reading behavior rather than duplicating provider SQL inline again.
-- Use SQLite as the reliable first implementation because the repository already has required-local SQLite schema tests and reusable SqliteTestDatabase fixtures that do not depend on external services.
-- Treat unsupported providers and unavailable live-provider environments as explicit outcomes with clear diagnostics or no-support results; do not silently skip comparison after a caller requested live drift.
-- Reuse the repository's existing ProviderIntegration.RequiredLocal and ProviderIntegration.ExternalOptIn test-lane boundaries and the existing external connection-string environment variables if optional provider readers are added.
-- Keep the first-slice comparison bounded to DVault-owned tables, ordered columns, named primary keys, and secondary indexes; broader constraint types or non-DVault catalog objects can be deferred safely.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the SQLite-first slice lands, should Postgres be the next external provider to graduate to supported live-schema reading because the repository already contains an opt-in information_schema schema test?
 - If DVault later begins projecting foreign keys or additional named constraints, should a follow-up ticket widen live-schema comparison beyond the current primary-key-plus-index baseline?
 - Once both child tasks under the parent drift story are complete, should README and model-first governance docs be consolidated into one end-to-end public comparison guide covering design-time, ModelSnapshot, and live-schema drift?
 
-## Risks
+Risks
 - Provider catalog metadata differs on casing, naming, and ordering, so insufficient normalization could create false drift even when the physical schema is semantically correct.
 - If unsupported-provider and unavailable-database outcomes are not distinguished clearly, consumers will not know whether they need a provider implementation or only environment configuration.
 - Documentation could overstate support if it implies broad multi-provider live drift coverage before evidence exists beyond the SQLite-first baseline and any explicitly opt-in lanes.
 - Allowing this task to expand into general-purpose database diffing or repair behavior would break the bounded child-ticket scope and jeopardize delivery.
 
-## Split Recommendations
+Split recommendations
 - No split is required for PO-critic readiness; this task is bounded as a SQLite-first live-schema abstraction with explicit unsupported-provider handling and documentation.
 - If first-class live readers are later needed for Postgres, SQL Server, Oracle, or MySQL, track each provider or broader constraint-surface expansion in separate follow-up tickets instead of widening this task.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 5
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Goal
-
-Introduce live-schema comparison without forcing every provider to be complete immediately.
-
-## Scope In
-
-- Define a schema-read contract for tables, columns, indexes, and constraints.
-- Implement at least one reliable provider path or documented no-support result.
-- Add tests that do not require unavailable databases by default.
-
-## Scope Out
-
-- No destructive repair operations.
-- No requirement that every provider has full live drift support in the first slice.
-
-## Acceptance Criteria
-
-- Unsupported providers return clear diagnostics.
-- Supported provider tests are deterministic.
-- Docs explain optional connection strings.
-
-## Implementation Notes
-
-- Keep it provider-neutral first.
-
-## Open Questions
-
-- none
+Run mode
+- apply: planned updates are applied after this comment

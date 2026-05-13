@@ -433,6 +433,28 @@ public static class SalesVaultReader {
 
 The shared-type table names and columns in this quickstart follow DVault's default naming conventions, for example `HubCustomer`, `HubOrder`, `LinkCustomerOrder`, `CustomerHashKey`, `OrderHashKey`, `LoadTimestamp`, and `RecordSource`. Direct EF queries remain available for table-specific projections, custom joins, diagnostics, and cases outside the typed read helper baseline.
 
+### Live schema drift checks
+
+DVault has a bounded live-schema drift path for comparing expected Data Vault metadata with the physical schema in a reachable database. The live snapshot surface is intentionally limited to DVault-owned tables, ordered columns, named primary-key constraints, and secondary indexes. It does not compare foreign keys, arbitrary non-DVault database objects, destructive migration plans, or repair operations.
+
+SQLite is the supported v1 live-schema reader. It is available through `DataVaultLiveSchemaReader.ReadAsync(context)` and returns a classified `DataVaultLiveSchemaReadResult` rather than silently skipping unsupported or unavailable environments. Compare the result with expected metadata using `DataVaultLiveSchemaDriftReporter.Compare`:
+
+```csharp
+using DCoding.Data.DVault;
+
+using var context = new SalesVaultContext(options);
+var liveSchema = await DataVaultLiveSchemaReader.ReadAsync(context);
+var report = DataVaultLiveSchemaDriftReporter.Compare(metadataModel, liveSchema);
+
+if (report.HasBlockingDifferences) {
+  throw new InvalidOperationException(report.ToDisplayString());
+}
+```
+
+Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadStatus.UnsupportedProvider`. A supported provider whose database cannot be reached returns `DataVaultLiveSchemaReadStatus.Unavailable`. Both outcomes become stable blocking drift differences when passed to `DataVaultLiveSchemaDriftReporter.Compare`.
+
+PostgreSQL, SQL Server, Oracle, and MySQL live-schema readers are not first-class supported readers in this slice. Existing external provider integration evidence remains opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
+
 ## v0.7.0 Release Notes
 
 The v0.7.0 release prepares the coordinated six-package DVault family for model-first governance and advanced read-model usage. See `docs/releases/v0.7.0.md` for the release-note record, package scope, compatibility notes, read-flow boundaries, benchmark evidence guidance, and package verification posture.
@@ -447,7 +469,7 @@ Notable user-facing changes:
 
 ## Current v0.7.0 Limitations
 
-Model-first APIs operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. `DataVaultModelArtifactExporter.ExportJson` supports fluent Code-First declaration callbacks, `DataVaultMetadataModel`, and `DataVaultMetadataRegistry`. Current limitations remain no first-party CLI commands, no documented CI gate snippets, no direct YAML ingestion, no live database drift introspection, and no extraction from arbitrary EF `ModelBuilder` state into a model artifact.
+Model-first APIs operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. `DataVaultModelArtifactExporter.ExportJson` supports fluent Code-First declaration callbacks, `DataVaultMetadataModel`, and `DataVaultMetadataRegistry`. Current limitations remain no first-party CLI commands, no documented CI gate snippets, no direct YAML ingestion, no broad multi-provider live database drift introspection beyond the bounded SQLite live-schema reader, and no extraction from arbitrary EF `ModelBuilder` state into a model artifact.
 
 PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization. Current provider-specific read optimization evidence is limited to the latest-satellite read benchmark surface documented under `benchmarks/DCoding.Data.DVault.Benchmarks/README.md`.
 

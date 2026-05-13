@@ -215,6 +215,71 @@ type public sealed class DCoding.Data.DVault.DataVaultLinkSaveOperation
   property public DCoding.Data.DVault.Modeling.DataVaultLinkMetadata Metadata { get; }
   property public System.Collections.Generic.IReadOnlyDictionary<string, string> ParticipantHashKeyValues { get; }
 
+type public sealed class DCoding.Data.DVault.DataVaultLiveSchemaColumn : System.IEquatable<DCoding.Data.DVault.DataVaultLiveSchemaColumn>
+  ctor public DataVaultLiveSchemaColumn(string ColumnName, int Ordinal, string ProviderStorageType)
+  property public int Ordinal { get; init; }
+  property public string ColumnName { get; init; }
+  property public string ProviderStorageType { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultLiveSchemaColumn? left, DCoding.Data.DVault.DataVaultLiveSchemaColumn? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultLiveSchemaColumn? left, DCoding.Data.DVault.DataVaultLiveSchemaColumn? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultLiveSchemaColumn? other)
+  method public void Deconstruct(out string ColumnName, out int Ordinal, out string ProviderStorageType)
+
+type public static class DCoding.Data.DVault.DataVaultLiveSchemaDriftReporter
+  method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.DataVaultModelImportResult expectedImport, DCoding.Data.DVault.DataVaultLiveSchemaReadResult liveSchemaReadResult, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
+  method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, DCoding.Data.DVault.DataVaultLiveSchemaReadResult liveSchemaReadResult)
+  method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, DCoding.Data.DVault.DataVaultLiveSchemaReadResult liveSchemaReadResult, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
+  method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, DCoding.Data.DVault.DataVaultLiveSchemaSnapshot liveSchemaSnapshot)
+  method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, DCoding.Data.DVault.DataVaultLiveSchemaSnapshot liveSchemaSnapshot, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
+  method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultModelDriftReport> CompareAsync(DCoding.Data.DVault.DataVaultModelImportResult expectedImport, Microsoft.EntityFrameworkCore.DbContext currentContext, DCoding.Data.DVault.IDataVaultLiveSchemaReader liveSchemaReader, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultModelDriftReport> CompareAsync(DCoding.Data.DVault.DataVaultModelImportResult expectedImport, Microsoft.EntityFrameworkCore.DbContext currentContext, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultModelDriftReport> CompareAsync(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, Microsoft.EntityFrameworkCore.DbContext currentContext, DCoding.Data.DVault.IDataVaultLiveSchemaReader liveSchemaReader, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultModelDriftReport> CompareAsync(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, Microsoft.EntityFrameworkCore.DbContext currentContext, System.Threading.CancellationToken cancellationToken = default)
+
+type public sealed class DCoding.Data.DVault.DataVaultLiveSchemaIndex
+  ctor public DataVaultLiveSchemaIndex(string indexName, System.Collections.Generic.IEnumerable<string> columnNames, bool isUnique)
+  property public System.Collections.Generic.IReadOnlyList<string> ColumnNames { get; }
+  property public bool IsUnique { get; }
+  property public string IndexName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultLiveSchemaPrimaryKey
+  ctor public DataVaultLiveSchemaPrimaryKey(string constraintName, System.Collections.Generic.IEnumerable<string> columnNames)
+  property public System.Collections.Generic.IReadOnlyList<string> ColumnNames { get; }
+  property public string ConstraintName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultLiveSchemaReadResult
+  ctor public DataVaultLiveSchemaReadResult(DCoding.Data.DVault.DataVaultLiveSchemaReadStatus status, string? providerName, DCoding.Data.DVault.DataVaultLiveSchemaSnapshot? snapshot, string message)
+  property public DCoding.Data.DVault.DataVaultLiveSchemaReadStatus Status { get; }
+  property public DCoding.Data.DVault.DataVaultLiveSchemaSnapshot? Snapshot { get; }
+  property public bool IsSucceeded { get; }
+  property public string Message { get; }
+  property public string? ProviderName { get; }
+  method public static DCoding.Data.DVault.DataVaultLiveSchemaReadResult Success(string? providerName, DCoding.Data.DVault.DataVaultLiveSchemaSnapshot snapshot)
+  method public static DCoding.Data.DVault.DataVaultLiveSchemaReadResult Unavailable(string? providerName, string message)
+  method public static DCoding.Data.DVault.DataVaultLiveSchemaReadResult UnsupportedProvider(string? providerName)
+
+type public enum DCoding.Data.DVault.DataVaultLiveSchemaReadStatus
+  value Succeeded = 0
+  value UnsupportedProvider = 1
+  value Unavailable = 2
+
+type public static class DCoding.Data.DVault.DataVaultLiveSchemaReader
+  method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultLiveSchemaReadResult> ReadAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, System.Threading.CancellationToken cancellationToken = default)
+
+type public sealed class DCoding.Data.DVault.DataVaultLiveSchemaSnapshot
+  ctor public DataVaultLiveSchemaSnapshot(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultLiveSchemaTable> tables)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultLiveSchemaTable> Tables { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultLiveSchemaTable
+  ctor public DataVaultLiveSchemaTable(string tableName, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultLiveSchemaColumn> columns, DCoding.Data.DVault.DataVaultLiveSchemaPrimaryKey primaryKey, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultLiveSchemaIndex> indexes)
+  property public DCoding.Data.DVault.DataVaultLiveSchemaPrimaryKey PrimaryKey { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultLiveSchemaColumn> Columns { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultLiveSchemaIndex> Indexes { get; }
+  property public string TableName { get; }
+
 type public sealed class DCoding.Data.DVault.DataVaultLoadTimestampResolutionContext
   ctor public DataVaultLoadTimestampResolutionContext(DCoding.Data.DVault.DataVaultSaveRequest request)
   property public DCoding.Data.DVault.DataVaultSaveRequest Request { get; }
@@ -804,6 +869,9 @@ type public interface DCoding.Data.DVault.IDataVaultHubMapper
 
 type public interface DCoding.Data.DVault.IDataVaultLinkMapper
   method public abstract DCoding.Data.DVault.DataVaultRegistryLinkSaveOperation Map(TSource source)
+
+type public interface DCoding.Data.DVault.IDataVaultLiveSchemaReader
+  method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultLiveSchemaReadResult> ReadAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, System.Threading.CancellationToken cancellationToken = default)
 
 type public interface DCoding.Data.DVault.IDataVaultLoadTimestampResolver
   method public abstract System.DateTimeOffset? ResolveLoadTimestamp(DCoding.Data.DVault.DataVaultLoadTimestampResolutionContext context)
