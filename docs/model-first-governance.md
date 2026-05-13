@@ -146,6 +146,18 @@ if (report.HasBlockingDifferences) {
 }
 ```
 
+## Workflow Test Evidence
+
+Run the focused design-time workflow coverage from the repository root with:
+
+```sh
+dotnet test DVault.slnx --nologo --filter FullyQualifiedName~DataVaultModelFirstDesignTimeWorkflowTests
+```
+
+The valid workflow imports the representative `models/sales-vault.json` `dvault.model.v1` fixture with `DataVaultModelArtifactImporter.ImportJson`, configures a SQLite-backed design-time context with `UseDataVaultMetadata(importResult)`, and compares the imported model against generated EF metadata with `DataVaultModelDriftReporter.Compare(importResult, context)`. The expected valid outcome is `report.HasBlockingDifferences == false` and `report.ToDisplayString()` reporting no differences. SQLite is used only for provider selection and EF metadata shape; the workflow does not open a database connection or initialize schema.
+
+The invalid workflow imports the same logical source path, `models/sales-vault.json`, with unsupported `schemaVersion` value `dvault.model.v2`. The expected invalid outcome is one import diagnostic with code `DMV1002`, category `schema-version`, logical source path `models/sales-vault.json`, and JSON Pointer `/schemaVersion`.
+
 ## Diagnostic Contract
 
 Model-first import and projection diagnostics use the stable `DMV####` id format. The `DMV` prefix is the v1 DVault model-artifact diagnostic family, and the four-digit numeric suffix is compared and reported as an ordinal string. Existing `DMV####` ids are stable once shipped; do not rename them to a different prefix or reuse an existing code for a different meaning.

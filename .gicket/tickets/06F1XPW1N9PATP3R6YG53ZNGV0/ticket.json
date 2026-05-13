@@ -3,19 +3,18 @@
   "ticket-id": "06F1XPW1N9PATP3R6YG53ZNGV0",
   "ticket-type": "task",
   "title": "Task: Wire design-time validation into a sample workflow",
-  "revision": "06F1XTP8TSV054DAN9GTHYNP9W",
-  "status": "todo",
+  "revision": "06F21JRGG350H9YJ4BB8DJ0VZM",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/task",
     "area/design-time",
     "area/examples",
     "area/testing",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRST21T8Z9RXCDP286A4R",
   "releaseId": "06F1XPRJZBEZFGF8XMH6RCPSS4",
   "created-at": "2026-05-13T01:02:43.0948422Z",
-  "updated-at": "2026-05-13T01:19:23.8625589Z"
+  "updated-at": "2026-05-13T10:03:59.4885052Z"
 }

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "dvault.model.v1",
+  "hubs": [
+    {
+      "name": "Customer",
+      "businessKeys": ["CustomerId", "RegionCode"]
+    },
+    {
+      "name": "Order",
+      "businessKeys": ["OrderId"]
+    }
+  ],
+  "links": [
+    {
+      "name": "CustomerOrder",
+      "participants": [
+        { "hub": "Customer" },
+        { "hub": "Order" }
+      ]
+    }
+  ],
+  "satellites": [
+    {
+      "name": "CustomerProfile",
+      "parent": {
+        "kind": "hub",
+        "name": "Customer"
+      },
+      "payload": ["Name", "EmailAddress"],
+      "drivingKeys": []
+    }
+  ]
+}
