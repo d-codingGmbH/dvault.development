@@ -3,19 +3,18 @@
   "ticket-id": "06F1XPYW5PVKRTK4A91M6GHHF8",
   "ticket-type": "task",
   "title": "Task: Add compiled query/model compatibility tests",
-  "revision": "06F1XTPV9967S8V3NCHPZQ6EHR",
-  "status": "todo",
+  "revision": "06F26913Z9SN08E60J75Y82X54",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/task",
+    "area/ef-core",
     "area/performance",
     "area/testing",
-    "area/ef-core",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRTTRNS5DF3BZJ7SJ9HT0",
   "releaseId": "06F1XPRP3Y5G2B9HAYGP870V8W",
   "created-at": "2026-05-13T01:03:05.9417195Z",
-  "updated-at": "2026-05-13T01:19:28.5868258Z"
+  "updated-at": "2026-05-13T21:00:31.6101856Z"
 }

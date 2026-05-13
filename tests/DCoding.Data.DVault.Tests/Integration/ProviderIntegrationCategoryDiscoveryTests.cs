@@ -8,6 +8,7 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
   private static readonly Type[] RequiredLocalSqliteCoverageTypes = [
       typeof(BenchmarkScenarioExecutionTests),
       typeof(DataVaultBridgeReadServiceSqliteTests),
+      typeof(DataVaultCompiledCompatibilitySqliteTests),
       typeof(DataVaultDiagnosticsIntegrationTests),
       typeof(DataVaultMetadataRegistrationIntegrationTests),
       typeof(DataVaultPitReadServiceSqliteTests),
