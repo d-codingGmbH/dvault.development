@@ -3,21 +3,20 @@
   "ticket-id": "06F23Z08K0W49K5JMEHP60WZC0",
   "ticket-type": "task",
   "title": "Task: Add v0.8.0 lifecycle guardrails release summary",
-  "revision": "06F24GF1BS49TN89FKCKP17S2G",
-  "status": "todo",
+  "revision": "06F24WQ29YYJRYCS5BEXWSNV2R",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
     "area/developer-experience",
     "area/diagnostics",
+    "area/drift",
     "area/ef-core",
     "area/migrations",
-    "area/drift"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRRJZAM9R6YWNR8K0M1T4",
   "releaseId": "06F1XPRJZBEZFGF8XMH6RCPSS4",
   "created-at": "2026-05-13T15:37:19.0318542Z",
-  "updated-at": "2026-05-13T16:53:23.4227105Z"
+  "updated-at": "2026-05-13T17:46:54.9275804Z"
 }
