@@ -3,12 +3,12 @@
 Status: authoritative child addendum
 Child ticket: 06F0ME9PM8KXH3VP59TQR0ETA8
 Parent ticket: 06F0ME976PM5455JK04S6GPNNW
-Parent contract: docs/plans/06F0ME976PM5455JK04S6GPNNW-fluent-code-first-api-contract.md
-Driving-key contract: docs/plans/multi-active-satellite-driving-key-contract-06EZ0NVX3R-06EZ0NW61G.md
+Parent contract: docs/plans/fluent-code-first-api-contract.md
+Driving-key contract: docs/plans/multi-active-satellite-driving-key-contract.md
 
 ## Boundary
 
-- Ticket 06F0ME976PM5455JK04S6GPNNW and docs/plans/06F0ME976PM5455JK04S6GPNNW-fluent-code-first-api-contract.md are the authoritative boundary for this child.
+- Ticket 06F0ME976PM5455JK04S6GPNNW and docs/plans/fluent-code-first-api-contract.md are the authoritative boundary for this child.
 - This child owns hub and hub-parent satellite projection only. Link declarations remain on 06F0MEA1FF743S14XQW02H4A3W and parity coverage remains on 06F0MEAD1BAA5QEVM3F9QJA38G.
 
 ## Required scope
@@ -19,5 +19,5 @@ Driving-key contract: docs/plans/multi-active-satellite-driving-key-contract-06E
 
 ## Acceptance additions
 
-- One or more `DrivingKey(...)` calls produce the covered multi-active metadata shape defined by docs/plans/multi-active-satellite-driving-key-contract-06EZ0NVX3R-06EZ0NW61G.md and remain schema-equivalent to the metadata-first baseline for the covered scenario.
+- One or more `DrivingKey(...)` calls produce the covered multi-active metadata shape defined by docs/plans/multi-active-satellite-driving-key-contract.md and remain schema-equivalent to the metadata-first baseline for the covered scenario.
 - Link declarations, link-parent satellites, save-service behavior, and typed save helpers stay out of scope for this child.

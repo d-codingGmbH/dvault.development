@@ -7,12 +7,12 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.7.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.7.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.7.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.7.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.7.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.7.0
+dotnet add package DCoding.Data.DVault --version 0.8.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.8.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.8.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.8.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.8.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.8.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
@@ -27,7 +27,7 @@ Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has
 - Metadata-first declarations through a shared `DataVaultMetadataModel` or `DataVaultMetadataRegistry` when one public metadata object should drive schema projection, explicit saves, typed latest/as-of reads, diagnostics, examples, or provider setup.
 - Model-first governance for reviewed `dvault.model.v1` JSON artifacts that should be imported, projected into EF metadata, exported canonically, and compared against generated metadata for drift evidence.
 
-Choose one authoritative path for a model boundary and keep the others as compatible alternatives for different ownership needs. See [Model-First Governance Workflow](docs/model-first-governance.md) for the current v0.7.0 JSON artifact contract.
+Choose one authoritative path for a model boundary and keep the others as compatible alternatives for different ownership needs. See [Model-First Governance Workflow](docs/model-first-governance.md) for the current `dvault.model.v1` JSON artifact contract and [DVault EF Design-Time Workflow](docs/architecture/dvault-dotnet-ef-design-time-workflow.md) for the v0.8.0 lifecycle guardrails around reviewed artifacts, EF metadata, migrations, and live schema drift.
 
 ### Register DVault services
 
@@ -455,23 +455,23 @@ Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadS
 
 PostgreSQL, SQL Server, Oracle, and MySQL live-schema readers are not first-class supported readers in this slice. Existing external provider integration evidence remains opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
 
-## v0.7.0 Release Notes
+## v0.8.0 Release Notes
 
-The v0.7.0 release prepares the coordinated six-package DVault family for model-first governance and advanced read-model usage. See `docs/releases/v0.7.0.md` for the release-note record, package scope, compatibility notes, read-flow boundaries, benchmark evidence guidance, and package verification posture.
+The v0.8.0 release adds EF Core lifecycle guardrails around design-time metadata, migration preflight checks, model drift reports, and live schema drift evidence. See `docs/releases/v0.8.0.md` for the release-note record, package scope, compatibility notes, design-time workflow boundaries, and package verification posture.
 
 Notable user-facing changes:
 
-- Code-First, metadata-first, and model-first are documented as distinct supported declaration paths rather than replacements for one another.
-- Model-first governance uses exact-versioned `dvault.model.v1` JSON artifacts, strict unknown-field rejection, canonical import/export ordering, EF metadata projection, and drift comparison review evidence.
-- Typed latest/as-of satellite reads remain the common read-service path, with raw satellite rows still available for dictionary-shaped projections.
-- Provider-neutral PIT-backed as-of reads and bridge reads are documented for already materialized PIT and bridge tables, including typed projector helpers.
-- Benchmark documentation covers latest satellite, PIT as-of, and bridge read baselines only where the repository benchmark harness records measured evidence.
+- `DataVaultModelDriftReporter` can compare expected metadata with generated EF metadata and reviewed `dvault.model.v1` artifacts before schema changes are applied.
+- `DataVaultLiveSchemaReader` and `DataVaultLiveSchemaDriftReporter` provide the bounded SQLite live-schema comparison lane.
+- Migration guardrail diagnostics DVM2001-DVM2006 classify lifecycle risks such as missing primary keys, missing load timestamps, missing record sources, satellite HashDiff drift, missing parent hash keys, and missing secondary indexes.
+- The design-time workflow documentation defines the consumer-owned registration pattern for `IDesignTimeDbContextFactory`, metadata registries, drift checks, and migration preflight.
+- Plan documentation now uses topic-first filenames while preserving ticket traceability inside the plan files.
 
-## Current v0.7.0 Limitations
+## Current v0.8.0 Limitations
 
-Model-first APIs operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. `DataVaultModelArtifactExporter.ExportJson` supports fluent Code-First declaration callbacks, `DataVaultMetadataModel`, and `DataVaultMetadataRegistry`. Current limitations remain no first-party CLI commands, no documented CI gate snippets, no direct YAML ingestion, no broad multi-provider live database drift introspection beyond the bounded SQLite live-schema reader, and no extraction from arbitrary EF `ModelBuilder` state into a model artifact.
+Lifecycle guardrails remain explicit library APIs. DVault does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.8.0 boundary. Live-schema drift reading is SQLite-first; PostgreSQL, SQL Server, Oracle, and MySQL still rely on external opt-in integration evidence rather than first-class live-schema readers.
 
-PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization. Current provider-specific read optimization evidence is limited to the latest-satellite read benchmark surface documented under `benchmarks/DCoding.Data.DVault.Benchmarks/README.md`.
+Model-first APIs continue to operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization.
 
 ## Layout
 

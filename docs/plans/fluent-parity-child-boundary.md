@@ -1,15 +1,14 @@
 # Fluent Code-First parity child boundary addendum
 
-Status: repository-root compatibility copy
-Canonical path: docs/plans/06F0MEAD1BAA5QEVM3F9QJA38G-fluent-parity-child-boundary.md
+Status: authoritative child addendum
 Child ticket: 06F0MEAD1BAA5QEVM3F9QJA38G
 Parent ticket: 06F0ME976PM5455JK04S6GPNNW
-Parent contract: docs/plans/06F0ME976PM5455JK04S6GPNNW-fluent-code-first-api-contract.md
-Driving-key contract: docs/plans/multi-active-satellite-driving-key-contract-06EZ0NVX3R-06EZ0NW61G.md
+Parent contract: docs/plans/fluent-code-first-api-contract.md
+Driving-key contract: docs/plans/multi-active-satellite-driving-key-contract.md
 
 ## Boundary
 
-- Ticket 06F0ME976PM5455JK04S6GPNNW and docs/plans/06F0ME976PM5455JK04S6GPNNW-fluent-code-first-api-contract.md are the authoritative boundary for this child.
+- Ticket 06F0ME976PM5455JK04S6GPNNW and docs/plans/fluent-code-first-api-contract.md are the authoritative boundary for this child.
 - This child owns parity coverage for the bounded shapes implemented by 06F0ME9PM8KXH3VP59TQR0ETA8 and 06F0MEA1FF743S14XQW02H4A3W, including the covered `DrivingKey(...)` multi-active hub-parent satellite shape.
 
 ## Required scope
@@ -22,7 +21,3 @@ Driving-key contract: docs/plans/multi-active-satellite-driving-key-contract-06E
 
 - Do not implement the fluent builders in this child.
 - Link-parent satellites and other shapes outside the parent contract stay out of scope.
-
-## Repository path note
-
-- The canonical planned addendum remains under `docs/plans/`; this root copy exists only because the ticket expected-path metadata includes the bare attachment filename as a repository-relative validation path.

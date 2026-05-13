@@ -3,6 +3,6 @@
   "milestoneId": "06F1XPRST21T8Z9RXCDP286A4R",
   "name": "v0.8.0 - Design-time and drift tooling",
   "description": "dotnet-ef design-time services, EF ModelSnapshot comparison, and optional live database schema drift reports.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-13T01:02:16.0166568Z"
 }

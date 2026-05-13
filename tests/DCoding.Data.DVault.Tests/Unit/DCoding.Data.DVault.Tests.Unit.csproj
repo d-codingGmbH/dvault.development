@@ -14,7 +14,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../../../Unit/*.cs" Link="ExpectedPaths/%(Filename)%(Extension)" />
     <Compile Include="../Modeling/*.cs" Link="Modeling/%(Filename)%(Extension)" />
     <Compile Include="../TechnicalMetadataColumnContractTests.cs" Link="TechnicalMetadataColumnContractTests.cs" />
   </ItemGroup>

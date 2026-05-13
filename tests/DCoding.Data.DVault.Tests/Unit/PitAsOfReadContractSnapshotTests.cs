@@ -163,7 +163,7 @@ public sealed class PitAsOfReadContractSnapshotTests {
     var documentPath = GetRepositoryPath(
         "docs",
         "plans",
-        "06F0MEGYHADPVN575H64D56W2G-pit-backed-as-of-read-api-contract.md");
+        "pit-backed-as-of-read-api-contract.md");
     var document = NormalizeLineEndings(File.ReadAllText(documentPath));
 
     Assert.Contains("IDataVaultReadService", document, StringComparison.Ordinal);

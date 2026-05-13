@@ -3,11 +3,11 @@
 Status: authoritative child addendum
 Child ticket: 06F0MEA1FF743S14XQW02H4A3W
 Parent ticket: 06F0ME976PM5455JK04S6GPNNW
-Parent contract: docs/plans/06F0ME976PM5455JK04S6GPNNW-fluent-code-first-api-contract.md
+Parent contract: docs/plans/fluent-code-first-api-contract.md
 
 ## Boundary
 
-- Ticket 06F0ME976PM5455JK04S6GPNNW and docs/plans/06F0ME976PM5455JK04S6GPNNW-fluent-code-first-api-contract.md are the authoritative boundary for this child.
+- Ticket 06F0ME976PM5455JK04S6GPNNW and docs/plans/fluent-code-first-api-contract.md are the authoritative boundary for this child.
 - This child owns only link and relationship projection. Hub-parent satellite projection, including `DrivingKey(...)` multi-active opt-in capture and validation, remains on 06F0ME9PM8KXH3VP59TQR0ETA8. Parity coverage remains on 06F0MEAD1BAA5QEVM3F9QJA38G.
 
 ## Required scope
