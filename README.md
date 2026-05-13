@@ -1,4 +1,4 @@
-﻿# DVault
+# DVault
 
 DVault is the repository for the `DCoding.Data.DVault` .NET library.
 
@@ -447,7 +447,7 @@ Notable user-facing changes:
 
 ## Current v0.7.0 Limitations
 
-Model-first APIs operate on JSON artifacts and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. `DataVaultModelArtifactExporter.ExportJson` supports fluent Code-First declaration callbacks, `DataVaultMetadataModel`, and `DataVaultMetadataRegistry`. Current limitations remain no first-party CLI commands, no documented CI gate snippets, no direct YAML ingestion, no live database drift introspection, and no public raw Code-First fluent/EF `ModelBuilder` to registry export bridge.
+Model-first APIs operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. `DataVaultModelArtifactExporter.ExportJson` supports fluent Code-First declaration callbacks, `DataVaultMetadataModel`, and `DataVaultMetadataRegistry`. Current limitations remain no first-party CLI commands, no documented CI gate snippets, no direct YAML ingestion, no live database drift introspection, and no extraction from arbitrary EF `ModelBuilder` state into a model artifact.
 
 PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization. Current provider-specific read optimization evidence is limited to the latest-satellite read benchmark surface documented under `benchmarks/DCoding.Data.DVault.Benchmarks/README.md`.
 
