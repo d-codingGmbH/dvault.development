@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the story against the current DVault baseline: the repository already exposes a provider-neutral save-strategy SPI, ordered bulk dispatch, request-bound diagnostics, provider package implementations, and bulk benchmark evidence. Verified done child task `06F1XQ0DB1PRZXNXY7NKEZCS68`, verified live follow-on relations to `06F1XQ1VWEX0WPAXE78FHSWJ8G` and `06F1XQ25KK4VY4MYJSDG9V4BZM`, and performed no planning writes or relation changes in this pass.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Ratify the existing core-owned `IDataVaultProviderSaveStrategy` plus `DataVaultProviderSaveStrategyContext` surface as the v1 optional provider bulk-insert extension point instead of introducing a second parallel SPI.
 - `DefaultDataVaultSaveService` already routes both single `DataVaultSaveRequest` and ordered `DataVaultBulkSaveRequest` batches through the same provider-strategy dispatcher before falling back to the provider-neutral EF writer.
 - Strategy selection is already deterministic in the visible source: higher `Priority` wins and equal priorities preserve dependency-injection registration order.
@@ -17,92 +16,46 @@
 - Child task `06F1XQ0DB1PRZXNXY7NKEZCS68` is done and already owns the core contract and fallback-test slice. Live `blocks` relations to `06F1XQ1VWEX0WPAXE78FHSWJ8G` and `06F1XQ25KK4VY4MYJSDG9V4BZM` were verified and left unchanged.
 - Incoming parent epic `06F1XPX99KQRB09GRQG50Z75FM` was verified. Incoming `blocks` from done epic `06F1XPRY3ZDB6W1WQ9ABRRJ2V4` is treated as historical/non-blocking because the source ticket is already done.
 
-### Scope In
+Scope In
 - Use the existing core save-strategy SPI and ordered bulk-save dispatcher as the authoritative v1 bulk append extension point.
 - Preserve provider-neutral fallback semantics and save-result ordering for both single-save and ordered bulk-save paths when no compatible provider strategy is selected.
 - Keep strategy selection and fallback reasons observable through the existing request-bound diagnostics surfaces for single and bulk saves.
 - Use the current benchmark README and existing provider-specific strategy families as the evidence boundary for bulk-path performance claims and comparison posture.
 - Treat this story as the parent planning ticket over the completed core contract/test child task `06F1XQ0DB1PRZXNXY7NKEZCS68`.
 
-### Scope Out
+Scope Out
 - No second `IDataVaultProviderBulkInsertStrategy`-style API parallel to the existing save-strategy contract.
 - No mandatory third-party bulk library in `DCoding.Data.DVault`.
 - No provider-name branching in the core save service and no requirement that every provider expose optimized bulk behavior in the first slice.
 - No destructive update or delete path and no SaveChanges-interceptor persistence model.
 - No expansion of this story into the separate Testcontainers/helper tickets `06F1XQ1VWEX0WPAXE78FHSWJ8G` and `06F1XQ25KK4VY4MYJSDG9V4BZM`.
 
-## Acceptance Criteria
-- The story contract explicitly treats `IDataVaultProviderSaveStrategy`, `DataVaultProviderSaveStrategyContext`, and `DataVaultBulkSaveRequest` dispatch as the v1 optional provider bulk-insert boundary.
-- When no provider strategy is registered, or when all registered strategies decline the current context or batch, both single and ordered bulk saves preserve the provider-neutral fallback writer behavior and existing save-result semantics.
-- When a compatible provider strategy is registered, selection remains deterministic by descending `Priority` and dependency-injection registration order for equal priorities.
-- Request-bound diagnostics make the selected path, candidate ordering, and fallback causes observable for both single and bulk save analysis.
-- Repository-visible tests cover no-strategy fallback, declined-strategy fallback, compatible-strategy selection, and ordered bulk-request evaluation without reopening provider-name branching in the core package.
-- Performance or release-posture claims for this story stay bounded to the existing benchmark documentation and provider-specific strategy families already documented in the repository.
-
-## Definition of Done
-- Ticket refinement reflects the existing repository baseline instead of reopening the bulk-strategy contract as an unresolved architecture question.
-- The completed child task `06F1XQ0DB1PRZXNXY7NKEZCS68` remains the core contract and fallback-test implementation slice for this story.
-- The story is reviewable against current repository evidence: core dispatcher code, diagnostics coverage, provider package registrations, and benchmark documentation.
-- Follow-on container/example work remains separately tracked by live tickets `06F1XQ1VWEX0WPAXE78FHSWJ8G` and `06F1XQ25KK4VY4MYJSDG9V4BZM` rather than being absorbed into this story.
-- No blocking architecture, naming, ordering, diagnostics, or proof-boundary question remains for the next PO-critic step.
-
-## Implementation Notes
-- Current source already exposes the generalized provider save-strategy contract in `src/DCoding.Data.DVault/DataVaultProviderSaveStrategy.cs` and dispatches both single and bulk requests from `src/DCoding.Data.DVault/DataVaultSaveService.cs`.
-- Current diagnostics already analyze strategy selection for single and bulk saves, including selected strategy, candidate ordering, and fallback causes; this is the preferred stable observability surface for the contract.
-- The benchmark boundary is already documented in `benchmarks/DCoding.Data.DVault.Benchmarks/README.md`, including bulk scenarios, provider-neutral fallback rows, provider-specific rows when configured, and skipped-row behavior when optional providers are unavailable.
-- Repository-visible provider proof baselines already exist through `AddDVaultSqlite`, `AddDVaultPostgres`, `AddDVaultSqlServer`, `AddDVaultMySql`, and `AddDVaultOracle`; the story should leverage that baseline rather than require a new placeholder provider path.
-- Live relation context verified: parent epic `06F1XPX99KQRB09GRQG50Z75FM`, done child task `06F1XQ0DB1PRZXNXY7NKEZCS68`, outgoing blocks to `06F1XQ1VWEX0WPAXE78FHSWJ8G` and `06F1XQ25KK4VY4MYJSDG9V4BZM`, and historical incoming blocks from done epic `06F1XPRY3ZDB6W1WQ9ABRRJ2V4`. No relation cleanup was materialized in this pass.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - If a future provider needs finer-grained capability advertisement than `CanSave` plus `Priority`, should that extension live on the existing save-strategy surface or on a later additive capability contract?
 - After the current core/save-strategy baseline, should the existing Testcontainers/helper tickets `06F1XQ1VWEX0WPAXE78FHSWJ8G` and `06F1XQ25KK4VY4MYJSDG9V4BZM` become the preferred local proof path for optional-provider benchmark and integration validation?
 - If future append-only optimization work needs a narrower contract than the general provider save-strategy SPI, what concrete provider constraint would justify that split instead of reusing the existing surface?
 
-## Risks
+Risks
 - Reopening the story around a brand-new parallel SPI would duplicate the already-visible core save-strategy surface and create avoidable provider-package guidance drift.
 - Performance claims can drift if story text forgets that optional provider benchmark rows are configuration-dependent and that skipped rows are part of the documented evidence boundary.
 - Live `blocks` relations to the Testcontainers/example tickets remain in place; if workflow intent changes, they need explicit relation cleanup rather than an implicit assumption.
 
-## Split Recommendations
+Split recommendations
 - No new split is required. Existing child task `06F1XQ0DB1PRZXNXY7NKEZCS68` already owns the core contract and fallback-test slice, and existing tickets `06F1XQ1VWEX0WPAXE78FHSWJ8G` and `06F1XQ25KK4VY4MYJSDG9V4BZM` already cover the separate container/example follow-up work.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 5
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Goal
-
-Create an optional extension point for provider-specific bulk insert paths while keeping the EF-based fallback reliable.
-
-## Scope In
-
-- Define a bulk insert strategy contract for Data Vault append paths.
-- Keep fallback behavior unchanged when no bulk strategy is registered.
-- Implement one proof provider or documented no-op strategy with benchmark hooks.
-- Measure impact against existing provider-specific save strategies.
-
-## Scope Out
-
-- No mandatory third-party bulk library in core.
-- No destructive update/delete path.
-- No promise that every provider has bulk support in the first slice.
-
-## Acceptance Criteria
-
-- Fallback behavior remains identical.
-- Strategy selection is explicit in diagnostics/logging.
-- Tests cover selection and fallback.
-- Benchmarks or docs state evidence boundary.
-
-## Implementation Notes
-
-- Leave room for provider packages to optimize independently.
-
-## Open Questions
-
-- none
+Run mode
+- apply: planned updates are applied after this comment

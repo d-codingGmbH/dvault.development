@@ -1,0 +1,17 @@
+{
+  "event-id": "06F25VWA2SKA150MTB6044RME4",
+  "occurred-at": "2026-05-13T20:03:04.3420792Z",
+  "event-type": "TicketEdited",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "changes": [
+      {
+        "field": "labels",
+        "op": "set"
+      }
+    ]
+  }
+}

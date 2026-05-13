@@ -1,0 +1,26 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `3` selected relation flow(s) for source ticket `06F1XQ03MADSPQD0AJN6R50D44`.
+- Role `po` completed with outcome `po-refinement-ready` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `4`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `c66a3e10002a4683a92380652cab3f60`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06F1XQ1VWEX0WPAXE78FHSWJ8G` via `blocks` path `06F1XQ03MADSPQD0AJN6R50D44 -> 06F1XQ1VWEX0WPAXE78FHSWJ8G`
+- [queued] `blocked-follow-up-comment` -> `06F1XQ25KK4VY4MYJSDG9V4BZM` via `blocks` path `06F1XQ03MADSPQD0AJN6R50D44 -> 06F1XQ25KK4VY4MYJSDG9V4BZM`
+- [queued] `blocked-by-follow-up-comment` -> `06F1XPRY3ZDB6W1WQ9ABRRJ2V4` via `blocks` path `06F1XQ03MADSPQD0AJN6R50D44 -> 06F1XPRY3ZDB6W1WQ9ABRRJ2V4`
+- [queued] `child-follow-up-comment` -> `06F1XQ0DB1PRZXNXY7NKEZCS68` via `parentOf` path `06F1XQ03MADSPQD0AJN6R50D44 -> 06F1XQ0DB1PRZXNXY7NKEZCS68`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06F1XQ03MADSPQD0AJN6R50D44` owner `ticket/06F1XQ03MADSPQD0AJN6R50D44-story-add-optional-provider-bulk-insert-strategy` base `develop` source-owner `ticket/06F1XQ03MADSPQD0AJN6R50D44-story-add-optional-provider-bulk-insert-strategy`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F1XQ1VWEX0WPAXE78FHSWJ8G` owner `ticket/06F1XQ1VWEX0WPAXE78FHSWJ8G-story-add-testcontainers-integration-helpers-and` base `develop` source-owner `ticket/06F1XQ03MADSPQD0AJN6R50D44-story-add-optional-provider-bulk-insert-strategy`: Target ticket owner branch 'ticket/06F1XQ1VWEX0WPAXE78FHSWJ8G-story-add-testcontainers-integration-helpers-and' differs from source owner branch 'ticket/06F1XQ03MADSPQD0AJN6R50D44-story-add-optional-provider-bulk-insert-strategy'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F1XQ25KK4VY4MYJSDG9V4BZM` owner `ticket/06F1XQ25KK4VY4MYJSDG9V4BZM-task-add-provider-container-fixture-sample` base `develop` source-owner `ticket/06F1XQ03MADSPQD0AJN6R50D44-story-add-optional-provider-bulk-insert-strategy`: Target ticket owner branch 'ticket/06F1XQ25KK4VY4MYJSDG9V4BZM-task-add-provider-container-fixture-sample' differs from source owner branch 'ticket/06F1XQ03MADSPQD0AJN6R50D44-story-add-optional-provider-bulk-insert-strategy'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F1XPRY3ZDB6W1WQ9ABRRJ2V4` owner `ticket/06F1XPRY3ZDB6W1WQ9ABRRJ2V4-epic-ef-core-lifecycle-guardrails` base `develop` source-owner `ticket/06F1XQ03MADSPQD0AJN6R50D44-story-add-optional-provider-bulk-insert-strategy`: Target ticket owner branch 'ticket/06F1XPRY3ZDB6W1WQ9ABRRJ2V4-epic-ef-core-lifecycle-guardrails' differs from source owner branch 'ticket/06F1XQ03MADSPQD0AJN6R50D44-story-add-optional-provider-bulk-insert-strategy'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F1XQ0DB1PRZXNXY7NKEZCS68` owner `ticket/06F1XQ0DB1PRZXNXY7NKEZCS68-task-define-bulk-strategy-contract-and-fallback` base `develop` source-owner `ticket/06F1XQ03MADSPQD0AJN6R50D44-story-add-optional-provider-bulk-insert-strategy`: Target ticket owner branch 'ticket/06F1XQ0DB1PRZXNXY7NKEZCS68-task-define-bulk-strategy-contract-and-fallback' differs from source owner branch 'ticket/06F1XQ03MADSPQD0AJN6R50D44-story-add-optional-provider-bulk-insert-strategy'.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F1XQ1VWEX0WPAXE78FHSWJ8G` on owner branch `ticket/06F1XQ1VWEX0WPAXE78FHSWJ8G-story-add-testcontainers-integration-helpers-and` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F1XQ25KK4VY4MYJSDG9V4BZM` on owner branch `ticket/06F1XQ25KK4VY4MYJSDG9V4BZM-task-add-provider-container-fixture-sample` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-by-follow-up-target` to `06F1XPRY3ZDB6W1WQ9ABRRJ2V4` on owner branch `ticket/06F1XPRY3ZDB6W1WQ9ABRRJ2V4-epic-ef-core-lifecycle-guardrails` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `child-follow-up-target` to `06F1XQ0DB1PRZXNXY7NKEZCS68` on owner branch `ticket/06F1XQ0DB1PRZXNXY7NKEZCS68-task-define-bulk-strategy-contract-and-fallback` after that branch is refreshed/rebased.
