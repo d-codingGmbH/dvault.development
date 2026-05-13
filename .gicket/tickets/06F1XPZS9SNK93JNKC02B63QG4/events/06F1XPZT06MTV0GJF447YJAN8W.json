@@ -1,0 +1,13 @@
+{
+  "event-id": "06F1XPZT06MTV0GJF447YJAN8W",
+  "occurred-at": "2026-05-13T01:03:13.4092246Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Implement SaveChanges metadata interceptor slice",
+    "status": "todo"
+  }
+}

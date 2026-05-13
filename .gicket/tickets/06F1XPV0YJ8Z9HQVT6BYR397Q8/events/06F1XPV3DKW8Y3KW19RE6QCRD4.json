@@ -1,0 +1,13 @@
+{
+  "event-id": "06F1XPV3DKW8Y3KW19RE6QCRD4",
+  "occurred-at": "2026-05-13T01:02:34.8602629Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Validate migration operations and report guardrail findings",
+    "status": "todo"
+  }
+}

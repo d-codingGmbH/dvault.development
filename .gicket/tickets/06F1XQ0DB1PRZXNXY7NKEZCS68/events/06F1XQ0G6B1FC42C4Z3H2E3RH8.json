@@ -1,0 +1,13 @@
+{
+  "event-id": "06F1XQ0G6B1FC42C4Z3H2E3RH8",
+  "occurred-at": "2026-05-13T01:03:19.0907893Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Define bulk strategy contract and fallback tests",
+    "status": "todo"
+  }
+}

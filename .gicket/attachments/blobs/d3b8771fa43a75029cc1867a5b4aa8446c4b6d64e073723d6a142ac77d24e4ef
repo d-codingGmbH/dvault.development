@@ -1,0 +1,10 @@
+# v0.10.0 adoption tooling plan
+
+Purpose: make the library easier to adopt safely after the lifecycle and runtime surfaces stabilize.
+
+Sequence:
+1. Analyzer package foundation.
+2. Testcontainers helper/examples.
+3. Production adoption checklist and examples refresh.
+
+Non-goals: IDE-specific extensions, hosted services, or unsupported provider promises.

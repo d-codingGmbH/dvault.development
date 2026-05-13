@@ -1,0 +1,16 @@
+{
+  "event-id": "06F1XQ3FGZ85P8BQW95JGS5TQ8",
+  "occurred-at": "2026-05-13T01:03:43.4950000Z",
+  "event-type": "TicketAttachmentAdded",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "attachment-id": "06F1XQ3FGYB3MAKWDCGNQQZME8",
+    "sha256": "06ef9cf424da59c6530e25d5babbf0abce00eebfab4edc030312bc06b375fdd1",
+    "file-name": "v0.9.0-read-runtime-performance-plan.md",
+    "content-type": "text/markdown",
+    "size": 379
+  }
+}

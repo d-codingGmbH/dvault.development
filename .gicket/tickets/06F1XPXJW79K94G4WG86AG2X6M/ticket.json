@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F1XPXJW79K94G4WG86AG2X6M",
+  "ticket-type": "story",
+  "title": "Story: Add LINQ-friendly current/as-of/bridge read helpers",
+  "revision": "06F1XQKZ19WC2FJ97WB6HJ5M54",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/story",
+    "area/read-models",
+    "area/api",
+    "area/developer-experience"
+  ],
+  "assignees": [],
+  "milestoneId": "06F1XPRTTRNS5DF3BZJ7SJ9HT0",
+  "releaseId": "06F1XPRP3Y5G2B9HAYGP870V8W",
+  "created-at": "2026-05-13T01:02:55.7059457Z",
+  "updated-at": "2026-05-13T01:05:58.5384253Z"
+}

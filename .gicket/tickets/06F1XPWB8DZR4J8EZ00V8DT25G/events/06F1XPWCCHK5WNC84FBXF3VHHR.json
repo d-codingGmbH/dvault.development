@@ -1,0 +1,13 @@
+{
+  "event-id": "06F1XPWCCHK5WNC84FBXF3VHHR",
+  "occurred-at": "2026-05-13T01:02:45.3488805Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Compare model artifacts with EF ModelSnapshot and live schema",
+    "status": "todo"
+  }
+}

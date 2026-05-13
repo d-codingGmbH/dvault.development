@@ -1,0 +1,13 @@
+{
+  "event-id": "06F1XQ1X1J21SWF6RXG2FG68WM",
+  "occurred-at": "2026-05-13T01:03:30.5724322Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add Testcontainers integration helpers and examples",
+    "status": "todo"
+  }
+}

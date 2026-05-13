@@ -1,0 +1,13 @@
+{
+  "event-id": "06F1XPXZEZTTE3CM471M7CVM6G",
+  "occurred-at": "2026-05-13T01:02:58.4237251Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Implement first read helper API slice and tests",
+    "status": "todo"
+  }
+}

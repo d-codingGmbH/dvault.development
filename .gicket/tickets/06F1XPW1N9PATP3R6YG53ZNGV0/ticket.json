@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F1XPW1N9PATP3R6YG53ZNGV0",
+  "ticket-type": "task",
+  "title": "Task: Wire design-time validation into a sample workflow",
+  "revision": "06F1XQKBHZSMWPMYFBVC1XZ5GM",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/task",
+    "area/design-time",
+    "area/examples",
+    "area/testing"
+  ],
+  "assignees": [],
+  "milestoneId": "06F1XPRST21T8Z9RXCDP286A4R",
+  "releaseId": "06F1XPRJZBEZFGF8XMH6RCPSS4",
+  "created-at": "2026-05-13T01:02:43.0948422Z",
+  "updated-at": "2026-05-13T01:05:53.5518394Z"
+}

@@ -1,0 +1,11 @@
+# v0.9.0 read and runtime performance plan
+
+Purpose: improve the everyday query/save experience without replacing EF Core.
+
+Sequence:
+1. Read helper API slice.
+2. Compiled model/query compatibility evidence.
+3. Opt-in load metadata interceptor.
+4. Optional bulk insert SPI with fallback-first behavior.
+
+Non-goals: mandatory third-party bulk dependencies or hidden data mutation.

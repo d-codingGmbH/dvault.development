@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F1XQ03MADSPQD0AJN6R50D44",
+  "ticket-type": "story",
+  "title": "Story: Add optional provider bulk insert strategy SPI",
+  "revision": "06F1XQMSE5Q85V1CGFVKZX0MRM",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/story",
+    "area/performance",
+    "area/provider-support",
+    "area/persistence"
+  ],
+  "assignees": [],
+  "milestoneId": "06F1XPRVKYQ0CRZSHZY1ZS8WF0",
+  "releaseId": "06F1XPRP3Y5G2B9HAYGP870V8W",
+  "created-at": "2026-05-13T01:03:16.0512369Z",
+  "updated-at": "2026-05-13T01:06:05.2976488Z"
+}

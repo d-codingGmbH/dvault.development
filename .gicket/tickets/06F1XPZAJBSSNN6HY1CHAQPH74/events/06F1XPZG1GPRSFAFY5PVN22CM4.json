@@ -1,0 +1,13 @@
+{
+  "event-id": "06F1XPZG1GPRSFAFY5PVN22CM4",
+  "occurred-at": "2026-05-13T01:03:10.8608717Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add opt-in load metadata interceptors",
+    "status": "todo"
+  }
+}

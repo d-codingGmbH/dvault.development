@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F1XPWB8DZR4J8EZ00V8DT25G",
+  "ticket-type": "story",
+  "title": "Story: Compare model artifacts with EF ModelSnapshot and live schema",
+  "revision": "06F1XQKFQTD559TTMWHCZR6FYC",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/story",
+    "area/drift",
+    "area/model-first",
+    "area/ef-core",
+    "area/provider-support"
+  ],
+  "assignees": [],
+  "milestoneId": "06F1XPRST21T8Z9RXCDP286A4R",
+  "releaseId": "06F1XPRJZBEZFGF8XMH6RCPSS4",
+  "created-at": "2026-05-13T01:02:45.3488805Z",
+  "updated-at": "2026-05-13T01:05:54.6224144Z"
+}

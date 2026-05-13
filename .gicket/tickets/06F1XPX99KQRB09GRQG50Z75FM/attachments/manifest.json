@@ -1,0 +1,13 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/attachment-manifest/v1",
+  "attachments": [
+    {
+      "attachmentId": "06F1XQ3FGYB3MAKWDCGNQQZME8",
+      "sha256": "06ef9cf424da59c6530e25d5babbf0abce00eebfab4edc030312bc06b375fdd1",
+      "fileName": "v0.9.0-read-runtime-performance-plan.md",
+      "contentType": "text/markdown",
+      "size": 379,
+      "addedAt": "2026-05-13T01:03:43.4950000Z"
+    }
+  ]
+}

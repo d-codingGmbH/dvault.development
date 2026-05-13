@@ -1,0 +1,13 @@
+{
+  "event-id": "06F1XPSA0A1MH8Z3A72A47R600",
+  "occurred-at": "2026-05-13T01:02:20.1626699Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Establish stable DVault diagnostic codes",
+    "status": "todo"
+  }
+}

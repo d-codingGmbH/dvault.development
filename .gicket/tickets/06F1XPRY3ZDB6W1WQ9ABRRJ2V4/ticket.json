@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F1XPRY3ZDB6W1WQ9ABRRJ2V4",
+  "ticket-type": "epic",
+  "title": "Epic: EF Core lifecycle guardrails",
+  "revision": "06F1XQJPQ2276HZ77N8K3QJKPR",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/epic",
+    "area/ef-core",
+    "area/diagnostics",
+    "area/migrations",
+    "area/drift",
+    "area/developer-experience"
+  ],
+  "assignees": [],
+  "has-attachments": true,
+  "milestoneId": "06F1XPRRJZAM9R6YWNR8K0M1T4",
+  "releaseId": "06F1XPRJZBEZFGF8XMH6RCPSS4",
+  "created-at": "2026-05-13T01:02:17.2782986Z",
+  "updated-at": "2026-05-13T01:05:48.2169304Z"
+}

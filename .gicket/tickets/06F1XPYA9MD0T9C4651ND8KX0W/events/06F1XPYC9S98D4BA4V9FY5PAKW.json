@@ -1,0 +1,13 @@
+{
+  "event-id": "06F1XPYC9S98D4BA4V9FY5PAKW",
+  "occurred-at": "2026-05-13T01:03:01.7108899Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Prove compiled model and compiled query compatibility",
+    "status": "todo"
+  }
+}

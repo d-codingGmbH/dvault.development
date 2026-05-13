@@ -1,0 +1,13 @@
+{
+  "event-id": "06F1XPX0VNMNK3XG1T1N3SWVPG",
+  "occurred-at": "2026-05-13T01:02:50.5896343Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add live database schema drift abstraction",
+    "status": "todo"
+  }
+}

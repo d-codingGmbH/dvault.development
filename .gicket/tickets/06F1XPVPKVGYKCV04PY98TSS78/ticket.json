@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F1XPVPKVGYKCV04PY98TSS78",
+  "ticket-type": "story",
+  "title": "Story: Add DVault design-time services for dotnet ef workflows",
+  "revision": "06F1XQK8XPXVJBBH0CDJ2F2QZR",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/story",
+    "area/design-time",
+    "area/ef-core",
+    "area/developer-experience"
+  ],
+  "assignees": [],
+  "milestoneId": "06F1XPRST21T8Z9RXCDP286A4R",
+  "releaseId": "06F1XPRJZBEZFGF8XMH6RCPSS4",
+  "created-at": "2026-05-13T01:02:39.9546433Z",
+  "updated-at": "2026-05-13T01:05:52.8770955Z"
+}

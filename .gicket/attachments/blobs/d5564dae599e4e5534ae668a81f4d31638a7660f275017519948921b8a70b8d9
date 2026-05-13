@@ -1,0 +1,11 @@
+# v0.8.0 lifecycle guardrails plan
+
+Purpose: make DVault safer in normal EF Core development loops before adding broader runtime ergonomics.
+
+Sequence:
+1. Diagnostic catalog.
+2. Migration guardrails.
+3. Design-time services.
+4. ModelSnapshot and optional live schema drift.
+
+Non-goals: automatic migration execution, destructive schema repair, or provider-specific migration rewrites.

@@ -1,0 +1,13 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/attachment-manifest/v1",
+  "attachments": [
+    {
+      "attachmentId": "06F1XQ3HA7BJ872SFVP12EK23M",
+      "sha256": "d3b8771fa43a75029cc1867a5b4aa8446c4b6d64e073723d6a142ac77d24e4ef",
+      "fileName": "v0.10.0-adoption-tooling-plan.md",
+      "contentType": "text/markdown",
+      "size": 354,
+      "addedAt": "2026-05-13T01:03:43.9530000Z"
+    }
+  ]
+}

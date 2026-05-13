@@ -1,0 +1,13 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/attachment-manifest/v1",
+  "attachments": [
+    {
+      "attachmentId": "06F1XQ3DQYJV7DK78JBDD708RG",
+      "sha256": "d5564dae599e4e5534ae668a81f4d31638a7660f275017519948921b8a70b8d9",
+      "fileName": "v0.8.0-lifecycle-guardrails-plan.md",
+      "contentType": "text/markdown",
+      "size": 384,
+      "addedAt": "2026-05-13T01:03:43.0390000Z"
+    }
+  ]
+}

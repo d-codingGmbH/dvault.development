@@ -1,0 +1,13 @@
+{
+  "event-id": "06F1XPX9XC0VCG73VYT1QBNCR8",
+  "occurred-at": "2026-05-13T01:02:52.9078080Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Epic: Read and runtime performance ergonomics",
+    "status": "todo"
+  }
+}

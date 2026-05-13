@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F1XQ25KK4VY4MYJSDG9V4BZM",
+  "ticket-type": "task",
+  "title": "Task: Add provider container fixture sample",
+  "revision": "06F1XQNNZWV90K3W5H4RV2BPF0",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/task",
+    "area/testing",
+    "area/examples",
+    "area/provider-support"
+  ],
+  "assignees": [],
+  "milestoneId": "06F1XPRX3H6KJWG27XEGZMQ7S4",
+  "releaseId": "06F1XPRQBHW47J1F73NNGYVN0R",
+  "created-at": "2026-05-13T01:03:32.9290110Z",
+  "updated-at": "2026-05-13T01:06:12.6074597Z"
+}

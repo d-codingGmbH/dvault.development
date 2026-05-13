@@ -1,0 +1,13 @@
+{
+  "event-id": "06F1XPW3JR5D9XTW05TJ2YCEM0",
+  "occurred-at": "2026-05-13T01:02:43.0948422Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Wire design-time validation into a sample workflow",
+    "status": "todo"
+  }
+}

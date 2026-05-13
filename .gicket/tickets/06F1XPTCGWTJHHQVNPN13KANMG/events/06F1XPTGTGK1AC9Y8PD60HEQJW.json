@@ -1,0 +1,13 @@
+{
+  "event-id": "06F1XPTGTGK1AC9Y8PD60HEQJW",
+  "occurred-at": "2026-05-13T01:02:30.1000539Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add EF migration guardrails for Data Vault structures",
+    "status": "todo"
+  }
+}

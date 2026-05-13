@@ -1,0 +1,15 @@
+{
+  "event-id": "06F1XQ5CADPS7HCK2Z22NYSJM4",
+  "occurred-at": "2026-05-13T01:03:59.0597606Z",
+  "event-type": "TicketRelationAdded",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "relation-id": "06F1XQ03MADSPQD0AJN6R50D44--06F1XQ0DB1PRZXNXY7NKEZCS68--parentOf",
+    "relation-type": "parentOf",
+    "source-ticket-id": "06F1XQ03MADSPQD0AJN6R50D44",
+    "target-ticket-id": "06F1XQ0DB1PRZXNXY7NKEZCS68"
+  }
+}

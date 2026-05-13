@@ -1,0 +1,19 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F1XPZS9SNK93JNKC02B63QG4",
+  "ticket-type": "task",
+  "title": "Task: Implement SaveChanges metadata interceptor slice",
+  "revision": "06F1XQMPSM8TP7W092JE98TBE0",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/task",
+    "area/persistence",
+    "area/testing"
+  ],
+  "assignees": [],
+  "milestoneId": "06F1XPRVKYQ0CRZSHZY1ZS8WF0",
+  "releaseId": "06F1XPRP3Y5G2B9HAYGP870V8W",
+  "created-at": "2026-05-13T01:03:13.4092246Z",
+  "updated-at": "2026-05-13T01:06:04.6214532Z"
+}

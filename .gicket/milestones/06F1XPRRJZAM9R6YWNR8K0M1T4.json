@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F1XPRRJZAM9R6YWNR8K0M1T4",
+  "name": "v0.8.0 - Diagnostics and migration guardrails",
+  "description": "Stable diagnostic taxonomy plus migration validation for generated Data Vault structures.",
+  "status": "active",
+  "createdAt": "2026-05-13T01:02:15.7036440Z"
+}

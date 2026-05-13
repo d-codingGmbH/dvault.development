@@ -1,0 +1,19 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F1XPXY7QKTYAW43JTT3BM704",
+  "ticket-type": "task",
+  "title": "Task: Implement first read helper API slice and tests",
+  "revision": "06F1XQM5ZEVAJ3N8YDYCZHFABW",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/task",
+    "area/read-models",
+    "area/testing"
+  ],
+  "assignees": [],
+  "milestoneId": "06F1XPRTTRNS5DF3BZJ7SJ9HT0",
+  "releaseId": "06F1XPRP3Y5G2B9HAYGP870V8W",
+  "created-at": "2026-05-13T01:02:58.4237251Z",
+  "updated-at": "2026-05-13T01:06:00.3152447Z"
+}

@@ -1,0 +1,13 @@
+{
+  "event-id": "06F1XQ04AE1PG2XRD79G01DXK8",
+  "occurred-at": "2026-05-13T01:03:16.0512369Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add optional provider bulk insert strategy SPI",
+    "status": "todo"
+  }
+}

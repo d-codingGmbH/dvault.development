@@ -1,0 +1,13 @@
+{
+  "event-id": "06F1XQ31WFANFEE2RBZQMQEA0M",
+  "occurred-at": "2026-05-13T01:03:40.0033677Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add production adoption checklist draft",
+    "status": "todo"
+  }
+}

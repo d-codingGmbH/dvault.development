@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "releaseId": "06F1XPRJZBEZFGF8XMH6RCPSS4",
+  "name": "v0.8.0 - EF Core Lifecycle Guardrails",
+  "description": "EF Core lifecycle hardening for DVault: stable diagnostics, migration guardrails, design-time services, ModelSnapshot drift, and live schema drift evidence.",
+  "status": "active",
+  "createdAt": "2026-05-13T01:02:14.2664793Z"
+}

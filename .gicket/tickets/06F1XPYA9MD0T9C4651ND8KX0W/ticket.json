@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F1XPYA9MD0T9C4651ND8KX0W",
+  "ticket-type": "story",
+  "title": "Story: Prove compiled model and compiled query compatibility",
+  "revision": "06F1XQMA1MT7B5TR44VSXHQW98",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/story",
+    "area/performance",
+    "area/ef-core",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "milestoneId": "06F1XPRTTRNS5DF3BZJ7SJ9HT0",
+  "releaseId": "06F1XPRP3Y5G2B9HAYGP870V8W",
+  "created-at": "2026-05-13T01:03:01.7108899Z",
+  "updated-at": "2026-05-13T01:06:01.3571196Z"
+}

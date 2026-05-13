@@ -1,0 +1,13 @@
+{
+  "event-id": "06F1XQ2687WEV871Q8D6KBS2CG",
+  "occurred-at": "2026-05-13T01:03:32.9290110Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add provider container fixture sample",
+    "status": "todo"
+  }
+}
