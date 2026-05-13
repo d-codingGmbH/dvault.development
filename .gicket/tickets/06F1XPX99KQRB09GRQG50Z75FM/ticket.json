@@ -3,7 +3,7 @@
   "ticket-id": "06F1XPX99KQRB09GRQG50Z75FM",
   "ticket-type": "epic",
   "title": "Epic: Read and runtime performance ergonomics",
-  "revision": "06F1XQKW90MY5DX4M2PMCS73HW",
+  "revision": "06F1XTPMDRKQ82ZFHQBXCVYEB4",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
@@ -12,12 +12,13 @@
     "area/performance",
     "area/persistence",
     "area/provider-support",
-    "area/developer-experience"
+    "area/developer-experience",
+    "needs-po"
   ],
   "assignees": [],
   "has-attachments": true,
   "milestoneId": "06F1XPRTTRNS5DF3BZJ7SJ9HT0",
   "releaseId": "06F1XPRP3Y5G2B9HAYGP870V8W",
   "created-at": "2026-05-13T01:02:52.9078080Z",
-  "updated-at": "2026-05-13T01:05:57.8322377Z"
+  "updated-at": "2026-05-13T01:19:26.8300685Z"
 }

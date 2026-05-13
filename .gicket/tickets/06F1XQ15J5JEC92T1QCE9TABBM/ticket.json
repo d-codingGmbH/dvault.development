@@ -3,18 +3,19 @@
   "ticket-id": "06F1XQ15J5JEC92T1QCE9TABBM",
   "ticket-type": "story",
   "title": "Story: Add DVault Roslyn analyzer package foundation",
-  "revision": "06F1XQN43MXK2MBTVF2R7D6YTC",
+  "revision": "06F1XTQ9YGKWPZY686660ADX3C",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/story",
     "area/analyzers",
     "area/diagnostics",
-    "area/developer-experience"
+    "area/developer-experience",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRWB9A53W64QD2VCF3T70",
   "releaseId": "06F1XPRQBHW47J1F73NNGYVN0R",
   "created-at": "2026-05-13T01:03:25.0565994Z",
-  "updated-at": "2026-05-13T01:06:08.0296349Z"
+  "updated-at": "2026-05-13T01:19:32.3401045Z"
 }

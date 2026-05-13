@@ -3,18 +3,19 @@
   "ticket-id": "06F1XQ1VWEX0WPAXE78FHSWJ8G",
   "ticket-type": "story",
   "title": "Story: Add Testcontainers integration helpers and examples",
-  "revision": "06F1XQNHDBNFGKANZNCZ0ZVN0G",
+  "revision": "06F1XTQBSXCQ2VFXYJ908B8X90",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/story",
     "area/testing",
     "area/provider-support",
-    "area/examples"
+    "area/examples",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRX3H6KJWG27XEGZMQ7S4",
   "releaseId": "06F1XPRQBHW47J1F73NNGYVN0R",
   "created-at": "2026-05-13T01:03:30.5724322Z",
-  "updated-at": "2026-05-13T01:06:11.4347946Z"
+  "updated-at": "2026-05-13T01:19:32.8157541Z"
 }

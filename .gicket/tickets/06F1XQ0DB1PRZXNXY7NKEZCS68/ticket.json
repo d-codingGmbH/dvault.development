@@ -3,18 +3,19 @@
   "ticket-id": "06F1XQ0DB1PRZXNXY7NKEZCS68",
   "ticket-type": "task",
   "title": "Task: Define bulk strategy contract and fallback tests",
-  "revision": "06F1XQMX88M34FGXHH98QD6A4C",
+  "revision": "06F1XTQ81S0TCW6PFFCRWRS790",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/task",
     "area/performance",
     "area/provider-support",
-    "area/testing"
+    "area/testing",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRVKYQ0CRZSHZY1ZS8WF0",
   "releaseId": "06F1XPRP3Y5G2B9HAYGP870V8W",
   "created-at": "2026-05-13T01:03:19.0907893Z",
-  "updated-at": "2026-05-13T01:06:06.2743081Z"
+  "updated-at": "2026-05-13T01:19:31.8548463Z"
 }

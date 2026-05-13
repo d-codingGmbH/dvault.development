@@ -3,18 +3,19 @@
   "ticket-id": "06F1XPTCGWTJHHQVNPN13KANMG",
   "ticket-type": "story",
   "title": "Story: Add EF migration guardrails for Data Vault structures",
-  "revision": "06F1XQK16WN1CJMPR8V5DE4YZ4",
+  "revision": "06F1XTP3H7N62M188GGDTF09NM",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/story",
     "area/migrations",
     "area/ef-core",
-    "area/diagnostics"
+    "area/diagnostics",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRRJZAM9R6YWNR8K0M1T4",
   "releaseId": "06F1XPRJZBEZFGF8XMH6RCPSS4",
   "created-at": "2026-05-13T01:02:30.1000539Z",
-  "updated-at": "2026-05-13T01:05:50.9035934Z"
+  "updated-at": "2026-05-13T01:19:22.5051542Z"
 }

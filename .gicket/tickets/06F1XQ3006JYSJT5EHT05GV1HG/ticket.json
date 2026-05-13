@@ -3,17 +3,18 @@
   "ticket-id": "06F1XQ3006JYSJT5EHT05GV1HG",
   "ticket-type": "task",
   "title": "Task: Add production adoption checklist draft",
-  "revision": "06F1XQP0PJ4H3SGJKH8N4Y6SBW",
+  "revision": "06F1XTQHHRZJCKTTF0B8QZEZ1M",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/task",
     "area/documentation",
-    "area/examples"
+    "area/examples",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRX3H6KJWG27XEGZMQ7S4",
   "releaseId": "06F1XPRQBHW47J1F73NNGYVN0R",
   "created-at": "2026-05-13T01:03:40.0033677Z",
-  "updated-at": "2026-05-13T01:06:15.3484081Z"
+  "updated-at": "2026-05-13T01:19:34.2868464Z"
 }
