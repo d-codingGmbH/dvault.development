@@ -3,6 +3,6 @@
   "milestoneId": "06F1XPRTTRNS5DF3BZJ7SJ9HT0",
   "name": "v0.9.0 - Read API ergonomics",
   "description": "LINQ-friendly current/as-of/bridge read helpers and compiled query/model compatibility evidence.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-13T01:02:16.2784831Z"
 }
