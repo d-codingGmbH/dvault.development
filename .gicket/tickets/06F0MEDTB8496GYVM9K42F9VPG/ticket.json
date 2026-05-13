@@ -3,21 +3,20 @@
   "ticket-id": "06F0MEDTB8496GYVM9K42F9VPG",
   "ticket-type": "epic",
   "title": "Epic: Model-First specifications and advanced read models",
-  "revision": "06F0QH499S5PQFBGG4E386M610",
-  "status": "todo",
+  "revision": "06F1XCM7KYATFNG1B66VW9BTP4",
+  "status": "done",
   "labels": [
-    "type/epic",
     "area/model-first",
-    "area/read-models",
     "area/modeling",
+    "area/read-models",
     "area/tooling",
     "automation/bot-ready",
-    "needs-po"
+    "type/epic"
   ],
   "assignees": [],
   "has-attachments": true,
   "milestoneId": "06F0ME831E6DZ661QMTG5Q77J0",
   "releaseId": "06F0ME7ZTS0AF9TVFVJWFNY2Q8",
   "created-at": "2026-05-09T00:53:36.1195016Z",
-  "updated-at": "2026-05-09T08:04:50.1266320Z"
+  "updated-at": "2026-05-13T00:17:57.1510000Z"
 }
