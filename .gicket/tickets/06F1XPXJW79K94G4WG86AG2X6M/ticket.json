@@ -3,19 +3,18 @@
   "ticket-id": "06F1XPXJW79K94G4WG86AG2X6M",
   "ticket-type": "story",
   "title": "Story: Add LINQ-friendly current/as-of/bridge read helpers",
-  "revision": "06F1XTPNEZG7WTTQH9CKKZCSRM",
-  "status": "todo",
+  "revision": "06F25RRGN6TA6YQB5GCZ85WCKR",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/story",
-    "area/read-models",
     "area/api",
     "area/developer-experience",
-    "needs-po"
+    "area/read-models",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRTTRNS5DF3BZJ7SJ9HT0",
   "releaseId": "06F1XPRP3Y5G2B9HAYGP870V8W",
   "created-at": "2026-05-13T01:02:55.7059457Z",
-  "updated-at": "2026-05-13T01:19:27.0951055Z"
+  "updated-at": "2026-05-13T19:49:26.8250000Z"
 }
