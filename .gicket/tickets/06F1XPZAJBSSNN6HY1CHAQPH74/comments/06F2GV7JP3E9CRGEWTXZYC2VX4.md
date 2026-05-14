@@ -1,21 +1,20 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Aligned the story to the repository's bounded interceptor baseline: explicit opt-in SaveChanges metadata population for LoadTimestamp and RecordSource only, with broader lineage metadata and consumer-guide work kept separate.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Repository evidence already fixes the v1 technical metadata baseline as HashKey, HashDiff, LoadTimestamp, and RecordSource; this story's interceptor scope auto-populates only missing LoadTimestamp and RecordSource values.
 - The concrete implementation slice is already represented by done child 06F1XPZS9SNK93JNKC02B63QG4, so this parent story should not reopen a second overlapping dev slice.
 - Opt-in happens per DbContext through UseDataVaultSaveChangesMetadataInterceptor(...); the default AddDVault() path remains interceptor-free and IDataVaultSaveService remains the default DVault write boundary.
 - Target-column discovery is annotation-driven through DVault technical metadata annotations, so effective-name overrides such as LoadedAtUtc or SourceSystem remain in scope without property-name branching.
 - Batch id, correlation id, tenant-bound lineage metadata, and overwrite-on-opt-in behavior are not part of this story's bounded v1 slice.
 
-### Scope In
+Scope In
 - Bound the parent story to an explicit opt-in SaveChanges interceptor for Added DVault hub, link, and satellite rows.
 - Expose and preserve the public DbContext opt-in configuration surface for interceptor registration and value supply.
 - Populate configured LoadTimestamp and RecordSource values only when those targeted metadata values are absent.
@@ -23,7 +22,7 @@
 - Use DVault metadata annotations to identify eligible technical columns, including renamed effective column names.
 - Treat the existing child implementation, API snapshot, and SQLite tests as the concrete delivery slice for this story.
 
-### Scope Out
+Scope Out
 - No default interceptor registration on the normal AddDVault() path.
 - No HashKey or HashDiff computation, mutation, or backfill inside SaveChanges interception.
 - No batch id, correlation id, tenant inference, source trust classification, or broader audit metadata work.
@@ -32,80 +31,35 @@
 - No broad README, examples, or adoption-guide refresh in this story.
 - No broader verification claim than the current SQLite proof baseline for behavior coverage.
 
-## Acceptance Criteria
-- A consumer can explicitly opt a DbContext into the interceptor through UseDataVaultSaveChangesMetadataInterceptor(...), and the default AddDVault() path still resolves with zero registered ISaveChangesInterceptor instances.
-- On Added DVault hub, link, and satellite rows, the interceptor populates configured LoadTimestamp and RecordSource values when those targeted values are missing.
-- When LoadTimestamp or RecordSource is already present on the tracked row, the interceptor preserves the manual value by default and does not overwrite it.
-- Target technical columns are identified from DVault annotations rather than hard-coded property names, so renamed effective columns remain supported.
-- HashKey and HashDiff technical-role properties remain untouched by this interceptor slice.
-- Sync SaveChanges() and async SaveChangesAsync() exhibit the same bounded behavior in SQLite integration coverage.
-- The parent story contract remains truthful that the interceptor is optional convenience and the explicit save service stays the default DVault persistence path.
-
-## Definition of Done
-- The parent story description is aligned to the bounded implemented slice and no longer implies batch, correlation, tenant, or overwrite-mode support in this ticket.
-- The existing child implementation remains the concrete delivery slice, with public API snapshot coverage for interceptor options and registration.
-- Repository tests cover explicit opt-in registration, default no-interceptor behavior, missing-value population, manual-value preservation, and annotation-based renamed-column handling on the SQLite baseline.
-- No additional parent-owned implementation scope is implied beyond this bounded LoadTimestamp and RecordSource interceptor slice.
-
-## Implementation Notes
-- Keep the mutation lane limited to EntityState.Added DVault hub, link, and satellite entities.
-- Use DataVaultAnnotationNames.PropertyRole together with DataVaultAnnotationNames.TechnicalColumnRole to discover candidate properties.
-- Keep local interceptor value suppliers/options acceptable for this convenience path instead of reshaping IDataVaultLoadTimestampResolver or IDataVaultRecordSourceResolver purely for SaveChanges interception.
-- Preserve explicit-save architecture language in code comments and ticket text: opt-in convenience, not the default persistence model.
-- If broader consumer-facing guidance is needed, route it through the separate documentation story rather than widening this implementation contract.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should a separate follow-up story cover batch id, correlation id, tenant-bound lineage metadata, or other technical roles beyond LoadTimestamp and RecordSource?
 - If callers later need explicit overwrite modes for LoadTimestamp or RecordSource, should that be a separate story instead of broadening this safe-default slice?
 - Should the documentation story add consumer guidance on when to choose the explicit save service versus the opt-in SaveChanges interceptor?
 
-## Risks
+Risks
 - If the parent story text stays broad, downstream reviewers may incorrectly assume this ticket delivers batch, correlation, tenant, or overwrite-mode behavior that the repository does not support.
 - If SaveChanges interception expands beyond LoadTimestamp and RecordSource without a separate contract, ownership of HashKey and HashDiff behavior can become ambiguous.
 - Current repository docs still emphasize the explicit save-service path; if later documentation is not updated carefully, consumer guidance can drift from the new optional opt-in behavior.
 - Claiming broad provider validation beyond the SQLite proof baseline would overstate the repository evidence.
 
-## Split Recommendations
+Split recommendations
 - No new split is needed for the implemented interceptor slice; use done child 06F1XPZS9SNK93JNKC02B63QG4 as the concrete implementation record for this story.
 - Keep broader lineage metadata families such as batch, correlation, tenant, or governance-specific source metadata in separate follow-up tickets.
 - Keep README and adoption-guide expansion in the existing documentation lane instead of reopening this story's core implementation scope.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 7
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Goal
-
-Reduce boilerplate for load date, record source, batch/correlation, and similar DVault metadata through explicit opt-in EF Core interceptors.
-
-## Scope In
-
-- Design options for load timestamp, record source, batch id, correlation id, and tenant/source metadata.
-- Implement an opt-in SaveChanges interceptor or equivalent EF Core integration.
-- Keep manual override behavior clear.
-- Document safe defaults and when not to use the interceptor.
-
-## Scope Out
-
-- No hidden mutation without explicit opt-in.
-- No security-sensitive tenant inference.
-- No replacement for application audit policy.
-
-## Acceptance Criteria
-
-- Interceptor populates configured metadata only when values are absent or explicitly allowed.
-- Manual values are preserved by default.
-- Tests cover sync/async save paths where applicable.
-
-## Implementation Notes
-
-- Complement explicit save services, do not obscure them.
-
-## Open Questions
-
-- none
+Run mode
+- apply: planned updates are applied after this comment

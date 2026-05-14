@@ -3,19 +3,18 @@
   "ticket-id": "06F1XPZAJBSSNN6HY1CHAQPH74",
   "ticket-type": "story",
   "title": "Story: Add opt-in load metadata interceptors",
-  "revision": "06F1XTPXMS61JT0SF0EADDEVSC",
-  "status": "todo",
+  "revision": "06F2H01T4QTDFZ3Q5CGRCA482C",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/story",
-    "area/persistence",
-    "area/ef-core",
     "area/developer-experience",
-    "needs-po"
+    "area/ef-core",
+    "area/persistence",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRVKYQ0CRZSHZY1ZS8WF0",
   "releaseId": "06F1XPRP3Y5G2B9HAYGP870V8W",
   "created-at": "2026-05-13T01:03:10.8608717Z",
-  "updated-at": "2026-05-13T01:19:29.1909079Z"
+  "updated-at": "2026-05-14T21:59:12.6778763Z"
 }
