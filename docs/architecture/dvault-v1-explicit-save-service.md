@@ -24,7 +24,7 @@ Hub and link writes use the generated hash-key value as the reuse key. When a re
 
 The current SQLite provider baseline is `DataVaultProviderCapabilityProfiles.Sqlite`, which declares `DataVaultProviderConcurrencySupport.NoneInV1Unsupported`. The default service therefore performs deterministic pre-insert reuse lookup for ordinary repeated saves, but it does not claim provider-neutral multi-writer conflict signals, retry behavior, merge semantics, or provider-specific upsert support.
 
-SaveChanges interceptors remain outside the default v1 path. An optional interceptor or convenience wrapper can be considered later without changing the explicit save boundary that downstream persistence work builds on.
+SaveChanges interceptors remain outside the default v1 persistence path. v0.9.0 adds an optional `UseDataVaultSaveChangesMetadataInterceptor(...)` convenience lane for callers that already track generated DVault rows through EF and want missing `LoadTimestamp` and `RecordSource` values filled at `SaveChanges` time. That interceptor does not replace `IDataVaultSaveService`, does not compute hash keys or hash diffs, and does not make Data Vault persistence implicit by default.
 
 ## Provider-Specific Save Strategy Dispatch
 

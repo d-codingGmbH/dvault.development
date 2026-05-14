@@ -3,6 +3,6 @@
   "releaseId": "06F1XPRP3Y5G2B9HAYGP870V8W",
   "name": "v0.9.0 - Read and Runtime Performance Ergonomics",
   "description": "EF Core-friendly read APIs and runtime performance work: query projection helpers, compiled query compatibility, metadata interceptors, and optional provider bulk insert strategies.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-13T01:02:15.0714346Z"
 }

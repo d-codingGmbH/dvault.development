@@ -7,12 +7,12 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.8.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.8.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.8.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.8.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.8.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.8.0
+dotnet add package DCoding.Data.DVault --version 0.9.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.9.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.9.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.9.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.9.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.9.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
@@ -101,7 +101,19 @@ Code-First metadata is additive. It does not ask callers to put DVault hash-key,
 
 ### Save explicitly
 
-Persistence remains an explicit service boundary. `DataVaultSaveRequest` carries the load timestamp and record source, and callers choose when to write vault rows through `IDataVaultSaveService`. DVault does not intercept `SaveChanges` or hide persistence behind ordinary EF entity tracking.
+Persistence remains an explicit service boundary. `DataVaultSaveRequest` carries the load timestamp and record source, and callers choose when to write vault rows through `IDataVaultSaveService`. The default DVault path does not intercept `SaveChanges` or hide persistence behind ordinary EF entity tracking.
+
+v0.9.0 adds an explicit opt-in `SaveChanges` metadata interceptor for applications that already add generated DVault rows through EF tracking. The interceptor only fills missing `LoadTimestamp` and `RecordSource` values on added hub, link, or satellite rows annotated by DVault metadata. It does not replace `IDataVaultSaveService`, compute hash keys, compute hash diffs, create rows, or change manually supplied metadata values.
+
+```csharp
+services.AddDbContext<SalesVaultContext>(options => {
+  options.UseSqlite(connectionString);
+  options.UseDataVaultMetadata(salesVaultMetadata);
+  options.UseDataVaultSaveChangesMetadataInterceptor(interceptor => interceptor
+      .UseLoadTimestamp(() => DateTimeOffset.UtcNow)
+      .UseRecordSource("crm-import"));
+});
+```
 
 The raw request example below uses explicit metadata objects. Applications that want to avoid repeating those metadata declarations in loaders can opt the `DbContext` into a `DataVaultMetadataRegistry` with `UseDataVaultMetadata()` and then use registry-backed requests or the typed mapper helpers such as `SaveHubAsync(...)`, `SaveLinkAsync(...)`, and `SaveOrdinaryHubSatelliteAsync(...)`.
 
@@ -455,23 +467,22 @@ Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadS
 
 PostgreSQL, SQL Server, Oracle, and MySQL live-schema readers are not first-class supported readers in this slice. Existing external provider integration evidence remains opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
 
-## v0.8.0 Release Notes
+## v0.9.0 Release Notes
 
-The v0.8.0 release adds EF Core lifecycle guardrails around design-time metadata, migration preflight checks, model drift reports, and live schema drift evidence. See `docs/releases/v0.8.0.md` for the release-note record, package scope, compatibility notes, design-time workflow boundaries, and package verification posture.
+The v0.9.0 release adds read and runtime performance ergonomics while keeping the explicit DVault persistence boundary intact. See `docs/releases/v0.9.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
 
 Notable user-facing changes:
 
-- `DataVaultModelDriftReporter` can compare expected metadata with generated EF metadata and reviewed `dvault.model.v1` artifacts before schema changes are applied.
-- `DataVaultLiveSchemaReader` and `DataVaultLiveSchemaDriftReporter` provide the bounded SQLite live-schema comparison lane.
-- Migration guardrail diagnostics DVM2001-DVM2006 classify lifecycle risks such as missing primary keys, missing load timestamps, missing record sources, satellite HashDiff drift, missing parent hash keys, and missing secondary indexes.
-- The design-time workflow documentation defines the consumer-owned registration pattern for `IDesignTimeDbContextFactory`, metadata registries, drift checks, and migration preflight.
-- Plan documentation now uses topic-first filenames while preserving ticket traceability inside the plan files.
+- `UseDataVaultSaveChangesMetadataInterceptor(...)` provides an opt-in EF `SaveChanges` interceptor that fills missing `LoadTimestamp` and `RecordSource` values for added generated hub, link, and satellite rows.
+- The default `AddDVault()` path still registers no `SaveChanges` interceptor; explicit `IDataVaultSaveService` persistence remains the main write boundary.
+- SQLite-backed compatibility tests prove that DVault metadata annotations survive compiled model usage and that EF compiled queries can read generated shared-type DVault tables.
+- The existing typed read helpers and provider save-strategy SPI are documented as the v1 read and bulk-save boundaries for this release.
 
-## Current v0.8.0 Limitations
+## Current v0.9.0 Limitations
 
-Lifecycle guardrails remain explicit library APIs. DVault does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.8.0 boundary. Live-schema drift reading is SQLite-first; PostgreSQL, SQL Server, Oracle, and MySQL still rely on external opt-in integration evidence rather than first-class live-schema readers.
+Lifecycle guardrails remain explicit library APIs. DVault does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.9.0 boundary. Live-schema drift reading is SQLite-first; PostgreSQL, SQL Server, Oracle, and MySQL still rely on external opt-in integration evidence rather than first-class live-schema readers.
 
-Model-first APIs continue to operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization.
+Model-first APIs continue to operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization. The v0.9.0 metadata interceptor is opt-in and metadata-only: callers still own generated row creation, hash-key and hash-diff values, save ordering, and explicit service-based persistence when they use `IDataVaultSaveService`.
 
 ## Layout
 

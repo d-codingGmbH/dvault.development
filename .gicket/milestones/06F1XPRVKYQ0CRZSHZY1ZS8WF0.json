@@ -3,6 +3,6 @@
   "milestoneId": "06F1XPRVKYQ0CRZSHZY1ZS8WF0",
   "name": "v0.9.0 - Runtime save performance",
   "description": "Interceptor-based load metadata defaults and optional provider bulk insert strategy hooks.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-13T01:02:16.4793390Z"
 }
