@@ -3,18 +3,17 @@
   "ticket-id": "06F1XPZS9SNK93JNKC02B63QG4",
   "ticket-type": "task",
   "title": "Task: Implement SaveChanges metadata interceptor slice",
-  "revision": "06F1XTPZ3DS3T9M96MSHY8GPHC",
-  "status": "todo",
+  "revision": "06F2GHNN9AAMZV2PV1ARC2P1WR",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/task",
     "area/persistence",
     "area/testing",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRVKYQ0CRZSHZY1ZS8WF0",
   "releaseId": "06F1XPRP3Y5G2B9HAYGP870V8W",
   "created-at": "2026-05-13T01:03:13.4092246Z",
-  "updated-at": "2026-05-13T01:19:29.5633198Z"
+  "updated-at": "2026-05-14T20:56:23.1140000Z"
 }

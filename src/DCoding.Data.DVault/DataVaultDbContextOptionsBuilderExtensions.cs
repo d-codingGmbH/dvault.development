@@ -74,6 +74,41 @@ public static class DataVaultDbContextOptionsBuilderExtensions {
     return optionsBuilder;
   }
 
+  /// <summary>
+  /// Opts a DbContext into the optional Data Vault SaveChanges metadata interceptor.
+  /// </summary>
+  /// <param name="optionsBuilder">The Entity Framework DbContext options builder.</param>
+  /// <param name="configure">The interceptor options callback that supplies metadata values.</param>
+  /// <returns>The same options builder so DbContext configuration can continue fluently.</returns>
+  public static DbContextOptionsBuilder UseDataVaultSaveChangesMetadataInterceptor(
+      this DbContextOptionsBuilder optionsBuilder,
+      Action<DataVaultSaveChangesMetadataInterceptorOptions> configure) {
+    ArgumentNullException.ThrowIfNull(optionsBuilder);
+    ArgumentNullException.ThrowIfNull(configure);
+
+    var options = new DataVaultSaveChangesMetadataInterceptorOptions();
+    configure(options);
+
+    return optionsBuilder.UseDataVaultSaveChangesMetadataInterceptor(options);
+  }
+
+  /// <summary>
+  /// Opts a DbContext into the optional Data Vault SaveChanges metadata interceptor.
+  /// </summary>
+  /// <param name="optionsBuilder">The Entity Framework DbContext options builder.</param>
+  /// <param name="options">The interceptor options that supply metadata values.</param>
+  /// <returns>The same options builder so DbContext configuration can continue fluently.</returns>
+  public static DbContextOptionsBuilder UseDataVaultSaveChangesMetadataInterceptor(
+      this DbContextOptionsBuilder optionsBuilder,
+      DataVaultSaveChangesMetadataInterceptorOptions options) {
+    ArgumentNullException.ThrowIfNull(optionsBuilder);
+    ArgumentNullException.ThrowIfNull(options);
+
+    optionsBuilder.AddInterceptors(new DataVaultSaveChangesMetadataInterceptor(options));
+
+    return optionsBuilder;
+  }
+
   private static void AddOrUpdateExtension(
       DbContextOptionsBuilder optionsBuilder,
       DataVaultDbContextOptionsExtension extension) {

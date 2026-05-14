@@ -97,6 +97,8 @@ type public static class DCoding.Data.DVault.DataVaultDbContextOptionsBuilderExt
   method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultMetadata(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, DCoding.Data.DVault.DataVaultModelImportResult importResult)
   method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultMetadata(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel)
   method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultMetadata(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, DCoding.Data.DVault.Modeling.DataVaultMetadataRegistry metadataRegistry)
+  method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultSaveChangesMetadataInterceptor(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, DCoding.Data.DVault.DataVaultSaveChangesMetadataInterceptorOptions options)
+  method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultSaveChangesMetadataInterceptor(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, System.Action<DCoding.Data.DVault.DataVaultSaveChangesMetadataInterceptorOptions> configure)
 
 type public sealed class DCoding.Data.DVault.DataVaultDiagnosticsIssue : System.IEquatable<DCoding.Data.DVault.DataVaultDiagnosticsIssue>
   ctor public DataVaultDiagnosticsIssue(DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity Severity, string Code, string Message, string? Path = null)
@@ -739,6 +741,13 @@ type public sealed class DCoding.Data.DVault.DataVaultSatelliteSaveOperation
   property public System.Collections.Generic.IReadOnlyDictionary<string, string> PayloadValues { get; }
   property public string HashDiff { get; }
   property public string ParentHashKey { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultSaveChangesMetadataInterceptorOptions
+  ctor public DataVaultSaveChangesMetadataInterceptorOptions()
+  method public DCoding.Data.DVault.DataVaultSaveChangesMetadataInterceptorOptions UseLoadTimestamp(System.DateTimeOffset loadTimestamp)
+  method public DCoding.Data.DVault.DataVaultSaveChangesMetadataInterceptorOptions UseLoadTimestamp(System.Func<System.DateTimeOffset> loadTimestampProvider)
+  method public DCoding.Data.DVault.DataVaultSaveChangesMetadataInterceptorOptions UseRecordSource(System.Func<string> recordSourceProvider)
+  method public DCoding.Data.DVault.DataVaultSaveChangesMetadataInterceptorOptions UseRecordSource(string recordSource)
 
 type public sealed class DCoding.Data.DVault.DataVaultSaveRequest
   ctor public DataVaultSaveRequest(System.DateTimeOffset loadTimestamp, string recordSource, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultHubSaveOperation> hubOperations, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultLinkSaveOperation> linkOperations)
