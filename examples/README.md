@@ -33,6 +33,8 @@ dotnet run --project examples/DCoding.Data.DVault.PostgresQuickstart/DCoding.Dat
 
 The PostgreSQL quickstart uses `AddDVaultPostgres()` plus the same `UseDataVaultMetadata()` registry-backed DbContext path as SQLite. It creates the DVault schema in the database named by the connection string and runs the same typed save/read flow.
 
+For a local Podman or Docker fixture that can supply this connection string, see `examples/DCoding.Data.DVault.PostgresQuickstart/README.md`. The fixture remains opt-in; default `dotnet test` execution does not require PostgreSQL, Docker, or Podman.
+
 If `DVAULT_TEST_POSTGRES_CONNECTION_STRING` is missing or empty, the PostgreSQL quickstart exits successfully before opening a database connection and prints:
 
 ```text

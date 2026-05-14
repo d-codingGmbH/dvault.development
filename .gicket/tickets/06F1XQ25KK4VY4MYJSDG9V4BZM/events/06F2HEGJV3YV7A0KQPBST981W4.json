@@ -1,0 +1,20 @@
+{
+  "event-id": "06F2HEGJV3YV7A0KQPBST981W4",
+  "occurred-at": "2026-05-14T23:02:23.7041335Z",
+  "event-type": "TicketEdited",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "changes": [
+      {
+        "field": "description-markdown",
+        "op": "set"
+      }
+    ],
+    "description-changed": true,
+    "description-hash": "D03FE21D84E585A67907415DB42532DBCFF087589F4346CA2E5D3E3A03CBD60F",
+    "previous-description-hash": "E428451290843ADF2AE21AF94C1C56166599A40F8550B44AEA95EF3B2C370A9C"
+  }
+}

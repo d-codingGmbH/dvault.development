@@ -3,19 +3,18 @@
   "ticket-id": "06F1XQ25KK4VY4MYJSDG9V4BZM",
   "ticket-type": "task",
   "title": "Task: Add provider container fixture sample",
-  "revision": "06F1XTQEN3FQGSJC75CDER3D8G",
-  "status": "todo",
+  "revision": "06F2HQMB6N62YH0DZ9S35Y5RJR",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/task",
-    "area/testing",
     "area/examples",
     "area/provider-support",
-    "needs-po"
+    "area/testing",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRX3H6KJWG27XEGZMQ7S4",
   "releaseId": "06F1XPRQBHW47J1F73NNGYVN0R",
   "created-at": "2026-05-13T01:03:32.9290110Z",
-  "updated-at": "2026-05-13T01:19:33.5449941Z"
+  "updated-at": "2026-05-14T23:42:13.8132933Z"
 }
