@@ -3,19 +3,18 @@
   "ticket-id": "06F2PGGEY26Y65G97NGFKH381M",
   "ticket-type": null,
   "title": "Story: Add DVault design-time command surface",
-  "revision": "06F2PNH7JESYA8ZQZYWCHVVHWR",
-  "status": "todo",
+  "revision": "06F2T80X6TGZ8JKSBXW2FMTRSG",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/story",
     "area/design-time",
     "area/developer-experience",
     "area/tooling",
-    "needs-po"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06F2PH98VY6AYZKTJZJAP83J2G",
   "releaseId": "06F2PH96YEJPH9QBMW4C852V4R",
   "created-at": "2026-05-15T10:50:10.2223416Z",
-  "updated-at": "2026-05-15T11:12:07.0598513Z"
+  "updated-at": "2026-05-15T19:32:19.8942831Z"
 }
