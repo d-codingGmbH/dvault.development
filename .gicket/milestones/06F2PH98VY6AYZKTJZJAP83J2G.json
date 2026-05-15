@@ -3,6 +3,6 @@
   "milestoneId": "06F2PH98VY6AYZKTJZJAP83J2G",
   "name": "v0.11.0 - Design-time CLI and CI guardrails",
   "description": "Command-line validation, CI examples, and migration guardrail enforcement for adopter workflows.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-15T10:53:33.2791904Z"
 }

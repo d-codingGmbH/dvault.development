@@ -3,6 +3,6 @@
   "releaseId": "06F2PH96YEJPH9QBMW4C852V4R",
   "name": "v0.11.0 - Design-Time Drift and CI Guardrails",
   "description": "Provider-aware live schema drift, design-time command surface, and CI-ready migration guardrails.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-15T10:53:32.7878674Z"
 }
