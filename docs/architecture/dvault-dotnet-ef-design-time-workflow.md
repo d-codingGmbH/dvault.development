@@ -98,9 +98,62 @@ public sealed class SalesVaultDesignTimeFactory : IDesignTimeDbContextFactory<Sa
 }
 ```
 
+## Consumer-Owned Command Host
+
+DVault exposes `DataVaultDesignTimeCommand` and `DataVaultDesignTimeCommandHost` so consumers can keep one small executable entrypoint in the project that owns the configured `DbContext`, design-time factory, migrations, and metadata source. The package still does not ship a standalone `dvault` CLI or intercept `dotnet ef`; the host below is application code that wires the reusable DVault command runner to application-owned dependencies.
+
+```csharp
+using DCoding.Data.DVault;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations.Operations;
+using Microsoft.Extensions.DependencyInjection;
+
+using var services = new ServiceCollection()
+    .AddDVault()
+    .BuildServiceProvider(validateScopes: true);
+
+var diagnostics = services.GetRequiredService<IDataVaultDiagnosticsService>();
+var host = new DataVaultDesignTimeCommandHost(
+    diagnostics,
+    () => new SalesVaultDesignTimeFactory().CreateDbContext(args),
+    DataVaultDesignTimeExportSource.FromMetadataModel(SalesVaultMetadata.CreateModel()),
+    ResolveMigrationOperations);
+
+return DataVaultDesignTimeCommand.Run(args, Console.Out, Console.Error, host);
+
+static IEnumerable<MigrationOperation> ResolveMigrationOperations(string migrationName) {
+  var migrationType = typeof(SalesVaultContext).Assembly
+      .GetTypes()
+      .SingleOrDefault(type =>
+          typeof(Migration).IsAssignableFrom(type) &&
+          string.Equals(type.Name, migrationName, StringComparison.Ordinal));
+
+  if (migrationType is null) {
+    throw new InvalidOperationException("Migration '" + migrationName + "' was not found.");
+  }
+
+  var migration = (Migration)Activator.CreateInstance(migrationType)!;
+  return migration.UpOperations;
+}
+```
+
+`DataVaultDesignTimeExportSource` should point at the same Code-First declarations, metadata model, or metadata registry that the configured context uses. The `export` verb is for artifact maintenance and reviewed refresh workflows:
+
+```sh
+dotnet run --project src/SalesVault/SalesVault.csproj -- export --output src/SalesVault/dvault.model.v1
+```
+
+Do not make `export` the default blocking CI gate. A blocking pre-integration gate should validate the configured design-time model and compare it against an already reviewed artifact when that artifact exists.
+
 ## Preflight Validation
 
 Run DVault validation explicitly before deciding whether to apply a generated migration. The validation step constructs the configured `DbContext` through the same factory and analyzes the in-memory EF design-time model. It does not require opening a live database connection.
+
+```sh
+dotnet run --project src/SalesVault/SalesVault.csproj -- validate
+```
+
+The reusable command runner prints `DataVaultDiagnosticsResult.ToDisplayString()` and exits with a non-zero status when validation is invalid. The equivalent low-level shape is `IDataVaultDiagnosticsService.Analyze(DbContext)`.
 
 ```csharp
 using DCoding.Data.DVault;
@@ -125,17 +178,35 @@ public static class SalesVaultDvaultPreflight {
 
 Stable diagnostic identifiers come from the existing DVault diagnostics surfaces. Model validation uses the `DMV####` family and migration guardrails use the `DVM2xxx` family. Do not add new design-time-only diagnostic identifiers for this workflow.
 
+## Artifact Drift Preflight
+
+When the consumer project has a reviewed `dvault.model.v1` artifact committed to source control, compare that artifact against the configured design-time model as the default drift lane:
+
+```sh
+dotnet run --project src/SalesVault/SalesVault.csproj -- drift --artifact src/SalesVault/dvault.model.v1
+```
+
+This is an artifact-versus-design-time-model comparison. It fails when the reviewed artifact cannot be imported or when the current configured model has blocking differences from the artifact. If the project has not adopted a reviewed artifact yet, keep this lane disabled or skipped until the artifact exists; do not generate a fresh artifact in CI and compare against that newly generated output.
+
+Live-schema drift is optional and non-default:
+
+```sh
+dotnet run --project src/SalesVault/SalesVault.csproj -- drift --artifact src/SalesVault/dvault.model.v1 --live-schema
+```
+
+Use the live-schema lane only inside the documented boundary. SQLite is the first-class local live-schema reader. PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks currently require unsupported or external opt-in evidence rather than a default DVault-provided CI reader.
+
 ## Migration Guardrail Preflight
 
 The migration guardrail step runs after scaffolding and before applying the migration:
 
 ```sh
-dotnet ef migrations add AddCustomerProfile
-dotnet run -- dvault-preflight AddCustomerProfile
-dotnet ef database update
+dotnet ef migrations add AddCustomerProfile --project src/SalesVault/SalesVault.csproj
+dotnet run --project src/SalesVault/SalesVault.csproj -- guardrail --migration AddCustomerProfile
+dotnet ef database update --project src/SalesVault/SalesVault.csproj
 ```
 
-The preflight command is consumer-owned. It resolves the generated migration, passes the migration `UpOperations` to DVault, prints the deterministic guardrail summary, and fails the local command when guardrail findings exist.
+The preflight command is consumer-owned. It resolves the generated migration through the configured `DataVaultDesignTimeCommandHost`, passes the migration `UpOperations` to DVault, prints the deterministic guardrail summary, and fails the local command when guardrail findings exist.
 
 ```csharp
 using DCoding.Data.DVault;
@@ -172,15 +243,112 @@ public static class SalesVaultDvaultPreflight {
 
 This step does not promise guardrail output inside `dotnet ef migrations add` or `dotnet ef database update`; those commands remain ordinary EF Core commands. The consumer decides whether to continue to `database update` after reading the preflight summary.
 
+## GitHub Actions Example
+
+The following adopter workflow keeps the design-time checks in the consumer repository. It assumes `src/SalesVault/SalesVault.csproj` contains the configured `DbContext`, the `IDesignTimeDbContextFactory<TContext>`, the command host entrypoint shown above, and the EF migrations.
+
+```yaml
+name: DVault design-time checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      migration_name:
+        description: "Optional migration name to scaffold and guard before apply."
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  dvault-design-time:
+    name: Validate model and reviewed artifact
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_NOLOGO: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+      CONSUMER_PROJECT: src/SalesVault/SalesVault.csproj
+      REVIEWED_MODEL_ARTIFACT: src/SalesVault/dvault.model.v1
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore "$CONSUMER_PROJECT" --nologo
+
+      - name: Build consumer project
+        run: dotnet build "$CONSUMER_PROJECT" --no-restore --nologo
+
+      - name: Validate configured DVault design-time model
+        run: dotnet run --no-build --project "$CONSUMER_PROJECT" -- validate
+
+      - name: Check drift against reviewed model artifact
+        run: |
+          if [ ! -f "$REVIEWED_MODEL_ARTIFACT" ]; then
+            echo "No reviewed dvault.model.v1 artifact found at $REVIEWED_MODEL_ARTIFACT; skipping artifact drift gate."
+            exit 0
+          fi
+
+          dotnet run --no-build --project "$CONSUMER_PROJECT" -- drift --artifact "$REVIEWED_MODEL_ARTIFACT"
+
+  dvault-migration-guardrail:
+    name: Scaffold migration and run guardrails
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.migration_name != '' }}
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_NOLOGO: "true"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+      CONSUMER_PROJECT: src/SalesVault/SalesVault.csproj
+      MIGRATION_NAME: ${{ github.event.inputs.migration_name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore "$CONSUMER_PROJECT" --nologo
+
+      - name: Install EF CLI
+        run: dotnet tool install --global dotnet-ef --version 10.0.7
+
+      - name: Scaffold proposed migration
+        run: dotnet ef migrations add "$MIGRATION_NAME" --project "$CONSUMER_PROJECT"
+
+      - name: Run DVault migration guardrails
+        run: dotnet run --project "$CONSUMER_PROJECT" -- guardrail --migration "$MIGRATION_NAME"
+```
+
+The validation step is the default blocking check. The drift step becomes blocking when a committed reviewed artifact is present, but it skips cleanly before a project adopts model-first artifact review. The guardrail job is separate because it runs after migration scaffolding and before any `dotnet ef database update` or integration step. It does not imply that DVault intercepts EF commands.
+
+If an adopter adds a live-schema drift lane, keep it separate from the default job and mark it as SQLite-only or external-opt-in:
+
+```yaml
+- name: Optional SQLite live-schema drift check
+  run: dotnet run --no-build --project "$CONSUMER_PROJECT" -- drift --artifact "$REVIEWED_MODEL_ARTIFACT" --live-schema
+```
+
 ## Workflow Order
 
 1. Keep the `DbContext`, DVault metadata registration, factory, and preflight entrypoint in the same project.
-2. Build the factory-backed context and run `IDataVaultDiagnosticsService.Analyze(DbContext)`.
+2. Build the factory-backed context and run `dotnet run --project <consumer-project> -- validate`; the reusable command host delegates to `IDataVaultDiagnosticsService.Analyze(DbContext)`.
 3. Print `DataVaultDiagnosticsResult.ToDisplayString()` and stop when validation is invalid.
-4. Scaffold the migration normally with `dotnet ef migrations add`.
-5. Run the consumer-owned migration guardrail preflight against the proposed migration `MigrationOperation` set.
-6. Print `DataVaultMigrationGuardrailReport.ToDisplayString()` and stop when guardrail findings exist.
-7. Run `dotnet ef database update` only after the explicit preflight steps pass.
+4. When a reviewed `dvault.model.v1` artifact exists, run `dotnet run --project <consumer-project> -- drift --artifact <path-to-reviewed-artifact>`.
+5. Scaffold the migration normally with `dotnet ef migrations add`.
+6. Run `dotnet run --project <consumer-project> -- guardrail --migration <migration-name>` against the proposed migration `MigrationOperation` set.
+7. Print `DataVaultMigrationGuardrailReport.ToDisplayString()` and stop when guardrail findings exist.
+8. Run `dotnet ef database update` only after the explicit preflight steps pass.
 
 ## Unsupported In V1
 
@@ -189,7 +357,7 @@ This step does not promise guardrail output inside `dotnet ef migrations add` or
 - Automatic migration guardrail output during `migrations add` or `database update`.
 - Repo-owned `Microsoft.EntityFrameworkCore.Design` dependencies in DVault packages.
 - Startup-project and target-project split layouts.
-- Live-database validation, model snapshot drift comparison, or schema drift reporting.
+- Live-database validation as a default CI gate, model snapshot drift comparison, or provider-wide live schema drift as a first-class boundary beyond SQLite.
 - Provider-specific online migration runners.
 
-The no-live-database design-time proof remains the existing diagnostics and model-first drift path. Downstream model snapshot and live schema drift work stays outside this v1 workflow.
+The default no-live-database design-time proof remains the existing diagnostics and artifact-versus-design-time-model drift path. Downstream model snapshot and broader provider live schema drift work stays outside this v1 workflow.

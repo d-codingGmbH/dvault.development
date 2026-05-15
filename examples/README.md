@@ -101,7 +101,15 @@ This keeps the write boundary explicit. The examples do not rely on ordinary EF 
 
 These quickstarts create disposable example schemas with EF Core so the projects remain small and directly runnable. Production applications should own migrations in the consumer project that owns the configured `DbContext`, design-time factory, and preflight entrypoint. DVault does not ship a `dotnet ef` shim, intercept EF CLI commands, auto-run migrations, or apply schema repairs.
 
-Use the v1 design-time workflow for production migration guardrails:
+Use the v1 design-time workflow for production migration guardrails. It includes the GitHub Actions baseline for pre-integration checks, and the reusable command host is invoked from the consumer project:
+
+```sh
+dotnet run --project src/SalesVault/SalesVault.csproj -- validate
+dotnet run --project src/SalesVault/SalesVault.csproj -- drift --artifact src/SalesVault/dvault.model.v1
+dotnet run --project src/SalesVault/SalesVault.csproj -- guardrail --migration AddCustomerProfile
+```
+
+The drift command uses a committed reviewed artifact when one exists. `export` is for artifact maintenance or reviewed refresh workflows, not the default blocking CI gate.
 
 1. Build the same configured `DbContext` that EF design-time commands use.
 2. Run DVault diagnostics against the configured model before applying migrations.

@@ -24,8 +24,10 @@ Use this checklist when preparing a DVault-consuming application for production.
 ## Migration And Drift Guardrails
 
 - [ ] Keep the configured `DbContext`, DVault metadata registration, EF design-time factory, and preflight entrypoint in the consumer project that owns migrations.
-- [ ] Run DVault diagnostics against the configured design-time model before applying migrations. Use [DVault Dotnet EF Design-Time Workflow](architecture/dvault-dotnet-ef-design-time-workflow.md) for the supported v1 order.
-- [ ] For model-first adoption, compare the reviewed artifact or metadata model against generated EF metadata with `DataVaultModelDriftReporter.Compare` and record the drift report as review evidence.
+- [ ] Run DVault diagnostics against the configured design-time model before applying migrations. Use [DVault Dotnet EF Design-Time Workflow](architecture/dvault-dotnet-ef-design-time-workflow.md) for the supported v1 order and GitHub Actions baseline.
+- [ ] Add a consumer-owned CI step that invokes `dotnet run --project <consumer-project> -- validate` through the application's design-time command host.
+- [ ] When a reviewed `dvault.model.v1` artifact exists, make `dotnet run --project <consumer-project> -- drift --artifact <path>` a blocking artifact-versus-design-time-model check. Do not generate a fresh artifact with `export` as the default CI gate.
+- [ ] Run `dotnet run --project <consumer-project> -- guardrail --migration <name>` after scaffolding a migration and before apply or integration.
 - [ ] Use live-schema drift checks only within the documented boundary. SQLite is the supported v1 live-schema reader; other providers currently rely on unsupported or external opt-in evidence rather than first-class live-schema readers.
 - [ ] Do not expect DVault to ship a `dotnet ef` command shim, intercept EF CLI commands, auto-run migrations, or apply schema repairs. Those behaviors are outside the current v1 workflow.
 
