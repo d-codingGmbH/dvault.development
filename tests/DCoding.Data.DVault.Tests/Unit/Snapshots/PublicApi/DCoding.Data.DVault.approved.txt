@@ -100,6 +100,23 @@ type public static class DCoding.Data.DVault.DataVaultDbContextOptionsBuilderExt
   method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultSaveChangesMetadataInterceptor(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, DCoding.Data.DVault.DataVaultSaveChangesMetadataInterceptorOptions options)
   method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultSaveChangesMetadataInterceptor(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, System.Action<DCoding.Data.DVault.DataVaultSaveChangesMetadataInterceptorOptions> configure)
 
+type public static class DCoding.Data.DVault.DataVaultDesignTimeCommand
+  method public static System.Threading.Tasks.Task<int> RunAsync(string[] args, System.IO.TextWriter output, System.IO.TextWriter error, DCoding.Data.DVault.DataVaultDesignTimeCommandHost host, System.Threading.CancellationToken cancellationToken = default)
+  method public static int Run(string[] args, System.IO.TextWriter output, System.IO.TextWriter error, DCoding.Data.DVault.DataVaultDesignTimeCommandHost host)
+
+type public sealed class DCoding.Data.DVault.DataVaultDesignTimeCommandHost
+  ctor public DataVaultDesignTimeCommandHost(DCoding.Data.DVault.IDataVaultDiagnosticsService diagnostics, System.Func<Microsoft.EntityFrameworkCore.DbContext> createDbContext, DCoding.Data.DVault.DataVaultDesignTimeExportSource exportSource, System.Func<string, System.Collections.Generic.IEnumerable<Microsoft.EntityFrameworkCore.Migrations.Operations.MigrationOperation>> resolveMigrationOperations)
+  property public DCoding.Data.DVault.DataVaultDesignTimeExportSource ExportSource { get; }
+  property public DCoding.Data.DVault.IDataVaultDiagnosticsService Diagnostics { get; }
+  property public DCoding.Data.DVault.IDataVaultLiveSchemaReader? LiveSchemaReader { get; init; }
+  property public System.Func<Microsoft.EntityFrameworkCore.DbContext> CreateDbContext { get; }
+  property public System.Func<string, System.Collections.Generic.IEnumerable<Microsoft.EntityFrameworkCore.Migrations.Operations.MigrationOperation>> ResolveMigrationOperations { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultDesignTimeExportSource
+  method public static DCoding.Data.DVault.DataVaultDesignTimeExportSource FromCodeFirst(System.Action<DCoding.Data.DVault.DataVaultCodeFirstModelBuilder> configureModel)
+  method public static DCoding.Data.DVault.DataVaultDesignTimeExportSource FromMetadataModel(DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel)
+  method public static DCoding.Data.DVault.DataVaultDesignTimeExportSource FromMetadataRegistry(DCoding.Data.DVault.Modeling.DataVaultMetadataRegistry metadataRegistry)
+
 type public sealed class DCoding.Data.DVault.DataVaultDiagnosticsIssue : System.IEquatable<DCoding.Data.DVault.DataVaultDiagnosticsIssue>
   ctor public DataVaultDiagnosticsIssue(DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity Severity, string Code, string Message, string? Path = null)
   property public DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity Severity { get; init; }

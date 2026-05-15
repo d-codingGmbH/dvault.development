@@ -1,14 +1,18 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Rebounded the ticket around source-backed diagnostics/export/drift/guardrail APIs, explicitly allowing creation of any missing command host/runner types; no child tickets, relation writes, or planning documents were materialized in this pass.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+PO-critic checklist responses
+- critic-item-1: `answered` - Replaced the earlier inferred command-surface assumption with source-backed API evidence. The current branch visibly exposes `IDataVaultDiagnosticsService.Analyze(DbContext)`, `DataVaultModelArtifactExporter.ExportJson(...)`, `DataVaultModelDriftReporter.Compare(...)`, `DataVaultLiveSchemaReader.ReadAsync(...)`, `DataVaultLiveSchemaDriftReporter.Compare/CompareAsync(...)`, and `DataVaultMigrationOperationDiagnostics.AnalyzeReport(...)`. The branch does not show a public command host/runner API, so this contract now treats any minimal host/runner types as new deliverables for this ticket rather than as pre-existing APIs.
+- critic-item-2: `answered` - The contract no longer depends on an unseen existing public command API/type. Acceptance criteria and implementation notes now state that this task may introduce the minimal public host/runner abstractions it needs inside `DCoding.Data.DVault`, and that any newly public types must be covered by the existing core public API snapshot.
+- critic-item-3: `answered` - The split decision is now grounded in live ticket structure instead of an inferred existing command API. The broader design-time command surface is already split at story level: story `06F2PGGEY26Y65G97NGFKH381M` parents this implementation task and sibling CI/examples task `06F2PGGR30XXCDKCZ8W2J2WX8C`, while release-facing documentation remains separate in `06F2PGHA0EXJRGDHM4GQM7NPYR`. The completed live-schema-reader story `06F2PGFZWC5PXSDH46RCZPN1CG` remains done and source-backed for the drift baseline.
+
+Clarifications
 - Repository evidence keeps the design-time boundary consumer-owned and single-project: the application that owns the configured `DbContext` also owns `IDesignTimeDbContextFactory<TContext>`, the preflight entrypoint, and any executable `Main`; `DCoding.Data.DVault` stays free of `Microsoft.EntityFrameworkCore.Design`, `IDesignTimeServices`, and `dotnet ef` interception.
 - Source-backed underlying APIs already present on the branch are `IDataVaultDiagnosticsService.Analyze(DbContext)`, `DataVaultModelArtifactExporter.ExportJson(...)`, `DataVaultModelDriftReporter.Compare(...)`, `DataVaultLiveSchemaReader.ReadAsync(...)`, `DataVaultLiveSchemaDriftReporter.Compare/CompareAsync(...)`, and `DataVaultMigrationOperationDiagnostics.AnalyzeReport(...)`.
 - The current core package does not expose a public command host/runner or verb API in the approved public snapshot, so this ticket may add the minimal public host/runner abstractions it needs inside `DCoding.Data.DVault`.
@@ -16,7 +20,7 @@
 - Drift should keep artifact-versus-design-time-model comparison as the default lane and treat live-schema comparison as opt-in; the existing live-schema surfaces already classify `Succeeded`, `UnsupportedProvider`, and `Unavailable`.
 - No child tickets, relation updates, or planning documents were materialized in this refinement pass; live relation state still includes a historical incoming `blocks` link from done story `06F2PGFZWC5PXSDH46RCZPN1CG`.
 
-### Scope In
+Scope In
 - Add the minimal reusable command surface inside `DCoding.Data.DVault` for verbs `validate`, `export`, `drift`, and `guardrail`; if the branch lacks required public host/runner types, create them in this ticket.
 - Keep executable hosting consumer-owned: the consumer project supplies the configured design-time `DbContext`, explicit export source, migration type/operation resolution, and `Main` entrypoint.
 - `validate`: analyze the configured design-time model through `IDataVaultDiagnosticsService.Analyze(DbContext)` and surface deterministic success/failure.
@@ -25,7 +29,7 @@
 - `guardrail`: evaluate scaffolded migration `UpOperations` against the configured design-time model via `DataVaultMigrationOperationDiagnostics.AnalyzeReport(...)`.
 - Add parser/help/exit-code coverage, representative verb tests, and core public API snapshot updates when new public types are introduced.
 
-### Scope Out
+Scope Out
 - No standalone DVault executable, `dotnet` tool package, `dotnet ef` shim, `IDesignTimeServices`, or EF CLI interception.
 - No new NuGet package family member, no new packable project, and no broader package-shape change.
 - No implicit export-from-`DbContext` or export-from-`ModelBuilder` path; explicit exporter inputs only.
@@ -34,65 +38,33 @@
 - No CI workflow snippet authoring or broad README/release-note rollout; those remain in `06F2PGGR30XXCDKCZ8W2J2WX8C` and `06F2PGHA0EXJRGDHM4GQM7NPYR`.
 - No automatic migration execution, schema repair, SQL parsing, or database update behavior.
 
-## Acceptance Criteria
-- A consumer-owned executable can host four verbs named `validate`, `export`, `drift`, and `guardrail` through `DCoding.Data.DVault`; if new public host/runner types are required, this ticket adds them without adding `Microsoft.EntityFrameworkCore.Design` to `src/DCoding.Data.DVault/DCoding.Data.DVault.csproj`, changing package publication scope, or relying on EF CLI interception.
-- `validate` runs the configured design-time `DbContext` through `IDataVaultDiagnosticsService.Analyze(DbContext)`, prints deterministic diagnostics text, returns exit code `0` when valid, `1` when invalid, and `2` on usage errors.
-- `export` emits deterministic canonical `dvault.model.v1` JSON from an explicit consumer-supplied exporter input compatible with current `DataVaultModelArtifactExporter` overloads, returns `0` on success, `1` on export failure, and `2` on usage errors.
-- `drift` imports a reviewed artifact path, compares it to the current design-time model by default, and supports an opt-in live-schema lane that preserves existing `Succeeded`, `UnsupportedProvider`, and `Unavailable` semantics through the current drift-report surfaces; it returns `0` only when no blocking differences exist.
-- `guardrail` evaluates a named scaffolded migration's `UpOperations` with `DataVaultMigrationOperationDiagnostics.AnalyzeReport(...)`, prints deterministic guardrail output, returns `0` only when the report is valid and has no findings, and returns `1` for findings or invalid diagnostics.
-- Automated tests cover command parsing/help, usage-error exit code `2`, and at least one success/failure path for each verb; any newly public command-host or runner types are reflected in `tests/DCoding.Data.DVault.Tests/Unit/Snapshots/PublicApi/DCoding.Data.DVault.approved.txt`.
-
-## Definition of Done
-- Only the minimal host/runner surface required for consumer hosting is public; the executable entrypoint, design-time factory wiring, export-source selection, and migration resolution remain consumer-owned.
-- Any newly public command-host or runner types are reflected in the core approved public API snapshot.
-- Command output reuses existing deterministic display/report surfaces instead of introducing a second diagnostics or drift taxonomy.
-- The implementation stays compatible with `docs/architecture/dvault-dotnet-ef-design-time-workflow.md` and keeps `src/DCoding.Data.DVault/DCoding.Data.DVault.csproj` free of `Microsoft.EntityFrameworkCore.Design`.
-- No new packable project, no core-package design-tool dependency, and no provider-support re-scope are introduced.
-
-## Implementation Notes
-- Use the consumer-owned workflow in `docs/architecture/dvault-dotnet-ef-design-time-workflow.md` as the architectural anchor: the core package may add minimal host/runner types, but the consumer project continues to own `Main`, `IDesignTimeDbContextFactory<TContext>`, and application-specific wiring.
-- `src/DCoding.Data.DVault/DCoding.Data.DVault.csproj` currently references EF Core runtime/relational packages and DI abstractions only; keep the core package design-package-free.
-- For `validate`, wrap `IDataVaultDiagnosticsService.Analyze(DbContext)` and reuse `DataVaultDiagnosticsResult.ToDisplayString()`.
-- For `export`, accept only existing `DataVaultModelArtifactExporter` inputs rather than attempting reflective export from EF model state.
-- For `drift`, keep artifact-versus-design-time-model comparison as the default safe lane via `DataVaultModelArtifactImporter` and `DataVaultModelDriftReporter`; make live-schema comparison an explicit opt-in lane via `DataVaultLiveSchemaReader` and `DataVaultLiveSchemaDriftReporter`.
-- For `guardrail`, keep migration resolution consumer-owned and operate on scaffolded `Migration.UpOperations`; do not parse SQL text or touch a live database.
-- Follow the deterministic parser/help pattern already visible in `tools/DCoding.Data.DVault.PackageVerification/PackageVerificationCommand.cs`, and update `tests/DCoding.Data.DVault.Tests/Unit/ApiSurfaceSnapshotTests.cs` plus the core approved snapshot file if new public types are introduced.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the command surface lands, should a later additive tooling ticket expose optional JSON command output, or are deterministic text plus exit codes sufficient because callers can already consume the structured APIs directly?
 - Should the later CI/documentation tickets show one consolidated sample consumer host that wires factory creation, export-source selection, and migration resolution together, or keep each verb documented independently?
 
-## Risks
+Risks
 - Because the current public API snapshot shows no command host/runner surface, over-designing the new public API beyond minimal consumer hosting would create unnecessary long-term support obligations.
 - Export is still the easiest place to overreach: the current exporter explicitly excludes EF `ModelBuilder` state and reflective `DbContext` export paths.
 - If live-schema drift becomes the default instead of an opt-in lane, external-provider availability and `UnsupportedProvider`/`Unavailable` outcomes could make routine local command use noisy or misleading.
 - Live relation state still contains a historical incoming `blocks` relation from done story `06F2PGFZWC5PXSDH46RCZPN1CG`; no relation cleanup was materialized in this pass, so schedule views may look more constrained than the actual baseline.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended inside this ticket because the broader design-time command-surface breakdown is already materialized: story `06F2PGGEY26Y65G97NGFKH381M` parents this implementation task and sibling CI/examples task `06F2PGGR30XXCDKCZ8W2J2WX8C`, while documentation/release-note rollout remains separate in `06F2PGHA0EXJRGDHM4GQM7NPYR`.
 - Migration guardrail rule taxonomy and coverage expansion remain outside this ticket and continue to live in `06F2PGGW8ZBW80V6B8RPWNVM70` and `06F2PGH42B6BT1708MYGMXP5GM`.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 5
+- implementation-notes items: 7
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Implement the minimal useful CLI/design-time command set.
-
-## Scope
-- Refine and complete the work for "Implement validate/export/drift/guardrail commands" within the boundaries of its parent story, epic, and release.
-- Keep the implementation focused on the affected DVault feature area; avoid unrelated refactorings or package shape changes unless they are required by the ticket.
-- Update tests, examples, diagnostics, provider behavior, and documentation only where they are relevant to this ticket's observable behavior.
-
-## Acceptance Criteria
-- The completed ticket includes clear evidence of the implemented behavior, verification steps, and any intentionally deferred work.
-- Relevant unit, integration, provider, analyzer, or documentation checks are added or updated, or the ticket documents why a check is not applicable.
-- Public behavior, command output, generated SQL, package contents, examples, README content, and release notes are updated when this ticket changes them.
-- The result remains compatible with the release ordering and relations; dependent tickets can start without reworking this ticket's scope.
-
-## Release Notes
-- If this ticket changes public behavior, package shape, examples, diagnostics, generated SQL, or provider behavior, update README and the release note document for this release before integration.
+Run mode
+- apply: planned updates are applied after this comment

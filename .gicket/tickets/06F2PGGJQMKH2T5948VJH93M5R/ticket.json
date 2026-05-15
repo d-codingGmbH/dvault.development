@@ -3,19 +3,18 @@
   "ticket-id": "06F2PGGJQMKH2T5948VJH93M5R",
   "ticket-type": null,
   "title": "Task: Implement validate/export/drift/guardrail commands",
-  "revision": "06F2PNHC5G6FW32NW3Z4K9G33G",
-  "status": "todo",
+  "revision": "06F2SM57CJF268K0C5SRRTY6EW",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/task",
     "area/design-time",
-    "area/tooling",
     "area/testing",
-    "needs-po"
+    "area/tooling",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F2PH98VY6AYZKTJZJAP83J2G",
   "releaseId": "06F2PH96YEJPH9QBMW4C852V4R",
   "created-at": "2026-05-15T10:50:11.1942093Z",
-  "updated-at": "2026-05-15T11:12:08.2363726Z"
+  "updated-at": "2026-05-15T18:05:32.3888906Z"
 }
