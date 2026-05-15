@@ -55,6 +55,11 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
               Columns = ["EmailAddress"],
               IsUnique = false,
             },
+            new RenameIndexOperation {
+              Table = "ApplicationAudit",
+              Name = "IX_ApplicationAudit_Description",
+              NewName = "IX_ApplicationAudit_Description_New",
+            },
             new AlterColumnOperation {
               Table = "SatCustomerContact",
               Name = "EmailAddress",
@@ -232,6 +237,11 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
               Table = "BridgeCustomerOrder",
               Name = "IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey",
             },
+            new RenameIndexOperation {
+              Table = "BridgeCustomerOrder",
+              Name = "IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey",
+              NewName = "IxBridgeCustomerOrderTraversal",
+            },
             new AddPrimaryKeyOperation {
               Table = "HubCustomer",
               Name = "PkHubCustomerWrongName",
@@ -262,6 +272,7 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
         issue => AssertIssue(issue, "DVM2003", DataVaultDiagnosticsIssueSeverity.Error, "migration/AlterColumn/BridgeCustomerOrder/OrderHashKey", "MI-3"),
         issue => AssertIssue(issue, "DVM2003", DataVaultDiagnosticsIssueSeverity.Error, "migration/DropColumn/BridgeSalesRegionHierarchy/TraversalDepth", "MI-3"),
         issue => AssertIssue(issue, "DVM2004", DataVaultDiagnosticsIssueSeverity.Warning, "migration/DropIndex/BridgeCustomerOrder/IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey", "MI-4"),
+        issue => AssertIssue(issue, "DVM2004", DataVaultDiagnosticsIssueSeverity.Warning, "migration/RenameIndex/BridgeCustomerOrder/IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey", "MI-4"),
         issue => AssertIssue(issue, "DVM2004", DataVaultDiagnosticsIssueSeverity.Warning, "migration/AddPrimaryKey/HubCustomer/PkHubCustomerWrongName", "MI-4"),
         issue => AssertIssue(issue, "DVM2004", DataVaultDiagnosticsIssueSeverity.Warning, "migration/DropPrimaryKey/PitCustomerContact/PkPitCustomerContactCustomerHashKeyLoadTimestamp", "MI-4"),
         issue => AssertIssue(issue, "DVM2006", DataVaultDiagnosticsIssueSeverity.Error, "migration/DropTable/BridgeCustomerOrder", "MI-5"));

@@ -3,19 +3,18 @@
   "ticket-id": "06F2PGGW8ZBW80V6B8RPWNVM70",
   "ticket-type": null,
   "title": "Story: Harden migration guardrails for CI enforcement",
-  "revision": "06F2PNHQJRFA20MDC4BTWD287W",
-  "status": "todo",
+  "revision": "06F2V3T41J15ZP951MFF2G59W8",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/story",
-    "area/migrations",
     "area/diagnostics",
     "area/ef-core",
-    "needs-po"
+    "area/migrations",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06F2PH98VY6AYZKTJZJAP83J2G",
   "releaseId": "06F2PH96YEJPH9QBMW4C852V4R",
   "created-at": "2026-05-15T10:50:14.4284186Z",
-  "updated-at": "2026-05-15T11:12:11.1587764Z"
+  "updated-at": "2026-05-15T21:33:44.3320112Z"
 }
