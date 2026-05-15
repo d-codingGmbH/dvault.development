@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "releaseId": "06F2PH99NN9B0S4RZW0NPST1CR",
+  "name": "v0.12.0 - Analyzer and Generator Ergonomics",
+  "description": "Expand compile-time diagnostics and introduce source-generated helpers for DVault metadata and row factories.",
+  "status": "planned",
+  "createdAt": "2026-05-15T10:53:33.4856945Z"
+}

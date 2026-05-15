@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F2PGGEY26Y65G97NGFKH381M",
+  "ticket-type": null,
+  "title": "Story: Add DVault design-time command surface",
+  "revision": "06F2PHYN3FD7XB0CAKH47896K0",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/story",
+    "area/design-time",
+    "area/developer-experience",
+    "area/tooling"
+  ],
+  "assignees": [],
+  "milestoneId": "06F2PH98VY6AYZKTJZJAP83J2G",
+  "releaseId": "06F2PH96YEJPH9QBMW4C852V4R",
+  "created-at": "2026-05-15T10:50:10.2223416Z",
+  "updated-at": "2026-05-15T10:56:28.4435022Z"
+}

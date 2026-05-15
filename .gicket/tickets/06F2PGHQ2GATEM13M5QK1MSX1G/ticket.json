@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F2PGHQ2GATEM13M5QK1MSX1G",
+  "ticket-type": null,
+  "title": "Story: Expand Code-First analyzer diagnostics",
+  "revision": "06F2PHCJ5EYNGBS97Z4NKQT1YR",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/story",
+    "area/analyzers",
+    "area/diagnostics",
+    "area/testing"
+  ],
+  "assignees": [],
+  "milestoneId": "06F2PH9AFGQEK2SPR3WJAAH3DG",
+  "releaseId": "06F2PH99NN9B0S4RZW0NPST1CR",
+  "created-at": "2026-05-15T10:50:20.9258503Z",
+  "updated-at": "2026-05-15T10:54:00.2355478Z"
+}

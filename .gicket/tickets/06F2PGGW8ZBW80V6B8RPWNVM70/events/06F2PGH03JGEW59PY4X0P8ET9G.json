@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGH03JGEW59PY4X0P8ET9G",
+  "occurred-at": "2026-05-15T10:50:14.4284186Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Harden migration guardrails for CI enforcement",
+    "status": "todo"
+  }
+}

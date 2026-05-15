@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGMXJ0QCR44J9AYSXZHPX4",
+  "occurred-at": "2026-05-15T10:50:46.5440127Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define explicit bulk ingestion SPI",
+    "status": "todo"
+  }
+}

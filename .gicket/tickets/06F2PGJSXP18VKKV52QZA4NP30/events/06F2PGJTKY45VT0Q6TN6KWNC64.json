@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGJTKY45VT0Q6TN6KWNC64",
+  "occurred-at": "2026-05-15T10:50:29.4071609Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Generate metadata and row factory helpers",
+    "status": "todo"
+  }
+}

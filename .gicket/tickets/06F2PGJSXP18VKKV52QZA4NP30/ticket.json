@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F2PGJSXP18VKKV52QZA4NP30",
+  "ticket-type": null,
+  "title": "Task: Generate metadata and row factory helpers",
+  "revision": "06F2PHDG8H51V3W2PHGY5AT9J0",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/task",
+    "area/source-generation",
+    "area/persistence",
+    "area/testing"
+  ],
+  "assignees": [],
+  "milestoneId": "06F2PH9B92XX975C9APSZQSGSC",
+  "releaseId": "06F2PH99NN9B0S4RZW0NPST1CR",
+  "created-at": "2026-05-15T10:50:29.4071609Z",
+  "updated-at": "2026-05-15T10:54:07.9407889Z"
+}

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F2PH9B92XX975C9APSZQSGSC",
+  "name": "v0.12.0 - Source-generated metadata helpers",
+  "description": "Generator contracts for deterministic mapper and factory helper output.",
+  "status": "planned",
+  "createdAt": "2026-05-15T10:53:33.8961808Z"
+}

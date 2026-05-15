@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGNP74TH4QHEPW7XV5T5TC",
+  "occurred-at": "2026-05-15T10:50:52.8573038Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add provider-native bulk ingestion strategies",
+    "status": "todo"
+  }
+}

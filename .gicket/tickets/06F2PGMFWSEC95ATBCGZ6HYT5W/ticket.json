@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F2PGMFWSEC95ATBCGZ6HYT5W",
+  "ticket-type": null,
+  "title": "Epic: Provider bulk ingestion",
+  "revision": "06F2PJ65GNZ6C42BXWBE2XPX4G",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/epic",
+    "area/performance",
+    "area/persistence",
+    "area/provider-support",
+    "area/documentation"
+  ],
+  "assignees": [],
+  "milestoneId": "06F2PH9HM4M34M1CKMHQV84RGC",
+  "releaseId": "06F2PH9EF1YYJ8F6F6KWG4DBY8",
+  "created-at": "2026-05-15T10:50:44.5403973Z",
+  "updated-at": "2026-05-15T10:57:29.9895090Z"
+}

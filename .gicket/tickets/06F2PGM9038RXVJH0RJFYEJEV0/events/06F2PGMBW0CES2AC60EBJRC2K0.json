@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGMBW0CES2AC60EBJRC2K0",
+  "occurred-at": "2026-05-15T10:50:42.0164817Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Update v0.13.0 documentation and release notes",
+    "status": "todo"
+  }
+}

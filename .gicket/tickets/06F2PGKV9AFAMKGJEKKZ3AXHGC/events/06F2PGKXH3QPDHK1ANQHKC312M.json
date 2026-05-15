@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGKXH3QPDHK1ANQHKC312M",
+  "occurred-at": "2026-05-15T10:50:38.3443276Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add Code-First effectivity satellite support",
+    "status": "todo"
+  }
+}

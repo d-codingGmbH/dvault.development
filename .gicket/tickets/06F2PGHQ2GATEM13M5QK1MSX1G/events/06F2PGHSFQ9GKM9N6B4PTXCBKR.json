@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGHSFQ9GKM9N6B4PTXCBKR",
+  "occurred-at": "2026-05-15T10:50:20.9258503Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Expand Code-First analyzer diagnostics",
+    "status": "todo"
+  }
+}

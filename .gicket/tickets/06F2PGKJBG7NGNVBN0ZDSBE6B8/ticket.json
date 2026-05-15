@@ -1,0 +1,19 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F2PGKJBG7NGNVBN0ZDSBE6B8",
+  "ticket-type": null,
+  "title": "Task: Test link-parent satellite metadata projection",
+  "revision": "06F2PHE4WCCTYP2YEDWYJ5PSCG",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/task",
+    "area/code-first",
+    "area/testing"
+  ],
+  "assignees": [],
+  "milestoneId": "06F2PH9CW55MJXTYMNFBJ0CCMC",
+  "releaseId": "06F2PH9C2PY0EBJBJNQA9338XC",
+  "created-at": "2026-05-15T10:50:36.6237638Z",
+  "updated-at": "2026-05-15T10:54:13.2192965Z"
+}

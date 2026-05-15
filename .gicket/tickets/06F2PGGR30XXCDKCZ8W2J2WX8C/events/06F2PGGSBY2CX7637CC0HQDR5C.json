@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGGSBY2CX7637CC0HQDR5C",
+  "occurred-at": "2026-05-15T10:50:12.7030083Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add CI workflow examples for design-time checks",
+    "status": "todo"
+  }
+}

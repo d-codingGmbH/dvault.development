@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGQ94RH7DTKVP72BTXK7ZC",
+  "occurred-at": "2026-05-15T10:51:05.8949571Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Explain save and read strategy decisions",
+    "status": "todo"
+  }
+}

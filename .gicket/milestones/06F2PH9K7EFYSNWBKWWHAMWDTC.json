@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F2PH9K7EFYSNWBKWWHAMWDTC",
+  "name": "v0.15.0 - PIT and bridge maintenance",
+  "description": "Explicit rebuild and incremental maintenance contracts for PIT and bridge structures.",
+  "status": "planned",
+  "createdAt": "2026-05-15T10:53:35.9316392Z"
+}

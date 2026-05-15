@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGFWHB6VPKRYB05ZJH9BD0",
+  "occurred-at": "2026-05-15T10:50:05.3224467Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Epic: Design-time drift and CI guardrails",
+    "status": "todo"
+  }
+}

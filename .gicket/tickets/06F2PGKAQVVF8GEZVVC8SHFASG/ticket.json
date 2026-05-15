@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F2PGKAQVVF8GEZVVC8SHFASG",
+  "ticket-type": null,
+  "title": "Story: Add Code-First link-parent satellites",
+  "revision": "06F2PHE19BQ55MKXQDDNQNCGWW",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/story",
+    "area/code-first",
+    "area/modeling",
+    "area/testing"
+  ],
+  "assignees": [],
+  "milestoneId": "06F2PH9CW55MJXTYMNFBJ0CCMC",
+  "releaseId": "06F2PH9C2PY0EBJBJNQA9338XC",
+  "created-at": "2026-05-15T10:50:34.1163033Z",
+  "updated-at": "2026-05-15T10:54:12.2981567Z"
+}

@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGPE0E42C1FP0YPF1G6SWM",
+  "occurred-at": "2026-05-15T10:50:58.9472869Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add PIT maintenance service",
+    "status": "todo"
+  }
+}

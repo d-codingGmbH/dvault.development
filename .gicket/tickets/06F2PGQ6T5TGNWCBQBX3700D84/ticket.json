@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F2PGQ6T5TGNWCBQBX3700D84",
+  "ticket-type": null,
+  "title": "Story: Explain save and read strategy decisions",
+  "revision": "06F2PHJ1W60PXDJQTMZ6WQ8WRC",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/story",
+    "area/observability",
+    "area/diagnostics",
+    "area/provider-support"
+  ],
+  "assignees": [],
+  "milestoneId": "06F2PH9NNNK5VAFKHA1T3HYTZM",
+  "releaseId": "06F2PH9MW3YQTVEZPYYR4ZXEJM",
+  "created-at": "2026-05-15T10:51:05.8949571Z",
+  "updated-at": "2026-05-15T10:54:45.2174029Z"
+}

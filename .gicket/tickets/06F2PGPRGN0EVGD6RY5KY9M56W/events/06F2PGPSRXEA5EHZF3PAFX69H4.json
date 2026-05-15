@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGPSRXEA5EHZF3PAFX69H4",
+  "occurred-at": "2026-05-15T10:51:01.9593458Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add provider-aware PIT and bridge read optimization",
+    "status": "todo"
+  }
+}

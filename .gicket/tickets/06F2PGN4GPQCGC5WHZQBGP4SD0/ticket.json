@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F2PGN4GPQCGC5WHZQBGP4SD0",
+  "ticket-type": null,
+  "title": "Task: Implement fallback bulk ingestion path",
+  "revision": "06F2PHZAXSJ9HCVMFH9S2CCWM0",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/task",
+    "area/performance",
+    "area/persistence",
+    "area/testing"
+  ],
+  "assignees": [],
+  "milestoneId": "06F2PH9GTDQ3VFDBAF5GPW9YJR",
+  "releaseId": "06F2PH9EF1YYJ8F6F6KWG4DBY8",
+  "created-at": "2026-05-15T10:50:48.9070487Z",
+  "updated-at": "2026-05-15T10:56:34.0300519Z"
+}

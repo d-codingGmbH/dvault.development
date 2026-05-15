@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGQFY9VT907MK91QWWWK3R",
+  "occurred-at": "2026-05-15T10:51:07.6345694Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add save/read telemetry hooks and counters",
+    "status": "todo"
+  }
+}

@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F2PGGR30XXCDKCZ8W2J2WX8C",
+  "ticket-type": null,
+  "title": "Task: Add CI workflow examples for design-time checks",
+  "revision": "06F2PHBJ16EQQJHQHKB5Y1PE4C",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/task",
+    "area/documentation",
+    "area/examples",
+    "area/design-time"
+  ],
+  "assignees": [],
+  "milestoneId": "06F2PH98VY6AYZKTJZJAP83J2G",
+  "releaseId": "06F2PH96YEJPH9QBMW4C852V4R",
+  "created-at": "2026-05-15T10:50:12.7030083Z",
+  "updated-at": "2026-05-15T10:53:52.0094588Z"
+}

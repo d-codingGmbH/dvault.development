@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F2PGPXVAYRBC94RQ7X5V4DVG",
+  "ticket-type": null,
+  "title": "Task: Update v0.15.0 documentation and release notes",
+  "revision": "06F2PHHQDB3GMQBNKDB1FYYRCG",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/task",
+    "area/documentation",
+    "area/read-models",
+    "area/maintenance"
+  ],
+  "assignees": [],
+  "milestoneId": "06F2PH9M2K8VYN3DM5XDXD1MQG",
+  "releaseId": "06F2PH9JDHV1GS17K0Y5128E5W",
+  "created-at": "2026-05-15T10:51:03.3337522Z",
+  "updated-at": "2026-05-15T10:54:42.5381692Z"
+}

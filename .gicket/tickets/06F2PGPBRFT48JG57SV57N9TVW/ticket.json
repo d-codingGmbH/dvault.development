@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F2PGPBRFT48JG57SV57N9TVW",
+  "ticket-type": null,
+  "title": "Story: Add PIT maintenance service",
+  "revision": "06F2PHGZZYM006X7BQRDZZ2KMM",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/story",
+    "area/read-models",
+    "area/maintenance",
+    "area/persistence"
+  ],
+  "assignees": [],
+  "milestoneId": "06F2PH9K7EFYSNWBKWWHAMWDTC",
+  "releaseId": "06F2PH9JDHV1GS17K0Y5128E5W",
+  "created-at": "2026-05-15T10:50:58.9472869Z",
+  "updated-at": "2026-05-15T10:54:36.5439179Z"
+}

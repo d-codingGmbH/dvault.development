@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGKPSW932EES7VJ3PBFBMW",
+  "occurred-at": "2026-05-15T10:50:36.6237638Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Test link-parent satellite metadata projection",
+    "status": "todo"
+  }
+}

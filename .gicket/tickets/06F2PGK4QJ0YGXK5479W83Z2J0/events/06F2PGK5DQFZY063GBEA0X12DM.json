@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGK5DQFZY063GBEA0X12DM",
+  "occurred-at": "2026-05-15T10:50:32.1736371Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Epic: Code-First parity expansion",
+    "status": "todo"
+  }
+}

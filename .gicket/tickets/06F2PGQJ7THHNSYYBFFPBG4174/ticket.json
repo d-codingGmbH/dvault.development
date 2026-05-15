@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F2PGQJ7THHNSYYBFFPBG4174",
+  "ticket-type": null,
+  "title": "Story: Add diagnostics support bundle export",
+  "revision": "06F2PHJC8YWYR8EKFDRFZXXQHG",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/story",
+    "area/observability",
+    "area/developer-experience",
+    "area/diagnostics"
+  ],
+  "assignees": [],
+  "milestoneId": "06F2PH9PEY6Q1CWXZRV2BKD0E4",
+  "releaseId": "06F2PH9MW3YQTVEZPYYR4ZXEJM",
+  "created-at": "2026-05-15T10:51:08.4009388Z",
+  "updated-at": "2026-05-15T10:54:47.8794243Z"
+}

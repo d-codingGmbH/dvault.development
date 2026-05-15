@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F2PGGW8ZBW80V6B8RPWNVM70",
+  "ticket-type": null,
+  "title": "Story: Harden migration guardrails for CI enforcement",
+  "revision": "06F2PHBZXCW4BVX1SRBCESNJ80",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/story",
+    "area/migrations",
+    "area/diagnostics",
+    "area/ef-core"
+  ],
+  "assignees": [],
+  "milestoneId": "06F2PH98VY6AYZKTJZJAP83J2G",
+  "releaseId": "06F2PH96YEJPH9QBMW4C852V4R",
+  "created-at": "2026-05-15T10:50:14.4284186Z",
+  "updated-at": "2026-05-15T10:53:55.5638121Z"
+}

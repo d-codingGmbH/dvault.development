@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F2PGHJAFMH80TZAMANQWH9PW",
+  "ticket-type": null,
+  "title": "Epic: Analyzer and generator ergonomics",
+  "revision": "06F2PJ50X6WPZQYFFWVVA749M8",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/epic",
+    "area/analyzers",
+    "area/source-generation",
+    "area/developer-experience",
+    "area/documentation"
+  ],
+  "assignees": [],
+  "milestoneId": "06F2PH9B92XX975C9APSZQSGSC",
+  "releaseId": "06F2PH99NN9B0S4RZW0NPST1CR",
+  "created-at": "2026-05-15T10:50:19.2625892Z",
+  "updated-at": "2026-05-15T10:57:20.6176858Z"
+}

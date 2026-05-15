@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGN6SFWCZ7CTVVGRWVWD9G",
+  "occurred-at": "2026-05-15T10:50:48.9070487Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Implement fallback bulk ingestion path",
+    "status": "todo"
+  }
+}

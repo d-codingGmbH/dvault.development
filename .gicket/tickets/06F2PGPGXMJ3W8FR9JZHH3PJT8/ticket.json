@@ -1,0 +1,20 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F2PGPGXMJ3W8FR9JZHH3PJT8",
+  "ticket-type": null,
+  "title": "Story: Add bridge maintenance service",
+  "revision": "06F2PHH5QT0QKZVZPZ6BWMFXZW",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "type/story",
+    "area/read-models",
+    "area/maintenance",
+    "area/modeling"
+  ],
+  "assignees": [],
+  "milestoneId": "06F2PH9K7EFYSNWBKWWHAMWDTC",
+  "releaseId": "06F2PH9JDHV1GS17K0Y5128E5W",
+  "created-at": "2026-05-15T10:50:59.8671058Z",
+  "updated-at": "2026-05-15T10:54:38.0141115Z"
+}

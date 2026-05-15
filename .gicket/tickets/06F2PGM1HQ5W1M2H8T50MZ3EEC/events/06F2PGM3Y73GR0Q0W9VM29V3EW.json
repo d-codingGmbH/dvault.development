@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGM3Y73GR0Q0W9VM29V3EW",
+  "occurred-at": "2026-05-15T10:50:39.9852563Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add same-as link and dependent child key modeling",
+    "status": "todo"
+  }
+}

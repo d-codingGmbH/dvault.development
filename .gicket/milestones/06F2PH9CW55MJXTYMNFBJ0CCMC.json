@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F2PH9CW55MJXTYMNFBJ0CCMC",
+  "name": "v0.13.0 - Link-parent and effectivity satellites",
+  "description": "Fluent declarations and metadata projection for link-parent and effectivity satellite shapes.",
+  "status": "planned",
+  "createdAt": "2026-05-15T10:53:34.3057032Z"
+}

@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGNVFWRTKJG0VAA8E3V95M",
+  "occurred-at": "2026-05-15T10:50:54.2077724Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add provider bulk integration coverage",
+    "status": "todo"
+  }
+}

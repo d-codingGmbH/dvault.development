@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGGFNS037YHHDDC1V68Z78",
+  "occurred-at": "2026-05-15T10:50:10.2223416Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add DVault design-time command surface",
+    "status": "todo"
+  }
+}

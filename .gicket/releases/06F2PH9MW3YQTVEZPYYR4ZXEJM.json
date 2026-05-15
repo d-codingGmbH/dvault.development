@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "releaseId": "06F2PH9MW3YQTVEZPYYR4ZXEJM",
+  "name": "v0.16.0 - Observability and Operations",
+  "description": "Explainable strategy selection, telemetry hooks, and operational diagnostics for production DVault usage.",
+  "status": "planned",
+  "createdAt": "2026-05-15T10:53:36.3522104Z"
+}

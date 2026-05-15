@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F2PH982MS2RG4C7S56Z34TYC",
+  "name": "v0.11.0 - Provider live drift inspection",
+  "description": "Catalog/schema readers for supported providers and deterministic drift comparison evidence.",
+  "status": "active",
+  "createdAt": "2026-05-15T10:53:33.0770811Z"
+}

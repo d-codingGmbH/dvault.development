@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGKD0H3XZZWFCWHPJ9QYQM",
+  "occurred-at": "2026-05-15T10:50:34.1163033Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add Code-First link-parent satellites",
+    "status": "todo"
+  }
+}

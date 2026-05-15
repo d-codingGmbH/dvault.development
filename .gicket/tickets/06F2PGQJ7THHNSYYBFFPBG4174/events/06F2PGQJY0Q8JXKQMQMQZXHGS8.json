@@ -1,0 +1,13 @@
+{
+  "event-id": "06F2PGQJY0Q8JXKQMQMQZXHGS8",
+  "occurred-at": "2026-05-15T10:51:08.4009388Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add diagnostics support bundle export",
+    "status": "todo"
+  }
+}
