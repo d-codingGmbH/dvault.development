@@ -3,19 +3,18 @@
   "ticket-id": "06F1XQ2MB5Y9JW25W2CWVZZ9G4",
   "ticket-type": "story",
   "title": "Story: Refresh adoption examples and production checklist",
-  "revision": "06F1XTQG35Q5HYXX0Z8S630DJ4",
-  "status": "todo",
+  "revision": "06F2JAEP82TD56D98WDQG960PC",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/story",
+    "area/developer-experience",
     "area/documentation",
     "area/examples",
-    "area/developer-experience",
-    "needs-po"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRX3H6KJWG27XEGZMQ7S4",
   "releaseId": "06F1XPRQBHW47J1F73NNGYVN0R",
   "created-at": "2026-05-13T01:03:37.2132292Z",
-  "updated-at": "2026-05-13T01:19:33.9134515Z"
+  "updated-at": "2026-05-15T01:04:28.2247557Z"
 }
