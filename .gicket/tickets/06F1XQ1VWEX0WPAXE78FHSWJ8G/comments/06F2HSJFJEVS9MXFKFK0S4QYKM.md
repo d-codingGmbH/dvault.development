@@ -1,20 +1,19 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined ticket 06F1XQ1VWEX0WPAXE78FHSWJ8G against repository and ticket evidence. Existing child task 06F1XQ25KK4VY4MYJSDG9V4BZM is done and provides the bounded PostgreSQL provider-container fixture sample; no new child tickets, planning documents, attachments, or relation changes were created in this run.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - SQLite remains the no-container local baseline. PostgreSQL is the first external provider fixture; SQL Server, MySQL, and Oracle fixture expansion is future work unless separate tickets are created.
 - The fixture boundary is opt-in local developer setup: document Podman/Docker commands and hand off DVAULT_TEST_POSTGRES_CONNECTION_STRING to the existing quickstart and external integration tests. Do not make DVault start containers by default.
 - Existing provider environment variables are DVAULT_TEST_POSTGRES_CONNECTION_STRING, DVAULT_TEST_SQLSERVER_CONNECTION_STRING, DVAULT_TEST_MYSQL_CONNECTION_STRING, and DVAULT_TEST_ORACLE_CONNECTION_STRING. This story should not introduce parallel names for the same connection-string handoff.
 - The repository already uses conditional provider package restore for external integration tests and explicit skip messages when local configuration is missing.
 
-### Scope In
+Scope In
 - Ratify the checked-in PostgreSQL fixture sample and documentation as the first provider container fixture pattern.
 - Document exact local commands, image/tag, port, database, user, local password handling, cleanup, and required schema/table privileges for the PostgreSQL fixture.
 - Keep examples/README.md linked to the PostgreSQL fixture and quickstart so one connection string can exercise both the example and opt-in tests.
@@ -22,7 +21,7 @@
 - Keep missing connection string, missing runtime/image, unreachable database, wrong credentials, and insufficient privileges explicit through skip or failure diagnostics.
 - Preserve a reusable lifecycle pattern for later provider fixtures: start runtime, configure connection string, run targeted validation, inspect output, and clean up.
 
-### Scope Out
+Scope Out
 - No full provider fixture matrix in this story.
 - No mandatory Docker, Podman, or external database dependency for default dotnet test execution.
 - No checked-in secrets, machine-specific connection strings, or bundled database images.
@@ -30,81 +29,35 @@
 - No CI provider matrix expansion unless a later ticket explicitly configures it.
 - No requirement to introduce a reusable DotNet.Testcontainers abstraction in this story; a documented local fixture is acceptable for the first provider baseline.
 
-## Acceptance Criteria
-- A PostgreSQL provider-container fixture sample is present under the existing examples/docs conventions and can be followed with Podman or Docker.
-- The sample documents docker.io/postgres:18 or another explicit approved PostgreSQL image tag, with placeholder credentials only.
-- The sample documents DVAULT_TEST_POSTGRES_CONNECTION_STRING exactly and uses it for both the PostgreSQL quickstart and Postgres external opt-in tests.
-- The documented test command includes the non-secret MSBuild marker property needed for conditional Npgsql package restore.
-- Default build/test behavior remains free of external database and container requirements.
-- Unavailable runtime, image, connection string, database reachability, credentials, or privileges produce clear developer-readable skip or failure output.
-
-## Definition of Done
-- No real credentials or machine-local connection strings are checked in.
-- The PostgreSQL fixture documentation is linked from examples documentation without weakening the opt-in testing boundary.
-- Existing Postgres configuration tests, provider category traits, and skip messages remain aligned with the documented environment variable.
-- The SQLite quickstart remains the local no-container runnable baseline.
-- The completed child ticket 06F1XQ25KK4VY4MYJSDG9V4BZM remains the materialized first-provider fixture task under this parent story.
-- No repository changes require provider packages to restore during default test runs beyond existing conditional behavior.
-
-## Implementation Notes
-- Relevant evidence includes examples/README.md, examples/DCoding.Data.DVault.PostgresQuickstart/README.md, examples/DCoding.Data.DVault.PostgresQuickstart/Program.cs, tests/DCoding.Data.DVault.Tests/Integration/*IntegrationTestConfiguration.cs, and ProviderTestCategories.cs.
-- The PostgreSQL quickstart already exits successfully with a skip message when DVAULT_TEST_POSTGRES_CONNECTION_STRING is missing.
-- The integration test project conditionally restores Npgsql, SQL Server, Oracle, and MySQL provider packages based on non-empty MSBuild properties matching the provider environment-variable names.
-- Use the existing Postgres fixture pattern rather than creating a separate connection-string convention or default test dependency.
-- No bounded ticket writes were needed during this refinement pass because the child split and relation already exist.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the PostgreSQL fixture baseline, should MySQL, SQL Server, or Oracle be the next provider fixture sample?
 - Should a later ticket add reusable Testcontainers-based .NET helper code, or keep provider startup as documented local Podman/Docker commands?
 - Should future provider fixtures be consolidated into one local-provider guide after at least two external providers have samples?
 - Should CI add any opt-in provider container lane later, separate from default test execution?
 
-## Risks
+Risks
 - The story title can invite full provider-matrix scope; keep this pass bounded to the done PostgreSQL first-provider fixture and reusable pattern.
 - Podman and Docker networking differ across hosts, so the sample must keep hostname and port overrides visible.
 - Conditional provider restore can fail if the documented MSBuild marker property is omitted during opt-in test runs.
 - Hardcoded ports can collide with local services; documentation should keep alternate host-port mapping explicit.
 
-## Split Recommendations
+Split recommendations
 - No new split is recommended now. The existing done child 06F1XQ25KK4VY4MYJSDG9V4BZM covers the first provider fixture sample.
 - If the product later requires a full external-provider fixture matrix, split MySQL, SQL Server, and Oracle into separate provider-specific tickets because images, licensing, authentication, and privilege setup differ.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 6
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Goal
-
-Make provider integration testing easier through Testcontainers-oriented helpers and examples.
-
-## Scope In
-
-- Provide examples or helper fixtures for PostgreSQL, SQL Server, MySQL, Oracle, and SQLite-equivalent local testing where feasible.
-- Document Podman/Docker prerequisites and connection string handoff.
-- Keep tests skippable when runtime/images are unavailable.
-- Align with existing integration-test environment variables.
-
-## Scope Out
-
-- No requirement that users adopt Testcontainers.
-- No bundling database images.
-- No CI provider matrix expansion unless explicitly configured.
-
-## Acceptance Criteria
-
-- Examples document exact package references and commands.
-- Unavailable runtime/images produce clear skip diagnostics.
-- At least one provider helper is runnable locally.
-
-## Implementation Notes
-
-- Distinguish test helpers from benchmark containers.
-
-## Open Questions
-
-- none
+Run mode
+- apply: planned updates are applied after this comment
