@@ -3,18 +3,19 @@
   "ticket-id": "06F2PGKAQVVF8GEZVVC8SHFASG",
   "ticket-type": null,
   "title": "Story: Add Code-First link-parent satellites",
-  "revision": "06F2PHE19BQ55MKXQDDNQNCGWW",
+  "revision": "06F2PNKAVH7HHFZY1XA5B84J0W",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/story",
     "area/code-first",
     "area/modeling",
-    "area/testing"
+    "area/testing",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9CW55MJXTYMNFBJ0CCMC",
   "releaseId": "06F2PH9C2PY0EBJBJNQA9338XC",
   "created-at": "2026-05-15T10:50:34.1163033Z",
-  "updated-at": "2026-05-15T10:54:12.2981567Z"
+  "updated-at": "2026-05-15T11:12:24.2844749Z"
 }

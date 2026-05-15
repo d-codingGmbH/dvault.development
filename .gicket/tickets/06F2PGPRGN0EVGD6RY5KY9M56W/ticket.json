@@ -3,18 +3,19 @@
   "ticket-id": "06F2PGPRGN0EVGD6RY5KY9M56W",
   "ticket-type": null,
   "title": "Story: Add provider-aware PIT and bridge read optimization",
-  "revision": "06F2PHHHNM4970EE9Y0BQ9E868",
+  "revision": "06F2PNMTSQ8RVW82K84XG4WKK4",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/story",
     "area/read-models",
     "area/provider-support",
-    "area/performance"
+    "area/performance",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9M2K8VYN3DM5XDXD1MQG",
   "releaseId": "06F2PH9JDHV1GS17K0Y5128E5W",
   "created-at": "2026-05-15T10:51:01.9593458Z",
-  "updated-at": "2026-05-15T10:54:41.0699667Z"
+  "updated-at": "2026-05-15T11:12:36.5578379Z"
 }

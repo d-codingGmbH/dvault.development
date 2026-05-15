@@ -3,17 +3,18 @@
   "ticket-id": "06F2PGJ28KVSZAAFRA40D94128",
   "ticket-type": null,
   "title": "Task: Document analyzer configuration and suppressions",
-  "revision": "06F2PHCV8VSTHWFRRXGGAJVQHW",
+  "revision": "06F2PNJTPVZ9G8DGP23VQK8K4M",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/task",
     "area/analyzers",
-    "area/documentation"
+    "area/documentation",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9AFGQEK2SPR3WJAAH3DG",
   "releaseId": "06F2PH99NN9B0S4RZW0NPST1CR",
   "created-at": "2026-05-15T10:50:24.4624555Z",
-  "updated-at": "2026-05-15T10:54:02.5668812Z"
+  "updated-at": "2026-05-15T11:12:20.1500558Z"
 }

@@ -3,7 +3,7 @@
   "ticket-id": "06F2PGK4QJ0YGXK5479W83Z2J0",
   "ticket-type": null,
   "title": "Epic: Code-First parity expansion",
-  "revision": "06F2PJ5PRR7NQABRXDDFFZ3DV0",
+  "revision": "06F2PNK942C9RS60QXYEE8XZ0C",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
@@ -11,11 +11,12 @@
     "area/code-first",
     "area/modeling",
     "area/ef-core",
-    "area/documentation"
+    "area/documentation",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9DNHSQZDX06D9FA2HCBR",
   "releaseId": "06F2PH9C2PY0EBJBJNQA9338XC",
   "created-at": "2026-05-15T10:50:32.1736371Z",
-  "updated-at": "2026-05-15T10:57:26.2148496Z"
+  "updated-at": "2026-05-15T11:12:23.8400965Z"
 }

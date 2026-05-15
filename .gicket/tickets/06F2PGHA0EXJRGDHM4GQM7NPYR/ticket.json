@@ -3,17 +3,18 @@
   "ticket-id": "06F2PGHA0EXJRGDHM4GQM7NPYR",
   "ticket-type": null,
   "title": "Task: Update v0.11.0 documentation and release notes",
-  "revision": "06F2PHC8ERK2PHGD23ARGS3NS0",
+  "revision": "06F2PNJ2GNC5WPZBWZ0KW3QVBM",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/task",
     "area/documentation",
-    "area/developer-experience"
+    "area/developer-experience",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F2PH98VY6AYZKTJZJAP83J2G",
   "releaseId": "06F2PH96YEJPH9QBMW4C852V4R",
   "created-at": "2026-05-15T10:50:17.2944000Z",
-  "updated-at": "2026-05-15T10:53:57.7509147Z"
+  "updated-at": "2026-05-15T11:12:13.9579802Z"
 }

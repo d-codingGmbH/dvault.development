@@ -3,18 +3,19 @@
   "ticket-id": "06F2PGHQ2GATEM13M5QK1MSX1G",
   "ticket-type": null,
   "title": "Story: Expand Code-First analyzer diagnostics",
-  "revision": "06F2PHCJ5EYNGBS97Z4NKQT1YR",
+  "revision": "06F2PNJDW1F1WNMWZS9AK6Y6AC",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/story",
     "area/analyzers",
     "area/diagnostics",
-    "area/testing"
+    "area/testing",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9AFGQEK2SPR3WJAAH3DG",
   "releaseId": "06F2PH99NN9B0S4RZW0NPST1CR",
   "created-at": "2026-05-15T10:50:20.9258503Z",
-  "updated-at": "2026-05-15T10:54:00.2355478Z"
+  "updated-at": "2026-05-15T11:12:16.8643656Z"
 }

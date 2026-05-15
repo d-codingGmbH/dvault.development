@@ -3,18 +3,19 @@
   "ticket-id": "06F2PGNGVQ3TZZWSABAK5SNFK4",
   "ticket-type": null,
   "title": "Story: Add provider-native bulk ingestion strategies",
-  "revision": "06F2PHFF9TCHS82SQ18FY1803R",
+  "revision": "06F2PNM25BTS0M9ERMSFJ23S9G",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/story",
     "area/performance",
     "area/provider-support",
-    "area/persistence"
+    "area/persistence",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9HM4M34M1CKMHQV84RGC",
   "releaseId": "06F2PH9EF1YYJ8F6F6KWG4DBY8",
   "created-at": "2026-05-15T10:50:52.8573038Z",
-  "updated-at": "2026-05-15T10:54:24.0785530Z"
+  "updated-at": "2026-05-15T11:12:30.2508258Z"
 }

@@ -3,18 +3,19 @@
   "ticket-id": "06F2PGNT7DF4DVNKYWDFZC8DEM",
   "ticket-type": null,
   "title": "Task: Add provider bulk integration coverage",
-  "revision": "06F2PHFMDXR7PXJNQEB68GPB2R",
+  "revision": "06F2PNM5H9DJGPZMZ72RBSR2YC",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/task",
     "area/provider-support",
     "area/testing",
-    "area/performance"
+    "area/performance",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9HM4M34M1CKMHQV84RGC",
   "releaseId": "06F2PH9EF1YYJ8F6F6KWG4DBY8",
   "created-at": "2026-05-15T10:50:54.2077724Z",
-  "updated-at": "2026-05-15T10:54:25.3912184Z"
+  "updated-at": "2026-05-15T11:12:31.1149632Z"
 }

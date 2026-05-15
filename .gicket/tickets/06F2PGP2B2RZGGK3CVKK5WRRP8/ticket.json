@@ -3,18 +3,19 @@
   "ticket-id": "06F2PGP2B2RZGGK3CVKK5WRRP8",
   "ticket-type": null,
   "title": "Task: Update v0.14.0 documentation and release notes",
-  "revision": "06F2PHG9KR7R337WE0SJXMM8ZG",
+  "revision": "06F2PNMAMV68BHS8NFAAEK0YK8",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/task",
     "area/documentation",
     "area/performance",
-    "area/provider-support"
+    "area/provider-support",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9HM4M34M1CKMHQV84RGC",
   "releaseId": "06F2PH9EF1YYJ8F6F6KWG4DBY8",
   "created-at": "2026-05-15T10:50:56.2912318Z",
-  "updated-at": "2026-05-15T10:54:30.8141232Z"
+  "updated-at": "2026-05-15T11:12:32.4222592Z"
 }

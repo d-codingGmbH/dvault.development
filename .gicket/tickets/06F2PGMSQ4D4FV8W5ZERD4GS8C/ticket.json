@@ -3,18 +3,19 @@
   "ticket-id": "06F2PGMSQ4D4FV8W5ZERD4GS8C",
   "ticket-type": null,
   "title": "Story: Define explicit bulk ingestion SPI",
-  "revision": "06F2PHZ4FHEGX12FWTGAM6XNJ0",
+  "revision": "06F2PNKVNHGGEBNJA07H8HS9HW",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/story",
     "area/api",
     "area/performance",
-    "area/persistence"
+    "area/persistence",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9GTDQ3VFDBAF5GPW9YJR",
   "releaseId": "06F2PH9EF1YYJ8F6F6KWG4DBY8",
   "created-at": "2026-05-15T10:50:46.5440127Z",
-  "updated-at": "2026-05-15T10:56:32.3805312Z"
+  "updated-at": "2026-05-15T11:12:28.5889916Z"
 }

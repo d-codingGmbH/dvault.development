@@ -3,17 +3,18 @@
   "ticket-id": "06F2PGH42B6BT1708MYGMXP5GM",
   "ticket-type": null,
   "title": "Task: Add migration guardrail rule coverage",
-  "revision": "06F2PHC3DGT2MSHA0KP3EB59P0",
+  "revision": "06F2PNHXZH425JX520QEQXV4GW",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/task",
     "area/migrations",
-    "area/testing"
+    "area/testing",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F2PH98VY6AYZKTJZJAP83J2G",
   "releaseId": "06F2PH96YEJPH9QBMW4C852V4R",
   "created-at": "2026-05-15T10:50:15.6612972Z",
-  "updated-at": "2026-05-15T10:53:56.4601260Z"
+  "updated-at": "2026-05-15T11:12:12.7968701Z"
 }

@@ -3,18 +3,19 @@
   "ticket-id": "06F2PGJBRXFCP038CN6XVAYSZM",
   "ticket-type": null,
   "title": "Story: Add code fixes for common DVault analyzer findings",
-  "revision": "06F2PHYYFDES9Z8N0GFB6K7PKR",
+  "revision": "06F2PNJX309DJJ198FQER80W8R",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/story",
     "area/analyzers",
     "area/developer-experience",
-    "area/testing"
+    "area/testing",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9AFGQEK2SPR3WJAAH3DG",
   "releaseId": "06F2PH99NN9B0S4RZW0NPST1CR",
   "created-at": "2026-05-15T10:50:25.7836846Z",
-  "updated-at": "2026-05-15T10:56:30.8433375Z"
+  "updated-at": "2026-05-15T11:12:20.7608511Z"
 }

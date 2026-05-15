@@ -3,18 +3,19 @@
   "ticket-id": "06F2PGJN1XCV8F7NWH567SQSKM",
   "ticket-type": null,
   "title": "Task: Define source generator input and output contract",
-  "revision": "06F2PHDAMACJKNBJXS90JGNCRC",
+  "revision": "06F2PNK2AS24B2X0SR0WXYAX80",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "type/task",
     "area/source-generation",
     "area/api",
-    "area/testing"
+    "area/testing",
+    "needs-po"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9B92XX975C9APSZQSGSC",
   "releaseId": "06F2PH99NN9B0S4RZW0NPST1CR",
   "created-at": "2026-05-15T10:50:28.1649728Z",
-  "updated-at": "2026-05-15T10:54:06.4984609Z"
+  "updated-at": "2026-05-15T11:12:22.1022294Z"
 }
