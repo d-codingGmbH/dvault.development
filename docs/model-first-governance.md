@@ -1,8 +1,8 @@
 # Model-First Governance Workflow
 
-Status: v0.7.0 branch documentation
+Status: v0.11.0 public guidance
 
-This guide describes how teams should use governed `dvault.model.v1` JSON artifacts alongside the existing Code-First and metadata-first DVault paths. The v0.6.0 release notes remain historical package context; they are not the current v0.7.0 branch baseline for model-first import, export, projection, or drift comparison APIs.
+This guide describes how teams should use governed `dvault.model.v1` JSON artifacts alongside the existing Code-First and metadata-first DVault paths. Earlier release notes remain historical package context; `docs/releases/v0.11.0.md` is the current public baseline for model-first import, export, projection, design-time drift, and optional live-schema drift guidance.
 
 ## Choose A Declaration Path
 
@@ -135,7 +135,7 @@ string jsonFromModel = DataVaultModelArtifactExporter.ExportJson(metadataModel);
 
 Compare the expected artifact or metadata model against generated/current EF metadata with `DataVaultModelDriftReporter.Compare`. Use the structured differences and `ToDisplayString()` as review evidence before accepting a model change. This comparison path remains design-time EF metadata comparison and does not open a database connection.
 
-When a reachable database must be checked, use the separate bounded live-schema path: `DataVaultLiveSchemaReader.ReadAsync(context)` captures DVault-owned tables, ordered columns, named primary-key constraints, and secondary indexes, and `DataVaultLiveSchemaDriftReporter.Compare` compares that result with expected metadata or an imported model. SQLite is the supported v1 live-schema reader. Providers without a live reader return `UnsupportedProvider`, and reachable-provider failures return `Unavailable`, so requested live checks do not silently pass.
+When a reachable database must be checked, use the separate bounded live-schema path: `DataVaultLiveSchemaReader.ReadAsync(context)` captures DVault-owned tables, ordered columns, named primary-key constraints, and secondary indexes, and `DataVaultLiveSchemaDriftReporter.Compare` compares that result with expected metadata or an imported model. Built-in reader coverage includes SQLite, PostgreSQL, SQL Server, Oracle, and MySQL. Both `MySql.EntityFrameworkCore` and `Pomelo.EntityFrameworkCore.MySql` map to the MySQL reader. Providers without a built-in reader return `UnsupportedProvider`, and reachable-provider failures return `Unavailable`, so requested live checks do not silently pass.
 
 ```csharp
 using DCoding.Data.DVault;
@@ -166,7 +166,7 @@ dotnet test DVault.slnx --nologo --filter FullyQualifiedName~DataVaultModelFirst
 
 The valid workflow imports the representative `models/sales-vault.json` `dvault.model.v1` fixture with `DataVaultModelArtifactImporter.ImportJson`, configures a SQLite-backed design-time context with `UseDataVaultMetadata(importResult)`, and compares the imported model against generated EF metadata with `DataVaultModelDriftReporter.Compare(importResult, context)`. The expected valid outcome is `report.HasBlockingDifferences == false` and `report.ToDisplayString()` reporting no differences. SQLite is used only for provider selection and EF metadata shape; the workflow does not open a database connection or initialize schema.
 
-The live-schema workflow is separate from the design-time workflow above. Required local live-schema coverage uses SQLite and does initialize a test database; external provider schema evidence remains opt-in behind the existing provider connection-string environment variables. The invalid workflow imports the same logical source path, `models/sales-vault.json`, with unsupported `schemaVersion` value `dvault.model.v2`. The expected invalid outcome is one import diagnostic with code `DMV1002`, category `schema-version`, logical source path `models/sales-vault.json`, and JSON Pointer `/schemaVersion`.
+The live-schema workflow is separate from the design-time workflow above. Required local live-schema coverage uses SQLite and does initialize a test database. PostgreSQL, SQL Server, Oracle, and MySQL live-schema readers are built in, but their tests and CI lanes remain opt-in behind the existing provider connection-string environment variables because the consuming environment owns reachable databases, credentials, lifecycle cleanup, and isolation. The invalid workflow imports the same logical source path, `models/sales-vault.json`, with unsupported `schemaVersion` value `dvault.model.v2`. The expected invalid outcome is one import diagnostic with code `DMV1002`, category `schema-version`, logical source path `models/sales-vault.json`, and JSON Pointer `/schemaVersion`.
 
 ## Diagnostic Contract
 
@@ -221,6 +221,6 @@ Do not use unknown fields for comments, vendor metadata, experimental parser hin
 
 ## Current Limitations
 
-The current branch does not provide first-party CLI commands, documented CI gate snippets, direct YAML ingestion, broad multi-provider live database drift introspection beyond the bounded SQLite live-schema reader, or extraction from arbitrary EF `ModelBuilder` state into a model artifact.
+The current baseline provides reusable library-hosted design-time command verbs through a consumer-owned command host, but it does not ship a standalone DVault CLI, intercept `dotnet ef`, apply migrations, or repair schema drift automatically. The command verbs are `validate`, `export`, `drift`, and `guardrail`; `export` is for artifact maintenance and reviewed refresh workflows, not the default blocking CI gate. Direct YAML ingestion and extraction from arbitrary EF `ModelBuilder` state into a model artifact remain outside the current contract.
 
-The model-first APIs operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata. Keep command-line automation, CI policy examples, YAML semantics, database schema inspection, and EF model reverse-engineering as separate future contracts instead of implying support in current examples.
+The model-first APIs operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata. Keep standalone CLI packaging, YAML semantics, database provisioning, secret-management recipes, and EF model reverse-engineering as separate future contracts instead of implying support in current examples.

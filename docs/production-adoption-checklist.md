@@ -26,9 +26,11 @@ Use this checklist when preparing a DVault-consuming application for production.
 - [ ] Keep the configured `DbContext`, DVault metadata registration, EF design-time factory, and preflight entrypoint in the consumer project that owns migrations.
 - [ ] Run DVault diagnostics against the configured design-time model before applying migrations. Use [DVault Dotnet EF Design-Time Workflow](architecture/dvault-dotnet-ef-design-time-workflow.md) for the supported v1 order and GitHub Actions baseline.
 - [ ] Add a consumer-owned CI step that invokes `dotnet run --project <consumer-project> -- validate` through the application's design-time command host.
+- [ ] Use `dotnet run --project <consumer-project> -- export --output <path>` only for artifact maintenance or reviewed refresh workflows, not as the default blocking CI gate.
 - [ ] When a reviewed `dvault.model.v1` artifact exists, make `dotnet run --project <consumer-project> -- drift --artifact <path>` a blocking artifact-versus-design-time-model check. Do not generate a fresh artifact with `export` as the default CI gate.
 - [ ] Run `dotnet run --project <consumer-project> -- guardrail --migration <name>` after scaffolding a migration and before apply or integration.
-- [ ] Use live-schema drift checks only within the documented boundary. SQLite is the supported v1 live-schema reader; other providers currently rely on unsupported or external opt-in evidence rather than first-class live-schema readers.
+- [ ] Use live-schema drift checks only within the documented boundary. Built-in reader coverage includes SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, with both `MySql.EntityFrameworkCore` and Pomelo mapped to the MySQL reader.
+- [ ] Keep PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks opt-in and operationally managed by the consumer application, including connection strings, credentials, reachable databases, lifecycle cleanup, and CI isolation.
 - [ ] Do not expect DVault to ship a `dotnet ef` command shim, intercept EF CLI commands, auto-run migrations, or apply schema repairs. Those behaviors are outside the current v1 workflow.
 
 ## Save And Read Boundaries
@@ -68,5 +70,5 @@ bash tools/check-format.sh
 - DVault's default path is explicit and service-based. It does not make Data Vault persistence implicit through EF entity tracking.
 - Design-time guardrails are explicit library APIs owned by the consumer project. DVault does not intercept EF migration commands.
 - PIT-backed reads and bridge reads operate over already materialized tables and do not maintain those tables.
-- SQLite is the first-class local live-schema drift reader. Broader provider live-schema drift support is outside the current first-class boundary.
+- SQLite is the default local live-schema proof because it does not need external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema readers are built in but remain external opt-in operational checks.
 - Advanced configuration hooks beyond the documented record-source resolver path remain optional planning boundaries, not required setup.

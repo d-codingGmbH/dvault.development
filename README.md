@@ -7,13 +7,13 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.10.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.10.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.10.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.10.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.10.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.10.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.10.0
+dotnet add package DCoding.Data.DVault --version 0.11.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.11.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.11.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.11.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.11.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.11.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.11.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
@@ -32,7 +32,7 @@ Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has
 - Metadata-first declarations through a shared `DataVaultMetadataModel` or `DataVaultMetadataRegistry` when one public metadata object should drive schema projection, explicit saves, typed latest/as-of reads, diagnostics, examples, or provider setup.
 - Model-first governance for reviewed `dvault.model.v1` JSON artifacts that should be imported, projected into EF metadata, exported canonically, and compared against generated metadata for drift evidence.
 
-Choose one authoritative path for a model boundary and keep the others as compatible alternatives for different ownership needs. See [Model-First Governance Workflow](docs/model-first-governance.md) for the current `dvault.model.v1` JSON artifact contract and [DVault EF Design-Time Workflow](docs/architecture/dvault-dotnet-ef-design-time-workflow.md) for the v0.8.0 lifecycle guardrails around reviewed artifacts, EF metadata, migrations, and live schema drift.
+Choose one authoritative path for a model boundary and keep the others as compatible alternatives for different ownership needs. See [Model-First Governance Workflow](docs/model-first-governance.md) for the current `dvault.model.v1` JSON artifact contract and [DVault EF Design-Time Workflow](docs/architecture/dvault-dotnet-ef-design-time-workflow.md) for the current consumer-owned design-time command workflow around reviewed artifacts, EF metadata, migrations, and live schema drift.
 
 ### Register DVault services
 
@@ -454,7 +454,7 @@ The shared-type table names and columns in this quickstart follow DVault's defau
 
 DVault has a bounded live-schema drift path for comparing expected Data Vault metadata with the physical schema in a reachable database. The live snapshot surface is intentionally limited to DVault-owned tables, ordered columns, named primary-key constraints, and secondary indexes. It does not compare foreign keys, arbitrary non-DVault database objects, destructive migration plans, or repair operations.
 
-SQLite is the supported v1 live-schema reader. It is available through `DataVaultLiveSchemaReader.ReadAsync(context)` and returns a classified `DataVaultLiveSchemaReadResult` rather than silently skipping unsupported or unavailable environments. Compare the result with expected metadata using `DataVaultLiveSchemaDriftReporter.Compare`:
+The built-in live-schema reader covers SQLite, PostgreSQL, SQL Server, Oracle, and MySQL. It is available through `DataVaultLiveSchemaReader.ReadAsync(context)` and returns a classified `DataVaultLiveSchemaReadResult` rather than silently skipping unsupported or unavailable environments. Compare the result with expected metadata using `DataVaultLiveSchemaDriftReporter.Compare`:
 
 ```csharp
 using DCoding.Data.DVault;
@@ -468,29 +468,32 @@ if (report.HasBlockingDifferences) {
 }
 ```
 
+Built-in provider dispatch recognizes `Microsoft.EntityFrameworkCore.Sqlite`, `Npgsql.EntityFrameworkCore.PostgreSQL`, `Microsoft.EntityFrameworkCore.SqlServer`, `Oracle.EntityFrameworkCore`, `MySql.EntityFrameworkCore`, and `Pomelo.EntityFrameworkCore.MySql`. Both MySQL EF Core provider names map to the MySQL reader.
+
 Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadStatus.UnsupportedProvider`. A supported provider whose database cannot be reached returns `DataVaultLiveSchemaReadStatus.Unavailable`. Both outcomes become stable blocking drift differences when passed to `DataVaultLiveSchemaDriftReporter.Compare`.
 
-PostgreSQL, SQL Server, Oracle, and MySQL live-schema readers are not first-class supported readers in this slice. Existing external provider integration evidence remains opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
+SQLite remains the default local live-schema proof because it does not require external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks require consumer-managed reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation. Keep those external provider checks opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
 
-## v0.10.0 Release Notes
+## v0.11.0 Release Notes
 
-The v0.10.0 release adds developer adoption tooling while keeping the explicit DVault persistence boundary intact. See `docs/releases/v0.10.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
+The v0.11.0 release documents the current design-time command surface and built-in provider live-schema readers while keeping the explicit DVault persistence and EF design-time boundaries intact. See `docs/releases/v0.11.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
 
 Notable user-facing changes:
 
-- `DCoding.Data.DVault.Analyzers` is now part of the coordinated package family and ships the first Code-First Roslyn analyzer rules.
-- `DMV1901` warns on unsupported `BusinessKey(...)`, `Payload(...)`, and `DrivingKey(...)` selector shapes.
-- `DMV1902` warns when a Code-First fluent scope repeats the same logical member declaration.
-- The PostgreSQL quickstart documentation includes an opt-in Podman/Docker fixture using `docker.io/postgres:18` and `DVAULT_TEST_POSTGRES_CONNECTION_STRING`.
-- The production adoption checklist collects package setup, declaration-path, migration, drift, save/read, provider, and publication readiness checks.
+- `DataVaultDesignTimeCommand` and `DataVaultDesignTimeCommandHost` provide reusable library-hosted `validate`, `export`, `drift`, and `guardrail` verbs for consumer-owned command hosts.
+- `drift --artifact <path>` is the default artifact-versus-design-time-model gate when a reviewed `dvault.model.v1` artifact exists.
+- `export` is for artifact maintenance and reviewed refresh workflows, not the default blocking CI gate.
+- `drift --artifact <path> --live-schema` keeps live-schema checks opt-in and separate from the default metadata-only drift lane.
+- `DataVaultLiveSchemaReader.ReadAsync(context)` has built-in reader dispatch for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, including both `MySql.EntityFrameworkCore` and Pomelo provider names.
+- External provider live-schema checks remain consumer-managed operational evidence with explicit connection strings, credentials, database lifecycle, and CI isolation.
 - `UseDataVaultSaveChangesMetadataInterceptor(...)` provides an opt-in EF `SaveChanges` interceptor that fills missing `LoadTimestamp` and `RecordSource` values for added generated hub, link, and satellite rows.
 - The default `AddDVault()` path still registers no `SaveChanges` interceptor; explicit `IDataVaultSaveService` persistence remains the main write boundary.
 - SQLite-backed compatibility tests prove that DVault metadata annotations survive compiled model usage and that EF compiled queries can read generated shared-type DVault tables.
 - The existing typed read helpers and provider save-strategy SPI are documented as the v1 read and bulk-save boundaries for this release.
 
-## Current v0.10.0 Limitations
+## Current v0.11.0 Limitations
 
-Lifecycle guardrails remain explicit library APIs. DVault does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.10.0 boundary. Live-schema drift reading is SQLite-first; PostgreSQL, SQL Server, Oracle, and MySQL still rely on external opt-in integration evidence rather than first-class live-schema readers.
+Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.11.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
 
 Model-first APIs continue to operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization. The metadata interceptor is opt-in and metadata-only: callers still own generated row creation, hash-key and hash-diff values, save ordering, and explicit service-based persistence when they use `IDataVaultSaveService`. The analyzer package intentionally covers only the first high-confidence Code-First selector and duplicate-member rules; it is not a complete model validator.
 

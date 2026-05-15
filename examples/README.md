@@ -14,13 +14,13 @@ The checked-in examples use project references so they can build against the cur
 Consumer applications install the provider-neutral package and exactly one provider package for the database they use. Keep every DVault package on one aligned version:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.10.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.10.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.10.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.10.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.10.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.10.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.10.0
+dotnet add package DCoding.Data.DVault --version 0.11.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.11.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.11.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.11.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.11.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.11.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.11.0
 ```
 
 Applications also need the normal Entity Framework Core provider package for their database, such as `Microsoft.EntityFrameworkCore.Sqlite`, `Npgsql.EntityFrameworkCore.PostgreSQL`, `Microsoft.EntityFrameworkCore.SqlServer`, `Oracle.EntityFrameworkCore`, or a MySQL EF Core provider.
@@ -118,6 +118,6 @@ The drift command uses a committed reviewed artifact when one exists. `export` i
 
 For model-first or metadata-first review evidence, compare the reviewed artifact or metadata model against generated EF metadata with `DataVaultModelDriftReporter.Compare(...)`.
 
-Live-schema drift evidence is intentionally bounded. SQLite is the supported v1 live-schema reader through `DataVaultLiveSchemaReader.ReadAsync(context)` and `DataVaultLiveSchemaDriftReporter.Compare(...)`. PostgreSQL, SQL Server, Oracle, and MySQL live-schema readers are not first-class supported readers in this slice; use external opt-in evidence for those providers when a team requires live database checks.
+Live-schema drift evidence is intentionally bounded. `DataVaultLiveSchemaReader.ReadAsync(context)` and `DataVaultLiveSchemaDriftReporter.Compare(...)` provide built-in reader coverage for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL. Both `MySql.EntityFrameworkCore` and `Pomelo.EntityFrameworkCore.MySql` map to the MySQL reader. Keep PostgreSQL, SQL Server, Oracle, and MySQL live checks as external opt-in evidence because the consumer application still owns reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation.
 
 See [DVault Dotnet EF Design-Time Workflow](../docs/architecture/dvault-dotnet-ef-design-time-workflow.md), [Model-First Governance Workflow](../docs/model-first-governance.md), and the [Production Adoption Checklist](../docs/production-adoption-checklist.md) before promoting a quickstart shape into a production application.
