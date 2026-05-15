@@ -34,15 +34,19 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
             [
                 typeof(MySqlExplicitDataVaultSaveServiceTests),
                 typeof(MySqlIntegrationTestConfigurationTests),
+                typeof(MySqlLiveSchemaFixtureContractTests),
                 typeof(PostgresDataVaultSchemaTests),
                 typeof(PostgresOptimizedDataVaultSaveServiceTests),
                 typeof(PostgresIntegrationTestConfigurationTests),
+                typeof(PostgresLiveSchemaFixtureContractTests),
                 typeof(OracleDataVaultSmokeTests),
                 typeof(OracleIntegrationTestConfigurationTests),
+                typeof(OracleLiveSchemaFixtureContractTests),
                 typeof(ProviderIntegrationCategoryDiscoveryTests),
                 typeof(SqlServerBatchScriptTests),
                 typeof(SqlServerDataVaultSmokeTests),
                 typeof(SqlServerIntegrationTestConfigurationTests),
+                typeof(SqlServerLiveSchemaFixtureContractTests),
             ])
         .Select(type => type.FullName!)
         .OrderBy(name => name, StringComparer.Ordinal)
@@ -187,6 +191,26 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
           coverageType,
           ProviderTestCategories.ProviderTraitName,
           ProviderTestCategories.SqlServerProvider);
+    }
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  public void LiveSchemaFixtureContractTestsRemainDefaultProviderSmokeCoverage() {
+    foreach (var (coverageType, providerName) in new[] {
+        (typeof(PostgresLiveSchemaFixtureContractTests), ProviderTestCategories.PostgresProvider),
+        (typeof(SqlServerLiveSchemaFixtureContractTests), ProviderTestCategories.SqlServerProvider),
+        (typeof(OracleLiveSchemaFixtureContractTests), ProviderTestCategories.OracleProvider),
+        (typeof(MySqlLiveSchemaFixtureContractTests), ProviderTestCategories.MySqlProvider),
+    }) {
+      AssertTrait(
+          coverageType,
+          ProviderTestCategories.CategoryTraitName,
+          ProviderTestCategories.DefaultProviderSmoke);
+      AssertTrait(
+          coverageType,
+          ProviderTestCategories.ProviderTraitName,
+          providerName);
     }
   }
 

@@ -27,7 +27,10 @@ public sealed class SqliteLiveSchemaDriftTests {
 
     Assert.Equal(DataVaultLiveSchemaReadStatus.Succeeded, readResult.Status);
     Assert.NotNull(readResult.Snapshot);
-    Assert.Contains(readResult.Snapshot.Tables, table => table.TableName == "HubCustomer");
+    Assert.Equal(
+        LiveSchemaReaderContractFixture.CreateSnapshotSignatures(
+            LiveSchemaReaderContractFixture.CreateExpectedSnapshot(DataVaultProviderCapabilityProfiles.Sqlite)),
+        LiveSchemaReaderContractFixture.CreateSnapshotSignatures(readResult.Snapshot));
     Assert.False(report.HasBlockingDifferences);
     Assert.Empty(report.Differences);
     Assert.Equal("DVault model drift: no differences.", report.ToDisplayString());
@@ -173,30 +176,11 @@ public sealed class SqliteLiveSchemaDriftTests {
   }
 
   private static DataVaultMetadataModel CreateCustomerOnlyMetadataModel() {
-    return new DataVaultMetadataModel([new DataVaultHubMetadata("Customer", ["Customer Id"])], [], []);
+    return LiveSchemaReaderContractFixture.CreateCustomerOnlyMetadataModel();
   }
 
   private static DataVaultMetadataModel CreateMetadataModel() {
-    return new DataVaultMetadataModel(
-        [
-            new DataVaultHubMetadata("Customer", ["Customer Id"]),
-            new DataVaultHubMetadata("Order", ["Order Id"]),
-        ],
-        [
-            new DataVaultLinkMetadata(
-                "CustomerOrder",
-                [DataVaultMetadataReference.Hub("Customer"), DataVaultMetadataReference.Hub("Order")]),
-        ],
-        [
-            new DataVaultSatelliteMetadata(
-                "Contact",
-                DataVaultMetadataReference.Hub("Customer"),
-                ["Email Address"]),
-            new DataVaultSatelliteMetadata(
-                "State",
-                DataVaultMetadataReference.Link("CustomerOrder"),
-                ["State Code"]),
-        ]);
+    return LiveSchemaReaderContractFixture.CreateCanonicalMetadataModel();
   }
 
   private static string CreateDifferenceSignature(DataVaultModelDriftDifference difference) {
