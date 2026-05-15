@@ -3,19 +3,19 @@
   "ticket-id": "06F2PGG8ZKSYGC8863118H56G8",
   "ticket-type": null,
   "title": "Task: Implement provider catalog readers",
-  "revision": "06F2PNH2RCRVAN7H2H01YV3F3G",
-  "status": "todo",
+  "revision": "06F2RMQWTT2YQEM06S7J79J7E4",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/task",
     "area/drift",
     "area/provider-support",
     "area/testing",
-    "needs-po"
+    "automation/bot-ready",
+    "critic-approved",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F2PH982MS2RG4C7S56Z34TYC",
   "releaseId": "06F2PH96YEJPH9QBMW4C852V4R",
   "created-at": "2026-05-15T10:50:08.8532197Z",
-  "updated-at": "2026-05-15T11:12:05.8275111Z"
+  "updated-at": "2026-05-15T15:48:16.7264998Z"
 }

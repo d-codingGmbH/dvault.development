@@ -35,18 +35,22 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
                 typeof(MySqlExplicitDataVaultSaveServiceTests),
                 typeof(MySqlIntegrationTestConfigurationTests),
                 typeof(MySqlLiveSchemaFixtureContractTests),
+                typeof(MySqlLiveSchemaReaderTests),
                 typeof(PostgresDataVaultSchemaTests),
                 typeof(PostgresOptimizedDataVaultSaveServiceTests),
                 typeof(PostgresIntegrationTestConfigurationTests),
                 typeof(PostgresLiveSchemaFixtureContractTests),
+                typeof(PostgresLiveSchemaReaderTests),
                 typeof(OracleDataVaultSmokeTests),
                 typeof(OracleIntegrationTestConfigurationTests),
                 typeof(OracleLiveSchemaFixtureContractTests),
+                typeof(OracleLiveSchemaReaderTests),
                 typeof(ProviderIntegrationCategoryDiscoveryTests),
                 typeof(SqlServerBatchScriptTests),
                 typeof(SqlServerDataVaultSmokeTests),
                 typeof(SqlServerIntegrationTestConfigurationTests),
                 typeof(SqlServerLiveSchemaFixtureContractTests),
+                typeof(SqlServerLiveSchemaReaderTests),
             ])
         .Select(type => type.FullName!)
         .OrderBy(name => name, StringComparer.Ordinal)
@@ -80,61 +84,74 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
   [Fact]
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
   public void LivePostgresIntegrationTestsAreExternalProviderOptInCoverage() {
-    AssertTrait(
+    foreach (var coverageType in new[] {
         typeof(PostgresDataVaultSchemaTests),
-        ProviderTestCategories.CategoryTraitName,
-        ProviderTestCategories.ExternalProviderIntegration);
-    AssertTrait(
-        typeof(PostgresDataVaultSchemaTests),
-        ProviderTestCategories.ProviderTraitName,
-        ProviderTestCategories.PostgresProvider);
-    AssertTrait(
         typeof(PostgresOptimizedDataVaultSaveServiceTests),
-        ProviderTestCategories.CategoryTraitName,
-        ProviderTestCategories.ExternalProviderIntegration);
-    AssertTrait(
-        typeof(PostgresOptimizedDataVaultSaveServiceTests),
-        ProviderTestCategories.ProviderTraitName,
-        ProviderTestCategories.PostgresProvider);
+        typeof(PostgresLiveSchemaReaderTests),
+    }) {
+      AssertTrait(
+          coverageType,
+          ProviderTestCategories.CategoryTraitName,
+          ProviderTestCategories.ExternalProviderIntegration);
+      AssertTrait(
+          coverageType,
+          ProviderTestCategories.ProviderTraitName,
+          ProviderTestCategories.PostgresProvider);
+    }
   }
 
   [Fact]
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
   public void LiveOracleIntegrationTestsAreExternalProviderOptInCoverage() {
-    AssertTrait(
+    foreach (var coverageType in new[] {
         typeof(OracleDataVaultSmokeTests),
-        ProviderTestCategories.CategoryTraitName,
-        ProviderTestCategories.ExternalProviderIntegration);
-    AssertTrait(
-        typeof(OracleDataVaultSmokeTests),
-        ProviderTestCategories.ProviderTraitName,
-        ProviderTestCategories.OracleProvider);
+        typeof(OracleLiveSchemaReaderTests),
+    }) {
+      AssertTrait(
+          coverageType,
+          ProviderTestCategories.CategoryTraitName,
+          ProviderTestCategories.ExternalProviderIntegration);
+      AssertTrait(
+          coverageType,
+          ProviderTestCategories.ProviderTraitName,
+          ProviderTestCategories.OracleProvider);
+    }
   }
 
   [Fact]
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
   public void LiveMySqlIntegrationTestsAreExternalProviderOptInCoverage() {
-    AssertTrait(
+    foreach (var coverageType in new[] {
         typeof(MySqlExplicitDataVaultSaveServiceTests),
-        ProviderTestCategories.CategoryTraitName,
-        ProviderTestCategories.ExternalProviderIntegration);
-    AssertTrait(
-        typeof(MySqlExplicitDataVaultSaveServiceTests),
-        ProviderTestCategories.ProviderTraitName,
-        ProviderTestCategories.MySqlProvider);
+        typeof(MySqlLiveSchemaReaderTests),
+    }) {
+      AssertTrait(
+          coverageType,
+          ProviderTestCategories.CategoryTraitName,
+          ProviderTestCategories.ExternalProviderIntegration);
+      AssertTrait(
+          coverageType,
+          ProviderTestCategories.ProviderTraitName,
+          ProviderTestCategories.MySqlProvider);
+    }
   }
 
   [Fact]
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
   public void LiveSqlServerIntegrationTestsAreExternalProviderOptInCoverage() {
-    AssertTrait(
+    foreach (var coverageType in new[] {
         typeof(SqlServerDataVaultSmokeTests),
-        ProviderTestCategories.CategoryTraitName,
-        ProviderTestCategories.ExternalProviderIntegration);
-    AssertTrait(
-        typeof(SqlServerDataVaultSmokeTests),
-        ProviderTestCategories.ProviderTraitName,
-        ProviderTestCategories.SqlServerProvider);
+        typeof(SqlServerLiveSchemaReaderTests),
+    }) {
+      AssertTrait(
+          coverageType,
+          ProviderTestCategories.CategoryTraitName,
+          ProviderTestCategories.ExternalProviderIntegration);
+      AssertTrait(
+          coverageType,
+          ProviderTestCategories.ProviderTraitName,
+          ProviderTestCategories.SqlServerProvider);
+    }
   }
 
   [Fact]
