@@ -3,19 +3,18 @@
   "ticket-id": "06F2PGFZWC5PXSDH46RCZPN1CG",
   "ticket-type": null,
   "title": "Story: Add provider live schema drift readers",
-  "revision": "06F2PNGRD4KKV1VH7E6KG4KGYG",
-  "status": "todo",
+  "revision": "06F2RXSV6988KDG6P5SNMZBBHM",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/story",
     "area/drift",
     "area/provider-support",
     "area/testing",
-    "needs-po"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06F2PH982MS2RG4C7S56Z34TYC",
   "releaseId": "06F2PH96YEJPH9QBMW4C852V4R",
   "created-at": "2026-05-15T10:50:06.5108851Z",
-  "updated-at": "2026-05-15T11:12:03.1774796Z"
+  "updated-at": "2026-05-15T16:27:51.9862677Z"
 }

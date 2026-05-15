@@ -1,0 +1,32 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `2` selected relation flow(s) for source ticket `06F2PGFZWC5PXSDH46RCZPN1CG`.
+- Role `po` completed with outcome `po-refinement-ready` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `6`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `b1aea291c5a6404292b4c01f07a72011`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06F2PGGEY26Y65G97NGFKH381M` via `blocks` path `06F2PGFZWC5PXSDH46RCZPN1CG -> 06F2PGGEY26Y65G97NGFKH381M`
+- [queued] `blocked-follow-up-comment` -> `06F2PGHA0EXJRGDHM4GQM7NPYR` via `blocks` path `06F2PGFZWC5PXSDH46RCZPN1CG -> 06F2PGHA0EXJRGDHM4GQM7NPYR`
+- [queued] `blocked-follow-up-comment` -> `06F2PGGJQMKH2T5948VJH93M5R` via `blocks` path `06F2PGFZWC5PXSDH46RCZPN1CG -> 06F2PGGJQMKH2T5948VJH93M5R`
+- [queued] `blocked-follow-up-comment` -> `06F2PGGR30XXCDKCZ8W2J2WX8C` via `blocks` path `06F2PGFZWC5PXSDH46RCZPN1CG -> 06F2PGGR30XXCDKCZ8W2J2WX8C`
+- [queued] `child-follow-up-comment` -> `06F2PGG57K3S7CJQP5QX9AWW3G` via `parentOf` path `06F2PGFZWC5PXSDH46RCZPN1CG -> 06F2PGG57K3S7CJQP5QX9AWW3G`
+- [queued] `child-follow-up-comment` -> `06F2PGG8ZKSYGC8863118H56G8` via `parentOf` path `06F2PGFZWC5PXSDH46RCZPN1CG -> 06F2PGG8ZKSYGC8863118H56G8`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06F2PGFZWC5PXSDH46RCZPN1CG` owner `ticket/06F2PGFZWC5PXSDH46RCZPN1CG-story-add-provider-live-schema-drift-readers` base `develop` source-owner `ticket/06F2PGFZWC5PXSDH46RCZPN1CG-story-add-provider-live-schema-drift-readers`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGGEY26Y65G97NGFKH381M` owner `ticket/06F2PGGEY26Y65G97NGFKH381M-story-add-dvault-design-time-command-surface` base `develop` source-owner `ticket/06F2PGFZWC5PXSDH46RCZPN1CG-story-add-provider-live-schema-drift-readers`: Target ticket owner branch 'ticket/06F2PGGEY26Y65G97NGFKH381M-story-add-dvault-design-time-command-surface' differs from source owner branch 'ticket/06F2PGFZWC5PXSDH46RCZPN1CG-story-add-provider-live-schema-drift-readers'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGHA0EXJRGDHM4GQM7NPYR` owner `ticket/06F2PGHA0EXJRGDHM4GQM7NPYR-task-update-v0-11-0-documentation-and-release-no` base `develop` source-owner `ticket/06F2PGFZWC5PXSDH46RCZPN1CG-story-add-provider-live-schema-drift-readers`: Target ticket owner branch 'ticket/06F2PGHA0EXJRGDHM4GQM7NPYR-task-update-v0-11-0-documentation-and-release-no' differs from source owner branch 'ticket/06F2PGFZWC5PXSDH46RCZPN1CG-story-add-provider-live-schema-drift-readers'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGGJQMKH2T5948VJH93M5R` owner `ticket/06F2PGGJQMKH2T5948VJH93M5R-task-implement-validate-export-drift-guardrail-c` base `develop` source-owner `ticket/06F2PGFZWC5PXSDH46RCZPN1CG-story-add-provider-live-schema-drift-readers`: Target ticket owner branch 'ticket/06F2PGGJQMKH2T5948VJH93M5R-task-implement-validate-export-drift-guardrail-c' differs from source owner branch 'ticket/06F2PGFZWC5PXSDH46RCZPN1CG-story-add-provider-live-schema-drift-readers'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGGR30XXCDKCZ8W2J2WX8C` owner `ticket/06F2PGGR30XXCDKCZ8W2J2WX8C-task-add-ci-workflow-examples-for-design-time-ch` base `develop` source-owner `ticket/06F2PGFZWC5PXSDH46RCZPN1CG-story-add-provider-live-schema-drift-readers`: Target ticket owner branch 'ticket/06F2PGGR30XXCDKCZ8W2J2WX8C-task-add-ci-workflow-examples-for-design-time-ch' differs from source owner branch 'ticket/06F2PGFZWC5PXSDH46RCZPN1CG-story-add-provider-live-schema-drift-readers'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGG57K3S7CJQP5QX9AWW3G` owner `ticket/06F2PGG57K3S7CJQP5QX9AWW3G-task-define-live-schema-reader-contract-and-fixt` base `develop` source-owner `ticket/06F2PGFZWC5PXSDH46RCZPN1CG-story-add-provider-live-schema-drift-readers`: Target ticket owner branch 'ticket/06F2PGG57K3S7CJQP5QX9AWW3G-task-define-live-schema-reader-contract-and-fixt' differs from source owner branch 'ticket/06F2PGFZWC5PXSDH46RCZPN1CG-story-add-provider-live-schema-drift-readers'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGG8ZKSYGC8863118H56G8` owner `ticket/06F2PGG8ZKSYGC8863118H56G8-task-implement-provider-catalog-readers` base `develop` source-owner `ticket/06F2PGFZWC5PXSDH46RCZPN1CG-story-add-provider-live-schema-drift-readers`: Target ticket owner branch 'ticket/06F2PGG8ZKSYGC8863118H56G8-task-implement-provider-catalog-readers' differs from source owner branch 'ticket/06F2PGFZWC5PXSDH46RCZPN1CG-story-add-provider-live-schema-drift-readers'.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGGEY26Y65G97NGFKH381M` on owner branch `ticket/06F2PGGEY26Y65G97NGFKH381M-story-add-dvault-design-time-command-surface` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGHA0EXJRGDHM4GQM7NPYR` on owner branch `ticket/06F2PGHA0EXJRGDHM4GQM7NPYR-task-update-v0-11-0-documentation-and-release-no` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGGJQMKH2T5948VJH93M5R` on owner branch `ticket/06F2PGGJQMKH2T5948VJH93M5R-task-implement-validate-export-drift-guardrail-c` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGGR30XXCDKCZ8W2J2WX8C` on owner branch `ticket/06F2PGGR30XXCDKCZ8W2J2WX8C-task-add-ci-workflow-examples-for-design-time-ch` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `child-follow-up-target` to `06F2PGG57K3S7CJQP5QX9AWW3G` on owner branch `ticket/06F2PGG57K3S7CJQP5QX9AWW3G-task-define-live-schema-reader-contract-and-fixt` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `child-follow-up-target` to `06F2PGG8ZKSYGC8863118H56G8` on owner branch `ticket/06F2PGG8ZKSYGC8863118H56G8-task-implement-provider-catalog-readers` after that branch is refreshed/rebased.
