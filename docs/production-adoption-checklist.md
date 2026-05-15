@@ -39,16 +39,16 @@ Use this checklist when preparing a DVault-consuming application for production.
 
 ## Provider And Advanced Feature Posture
 
-- [ ] Confirm the selected provider package matches the configured EF provider and the application's supported database. Use the [README provider package guidance](../README.md#provider-packages) as the current provider-package authority.
+- [ ] Confirm the selected provider package matches the configured EF provider and the application's supported database. Use the [README provider package guidance](../README.md#provider-packages) as the authoritative package responsibility reference.
 - [ ] Keep provider-specific save strategies as optimizations around the same public save contract. Unsupported request shapes or dirty tracked contexts can decline to the provider-neutral writer; see [DVault V1 Explicit Save Service](architecture/dvault-v1-explicit-save-service.md).
-- [ ] Treat provider-specific live database integration tests for PostgreSQL, SQL Server, Oracle, and MySQL as opt-in evidence behind their documented connection-string environment variables. Follow the [README local validation guidance](../README.md#local-validation) and the optional provider sections for [PostgreSQL](../README.md#optional-local-postgres-integration-tests), [SQL Server](../README.md#optional-local-sql-server-integration-tests), [Oracle](../README.md#optional-local-oracle-integration-tests), and [MySQL](../README.md#optional-local-mysql-integration-tests).
+- [ ] Treat provider-specific live database integration tests for PostgreSQL, SQL Server, Oracle, and MySQL as opt-in evidence behind their documented connection-string environment variables. Follow the [README local validation](../README.md#local-validation) guidance and the optional provider test sections for [PostgreSQL](../README.md#optional-local-postgres-integration-tests), [SQL Server](../README.md#optional-local-sql-server-integration-tests), [Oracle](../README.md#optional-local-oracle-integration-tests), and [MySQL](../README.md#optional-local-mysql-integration-tests).
 - [ ] Treat advanced configuration hooks as optional or future-facing unless the application has a specific deterministic rule to configure. The current source-backed custom path is record-source resolver replacement; broader naming, hashing, timestamp, and provider hooks are planned boundaries. See [Optional Advanced Configuration Hooks](plans/optional-advanced-configuration-hooks.md).
 - [ ] Do not make ordinary production adoption depend on PIT maintenance, bridge maintenance, multi-active PIT behavior, provider-specific physical tuning, custom hook matrices, or unpublished provider capabilities.
 
 ## Validation Evidence
 
-- [ ] Run the adopter application's own build, test, migration-preflight, and drift checks before promoting a production configuration. Use the [README local validation guidance](../README.md#local-validation) as the repository validation reference.
-- [ ] For repository validation evidence, the current documented baseline is:
+- [ ] Run the adopter application's own build, test, migration-preflight, and drift checks before promoting a production configuration.
+- [ ] For repository validation evidence, use the [README local validation](../README.md#local-validation) section as the authoritative command baseline:
 
 ```sh
 dotnet build DVault.slnx --nologo
