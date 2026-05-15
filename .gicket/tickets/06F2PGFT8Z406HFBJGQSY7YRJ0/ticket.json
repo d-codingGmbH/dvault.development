@@ -3,21 +3,20 @@
   "ticket-id": "06F2PGFT8Z406HFBJGQSY7YRJ0",
   "ticket-type": null,
   "title": "Epic: Design-time drift and CI guardrails",
-  "revision": "06F2PNGNHRA8TR14BTBQ18E2E4",
-  "status": "todo",
+  "revision": "06F2VWFHH5YCWC30YB0V8A2XG0",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/epic",
     "area/design-time",
+    "area/documentation",
     "area/drift",
     "area/migrations",
     "area/provider-support",
-    "area/documentation",
-    "needs-po"
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
   "milestoneId": "06F2PH98VY6AYZKTJZJAP83J2G",
   "releaseId": "06F2PH96YEJPH9QBMW4C852V4R",
   "created-at": "2026-05-15T10:50:05.3224467Z",
-  "updated-at": "2026-05-15T11:12:02.4467129Z"
+  "updated-at": "2026-05-15T23:21:31.2731870Z"
 }

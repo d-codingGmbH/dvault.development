@@ -1,0 +1,7 @@
+﻿[gicket-bot] lease-state-v1 (event: claimed)
+
+```json
+{"owner":"hp-ai-2026-001.1","role":"dev","acquired":"2026-05-15T22:53:19.2743185\u002B00:00","expires":"2026-05-16T00:53:19.2743185\u002B00:00","version":5,"state":"active"}
+```
+
+<!-- gicket-semantic-idempotency-key: bot-lease:06f2pgft8z406hfbjgqsy7yrj0:claim:dev:owner:hp-ai-2026-001.1:anchor:298d262da7073084:lease-state:claimed -->

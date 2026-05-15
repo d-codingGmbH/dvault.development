@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Ratified this epic as a completed v0.11.0 design-time/drift roll-up: the four already-created child tickets are done, the repository evidence matches the intended boundary, and no further split or relation cleanup is needed.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Local ticket-store relation state shows the epic already has four `parentOf` children and all are `done`: `06F2PGFZWC5PXSDH46RCZPN1CG` (provider live-schema readers), `06F2PGGEY26Y65G97NGFKH381M` (design-time command surface), `06F2PGGW8ZBW80V6B8RPWNVM70` (migration guardrails), and `06F2PGHA0EXJRGDHM4GQM7NPYR` (v0.11.0 documentation and release notes).
 - Repository evidence ratifies the intended v0.11.0 baseline: `DataVaultDesignTimeCommand` and `DataVaultDesignTimeCommandHost` exist for `validate`, `export`, `drift`, and `guardrail`; `DataVaultLiveSchemaReader` has built-in SQLite/PostgreSQL/SQL Server/Oracle/MySQL dispatch; and `DataVaultMigrationOperationDiagnostics` plus tests anchor the CI-safe guardrail lane.
 - The supported design-time boundary remains consumer-owned and single-project: the application owns the configured `DbContext`, `IDesignTimeDbContextFactory<TContext>`, command host entrypoint, reviewed-artifact path, and `dotnet ef` invocation point; DVault does not ship a standalone CLI, intercept EF commands, auto-apply migrations, or repair schema drift.
@@ -16,77 +15,48 @@
 - Existing downstream `blocks` relations were verified and left unchanged: `06F2PGHJAFMH80TZAMANQWH9PW`, `06F2PGHQ2GATEM13M5QK1MSX1G`, `06F2PGHWEWYJZSRQ9QPT4NJ0QM`, `06F2PGJ28KVSZAAFRA40D94128`, `06F2PGJBRXFCP038CN6XVAYSZM`, `06F2PGJGDGMXHPT1VP0ASQ5HJ4`, `06F2PGJN1XCV8F7NWH567SQSKM`, `06F2PGJSXP18VKKV52QZA4NP30`, and `06F2PGJYY6S97B4Z8044D34K5C`; no relation adds/removals, new child tickets, attachments, or planning documents were materialized in this pass.
 - Ticket comments in the local store are automation claim/lease comments only; there is no human clarification to fold into the epic scope.
 
-### Scope In
+Scope In
 - Epic-level roll-up of the already-materialized v0.11.0 design-time/drift work delivered by child tickets `06F2PGFZWC5PXSDH46RCZPN1CG`, `06F2PGGEY26Y65G97NGFKH381M`, `06F2PGGW8ZBW80V6B8RPWNVM70`, and `06F2PGHA0EXJRGDHM4GQM7NPYR`.
 - Consumer-owned design-time workflow around a configured `DbContext`, `IDesignTimeDbContextFactory<TContext>`, reusable `validate`/`export`/`drift`/`guardrail` verbs, reviewed-artifact drift checks, and explicit migration preflight before `dotnet ef database update`.
 - Built-in live-schema reader support for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, with external-provider execution remaining opt-in operational evidence rather than default local validation.
 - Provider-neutral migration guardrail diagnostics that are deterministic enough for CI preflight without parsing provider SQL or inferring automatic repair actions.
 - Public documentation and release-note alignment for the v0.11.0 baseline, including current package versions and the explicit non-goals around CLI interception and automatic migration behavior.
 
-### Scope Out
+Scope Out
 - Future analyzer, code-fix, and source-generator ergonomics already tracked in blocked v0.12.0 tickets beginning with epic `06F2PGHJAFMH80TZAMANQWH9PW`.
 - A DVault-owned standalone executable, `dotnet ef` shim/interception, automatic migration execution, or automatic schema repair.
 - Startup-project and target-project split support, multi-project design-time discovery, or host auto-discovery beyond the documented single-project v1 boundary.
 - Provider-specific database provisioning, secret-management recipes, container lifecycle guides, or runnable non-SQLite operational tutorials.
 - Model-snapshot drift, rename/missing-table inference from prior schema state, or broader drift surfaces beyond reviewed-artifact comparison and the bounded live-schema reader.
 
-## Acceptance Criteria
-- The epic's four materialized child tickets remain the complete delivery split and all four are `done` with no missing design-time/drift/doc slice left untracked.
-- The repository exposes a consumer-hosted command surface through `DataVaultDesignTimeCommand` and `DataVaultDesignTimeCommandHost` for `validate`, `export`, `drift`, and `guardrail`, while keeping EF design tooling ownership in the consuming application.
-- Provider live-schema drift support covers SQLite, PostgreSQL, SQL Server, Oracle, and MySQL through `DataVaultLiveSchemaReader.ReadAsync(...)`, with classified `Succeeded`, `UnsupportedProvider`, and `Unavailable` outcomes and opt-in external-provider verification.
-- Migration guardrail diagnostics are deterministic and CI-safe for the current DVault structural invariants without claiming EF CLI interception, automatic migration execution, or schema repair.
-- Current public docs and release notes consistently describe the v0.11.0 baseline, default reviewed-artifact drift gate, opt-in live-schema lane, and explicit consumer-owned design-time boundary.
-
-## Definition of Done
-- The epic can be treated as fully bounded without additional split work because the existing four-child materialization already matches the repository evidence and release scope.
-- Downstream blocked analyzer/generator tickets can start from this ratified baseline without reopening the v0.11.0 command surface, provider-reader support, migration-guardrail boundary, or documentation scope.
-- Source, tests, and docs on the branch remain mutually consistent on command names, drift-lane defaults, provider-reader coverage, and the no-standalone-CLI/no-auto-migration boundary.
-- No blocking PO questions remain, and no relation cleanup, child-ticket creation, attachment, or planning-document write is required to make the epic coherent for PO-critic review.
-
-## Implementation Notes
-- Use `src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs` and `src/DCoding.Data.DVault/DataVaultDesignTimeCommandHost.cs` as the implementation anchors for the consumer-hosted command surface.
-- Use `src/DCoding.Data.DVault/DataVaultLiveSchemaReader.cs` as the provider-reader baseline, including both `MySql.EntityFrameworkCore` and `Pomelo.EntityFrameworkCore.MySql` dispatch to the MySQL reader.
-- Use `src/DCoding.Data.DVault/DataVaultMigrationOperationDiagnostics.cs`, `tests/DCoding.Data.DVault.Tests/Unit/DataVaultMigrationOperationDiagnosticsTests.cs`, and `tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs` as the guardrail and command-behavior verification anchors.
-- Use `tests/DCoding.Data.DVault.Tests/Integration/ExternalProviderLiveSchemaReaderTests.cs` as the non-SQLite provider verification anchor, with external databases remaining opt-in through consumer-managed connection-string environments.
-- Use `docs/architecture/dvault-dotnet-ef-design-time-workflow.md`, `README.md`, `examples/README.md`, `docs/production-adoption-checklist.md`, `docs/model-first-governance.md`, and `docs/releases/v0.11.0.md` as the public-boundary record for this epic.
-- No planning document, attachment, child-ticket write, or relation write was materialized in this refinement pass because the current `.gicket` child/relation state already matches the repository-backed scope.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should a later tooling ticket broaden the current single-project design-time boundary to support startup-project/target-project or other multi-project discovery patterns?
 - Should a later drift ticket add model-snapshot or prior-schema-aware comparison lanes in addition to reviewed-artifact drift and the current bounded live-schema reader?
 - Should later docs/tooling add structured JSON command output or provider-specific operational walkthroughs for PostgreSQL, SQL Server, Oracle, and MySQL live-schema validation?
 
-## Risks
+Risks
 - Non-SQLite live-schema validation remains environment-dependent and can regress unnoticed unless consuming applications explicitly enable the opt-in provider lanes.
 - If later docs or downstream tickets blur the boundary, users may misread built-in provider readers as DVault-managed database provisioning, CI infrastructure, or automatic migration behavior.
 - Future analyzer/generator work could accidentally reopen the v0.11.0 scope unless the explicit consumer-owned command-host and preflight model stays fixed.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended; the epic already has the correct bounded child set in `06F2PGFZWC5PXSDH46RCZPN1CG`, `06F2PGGEY26Y65G97NGFKH381M`, `06F2PGGW8ZBW80V6B8RPWNVM70`, and `06F2PGHA0EXJRGDHM4GQM7NPYR`.
 - Keep the existing downstream analyzer/code-fix/source-generator tickets blocked and separate instead of widening this v0.11.0 design-time/drift epic.
 - Do not materialize new planning docs or relation rewrites unless a later ticket intentionally re-scopes the downstream dependency graph.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Deliver production-grade design-time validation and provider-aware drift checks without making DVault execute migrations automatically.
-
-## Scope
-- Refine and complete the work for "Design-time drift and CI guardrails" within the boundaries of its parent story, epic, and release.
-- Keep the implementation focused on the affected DVault feature area; avoid unrelated refactorings or package shape changes unless they are required by the ticket.
-- Update tests, examples, diagnostics, provider behavior, and documentation only where they are relevant to this ticket's observable behavior.
-
-## Acceptance Criteria
-- The completed ticket includes clear evidence of the implemented behavior, verification steps, and any intentionally deferred work.
-- Relevant unit, integration, provider, analyzer, or documentation checks are added or updated, or the ticket documents why a check is not applicable.
-- Public behavior, command output, generated SQL, package contents, examples, README content, and release notes are updated when this ticket changes them.
-- The result remains compatible with the release ordering and relations; dependent tickets can start without reworking this ticket's scope.
-
-## Release Notes
-- If this ticket changes public behavior, package shape, examples, diagnostics, generated SQL, or provider behavior, update README and the release note document for this release before integration.
+Run mode
+- apply: planned updates are applied after this comment
