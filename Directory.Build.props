@@ -22,7 +22,7 @@
     <PackageReference Include="MinVer" Version="7.0.0" PrivateAssets="all" />
   </ItemGroup>
 
-  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'DCoding.Data.DVault.Tests.Shared' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Tests.Unit' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Tests.Integration'">
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'DCoding.Data.DVault.Tests.Shared' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Tests.Unit' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Tests.Integration' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Tests.Analyzers'">
     <BaseOutputPath>$(MSBuildThisFileDirectory)artifacts/bin/$(MSBuildProjectName)/</BaseOutputPath>
     <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)artifacts/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
   </PropertyGroup>

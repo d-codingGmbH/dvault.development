@@ -3,18 +3,17 @@
   "ticket-id": "06F1XQ1JNMDXAKMS9NFJA0A3GW",
   "ticket-type": "task",
   "title": "Task: Implement first analyzer rules and tests",
-  "revision": "06F1XTQAWGH8SXYYFVC16DN5A4",
-  "status": "todo",
+  "revision": "06F2JK6DMA7B1KQCYPM3QS64Z4",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/task",
     "area/analyzers",
     "area/testing",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F1XPRWB9A53W64QD2VCF3T70",
   "releaseId": "06F1XPRQBHW47J1F73NNGYVN0R",
   "created-at": "2026-05-13T01:03:28.0965569Z",
-  "updated-at": "2026-05-13T01:19:32.5805784Z"
+  "updated-at": "2026-05-15T01:42:39.7782481Z"
 }

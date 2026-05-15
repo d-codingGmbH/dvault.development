@@ -1,14 +1,20 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Resolved the PO-critic blockers by reserving DMV1901 and DMV1902 inside a new DMV1901-DMV1999 CodeFirst analyzer band and by making analyzer-local mirrored diagnostic metadata the explicit package-boundary decision for this task.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+PO-critic checklist responses
+- critic-item-1: `answered` - This task now reserves DMV1901-DMV1999 as the first CodeFirst analyzer diagnostic band and assigns the two concrete rule ids up front: DMV1901 for unsupported selector shapes and DMV1902 for duplicate logical member declarations. The category convention for both rules is CodeFirst.
+- critic-item-2: `answered` - The diagnostic metadata for this ticket lives in the analyzer assembly, not in the current core-package internal catalog. The analyzer project may define analyzer-local descriptor or catalog entries that mirror the established DVault diagnostic fields: id, category, title, message, and remediation guidance.
+- critic-item-3: `answered` - The package-boundary decision has been copied into this task instead of being left implicit on parent story 06F1XQ15J5JEC92T1QCE9TABBM. Broader analyzer foundation work stays with the parent, but this task is explicitly allowed to ship the first two rules with analyzer-local mirrored diagnostic metadata and does not wait for a new shared public diagnostics contract.
+- critic-item-4: `answered` - Stable user-visible ids are no longer left to implementation. DMV1901 is reserved for the selector-shape rule and DMV1902 for the duplicate-member rule, both inside the new DMV1901-DMV1999 CodeFirst analyzer band.
+- critic-item-5: `answered` - The task no longer assumes reuse of the internal core diagnostic catalog across package boundaries. It now explicitly requires analyzer-local metadata definitions that mirror the DVault contract fields and match the established catalog style, which closes the package/catalog ownership gap without broadening this task into a shared public contract extraction.
+
+Clarifications
 - Reserve DMV1901-DMV1999 as the first Roslyn CodeFirst analyzer diagnostic band. This ticket consumes DMV1901 and DMV1902, and later CodeFirst analyzer tickets should continue at DMV1903+ unless a later PO contract says otherwise.
 - DMV1901 is the selector-shape diagnostic for unsupported BusinessKey(...), Payload(...), or DrivingKey(...) selectors such as anonymous-object, method-call, nested-member, or collection selectors. Use category CodeFirst and remediation guidance that directs callers to repeated direct readable scalar member selectors.
 - DMV1902 is the duplicate-member diagnostic for repeated logical member names within the same BusinessKey(...), Payload(...), or DrivingKey(...) fluent scope. Use category CodeFirst and remediation guidance that directs callers to declare each logical member name at most once per relevant scope.
@@ -16,7 +22,7 @@
 - This task does not require the current core-package internal diagnostic catalog types to become public, shared, or directly referenced by the analyzer project.
 - The package-boundary decision is now explicit in this task: parent story 06F1XQ15J5JEC92T1QCE9TABBM retains broader analyzer-foundation concerns, but this implementation task may ship the first two rules with analyzer-local mirrored metadata.
 
-### Scope In
+Scope In
 - Create the minimal Roslyn analyzer project boundary and analyzer-test infrastructure needed for DVault within existing src/ and tests/ conventions if that scaffolding is not already present.
 - Reserve the DMV1901-DMV1999 CodeFirst analyzer band and implement DMV1901 and DMV1902 within it.
 - Implement DMV1901 for unsupported direct-member selector misuse in BusinessKey(...), Payload(...), and DrivingKey(...) calls inside DVault Code-First configuration.
@@ -24,88 +30,42 @@
 - Define analyzer-local diagnostic metadata in the analyzer project that mirrors the established DVault diagnostic fields and conventions.
 - Add positive and negative analyzer test samples for each rule, including true-positive diagnostics and false-positive guards on valid direct scalar member declarations.
 
-### Scope Out
+Scope Out
 - Broader analyzer coverage such as missing business keys, link participant ordering, missing hubs, or duplicate metadata names outside the first two bounded rules.
 - Model-first JSON validation, migration guardrail diagnostics, or any non-Roslyn validation surface already covered by existing DMV#### or DVM2xxx runtime diagnostics.
 - NuGet packaging polish, installation docs, suppression docs, and broader analyzer-package foundation work beyond the minimal scaffolding needed to compile and test these rules.
 - Extracting a new shared public diagnostics-contract package or making the current core-package internal diagnostic catalog public just to satisfy this ticket.
 - Non-trivial code fixes or broad semantic or dataflow analysis that would increase false positives in the first analyzer slice.
 
-## Acceptance Criteria
-- The repository contains a working analyzer implementation path for DVault that follows existing layout conventions and can be exercised by automated tests without relying on the current RunAnalyzers=false test-project defaults.
-- DMV1901 in category CodeFirst reports a documented diagnostic when BusinessKey(...), Payload(...), or DrivingKey(...) receives an unsupported selector shape such as anonymous-object, method-call, nested-member, or collection selectors, and does not report on valid direct readable scalar members.
-- DMV1902 in category CodeFirst reports a documented diagnostic when the same logical member name is declared more than once within the same relevant BusinessKey(...), Payload(...), or DrivingKey(...) fluent scope, and does not report when distinct members are declared once each.
-- The analyzer project defines the metadata for DMV1901 and DMV1902 locally, using descriptor or catalog entries that mirror the established DVault diagnostic fields and catalog style without depending on non-public core-package catalog types.
-- Automated tests cover at least one true-positive and one false-positive guard for each rule, using code samples that map back to the documented Code-First contract and current runtime-validation behavior.
-- The solution and project layout for any new analyzer and analyzer-test projects match repository conventions and are added to DVault.slnx.
-
-## Definition of Done
-- DMV1901 and DMV1902 are implemented, compile, and are covered by repeatable automated tests in the repository.
-- Any new analyzer and test project scaffolding is limited to what is required for this ticket and follows the repository's existing net10.0, nullable, implicit-usings, and solution-layout conventions.
-- Diagnostic metadata for DMV1901 and DMV1902 is documented in source through analyzer-local catalog or descriptor definitions that mirror the established DVault contract fields, with no undocumented one-off ids, categories, titles, messages, or remediation text.
-- The test suite proves both findings and non-findings for the targeted Code-First misuse patterns, so the first analyzer slice is demonstrably low-noise.
-- No broader analyzer backlog items, shared diagnostics-contract extraction, packaging polish, or non-trivial code-fix work are pulled into this ticket.
-
-## Implementation Notes
-- Use docs/plans/fluent-code-first-api-contract.md as the product contract for valid and invalid Code-First selector and duplicate-member behavior.
-- Mirror the already-tested fail-fast behaviors in DataVaultCodeFirstHubBuilder.cs, DataVaultCodeFirstSatelliteBuilder.cs, DataVaultCodeFirstSelector.cs, and DataVaultCodeFirstModelBuilder.cs instead of designing new analyzer-only semantics.
-- DataVaultCodeFirstMetadataTranslationTests.cs already covers unsupported selector shapes and duplicate member declarations; its examples are the safe baseline for analyzer fixtures, expected ids, and expected guidance.
-- Because tests/DCoding.Data.DVault.Tests/Unit/DCoding.Data.DVault.Tests.Unit.csproj sets RunAnalyzers=false, the analyzer tests need an explicit Roslyn analyzer test harness or equivalent compilation-based verifier rather than normal build-only coverage.
-- If the analyzer package boundary must be created in this ticket, place it under src with a matching test project under tests/DCoding.Data.DVault.Tests and add both to DVault.slnx to stay consistent with shared repository standards.
-- Reserve DMV1901-DMV1999 for CodeFirst analyzer diagnostics in this stream; implement this ticket with DMV1901 for unsupported selector shape and DMV1902 for duplicate member declaration.
-- House the diagnostic descriptors or equivalent catalog metadata inside the analyzer project. Mirror the established DVault fields and wording conventions there instead of taking a dependency on non-public core-package diagnostic catalog types.
-- Keep the first rules tightly scoped to direct DVault Code-First invocations and generated-code-safe behavior so the initial package proves precision before broader rule expansion.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the first analyzer slice ships, should parent story 06F1XQ15J5JEC92T1QCE9TABBM extract a shared public diagnostics contract if multiple analyzer assemblies need to reuse the same catalog metadata?
 - After DMV1901 and DMV1902 land, should the next analyzer tickets continue consuming DMV1903+ within the same CodeFirst band or reserve a separate family for non-CodeFirst analyzers?
 - Should a later ticket add code fixes for DMV1901 and DMV1902, or should the analyzer package remain diagnostics-only for v0.10.0?
 
-## Risks
+Risks
 - If implementation tries to reuse or expose the current internal core diagnostic catalog from src/DCoding.Data.DVault inside this ticket, the work will expand back into the parent analyzer-foundation story.
 - Because current test projects disable analyzer execution, the ticket can still appear complete without real analyzer coverage unless the explicit harness is added.
 - If later analyzer tickets ignore the reserved DMV1901-DMV1999 CodeFirst band, DVault diagnostic numbering will drift across analyzer work.
 - If the analyzer attempts to infer builder state across locals, helper methods, or complex control flow in v1, false positives and false negatives will rise quickly.
 
-## Split Recommendations
+Split recommendations
 - No immediate split is required for PO-critic readiness; the task remains well-bounded once DMV1901, DMV1902, and the analyzer-local metadata decision are made explicit.
 - If the team later wants a shared public diagnostics contract across multiple analyzer assemblies, create a follow-up under parent story 06F1XQ15J5JEC92T1QCE9TABBM rather than expanding this task.
 - If broader analyzer coverage such as missing business keys or link-participant validation is wanted next, create a follow-up task after this first low-noise rule pair ships.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 5
+- implementation-notes items: 8
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Goal
-
-Add the first high-confidence analyzer rules with tests.
-
-## Scope In
-
-- Set up analyzer test infrastructure.
-- Implement at least two rules with diagnostic ids and messages.
-- Add positive and negative code samples.
-
-## Scope Out
-
-- No code fixes unless trivial and safe.
-- No broad semantic analysis that creates noisy warnings.
-
-## Acceptance Criteria
-
-- Analyzer tests cover true positive and false positive guards.
-- Diagnostics use documented ids and categories.
-- Package/project layout matches repository conventions.
-
-## Implementation Notes
-
-- Keep analyzer scope tight.
-
-## Open Questions
-
-- none
+Run mode
+- apply: planned updates are applied after this comment

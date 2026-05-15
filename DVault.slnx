@@ -9,6 +9,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/DCoding.Data/DCoding.Data.csproj" />
+    <Project Path="src/DCoding.Data.DVault.Analyzers/DCoding.Data.DVault.Analyzers.csproj" />
     <Project Path="src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
     <Project Path="src/DCoding.Data.DVault.MySql/DCoding.Data.DVault.MySql.csproj" />
     <Project Path="src/DCoding.Data.DVault.Oracle/DCoding.Data.DVault.Oracle.csproj" />
@@ -18,6 +19,9 @@
   </Folder>
   <Folder Name="/tests/" />
   <Folder Name="/tests/DCoding.Data.DVault.Tests/" />
+  <Folder Name="/tests/DCoding.Data.DVault.Tests/Analyzers/">
+    <Project Path="tests/DCoding.Data.DVault.Tests/Analyzers/DCoding.Data.DVault.Tests.Analyzers.csproj" />
+  </Folder>
   <Folder Name="/tests/DCoding.Data.DVault.Tests/Integration/">
     <Project Path="tests/DCoding.Data.DVault.Tests/Integration/DCoding.Data.DVault.Tests.Integration.csproj" />
   </Folder>
