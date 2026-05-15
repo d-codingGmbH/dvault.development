@@ -1,104 +1,60 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the developer adoption tooling epic against the provided ticket snapshot, local relation state, attachment metadata, child-ticket contracts, and repository evidence. The three direct child stories are already materialized and done; no new tickets, relation changes, attachments, or planning documents were needed.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The attached v0.10.0-adoption-tooling-plan.md establishes the intended sequence: analyzer package foundation, Testcontainers/helper examples, then production adoption checklist and examples refresh.
 - Current repository evidence ratifies the analyzer boundary at src/DCoding.Data.DVault.Analyzers with package id DCoding.Data.DVault.Analyzers, packable analyzer assets, README installation/suppression guidance, and DMV1901/DMV1902 coverage.
 - The Testcontainers-oriented v1 scope is the opt-in PostgreSQL local container fixture and documentation using DVAULT_TEST_POSTGRES_CONNECTION_STRING; a published reusable DotNet.Testcontainers helper library is not required for this epic.
 - The adoption documentation baseline is README.md, examples/README.md, examples/DCoding.Data.DVault.PostgresQuickstart/README.md, docs/production-adoption-checklist.md, and the v0.8 design-time workflow, using the coordinated 0.9.0 package examples and current API names.
 
-### Scope In
+Scope In
 - Treat the epic as the adoption-tooling umbrella for the three completed child stories: analyzer package foundation, opt-in provider-container example guidance, and production adoption documentation refresh.
 - Preserve the analyzer package boundary, DMV1901/DMV1902 first-rule baseline, package metadata, analyzer asset packing, tests, and installation/suppression documentation.
 - Preserve the opt-in PostgreSQL container fixture pattern with explicit image/tag, connection-string handoff, targeted external-provider test command, skip/failure behavior, and no default external database dependency.
 - Keep adopter-facing docs aligned around the provider-neutral package, the five provider packages, NuGet installation, AddDVault()/AddDVaultProvider registration, Code-First/metadata-first/model-first declaration paths, explicit save boundaries, read helpers, migration guardrails, and drift limits.
 - Keep known limitations visible, especially SQLite-first live-schema drift support and external opt-in evidence for PostgreSQL, SQL Server, Oracle, and MySQL.
 
-### Scope Out
+Scope Out
 - No IDE-specific extension beyond normal Roslyn analyzer distribution.
 - No hosted service, SaaS dependency, bundled database image, checked-in secret, or mandatory Docker/Podman dependency for default tests.
 - No full provider fixture matrix, CI provider matrix expansion, or reusable Testcontainers helper package unless later tickets explicitly add them.
 - No new core DVault semantics, provider implementation, migration automation, EF CLI shim, or runtime behavior changes under this epic.
 - No provider support promise without runnable evidence or an explicit documented limitation.
 
-## Acceptance Criteria
-- The three direct child stories are done or explicitly superseded; current evidence shows all three direct children are done.
-- Analyzer packaging and docs clearly identify DCoding.Data.DVault.Analyzers as the Roslyn analyzer package boundary and document installation and suppression behavior.
-- Analyzer tests and source retain the DMV1901 unsupported Code-First selector diagnostic and DMV1902 duplicate member diagnostic as the initial high-confidence baseline.
-- Examples and docs use NuGet-oriented consumer installation with current package IDs, version examples, provider extension names, and API names.
-- PostgreSQL container fixture guidance remains opt-in, uses DVAULT_TEST_POSTGRES_CONNECTION_STRING, and documents the non-secret MSBuild marker for external opt-in tests.
-- README, examples documentation, and production checklist consistently distinguish required production readiness from optional advanced features and unsupported provider evidence.
-
-## Definition of Done
-- Direct child-ticket relation state remains the chosen split for this epic and all linked direct children are complete or intentionally superseded.
-- The attached adoption-tooling plan remains consistent with the delivered sequence or is superseded by explicit ticket evidence.
-- Repository documentation names only available packages, examples, commands, and helper APIs, and keeps provider limitations explicit.
-- Default local build/test guidance does not require external databases, containers, or provider packages beyond existing conditional restore behavior.
-- No workflow-label or handoff-status metadata is treated as a product-scope blocker.
-
-## Implementation Notes
-- Use README.md and examples/README.md as the consumer-facing package and quickstart baseline; use docs/production-adoption-checklist.md and docs/architecture/dvault-dotnet-ef-design-time-workflow.md for production guardrails.
-- Keep the explicit IDataVaultSaveService boundary and consumer-owned EF design-time workflow intact; adoption tooling should polish usage rather than add new persistence semantics.
-- Where docs mention provider validation, keep SQLite as the no-container local baseline and keep other providers behind explicit external opt-in configuration.
-- No bounded ticket write, relation write, attachment write, or planning-document write was materialized in this refinement pass.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should a future release add more analyzer rule families beyond DMV1901/DMV1902, such as missing business keys, suspicious satellite names, metadata-first/model-first artifact checks, or provider governance diagnostics?
 - Should MySQL, SQL Server, or Oracle get separate provider-container fixture tickets after the PostgreSQL baseline?
 - Should a later ticket add reusable DotNet.Testcontainers helper code, or keep provider startup as documented local Podman/Docker commands?
 - Should provider-specific production operations get separate deep-dive docs after the general checklist stabilizes?
 
-## Risks
+Risks
 - The epic wording can be read as requiring a full Testcontainers library or provider matrix; acceptance should stay bounded to the completed PostgreSQL opt-in fixture unless new tickets expand it.
 - Analyzer messaging can overpromise if presented as complete DVault modeling validation; keep it scoped to the high-confidence DMV1901/DMV1902 baseline.
 - External provider examples can leak into default-test expectations unless docs continue to emphasize opt-in configuration, placeholder credentials, and conditional package restore.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended now; the existing three direct child stories cover the epic scope and are done.
 - Future provider fixture expansion or broader analyzer coverage should be split into separate provider-specific or rule-family tickets rather than expanding this epic.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 5
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-## Goal
-
-Package DVault guidance into tooling and examples that help teams adopt the library safely in real EF Core projects.
-
-## Scope In
-
-- Ship analyzer foundations for common modeling mistakes.
-- Add Testcontainers-oriented integration helpers/examples.
-- Update production adoption docs and examples after v0.8/v0.9 stabilize.
-
-## Scope Out
-
-- No IDE-specific extension beyond Roslyn analyzer capabilities.
-- No hosted service or external SaaS dependency.
-- No provider promise without a runnable test or documented limitation.
-
-## Acceptance Criteria
-
-- Child stories are done or intentionally superseded.
-- Analyzer/test helper docs are clear about package boundaries.
-- Examples use NuGet-based installation and current API names.
-
-## Implementation Notes
-
-- Polish adoption; do not introduce core semantics that belong in v0.8/v0.9.
-
-## Open Questions
-
-- none
+Run mode
+- apply: planned updates are applied after this comment

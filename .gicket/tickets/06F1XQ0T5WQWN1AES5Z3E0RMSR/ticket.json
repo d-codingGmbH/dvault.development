@@ -3,22 +3,21 @@
   "ticket-id": "06F1XQ0T5WQWN1AES5Z3E0RMSR",
   "ticket-type": "epic",
   "title": "Epic: Developer adoption tooling",
-  "revision": "06F1XTQ911PYMCCJT75ACNN4N8",
-  "status": "todo",
+  "revision": "06F2K6CV3CC53C12TGS1NWE6N0",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/epic",
     "area/analyzers",
-    "area/testing",
-    "area/examples",
-    "area/documentation",
     "area/developer-experience",
-    "needs-po"
+    "area/documentation",
+    "area/examples",
+    "area/testing",
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
   "has-attachments": true,
   "milestoneId": "06F1XPRWB9A53W64QD2VCF3T70",
   "releaseId": "06F1XPRQBHW47J1F73NNGYVN0R",
   "created-at": "2026-05-13T01:03:22.2628958Z",
-  "updated-at": "2026-05-13T01:19:32.1043390Z"
+  "updated-at": "2026-05-15T03:06:33.1150333Z"
 }
