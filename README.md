@@ -19,6 +19,8 @@ Applications still need their normal Entity Framework Core database provider pac
 
 Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
 
+For a short adopter readiness pass before production use, see the [Production Adoption Checklist](docs/production-adoption-checklist.md).
+
 ## Quickstart
 
 Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has an Entity Framework Core provider configured. DVault supports three additive declaration paths:
