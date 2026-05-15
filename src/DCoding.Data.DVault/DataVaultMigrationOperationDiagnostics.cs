@@ -119,6 +119,8 @@ public static class DataVaultMigrationOperationDiagnostics {
     ArgumentNullException.ThrowIfNull(operation);
 
     switch (operation) {
+      case CreateTableOperation createTable:
+        return AnalyzeCreateTable(schema, createTable);
       case AddColumnOperation addColumn:
         return AnalyzeAddColumn(schema, addColumn);
       case DropColumnOperation dropColumn:
@@ -152,6 +154,103 @@ public static class DataVaultMigrationOperationDiagnostics {
       default:
         return [];
     }
+  }
+
+  private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeCreateTable(
+      DataVaultMigrationSchemaBaseline schema,
+      CreateTableOperation operation) {
+    if (!schema.TryGetEntity(operation.Name, out var entity)) {
+      return [];
+    }
+
+    var issues = new List<DataVaultDiagnosticsIssue>();
+    var operationColumnNames = operation.Columns
+        .Select(column => column.Name)
+        .Where(columnName => !string.IsNullOrWhiteSpace(columnName))
+        .ToHashSet(StringComparer.Ordinal);
+
+    foreach (var column in entity.ColumnsInOrder) {
+      if (operationColumnNames.Contains(column.Name)) {
+        continue;
+      }
+
+      var code = GetDropOrAlterColumnCode(column);
+      if (code is null) {
+        continue;
+      }
+
+      var shape = code == "DVM2002"
+          ? "required technical column"
+          : "stable key, parent, participant, driving-key, snapshot-reference, or bridge-depth column";
+      var invariant = code == "DVM2002" ? "MI-2" : "MI-3";
+      issues.Add(CreateIssue(
+          code,
+          invariant + " violation: migration creates Data Vault " + FormatTableKind(entity.Kind) +
+          " table '" + entity.TableName + "' without " + shape + " '" + column.Name + "'.",
+          CreatePath("CreateTable", entity.TableName, column.Name)));
+    }
+
+    foreach (var operationColumn in operation.Columns) {
+      if (string.IsNullOrWhiteSpace(operationColumn.Name) ||
+          entity.Columns.ContainsKey(operationColumn.Name)) {
+        continue;
+      }
+
+      var unexpectedColumnIssue = CreateUnexpectedCreateTableColumnIssue(entity, operationColumn.Name);
+      if (unexpectedColumnIssue is not null) {
+        issues.Add(unexpectedColumnIssue);
+      }
+    }
+
+    if (operation.PrimaryKey is not null) {
+      issues.AddRange(AnalyzeCreateTablePrimaryKey(entity, operation.PrimaryKey));
+    }
+
+    return issues;
+  }
+
+  private static DataVaultDiagnosticsIssue? CreateUnexpectedCreateTableColumnIssue(
+      DataVaultMigrationEntityBaseline entity,
+      string columnName) {
+    if (entity.Kind is DataVaultTableKind.Hub or DataVaultTableKind.Link) {
+      return CreateIssue(
+          "DVM2001",
+          "MI-1 violation: migration creates Data Vault " + FormatTableKind(entity.Kind) +
+          " table '" + entity.TableName + "' with payload column '" + columnName + "'.",
+          CreatePath("CreateTable", entity.TableName, columnName));
+    }
+
+    if (entity.Kind is not (DataVaultTableKind.Pit or DataVaultTableKind.Bridge)) {
+      return null;
+    }
+
+    return CreateIssue(
+        "DVM2003",
+        "MI-3 violation: migration creates Data Vault " + FormatTableKind(entity.Kind) +
+        " table '" + entity.TableName + "' with unsupported structural column '" + columnName + "'.",
+        CreatePath("CreateTable", entity.TableName, columnName));
+  }
+
+  private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeCreateTablePrimaryKey(
+      DataVaultMigrationEntityBaseline entity,
+      AddPrimaryKeyOperation primaryKey) {
+    var operationColumns = primaryKey.Columns ?? Array.Empty<string>();
+    if (string.Equals(primaryKey.Name, entity.PrimaryKey.Name, StringComparison.Ordinal) &&
+        entity.PrimaryKey.PropertyNames.SequenceEqual(operationColumns, StringComparer.Ordinal)) {
+      return [];
+    }
+
+    var operationName = string.IsNullOrWhiteSpace(primaryKey.Name)
+        ? "<unnamed>"
+        : primaryKey.Name;
+
+    return [CreateIssue(
+        "DVM2004",
+        "MI-4 violation: migration creates Data Vault table '" + entity.TableName +
+        "' with inline primary key '" + operationName +
+        "' with wrong name or columns; expected '" + entity.PrimaryKey.Name + "' on columns [" +
+        string.Join(", ", entity.PrimaryKey.PropertyNames) + "].",
+        CreatePath("CreateTable", entity.TableName, operationName))];
   }
 
   private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeAddColumn(
@@ -407,11 +506,13 @@ public static class DataVaultMigrationOperationDiagnostics {
     private DataVaultMigrationEntityBaseline(
         string tableName,
         DataVaultTableKind kind,
+        IReadOnlyList<DataVaultMigrationColumnBaseline> columnsInOrder,
         IReadOnlyDictionary<string, DataVaultMigrationColumnBaseline> columns,
         DataVaultMigrationKeyBaseline primaryKey,
         IReadOnlyDictionary<string, DataVaultMigrationIndexBaseline> indexes) {
       TableName = tableName;
       Kind = kind;
+      ColumnsInOrder = columnsInOrder;
       Columns = columns;
       PrimaryKey = primaryKey;
       Indexes = indexes;
@@ -421,6 +522,8 @@ public static class DataVaultMigrationOperationDiagnostics {
 
     public DataVaultTableKind Kind { get; }
 
+    public IReadOnlyList<DataVaultMigrationColumnBaseline> ColumnsInOrder { get; }
+
     public IReadOnlyDictionary<string, DataVaultMigrationColumnBaseline> Columns { get; }
 
     public DataVaultMigrationKeyBaseline PrimaryKey { get; }
@@ -428,15 +531,23 @@ public static class DataVaultMigrationOperationDiagnostics {
     public IReadOnlyDictionary<string, DataVaultMigrationIndexBaseline> Indexes { get; }
 
     public static DataVaultMigrationEntityBaseline Create(DataVaultEntityExplain entity) {
-      var columns = entity.Properties
+      var columnsInOrder = entity.Properties
           .Select(DataVaultMigrationColumnBaseline.Create)
+          .ToArray();
+      var columns = columnsInOrder
           .ToDictionary(column => column.Name, StringComparer.Ordinal);
       var primaryKey = DataVaultMigrationKeyBaseline.Create(entity.PrimaryKey);
       var indexes = entity.Indexes
           .Select(DataVaultMigrationIndexBaseline.Create)
           .ToDictionary(index => index.Name, StringComparer.Ordinal);
 
-      return new DataVaultMigrationEntityBaseline(entity.TableName, entity.TableKind, columns, primaryKey, indexes);
+      return new DataVaultMigrationEntityBaseline(
+          entity.TableName,
+          entity.TableKind,
+          columnsInOrder,
+          columns,
+          primaryKey,
+          indexes);
     }
   }
 

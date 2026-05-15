@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refinement narrows this ticket to provider-neutral CreateTableOperation guardrail coverage, reusing the current DVM2001-DVM2006 catalog and explain-baseline comparison so CI can catch malformed newly generated DVault tables without widening into rename-table or provider-specific SQL analysis.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Done story 06F2PGGEY26Y65G97NGFKH381M already delivers the consumer-owned guardrail command surface; this ticket hardens rule coverage inside DataVaultMigrationOperationDiagnostics rather than reopening command verbs, host ownership, or exit-code behavior.
 - Current source already handles AddColumn, DropColumn, AlterColumn, RenameColumn, CreateIndex, DropIndex, RenameIndex, AddPrimaryKey, DropPrimaryKey, and DropTable guardrails; the first visible high-confidence gap for CI enforcement is that CreateTableOperation is still ignored.
 - Ratify CreateTableOperation shape validation as the first expansion lane for this ticket, using the current diagnostics explain baseline for hub, link, satellite, PIT, and bridge entities.
@@ -16,80 +15,49 @@
 - Limit analysis to create-table operations whose table name already matches a current DVault-produced table name; do not infer missing or renamed tables from absence in the operation set.
 - Broader README and release-note rollout remains separate in 06F2PGHA0EXJRGDHM4GQM7NPYR; this ticket only needs a doc touch if a narrow guardrail example or catalog description must change.
 
-### Scope In
+Scope In
 - Add provider-neutral CreateTableOperation guardrail analysis for current DVault-produced hub, link, satellite, PIT, and bridge tables.
 - Validate created table column shape against the current explain baseline, including hub/link insert-only boundaries, required technical columns, key or parent or participant or driving columns, PIT snapshot-reference columns, and bridge TraversalDepth where applicable.
 - Validate the created table primary-key shape when it is expressed inside CreateTableOperation, while leaving existing CreateIndexOperation and AddPrimaryKeyOperation checks in place for separate EF operations.
 - Add deterministic tests for quiet and finding-producing create-table cases, including a non-DVault quiet case and representative DVault cases across the current hub/link and PIT/bridge structural baseline.
 - Preserve the existing migration path format and deterministic report ordering when create-table findings are surfaced through the public guardrail report and command path.
 
-### Scope Out
+Scope Out
 - No RenameTableOperation, foreign-key, check-constraint, default-SQL, or provider-specific store-type analysis in this first expansion.
 - No absence-based detection for expected DVault tables that were not created by the operation set, because this guardrail pass does not own prior-schema state.
 - No changes to DataVaultDesignTimeCommand verbs, exit-code policy, consumer-owned migration resolution, or public diagnostics issue shape.
 - No live-schema drift changes, migration SQL parsing, migration execution, or schema repair behavior.
 - No broad documentation consolidation beyond any narrowly necessary guardrail wording update.
 
-## Acceptance Criteria
-- A CreateTableOperation targeting a current DVault-produced table is analyzed against the diagnostics explain baseline instead of being ignored.
-- Safe create-table cases remain quiet: non-DVault tables are ignored, and a DVault create-table operation whose columns and primary-key shape match the current baseline produces no findings.
-- Finding-producing create-table cases reuse existing DVM semantics: hub or link payload columns in a created core table emit DVM2001, missing or wrong required technical columns emit DVM2002, missing or wrong key or parent or participant or driving or snapshot or bridge-depth columns emit DVM2003, and wrong created primary-key shape emits DVM2004.
-- Create-table findings use the existing deterministic migration/{Operation}/{Target}/{Member?} path style so tests can assert exact locations.
-- When a new DVault table also produces separate CreateIndexOperation or AddPrimaryKeyOperation findings, the combined report ordering remains deterministic and existing DVM2004 behavior is preserved.
-- Automated coverage includes representative quiet and finding cases for the new create-table lane, and the public command or diagnostics API surface remains unchanged.
-
-## Definition of Done
-- Only rule coverage and tests are expanded; the public command surface, public diagnostics issue shape, and consumer-owned design-time workflow boundary stay unchanged.
-- The reused DVM2001 through DVM2004 catalog entries remain the published contract for this expansion, with any wording update kept consistent with the existing migration-guardrail taxonomy.
-- Tests assert deterministic code, severity, path, and report ordering for the new create-table scenarios.
-- Existing guardrail command and integration behavior stays compatible with the current single-project consumer-owned workflow.
-- Any narrow doc touch stays aligned with the separate broader documentation task 06F2PGHA0EXJRGDHM4GQM7NPYR instead of duplicating that rollout here.
-
-## Implementation Notes
-- Extend DataVaultMigrationOperationDiagnostics rather than adding a parallel validator path.
-- Compare CreateTableOperation columns and primary-key shape against DataVaultDiagnosticsResult.Explain.Entities and the existing DataVaultEntityExplain baseline rather than provider SQL types, annotations, or live-schema metadata.
-- Treat provider facets such as store type, default SQL, collation, annotations, and engine-specific options as out of scope unless an existing DVM invariant already depends on them.
-- Reuse current DVM2001 through DVM2004 meanings for create-table findings and avoid broadening DVM2005 or DVM2006 in this ticket.
-- Keep non-DVault create-table operations quiet by default so application-owned tables do not create CI noise.
-- If catalog text is updated for create-table omissions or malformed created shapes, keep remediation guidance centralized in DataVaultDiagnosticCatalog and preserve deterministic report rendering.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should a later hardening ticket add RenameTableOperation coverage, potentially with a new stable DVM code if table-name drift cannot fit the current catalog cleanly?
 - Should later guardrails compare create-table operations against reviewed artifact or ModelSnapshot context so missing or renamed DVault tables can be detected without inferring from operation absence?
 - Should a later provider-focused ticket add optional provider-specific checks for store-type or default-SQL mismatches once the provider-neutral create-table baseline proves stable?
 
-## Risks
+Risks
 - CreateTableOperation carries provider-specific facets that vary across databases; comparing those directly would create noisy false positives, so this ticket must stay on provider-neutral DVault structural invariants.
 - The guardrail pass has no authoritative prior-schema state, so trying to infer that an expected DVault table should have been created or renamed would produce unstable CI behavior.
 - If create-table findings emit overlapping DVM2001 through DVM2004 issues in nondeterministic order, downstream command and CI assertions will churn.
 - Manual migration edits that change a DVault table name without reusing a current produced name may still evade this first expansion and should be handled by a later rename-table or drift-aware follow-up.
 
-## Split Recommendations
+Split recommendations
 - Keep this ticket bounded to provider-neutral CreateTableOperation rule coverage and tests.
 - Track RenameTableOperation or missing-table inference as a separate follow-up if later work wants guardrails that reason about name drift or prior schema state.
 - Keep broader v0.11 documentation or release-note rollout in 06F2PGHA0EXJRGDHM4GQM7NPYR rather than widening this ticket.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 5
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Add the first expanded guardrail rule set and tests.
-
-## Scope
-- Refine and complete the work for "Add migration guardrail rule coverage" within the boundaries of its parent story, epic, and release.
-- Keep the implementation focused on the affected DVault feature area; avoid unrelated refactorings or package shape changes unless they are required by the ticket.
-- Update tests, examples, diagnostics, provider behavior, and documentation only where they are relevant to this ticket's observable behavior.
-
-## Acceptance Criteria
-- The completed ticket includes clear evidence of the implemented behavior, verification steps, and any intentionally deferred work.
-- Relevant unit, integration, provider, analyzer, or documentation checks are added or updated, or the ticket documents why a check is not applicable.
-- Public behavior, command output, generated SQL, package contents, examples, README content, and release notes are updated when this ticket changes them.
-- The result remains compatible with the release ordering and relations; dependent tickets can start without reworking this ticket's scope.
-
-## Release Notes
-- If this ticket changes public behavior, package shape, examples, diagnostics, generated SQL, or provider behavior, update README and the release note document for this release before integration.
+Run mode
+- apply: planned updates are applied after this comment
