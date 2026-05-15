@@ -3,6 +3,6 @@
   "milestoneId": "06F1XPRWB9A53W64QD2VCF3T70",
   "name": "v0.10.0 - Analyzer package",
   "description": "Roslyn analyzer package for DVault modeling mistakes and EF Core usage diagnostics.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-13T01:02:16.6662131Z"
 }

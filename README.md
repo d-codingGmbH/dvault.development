@@ -7,15 +7,18 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.9.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.9.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.9.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.9.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.9.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.9.0
+dotnet add package DCoding.Data.DVault --version 0.10.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.10.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.10.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.10.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.10.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.10.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.10.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
+
+`DCoding.Data.DVault.Analyzers` is optional developer tooling. Prefer `PrivateAssets="all"` for that package so analyzer assets stay local to the project that declares DVault Code-First metadata.
 
 Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
 
@@ -105,7 +108,7 @@ Code-First metadata is additive. It does not ask callers to put DVault hash-key,
 
 Persistence remains an explicit service boundary. `DataVaultSaveRequest` carries the load timestamp and record source, and callers choose when to write vault rows through `IDataVaultSaveService`. The default DVault path does not intercept `SaveChanges` or hide persistence behind ordinary EF entity tracking.
 
-v0.9.0 adds an explicit opt-in `SaveChanges` metadata interceptor for applications that already add generated DVault rows through EF tracking. The interceptor only fills missing `LoadTimestamp` and `RecordSource` values on added hub, link, or satellite rows annotated by DVault metadata. It does not replace `IDataVaultSaveService`, compute hash keys, compute hash diffs, create rows, or change manually supplied metadata values.
+DVault also provides an explicit opt-in `SaveChanges` metadata interceptor for applications that already add generated DVault rows through EF tracking. The interceptor only fills missing `LoadTimestamp` and `RecordSource` values on added hub, link, or satellite rows annotated by DVault metadata. It does not replace `IDataVaultSaveService`, compute hash keys, compute hash diffs, create rows, or change manually supplied metadata values.
 
 ```csharp
 services.AddDbContext<SalesVaultContext>(options => {
@@ -469,22 +472,27 @@ Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadS
 
 PostgreSQL, SQL Server, Oracle, and MySQL live-schema readers are not first-class supported readers in this slice. Existing external provider integration evidence remains opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
 
-## v0.9.0 Release Notes
+## v0.10.0 Release Notes
 
-The v0.9.0 release adds read and runtime performance ergonomics while keeping the explicit DVault persistence boundary intact. See `docs/releases/v0.9.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
+The v0.10.0 release adds developer adoption tooling while keeping the explicit DVault persistence boundary intact. See `docs/releases/v0.10.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
 
 Notable user-facing changes:
 
+- `DCoding.Data.DVault.Analyzers` is now part of the coordinated package family and ships the first Code-First Roslyn analyzer rules.
+- `DMV1901` warns on unsupported `BusinessKey(...)`, `Payload(...)`, and `DrivingKey(...)` selector shapes.
+- `DMV1902` warns when a Code-First fluent scope repeats the same logical member declaration.
+- The PostgreSQL quickstart documentation includes an opt-in Podman/Docker fixture using `docker.io/postgres:18` and `DVAULT_TEST_POSTGRES_CONNECTION_STRING`.
+- The production adoption checklist collects package setup, declaration-path, migration, drift, save/read, provider, and publication readiness checks.
 - `UseDataVaultSaveChangesMetadataInterceptor(...)` provides an opt-in EF `SaveChanges` interceptor that fills missing `LoadTimestamp` and `RecordSource` values for added generated hub, link, and satellite rows.
 - The default `AddDVault()` path still registers no `SaveChanges` interceptor; explicit `IDataVaultSaveService` persistence remains the main write boundary.
 - SQLite-backed compatibility tests prove that DVault metadata annotations survive compiled model usage and that EF compiled queries can read generated shared-type DVault tables.
 - The existing typed read helpers and provider save-strategy SPI are documented as the v1 read and bulk-save boundaries for this release.
 
-## Current v0.9.0 Limitations
+## Current v0.10.0 Limitations
 
-Lifecycle guardrails remain explicit library APIs. DVault does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.9.0 boundary. Live-schema drift reading is SQLite-first; PostgreSQL, SQL Server, Oracle, and MySQL still rely on external opt-in integration evidence rather than first-class live-schema readers.
+Lifecycle guardrails remain explicit library APIs. DVault does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.10.0 boundary. Live-schema drift reading is SQLite-first; PostgreSQL, SQL Server, Oracle, and MySQL still rely on external opt-in integration evidence rather than first-class live-schema readers.
 
-Model-first APIs continue to operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization. The v0.9.0 metadata interceptor is opt-in and metadata-only: callers still own generated row creation, hash-key and hash-diff values, save ordering, and explicit service-based persistence when they use `IDataVaultSaveService`.
+Model-first APIs continue to operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization. The metadata interceptor is opt-in and metadata-only: callers still own generated row creation, hash-key and hash-diff values, save ordering, and explicit service-based persistence when they use `IDataVaultSaveService`. The analyzer package intentionally covers only the first high-confidence Code-First selector and duplicate-member rules; it is not a complete model validator.
 
 ## Layout
 
@@ -492,6 +500,7 @@ Model-first APIs continue to operate on JSON artifacts, fluent Code-First declar
 - `src/DCoding.Data/`: Non-packable build anchor for the `DCoding.Data` source-root namespace family.
 - `src/DCoding.Data.DVault/`: Main library project. The NuGet package id and root namespace are `DCoding.Data.DVault`.
 - `src/DCoding.Data.DVault.*`: Provider extension packages for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL.
+- `src/DCoding.Data.DVault.Analyzers/`: Roslyn analyzer package for high-confidence DVault Code-First diagnostics.
 - `tests/DCoding.Data.DVault.Tests/`: Unit, integration, and shared test projects for DVault.
 - `examples/`: Runnable SQLite and PostgreSQL quickstart projects.
 - `benchmarks/`: Local performance benchmark projects.
@@ -511,7 +520,7 @@ bash tools/check-format.sh
 
 The normal test run includes package-specific public API snapshot checks for `DCoding.Data.DVault` and the five provider packages. See `docs/quality/api-surface-snapshots.md` for the approved baseline location and the explicit update workflow for intentional API changes.
 
-`bash tools/verify-packages.sh` inspects the artifacts created under `artifacts/packages/` by the solution-level pack command. It expects exactly the six DVault library packages and matching symbol packages, checks README and XML documentation entries, validates declared NuGet metadata, and confirms each provider package depends on the packed `DCoding.Data.DVault` version. The verifier intentionally fails when stale, unexpected, or non-packable package artifacts remain in `artifacts/packages/`.
+`bash tools/verify-packages.sh` inspects the artifacts created under `artifacts/packages/` by the solution-level pack command. It expects exactly the seven DVault packages plus six matching symbol packages for the runtime/provider packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider package depends on the packed `DCoding.Data.DVault` version. The verifier intentionally fails when stale, unexpected, or non-packable package artifacts remain in `artifacts/packages/`.
 
 Provider integration tests use stable xUnit trait categories so required local coverage and opt-in external database coverage can be selected explicitly:
 

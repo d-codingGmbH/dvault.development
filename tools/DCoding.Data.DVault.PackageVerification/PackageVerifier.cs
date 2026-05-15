@@ -18,37 +18,50 @@ public sealed class PackageVerifier {
           "DVault",
           "Convention-first .NET 10 library extending Entity Framework for Data Vault 2.x-oriented persistence.",
           ["dvault", "data-vault", "data-modeling", "dotnet", "entity-framework", "ef-core", "data-vault-2", "persistence"],
+          false,
           false),
+      new(
+          "DCoding.Data.DVault.Analyzers",
+          "DVault Roslyn Analyzers",
+          "Roslyn analyzers for high-confidence DVault Code-First fluent metadata declarations.",
+          ["dvault", "data-vault", "roslyn", "analyzer", "diagnostics", "ef-core"],
+          false,
+          true),
       new(
           "DCoding.Data.DVault.MySql",
           "DVault MySQL Provider Extensions",
           "MySQL provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "mysql", "ef-core", "persistence"],
-          true),
+          true,
+          false),
       new(
           "DCoding.Data.DVault.Oracle",
           "DVault Oracle Provider Extensions",
           "Oracle provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "oracle", "ef-core", "persistence"],
-          true),
+          true,
+          false),
       new(
           "DCoding.Data.DVault.Postgres",
           "DVault PostgreSQL Provider Extensions",
           "PostgreSQL provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "postgresql", "postgres", "ef-core", "persistence"],
-          true),
+          true,
+          false),
       new(
           "DCoding.Data.DVault.Sqlite",
           "DVault SQLite Provider Extensions",
           "SQLite provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "sqlite", "ef-core", "persistence"],
-          true),
+          true,
+          false),
       new(
           "DCoding.Data.DVault.SqlServer",
           "DVault SQL Server Provider Extensions",
           "SQL Server provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "sql-server", "ef-core", "persistence"],
-          true),
+          true,
+          false),
   ];
 
   private static readonly IReadOnlyDictionary<string, ExpectedPackage> ExpectedPackageById =
@@ -75,10 +88,12 @@ public sealed class PackageVerifier {
         .Order(StringComparer.Ordinal)
         .ToArray();
 
+    var expectedPackageArtifactCount = ExpectedPackages.Count;
+    var expectedSymbolsArtifactCount = ExpectedPackages.Count(package => !package.IsAnalyzer);
     foreach (var unexpectedFile in unexpectedFiles) {
       issues.Add(new PackageVerificationIssue(
           Path.GetFileName(unexpectedFile),
-          "Unexpected file artifact in package directory. Expected only the six .nupkg files and six .snupkg files produced from DVault.slnx."));
+          "Unexpected file artifact in package directory. Expected only the " + expectedPackageArtifactCount + " .nupkg files and " + expectedSymbolsArtifactCount + " .snupkg files produced from DVault.slnx."));
     }
 
     var packageArchives = ReadArchives(packageDirectory, PackageArtifactKind.Package, issues);
@@ -98,7 +113,7 @@ public sealed class PackageVerifier {
         ValidatePackageArchive(packageArchive, expectedPackage, coreVersion, issues);
       }
 
-      if (symbolsById.TryGetValue(expectedPackage.Id, out var symbolsArchive)) {
+      if (!expectedPackage.IsAnalyzer && symbolsById.TryGetValue(expectedPackage.Id, out var symbolsArchive)) {
         ValidateSymbolsArchive(symbolsArchive, expectedPackage, packageArchive?.Version, issues);
       }
     }
@@ -188,7 +203,8 @@ public sealed class PackageVerifier {
       PackageArtifactKind artifactKind,
       List<PackageVerificationIssue> issues) {
     var extension = artifactKind == PackageArtifactKind.Package ? ".nupkg" : ".snupkg";
-    var expectedFileCount = ExpectedPackages.Count;
+    IReadOnlyList<ExpectedPackage> expectedPackages = GetExpectedPackagesForArtifactKind(artifactKind);
+    var expectedFileCount = expectedPackages.Count;
 
     if (archives.Count != expectedFileCount) {
       issues.Add(new PackageVerificationIssue(
@@ -197,10 +213,10 @@ public sealed class PackageVerifier {
     }
 
     foreach (var archive in archives) {
-      if (!ExpectedPackageById.ContainsKey(archive.Id)) {
+      if (!expectedPackages.Any(package => string.Equals(package.Id, archive.Id, StringComparison.Ordinal))) {
         issues.Add(new PackageVerificationIssue(
             archive.Id,
-            "Unexpected " + extension + " artifact '" + archive.FileName + "'. Expected only: " + string.Join(", ", ExpectedPackages.Select(package => package.Id)) + "."));
+            "Unexpected " + extension + " artifact '" + archive.FileName + "'. Expected only: " + string.Join(", ", expectedPackages.Select(package => package.Id)) + "."));
       }
 
       var expectedFileName = archive.Id + "." + archive.Version + extension;
@@ -211,7 +227,7 @@ public sealed class PackageVerifier {
       }
     }
 
-    foreach (var expectedPackage in ExpectedPackages) {
+    foreach (var expectedPackage in expectedPackages) {
       var matchingArchives = archives
           .Where(archive => string.Equals(archive.Id, expectedPackage.Id, StringComparison.Ordinal))
           .ToArray();
@@ -227,6 +243,12 @@ public sealed class PackageVerifier {
             "Expected exactly one " + extension + " artifact but found " + matchingArchives.Length + ": " + string.Join(", ", matchingArchives.Select(archive => archive.FileName)) + "."));
       }
     }
+  }
+
+  private static IReadOnlyList<ExpectedPackage> GetExpectedPackagesForArtifactKind(PackageArtifactKind artifactKind) {
+    return artifactKind == PackageArtifactKind.Package
+        ? ExpectedPackages
+        : [.. ExpectedPackages.Where(package => !package.IsAnalyzer)];
   }
 
   private static IReadOnlyDictionary<string, PackageArchive> GetSingleArchiveById(IReadOnlyList<PackageArchive> archives) {
@@ -252,6 +274,7 @@ public sealed class PackageVerifier {
     ValidateRepository(archive, metadata, issues);
     ValidateReadme(archive, coreVersion, issues);
     ValidateXmlDocumentation(archive, expectedPackage, issues);
+    ValidateAnalyzerAssets(archive, expectedPackage, issues);
 
     if (expectedPackage.IsProvider) {
       ValidateProviderDependency(archive, coreVersion, issues);
@@ -270,7 +293,9 @@ public sealed class PackageVerifier {
           "Symbols package version '" + archive.Version + "' does not match package version '" + packageVersion + "'."));
     }
 
-    var expectedPdbPath = "lib/" + TargetFramework + "/" + expectedPackage.Id + ".pdb";
+    var expectedPdbPath = expectedPackage.IsAnalyzer
+        ? "analyzers/dotnet/cs/" + expectedPackage.Id + ".pdb"
+        : "lib/" + TargetFramework + "/" + expectedPackage.Id + ".pdb";
     if (!archive.Entries.Contains(expectedPdbPath)) {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
@@ -361,6 +386,18 @@ public sealed class PackageVerifier {
       return;
     }
 
+    if (ExpectedPackageById.TryGetValue(archive.Id, out var currentPackage) && currentPackage.IsAnalyzer) {
+      var expectedAnalyzerReference =
+          "<PackageReference Include=\"" + currentPackage.Id + "\" Version=\"" + expectedInstallVersion + "\" PrivateAssets=\"all\" />";
+      if (!archive.ReadmeText.Contains(expectedAnalyzerReference, StringComparison.Ordinal)) {
+        issues.Add(new PackageVerificationIssue(
+            archive.Id,
+            "Packaged analyzer README.md does not contain the current PrivateAssets installation guidance."));
+      }
+
+      return;
+    }
+
     foreach (var expectedPackage in ExpectedPackages) {
       var expectedInstallCommand =
           "dotnet add package " + expectedPackage.Id + " --version " + expectedInstallVersion;
@@ -377,11 +414,29 @@ public sealed class PackageVerifier {
       PackageArchive archive,
       ExpectedPackage expectedPackage,
       List<PackageVerificationIssue> issues) {
-    var expectedXmlPath = "lib/" + TargetFramework + "/" + expectedPackage.Id + ".xml";
+    var expectedXmlPath = expectedPackage.IsAnalyzer
+        ? "analyzers/dotnet/cs/" + expectedPackage.Id + ".xml"
+        : "lib/" + TargetFramework + "/" + expectedPackage.Id + ".xml";
     if (!archive.Entries.Contains(expectedXmlPath)) {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
           "Package archive '" + archive.FileName + "' is missing generated XML documentation entry '" + expectedXmlPath + "'."));
+    }
+  }
+
+  private static void ValidateAnalyzerAssets(
+      PackageArchive archive,
+      ExpectedPackage expectedPackage,
+      List<PackageVerificationIssue> issues) {
+    if (!expectedPackage.IsAnalyzer) {
+      return;
+    }
+
+    var expectedAnalyzerPath = "analyzers/dotnet/cs/" + expectedPackage.Id + ".dll";
+    if (!archive.Entries.Contains(expectedAnalyzerPath)) {
+      issues.Add(new PackageVerificationIssue(
+          archive.Id,
+          "Analyzer package archive '" + archive.FileName + "' is missing analyzer asset '" + expectedAnalyzerPath + "'."));
     }
   }
 
@@ -464,7 +519,8 @@ public sealed class PackageVerifier {
       string Title,
       string Description,
       string[] Tags,
-      bool IsProvider);
+      bool IsProvider,
+      bool IsAnalyzer);
 
   private sealed record PackageArchive(
       string FilePath,

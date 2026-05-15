@@ -21,37 +21,50 @@ public sealed class PackageVerifierTests {
           "DVault",
           "Convention-first .NET 10 library extending Entity Framework for Data Vault 2.x-oriented persistence.",
           ["dvault", "data-vault", "data-modeling", "dotnet", "entity-framework", "ef-core", "data-vault-2", "persistence"],
+          false,
           false),
+      new(
+          "DCoding.Data.DVault.Analyzers",
+          "DVault Roslyn Analyzers",
+          "Roslyn analyzers for high-confidence DVault Code-First fluent metadata declarations.",
+          ["dvault", "data-vault", "roslyn", "analyzer", "diagnostics", "ef-core"],
+          false,
+          true),
       new(
           "DCoding.Data.DVault.MySql",
           "DVault MySQL Provider Extensions",
           "MySQL provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "mysql", "ef-core", "persistence"],
-          true),
+          true,
+          false),
       new(
           "DCoding.Data.DVault.Oracle",
           "DVault Oracle Provider Extensions",
           "Oracle provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "oracle", "ef-core", "persistence"],
-          true),
+          true,
+          false),
       new(
           "DCoding.Data.DVault.Postgres",
           "DVault PostgreSQL Provider Extensions",
           "PostgreSQL provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "postgresql", "postgres", "ef-core", "persistence"],
-          true),
+          true,
+          false),
       new(
           "DCoding.Data.DVault.Sqlite",
           "DVault SQLite Provider Extensions",
           "SQLite provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "sqlite", "ef-core", "persistence"],
-          true),
+          true,
+          false),
       new(
           "DCoding.Data.DVault.SqlServer",
           "DVault SQL Server Provider Extensions",
           "SQL Server provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "sql-server", "ef-core", "persistence"],
-          true),
+          true,
+          false),
   ];
 
   [Fact]
@@ -87,10 +100,11 @@ public sealed class PackageVerifierTests {
         packageDirectory.Path,
         new TestPackageDefinition(
             "DCoding.Data",
-            "DCoding.Data",
-            "Non-packable source-root build anchor for the DCoding.Data namespace family.",
-            ["dvault"],
-            false),
+          "DCoding.Data",
+          "Non-packable source-root build anchor for the DCoding.Data namespace family.",
+          ["dvault"],
+          false,
+          false),
         new PackageArchiveOptions());
 
     var result = Verify(packageDirectory.Path);
@@ -244,7 +258,7 @@ public sealed class PackageVerifierTests {
   private static Dictionary<string, PackageArchiveOptions> CreatePackageOptions() {
     return PackageDefinitions.ToDictionary(
         package => package.Id,
-        _ => new PackageArchiveOptions(),
+        package => new PackageArchiveOptions { WriteSymbols = !package.IsAnalyzer },
         StringComparer.Ordinal);
   }
 
@@ -259,7 +273,7 @@ public sealed class PackageVerifierTests {
         WritePackage(packageDirectory, package, packageOptions);
       }
 
-      if (packageOptions.WriteSymbols) {
+      if (!package.IsAnalyzer && packageOptions.WriteSymbols) {
         WriteSymbolsPackage(packageDirectory, package, packageOptions);
       }
     }
@@ -277,14 +291,23 @@ public sealed class PackageVerifierTests {
       WriteTextEntry(
           archive,
           "README.md",
-          string.Join(
-              "\n",
-              PackageDefinitions.Select(package =>
-                  "dotnet add package " + package.Id + " --version " + ReadmeInstallVersion)) + "\n");
+          package.IsAnalyzer
+              ? "<PackageReference Include=\"" + package.Id + "\" Version=\"" + ReadmeInstallVersion + "\" PrivateAssets=\"all\" />\n"
+              : string.Join(
+                  "\n",
+                  PackageDefinitions.Select(package =>
+                      "dotnet add package " + package.Id + " --version " + ReadmeInstallVersion)) + "\n");
     }
 
     if (options.IncludeXmlDocumentation) {
-      WriteTextEntry(archive, "lib/" + TargetFramework + "/" + package.Id + ".xml", "<doc />\n");
+      var xmlPath = package.IsAnalyzer
+          ? "analyzers/dotnet/cs/" + package.Id + ".xml"
+          : "lib/" + TargetFramework + "/" + package.Id + ".xml";
+      WriteTextEntry(archive, xmlPath, "<doc />\n");
+    }
+
+    if (package.IsAnalyzer) {
+      WriteBinaryEntry(archive, "analyzers/dotnet/cs/" + package.Id + ".dll", [1, 2, 3]);
     }
   }
 
@@ -297,7 +320,10 @@ public sealed class PackageVerifierTests {
 
     WriteTextEntry(archive, package.Id + ".nuspec", CreateNuspec(package, options));
     if (options.IncludeSymbolPdb) {
-      WriteBinaryEntry(archive, "lib/" + TargetFramework + "/" + package.Id + ".pdb", [1, 2, 3]);
+      var pdbPath = package.IsAnalyzer
+          ? "analyzers/dotnet/cs/" + package.Id + ".pdb"
+          : "lib/" + TargetFramework + "/" + package.Id + ".pdb";
+      WriteBinaryEntry(archive, pdbPath, [1, 2, 3]);
     }
   }
 
@@ -384,7 +410,8 @@ public sealed class PackageVerifierTests {
       string Title,
       string Description,
       string[] Tags,
-      bool IsProvider);
+      bool IsProvider,
+      bool IsAnalyzer);
 
   private sealed class PackageArchiveOptions {
     public bool WritePackage { get; set; } = true;

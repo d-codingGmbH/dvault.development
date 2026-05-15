@@ -17,7 +17,7 @@ public static class PackageVerificationCommand {
       output.WriteLine(
           "Verified DVault packages in '" +
           options.PackageDirectory +
-          "': exactly six .nupkg files, six .snupkg files, metadata, README, XML docs, symbols, and provider dependencies are valid.");
+          "': exactly seven .nupkg files, six .snupkg files, metadata, README, XML docs, symbols, analyzer assets, and provider dependencies are valid.");
       return 0;
     }
 

@@ -6,9 +6,10 @@ Publishing remains manual. This document does not introduce release credentials,
 
 ## Package Family
 
-The v1 coordinated release family contains exactly these six packable packages:
+The v1 coordinated release family contains exactly these seven packable packages:
 
 - `DCoding.Data.DVault`
+- `DCoding.Data.DVault.Analyzers`
 - `DCoding.Data.DVault.MySql`
 - `DCoding.Data.DVault.Oracle`
 - `DCoding.Data.DVault.Postgres`
@@ -29,8 +30,8 @@ Source or project-reference consumption remains useful for repository developmen
 
 Before final publish approval, the maintainer performing the release must confirm:
 
-- the release covers all six package ids listed in this document
-- one aligned release version is used for all six packages
+- the release covers all seven package ids listed in this document
+- one aligned release version is used for all seven packages
 - the planned version is intentional for the coordinated release and is not being applied to only a provider-specific subset
 - release notes or changelog content has been prepared and reviewed for the coordinated release
 - all required pre-publish validation commands have passed against the same checkout and release version
@@ -45,7 +46,7 @@ Minimum auditable release-note content is:
 
 - coordinated release version
 - release date or intended release date
-- the six package ids covered by the release
+- the seven package ids covered by the release
 - notable user-facing changes, fixes, documentation changes, and packaging changes
 - known limitations or compatibility notes relevant to consumers
 - reviewer or approver identity for the final publish approval
@@ -68,13 +69,13 @@ Do not replace these commands with an undocumented automation path. Later releas
 
 ## Version And Dependency Alignment
 
-Use one aligned release version across all six packages. Package versions are derived from Git tags with the `v` prefix by MinVer. Before final approval, inspect the package outputs produced by `dotnet pack DVault.slnx --configuration Release --nologo` through the package verification gate:
+Use one aligned release version across all seven packages. Package versions are derived from Git tags with the `v` prefix by MinVer. Before final approval, inspect the package outputs produced by `dotnet pack DVault.slnx --configuration Release --nologo` through the package verification gate:
 
 ```sh
 bash tools/verify-packages.sh
 ```
 
-Package verification is the manual dependency-alignment gate. It must confirm the exact six package set, matching symbol packages, package README and XML metadata, and provider dependency alignment. Each provider package must depend on the packed `DCoding.Data.DVault` version for the same coordinated release.
+Package verification is the manual dependency-alignment gate. It must confirm the exact seven package set, six matching symbol packages for the runtime/provider packages, package README and XML metadata, analyzer assets, and provider dependency alignment. Each provider package must depend on the packed `DCoding.Data.DVault` version for the same coordinated release.
 
 If verification reports that a provider package is missing a `DCoding.Data.DVault` dependency or depends on a different core version, stop the release. Correct the package inputs, rebuild, repack, and rerun the full required pre-publish evidence before requesting approval again.
 
@@ -82,8 +83,8 @@ If verification reports that a provider package is missing a `DCoding.Data.DVaul
 
 Follow this sequence exactly for the coordinated manual release:
 
-1. Confirm the release scope is the full six-package family.
-2. Set or confirm one aligned release version for all six packages.
+1. Confirm the release scope is the full seven-package family.
+2. Set or confirm one aligned release version for all seven packages.
 3. Prepare and review release notes or changelog content for the coordinated release.
 4. Run `dotnet build DVault.slnx --nologo`.
 5. Run `dotnet test DVault.slnx --nologo`.
@@ -93,12 +94,13 @@ Follow this sequence exactly for the coordinated manual release:
 9. Review the validation evidence and provider dependency alignment.
 10. Record final publish approval for the coordinated release.
 11. Push `DCoding.Data.DVault` first.
-12. Push `DCoding.Data.DVault.MySql`.
-13. Push `DCoding.Data.DVault.Oracle`.
-14. Push `DCoding.Data.DVault.Postgres`.
-15. Push `DCoding.Data.DVault.Sqlite`.
-16. Push `DCoding.Data.DVault.SqlServer`.
-17. Record the completed publication outcome for all six packages.
+12. Push `DCoding.Data.DVault.Analyzers`.
+13. Push `DCoding.Data.DVault.MySql`.
+14. Push `DCoding.Data.DVault.Oracle`.
+15. Push `DCoding.Data.DVault.Postgres`.
+16. Push `DCoding.Data.DVault.Sqlite`.
+17. Push `DCoding.Data.DVault.SqlServer`.
+18. Record the completed publication outcome for all seven packages.
 
 The provider publish order is policy for this manual release flow: MySql, Oracle, Postgres, Sqlite, then SqlServer. Do not infer a different order from project layout or provider dependency shape.
 
@@ -115,7 +117,7 @@ If a failure happens after the core package or an earlier provider package has a
 Before the first package push, the final approval record must include:
 
 - coordinated release version
-- confirmation that all six packages are in scope
+- confirmation that all seven packages are in scope
 - location of the reviewed release notes or changelog content
 - validation evidence for the five required commands
 - confirmation that `bash tools/verify-packages.sh` passed provider dependency alignment against the packed core version

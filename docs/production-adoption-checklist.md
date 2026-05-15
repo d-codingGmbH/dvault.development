@@ -6,7 +6,8 @@ Use this checklist when preparing a DVault-consuming application for production.
 
 - [ ] Install the provider-neutral `DCoding.Data.DVault` package from NuGet and use the published installation guidance in the [README](../README.md#installation).
 - [ ] Select the DVault provider package that matches the application database and keep every DVault package on one aligned published release version.
-- [ ] Treat the coordinated DVault package family as exactly these package ids: `DCoding.Data.DVault`, `DCoding.Data.DVault.MySql`, `DCoding.Data.DVault.Oracle`, `DCoding.Data.DVault.Postgres`, `DCoding.Data.DVault.Sqlite`, and `DCoding.Data.DVault.SqlServer`.
+- [ ] Treat the coordinated DVault package family as exactly these package ids: `DCoding.Data.DVault`, `DCoding.Data.DVault.Analyzers`, `DCoding.Data.DVault.MySql`, `DCoding.Data.DVault.Oracle`, `DCoding.Data.DVault.Postgres`, `DCoding.Data.DVault.Sqlite`, and `DCoding.Data.DVault.SqlServer`.
+- [ ] Install `DCoding.Data.DVault.Analyzers` only in projects that own DVault Code-First declarations, and keep it local with `PrivateAssets="all"`.
 - [ ] Also install and configure the normal Entity Framework Core database provider package used by the application, such as SQLite, PostgreSQL, SQL Server, Oracle, or MySQL.
 - [ ] Do not treat `src/DCoding.Data` as a consumer package. It is the non-packable source-root build anchor for the namespace family.
 - [ ] Register `AddDVault()` and, when using a provider package, the matching provider startup extension shown in the [README quickstart](../README.md#register-dvault-services).
@@ -57,7 +58,7 @@ bash tools/check-format.sh
 ```
 
 - [ ] For package publication or release approval, use [Manual NuGet Publication Checklist](manual-nuget-publication.md) instead of this adoption checklist. Publication evidence adds packing, package verification, release notes, signing or approval records where applicable, stop conditions, and publish order.
-- [ ] Before any coordinated publication, verify all six package ids are validated and published together with one aligned version. Do not publish only a subset of the DVault package family.
+- [ ] Before any coordinated publication, verify all seven package ids are validated and published together with one aligned version. Do not publish only a subset of the DVault package family.
 - [ ] Keep consumer-facing release notes and internal adoption records limited to published package versions and documented current behavior. Do not imply availability for unpublished future releases.
 
 ## Current Limitations To Keep Visible
