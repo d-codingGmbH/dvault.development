@@ -5,6 +5,8 @@ Roslyn analyzers for DVault Code-First metadata declarations. The v1 package rep
 - `DMV1901` for unsupported `BusinessKey(...)`, `Payload(...)`, or `DrivingKey(...)` selector shapes.
 - `DMV1902` for duplicate logical member declarations inside the same applicable Code-First builder lambda scope.
 
+The package also provides bounded code fixes for DMV1901 anonymous-object direct-member expansion and DMV1902 later-duplicate removal.
+
 ## Installation
 
 Install the analyzer package in projects that declare DVault Code-First metadata through normal Roslyn analyzer package conventions:
@@ -21,7 +23,9 @@ Install the analyzer package in projects that declare DVault Code-First metadata
 
 The current analyzer slice inspects the first direct lambda selector passed to `BusinessKey(...)`, `Payload(...)`, and `DrivingKey(...)`. It expects one direct readable scalar member on the configured entity type, such as `hub.BusinessKey(customer => customer.CustomerId)` or `satellite.Payload(customer => customer.EmailAddress)`.
 
-Composite business keys, payloads, and driving keys should use repeated single-member calls in their canonical order. Selector variables, indirect selectors, computed selectors, nested selectors, method calls, anonymous objects, and collection-valued selectors are intentionally outside the first direct-lambda slice unless a diagnostic can be reported with high confidence.
+Composite business keys, payloads, and driving keys should use repeated single-member calls in their canonical order. When an anonymous-object selector contains only direct readable scalar member accesses, the DMV1901 code fix can expand it into repeated same-verb single-member calls in source order. The DMV1901 code fix is intentionally not offered for selector variables, indirect selectors, computed selectors, nested selectors, method calls, collection-valued selectors, or mixed anonymous-object selectors that are not mechanically expandable.
+
+The DMV1902 code fix removes the later duplicate `BusinessKey(...)`, `Payload(...)`, or `DrivingKey(...)` declaration and leaves the first declaration authoritative within the same fluent scope.
 
 ## Suppression
 

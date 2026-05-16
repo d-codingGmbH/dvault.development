@@ -1,8 +1,11 @@
 using System.Collections.Immutable;
 using DCoding.Data.DVault.Analyzers;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeActions;
+using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Text;
 using Xunit;
 
 namespace DCoding.Data.DVault.Tests.Analyzers;
@@ -26,6 +29,12 @@ public sealed class DataVaultCodeFirstAnalyzerTests {
         "Duplicate Code-First member declaration",
         "repeats a logical member name",
         "Declare each logical member name at most once");
+  }
+
+  [Fact]
+  public void CodeFixProviderRemainsInternalPackageImplementationSurface() {
+    Assert.True(typeof(CodeFixProvider).IsAssignableFrom(typeof(DataVaultCodeFirstCodeFixProvider)));
+    Assert.False(typeof(DataVaultCodeFirstCodeFixProvider).IsPublic);
   }
 
   [Theory]
@@ -121,6 +130,56 @@ public sealed class DataVaultCodeFirstAnalyzerTests {
     Assert.Empty(diagnostics);
   }
 
+  [Theory]
+  [InlineData(
+      "vault.Hub<Customer>(hub => { hub.BusinessKey(customer => new { customer.CustomerId, customer.RegionCode }); });",
+      "hub.BusinessKey(customer => customer.CustomerId).BusinessKey(customer => customer.RegionCode);")]
+  [InlineData(
+      "vault.Hub<Customer>(hub => { hub.BusinessKey(customer => customer.CustomerId); hub.Satellite(\"Contact\", satellite => { satellite.Payload(customer => new { customer.EmailAddress, customer.PhoneNumber }); }); });",
+      "satellite.Payload(customer => customer.EmailAddress).Payload(customer => customer.PhoneNumber);")]
+  [InlineData(
+      "vault.Hub<Customer>(hub => { hub.BusinessKey(customer => customer.CustomerId); hub.Satellite(\"Contact\", satellite => { satellite.DrivingKey(customer => new { customer.ContactType, customer.RegionCode }); satellite.Payload(customer => customer.EmailAddress); }); });",
+      "satellite.DrivingKey(customer => customer.ContactType).DrivingKey(customer => customer.RegionCode);")]
+  public async Task ExpandsAnonymousObjectSelectorsIntoRepeatedDirectMemberCalls(
+      string configureBody,
+      string expectedReplacement) {
+    var fixedSource = await ApplyFirstCodeFixAsync(CreateSource(configureBody), "DMV1901");
+
+    Assert.Contains(expectedReplacement, fixedSource, StringComparison.Ordinal);
+    Assert.DoesNotContain("new {", fixedSource, StringComparison.Ordinal);
+    Assert.Empty(await AnalyzeAsync(fixedSource));
+  }
+
+  [Fact]
+  public async Task RemovesLaterDuplicateDeclarationWithoutReorderingFluentScope() {
+    var fixedSource = await ApplyFirstCodeFixAsync(CreateSource("""
+        vault.Hub<Customer>(hub => {
+          hub.BusinessKey(customer => customer.CustomerId);
+          hub.Satellite("Contact", satellite => {
+            satellite.Payload(customer => customer.EmailAddress)
+                .Payload(customer => customer.PhoneNumber)
+                .Payload(customer => customer.EmailAddress);
+          });
+        });
+        """), "DMV1902");
+
+    Assert.Equal(1, CountOccurrences(fixedSource, ".Payload(customer => customer.EmailAddress)"));
+    Assert.Contains(".Payload(customer => customer.PhoneNumber);", fixedSource, StringComparison.Ordinal);
+    Assert.Empty(await AnalyzeAsync(fixedSource));
+  }
+
+  [Theory]
+  [InlineData("vault.Hub<Customer>(hub => { hub.BusinessKey(customer => customer.CustomerId); hub.Satellite(\"Contact\", satellite => { satellite.Payload(customer => customer.EmailAddress.ToUpperInvariant()); }); });")]
+  [InlineData("vault.Hub<Customer>(hub => { hub.BusinessKey(customer => customer.CustomerId); hub.Satellite(\"Contact\", satellite => { satellite.DrivingKey(customer => customer.Contact.EmailAddress); satellite.Payload(customer => customer.EmailAddress); }); });")]
+  [InlineData("vault.Hub<Customer>(hub => { hub.BusinessKey(customer => customer.CustomerId); hub.Satellite(\"Contact\", satellite => { satellite.Payload(customer => new { Combined = customer.EmailAddress + customer.RegionCode }); }); });")]
+  [InlineData("vault.Hub<Customer>(hub => { hub.BusinessKey(customer => customer.CustomerId); hub.Satellite(\"Contact\", satellite => { satellite.Payload(customer => new { customer.Tags }); }); });")]
+  [InlineData("Expression<Func<Customer, string>> emailSelector = customer => customer.EmailAddress; vault.Hub<Customer>(hub => { hub.BusinessKey(customer => customer.CustomerId); hub.Satellite(\"Contact\", satellite => { satellite.Payload(emailSelector); }); });")]
+  public async Task DoesNotOfferCodeFixesForNonMechanicalSelectorShapes(string configureBody) {
+    var codeFixes = await GetCodeFixesForFirstDiagnosticAsync(CreateSource(configureBody), "DMV1901");
+
+    Assert.Empty(codeFixes);
+  }
+
   private static void AssertDescriptor(
       DiagnosticDescriptor descriptor,
       string expectedCategory,
@@ -136,12 +195,59 @@ public sealed class DataVaultCodeFirstAnalyzerTests {
   }
 
   private static async Task<IReadOnlyList<Diagnostic>> AnalyzeAsync(string source) {
-    var syntaxTree = CSharpSyntaxTree.ParseText(source, cancellationToken: TestContext.Current.CancellationToken);
-    var compilation = CSharpCompilation.Create(
-        "DVaultAnalyzerSample",
-        [syntaxTree],
-        CreateReferences(),
-        new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+    using var workspace = CreateWorkspaceWithDocument(source, out var document);
+
+    return await AnalyzeDocumentAsync(document);
+  }
+
+  private static async Task<string> ApplyFirstCodeFixAsync(string source, string diagnosticId) {
+    using var workspace = CreateWorkspaceWithDocument(source, out var document);
+    var diagnostics = await AnalyzeDocumentAsync(document);
+    var diagnostic = Assert.Single(diagnostics.Where(candidate => string.Equals(candidate.Id, diagnosticId, StringComparison.Ordinal)));
+    var codeFixes = await GetCodeFixesAsync(document, diagnostic);
+    var codeFix = Assert.Single(codeFixes);
+    var operations = await codeFix.GetOperationsAsync(TestContext.Current.CancellationToken);
+    var applyChangesOperation = Assert.Single(operations.OfType<ApplyChangesOperation>());
+    var changedDocument = applyChangesOperation.ChangedSolution.GetDocument(document.Id);
+
+    Assert.NotNull(changedDocument);
+    var changedText = await changedDocument.GetTextAsync(TestContext.Current.CancellationToken);
+
+    return changedText.ToString();
+  }
+
+  private static async Task<IReadOnlyList<CodeAction>> GetCodeFixesForFirstDiagnosticAsync(
+      string source,
+      string diagnosticId) {
+    using var workspace = CreateWorkspaceWithDocument(source, out var document);
+    var diagnostics = await AnalyzeDocumentAsync(document);
+    var diagnostic = diagnostics.FirstOrDefault(candidate => string.Equals(candidate.Id, diagnosticId, StringComparison.Ordinal));
+    if (diagnostic is null) {
+      return [];
+    }
+
+    return await GetCodeFixesAsync(document, diagnostic);
+  }
+
+  private static async Task<IReadOnlyList<CodeAction>> GetCodeFixesAsync(
+      Document document,
+      Diagnostic diagnostic) {
+    var codeFixes = new List<CodeAction>();
+    var context = new CodeFixContext(
+        document,
+        diagnostic,
+        (codeAction, _) => codeFixes.Add(codeAction),
+        TestContext.Current.CancellationToken);
+
+    await new DataVaultCodeFirstCodeFixProvider().RegisterCodeFixesAsync(context);
+
+    return codeFixes;
+  }
+
+  private static async Task<IReadOnlyList<Diagnostic>> AnalyzeDocumentAsync(Document document) {
+    var compilation = await document.Project.GetCompilationAsync(TestContext.Current.CancellationToken);
+    Assert.NotNull(compilation);
+
     var compilerDiagnostics = compilation.GetDiagnostics(TestContext.Current.CancellationToken)
         .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
         .ToArray();
@@ -157,6 +263,36 @@ public sealed class DataVaultCodeFirstAnalyzerTests {
         .OrderBy(diagnostic => diagnostic.Id, StringComparer.Ordinal)
         .ThenBy(diagnostic => diagnostic.Location.SourceSpan.Start)
         .ToArray();
+  }
+
+  private static AdhocWorkspace CreateWorkspaceWithDocument(string source, out Document document) {
+    var workspace = new AdhocWorkspace();
+    var projectInfo = ProjectInfo.Create(
+            ProjectId.CreateNewId(),
+            VersionStamp.Create(),
+            "DVaultAnalyzerSample",
+            "DVaultAnalyzerSample",
+            LanguageNames.CSharp)
+        .WithMetadataReferences(CreateReferences())
+        .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+    var project = workspace.AddProject(projectInfo);
+    document = workspace.AddDocument(project.Id, "Sample.cs", SourceText.From(source));
+
+    return workspace;
+  }
+
+  private static int CountOccurrences(string text, string value) {
+    var count = 0;
+    var startIndex = 0;
+    while (true) {
+      var index = text.IndexOf(value, startIndex, StringComparison.Ordinal);
+      if (index < 0) {
+        return count;
+      }
+
+      count++;
+      startIndex = index + value.Length;
+    }
   }
 
   private static IReadOnlyList<MetadataReference> CreateReferences() {

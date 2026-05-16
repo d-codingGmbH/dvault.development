@@ -81,7 +81,10 @@ public sealed class DataVaultCodeFirstAnalyzer : DiagnosticAnalyzer {
     }
 
     var declarations = new Dictionary<MemberDeclarationKey, InvocationExpressionSyntax>();
-    foreach (var invocation in lambda.Body.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()) {
+    foreach (var invocation in lambda.Body
+        .DescendantNodesAndSelf()
+        .OfType<InvocationExpressionSyntax>()
+        .OrderBy(invocation => invocation.ArgumentList.Arguments.FirstOrDefault()?.SpanStart ?? invocation.SpanStart)) {
       if (!TryGetCodeFirstVerb(context.SemanticModel, invocation, context.CancellationToken, out var verb) ||
           !VerbBelongsToScope(scopeKind, verb) ||
           !TryGetInvocationRootReceiverSymbol(
