@@ -3,18 +3,17 @@
   "ticket-id": "06F2PGHWEWYJZSRQ9QPT4NJ0QM",
   "ticket-type": null,
   "title": "Task: Implement high-confidence analyzer rules",
-  "revision": "06F2PNJQXR1DN60AWP11BHVHFC",
-  "status": "todo",
+  "revision": "06F2W9MDAD5NQKA37ZB43DJNT8",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/task",
     "area/analyzers",
     "area/testing",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9AFGQEK2SPR3WJAAH3DG",
   "releaseId": "06F2PH99NN9B0S4RZW0NPST1CR",
   "created-at": "2026-05-15T10:50:22.5612311Z",
-  "updated-at": "2026-05-15T11:12:19.4388262Z"
+  "updated-at": "2026-05-16T00:18:59.0270000Z"
 }
