@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the ticket into a bounded ratification: v0.13 effectivity uses the existing Code-First link-parent satellite surface and generic satellite metadata, with documentation cleanup left on the existing documentation task.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Verified live `.gicket` state directly: the story remains under epic `06F2PGK4QJ0YGXK5479W83Z2J0`, still blocks doc task `06F2PGM9038RXVJH0RJFYEJEV0` and same-as/dependent-child story `06F2PGM1HQ5W1M2H8T50MZ3EEC`, and still has incoming `blocks` relations from done tickets `06F2PGKAQVVF8GEZVVC8SHFASG` and `06F2PGHJAFMH80TZAMANQWH9PW`; no relation cleanup was materialized in this pass.
 - Current branch source already exposes `DataVaultCodeFirstLinkBuilder.Satellite<TSatellite>(...)`, and `DataVaultCodeFirstModelBuilder` projects those declarations into `DataVaultSatelliteMetadata` with `Parent.Kind = Link`.
 - Current model/runtime metadata is generic rather than effectivity-specific: `DataVaultSatelliteMetadata` only carries payload names, optional driving-key names, and the existing `HashDiff`/`LoadTimestamp`/`RecordSource` technical columns, and `DataVaultPropertyRole` has no effectivity-specific role.
@@ -16,72 +15,45 @@
 - Repository evidence already covers the reusable pattern across code-first link-satellite translation, model-artifact export/import, explicit save requests, and latest-satellite read paths for link-parent satellites.
 - `README.md` and `docs/plans/fluent-code-first-api-contract.md` still describe a narrower Code-First surface; updating that v0.13 narrative remains on `06F2PGM9038RXVJH0RJFYEJEV0`, and no child tickets, attachments, or planning documents were created in this run.
 
-### Scope In
+Scope In
 - Ratify effectivity satellites in v0.13 as caller-owned link-parent satellites declared through existing `Link(...).Satellite<TSatellite>(...)` plus `Payload(...)` and optional `DrivingKey(...)` selectors.
 - Keep effectivity on the existing generic satellite metadata and persistence surface: parent kind `Link`, standard satellite technical columns, explicit registry save requests, and generic latest/as-of satellite read APIs.
 - Give downstream work one bounded architecture stance: effectivity is a modeling pattern on top of existing link-parent satellite support, not a separate DVault entity family.
 
-### Scope Out
+Scope Out
 - A new `EffectivitySatellite(...)` fluent API, new effectivity-specific metadata/entity kinds, or new technical columns/annotations beyond the current satellite baseline.
 - A mandated effectivity payload schema or fixed member names; caller-owned CLR types and selector names remain the model boundary.
 - Widening `DataVaultSaveServiceTypedExtensions.CreateOrdinaryHubSatelliteRegistrySaveRequest(...)` to link-parent or driving-key satellite shapes.
 - Same-as links, dependent child keys, repeated same-hub participant roles/aliases, PIT/bridge interactions, or documentation authoring already tracked on `06F2PGM9038RXVJH0RJFYEJEV0`.
 
-## Acceptance Criteria
-- The refined contract explicitly states that effectivity in v0.13 is modeled through existing `Link(...).Satellite<TSatellite>(...)`, `Payload(...)`, and optional `DrivingKey(...)` verbs rather than through a new effectivity-specific API.
-- Repository evidence remains consistent with that stance: Code-First link satellites project to `DataVaultSatelliteMetadata` with link parent references, and the generic satellite metadata surface stays limited to payload names, optional driving keys, and the standard technical columns.
-- The contract keeps effectivity on the current generic persistence boundary: explicit registry satellite save operations and generic latest/as-of satellite read flows remain the supported runtime path for effectivity-shaped link satellites.
-- Documentation follow-through stays on `06F2PGM9038RXVJH0RJFYEJEV0` and must remove stale README/planning wording that still treats link-parent satellite shapes as metadata-first-only before release integration.
-
-## Definition of Done
-- Downstream work can treat effectivity as an existing link-parent satellite pattern without reopening whether DVault needs separate effectivity metadata kinds, annotations, or technical columns.
-- No new child tickets, relation rewrites, attachments, or planning documents are required from the current evidence.
-- Later delivery work does not widen ordinary hub-satellite typed save helpers or invent effectivity-specific fluent verbs unless a separate ticket explicitly scopes that expansion.
-- Release-facing documentation is updated on `06F2PGM9038RXVJH0RJFYEJEV0` to match the ratified runtime surface before integration.
-
-## Implementation Notes
-- Use live branch source as the authority over older planning text: `DataVaultCodeFirstLinkBuilder`, `DataVaultCodeFirstModelBuilder`, the public API snapshot, and current tests already show link-parent satellite support even though some older docs still say otherwise.
-- An effectivity example should be implemented as a caller-owned CLR type attached to a link and should reuse the existing generic satellite builder; do not add a second effectivity-specific fluent surface.
-- Current repository evidence already spans code-first translation, model-artifact export/import, explicit save requests, and latest-satellite read paths for link-parent satellites, so this ticket should only add work if it clarifies the effectivity pattern rather than duplicating generic capability.
-- Explicit registry save requests and generic satellite read APIs already accept link-parent satellites, but typed helper convenience remains intentionally narrower; keep any widening as separate follow-up work.
-- No persistent planning action was materialized in this run.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should `06F2PGM9038RXVJH0RJFYEJEV0` add one canonical docs example that names the effectivity pattern explicitly, even though the runtime surface stays generic?
 - If adopters want convenience beyond explicit registry save requests, should link-parent and/or driving-key typed satellite save helpers become a separate post-v0.13 ticket?
 - If a future release needs effectivity-specific validation or sugar, should that be introduced as a separate additive API instead of broadening the generic satellite contract?
 
-## Risks
+Risks
 - The main immediate risk is documentation drift: `README.md` and the old fluent planning doc still understate the live Code-First surface and could make reviewers think effectivity is unsupported.
 - The story title can invite over-design; without this contract, implementation could incorrectly introduce effectivity-specific metadata, columns, or builder verbs that the current repository architecture does not need.
 - Typed save-helper limitations are easy to over-assume because generic link-parent satellite save/read support exists while the convenience helper still rejects link-parent and driving-key shapes.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended from current evidence; keep this ticket as a bounded contract/ratification story around the existing generic link-parent satellite surface.
 - If product later wants first-class effectivity-specific APIs, validators, or typed-helper convenience, create separate follow-on tickets instead of reopening the generic satellite baseline.
 - Keep README/release-note cleanup on `06F2PGM9038RXVJH0RJFYEJEV0`.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 4
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Model effectivity satellites in fluent Code-First metadata.
-
-## Scope
-- Refine and complete the work for "Add Code-First effectivity satellite support" within the boundaries of its parent story, epic, and release.
-- Keep the implementation focused on the affected DVault feature area; avoid unrelated refactorings or package shape changes unless they are required by the ticket.
-- Update tests, examples, diagnostics, provider behavior, and documentation only where they are relevant to this ticket's observable behavior.
-
-## Acceptance Criteria
-- The completed ticket includes clear evidence of the implemented behavior, verification steps, and any intentionally deferred work.
-- Relevant unit, integration, provider, analyzer, or documentation checks are added or updated, or the ticket documents why a check is not applicable.
-- Public behavior, command output, generated SQL, package contents, examples, README content, and release notes are updated when this ticket changes them.
-- The result remains compatible with the release ordering and relations; dependent tickets can start without reworking this ticket's scope.
-
-## Release Notes
-- If this ticket changes public behavior, package shape, examples, diagnostics, generated SQL, or provider behavior, update README and the release note document for this release before integration.
+Run mode
+- apply: planned updates are applied after this comment

@@ -3,19 +3,18 @@
   "ticket-id": "06F2PGKV9AFAMKGJEKKZ3AXHGC",
   "ticket-type": null,
   "title": "Story: Add Code-First effectivity satellite support",
-  "revision": "06F2PNKFW68EMY6BAWTVZ6HFBM",
-  "status": "todo",
+  "revision": "06F3FBM4VN5W7DFJDSM3RYK0GW",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/story",
     "area/code-first",
     "area/modeling",
     "area/persistence",
-    "needs-po"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9CW55MJXTYMNFBJ0CCMC",
   "releaseId": "06F2PH9C2PY0EBJBJNQA9338XC",
   "created-at": "2026-05-15T10:50:38.3443276Z",
-  "updated-at": "2026-05-15T11:12:25.5696267Z"
+  "updated-at": "2026-05-17T20:44:04.7017963Z"
 }
