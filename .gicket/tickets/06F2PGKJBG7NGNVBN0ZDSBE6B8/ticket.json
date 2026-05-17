@@ -3,18 +3,17 @@
   "ticket-id": "06F2PGKJBG7NGNVBN0ZDSBE6B8",
   "ticket-type": null,
   "title": "Task: Test link-parent satellite metadata projection",
-  "revision": "06F2PNKCJTGFVQ10PN6CWW1NWG",
-  "status": "todo",
+  "revision": "06F3EATE594RQKHPH9C9HSJPP0",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/task",
     "area/code-first",
     "area/testing",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9CW55MJXTYMNFBJ0CCMC",
   "releaseId": "06F2PH9C2PY0EBJBJNQA9338XC",
   "created-at": "2026-05-15T10:50:36.6237638Z",
-  "updated-at": "2026-05-15T11:12:24.7264685Z"
+  "updated-at": "2026-05-17T18:20:45.4821226Z"
 }
