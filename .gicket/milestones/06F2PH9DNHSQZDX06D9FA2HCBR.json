@@ -3,6 +3,6 @@
   "milestoneId": "06F2PH9DNHSQZDX06D9FA2HCBR",
   "name": "v0.13.0 - Same-as and dependent child modeling",
   "description": "Fluent support and diagnostics for same-as links and dependent child keys.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-15T10:53:34.5084522Z"
 }
