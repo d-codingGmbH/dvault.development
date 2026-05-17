@@ -3,7 +3,7 @@
   "ticket-id": "06F2PGJGDGMXHPT1VP0ASQ5HJ4",
   "ticket-type": null,
   "title": "Story: Add source-generated metadata helper foundation",
-  "revision": "06F2PNJYXKHPMFG2CAMEDFMZ6R",
+  "revision": "06F37T69B79HZP7GT60KWEAPFR",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
@@ -17,5 +17,5 @@
   "milestoneId": "06F2PH9B92XX975C9APSZQSGSC",
   "releaseId": "06F2PH99NN9B0S4RZW0NPST1CR",
   "created-at": "2026-05-15T10:50:26.9758020Z",
-  "updated-at": "2026-05-15T11:12:21.2281375Z"
+  "updated-at": "2026-05-17T03:09:14.4578357Z"
 }
