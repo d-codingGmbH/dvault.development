@@ -3,6 +3,6 @@
   "milestoneId": "06F2PH9AFGQEK2SPR3WJAAH3DG",
   "name": "v0.12.0 - Analyzer rule and code-fix expansion",
   "description": "High-confidence Roslyn diagnostics and fixes for common Code-First mistakes.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-15T10:53:33.6927731Z"
 }
