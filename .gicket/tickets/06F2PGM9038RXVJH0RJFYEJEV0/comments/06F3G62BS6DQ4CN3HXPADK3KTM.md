@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the v0.13.0 documentation ticket into a bounded release-closure doc sweep: create `docs/releases/v0.13.0.md`, align current-baseline docs to `0.13.0`, and document the shipped Code-First parity surface without claiming deferred dependent-child or effectivity-specific APIs.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Repository evidence shows `docs/releases` currently stops at `v0.12.0`, while live release `06F2PH9C2PY0EBJBJNQA9338XC` is active as `v0.13.0 - Code-First Parity Expansion`; this ticket owns the missing coordinated `docs/releases/v0.13.0.md` closure.
 - Live `.gicket` state keeps this task under epic `06F2PGK4QJ0YGXK5479W83Z2J0`; incoming `blocks` relations from done tickets `06F2PGM1HQ5W1M2H8T50MZ3EEC`, `06F2PGKAQVVF8GEZVVC8SHFASG`, `06F2PGKV9AFAMKGJEKKZ3AXHGC`, and `06F2PGHJAFMH80TZAMANQWH9PW` are satisfied historical context rather than PO blockers.
 - Current ticket comments contain only automation lease comments; no human follow-up comment changes the scope.
@@ -19,7 +18,7 @@
 - No visible shipped public API baseline exists for dependent child key modeling in the current repository, so v0.13 docs should treat that capability as deferred rather than documented release scope.
 - No child tickets, relation writes, attachments, or planning documents were materialized in this refinement run.
 
-### Scope In
+Scope In
 - Create `docs/releases/v0.13.0.md` using the established release-note structure and the live v0.13 release context.
 - Update root `README.md` so installation snippets, current-release references, and Code-First guidance align to `0.13.0` and describe the shipped parity surface: explicit or derived links, repeated same-hub links with distinct roles, hub-parent satellites, and link-parent satellites.
 - Document that repeated same-hub Code-First links require an explicit link name plus distinct `Participant<TEntity>(string role)` roles, and add one canonical same-as or self-link example that shows that pattern.
@@ -27,7 +26,7 @@
 - Version-align and minimally refresh other current-baseline docs that still present the old `0.12.0` or hub-parent-only narrative, including `examples/README.md`, `docs/model-first-governance.md`, `docs/production-adoption-checklist.md`, and any touched package-local install guidance such as `src/DCoding.Data.DVault.Analyzers/README.md`.
 - Keep the existing architecture boundaries explicit in touched docs: metadata-first and model-first remain authoritative alternatives for other ownership needs, and there is still no public Code-First-to-registry bridge.
 
-### Scope Out
+Scope Out
 - Any new runtime, modeling, analyzer, persistence, or package-shape implementation; this ticket documents shipped behavior only.
 - Dependent child key modeling, including any new link-key metadata, hashing contract, or public API claim for that unfinished capability.
 - A new effectivity-specific fluent API, metadata kind, annotation set, or technical column family.
@@ -35,65 +34,34 @@
 - Retrofitting the runnable quickstarts away from their current metadata-first posture or adding a new end-to-end sample project unless a short consistency note is sufficient.
 - Relation cleanup, child-ticket creation, or broader planning-graph reshaping.
 
-## Acceptance Criteria
-- `docs/releases/v0.13.0.md` exists and records the coordinated `v0.13.0 - Code-First Parity Expansion` release with aligned `0.13.0` package versions, highlights, compatibility notes, known limitations, documentation updates, and validation-evidence pointers consistent with repository state.
-- Root `README.md` no longer presents `v0.12.0` as the current baseline and accurately describes the shipped Code-First surface, including `Participant<TEntity>(string role)` for repeated same-hub links and `Link(...).Satellite<TSatellite>(...)` for link-parent satellites.
-- Touched public docs and versioned install snippets align to `0.13.0` and no longer describe link-parent satellites as metadata-first-only or Code-First as hub-parent-only.
-- At least one touched doc or the v0.13 release notes shows an explicitly named same-as or self-link example with distinct participant roles so the required declaration pattern is unambiguous.
-- Touched docs explicitly state that effectivity in v0.13 is modeled through generic link-parent satellites rather than a separate effectivity-specific API or entity family.
-- Touched docs do not claim dependent child key modeling or same-hub typed mapper/source-generator parity unless the repository surface actually shows that support, and they keep the explicit save and metadata-authority boundaries intact.
-
-## Definition of Done
-- Repository-facing public guidance has one current coordinated release record at `docs/releases/v0.13.0.md`, and touched current-baseline docs consistently point to `0.13.0`.
-- README-level and supporting docs reflect the shipped Code-First parity expansion without reopening architecture: same-hub role-bearing links, link-parent satellites, and effectivity as a generic link-parent satellite pattern are documented, while metadata-first and model-first remain valid alternatives.
-- Deferred items such as dependent child keys and same-hub typed mapper or source-generator parity are clearly kept out of the v0.13 public claim set.
-- No additional child ticket, attachment, planning document, or relation change is required for PO-critic review.
-
-## Implementation Notes
-- Use live repository code and tests as the truth set for the doc update: `src/DCoding.Data.DVault/DataVaultCodeFirstLinkBuilder.cs`, `DataVaultCodeFirstModelBuilder.cs`, `tests/DCoding.Data.DVault.Tests/Unit/DataVaultCodeFirstLinkTests.cs`, `DataVaultModelArtifactExporterTests.cs`, `tests/DCoding.Data.DVault.Tests/Integration/ExplicitDataVaultSaveServiceSqliteTests.cs`, and the public API snapshot.
-- Carry forward the existing explicit-boundary language from current docs: Code-First is additive, there is still no public Code-First-to-registry bridge, and the quickstarts can remain metadata-first.
-- Describe repeated same-hub support with the repository-visible term `role`, not an alternate synonym, and keep the explicit-link-name requirement visible.
-- If touched docs discuss effectivity persistence or reads, keep them on the already-ratified generic link-parent satellite path: explicit registry save requests and generic latest or as-of satellite read flows, without implying hub-satellite typed helper convenience.
-- If `docs/plans/fluent-code-first-api-contract.md` or other older planning docs are touched, limit the change to a narrow superseding note or boundary correction so they stop contradicting current shipped behavior without rewriting historical ticket contracts wholesale.
-- If `src/DCoding.Data.DVault.Analyzers/README.md` is touched, keep the change minimal and version-alignment-only; v0.13 is not an analyzer-feature release.
-- No child tickets, relation rewrites, attachments, or planning documents were created during refinement.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should a later examples ticket add a runnable end-to-end Code-First sample for same-as links or link-parent/effectivity satellites instead of keeping v0.13 at README and release-note level?
 - If future work delivers dependent child key modeling, should that ship with a separate release-note and documentation sweep rather than being backfilled into the v0.13 story?
 - If product later wants first-class effectivity-specific sugar or validation, should that arrive as a separate additive API instead of broadening the generic link-parent satellite contract?
 
-## Risks
+Risks
 - If the docs sweep only bumps versions without correcting the surface boundary, public guidance will remain inconsistent and understate shipped Code-First behavior.
 - If v0.13 docs overstate the release by claiming dependent child keys or effectivity-specific APIs, the release history will be misleading.
 - If touched docs omit the explicit-name-plus-role pattern for repeated same-hub links, adopters may infer that derived names work or that same-hub links remain unsupported.
 - If touched docs blur metadata-first, model-first, and Code-First responsibilities, adopters may infer a new metadata authority or save boundary that the repository does not provide.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended; done implementation tickets already isolate same-hub role support, link-parent satellites, and effectivity ratification, and this ticket is the bounded v0.13 documentation closure.
 - If product later wants runnable same-as/effectivity samples or dependent child key documentation, track those as separate follow-on tickets instead of widening this release-closure task.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 4
+- implementation-notes items: 7
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Document Code-First parity expansion accurately.
-
-## Scope
-- Refine and complete the work for "Update v0.13.0 documentation and release notes" within the boundaries of its parent story, epic, and release.
-- Keep the implementation focused on the affected DVault feature area; avoid unrelated refactorings or package shape changes unless they are required by the ticket.
-- Update tests, examples, diagnostics, provider behavior, and documentation only where they are relevant to this ticket's observable behavior.
-
-## Acceptance Criteria
-- The completed ticket includes clear evidence of the implemented behavior, verification steps, and any intentionally deferred work.
-- Relevant unit, integration, provider, analyzer, or documentation checks are added or updated, or the ticket documents why a check is not applicable.
-- Public behavior, command output, generated SQL, package contents, examples, README content, and release notes are updated when this ticket changes them.
-- The result remains compatible with the release ordering and relations; dependent tickets can start without reworking this ticket's scope.
-
-## Release Notes
-- If this ticket changes public behavior, package shape, examples, diagnostics, generated SQL, or provider behavior, update README and the release note document for this release before integration.
+Run mode
+- apply: planned updates are applied after this comment

@@ -16,9 +16,11 @@ Use this checklist when preparing a DVault-consuming application for production.
 ## Model Declaration Readiness
 
 - [ ] Choose one authoritative model declaration path for each model boundary: Code-First metadata, metadata-first registry-backed metadata, or governed model-first `dvault.model.v1` artifacts.
-- [ ] Use Code-First declarations when the model is local to one EF model and fits the fluent hub, satellite, multi-active driving-key, and ordered link surface described in the [README quickstart](../README.md#quickstart).
+- [ ] Use Code-First declarations when the model is local to one EF model and fits the fluent hub, hub-parent satellite, link-parent satellite, multi-active driving-key, explicit or derived link, and repeated same-hub role-bearing link surface described in the [README quickstart](../README.md#quickstart).
 - [ ] Use metadata-first registry-backed metadata when one shared `DataVaultMetadataModel` or `DataVaultMetadataRegistry` should drive schema projection, explicit saves, typed reads, diagnostics, examples, or provider setup.
 - [ ] Use model-first governance when source-controlled `dvault.model.v1` JSON artifacts need review, strict import diagnostics, canonical export, projection into EF metadata, and drift-report evidence. Follow [Model-First Governance Workflow](model-first-governance.md).
+- [ ] For repeated same-hub Code-First links, require an explicit relationship name plus distinct non-blank `Participant<TEntity>(string role)` roles so generated participant names and hash-key columns are unambiguous.
+- [ ] Model effectivity in v0.13 as caller-owned link-parent satellite state declared with `Link(...).Satellite<TSatellite>(...)`, `Payload(...)`, and optional `DrivingKey(...)`; do not assume an effectivity-specific builder or metadata kind exists.
 - [ ] Mark multi-active satellites, PIT declarations, and bridge declarations as explicit opt-in model features in the adopter's design notes. They are not prerequisites for ordinary hub, link, and satellite setup.
 
 ## Migration And Drift Guardrails
@@ -69,6 +71,8 @@ bash tools/check-format.sh
 ## Current Limitations To Keep Visible
 
 - DVault's default path is explicit and service-based. It does not make Data Vault persistence implicit through EF entity tracking.
+- Dependent child key modeling is outside the v0.13 public documentation baseline.
+- Repeated same-hub runtime and metadata support does not imply typed mapper or source-generator parity for repeated same-hub mappings.
 - Design-time guardrails are explicit library APIs owned by the consumer project. DVault does not intercept EF migration commands.
 - PIT-backed reads and bridge reads operate over already materialized tables and do not maintain those tables.
 - SQLite is the default local live-schema proof because it does not need external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema readers are built in but remain external opt-in operational checks.

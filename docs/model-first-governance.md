@@ -1,12 +1,12 @@
 # Model-First Governance Workflow
 
-Status: v0.12.0 public guidance
+Status: v0.13.0 public guidance
 
-This guide describes how teams should use governed `dvault.model.v1` JSON artifacts alongside the existing Code-First and metadata-first DVault paths. Earlier release notes remain historical package context; `docs/releases/v0.12.0.md` is the current public baseline for analyzer/generator ergonomics, model-first import, export, projection, design-time drift, and optional live-schema drift guidance.
+This guide describes how teams should use governed `dvault.model.v1` JSON artifacts alongside the existing Code-First and metadata-first DVault paths. Earlier release notes remain historical package context; `docs/releases/v0.13.0.md` is the current public baseline for Code-First parity expansion, analyzer/generator ergonomics, model-first import, export, projection, design-time drift, and optional live-schema drift guidance.
 
 ## Choose A Declaration Path
 
-Use Code-First declarations when the Data Vault model is local to one EF model and fits the implemented fluent surface for hubs, hub-parent satellites, multi-active driving keys, and ordered hub links. This keeps schema intent close to `OnModelCreating` through `ApplyDataVaultMetadata(vault => ...)` and is the simplest application-local path.
+Use Code-First declarations when the Data Vault model is local to one EF model and fits the implemented fluent surface for hubs, hub-parent satellites, link-parent satellites, multi-active driving keys, explicit or derived hub links, and explicitly named repeated same-hub links with distinct participant roles. This keeps schema intent close to `OnModelCreating` through `ApplyDataVaultMetadata(vault => ...)` and is the simplest application-local path.
 
 Use metadata-first registry-backed metadata when one shared authoritative `DataVaultMetadataModel` or `DataVaultMetadataRegistry` should drive EF projection, explicit save requests, typed latest/as-of reads, diagnostics, examples, or provider setup. Register that model or registry through `AddDVault(...)` and opt DbContexts into it with `UseDataVaultMetadata()`.
 
@@ -42,6 +42,13 @@ Canonical v1 JSON uses the stable top-level declaration categories `hubs`, `link
         { "hub": "Customer" },
         { "hub": "Order" }
       ]
+    },
+    {
+      "name": "CustomerIdentityMatch",
+      "participants": [
+        { "hub": "Customer", "role": "SourceCustomer" },
+        { "hub": "Customer", "role": "MatchedCustomer" }
+      ]
     }
   ],
   "satellites": [
@@ -53,6 +60,15 @@ Canonical v1 JSON uses the stable top-level declaration categories `hubs`, `link
       },
       "payload": ["Name", "EmailAddress"],
       "drivingKeys": []
+    },
+    {
+      "name": "CustomerOrderState",
+      "parent": {
+        "kind": "link",
+        "name": "CustomerOrder"
+      },
+      "payload": ["StatusCode", "StateChangedAt"],
+      "drivingKeys": ["StateSource"]
     }
   ],
   "pits": [
@@ -223,4 +239,4 @@ Do not use unknown fields for comments, vendor metadata, experimental parser hin
 
 The current baseline provides reusable library-hosted design-time command verbs through a consumer-owned command host, but it does not ship a standalone DVault CLI, intercept `dotnet ef`, apply migrations, or repair schema drift automatically. The command verbs are `validate`, `export`, `drift`, and `guardrail`; `export` is for artifact maintenance and reviewed refresh workflows, not the default blocking CI gate. Direct YAML ingestion and extraction from arbitrary EF `ModelBuilder` state into a model artifact remain outside the current contract.
 
-The model-first APIs operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata. Keep standalone CLI packaging, YAML semantics, database provisioning, secret-management recipes, and EF model reverse-engineering as separate future contracts instead of implying support in current examples.
+The model-first APIs operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata. v0.13 artifacts can represent repeated same-hub participant roles and link-parent satellites, including effectivity modeled as ordinary caller-owned link-parent satellite state. Dependent child key modeling, same-hub typed mapper or source-generator parity, and effectivity-specific fluent APIs remain outside the current public claim set. Keep standalone CLI packaging, YAML semantics, database provisioning, secret-management recipes, and EF model reverse-engineering as separate future contracts instead of implying support in current examples.

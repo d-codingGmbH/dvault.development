@@ -7,13 +7,13 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.12.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.12.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.12.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.12.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.12.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.12.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.12.0
+dotnet add package DCoding.Data.DVault --version 0.13.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.13.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.13.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.13.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.13.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.13.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.13.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
@@ -28,7 +28,7 @@ For a short adopter readiness pass before production use, see the [Production Ad
 
 Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has an Entity Framework Core provider configured. DVault supports three additive declaration paths:
 
-- Code-First declarations for app-local EF models that fit the fluent hub, hub-parent satellite, multi-active driving-key, and ordered hub-link surface.
+- Code-First declarations for app-local EF models that fit the fluent hub, hub-parent satellite, link-parent satellite, multi-active driving-key, explicit or derived hub-link, and explicitly named repeated same-hub link surface.
 - Metadata-first declarations through a shared `DataVaultMetadataModel` or `DataVaultMetadataRegistry` when one public metadata object should drive schema projection, explicit saves, typed latest/as-of reads, diagnostics, examples, or provider setup.
 - Model-first governance for reviewed `dvault.model.v1` JSON artifacts that should be imported, projected into EF metadata, exported canonically, and compared against generated metadata for drift evidence.
 
@@ -84,6 +84,16 @@ public sealed class SalesVaultContext(DbContextOptions<SalesVaultContext> option
       vault.Link("CustomerOrder", link => {
         link.Participant<Customer>();
         link.Participant<Order>();
+        link.Satellite<CustomerOrderState>("State", satellite => {
+          satellite.DrivingKey(state => state.StateSource);
+          satellite.Payload(state => state.StatusCode);
+          satellite.Payload(state => state.StateChangedAt);
+        });
+      });
+
+      vault.Link("CustomerIdentityMatch", link => {
+        link.Participant<Customer>("SourceCustomer");
+        link.Participant<Customer>("MatchedCustomer");
       });
     });
   }
@@ -100,9 +110,17 @@ public sealed class Customer {
 public sealed class Order {
   public string OrderId { get; set; } = string.Empty;
 }
+
+public sealed class CustomerOrderState {
+  public string StateSource { get; set; } = string.Empty;
+  public string StatusCode { get; set; } = string.Empty;
+  public DateTimeOffset StateChangedAt { get; set; }
+}
 ```
 
 Code-First metadata is additive. It does not ask callers to put DVault hash-key, load-timestamp, or record-source technical fields on domain entities, and it does not create a public Code-First-to-registry bridge. Callers that want the same public metadata object reused by schema, save, and read paths should use the registry-backed metadata path shown below.
+
+Code-First link names can be explicit or, for non-repeated hub participants, derived from participant order. When the same hub type appears more than once in one link, use an explicit relationship name and distinct `Participant<TEntity>(string role)` roles; those roles become participant names and generated hash-key columns such as `SourceCustomerHashKey` and `MatchedCustomerHashKey`. Link-parent satellites are declared inside `Link(..., link => ...)` with `link.Satellite<TSatellite>(...)`, and they use the same `Payload(...)` and optional `DrivingKey(...)` selector rules as hub-parent satellites. Effectivity in v0.13 is modeled as caller-owned link-parent satellite state on a link; DVault does not add an effectivity-specific builder, metadata kind, or entity family.
 
 ### Save explicitly
 
@@ -429,7 +447,7 @@ Provider-specific save-strategy registration and provider capability-profile sel
 
 v0.5 metadata-first `DataVaultMetadataModel` usage remains valid in v0.6.0. Existing applications can keep constructing metadata models, registering them with `AddDVault(options => options.UseMetadataModel(...))`, and opting DbContexts into `UseDataVaultMetadata()`.
 
-New application code can prefer Code-First declarations when the Data Vault model fits the implemented hub-parent satellite and ordered hub-link surface. Keep metadata-first declarations for shared metadata registries, example-local quickstarts, link-parent satellite shapes, bridge/PIT metadata baselines, or naming requirements outside the bounded Code-First API.
+New application code can prefer Code-First declarations when the Data Vault model fits the implemented hub-parent satellite, link-parent satellite, multi-active driving-key, explicit or derived link, and repeated same-hub role-bearing link surface. Keep metadata-first declarations for shared metadata registries, example-local quickstarts, bridge/PIT metadata baselines, dependent child key modeling, custom naming requirements, or any scenario that needs one public metadata object reused by schema, save, and read paths.
 
 ### Query generated tables
 
@@ -474,32 +492,28 @@ Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadS
 
 SQLite remains the default local live-schema proof because it does not require external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks require consumer-managed reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation. Keep those external provider checks opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
 
-## v0.12.0 Release Notes
+## v0.13.0 Release Notes
 
-The v0.12.0 release documents the current analyzer and source-generator ergonomics layer while keeping the explicit DVault persistence and EF design-time boundaries intact. See `docs/releases/v0.12.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
+The v0.13.0 release records the Code-First parity expansion while keeping the explicit DVault persistence and metadata-authority boundaries intact. See `docs/releases/v0.13.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
 
 Notable user-facing changes:
 
-- `DCoding.Data.DVault.Analyzers` keeps the carried-forward DMV1901/DMV1902 Code-First selector diagnostics and adds bounded code fixes for directly expandable anonymous-object selectors and later duplicate declarations.
-- DMV1950 through DMV1955 report malformed compile-time mapping declarations, missing generated row bindings, invalid source members, duplicate binding order or names, and repeated link participant hub names.
-- The analyzer package source generator emits registry-backed typed row mappers from public `DCoding.Data.DVault` mapping attributes.
-- Generated helpers construct the same `DataVaultRegistry*SaveOperation` values as manual typed mappers and still require caller-supplied `loadTimestamp`, `recordSource`, and explicit `IDataVaultSaveService` calls.
-- `DataVaultDesignTimeCommand` and `DataVaultDesignTimeCommandHost` provide reusable library-hosted `validate`, `export`, `drift`, and `guardrail` verbs for consumer-owned command hosts.
-- `drift --artifact <path>` is the default artifact-versus-design-time-model gate when a reviewed `dvault.model.v1` artifact exists.
-- `export` is for artifact maintenance and reviewed refresh workflows, not the default blocking CI gate.
-- `drift --artifact <path> --live-schema` keeps live-schema checks opt-in and separate from the default metadata-only drift lane.
-- `DataVaultLiveSchemaReader.ReadAsync(context)` has built-in reader dispatch for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, including both `MySql.EntityFrameworkCore` and Pomelo provider names.
-- External provider live-schema checks remain consumer-managed operational evidence with explicit connection strings, credentials, database lifecycle, and CI isolation.
-- `UseDataVaultSaveChangesMetadataInterceptor(...)` provides an opt-in EF `SaveChanges` interceptor that fills missing `LoadTimestamp` and `RecordSource` values for added generated hub, link, and satellite rows.
-- The default `AddDVault()` path still registers no `SaveChanges` interceptor; explicit `IDataVaultSaveService` persistence remains the main write boundary.
-- SQLite-backed compatibility tests prove that DVault metadata annotations survive compiled model usage and that EF compiled queries can read generated shared-type DVault tables.
-- The existing typed read helpers and provider save-strategy SPI are documented as the v1 read and bulk-save boundaries for this release.
+- Code-First links continue to support explicit relationship names and derived names for non-repeated hub participants.
+- Repeated same-hub Code-First links are supported when the link has an explicit relationship name and every repeated participant uses a distinct non-blank `Participant<TEntity>(string role)` role.
+- Role-bearing same-hub participants produce stable role-based participant names and generated columns such as `SourceCustomerHashKey` and `MatchedCustomerHashKey`.
+- Code-First link-parent satellites are declared with `Link(...).Satellite<TSatellite>(...)` and project as satellites whose parent kind is `Link`.
+- Link-parent satellites use the existing `Payload(...)` and optional `DrivingKey(...)` selector surface, so effectivity can be modeled as caller-owned link-parent satellite state without a separate effectivity-specific API.
+- Model-first export and import preserve link-parent satellites and participant roles in `dvault.model.v1` artifacts.
+- Metadata-first and model-first remain authoritative alternatives for shared registries, reviewed artifacts, bridge/PIT declarations, custom naming, and model ownership outside the bounded Code-First surface.
+- The analyzer package remains optional developer tooling; v0.13 is not an analyzer-feature release.
 
-## Current v0.12.0 Limitations
+## Current v0.13.0 Limitations
 
-Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.12.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
+Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.13.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
 
-Model-first APIs continue to operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization. The metadata interceptor is opt-in and metadata-only: callers still own generated row creation, hash-key and hash-diff values, save ordering, and explicit service-based persistence when they use `IDataVaultSaveService`. The analyzer package is not a complete model validator; it covers the documented Code-First selector diagnostics, duplicate-member diagnostics, bounded code fixes, and compile-time mapping declaration diagnostics only.
+Model-first APIs continue to operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization. The metadata interceptor is opt-in and metadata-only: callers still own generated row creation, hash-key and hash-diff values, save ordering, and explicit service-based persistence when they use `IDataVaultSaveService`.
+
+Dependent child key modeling is not part of the v0.13 public claim set. Repeated same-hub runtime and metadata support does not imply typed link-mapper or source-generator parity for repeated same-hub mappings; generated and manual typed link mappers continue to use the existing unique-participant mapping boundary. Effectivity remains a generic link-parent satellite pattern rather than a first-class effectivity entity family, fluent builder, metadata kind, or technical column set. The analyzer package is not a complete model validator; it covers the documented Code-First selector diagnostics, duplicate-member diagnostics, bounded code fixes, and compile-time mapping declaration diagnostics only.
 
 ## Layout
 

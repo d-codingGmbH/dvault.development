@@ -1,6 +1,7 @@
 # Fluent Code-First Hub, Satellite, and Link Contract
 
 Status: v1 planning contract
+Superseding shipped note: v0.13.0 extends the original bounded planning baseline with repeated same-hub participant roles and link-parent satellites. Use the current README and `docs/releases/v0.13.0.md` for shipped public behavior.
 Ticket: 06F0ME976PM5455JK04S6GPNNW
 Parent story: 06F0ME8NFJX6CD20MEA10J761R
 Implementation children: 06F0ME9PM8KXH3VP59TQR0ETA8, 06F0MEA1FF743S14XQW02H4A3W, 06F0MEAD1BAA5QEVM3F9QJA38G
@@ -78,7 +79,7 @@ modelBuilder.ApplyDataVaultMetadata(vault => {
 
 - `DrivingKey(...)` is the only fluent opt-in for multi-active satellite behavior. There is no separate boolean flag or options object.
 - Repeated `DrivingKey(...)` calls define the canonical driving-key order and align with the existing multi-active driving-key contract.
-- The bounded v1 Code-First implementation baseline for this story is hub-parent satellites only. Link-parent satellites remain available through metadata-first declarations and can be added as a later fluent expansion without changing the verbs defined here.
+- The original bounded v1 Code-First implementation baseline for this planning story was hub-parent satellites only. v0.13 later added link-parent satellites through `DataVaultCodeFirstLinkBuilder.Satellite<TSatellite>(...)`; this note preserves the historical contract while deferring current shipped behavior to the release notes and README.
 
 ## Link Contract
 
