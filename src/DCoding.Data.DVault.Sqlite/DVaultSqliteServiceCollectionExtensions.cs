@@ -142,7 +142,7 @@ internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrate
       DataVaultLinkSaveOperation operation) {
     var link = operation.Metadata;
     var participantNames = link.Participants
-        .Select(participant => participant.HubReference.Name)
+        .Select(participant => participant.SourceEndpointName)
         .ToArray();
     var tableName = NamingPolicy.GetLinkTableName(new DataVaultLinkNameContext(link.Name, participantNames));
     var linkHashKeyColumnName = NamingPolicy.GetTechnicalColumnName(

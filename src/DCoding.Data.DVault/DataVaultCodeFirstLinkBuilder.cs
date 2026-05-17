@@ -17,7 +17,22 @@ public sealed class DataVaultCodeFirstLinkBuilder {
   /// <returns>The same link builder so additional participants can be configured fluently.</returns>
   public DataVaultCodeFirstLinkBuilder Participant<TEntity>()
       where TEntity : class {
-    _declaration.ParticipantClrTypes.Add(typeof(TEntity));
+    _declaration.Participants.Add(new DataVaultCodeFirstModelBuilder.ParticipantDeclaration(typeof(TEntity), role: null));
+
+    return this;
+  }
+
+  /// <summary>
+  /// Adds one participating hub CLR type to the link in declaration order with an explicit participant role.
+  /// </summary>
+  /// <typeparam name="TEntity">The CLR entity type for a previously configured hub participant.</typeparam>
+  /// <param name="role">The provider-neutral participant role used as the produced participant name.</param>
+  /// <returns>The same link builder so additional participants can be configured fluently.</returns>
+  public DataVaultCodeFirstLinkBuilder Participant<TEntity>(string role)
+      where TEntity : class {
+    ArgumentException.ThrowIfNullOrWhiteSpace(role);
+
+    _declaration.Participants.Add(new DataVaultCodeFirstModelBuilder.ParticipantDeclaration(typeof(TEntity), role));
 
     return this;
   }

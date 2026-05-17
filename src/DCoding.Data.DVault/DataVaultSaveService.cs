@@ -292,7 +292,7 @@ public sealed class DataVaultRegistryLinkSaveOperation {
   /// Initializes a new registry-backed link save operation.
   /// </summary>
   /// <param name="linkName">The exact logical link metadata name to resolve from the authoritative registry.</param>
-  /// <param name="participantHashKeyValues">Participant hash keys keyed by the resolved link participant hub metadata names.</param>
+  /// <param name="participantHashKeyValues">Participant hash keys keyed by the resolved link produced participant names.</param>
   public DataVaultRegistryLinkSaveOperation(
       string linkName,
       IEnumerable<KeyValuePair<string, string>> participantHashKeyValues) {
@@ -308,7 +308,7 @@ public sealed class DataVaultRegistryLinkSaveOperation {
   public string LinkName { get; }
 
   /// <summary>
-  /// Gets participant hash keys keyed by the resolved link participant hub metadata names.
+  /// Gets participant hash keys keyed by the resolved link produced participant names.
   /// </summary>
   public IReadOnlyDictionary<string, string> ParticipantHashKeyValues { get; }
 }
@@ -566,7 +566,7 @@ public sealed class DataVaultLinkSaveOperation {
   /// Initializes a new link save operation.
   /// </summary>
   /// <param name="metadata">The link metadata declaration that owns the target table and participant shape.</param>
-  /// <param name="participantHashKeyValues">Participant hash keys keyed by the participant hub metadata names.</param>
+  /// <param name="participantHashKeyValues">Participant hash keys keyed by the produced participant names.</param>
   public DataVaultLinkSaveOperation(
       DataVaultLinkMetadata metadata,
       IEnumerable<KeyValuePair<string, string>> participantHashKeyValues) {
@@ -584,7 +584,7 @@ public sealed class DataVaultLinkSaveOperation {
   public DataVaultLinkMetadata Metadata { get; }
 
   /// <summary>
-  /// Gets participant hash keys keyed by the participant hub metadata names.
+  /// Gets participant hash keys keyed by the produced participant names.
   /// </summary>
   public IReadOnlyDictionary<string, string> ParticipantHashKeyValues { get; }
 }
@@ -1015,7 +1015,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       DataVaultLinkSaveOperation operation) {
     var link = operation.Metadata;
     var participantNames = link.Participants
-        .Select(participant => participant.HubReference.Name)
+        .Select(participant => participant.SourceEndpointName)
         .ToArray();
     var tableName = NamingPolicy.GetLinkTableName(new DataVaultLinkNameContext(link.Name, participantNames));
     var linkHashKeyColumnName = NamingPolicy.GetTechnicalColumnName(
@@ -1380,14 +1380,18 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
   }
 
   private static IEnumerable<Dictionary<string, object>> GetTrackedRows(DbContext dbContext, string tableName) {
-    foreach (var entry in dbContext.ChangeTracker.Entries<Dictionary<string, object>>()) {
+    foreach (var entry in dbContext.ChangeTracker.Entries()) {
       if (entry.State == EntityState.Deleted) {
+        continue;
+      }
+
+      if (entry.Entity is not Dictionary<string, object> row) {
         continue;
       }
 
       var producedName = entry.Metadata.FindAnnotation(DataVaultAnnotationNames.ProducedName)?.Value as string;
       if (string.Equals(producedName ?? entry.Metadata.Name, tableName, StringComparison.Ordinal)) {
-        yield return entry.Entity;
+        yield return row;
       }
     }
   }

@@ -3,19 +3,18 @@
   "ticket-id": "06F2PGM1HQ5W1M2H8T50MZ3EEC",
   "ticket-type": null,
   "title": "Story: Add same-as link and dependent child key modeling",
-  "revision": "06F2PNKHK38BD77MZ91V83HWH0",
-  "status": "todo",
+  "revision": "06F3G31TQ8CCW8C54QBH6Y5GGR",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/story",
     "area/code-first",
-    "area/modeling",
     "area/diagnostics",
-    "needs-po"
+    "area/modeling",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9DNHSQZDX06D9FA2HCBR",
   "releaseId": "06F2PH9C2PY0EBJBJNQA9338XC",
   "created-at": "2026-05-15T10:50:39.9852563Z",
-  "updated-at": "2026-05-15T11:12:26.0082511Z"
+  "updated-at": "2026-05-17T22:26:26.1061347Z"
 }

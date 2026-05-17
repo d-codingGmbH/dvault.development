@@ -225,7 +225,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
       LinkProjection projection) {
     var link = operation.Metadata;
     var participantNames = link.Participants
-        .Select(participant => participant.HubReference.Name)
+        .Select(participant => participant.SourceEndpointName)
         .ToArray();
     var participantHashKeyFields = participantNames
         .Select(participantName => new KeyValuePair<string, string>(
@@ -370,7 +370,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
 
   private static LinkProjection CreateLinkProjection(DataVaultLinkMetadata link) {
     var participantNames = link.Participants
-        .Select(participant => participant.HubReference.Name)
+        .Select(participant => participant.SourceEndpointName)
         .ToArray();
     var tableName = NamingPolicy.GetLinkTableName(new DataVaultLinkNameContext(link.Name, participantNames));
     var linkHashKeyColumnName = NamingPolicy.GetTechnicalColumnName(

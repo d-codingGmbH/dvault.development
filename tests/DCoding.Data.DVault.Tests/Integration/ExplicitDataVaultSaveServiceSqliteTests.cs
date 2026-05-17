@@ -76,6 +76,74 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     }
   }
 
+  [Fact]
+  public async Task DefaultSaveServicePersistsRoleBearingSameHubLinkRowsThroughSqlite() {
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
+    var customerSameAs = CreateCustomerIdentityMatchLinkMetadata();
+    var loadTimestamp = new DateTimeOffset(2026, 5, 17, 10, 15, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<SameAsSaveServiceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    string sourceCustomerHashKey;
+    string matchedCustomerHashKey;
+
+    await using (var context = new SameAsSaveServiceContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+
+      var hubResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              loadTimestamp,
+              "crm-import",
+              [
+                  new(customer, [new("CustomerId", "C-100")]),
+                  new(customer, [new("CustomerId", "C-200")]),
+              ],
+              []));
+
+      var customerHashKeys = hubResult.SavedRecords
+          .Where(record => record.Kind == DataVaultTableKind.Hub && record.MetadataName == "Customer")
+          .Select(record => record.HashKey)
+          .ToArray();
+
+      Assert.Equal(2, hubResult.RowsWritten);
+      Assert.Equal(2, customerHashKeys.Length);
+
+      sourceCustomerHashKey = customerHashKeys[0];
+      matchedCustomerHashKey = customerHashKeys[1];
+
+      var linkResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              loadTimestamp,
+              "crm-import",
+              [],
+              [
+                  new(
+                      customerSameAs,
+                      [new("SourceCustomer", sourceCustomerHashKey), new("MatchedCustomer", matchedCustomerHashKey)]),
+              ]));
+
+      Assert.Equal(1, linkResult.RowsWritten);
+    }
+
+    await using (var context = new SameAsSaveServiceContext(options)) {
+      var linkRow = await context.Set<Dictionary<string, object>>("LinkCustomerIdentityMatch").AsNoTracking().SingleAsync();
+
+      Assert.Equal("crm-import", linkRow["RecordSource"]);
+      Assert.Equal(loadTimestamp, linkRow["LoadTimestamp"]);
+      Assert.Equal(sourceCustomerHashKey, linkRow["SourceCustomerHashKey"]);
+      Assert.Equal(matchedCustomerHashKey, linkRow["MatchedCustomerHashKey"]);
+      Assert.Matches("^[0-9a-f]{64}$", Assert.IsType<string>(linkRow["CustomerIdentityMatchHashKey"]));
+    }
+  }
+
   [Theory]
   [InlineData(false)]
   [InlineData(true)]
@@ -1608,6 +1676,17 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
         []);
   }
 
+  private static DataVaultLinkMetadata CreateCustomerIdentityMatchLinkMetadata() {
+    var customer = DataVaultMetadataReference.Hub("Customer");
+
+    return new DataVaultLinkMetadata(
+        "CustomerIdentityMatch",
+        [
+            new DataVaultLinkParticipantMetadata(customer, "SourceCustomer"),
+            new DataVaultLinkParticipantMetadata(customer, "MatchedCustomer"),
+        ]);
+  }
+
   private static DataVaultMetadataModel CreateOrderOnlyMetadataModel() {
     return new DataVaultMetadataModel(
         [new DataVaultHubMetadata("Order", ["Order Id"])],
@@ -1617,6 +1696,21 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
 
   private sealed class RegistryBackedSaveServiceContext(
       DbContextOptions<RegistryBackedSaveServiceContext> options) : DbContext(options) {
+  }
+
+  private sealed class SameAsSaveServiceContext(
+      DbContextOptions<SameAsSaveServiceContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(
+          vault => {
+            vault.Hub<Customer>(hub => hub.BusinessKey(customer => customer.CustomerId));
+            vault.Link("CustomerIdentityMatch", link => {
+              link.Participant<Customer>("SourceCustomer");
+              link.Participant<Customer>("MatchedCustomer");
+            });
+          },
+          DataVaultProviderCapabilityProfiles.Sqlite);
+    }
   }
 
   private sealed class ExplicitSaveServiceContext(
@@ -1630,6 +1724,10 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
           DataVaultProviderCapabilityProfiles.Sqlite,
           LoadTimestampStorage);
     }
+  }
+
+  private sealed class Customer {
+    public string CustomerId { get; init; } = string.Empty;
   }
 
   private sealed class ExplicitSaveServiceModelCacheKeyFactory : IModelCacheKeyFactory {

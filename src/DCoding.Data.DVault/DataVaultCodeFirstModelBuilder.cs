@@ -127,29 +127,90 @@ public sealed class DataVaultCodeFirstModelBuilder {
   }
 
   private DataVaultLinkMetadata BuildLinkMetadata(LinkDeclaration link) {
-    if (link.ParticipantClrTypes.Count < 2) {
+    if (link.Participants.Count < 2) {
       throw LinkValidationException(link, "requires at least two participant declarations.");
     }
 
-    var participantHubs = link.ParticipantClrTypes
-        .Select(participantClrType => ResolveParticipantHub(link, participantClrType))
+    var participantDeclarations = link.Participants
+        .Select(participant => new ParticipantHub(participant, ResolveParticipantHub(link, participant.ClrType)))
         .ToArray();
-    var participantHubNames = new HashSet<string>(StringComparer.Ordinal);
-    foreach (var participantHub in participantHubs) {
-      if (!participantHubNames.Add(participantHub.Name)) {
-        throw LinkValidationException(
-            link,
-            "declares hub '" +
-            participantHub.Name +
-            "' more than once. Repeated same-hub participants require explicit participant role or alias support and are not supported by v1 code-first link projection.");
-      }
-    }
+    ValidateRepeatedParticipantRoles(link, participantDeclarations);
+    ValidateProducedParticipantNames(link, participantDeclarations);
 
+    var participantHubs = participantDeclarations
+        .Select(participant => participant.Hub)
+        .ToArray();
     var linkName = link.RelationshipName ?? DeriveRelationshipName(participantHubs);
 
     return new DataVaultLinkMetadata(
         linkName,
-        participantHubs.Select(participantHub => DataVaultMetadataReference.Hub(participantHub.Name)));
+        participantDeclarations.Select(participant => new DataVaultLinkParticipantMetadata(
+            DataVaultMetadataReference.Hub(participant.Hub.Name),
+            GetProducedParticipantName(participant))));
+  }
+
+  private static void ValidateRepeatedParticipantRoles(
+      LinkDeclaration link,
+      IReadOnlyList<ParticipantHub> participants) {
+    var repeatedHubGroups = participants
+        .GroupBy(participant => participant.Hub.Name, StringComparer.Ordinal)
+        .Where(group => group.Count() > 1)
+        .ToArray();
+
+    if (repeatedHubGroups.Length == 0) {
+      return;
+    }
+
+    if (link.RelationshipName is null) {
+      throw LinkValidationException(
+          link,
+          "repeats a hub participant and therefore requires an explicit relationship name.");
+    }
+
+    foreach (var group in repeatedHubGroups) {
+      if (group.Any(participant => string.IsNullOrWhiteSpace(participant.Participant.Role))) {
+        throw LinkValidationException(
+            link,
+            "declares hub '" +
+            group.Key +
+            "' more than once. Every repeated same-hub participant must declare a distinct non-blank role.");
+      }
+
+      var roles = new HashSet<string>(StringComparer.Ordinal);
+      foreach (var participant in group) {
+        if (!roles.Add(participant.Participant.Role!)) {
+          throw LinkValidationException(
+              link,
+              "declares repeated hub '" +
+              group.Key +
+              "' with duplicate participant role '" +
+              participant.Participant.Role +
+              "'. Repeated same-hub participant roles must be distinct.");
+        }
+      }
+    }
+  }
+
+  private static void ValidateProducedParticipantNames(
+      LinkDeclaration link,
+      IEnumerable<ParticipantHub> participants) {
+    var participantNames = new HashSet<string>(StringComparer.Ordinal);
+    foreach (var participant in participants) {
+      var participantName = GetProducedParticipantName(participant);
+      if (!participantNames.Add(participantName)) {
+        throw LinkValidationException(
+            link,
+            "declares produced participant name '" +
+            participantName +
+            "' more than once. Participant names must be unique by StringComparer.Ordinal.");
+      }
+    }
+  }
+
+  private static string GetProducedParticipantName(ParticipantHub participant) {
+    return string.IsNullOrWhiteSpace(participant.Participant.Role)
+        ? participant.Hub.Name
+        : participant.Participant.Role!;
   }
 
   private HubDeclaration ResolveParticipantHub(LinkDeclaration link, Type participantClrType) {
@@ -210,10 +271,18 @@ public sealed class DataVaultCodeFirstModelBuilder {
 
     public int PrecedingHubCount { get; } = precedingHubCount;
 
-    public List<Type> ParticipantClrTypes { get; } = [];
+    public List<ParticipantDeclaration> Participants { get; } = [];
 
     public List<SatelliteDeclaration> Satellites { get; } = [];
   }
+
+  internal sealed class ParticipantDeclaration(Type clrType, string? role) {
+    public Type ClrType { get; } = clrType;
+
+    public string? Role { get; } = role;
+  }
+
+  private sealed record ParticipantHub(ParticipantDeclaration Participant, HubDeclaration Hub);
 
   internal sealed class SatelliteDeclaration(string name) {
     public string Name { get; } = name;

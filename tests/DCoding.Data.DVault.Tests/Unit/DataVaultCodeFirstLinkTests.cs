@@ -39,6 +39,45 @@ public sealed class DataVaultCodeFirstLinkTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataProjectsRoleBearingSameHubLinkThroughMetadataTranslator() {
+    void Configure(DataVaultCodeFirstModelBuilder vault) {
+      vault.Hub<Customer>(hub => hub.BusinessKey(customer => customer.CustomerId));
+
+      vault.Link("CustomerIdentityMatch", link => {
+        link.Participant<Customer>("SourceCustomer");
+        link.Participant<Customer>("MatchedCustomer");
+      });
+    }
+
+    var codeFirstMetadata = CreateCodeFirstMetadata(Configure);
+    var codeFirstModel = TranslateCodeFirst(Configure);
+    var metadataFirstMetadata = CreateSameHubRoleMetadata();
+
+    AssertLinkMetadata(
+        codeFirstMetadata,
+        "CustomerIdentityMatch",
+        ["Customer", "Customer"],
+        ["SourceCustomer", "MatchedCustomer"]);
+    Assert.Equal(ModelShape(Translate(metadataFirstMetadata)), ModelShape(codeFirstModel));
+
+    var link = FindEntity(codeFirstModel, "LinkCustomerIdentityMatch");
+
+    AssertRelationalEntity(
+        link,
+        "LinkCustomerIdentityMatch",
+        [
+            "CustomerIdentityMatchHashKey",
+            "LoadTimestamp",
+            "RecordSource",
+            "SourceCustomerHashKey",
+            "MatchedCustomerHashKey",
+        ],
+        "PkLinkCustomerIdentityMatchCustomerIdentityMatchHashKey",
+        "IxLinkCustomerIdentityMatchRelationshipSourceCustomerHashKeyMatchedCustomerHashKey",
+        ["SourceCustomerHashKey", "MatchedCustomerHashKey"]);
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataProjectsDerivedNameMultiParticipantLinkInDeclarationOrder() {
     void Configure(DataVaultCodeFirstModelBuilder vault) {
       vault.Hub<Customer>(hub => hub.BusinessKey(customer => customer.CustomerId));
@@ -205,7 +244,7 @@ public sealed class DataVaultCodeFirstLinkTests {
   }
 
   [Fact]
-  public void ApplyDataVaultMetadataRejectsRepeatedSameHubParticipants() {
+  public void ApplyDataVaultMetadataRejectsRepeatedSameHubParticipantsWithoutRoles() {
     var exception = Assert.Throws<ArgumentException>(() =>
         CreateCodeFirstMetadata(vault => {
           vault.Hub<Customer>(hub => hub.BusinessKey(customer => customer.CustomerId));
@@ -218,7 +257,39 @@ public sealed class DataVaultCodeFirstLinkTests {
     Assert.Equal("configureModel", exception.ParamName);
     Assert.Contains("CustomerHierarchy", exception.Message, StringComparison.Ordinal);
     Assert.Contains("declares hub 'Customer' more than once", exception.Message, StringComparison.Ordinal);
-    Assert.Contains("not supported by v1 code-first link projection", exception.Message, StringComparison.Ordinal);
+    Assert.Contains("Every repeated same-hub participant must declare a distinct non-blank role", exception.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataRejectsDuplicateRepeatedSameHubParticipantRoles() {
+    var exception = Assert.Throws<ArgumentException>(() =>
+        CreateCodeFirstMetadata(vault => {
+          vault.Hub<Customer>(hub => hub.BusinessKey(customer => customer.CustomerId));
+          vault.Link("CustomerHierarchy", link => {
+            link.Participant<Customer>("RelatedCustomer");
+            link.Participant<Customer>("RelatedCustomer");
+          });
+        }));
+
+    Assert.Equal("configureModel", exception.ParamName);
+    Assert.Contains("CustomerHierarchy", exception.Message, StringComparison.Ordinal);
+    Assert.Contains("duplicate participant role 'RelatedCustomer'", exception.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataRejectsDerivedNameRepeatedSameHubParticipantRoles() {
+    var exception = Assert.Throws<ArgumentException>(() =>
+        CreateCodeFirstMetadata(vault => {
+          vault.Hub<Customer>(hub => hub.BusinessKey(customer => customer.CustomerId));
+          vault.Link(link => {
+            link.Participant<Customer>("SourceCustomer");
+            link.Participant<Customer>("MatchedCustomer");
+          });
+        }));
+
+    Assert.Equal("configureModel", exception.ParamName);
+    Assert.Contains("derived relationship name", exception.Message, StringComparison.Ordinal);
+    Assert.Contains("requires an explicit relationship name", exception.Message, StringComparison.Ordinal);
   }
 
   [Fact]
@@ -269,6 +340,22 @@ public sealed class DataVaultCodeFirstLinkTests {
         []);
   }
 
+  private static DataVaultMetadataModel CreateSameHubRoleMetadata() {
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
+
+    return new DataVaultMetadataModel(
+        [customer],
+        [
+            new DataVaultLinkMetadata(
+                "CustomerIdentityMatch",
+                [
+                    new DataVaultLinkParticipantMetadata(customer.ToReference(), "SourceCustomer"),
+                    new DataVaultLinkParticipantMetadata(customer.ToReference(), "MatchedCustomer"),
+                ]),
+        ],
+        []);
+  }
+
   private static DataVaultMetadataModel CreateDerivedLinkParentSatelliteMetadata() {
     var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
     var order = new DataVaultHubMetadata("Order", ["OrderId"]);
@@ -306,11 +393,15 @@ public sealed class DataVaultCodeFirstLinkTests {
   private static void AssertLinkMetadata(
       DataVaultMetadataModel metadataModel,
       string expectedName,
-      string[] expectedParticipantHubNames) {
+      string[] expectedParticipantHubNames,
+      string[]? expectedProducedParticipantNames = null) {
     var link = Assert.Single(metadataModel.Links);
 
     Assert.Equal(expectedName, link.Name);
     Assert.Equal(expectedParticipantHubNames, link.Participants.Select(participant => participant.HubReference.Name));
+    Assert.Equal(
+        expectedProducedParticipantNames ?? expectedParticipantHubNames,
+        link.Participants.Select(participant => participant.SourceEndpointName));
   }
 
   private static void AssertRelationalEntity(
