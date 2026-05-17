@@ -59,6 +59,12 @@ type public sealed class DCoding.Data.DVault.DataVaultBulkSaveRequest
   ctor public DataVaultBulkSaveRequest(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveRequest> requests)
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> Requests { get; }
 
+type public sealed class DCoding.Data.DVault.DataVaultBusinessKeyBindingAttribute : System.Attribute
+  ctor public DataVaultBusinessKeyBindingAttribute(int order, string businessKeyName, string sourceMemberName)
+  property public int Order { get; }
+  property public string BusinessKeyName { get; }
+  property public string SourceMemberName { get; }
+
 type public sealed class DCoding.Data.DVault.DataVaultCodeFirstHubBuilder where TEntity : class
   method public DCoding.Data.DVault.DataVaultCodeFirstHubBuilder<TEntity> BusinessKey<TProperty>(System.Linq.Expressions.Expression<System.Func<TEntity, TProperty?>> propertySelector)
   method public DCoding.Data.DVault.DataVaultCodeFirstHubBuilder<TEntity> Satellite(string satelliteName, System.Action<DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TEntity>>? configure = null)
@@ -190,6 +196,15 @@ type public sealed class DCoding.Data.DVault.DataVaultExplainDiagnostics : Syste
   method public virtual bool Equals(DCoding.Data.DVault.DataVaultExplainDiagnostics? other)
   method public void Deconstruct(out string MetadataSourceKind, out string? MetadataSourceFingerprint, out string? ProviderName, out string CapabilityProfileName, out bool CapabilityProfileDefaulted, out DCoding.Data.DVault.DataVaultProviderValueFormat LoadTimestampValueFormat, out string LoadTimestampStoreType, out string ProviderBehaviorProfileName, out bool ProviderBehaviorDefaulted, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultEntityExplain> Entities)
 
+type public sealed class DCoding.Data.DVault.DataVaultHubMappingAttribute : System.Attribute
+  ctor public DataVaultHubMappingAttribute(string hubName)
+  property public string HubName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultHubSatelliteMappingAttribute : System.Attribute
+  ctor public DataVaultHubSatelliteMappingAttribute(string parentHubName, string satelliteName)
+  property public string ParentHubName { get; }
+  property public string SatelliteName { get; }
+
 type public sealed class DCoding.Data.DVault.DataVaultHubSaveOperation
   ctor public DataVaultHubSaveOperation(DCoding.Data.DVault.Modeling.DataVaultHubMetadata metadata, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> businessKeyValues)
   property public DCoding.Data.DVault.Modeling.DataVaultHubMetadata Metadata { get; }
@@ -228,6 +243,16 @@ type public sealed class DCoding.Data.DVault.DataVaultLatestSatelliteReadRequest
   property public DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata Satellite { get; }
   property public System.Collections.Generic.IReadOnlyList<string> ParentHashKeys { get; }
   property public System.DateTimeOffset? AsOf { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultLinkMappingAttribute : System.Attribute
+  ctor public DataVaultLinkMappingAttribute(string linkName)
+  property public string LinkName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultLinkParticipantBindingAttribute : System.Attribute
+  ctor public DataVaultLinkParticipantBindingAttribute(int order, string participantHubName, string sourceMemberName)
+  property public int Order { get; }
+  property public string ParticipantHubName { get; }
+  property public string SourceMemberName { get; }
 
 type public sealed class DCoding.Data.DVault.DataVaultLinkSaveOperation
   ctor public DataVaultLinkSaveOperation(DCoding.Data.DVault.Modeling.DataVaultLinkMetadata metadata, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> participantHashKeyValues)
@@ -734,6 +759,26 @@ type public sealed class DCoding.Data.DVault.DataVaultResolvedSaveRequest
   property public DCoding.Data.DVault.DataVaultSaveRequest Request { get; }
   property public System.DateTimeOffset LoadTimestamp { get; }
   property public string RecordSource { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultSatelliteDrivingKeyBindingAttribute : System.Attribute
+  ctor public DataVaultSatelliteDrivingKeyBindingAttribute(int order, string drivingKeyName, string sourceMemberName)
+  property public int Order { get; }
+  property public string DrivingKeyName { get; }
+  property public string SourceMemberName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultSatelliteHashDiffBindingAttribute : System.Attribute
+  ctor public DataVaultSatelliteHashDiffBindingAttribute(string sourceMemberName)
+  property public string SourceMemberName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultSatelliteParentHashKeyBindingAttribute : System.Attribute
+  ctor public DataVaultSatelliteParentHashKeyBindingAttribute(string sourceMemberName)
+  property public string SourceMemberName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultSatellitePayloadBindingAttribute : System.Attribute
+  ctor public DataVaultSatellitePayloadBindingAttribute(int order, string payloadName, string sourceMemberName)
+  property public int Order { get; }
+  property public string PayloadName { get; }
+  property public string SourceMemberName { get; }
 
 type public sealed class DCoding.Data.DVault.DataVaultSatelliteProjectionRow
   method public System.DateTimeOffset RequiredDateTimeOffset(string name)

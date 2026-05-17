@@ -8,7 +8,7 @@
     <IsTestProject>true</IsTestProject>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
-    <RunAnalyzers>false</RunAnalyzers>
+    <RunAnalyzers>true</RunAnalyzers>
     <NuGetAudit>false</NuGetAudit>
   </PropertyGroup>
 
@@ -28,6 +28,7 @@
   <ItemGroup>
     <ProjectReference Include="../../../benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
+    <ProjectReference Include="../../../src/DCoding.Data.DVault.Analyzers/DCoding.Data.DVault.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.MySql/DCoding.Data.DVault.MySql.csproj" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.Oracle/DCoding.Data.DVault.Oracle.csproj" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.Postgres/DCoding.Data.DVault.Postgres.csproj" />

@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined 06F2PGJSXP18VKKV52QZA4NP30 into a bounded v1 generator implementation ticket: extend DCoding.Data.DVault.Analyzers with the first source generator, add the consumer-facing compile-time mapping declaration surface in DCoding.Data.DVault, generate deterministic metadata helpers plus registry-backed row-helper code for hubs, unique-participant links, ordinary hub-parent satellites, and hub-parent multi-active satellites, and verify through generator, runtime, package, and SQLite integration coverage; no child tickets, attachments, planning documents, or relation writes were materialized.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Upstream contract ticket 06F2PGJN1XCV8F7NWH567SQSKM is already done and integrated, so its generator boundary is the authoritative baseline for this ticket rather than an open design dependency.
 - Repository evidence shows src/DCoding.Data.DVault.Analyzers is already the optional packable analyzer and code-fix package, but it currently contains no source-generator implementation, so v1 generator work should extend that package instead of adding a new package family.
 - The analyzer package ships analyzer assets only, suppresses dependencies, and does not expose compile-reference assets to consumers; consumer-authored mapping declaration types therefore belong in src/DCoding.Data.DVault, while the generator remains self-contained in the analyzer package.
@@ -16,82 +15,50 @@
 - Current typed-mapper boundaries already constrain v1 generator output: links require unique participant hub names by StringComparer.Ordinal, and link-parent satellites plus same-hub or repeated-participant link mappings are outside this ticket.
 - No child tickets, attachments, planning documents, or relation writes were created in this refinement pass; live relation state still shows historical incoming blocks edges from done contract ticket 06F2PGJN1XCV8F7NWH567SQSKM, done story 06F2PGJBRXFCP038CN6XVAYSZM, and done epic 06F2PGFT8Z406HFBJGQSY7YRJ0.
 
-### Scope In
+Scope In
 - Add the first public compile-time mapping declaration surface in src/DCoding.Data.DVault so consuming code can declare one source type to one logical hub, link, or hub-parent satellite target by exact DVault names and ordered member bindings.
 - Implement the first source generator in src/DCoding.Data.DVault.Analyzers that reads those declarations and emits deterministic metadata helper output plus row-helper code that constructs existing registry-backed save operations.
 - Support hub mappings, link mappings whose participant hub names are unique by StringComparer.Ordinal, ordinary hub-parent satellite mappings, and hub-parent multi-active satellite mappings.
 - Require supported declarations to bind all runtime-required values explicitly: hub business keys, link participant hash keys, satellite parent hash key, satellite payload values, satellite hash diff, and multi-active driving keys where applicable.
 - Add the minimal compile-time diagnostics, generator tests, runtime API tests, package verification, and end-to-end SQLite proof needed to make the supported generator slice safe and usable.
 
-### Scope Out
+Scope Out
 - No new package family, no fourth metadata authority, and no generator-time execution of EF models, ApplyDataVaultMetadata(...), JSON artifacts, or design-time commands.
 - No hidden SaveAsync orchestration, no automatic loadTimestamp or recordSource, and no automatic hash-key or hash-diff derivation beyond caller-provided mapped values.
 - No link-parent satellite generation, no same-hub or repeated-participant or self-link typed link generation, and no widening into other unsupported runtime shapes.
 - No broader analyzer or code-fix, migration, design-time CLI, or provider behavior work outside the bounded generator slice.
 - No coordinated v0.12 README, examples, release-note closure, or docs/releases/v0.12.0.md work; that remains with 06F2PGJYY6S97B4Z8044D34K5C, aside from source-local XML docs or test updates required by touched code.
 
-## Acceptance Criteria
-- Consuming code can declare supported source-to-DVault mappings through a public compile-time surface in DCoding.Data.DVault without introducing a new package or a runtime-discovered registration system.
-- For each valid supported declaration, compilation emits deterministic helper code inside the consumer build that preserves exact logical target names and logical member order and produces the correct DataVaultRegistry*SaveOperation type for the declared shape.
-- Generated hub, unique-participant link, ordinary hub-parent satellite, and hub-parent multi-active satellite helpers integrate with the existing IDataVault*Mapper<TSource> and save-service flows instead of introducing a separate persistence API.
-- Unsupported or malformed declarations fail with compile-time diagnostics rather than ambiguous generated code, and excluded link-parent or repeated-participant shapes are not silently accepted.
-- Generated output continues to require callers to supply loadTimestamp and recordSource through the existing registry-backed save request or typed save-helper boundary, and it does not hide persistence orchestration.
-- Verification covers generator source output and diagnostics, runtime public API and contract changes, analyzer package shape, and at least one end-to-end SQLite proof that generated helpers work with the existing registry-backed save pipeline.
-
-## Definition of Done
-- The branch contains the first generator implementation in DCoding.Data.DVault.Analyzers and the consumer-facing declaration surface in DCoding.Data.DVault, with no extra package added.
-- The analyzer package still builds and packs as optional developer tooling with analyzer assets, and package-verification coverage remains aligned with the new generator behavior.
-- Supported declarations compile into usable generated helpers that construct existing registry-backed operations and can participate in the same explicit save flow already proven by manual typed mappers.
-- Unsupported shapes and malformed declarations are rejected at compile time, while missing required metadata names or runtime values continue to fail at the existing operation-constructor or save-service validation boundary.
-- Public API snapshots, relevant unit and integration tests, and source-local XML docs are updated for the new surface, while broader v0.12 documentation and release-note follow-through stays delegated to 06F2PGJYY6S97B4Z8044D34K5C.
-
-## Implementation Notes
-- Use src/DCoding.Data.DVault.Analyzers/DCoding.Data.DVault.Analyzers.csproj as the only generator implementation boundary; it already hosts the analyzer and code-fix toolchain and packs analyzer assets.
-- Keep the analyzer and generator assembly dependency-self-contained: the current analyzer package suppresses dependencies and does not reference DCoding.Data.DVault, so generator logic should inspect declaration symbols by fully qualified metadata name rather than taking a runtime package dependency that would break analyzer packaging.
-- Put any consumer-authored mapping declaration types and any shared generated-helper contracts in src/DCoding.Data.DVault, because analyzer-only package assets are not compile-reference assets for consuming applications.
-- Reuse IDataVaultHubMapper<TSource>, IDataVaultLinkMapper<TSource>, IDataVaultSatelliteMapper<TSource>, DataVaultRegistryHubSaveOperation, DataVaultRegistryLinkSaveOperation, DataVaultRegistrySatelliteSaveOperation, DataVaultRegistrySaveRequest, and the existing typed save extensions as the integration boundary.
-- Carry forward the current typed-mapper constraints documented in docs/architecture/dvault-v1-typed-row-mapper-contract.md, IDataVaultLinkMapper.cs, and DataVaultTypedMapperContractTests: unique participant hub names only for generated links, and no v1 support for link-parent or same-hub repeated-participant shapes.
-- Extend tests/DCoding.Data.DVault.Tests/Analyzers for generator diagnostics and emitted-source coverage, tests/DCoding.Data.DVault.Tests/Unit for runtime contract plus API snapshot updates, and tests/DCoding.Data.DVault.Tests/Integration for at least one generated-helper SQLite persistence proof.
-- Keep coordinated README, example, and release-note narrative out of this ticket unless a touched package-local readme must change to keep packaging accurate; downstream doc closure remains with 06F2PGJYY6S97B4Z8044D34K5C.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the bounded v1 slice lands, should a follow-on ticket add link-parent satellite generation on the same runtime boundary?
 - Should a separate follow-on ticket add explicit participant-alias support for repeated-participant or self-link mappings instead of widening the first generator slice?
 - When 06F2PGJYY6S97B4Z8044D34K5C runs, should the v0.12 documentation explicitly compare manual typed mappers against generated helpers on the same DataVaultRegistry*SaveOperation boundary?
 
-## Risks
+Risks
 - If the declaration surface or generated helpers start behaving like a new metadata authority or hidden persistence layer, the ticket will sprawl beyond the ratified v1 boundary.
 - If the analyzer package gains a runtime dependency or consumer-only declaration types live in analyzer-only assets, the current package shape can break consumer compilation or analyzer loading.
 - Generated support can accidentally overreach into repeated-participant or self-link or link-parent satellite shapes that the current runtime and typed-mapper contracts do not safely support.
 - New public API in DCoding.Data.DVault and new analyzer behavior both require disciplined snapshot and package verification to avoid silent package-shape regressions.
 - Because no relation cleanup was materialized in this pass, live planning views may still show historical blockers from done tickets even though the design baseline for this implementation is already settled.
 
-## Split Recommendations
+Split recommendations
 - No additional split is required before PO-critic review; the current separation between contract ticket 06F2PGJN1XCV8F7NWH567SQSKM, implementation ticket 06F2PGJSXP18VKKV52QZA4NP30, and documentation ticket 06F2PGJYY6S97B4Z8044D34K5C is sufficient for the available evidence.
 - If development proves the bounded v1 implementation is still too large, split follow-on work by excluded shape families such as link-parent satellites or repeated-participant or self-link support instead of widening this ticket.
 - Keep any later ergonomic wrappers around SaveHubAsync(...), SaveLinkAsync(...), bulk orchestration, or relation-graph cleanup in separate downstream tickets rather than mixing them into the first generator-output implementation.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 5
+- implementation-notes items: 7
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Implement first useful generator output.
-
-## Scope
-- Refine and complete the work for "Generate metadata and row factory helpers" within the boundaries of its parent story, epic, and release.
-- Keep the implementation focused on the affected DVault feature area; avoid unrelated refactorings or package shape changes unless they are required by the ticket.
-- Update tests, examples, diagnostics, provider behavior, and documentation only where they are relevant to this ticket's observable behavior.
-
-## Acceptance Criteria
-- The completed ticket includes clear evidence of the implemented behavior, verification steps, and any intentionally deferred work.
-- Relevant unit, integration, provider, analyzer, or documentation checks are added or updated, or the ticket documents why a check is not applicable.
-- Public behavior, command output, generated SQL, package contents, examples, README content, and release notes are updated when this ticket changes them.
-- The result remains compatible with the release ordering and relations; dependent tickets can start without reworking this ticket's scope.
-
-## Release Notes
-- If this ticket changes public behavior, package shape, examples, diagnostics, generated SQL, or provider behavior, update README and the release note document for this release before integration.
+Run mode
+- apply: planned updates are applied after this comment

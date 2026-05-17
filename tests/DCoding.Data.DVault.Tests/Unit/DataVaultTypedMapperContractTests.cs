@@ -102,6 +102,36 @@ public sealed class DataVaultTypedMapperContractTests {
   }
 
   [Fact]
+  public void CompileTimeMappingDeclarationAttributesExposeExactNamesAndOrder() {
+    var hub = new DataVaultHubMappingAttribute("Customer");
+    var businessKey = new DataVaultBusinessKeyBindingAttribute(1, "Region Code", nameof(CustomerSource.RegionCode));
+    var link = new DataVaultLinkMappingAttribute("CustomerOrder");
+    var participant = new DataVaultLinkParticipantBindingAttribute(0, "Customer", nameof(CustomerOrderSource.CustomerHashKey));
+    var satellite = new DataVaultHubSatelliteMappingAttribute("Customer", "Profile");
+    var parentHashKey = new DataVaultSatelliteParentHashKeyBindingAttribute(nameof(CustomerProfileSource.CustomerHashKey));
+    var drivingKey = new DataVaultSatelliteDrivingKeyBindingAttribute(0, "Contact Type", nameof(CustomerContactSource.ContactType));
+    var payload = new DataVaultSatellitePayloadBindingAttribute(0, "customer_name", nameof(CustomerProfileSource.CustomerName));
+    var hashDiff = new DataVaultSatelliteHashDiffBindingAttribute(nameof(CustomerProfileSource.HashDiff));
+
+    Assert.Equal("Customer", hub.HubName);
+    Assert.Equal(1, businessKey.Order);
+    Assert.Equal("Region Code", businessKey.BusinessKeyName);
+    Assert.Equal(nameof(CustomerSource.RegionCode), businessKey.SourceMemberName);
+    Assert.Equal("CustomerOrder", link.LinkName);
+    Assert.Equal(0, participant.Order);
+    Assert.Equal("Customer", participant.ParticipantHubName);
+    Assert.Equal(nameof(CustomerOrderSource.CustomerHashKey), participant.SourceMemberName);
+    Assert.Equal("Customer", satellite.ParentHubName);
+    Assert.Equal("Profile", satellite.SatelliteName);
+    Assert.Equal(nameof(CustomerProfileSource.CustomerHashKey), parentHashKey.SourceMemberName);
+    Assert.Equal("Contact Type", drivingKey.DrivingKeyName);
+    Assert.Equal(nameof(CustomerContactSource.ContactType), drivingKey.SourceMemberName);
+    Assert.Equal("customer_name", payload.PayloadName);
+    Assert.Equal(nameof(CustomerProfileSource.CustomerName), payload.SourceMemberName);
+    Assert.Equal(nameof(CustomerProfileSource.HashDiff), hashDiff.SourceMemberName);
+  }
+
+  [Fact]
   public void SatelliteSupportingOperationValidatesMultiActiveDrivingKeySetsExactly() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var contact = new DataVaultSatelliteMetadata(

@@ -26,8 +26,8 @@ public sealed class PackageVerifierTests {
       new(
           "DCoding.Data.DVault.Analyzers",
           "DVault Roslyn Analyzers",
-          "Roslyn analyzers for high-confidence DVault Code-First fluent metadata declarations.",
-          ["dvault", "data-vault", "roslyn", "analyzer", "diagnostics", "ef-core"],
+          "Roslyn analyzers and source generators for high-confidence DVault compile-time metadata declarations.",
+          ["dvault", "data-vault", "roslyn", "analyzer", "source-generator", "diagnostics", "ef-core"],
           false,
           true),
       new(

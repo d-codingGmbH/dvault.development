@@ -11,8 +11,8 @@
     <PackageId>DCoding.Data.DVault.Analyzers</PackageId>
     <Title>DVault Roslyn Analyzers</Title>
     <Authors>d-coding GmbH</Authors>
-    <Description>Roslyn analyzers for high-confidence DVault Code-First fluent metadata declarations.</Description>
-    <PackageTags>dvault;data-vault;roslyn;analyzer;diagnostics;ef-core</PackageTags>
+    <Description>Roslyn analyzers and source generators for high-confidence DVault compile-time metadata declarations.</Description>
+    <PackageTags>dvault;data-vault;roslyn;analyzer;source-generator;diagnostics;ef-core</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/d-codingGmbH/dvault.development.git</RepositoryUrl>
