@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Ratified ticket 06F2PGJGDGMXHPT1VP0ASQ5HJ4 as the v0.12 source-generated mapper-helper roll-up: the three-child split is already materialized, all three children are done, and current repository evidence matches the bounded contract, implementation, tests, and documentation surface. No child tickets, relation writes, attachments, or planning documents were created in this refinement run.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The story now has three persisted child tickets linked by `parentOf`, and all three are `done`: 06F2PGJN1XCV8F7NWH567SQSKM for the generator contract, 06F2PGJSXP18VKKV52QZA4NP30 for generator implementation, and 06F2PGJYY6S97B4Z8044D34K5C for v0.12 documentation and release-note closure.
 - Ticket event history shows the former `blocks` edge from this story to 06F2PGJYY6S97B4Z8044D34K5C was already removed and replaced with `parentOf` on 2026-05-17, so the delivery split is already materialized cleanly in the live relation graph.
 - Repository evidence matches that split: `src/DCoding.Data.DVault.Analyzers/DataVaultMappingSourceGenerator.cs` implements the generator, `src/DCoding.Data.DVault/DataVaultHubMappingAttribute.cs` plus related binding attributes expose the compile-time declaration surface, `tests/DCoding.Data.DVault.Tests/Analyzers/DataVaultMappingSourceGeneratorTests.cs` covers DMV1950-DMV1955, and `docs/releases/v0.12.0.md` plus `README.md` record the public baseline.
@@ -17,73 +16,46 @@
 - Local ticket comments for this story are automation claim/lease comments only; no human clarification needs to be incorporated.
 - Incoming `blocks` relations from done story 06F2PGJBRXFCP038CN6XVAYSZM and done epic 06F2PGFT8Z406HFBJGQSY7YRJ0 are historical satisfied dependencies. No relation cleanup was materialized in this pass.
 
-### Scope In
+Scope In
 - Story-level roll-up of the already materialized v0.12 generator contract, implementation, and documentation work for source-generated DVault mapper helpers.
 - Public compile-time mapping declaration attributes in `DCoding.Data.DVault` for hub, link, and hub-parent satellite mapping inputs.
 - Source-generator output in `DCoding.Data.DVault.Analyzers` that emits deterministic registry-backed mapper helpers and compile-time diagnostics for malformed mapping declarations.
 - Tests and public documentation updates required to make the bounded generated-helper slice adoption-ready within the current release.
 
-### Scope Out
+Scope Out
 - Any new metadata authority, runtime-discovered registration system, hidden save orchestration, automatic `loadTimestamp` or `recordSource` handling, or automatic hash-key/hash-diff derivation.
 - Generated support for link-parent satellites, repeated-participant links, self-links, or other excluded runtime shapes beyond the ratified v1 baseline.
 - A new generator package family, broader provider/runtime refactors, or unrelated analyzer and code-fix backlog beyond the bounded generator-release story.
 - A runnable generator-based example application or deeper post-release documentation expansion beyond the current v0.12 closure.
 
-## Acceptance Criteria
-- The story's three persisted child tickets remain the complete delivery split and all three are `done`: 06F2PGJN1XCV8F7NWH567SQSKM, 06F2PGJSXP18VKKV52QZA4NP30, and 06F2PGJYY6S97B4Z8044D34K5C.
-- `DCoding.Data.DVault` exposes compile-time mapping declarations and `DCoding.Data.DVault.Analyzers` generates deterministic helpers for hubs, unique-participant links, ordinary hub-parent satellites, and hub-parent multi-active satellites.
-- Generated helpers integrate with the existing `IDataVault*Mapper<TSource>` and `DataVaultRegistry*SaveOperation` boundary and do not hide caller-owned `loadTimestamp`, `recordSource`, `DbContext`, or `IDataVaultSaveService` usage.
-- Malformed or unsupported mapping declarations fail through the DMV1950-DMV1955 compile-time diagnostic surface rather than ambiguous generated output, and excluded shapes are not silently accepted.
-- The current public baseline is documented in `docs/releases/v0.12.0.md` and aligned README/analyzer-package/adoption guidance.
-
-## Definition of Done
-- Repository evidence continues to show the bounded generator contract, implementation, tests, and v0.12 documentation surfaces in place and internally consistent.
-- The story can be treated as fully bounded without additional child-ticket creation because contract, implementation, and documentation closure are already separated and completed by the existing three-child split.
-- No PO-level ambiguity remains about package placement, supported generated shapes, diagnostics ownership, or the preserved explicit save boundary.
-- No additional attachment, planning document, or relation write is required before PO-critic review.
-
-## Implementation Notes
-- Keep the generator implementation boundary in `src/DCoding.Data.DVault.Analyzers` and the consumer-authored mapping declaration surface in `src/DCoding.Data.DVault`; do not introduce another package or analyzer-runtime dependency inversion.
-- Use `DataVaultMappingSourceGenerator.cs`, `DataVaultMappingDiagnosticCatalog.cs`, `DataVaultMappingSourceGeneratorTests.cs`, `DataVaultTypedMapperContractTests.cs`, and `DataVaultTypedMapperSaveServiceSqliteTests.cs` as the concrete evidence baseline for this story.
-- Keep deeper installation, suppression, and bounded analyzer/generator behavior guidance package-local in `src/DCoding.Data.DVault.Analyzers/README.md`, with broader docs summarizing and linking rather than duplicating a second contract.
-- No child tickets, relation writes, attachments, or planning documents were created during this refinement run.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should a later follow-on ticket add generated support for link-parent satellites on the same explicit save boundary?
 - Should repeated-participant or self-link mappings get a separate generator follow-on with explicit participant-alias semantics instead of widening the v1 slice?
 - Should a later docs/examples ticket add a runnable end-to-end consumer sample that uses the generated mapping attributes and generated mappers?
 
-## Risks
+Risks
 - If future work presents generated helpers as a fourth metadata authority or a hidden persistence layer, the story boundary will sprawl beyond the ratified explicit-save model.
 - If future docs duplicate analyzer-package suppression and capability details outside `src/DCoding.Data.DVault.Analyzers/README.md`, public guidance can drift.
 - If later generator expansion reaches excluded link or satellite shapes without a separate ticket, runtime-boundary assumptions around unique participant names and supported parents can be broken.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended. The existing child-ticket separation across contract, implementation, and documentation is already sufficient.
 - If the team wants generated support for link-parent satellites or repeated-participant/self-link mappings, create separate follow-on tickets rather than widening this story.
 - If the team wants richer adoption material, create a separate documentation or examples ticket for runnable generator-based samples or capability tables.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Generate deterministic helper code for metadata and row factory boilerplate.
-
-## Scope
-- Refine and complete the work for "Add source-generated metadata helper foundation" within the boundaries of its parent story, epic, and release.
-- Keep the implementation focused on the affected DVault feature area; avoid unrelated refactorings or package shape changes unless they are required by the ticket.
-- Update tests, examples, diagnostics, provider behavior, and documentation only where they are relevant to this ticket's observable behavior.
-
-## Acceptance Criteria
-- The completed ticket includes clear evidence of the implemented behavior, verification steps, and any intentionally deferred work.
-- Relevant unit, integration, provider, analyzer, or documentation checks are added or updated, or the ticket documents why a check is not applicable.
-- Public behavior, command output, generated SQL, package contents, examples, README content, and release notes are updated when this ticket changes them.
-- The result remains compatible with the release ordering and relations; dependent tickets can start without reworking this ticket's scope.
-
-## Release Notes
-- If this ticket changes public behavior, package shape, examples, diagnostics, generated SQL, or provider behavior, update README and the release note document for this release before integration.
+Run mode
+- apply: planned updates are applied after this comment
