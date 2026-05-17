@@ -81,6 +81,63 @@ public sealed class DataVaultCodeFirstLinkTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataProjectsDerivedNameLinkParentSatelliteThroughMetadataTranslator() {
+    void Configure(DataVaultCodeFirstModelBuilder vault) {
+      vault.Hub<Customer>(hub => hub.BusinessKey(customer => customer.CustomerId));
+      vault.Hub<Order>(hub => hub.BusinessKey(order => order.OrderId));
+
+      vault.Link(link => {
+        link.Participant<Customer>();
+        link.Participant<Order>();
+        link.Satellite<CustomerOrderState>("State", satellite => {
+          satellite.DrivingKey(state => state.StateSource);
+          satellite.Payload(state => state.StatusCode);
+          satellite.Payload(state => state.StateChangedAt);
+        });
+      });
+    }
+
+    var codeFirstMetadata = CreateCodeFirstMetadata(Configure);
+    var codeFirstModel = TranslateCodeFirst(Configure);
+    var metadataFirstMetadata = CreateDerivedLinkParentSatelliteMetadata();
+
+    AssertLinkMetadata(codeFirstMetadata, "CustomerOrder", ["Customer", "Order"]);
+
+    var metadataSatellite = Assert.Single(codeFirstMetadata.Satellites);
+
+    Assert.Equal("State", metadataSatellite.Name);
+    Assert.Equal(DataVaultMetadataReferenceKind.Link, metadataSatellite.Parent.Kind);
+    Assert.Equal("CustomerOrder", metadataSatellite.Parent.Name);
+    Assert.Equal([nameof(CustomerOrderState.StateSource)], metadataSatellite.DrivingKeyNames);
+    Assert.Equal(
+        [nameof(CustomerOrderState.StatusCode), nameof(CustomerOrderState.StateChangedAt)],
+        metadataSatellite.DescriptiveAttributeNames);
+    Assert.Equal(ModelShape(Translate(metadataFirstMetadata)), ModelShape(codeFirstModel));
+
+    var satellite = FindEntity(codeFirstModel, "SatCustomerOrderState");
+
+    Assert.Equal(
+        DataVaultMetadataReferenceKind.Link,
+        AnnotationValue<DataVaultMetadataReferenceKind>(satellite, DataVaultAnnotationNames.ParentReferenceKind));
+    Assert.Equal("CustomerOrder", AnnotationValue<string>(satellite, DataVaultAnnotationNames.ParentReferenceName));
+    AssertRelationalEntity(
+        satellite,
+        "SatCustomerOrderState",
+        [
+            "CustomerOrderHashKey",
+            "StateSource",
+            "HashDiff",
+            "LoadTimestamp",
+            "RecordSource",
+            "StatusCode",
+            "StateChangedAt",
+        ],
+        "PkSatCustomerOrderStateCustomerOrderHashKeyStateSourceLoadTimestamp",
+        "IxSatCustomerOrderStateSatelliteParentCustomerOrderHashKeyStateSourceLoadTimestamp",
+        ["CustomerOrderHashKey", "StateSource", "LoadTimestamp", "HashDiff"]);
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataRejectsMissingParticipantHub() {
     var exception = Assert.Throws<ArgumentException>(() =>
         CreateCodeFirstMetadata(vault => {
@@ -212,6 +269,23 @@ public sealed class DataVaultCodeFirstLinkTests {
         []);
   }
 
+  private static DataVaultMetadataModel CreateDerivedLinkParentSatelliteMetadata() {
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
+    var order = new DataVaultHubMetadata("Order", ["OrderId"]);
+    var customerOrder = new DataVaultLinkMetadata("CustomerOrder", [customer.ToReference(), order.ToReference()]);
+
+    return new DataVaultMetadataModel(
+        [customer, order],
+        [customerOrder],
+        [
+            new DataVaultSatelliteMetadata(
+                "State",
+                customerOrder.ToReference(),
+                [nameof(CustomerOrderState.StatusCode), nameof(CustomerOrderState.StateChangedAt)],
+                [nameof(CustomerOrderState.StateSource)]),
+        ]);
+  }
+
   private static IMutableModel Translate(DataVaultMetadataModel metadataModel) {
     var modelBuilder = new ModelBuilder(new ConventionSet());
 
@@ -327,6 +401,14 @@ public sealed class DataVaultCodeFirstLinkTests {
 
   private sealed class Order {
     public string OrderId { get; init; } = string.Empty;
+  }
+
+  private sealed class CustomerOrderState {
+    public string StateChangedAt { get; init; } = string.Empty;
+
+    public string StateSource { get; init; } = string.Empty;
+
+    public string StatusCode { get; init; } = string.Empty;
   }
 
   private sealed class SaleRegion {

@@ -71,6 +71,7 @@ type public sealed class DCoding.Data.DVault.DataVaultCodeFirstHubBuilder where 
 
 type public sealed class DCoding.Data.DVault.DataVaultCodeFirstLinkBuilder
   method public DCoding.Data.DVault.DataVaultCodeFirstLinkBuilder Participant<TEntity>() where TEntity : class
+  method public DCoding.Data.DVault.DataVaultCodeFirstLinkBuilder Satellite<TSatellite>(string satelliteName, System.Action<DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TSatellite>>? configure = null) where TSatellite : class
 
 type public sealed class DCoding.Data.DVault.DataVaultCodeFirstModelBuilder
   method public DCoding.Data.DVault.DataVaultCodeFirstHubBuilder<TEntity> Hub<TEntity>(System.Action<DCoding.Data.DVault.DataVaultCodeFirstHubBuilder<TEntity>>? configure = null) where TEntity : class

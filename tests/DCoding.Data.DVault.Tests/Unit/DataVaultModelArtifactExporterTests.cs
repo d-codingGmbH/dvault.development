@@ -59,6 +59,39 @@ public sealed class DataVaultModelArtifactExporterTests {
   }
 
   [Fact]
+  public void ExportJsonFromCodeFirstDeclarationsIncludesLinkParentSatellites() {
+    var json = DataVaultModelArtifactExporter.ExportJson(vault => {
+      vault.Hub<Customer>(hub => hub.BusinessKey(customer => customer.CustomerId));
+      vault.Hub<Order>(hub => hub.BusinessKey(order => order.OrderId));
+      vault.Link("CustomerOrder", link => {
+        link.Participant<Customer>();
+        link.Participant<Order>();
+        link.Satellite<CustomerOrderState>("State", satellite => {
+          satellite.DrivingKey(state => state.StateSource);
+          satellite.Payload(state => state.StatusCode);
+          satellite.Payload(state => state.StateChangedAt);
+        });
+      });
+    });
+
+    Assert.Contains("\"kind\": \"link\"", json, StringComparison.Ordinal);
+
+    var importResult = DataVaultModelArtifactImporter.ImportJson(json);
+
+    AssertValid(importResult);
+
+    var satellite = Assert.Single(importResult.MetadataModel!.Satellites);
+
+    Assert.Equal("State", satellite.Name);
+    Assert.Equal(DataVaultMetadataReferenceKind.Link, satellite.Parent.Kind);
+    Assert.Equal("CustomerOrder", satellite.Parent.Name);
+    Assert.Equal([nameof(CustomerOrderState.StateSource)], satellite.DrivingKeyNames);
+    Assert.Equal(
+        [nameof(CustomerOrderState.StatusCode), nameof(CustomerOrderState.StateChangedAt)],
+        satellite.DescriptiveAttributeNames);
+  }
+
+  [Fact]
   public void ExportJsonFromEmptyMetadataModelEmitsDefaultCanonicalEnvelopeAndRoundTripsThroughImporter() {
     var metadataModel = new DataVaultMetadataModel([], [], []);
 
@@ -273,5 +306,13 @@ public sealed class DataVaultModelArtifactExporterTests {
 
   private sealed class Order {
     public string OrderId { get; set; } = string.Empty;
+  }
+
+  private sealed class CustomerOrderState {
+    public string StateChangedAt { get; set; } = string.Empty;
+
+    public string StateSource { get; set; } = string.Empty;
+
+    public string StatusCode { get; set; } = string.Empty;
   }
 }

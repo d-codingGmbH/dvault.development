@@ -64,8 +64,14 @@ public sealed class DataVaultCodeFirstModelBuilder {
     var hubs = _hubs
         .Select(hub => new DataVaultHubMetadata(hub.Name, hub.BusinessKeyNames))
         .ToArray();
-    var satellites = _hubs
-        .SelectMany(hub => hub.Satellites.Select(satellite => CreateSatelliteMetadata(hub, satellite)))
+    var hubSatellites = _hubs
+        .SelectMany(hub => hub.Satellites.Select(satellite => CreateSatelliteMetadata(hub, satellite)));
+    var linkSatellites = _links
+        .Zip(links, (linkDeclaration, linkMetadata) => linkDeclaration.Satellites
+            .Select(satellite => CreateSatelliteMetadata(linkMetadata, satellite)))
+        .SelectMany(satellites => satellites);
+    var satellites = hubSatellites
+        .Concat(linkSatellites)
         .ToArray();
 
     return new DataVaultMetadataModel(hubs, links, satellites);
@@ -99,12 +105,23 @@ public sealed class DataVaultCodeFirstModelBuilder {
   private static DataVaultSatelliteMetadata CreateSatelliteMetadata(
       HubDeclaration hub,
       SatelliteDeclaration satellite) {
-    var hubReference = DataVaultMetadataReference.Hub(hub.Name);
+    return CreateSatelliteMetadata(DataVaultMetadataReference.Hub(hub.Name), satellite);
+  }
+
+  private static DataVaultSatelliteMetadata CreateSatelliteMetadata(
+      DataVaultLinkMetadata link,
+      SatelliteDeclaration satellite) {
+    return CreateSatelliteMetadata(link.ToReference(), satellite);
+  }
+
+  private static DataVaultSatelliteMetadata CreateSatelliteMetadata(
+      DataVaultMetadataReference parentReference,
+      SatelliteDeclaration satellite) {
     return satellite.DrivingKeyNames.Count == 0
-        ? new DataVaultSatelliteMetadata(satellite.Name, hubReference, satellite.PayloadNames)
+        ? new DataVaultSatelliteMetadata(satellite.Name, parentReference, satellite.PayloadNames)
         : new DataVaultSatelliteMetadata(
             satellite.Name,
-            hubReference,
+            parentReference,
             satellite.PayloadNames,
             satellite.DrivingKeyNames);
   }
@@ -194,6 +211,8 @@ public sealed class DataVaultCodeFirstModelBuilder {
     public int PrecedingHubCount { get; } = precedingHubCount;
 
     public List<Type> ParticipantClrTypes { get; } = [];
+
+    public List<SatelliteDeclaration> Satellites { get; } = [];
   }
 
   internal sealed class SatelliteDeclaration(string name) {

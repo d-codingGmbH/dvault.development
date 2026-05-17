@@ -21,4 +21,26 @@ public sealed class DataVaultCodeFirstLinkBuilder {
 
     return this;
   }
+
+  /// <summary>
+  /// Adds a link-parent satellite declaration with an explicit satellite name.
+  /// </summary>
+  /// <typeparam name="TSatellite">The CLR type used by the satellite configuration selectors.</typeparam>
+  /// <param name="satelliteName">The provider-neutral satellite name.</param>
+  /// <param name="configure">The optional satellite configuration callback.</param>
+  /// <returns>The same link builder so additional participants or satellites can be configured fluently.</returns>
+  public DataVaultCodeFirstLinkBuilder Satellite<TSatellite>(
+      string satelliteName,
+      Action<DataVaultCodeFirstSatelliteBuilder<TSatellite>>? configure = null)
+      where TSatellite : class {
+    ArgumentException.ThrowIfNullOrWhiteSpace(satelliteName);
+
+    var declaration = new DataVaultCodeFirstModelBuilder.SatelliteDeclaration(satelliteName);
+    _declaration.Satellites.Add(declaration);
+
+    var builder = new DataVaultCodeFirstSatelliteBuilder<TSatellite>(declaration);
+    configure?.Invoke(builder);
+
+    return this;
+  }
 }
