@@ -1,0 +1,1 @@
+﻿Manual repair summary: implemented the v0.12.0 documentation sweep on this ticket branch, including docs/releases/v0.12.0.md and aligned README, examples, analyzer package, production-adoption, and model-first guidance. The durable escalation was caused by an external model/tool-loop contract failure, not by unresolved ticket content. Ticket is now handed to test via needs-test.

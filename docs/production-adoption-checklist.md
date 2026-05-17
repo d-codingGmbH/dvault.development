@@ -7,7 +7,7 @@ Use this checklist when preparing a DVault-consuming application for production.
 - [ ] Install the provider-neutral `DCoding.Data.DVault` package from NuGet and use the published installation guidance in the [README](../README.md#installation).
 - [ ] Select the DVault provider package that matches the application database and keep every DVault package on one aligned published release version.
 - [ ] Treat the coordinated DVault package family as exactly these package ids: `DCoding.Data.DVault`, `DCoding.Data.DVault.Analyzers`, `DCoding.Data.DVault.MySql`, `DCoding.Data.DVault.Oracle`, `DCoding.Data.DVault.Postgres`, `DCoding.Data.DVault.Sqlite`, and `DCoding.Data.DVault.SqlServer`.
-- [ ] Install `DCoding.Data.DVault.Analyzers` only in projects that own DVault Code-First declarations, and keep it local with `PrivateAssets="all"`.
+- [ ] Install `DCoding.Data.DVault.Analyzers` only in projects that own DVault Code-First declarations or compile-time generated row mapping declarations, and keep it local with `PrivateAssets="all"`.
 - [ ] Also install and configure the normal Entity Framework Core database provider package used by the application, such as SQLite, PostgreSQL, SQL Server, Oracle, or MySQL.
 - [ ] Do not treat `src/DCoding.Data` as a consumer package. It is the non-packable source-root build anchor for the namespace family.
 - [ ] Register `AddDVault()` and, when using a provider package, the matching provider startup extension shown in the [README quickstart](../README.md#register-dvault-services).
@@ -36,6 +36,7 @@ Use this checklist when preparing a DVault-consuming application for production.
 ## Save And Read Boundaries
 
 - [ ] Use `IDataVaultSaveService` as the default write boundary. Each save request should carry an explicit UTC load timestamp and record source.
+- [ ] Treat generated mapper helpers as compile-time ergonomics around the same explicit save boundary: they construct registry-backed operations but do not choose timestamps, record sources, contexts, providers, or save orchestration.
 - [ ] Keep ordinary EF `SaveChanges` separate from DVault persistence unless the application deliberately owns generated DVault rows and opts into metadata fill.
 - [ ] Treat `UseDataVaultSaveChangesMetadataInterceptor(...)` as optional and metadata-only. It fills missing `LoadTimestamp` and `RecordSource` values on already tracked generated DVault rows; it does not create rows, compute hash keys, compute hash diffs, or replace `IDataVaultSaveService`.
 - [ ] Prefer registry-backed requests or typed save helpers when they reduce repeated metadata declarations in loaders.

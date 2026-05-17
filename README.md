@@ -7,18 +7,18 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.11.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.11.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.11.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.11.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.11.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.11.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.11.0
+dotnet add package DCoding.Data.DVault --version 0.12.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.12.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.12.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.12.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.12.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.12.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.12.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
 
-`DCoding.Data.DVault.Analyzers` is optional developer tooling. Prefer `PrivateAssets="all"` for that package so analyzer assets stay local to the project that declares DVault Code-First metadata.
+`DCoding.Data.DVault.Analyzers` is optional developer tooling. Prefer `PrivateAssets="all"` for that package so analyzer and source-generator assets stay local to the project that declares DVault Code-First metadata or compile-time mapping declarations. See `src/DCoding.Data.DVault.Analyzers/README.md` for the package-local diagnostic, code-fix, source-generator, suppression, and configuration guidance.
 
 Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
 
@@ -474,12 +474,16 @@ Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadS
 
 SQLite remains the default local live-schema proof because it does not require external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks require consumer-managed reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation. Keep those external provider checks opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
 
-## v0.11.0 Release Notes
+## v0.12.0 Release Notes
 
-The v0.11.0 release documents the current design-time command surface and built-in provider live-schema readers while keeping the explicit DVault persistence and EF design-time boundaries intact. See `docs/releases/v0.11.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
+The v0.12.0 release documents the current analyzer and source-generator ergonomics layer while keeping the explicit DVault persistence and EF design-time boundaries intact. See `docs/releases/v0.12.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
 
 Notable user-facing changes:
 
+- `DCoding.Data.DVault.Analyzers` keeps the carried-forward DMV1901/DMV1902 Code-First selector diagnostics and adds bounded code fixes for directly expandable anonymous-object selectors and later duplicate declarations.
+- DMV1950 through DMV1955 report malformed compile-time mapping declarations, missing generated row bindings, invalid source members, duplicate binding order or names, and repeated link participant hub names.
+- The analyzer package source generator emits registry-backed typed row mappers from public `DCoding.Data.DVault` mapping attributes.
+- Generated helpers construct the same `DataVaultRegistry*SaveOperation` values as manual typed mappers and still require caller-supplied `loadTimestamp`, `recordSource`, and explicit `IDataVaultSaveService` calls.
 - `DataVaultDesignTimeCommand` and `DataVaultDesignTimeCommandHost` provide reusable library-hosted `validate`, `export`, `drift`, and `guardrail` verbs for consumer-owned command hosts.
 - `drift --artifact <path>` is the default artifact-versus-design-time-model gate when a reviewed `dvault.model.v1` artifact exists.
 - `export` is for artifact maintenance and reviewed refresh workflows, not the default blocking CI gate.
@@ -491,11 +495,11 @@ Notable user-facing changes:
 - SQLite-backed compatibility tests prove that DVault metadata annotations survive compiled model usage and that EF compiled queries can read generated shared-type DVault tables.
 - The existing typed read helpers and provider save-strategy SPI are documented as the v1 read and bulk-save boundaries for this release.
 
-## Current v0.11.0 Limitations
+## Current v0.12.0 Limitations
 
-Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.11.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
+Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.12.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
 
-Model-first APIs continue to operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization. The metadata interceptor is opt-in and metadata-only: callers still own generated row creation, hash-key and hash-diff values, save ordering, and explicit service-based persistence when they use `IDataVaultSaveService`. The analyzer package intentionally covers only the first high-confidence Code-First selector and duplicate-member rules; it is not a complete model validator.
+Model-first APIs continue to operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization. The metadata interceptor is opt-in and metadata-only: callers still own generated row creation, hash-key and hash-diff values, save ordering, and explicit service-based persistence when they use `IDataVaultSaveService`. The analyzer package is not a complete model validator; it covers the documented Code-First selector diagnostics, duplicate-member diagnostics, bounded code fixes, and compile-time mapping declaration diagnostics only.
 
 ## Layout
 
@@ -503,7 +507,7 @@ Model-first APIs continue to operate on JSON artifacts, fluent Code-First declar
 - `src/DCoding.Data/`: Non-packable build anchor for the `DCoding.Data` source-root namespace family.
 - `src/DCoding.Data.DVault/`: Main library project. The NuGet package id and root namespace are `DCoding.Data.DVault`.
 - `src/DCoding.Data.DVault.*`: Provider extension packages for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL.
-- `src/DCoding.Data.DVault.Analyzers/`: Roslyn analyzer package for high-confidence DVault Code-First diagnostics.
+- `src/DCoding.Data.DVault.Analyzers/`: Roslyn analyzer and source-generator package for DVault Code-First diagnostics, bounded code fixes, and compile-time mapping declarations.
 - `tests/DCoding.Data.DVault.Tests/`: Unit, integration, and shared test projects for DVault.
 - `examples/`: Runnable SQLite and PostgreSQL quickstart projects.
 - `benchmarks/`: Local performance benchmark projects.

@@ -1,8 +1,8 @@
 # Model-First Governance Workflow
 
-Status: v0.11.0 public guidance
+Status: v0.12.0 public guidance
 
-This guide describes how teams should use governed `dvault.model.v1` JSON artifacts alongside the existing Code-First and metadata-first DVault paths. Earlier release notes remain historical package context; `docs/releases/v0.11.0.md` is the current public baseline for model-first import, export, projection, design-time drift, and optional live-schema drift guidance.
+This guide describes how teams should use governed `dvault.model.v1` JSON artifacts alongside the existing Code-First and metadata-first DVault paths. Earlier release notes remain historical package context; `docs/releases/v0.12.0.md` is the current public baseline for analyzer/generator ergonomics, model-first import, export, projection, design-time drift, and optional live-schema drift guidance.
 
 ## Choose A Declaration Path
 
