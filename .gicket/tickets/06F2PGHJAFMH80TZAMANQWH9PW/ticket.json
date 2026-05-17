@@ -3,20 +3,19 @@
   "ticket-id": "06F2PGHJAFMH80TZAMANQWH9PW",
   "ticket-type": null,
   "title": "Epic: Analyzer and generator ergonomics",
-  "revision": "06F2PNJ8DYEQG2VQ0GTYEYYF8M",
-  "status": "todo",
+  "revision": "06F3DHWVQJ19RZQ1HVNSDCFZ20",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/epic",
     "area/analyzers",
-    "area/source-generation",
     "area/developer-experience",
     "area/documentation",
-    "needs-po"
+    "area/source-generation",
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9B92XX975C9APSZQSGSC",
   "releaseId": "06F2PH99NN9B0S4RZW0NPST1CR",
   "created-at": "2026-05-15T10:50:19.2625892Z",
-  "updated-at": "2026-05-15T11:12:15.4710183Z"
+  "updated-at": "2026-05-17T16:31:51.7406876Z"
 }

@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Epic scope is already fully materialized and completed: the direct child split is done, repository evidence matches the v0.12 analyzer/code-fix/source-generator/docs baseline, and no new planning artifacts or relation changes were needed.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Local ticket-store evidence shows four direct parentOf children under this epic and all four are done: 06F2PGHQ2GATEM13M5QK1MSX1G (Expand Code-First analyzer diagnostics), 06F2PGJBRXFCP038CN6XVAYSZM (Add code fixes for common DVault analyzer findings), 06F2PGJGDGMXHPT1VP0ASQ5HJ4 (Add source-generated metadata helper foundation), and 06F2PGJYY6S97B4Z8044D34K5C (Update v0.12.0 documentation and release notes).
 - Nested child work is also already closed: analyzer story 06F2PGHQ2GATEM13M5QK1MSX1G has done tasks 06F2PGHWEWYJZSRQ9QPT4NJ0QM and 06F2PGJ28KVSZAAFRA40D94128, and generator story 06F2PGJGDGMXHPT1VP0ASQ5HJ4 has done tasks 06F2PGJN1XCV8F7NWH567SQSKM and 06F2PGJSXP18VKKV52QZA4NP30.
 - Repository evidence matches that split: src/DCoding.Data.DVault.Analyzers/DataVaultCodeFirstAnalyzer.cs and DataVaultCodeFirstCodeFixProvider.cs cover analyzer/code-fix ergonomics, DataVaultMappingSourceGenerator.cs and DataVaultMappingDiagnosticCatalog.cs cover generated mapper helpers and DMV1950-DMV1955, and tests/DCoding.Data.DVault.Tests/Analyzers plus typed-mapper tests cover the shipped behavior.
@@ -17,73 +16,46 @@
 - Outgoing blocks relations to later Code-First parity tickets 06F2PGK4QJ0YGXK5479W83Z2J0, 06F2PGKAQVVF8GEZVVC8SHFASG, 06F2PGKJBG7NGNVBN0ZDSBE6B8, 06F2PGKV9AFAMKGJEKKZ3AXHGC, and 06F2PGM1HQ5W1M2H8T50MZ3EEC remain consistent as downstream sequencing for later release work; no relation cleanup was justified in this pass.
 - No child tickets, relation writes, attachments, or planning documents were created during this refinement run.
 
-### Scope In
+Scope In
 - Closure-only epic roll-up of the shipped v0.12 analyzer and generator ergonomics slice across analyzer diagnostics, bounded code fixes, generated mapper helpers, and release-ready documentation.
 - Direct child-ticket completion status and existing nested split as the authoritative planning structure for this epic.
 - The public v0.12 behavior baseline: DMV1901/DMV1902, bounded code fixes, DMV1950-DMV1955, compile-time mapping attributes, generated IDataVault*Mapper<TSource> helpers, and the explicit IDataVaultSaveService boundary.
 - Epic-level confirmation that downstream work can rely on the current ergonomics baseline without reopening this release scope.
 
-### Scope Out
+Scope Out
 - New analyzer diagnostics, broader code-fix automation, or dataflow-heavy/full-model validation beyond the shipped v0.12 slice.
 - Generated support for later Code-First parity shapes such as link-parent satellites, effectivity satellites, same-as links, or dependent child key modeling.
 - A new runnable generator-based sample app, broader post-release docs expansion, or unrelated package/runtime refactoring.
 - Relation-graph reshaping beyond the already-materialized child split and still-valid downstream blocks sequencing.
 
-## Acceptance Criteria
-- The epic's direct child split remains the complete delivery structure and all direct children are done: 06F2PGHQ2GATEM13M5QK1MSX1G, 06F2PGJBRXFCP038CN6XVAYSZM, 06F2PGJGDGMXHPT1VP0ASQ5HJ4, and 06F2PGJYY6S97B4Z8044D34K5C.
-- Repository evidence remains consistent with the shipped ergonomics baseline: analyzer diagnostics and code fixes in src/DCoding.Data.DVault.Analyzers, mapping attributes and typed save helpers in src/DCoding.Data.DVault, and analyzer/generator coverage in tests/DCoding.Data.DVault.Tests.
-- Public guidance remains consistent with that baseline in README.md, src/DCoding.Data.DVault.Analyzers/README.md, and docs/releases/v0.12.0.md, including the preserved explicit-save boundary and optional analyzer package usage.
-- Later Code-First parity tickets can proceed from this closed v0.12 baseline without reopening analyzer/generator ergonomics scope or re-splitting this epic.
-
-## Definition of Done
-- No additional child tickets, relation rewrites, attachments, or planning documents are required for this epic.
-- The epic can be treated as a closure-only roll-up of already-completed child work rather than a container for new v0.12 scope.
-- Analyzer/code-fix/generator/docs evidence remains internally consistent across source, tests, and public documentation.
-- Any future expansion beyond the ratified v0.12 ergonomics baseline stays in later linked tickets rather than reopening this epic.
-
-## Implementation Notes
-- Use the existing child tickets as ownership boundaries: analyzer baseline in 06F2PGHQ2GATEM13M5QK1MSX1G, code fixes in 06F2PGJBRXFCP038CN6XVAYSZM, generator foundation in 06F2PGJGDGMXHPT1VP0ASQ5HJ4, and release-doc closure in 06F2PGJYY6S97B4Z8044D34K5C.
-- Use src/DCoding.Data.DVault.Analyzers/DataVaultCodeFirstAnalyzer.cs, DataVaultCodeFirstCodeFixProvider.cs, DataVaultMappingSourceGenerator.cs, and DataVaultMappingDiagnosticCatalog.cs as the implementation anchors for the v0.12 ergonomics surface.
-- Use tests/DCoding.Data.DVault.Tests/Analyzers/DataVaultCodeFirstAnalyzerTests.cs, DataVaultMappingSourceGeneratorTests.cs, Unit/DataVaultTypedMapperContractTests.cs, and Integration/DataVaultTypedMapperSaveServiceSqliteTests.cs as the verification anchors.
-- Keep the public boundary description stable: generated helpers emit IDataVaultHubMapper<TSource>, IDataVaultLinkMapper<TSource>, or IDataVaultSatelliteMapper<TSource> implementations that construct DataVaultRegistry*SaveOperation values and still require caller-supplied loadTimestamp, recordSource, DbContext, and IDataVaultSaveService orchestration.
-- No persistent planning action was materialized in this run because the live child split and relation graph were already sufficient.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should the later Code-First parity epic 06F2PGK4QJ0YGXK5479W83Z2J0 treat the current analyzer/generator baseline as fixed and add new generator/analyzer support only through separate follow-on tickets per shape?
 - Should a later docs/examples ticket add a runnable end-to-end consumer sample that uses the compile-time mapping attributes and generated mappers?
 - If future releases add more DMV195x coverage or broader generated shapes, should root-level docs grow a compact capability table while keeping suppression and detailed rule guidance package-local?
 
-## Risks
+Risks
 - If later work reopens this epic instead of using the already-linked downstream tickets, the clean v0.12 release boundary will blur into later Code-First parity scope.
 - If future analyzer/generator changes are not kept aligned across README.md, src/DCoding.Data.DVault.Analyzers/README.md, and docs/releases, the public release narrative can drift from the shipped package behavior.
 - If later documentation presents generated helpers as a new metadata authority or hidden persistence layer, adopters may misinterpret the preserved explicit-save boundary.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended; the existing direct and nested child-ticket structure is already sufficient and completed.
 - Keep later Code-First parity expansion in the already-linked downstream epic 06F2PGK4QJ0YGXK5479W83Z2J0 and its child tickets instead of widening this v0.12 epic.
 - If future ergonomics work adds new generated shapes, deeper analyzer rules, or runnable examples, create new follow-on tickets rather than reopening this epic.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 4
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Improve compile-time feedback and reduce repetitive DVault mapping code with analyzers and source-generated helpers.
-
-## Scope
-- Refine and complete the work for "Analyzer and generator ergonomics" within the boundaries of its parent story, epic, and release.
-- Keep the implementation focused on the affected DVault feature area; avoid unrelated refactorings or package shape changes unless they are required by the ticket.
-- Update tests, examples, diagnostics, provider behavior, and documentation only where they are relevant to this ticket's observable behavior.
-
-## Acceptance Criteria
-- The completed ticket includes clear evidence of the implemented behavior, verification steps, and any intentionally deferred work.
-- Relevant unit, integration, provider, analyzer, or documentation checks are added or updated, or the ticket documents why a check is not applicable.
-- Public behavior, command output, generated SQL, package contents, examples, README content, and release notes are updated when this ticket changes them.
-- The result remains compatible with the release ordering and relations; dependent tickets can start without reworking this ticket's scope.
-
-## Release Notes
-- If this ticket changes public behavior, package shape, examples, diagnostics, generated SQL, or provider behavior, update README and the release note document for this release before integration.
+Run mode
+- apply: planned updates are applied after this comment

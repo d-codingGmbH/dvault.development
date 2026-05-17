@@ -1,0 +1,42 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `3` selected relation flow(s) for source ticket `06F2PGHJAFMH80TZAMANQWH9PW`.
+- Role `test` completed with outcome `test-workflow-awaiting-integrator` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `6`; dropped obsolete follow-up(s): `5`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `575e9b791e8d445e83e2be2a4fc671be`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06F2PGK4QJ0YGXK5479W83Z2J0` via `blocks` path `06F2PGHJAFMH80TZAMANQWH9PW -> 06F2PGK4QJ0YGXK5479W83Z2J0`
+- [queued] `blocked-follow-up-comment` -> `06F2PGKAQVVF8GEZVVC8SHFASG` via `blocks` path `06F2PGHJAFMH80TZAMANQWH9PW -> 06F2PGKAQVVF8GEZVVC8SHFASG`
+- [queued] `blocked-follow-up-comment` -> `06F2PGKJBG7NGNVBN0ZDSBE6B8` via `blocks` path `06F2PGHJAFMH80TZAMANQWH9PW -> 06F2PGKJBG7NGNVBN0ZDSBE6B8`
+- [queued] `blocked-follow-up-comment` -> `06F2PGKV9AFAMKGJEKKZ3AXHGC` via `blocks` path `06F2PGHJAFMH80TZAMANQWH9PW -> 06F2PGKV9AFAMKGJEKKZ3AXHGC`
+- [queued] `blocked-follow-up-comment` -> `06F2PGM1HQ5W1M2H8T50MZ3EEC` via `blocks` path `06F2PGHJAFMH80TZAMANQWH9PW -> 06F2PGM1HQ5W1M2H8T50MZ3EEC`
+- [queued] `blocked-follow-up-comment` -> `06F2PGM9038RXVJH0RJFYEJEV0` via `blocks` path `06F2PGHJAFMH80TZAMANQWH9PW -> 06F2PGM9038RXVJH0RJFYEJEV0`
+- [dropped] `blocked-by-follow-up-comment` -> `06F2PGFT8Z406HFBJGQSY7YRJ0` via `blocks` path `06F2PGHJAFMH80TZAMANQWH9PW -> 06F2PGFT8Z406HFBJGQSY7YRJ0`
+- [dropped] `child-follow-up-comment` -> `06F2PGHQ2GATEM13M5QK1MSX1G` via `parentOf` path `06F2PGHJAFMH80TZAMANQWH9PW -> 06F2PGHQ2GATEM13M5QK1MSX1G`
+- [dropped] `child-follow-up-comment` -> `06F2PGJBRXFCP038CN6XVAYSZM` via `parentOf` path `06F2PGHJAFMH80TZAMANQWH9PW -> 06F2PGJBRXFCP038CN6XVAYSZM`
+- [dropped] `child-follow-up-comment` -> `06F2PGJGDGMXHPT1VP0ASQ5HJ4` via `parentOf` path `06F2PGHJAFMH80TZAMANQWH9PW -> 06F2PGJGDGMXHPT1VP0ASQ5HJ4`
+- [dropped] `child-follow-up-comment` -> `06F2PGJYY6S97B4Z8044D34K5C` via `parentOf` path `06F2PGHJAFMH80TZAMANQWH9PW -> 06F2PGJYY6S97B4Z8044D34K5C`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06F2PGHJAFMH80TZAMANQWH9PW` owner `ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics` base `develop` source-owner `ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGK4QJ0YGXK5479W83Z2J0` owner `ticket/06F2PGK4QJ0YGXK5479W83Z2J0-epic-code-first-parity-expansion` base `develop` source-owner `ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics`: Target ticket owner branch 'ticket/06F2PGK4QJ0YGXK5479W83Z2J0-epic-code-first-parity-expansion' differs from source owner branch 'ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGKAQVVF8GEZVVC8SHFASG` owner `ticket/06F2PGKAQVVF8GEZVVC8SHFASG-story-add-code-first-link-parent-satellites` base `develop` source-owner `ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics`: Target ticket owner branch 'ticket/06F2PGKAQVVF8GEZVVC8SHFASG-story-add-code-first-link-parent-satellites' differs from source owner branch 'ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGKJBG7NGNVBN0ZDSBE6B8` owner `ticket/06F2PGKJBG7NGNVBN0ZDSBE6B8-task-test-link-parent-satellite-metadata-project` base `develop` source-owner `ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics`: Target ticket owner branch 'ticket/06F2PGKJBG7NGNVBN0ZDSBE6B8-task-test-link-parent-satellite-metadata-project' differs from source owner branch 'ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGKV9AFAMKGJEKKZ3AXHGC` owner `ticket/06F2PGKV9AFAMKGJEKKZ3AXHGC-story-add-code-first-effectivity-satellite-suppo` base `develop` source-owner `ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics`: Target ticket owner branch 'ticket/06F2PGKV9AFAMKGJEKKZ3AXHGC-story-add-code-first-effectivity-satellite-suppo' differs from source owner branch 'ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGM1HQ5W1M2H8T50MZ3EEC` owner `ticket/06F2PGM1HQ5W1M2H8T50MZ3EEC-story-add-same-as-link-and-dependent-child-key-m` base `develop` source-owner `ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics`: Target ticket owner branch 'ticket/06F2PGM1HQ5W1M2H8T50MZ3EEC-story-add-same-as-link-and-dependent-child-key-m' differs from source owner branch 'ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGM9038RXVJH0RJFYEJEV0` owner `ticket/06F2PGM9038RXVJH0RJFYEJEV0-task-update-v0-13-0-documentation-and-release-no` base `develop` source-owner `ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics`: Target ticket owner branch 'ticket/06F2PGM9038RXVJH0RJFYEJEV0-task-update-v0-13-0-documentation-and-release-no' differs from source owner branch 'ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics'.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F2PGFT8Z406HFBJGQSY7YRJ0` owner `<base-terminal>` base `develop` source-owner `ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F2PGHQ2GATEM13M5QK1MSX1G` owner `<base-terminal>` base `develop` source-owner `ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F2PGJBRXFCP038CN6XVAYSZM` owner `<base-terminal>` base `develop` source-owner `ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F2PGJGDGMXHPT1VP0ASQ5HJ4` owner `<base-terminal>` base `develop` source-owner `ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F2PGJYY6S97B4Z8044D34K5C` owner `<base-terminal>` base `develop` source-owner `ticket/06F2PGHJAFMH80TZAMANQWH9PW-epic-analyzer-and-generator-ergonomics`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGK4QJ0YGXK5479W83Z2J0` on owner branch `ticket/06F2PGK4QJ0YGXK5479W83Z2J0-epic-code-first-parity-expansion` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGKAQVVF8GEZVVC8SHFASG` on owner branch `ticket/06F2PGKAQVVF8GEZVVC8SHFASG-story-add-code-first-link-parent-satellites` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGKJBG7NGNVBN0ZDSBE6B8` on owner branch `ticket/06F2PGKJBG7NGNVBN0ZDSBE6B8-task-test-link-parent-satellite-metadata-project` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGKV9AFAMKGJEKKZ3AXHGC` on owner branch `ticket/06F2PGKV9AFAMKGJEKKZ3AXHGC-story-add-code-first-effectivity-satellite-suppo` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGM1HQ5W1M2H8T50MZ3EEC` on owner branch `ticket/06F2PGM1HQ5W1M2H8T50MZ3EEC-story-add-same-as-link-and-dependent-child-key-m` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGM9038RXVJH0RJFYEJEV0` on owner branch `ticket/06F2PGM9038RXVJH0RJFYEJEV0-task-update-v0-13-0-documentation-and-release-no` after that branch is refreshed/rebased.
