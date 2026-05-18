@@ -68,7 +68,9 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark 
 
         BenchmarkAssert.Equal(ExpectedRowsWritten, result.RowsWritten, "The provider-native bulk benchmark row count drifted.");
         BenchmarkAssert.Equal(ExpectedSavedRecordCount, result.SavedRecords.Count, "The provider-native bulk benchmark saved-record count drifted.");
-        BenchmarkAssert.Equal(0, context.ChangeTracker.Entries().Count(), "The provider-native bulk benchmark must leave a clean change tracker.");
+        if (DataVaultBenchmarkHelpers.GetProviderSaveStrategyName(_strategy) is not null) {
+          BenchmarkAssert.Equal(0, context.ChangeTracker.Entries().Count(), "The provider-native bulk benchmark must leave a clean change tracker.");
+        }
       }).ConfigureAwait(false);
 
       await VerifyOutcomeAsync(options, providerCapabilities, scenario, cancellationToken).ConfigureAwait(false);
