@@ -11,9 +11,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.7" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.7" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.7" Condition="'$(DVAULT_TEST_SQLSERVER_CONNECTION_STRING)' != ''" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.8" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.8" Condition="'$(DVAULT_TEST_SQLSERVER_CONNECTION_STRING)' != ''" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" Condition="'$(DVAULT_TEST_POSTGRES_CONNECTION_STRING)' != ''" />
     <PackageReference Include="Oracle.EntityFrameworkCore" Version="10.23.26200" Condition="'$(DVAULT_TEST_ORACLE_CONNECTION_STRING)' != ''" />
     <PackageReference Include="MySql.EntityFrameworkCore" Version="10.0.7" Condition="'$(DVAULT_TEST_MYSQL_CONNECTION_STRING)' != ''" />
