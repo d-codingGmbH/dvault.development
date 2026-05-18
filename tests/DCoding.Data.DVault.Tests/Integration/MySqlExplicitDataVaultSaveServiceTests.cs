@@ -21,6 +21,14 @@ public sealed class MySqlExplicitDataVaultSaveServiceTests {
   private const string FallbackPayloadName = "Profile Status";
   private const string FallbackPayloadColumnName = "ProfileStatus";
 
+  [Fact]
+  public async Task AddDVaultMySqlBulkStrategyPersistsOrderedHubLinkAndSatelliteBatchWhenConfigured() {
+    await ExternalProviderBulkSaveAssertions.AssertProviderBulkSaveAsync(
+        ExternalProviderLiveSchemaFixture.CreateMySqlAsync,
+        services => services.AddDVaultMySql(),
+        "MySqlDataVaultSaveStrategy");
+  }
+
   private static readonly DateTimeOffset LoadTimestamp =
       new(2026, 5, 4, 0, 0, 0, TimeSpan.Zero);
 

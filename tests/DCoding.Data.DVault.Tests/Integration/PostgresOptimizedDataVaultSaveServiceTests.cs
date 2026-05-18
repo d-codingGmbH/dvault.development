@@ -203,6 +203,14 @@ public sealed class PostgresOptimizedDataVaultSaveServiceTests {
     }
   }
 
+  [Fact]
+  public async Task AddDVaultPostgresBulkStrategyPersistsOrderedHubLinkAndSatelliteBatchWhenConfigured() {
+    await ExternalProviderBulkSaveAssertions.AssertProviderBulkSaveAsync(
+        ExternalProviderLiveSchemaFixture.CreatePostgresAsync,
+        services => services.AddDVaultPostgres(),
+        "PostgresDataVaultSaveStrategy");
+  }
+
   private static DbContextOptions<OptimizedPostgresSaveContext> CreatePostgresOptions(string connectionString) {
     var optionsBuilder = new DbContextOptionsBuilder<OptimizedPostgresSaveContext>();
 

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text;
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DCoding.Data.DVault;
@@ -380,7 +381,7 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
         command.Transaction = dbContext.Database.CurrentTransaction?.GetDbTransaction();
 
         var parameterNames = AddCommandParameters(command, parentHashKeyBatch);
-        command.CommandText = CreateLatestSatelliteHashDiffsCommandText(table, parameterNames);
+        command.CommandText = CreateLatestSatelliteHashDiffsCommandText(dbContext, table, parameterNames);
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
@@ -465,7 +466,7 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
               ? await ExecuteOracleUniqueInsertChunkAsync(
                   connection,
                   transaction,
-                  group.Key.TableName,
+                  ResolvePhysicalTableName(dbContext, group.Key.TableName),
                   columns,
                   group.Key.HashKeyColumnName
                       ?? throw new InvalidOperationException("Oracle unique insert rows require a hash key column."),
@@ -474,7 +475,7 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
               : await ExecuteOracleInsertAllChunkAsync(
                   connection,
                   transaction,
-                  group.Key.TableName,
+                  ResolvePhysicalTableName(dbContext, group.Key.TableName),
                   columns,
                   chunk.Select(row => row.Values).ToArray(),
                   cancellationToken).ConfigureAwait(false);
@@ -773,6 +774,7 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
   }
 
   private static string CreateLatestSatelliteHashDiffsCommandText(
+      DbContext dbContext,
       SatelliteTableProjection table,
       IReadOnlyList<string> parentHashKeyParameterNames) {
     var builder = new StringBuilder();
@@ -795,7 +797,7 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
         .Append(" DESC) AS ")
         .Append(QuoteOracleIdentifier("rn"))
         .Append(" FROM ")
-        .Append(QuoteOracleIdentifier(table.TableName))
+        .Append(QuoteOracleIdentifier(ResolvePhysicalTableName(dbContext, table.TableName)))
         .Append(" WHERE ")
         .Append(QuoteOracleIdentifier(table.ParentHashKeyColumnName))
         .Append(" IN (");
@@ -885,6 +887,30 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     arrayBindCountProperty.SetValue(command, rowCount);
 
     return true;
+  }
+
+  private static string ResolvePhysicalTableName(DbContext dbContext, string producedTableName) {
+    var entityType = FindEntityType(dbContext, producedTableName);
+
+    return entityType?.GetTableName() ?? producedTableName;
+  }
+
+  private static IEntityType? FindEntityType(DbContext dbContext, string producedTableName) {
+    foreach (var entityType in dbContext.Model.GetEntityTypes()) {
+      var producedName = entityType.FindAnnotation(DataVaultAnnotationNames.ProducedName)?.Value as string;
+      if (string.Equals(producedName, producedTableName, StringComparison.Ordinal)) {
+        return entityType;
+      }
+    }
+
+    foreach (var entityType in dbContext.Model.GetEntityTypes()) {
+      if (string.Equals(entityType.GetTableName(), producedTableName, StringComparison.Ordinal) ||
+          string.Equals(entityType.Name, producedTableName, StringComparison.Ordinal)) {
+        return entityType;
+      }
+    }
+
+    return null;
   }
 
   private static string GetRequiredString(DbDataReader reader, int ordinal) {

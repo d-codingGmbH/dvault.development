@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text;
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DCoding.Data.DVault;
@@ -51,6 +52,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
 
     try {
       var filteredSatellitePlans = await FilterSatellitePlansAsync(
+          context.DbContext,
           connection,
           transaction,
           satellitePlans,
@@ -60,6 +62,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
           .Concat(filteredSatellitePlans.Results.Select(result => result.SavedRecord))
           .ToArray();
       var rowsWritten = await ExecuteMySqlInsertRowsAsync(
+          context.DbContext,
           connection,
           transaction,
           uniquePlans.Select(plan => new MySqlInsertRow(plan.Table.TableName, plan.Row)),
@@ -67,6 +70,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
           cancellationToken).ConfigureAwait(false);
 
       rowsWritten += await ExecuteMySqlInsertRowsAsync(
+          context.DbContext,
           connection,
           transaction,
           filteredSatellitePlans.RowsToWrite.Select(plan => new MySqlInsertRow(plan.Table.TableName, plan.Row)),
@@ -417,6 +421,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   }
 
   private static async Task<FilteredSatelliteSavePlans> FilterSatellitePlansAsync(
+      DbContext dbContext,
       DbConnection connection,
       DbTransaction transaction,
       IReadOnlyList<SatelliteSavePlan> plans,
@@ -426,6 +431,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
 
     foreach (var group in plans.GroupBy(plan => plan.Table)) {
       var latestHashDiffs = await LoadLatestSatelliteHashDiffsAsync(
+          dbContext,
           connection,
           transaction,
           group.Key,
@@ -447,6 +453,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   }
 
   private static async Task<Dictionary<string, LatestSatelliteHashDiff>> LoadLatestSatelliteHashDiffsAsync(
+      DbContext dbContext,
       DbConnection connection,
       DbTransaction transaction,
       SatelliteTableProjection table,
@@ -461,7 +468,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
       command.Transaction = transaction;
 
       var parameterNames = AddCommandParameters(command, parentHashKeyBatch);
-      command.CommandText = CreateLatestSatelliteHashDiffsCommandText(table, parameterNames);
+      command.CommandText = CreateLatestSatelliteHashDiffsCommandText(dbContext, table, parameterNames);
 
       await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
       while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
@@ -496,6 +503,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   }
 
   private static async Task<int> ExecuteMySqlInsertRowsAsync(
+      DbContext dbContext,
       DbConnection connection,
       DbTransaction transaction,
       IEnumerable<MySqlInsertRow> rows,
@@ -518,7 +526,7 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
         rowsWritten += await ExecuteMySqlInsertChunkAsync(
             connection,
             transaction,
-            group.Key.TableName,
+            ResolvePhysicalTableName(dbContext, group.Key.TableName),
             columns,
             chunk.Select(row => row.Values).ToArray(),
             conflictBehavior,
@@ -560,10 +568,11 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   }
 
   private static string CreateLatestSatelliteHashDiffsCommandText(
+      DbContext dbContext,
       SatelliteTableProjection table,
       IReadOnlyList<string> parentHashKeyParameterNames) {
     return CreateLatestSatelliteHashDiffsCommandText(
-        table.TableName,
+        ResolvePhysicalTableName(dbContext, table.TableName),
         table.ParentHashKeyColumnName,
         table.HashDiffColumnName,
         table.LoadTimestampColumnName,
@@ -643,6 +652,30 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
 
   private static DateTimeOffset GetRequiredDateTimeOffset(DbDataReader reader, int ordinal) {
     return DataVaultLoadTimestampValueConverter.ReadProviderValue(reader.GetValue(ordinal));
+  }
+
+  private static string ResolvePhysicalTableName(DbContext dbContext, string producedTableName) {
+    var entityType = FindEntityType(dbContext, producedTableName);
+
+    return entityType?.GetTableName() ?? producedTableName;
+  }
+
+  private static IEntityType? FindEntityType(DbContext dbContext, string producedTableName) {
+    foreach (var entityType in dbContext.Model.GetEntityTypes()) {
+      var producedName = entityType.FindAnnotation(DataVaultAnnotationNames.ProducedName)?.Value as string;
+      if (string.Equals(producedName, producedTableName, StringComparison.Ordinal)) {
+        return entityType;
+      }
+    }
+
+    foreach (var entityType in dbContext.Model.GetEntityTypes()) {
+      if (string.Equals(entityType.GetTableName(), producedTableName, StringComparison.Ordinal) ||
+          string.Equals(entityType.Name, producedTableName, StringComparison.Ordinal)) {
+        return entityType;
+      }
+    }
+
+    return null;
   }
 
   private static string QuoteMySqlIdentifier(string identifier) {

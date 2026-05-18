@@ -160,6 +160,14 @@ public sealed class SqlServerDataVaultSmokeTests {
     }
   }
 
+  [Fact]
+  public async Task AddDVaultSqlServerBulkStrategyPersistsOrderedHubLinkAndSatelliteBatchWhenConfigured() {
+    await ExternalProviderBulkSaveAssertions.AssertProviderBulkSaveAsync(
+        ExternalProviderLiveSchemaFixture.CreateSqlServerAsync,
+        services => services.AddDVaultSqlServer(),
+        "SqlServerDataVaultSaveStrategy");
+  }
+
   private static ServiceProvider CreateServiceProvider() {
     var services = new ServiceCollection();
     services.AddDVaultSqlServer();

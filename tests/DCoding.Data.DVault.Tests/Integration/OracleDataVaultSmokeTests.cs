@@ -18,6 +18,14 @@ public sealed class OracleDataVaultSmokeTests {
   private const string CustomerId = "C-ORACLE-100";
   private const string RecordSource = "oracle-smoke";
 
+  [Fact]
+  public async Task AddDVaultOracleBulkStrategyPersistsOrderedHubLinkAndSatelliteBatchWhenConfigured() {
+    await ExternalProviderBulkSaveAssertions.AssertProviderBulkSaveAsync(
+        ExternalProviderLiveSchemaFixture.CreateOracleAsync,
+        services => services.AddDVaultOracle(),
+        "OracleDataVaultSaveStrategy");
+  }
+
   private static readonly DateTimeOffset LoadTimestamp =
       new(2026, 5, 4, 0, 0, 0, TimeSpan.Zero);
 
