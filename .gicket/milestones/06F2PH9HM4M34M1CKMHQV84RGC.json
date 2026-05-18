@@ -3,6 +3,6 @@
   "milestoneId": "06F2PH9HM4M34M1CKMHQV84RGC",
   "name": "v0.14.0 - Provider-native bulk strategies",
   "description": "COPY, BulkCopy, array binding, multi-row insert, and transaction batching where appropriate.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-15T10:53:35.5214974Z"
 }
