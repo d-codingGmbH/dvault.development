@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using DCoding.Data.DVault;
 using DCoding.Data.DVault.Benchmarks;
 using DCoding.Data.DVault.Tests.Shared;
 using Xunit;
@@ -11,6 +12,9 @@ namespace DCoding.Data.DVault.Tests.Integration;
 public sealed class BenchmarkScenarioExecutionTests {
   private const string SqliteProviderName = "SQLite local temporary files";
   private const string PostgresProviderName = "PostgreSQL external provider";
+  private const string SqlServerProviderName = "SQL Server external provider";
+  private const string MySqlProviderName = "MySQL external provider";
+  private const string OracleProviderName = "Oracle external provider";
 
   private static readonly ExpectedBenchmarkRow[] ExpectedRows =
   [
@@ -122,90 +126,70 @@ public sealed class BenchmarkScenarioExecutionTests {
           "sqlite-optimized-dvault",
           "1 hierarchy ancestor with 100 descendant bridge rows",
           "maximum depth 3 of 5"),
-      SkippedPostgres(
-          "customer-profile-history",
+      SkippedExternal(
+          PostgresProviderName,
+          "provider-native-bulk-ingestion",
           "dvault-adddvault-fallback",
           "provider-neutral-dvault-fallback",
-          "1 customer, 2 profile states",
-          "50% repeat-change history"),
-      SkippedPostgres(
-          "customer-profile-history",
+          "20 order-product pairs, 3 fulfillment satellite operations",
+          "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
+          NotConfiguredSkipReason),
+      SkippedExternal(
+          PostgresProviderName,
+          "provider-native-bulk-ingestion",
           "dvault-adddvaultpostgres-optimized",
           "postgres-optimized-dvault",
-          "1 customer, 2 profile states",
-          "50% repeat-change history"),
-      SkippedPostgres(
-          "customer-profile-bulk-insert-only",
+          "20 order-product pairs, 3 fulfillment satellite operations",
+          "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
+          NotConfiguredSkipReason),
+      SkippedExternal(
+          SqlServerProviderName,
+          "provider-native-bulk-ingestion",
           "dvault-adddvault-fallback",
           "provider-neutral-dvault-fallback",
-          "100 customers, 1 profile state each",
-          "0% repeat-change history"),
-      SkippedPostgres(
-          "customer-profile-bulk-insert-only",
-          "dvault-adddvaultpostgres-optimized",
-          "postgres-optimized-dvault",
-          "100 customers, 1 profile state each",
-          "0% repeat-change history"),
-      SkippedPostgres(
-          "customer-profile-bulk-history",
+          "20 order-product pairs, 3 fulfillment satellite operations",
+          "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          SqlServerProviderName,
+          "provider-native-bulk-ingestion",
+          "dvault-adddvaultsqlserver-optimized",
+          "sqlserver-optimized-dvault",
+          "20 order-product pairs, 3 fulfillment satellite operations",
+          "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          MySqlProviderName,
+          "provider-native-bulk-ingestion",
           "dvault-adddvault-fallback",
           "provider-neutral-dvault-fallback",
-          "100 customers, 10 profile states each",
-          "90% repeat-change history"),
-      SkippedPostgres(
-          "customer-profile-bulk-history",
-          "dvault-adddvaultpostgres-optimized",
-          "postgres-optimized-dvault",
-          "100 customers, 10 profile states each",
-          "90% repeat-change history"),
-      SkippedPostgres(
-          "order-product-fulfillment-history",
+          "20 order-product pairs, 3 fulfillment satellite operations",
+          "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          MySqlProviderName,
+          "provider-native-bulk-ingestion",
+          "dvault-adddvaultmysql-optimized",
+          "mysql-optimized-dvault",
+          "20 order-product pairs, 3 fulfillment satellite operations",
+          "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          OracleProviderName,
+          "provider-native-bulk-ingestion",
           "dvault-adddvault-fallback",
           "provider-neutral-dvault-fallback",
-          "1 order-product relationship, 2 fulfillment states",
-          "50% repeat-change history"),
-      SkippedPostgres(
-          "order-product-fulfillment-history",
-          "dvault-adddvaultpostgres-optimized",
-          "postgres-optimized-dvault",
-          "1 order-product relationship, 2 fulfillment states",
-          "50% repeat-change history"),
-      SkippedPostgres(
-          "latest-satellite-read",
-          "dvault-adddvault-fallback",
-          "provider-neutral-dvault-fallback",
-          "100 customers, 10 profile states each",
-          "90% repeat-change history latest read"),
-      SkippedPostgres(
-          "latest-satellite-read",
-          "dvault-adddvaultpostgres-optimized",
-          "postgres-optimized-dvault",
-          "100 customers, 10 profile states each",
-          "90% repeat-change history latest read"),
-      SkippedPostgres(
-          "pit-as-of-read",
-          "dvault-adddvault-fallback",
-          "provider-neutral-dvault-fallback",
-          "100 customers, 100 PIT rows, 2 satellite segments",
-          "as-of read after latest profile/status snapshots"),
-      SkippedPostgres(
-          "pit-as-of-read",
-          "dvault-adddvaultpostgres-optimized",
-          "postgres-optimized-dvault",
-          "100 customers, 100 PIT rows, 2 satellite segments",
-          "as-of read after latest profile/status snapshots"),
-      SkippedPostgres(
-          "bridge-traversal-read",
-          "dvault-adddvault-fallback",
-          "provider-neutral-dvault-fallback",
-          "1 hierarchy ancestor with 100 descendant bridge rows",
-          "maximum depth 3 of 5"),
-      SkippedPostgres(
-          "bridge-traversal-read",
-          "dvault-adddvaultpostgres-optimized",
-          "postgres-optimized-dvault",
-          "1 hierarchy ancestor with 100 descendant bridge rows",
-          "maximum depth 3 of 5"),
+          "20 order-product pairs, 3 fulfillment satellite operations",
+          "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          OracleProviderName,
+          "provider-native-bulk-ingestion",
+          "dvault-adddvaultoracle-optimized",
+          "oracle-optimized-dvault",
+          "20 order-product pairs, 3 fulfillment satellite operations",
+          "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable)),
   ];
 
   [Fact]
@@ -234,9 +218,9 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Contains("100 latest profile satellite rows read from 1000 seeded profile states", text);
     Assert.Contains("100 PIT as-of rows read across profile and status satellite snapshots", text);
     Assert.Contains("60 bridge traversal rows read from 100 seeded hierarchy rows", text);
-    Assert.Contains("Recorded 74 benchmark report rows.", text);
+    Assert.Contains("Recorded 26 benchmark report rows.", text);
     Assert.Contains("Executed 18 benchmark report rows.", text);
-    Assert.Contains("Skipped 56 benchmark report rows.", text);
+    Assert.Contains("Skipped 8 benchmark report rows.", text);
   }
 
   [Fact]
@@ -280,7 +264,7 @@ public sealed class BenchmarkScenarioExecutionTests {
 
       var csv = await File.ReadAllTextAsync(csvPath).ConfigureAwait(false);
       var csvLines = csv.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
-      Assert.Equal(75, csvLines.Length);
+      Assert.Equal(27, csvLines.Length);
       Assert.Equal(
           "scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,persistedOutcome",
           csvLines[0]);
@@ -307,7 +291,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.False(string.IsNullOrWhiteSpace(context.GetProperty("dotNetRuntimeVersion").GetString()));
 
       var results = json.RootElement.GetProperty("results").EnumerateArray().ToArray();
-      Assert.Equal(74, results.Length);
+      Assert.Equal(26, results.Length);
 
       foreach (var expectedRow in ExpectedRows) {
         var matchingResults = results.Where(result =>
@@ -337,6 +321,19 @@ public sealed class BenchmarkScenarioExecutionTests {
         Directory.Delete(artifactDirectory, recursive: true);
       }
     }
+  }
+
+  [Fact]
+  public async Task ProviderNativeBulkBenchmarkProvesSelectedProviderStrategyBeforeTimingNativeRow() {
+    var benchmark = new ProviderNativeBulkIngestionBenchmark(
+        BenchmarkDatabaseProviders.Sqlite,
+        DataVaultBenchmarkStrategy.SqliteOptimized,
+        DataVaultLoadTimestampStorage.ProviderDefault);
+
+    var result = await benchmark.ExecuteAsync(CancellationToken.None).ConfigureAwait(false);
+
+    Assert.Contains("20 order hubs, 20 product hubs, 20 order-product links, and 2 fulfillment satellite rows", result.PersistedOutcome);
+    Assert.True(result.Elapsed > TimeSpan.Zero);
   }
 
   [Fact]
@@ -517,6 +514,10 @@ public sealed class BenchmarkScenarioExecutionTests {
 
   private static string NotConfiguredSkipReason => BenchmarkSkipReason.NotConfigured().DisplayText;
 
+  private static string NotConfiguredSkipReasonFor(string connectionStringEnvironmentVariable) {
+    return BenchmarkSkipReason.NotConfigured(connectionStringEnvironmentVariable).DisplayText;
+  }
+
   private static ExpectedBenchmarkRow CompletedSqlite(
       string scenarioName,
       string baselineName,
@@ -535,21 +536,23 @@ public sealed class BenchmarkScenarioExecutionTests {
         1);
   }
 
-  private static ExpectedBenchmarkRow SkippedPostgres(
+  private static ExpectedBenchmarkRow SkippedExternal(
+      string providerName,
       string scenarioName,
       string baselineName,
       string strategyFamily,
       string datasetSize,
-      string changeRatio) {
+      string changeRatio,
+      string skipReason) {
     return new ExpectedBenchmarkRow(
         scenarioName,
-        PostgresProviderName,
+        providerName,
         baselineName,
         strategyFamily,
         datasetSize,
         changeRatio,
         "skipped",
-        NotConfiguredSkipReason,
+        skipReason,
         0);
   }
 

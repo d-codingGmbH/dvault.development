@@ -63,6 +63,38 @@ internal static class DataVaultBenchmarkHelpers {
     };
   }
 
+  public static string? GetProviderSaveStrategyName(DataVaultBenchmarkStrategy strategy) {
+    return strategy switch {
+      DataVaultBenchmarkStrategy.ProviderNeutralFallback => null,
+      DataVaultBenchmarkStrategy.SqliteOptimized => "SqliteDataVaultSaveStrategy",
+      DataVaultBenchmarkStrategy.PostgresOptimized => "PostgresDataVaultSaveStrategy",
+      DataVaultBenchmarkStrategy.SqlServerOptimized => "SqlServerDataVaultSaveStrategy",
+      DataVaultBenchmarkStrategy.MySqlOptimized => "MySqlDataVaultSaveStrategy",
+      DataVaultBenchmarkStrategy.OracleOptimized => "OracleDataVaultSaveStrategy",
+      _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Unsupported benchmark strategy."),
+    };
+  }
+
+  public static void AssertProviderSaveStrategySelected(
+      DataVaultDiagnosticsResult diagnostics,
+      string expectedStrategyName) {
+    ArgumentNullException.ThrowIfNull(diagnostics);
+    ArgumentException.ThrowIfNullOrWhiteSpace(expectedStrategyName);
+
+    BenchmarkAssert.Equal(
+        DataVaultSaveStrategyDiagnosticsStatus.ProviderStrategySelected,
+        diagnostics.SaveStrategy.Status,
+        "The optimized benchmark row must select the provider-specific Data Vault save strategy.");
+    BenchmarkAssert.Equal(
+        expectedStrategyName,
+        diagnostics.SaveStrategy.SelectedStrategyName,
+        "The optimized benchmark row selected an unexpected provider-specific Data Vault save strategy.");
+    BenchmarkAssert.Equal(0, diagnostics.SaveStrategy.FallbackCauses.Count, "The optimized benchmark row must not have fallback causes.");
+    BenchmarkAssert.True(
+        diagnostics.SaveStrategy.Candidates.Any(candidate => string.Equals(candidate.StrategyName, expectedStrategyName, StringComparison.Ordinal) && candidate.CanSave),
+        "The optimized benchmark row must expose the selected provider strategy as an accepted diagnostics candidate.");
+  }
+
   public static string GetHashKey(DataVaultSaveResult result, DataVaultTableKind kind, string metadataName) {
     return result.SavedRecords
         .Single(record => record.Kind == kind && string.Equals(record.MetadataName, metadataName, StringComparison.Ordinal))

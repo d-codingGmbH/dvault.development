@@ -13,9 +13,9 @@ The executable always uses SQLite temporary files as the required local baseline
 - `DVAULT_TEST_MYSQL_CONNECTION_STRING`
 - `DVAULT_TEST_ORACLE_CONNECTION_STRING`
 
-When a provider is configured, the report includes DVault fallback plus provider-specific optimized rows for the same Data Vault scenarios. When a provider is not configured, its dependency is unavailable, or the connection cannot be opened, the command still emits provider rows with `executionStatus=skipped` and a normalized `skipReason`.
+When a provider is configured, the default report includes DVault fallback plus provider-specific optimized rows for the provider-native bulk-ingestion scenario. The optimized row first checks DVault diagnostics and fails the row if the named provider save strategy is not selected. When a provider is not configured, its dependency is unavailable, or the connection cannot be opened, the command still emits provider rows with `executionStatus=skipped` and a normalized `skipReason`.
 
-The default matrix includes read baselines for latest satellite, PIT as-of, and bridge traversal scenarios. Fixture creation and seeding run before the timed operation so the measured read rows focus on the `IDataVaultReadService` latest satellite path, the `DataVaultPitAsOfReadRequest`/`DataVaultPitReadRecord` path, and the provider-neutral `DataVaultBridgeReadRequest`/`DataVaultBridgeReadRecord` path. SQLite latest-satellite read rows now compare the provider-neutral `AddDVault()` fallback with the `AddDVaultSqlite()` optimized provider read strategy. PIT and bridge read rows remain provider-neutral baselines.
+The required SQLite matrix includes read baselines for latest satellite, PIT as-of, and bridge traversal scenarios. Fixture creation and seeding run before the timed operation so the measured read rows focus on the `IDataVaultReadService` latest satellite path, the `DataVaultPitAsOfReadRequest`/`DataVaultPitReadRecord` path, and the provider-neutral `DataVaultBridgeReadRequest`/`DataVaultBridgeReadRecord` path. SQLite latest-satellite read rows compare the provider-neutral `AddDVault()` fallback with the `AddDVaultSqlite()` optimized provider read strategy. PIT and bridge read rows remain provider-neutral baselines, and non-SQLite provider rows are not emitted as provider-specific read evidence in the default matrix.
 
 Increase `--iterations` and `--warmup` locally when collecting steadier timing numbers.
 
@@ -72,6 +72,7 @@ The benchmark command executes the required comparisons:
 - latest satellite read: 100 seeded customers with 10 profile states each, measured through `ReadLatestSatelliteRowsAsync(...)`
 - PIT as-of read: 100 seeded customers with profile and status snapshots plus one PIT row per customer, measured through `ReadPitRowsAsync(...)`
 - bridge traversal read: one seeded hierarchy ancestor with 100 descendant bridge rows and a bounded maximum depth, measured through `ReadBridgeRowsAsync(...)`
+- optional provider-native bulk ingestion: 20 order-product pairs, 20 order-product links, and three ordered fulfillment satellite operations including one unchanged replay in a single provider-eligible bulk request
 
 For write-history scenarios, SQLite emits one row for each strategy family:
 
@@ -79,9 +80,9 @@ For write-history scenarios, SQLite emits one row for each strategy family:
 - `provider-neutral-dvault-fallback`
 - `sqlite-optimized-dvault`
 
-Read baselines emit the current provider-neutral read-service path through the DVault fallback registration and the selected provider package registration. For SQLite latest-satellite reads, the provider package row uses the SQLite optimized read strategy for the supported hub-parent, non-multi-active latest/as-of satellite shape. When PostgreSQL, SQL Server, MySQL, or Oracle is configured and reachable, each Data Vault scenario emits:
+Read baselines emit the current provider-neutral read-service path through the DVault fallback registration and the selected provider package registration for SQLite only. For SQLite latest-satellite reads, the provider package row uses the SQLite optimized read strategy for the supported hub-parent, non-multi-active latest/as-of satellite shape. When PostgreSQL, SQL Server, MySQL, or Oracle is configured and reachable in the default matrix, the provider-native bulk-ingestion scenario emits:
 
 - `provider-neutral-dvault-fallback`
 - the provider-specific optimized DVault strategy family
 
-When an optional provider is not configured or unavailable, those same provider Data Vault rows are present as skipped rows so archived artifacts do not silently omit the optional provider boundary.
+The provider-native optimized row uses a clean `DbContext`, no multi-active satellites, 63 total operations, and three satellite operations, so it satisfies the SQL Server, MySQL, and Oracle native-save gates before timing. When an optional provider is not configured or unavailable, those same provider-native bulk rows are present as skipped rows so archived artifacts do not silently omit the optional provider boundary.

@@ -244,36 +244,11 @@ internal static class BenchmarkRunner {
       BenchmarkOptions options) {
     return
     [
-        new CustomerProfileDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
-        new CustomerProfileDataVaultBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage),
-        new CustomerProfileBulkDataVaultBenchmark(
+        new ProviderNativeBulkIngestionBenchmark(
             provider,
-            CustomerProfileBulkScenarios.InsertOnly,
             DataVaultBenchmarkStrategy.ProviderNeutralFallback,
             options.LoadTimestampStorage),
-        new CustomerProfileBulkDataVaultBenchmark(
-            provider,
-            CustomerProfileBulkScenarios.InsertOnly,
-            optimizedStrategy,
-            options.LoadTimestampStorage),
-        new CustomerProfileBulkDataVaultBenchmark(
-            provider,
-            CustomerProfileBulkScenarios.ChangeHeavy,
-            DataVaultBenchmarkStrategy.ProviderNeutralFallback,
-            options.LoadTimestampStorage),
-        new CustomerProfileBulkDataVaultBenchmark(
-            provider,
-            CustomerProfileBulkScenarios.ChangeHeavy,
-            optimizedStrategy,
-            options.LoadTimestampStorage),
-        new OrderProductDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
-        new OrderProductDataVaultBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage),
-        new LatestSatelliteReadBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
-        new LatestSatelliteReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage),
-        new PitAsOfReadBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
-        new PitAsOfReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage),
-        new BridgeTraversalReadBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
-        new BridgeTraversalReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage),
+        new ProviderNativeBulkIngestionBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage),
     ];
   }
 
