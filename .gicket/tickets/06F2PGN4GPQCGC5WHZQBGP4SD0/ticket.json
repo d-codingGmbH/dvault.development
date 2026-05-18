@@ -3,19 +3,18 @@
   "ticket-id": "06F2PGN4GPQCGC5WHZQBGP4SD0",
   "ticket-type": null,
   "title": "Task: Implement fallback bulk ingestion path",
-  "revision": "06F2PNKZJWNNN0JPAR77C5C368",
-  "status": "todo",
+  "revision": "06F3MV3YG789CA1JT78JP9EHVW",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/task",
     "area/performance",
     "area/persistence",
     "area/testing",
-    "needs-po"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9GTDQ3VFDBAF5GPW9YJR",
   "releaseId": "06F2PH9EF1YYJ8F6F6KWG4DBY8",
   "created-at": "2026-05-15T10:50:48.9070487Z",
-  "updated-at": "2026-05-15T11:12:29.5912161Z"
+  "updated-at": "2026-05-18T09:30:49.3458929Z"
 }
