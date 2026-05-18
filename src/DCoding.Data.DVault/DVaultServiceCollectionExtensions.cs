@@ -27,6 +27,7 @@ public static class DVaultServiceCollectionExtensions {
     TryAddSingleton(services, typeof(IDataVaultReadDiagnosticsService), typeof(DefaultDataVaultDiagnosticsService));
     TryAddSingleton(services, typeof(IDataVaultSaveService), typeof(DefaultDataVaultSaveService));
     TryAddSingleton(services, typeof(IDataVaultReadService), typeof(DefaultDataVaultReadService));
+    TryAddSingleton(services, typeof(IDataVaultPitMaintenanceService), typeof(DefaultDataVaultPitMaintenanceService));
 
     return services;
   }

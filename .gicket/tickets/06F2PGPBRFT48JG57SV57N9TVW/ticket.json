@@ -3,19 +3,18 @@
   "ticket-id": "06F2PGPBRFT48JG57SV57N9TVW",
   "ticket-type": null,
   "title": "Story: Add PIT maintenance service",
-  "revision": "06F2PNMHZPD8ZRM967TN5BD8J8",
-  "status": "todo",
+  "revision": "06F3V1VE3A1KFR0PPJ6FJXJ2BG",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/story",
-    "area/read-models",
     "area/maintenance",
     "area/persistence",
-    "needs-po"
+    "area/read-models",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9K7EFYSNWBKWWHAMWDTC",
   "releaseId": "06F2PH9JDHV1GS17K0Y5128E5W",
   "created-at": "2026-05-15T10:50:58.9472869Z",
-  "updated-at": "2026-05-15T11:12:34.3013535Z"
+  "updated-at": "2026-05-18T23:59:06.2660316Z"
 }

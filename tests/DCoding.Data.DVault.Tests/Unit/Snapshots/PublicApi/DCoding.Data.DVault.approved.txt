@@ -501,6 +501,20 @@ type public sealed class DCoding.Data.DVault.DataVaultPitAsOfReadRequest
   property public System.Collections.Generic.IReadOnlyList<string> ParentHashKeys { get; }
   property public System.DateTimeOffset AsOf { get; }
 
+type public sealed class DCoding.Data.DVault.DataVaultPitMaintenanceResult
+  ctor public DataVaultPitMaintenanceResult(DCoding.Data.DVault.Modeling.DataVaultPitMetadata pit, string tableName, int parentHashKeyCount, int rowsDeleted, int rowsWritten)
+  property public DCoding.Data.DVault.Modeling.DataVaultPitMetadata Pit { get; }
+  property public bool IsNoOp { get; }
+  property public int ParentHashKeyCount { get; }
+  property public int RowsDeleted { get; }
+  property public int RowsWritten { get; }
+  property public string TableName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultPitParentMaintenanceRequest
+  ctor public DataVaultPitParentMaintenanceRequest(DCoding.Data.DVault.Modeling.DataVaultPitMetadata pit, System.Collections.Generic.IEnumerable<string> parentHashKeys)
+  property public DCoding.Data.DVault.Modeling.DataVaultPitMetadata Pit { get; }
+  property public System.Collections.Generic.IReadOnlyList<string> ParentHashKeys { get; }
+
 type public sealed class DCoding.Data.DVault.DataVaultPitProjectionRow
   method public DCoding.Data.DVault.DataVaultPitSatelliteProjectionRow RequiredSatellite(string satelliteName)
   method public DCoding.Data.DVault.DataVaultPitSatelliteProjectionRow? OptionalSatellite(string satelliteName)
@@ -512,6 +526,10 @@ type public sealed class DCoding.Data.DVault.DataVaultPitReadRecord
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPitSatelliteSnapshot> SatelliteSnapshots { get; }
   property public System.DateTimeOffset LoadTimestamp { get; }
   property public string ParentHashKey { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultPitRebuildRequest
+  ctor public DataVaultPitRebuildRequest(DCoding.Data.DVault.Modeling.DataVaultPitMetadata pit)
+  property public DCoding.Data.DVault.Modeling.DataVaultPitMetadata Pit { get; }
 
 type public sealed class DCoding.Data.DVault.DataVaultPitSatelliteProjectionRow
   property public string SatelliteName { get; }
@@ -948,6 +966,10 @@ type public interface DCoding.Data.DVault.IDataVaultLiveSchemaReader
 
 type public interface DCoding.Data.DVault.IDataVaultLoadTimestampResolver
   method public abstract System.DateTimeOffset? ResolveLoadTimestamp(DCoding.Data.DVault.DataVaultLoadTimestampResolutionContext context)
+
+type public interface DCoding.Data.DVault.IDataVaultPitMaintenanceService
+  method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultPitMaintenanceResult> MaintainParentsAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultPitParentMaintenanceRequest request, System.Threading.CancellationToken cancellationToken = default)
+  method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultPitMaintenanceResult> RebuildAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultPitRebuildRequest request, System.Threading.CancellationToken cancellationToken = default)
 
 type public interface DCoding.Data.DVault.IDataVaultProviderBehavior
   property public int Priority { get; }

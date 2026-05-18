@@ -1,0 +1,22 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `2` selected relation flow(s) for source ticket `06F2PGPBRFT48JG57SV57N9TVW`.
+- Role `dev` completed with outcome `dev-workflow-apply` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `2`; dropped obsolete follow-up(s): `1`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `99934ed554b14bfe989d0229e5bf4a3f`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06F2PGPKXWRFXNPFA1JR0X67XC` via `blocks` path `06F2PGPBRFT48JG57SV57N9TVW -> 06F2PGPKXWRFXNPFA1JR0X67XC`
+- [queued] `blocked-follow-up-comment` -> `06F2PGPXVAYRBC94RQ7X5V4DVG` via `blocks` path `06F2PGPBRFT48JG57SV57N9TVW -> 06F2PGPXVAYRBC94RQ7X5V4DVG`
+- [dropped] `blocked-by-follow-up-comment` -> `06F2PGMFWSEC95ATBCGZ6HYT5W` via `blocks` path `06F2PGPBRFT48JG57SV57N9TVW -> 06F2PGMFWSEC95ATBCGZ6HYT5W`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06F2PGPBRFT48JG57SV57N9TVW` owner `ticket/06F2PGPBRFT48JG57SV57N9TVW-story-add-pit-maintenance-service` base `develop` source-owner `ticket/06F2PGPBRFT48JG57SV57N9TVW-story-add-pit-maintenance-service`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGPKXWRFXNPFA1JR0X67XC` owner `ticket/06F2PGPKXWRFXNPFA1JR0X67XC-story-improve-current-and-as-of-query-apis` base `develop` source-owner `ticket/06F2PGPBRFT48JG57SV57N9TVW-story-add-pit-maintenance-service`: Target ticket owner branch 'ticket/06F2PGPKXWRFXNPFA1JR0X67XC-story-improve-current-and-as-of-query-apis' differs from source owner branch 'ticket/06F2PGPBRFT48JG57SV57N9TVW-story-add-pit-maintenance-service'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGPXVAYRBC94RQ7X5V4DVG` owner `ticket/06F2PGPXVAYRBC94RQ7X5V4DVG-task-update-v0-15-0-documentation-and-release-no` base `develop` source-owner `ticket/06F2PGPBRFT48JG57SV57N9TVW-story-add-pit-maintenance-service`: Target ticket owner branch 'ticket/06F2PGPXVAYRBC94RQ7X5V4DVG-task-update-v0-15-0-documentation-and-release-no' differs from source owner branch 'ticket/06F2PGPBRFT48JG57SV57N9TVW-story-add-pit-maintenance-service'.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F2PGMFWSEC95ATBCGZ6HYT5W` owner `<base-terminal>` base `develop` source-owner `ticket/06F2PGPBRFT48JG57SV57N9TVW-story-add-pit-maintenance-service`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGPKXWRFXNPFA1JR0X67XC` on owner branch `ticket/06F2PGPKXWRFXNPFA1JR0X67XC-story-improve-current-and-as-of-query-apis` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGPXVAYRBC94RQ7X5V4DVG` on owner branch `ticket/06F2PGPXVAYRBC94RQ7X5V4DVG-task-update-v0-15-0-documentation-and-release-no` after that branch is refreshed/rebased.
