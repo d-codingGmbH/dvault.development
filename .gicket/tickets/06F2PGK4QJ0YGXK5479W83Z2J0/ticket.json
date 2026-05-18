@@ -1,22 +1,21 @@
 ﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F2PGK4QJ0YGXK5479W83Z2J0",
-  "ticket-type": null,
+  "ticket-type": "epic",
   "title": "Epic: Code-First parity expansion",
-  "revision": "06F2PNK942C9RS60QXYEE8XZ0C",
-  "status": "todo",
+  "revision": "06F3MAJKC11DV8JSA58PMM47MW",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/epic",
     "area/code-first",
-    "area/modeling",
-    "area/ef-core",
     "area/documentation",
-    "needs-po"
+    "area/ef-core",
+    "area/modeling",
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9DNHSQZDX06D9FA2HCBR",
   "releaseId": "06F2PH9C2PY0EBJBJNQA9338XC",
   "created-at": "2026-05-15T10:50:32.1736371Z",
-  "updated-at": "2026-05-15T11:12:23.8400965Z"
+  "updated-at": "2026-05-18T08:18:32.9280000Z"
 }
