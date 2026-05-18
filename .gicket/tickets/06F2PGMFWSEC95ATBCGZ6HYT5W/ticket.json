@@ -3,20 +3,19 @@
   "ticket-id": "06F2PGMFWSEC95ATBCGZ6HYT5W",
   "ticket-type": null,
   "title": "Epic: Provider bulk ingestion",
-  "revision": "06F2PNKSB1H0Z76PDCHNRF1G9C",
-  "status": "todo",
+  "revision": "06F3QNTRR6R7HEZG41RE334HRR",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/epic",
+    "area/documentation",
     "area/performance",
     "area/persistence",
     "area/provider-support",
-    "area/documentation",
-    "needs-po"
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9HM4M34M1CKMHQV84RGC",
   "releaseId": "06F2PH9EF1YYJ8F6F6KWG4DBY8",
   "created-at": "2026-05-15T10:50:44.5403973Z",
-  "updated-at": "2026-05-15T11:12:27.9924065Z"
+  "updated-at": "2026-05-18T16:07:09.2494245Z"
 }
