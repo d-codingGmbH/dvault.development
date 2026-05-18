@@ -3,6 +3,6 @@
   "milestoneId": "06F2PH9GTDQ3VFDBAF5GPW9YJR",
   "name": "v0.14.0 - Bulk ingestion SPI and fallback",
   "description": "Stable public contract and safe EF/fallback behavior for batch persistence.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-15T10:53:35.3151127Z"
 }

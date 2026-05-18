@@ -3,6 +3,6 @@
   "releaseId": "06F2PH9EF1YYJ8F6F6KWG4DBY8",
   "name": "v0.14.0 - Provider Bulk Ingestion",
   "description": "Explicit opt-in bulk ingestion SPI plus provider-native implementations and benchmarks.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-15T10:53:34.7120748Z"
 }
