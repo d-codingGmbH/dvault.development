@@ -3,6 +3,6 @@
   "releaseId": "06F2PH9JDHV1GS17K0Y5128E5W",
   "name": "v0.15.0 - Maintenance and Query Operations",
   "description": "PIT/bridge maintenance services and stronger current/as-of query APIs.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-15T10:53:35.7249405Z"
 }
