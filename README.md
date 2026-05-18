@@ -7,13 +7,13 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.13.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.13.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.13.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.13.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.13.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.13.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.13.0
+dotnet add package DCoding.Data.DVault --version 0.14.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.14.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.14.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.14.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.14.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.14.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.14.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
@@ -120,7 +120,7 @@ public sealed class CustomerOrderState {
 
 Code-First metadata is additive. It does not ask callers to put DVault hash-key, load-timestamp, or record-source technical fields on domain entities, and it does not create a public Code-First-to-registry bridge. Callers that want the same public metadata object reused by schema, save, and read paths should use the registry-backed metadata path shown below.
 
-Code-First link names can be explicit or, for non-repeated hub participants, derived from participant order. When the same hub type appears more than once in one link, use an explicit relationship name and distinct `Participant<TEntity>(string role)` roles; those roles become participant names and generated hash-key columns such as `SourceCustomerHashKey` and `MatchedCustomerHashKey`. Link-parent satellites are declared inside `Link(..., link => ...)` with `link.Satellite<TSatellite>(...)`, and they use the same `Payload(...)` and optional `DrivingKey(...)` selector rules as hub-parent satellites. Effectivity in v0.13 is modeled as caller-owned link-parent satellite state on a link; DVault does not add an effectivity-specific builder, metadata kind, or entity family.
+Code-First link names can be explicit or, for non-repeated hub participants, derived from participant order. When the same hub type appears more than once in one link, use an explicit relationship name and distinct `Participant<TEntity>(string role)` roles; those roles become participant names and generated hash-key columns such as `SourceCustomerHashKey` and `MatchedCustomerHashKey`. Link-parent satellites are declared inside `Link(..., link => ...)` with `link.Satellite<TSatellite>(...)`, and they use the same `Payload(...)` and optional `DrivingKey(...)` selector rules as hub-parent satellites. Effectivity is modeled as caller-owned link-parent satellite state on a link; DVault does not add an effectivity-specific builder, metadata kind, or entity family.
 
 ### Save explicitly
 
@@ -201,7 +201,7 @@ public static class SalesVaultWriter {
 }
 ```
 
-For loaders that already have multiple source batches prepared, `DataVaultBulkSaveRequest` processes ordered save requests through the same service and keeps satellite HashDiff state in memory across the batch.
+For loaders that already have multiple source batches prepared, `DataVaultBulkSaveRequest` processes ordered save requests through the same explicit service. Each contained request keeps its caller-supplied load timestamp, record source, hub operations, link operations, and satellite operations. The provider-neutral writer keeps satellite HashDiff state in memory across the ordered batch, and provider packages can select native bulk strategies when diagnostics gates accept the current clean context. Registry-backed callers can use `DataVaultRegistryBulkSaveRequest` to resolve logical metadata names once and delegate to the same bulk pipeline.
 
 ### Read typed latest and as-of satellite projections
 
@@ -439,7 +439,9 @@ The provider-neutral projection stores driving-key columns immediately after the
 
 `DCoding.Data.DVault` contains the provider-neutral API, metadata model, naming conventions, stable hashing, read helpers, diagnostics, and EF fallback writer. Provider packages extend that base registration without changing the explicit save or read APIs.
 
-`DCoding.Data.DVault.Sqlite` registers the optimized SQLite set-based save strategy. `DCoding.Data.DVault.Postgres` registers an optimized Npgsql/PostgreSQL strategy for clean contexts that use set-based `INSERT ... ON CONFLICT DO NOTHING` hub and link writes plus latest-state satellite checks. `DCoding.Data.DVault.SqlServer` registers an optimized SQL Server strategy for clean contexts with set-based unique-row inserts and latest-state satellite checks. `DCoding.Data.DVault.Oracle` registers an Oracle-gated insert-only strategy for clean `Oracle.EntityFrameworkCore` contexts that meet the native bulk gate, including ordinary hub, link, and satellite batches; unsupported shapes such as dirty tracked contexts and multi-active satellite batches fall back through the provider-neutral writer. `DCoding.Data.DVault.MySql` supports `Pomelo.EntityFrameworkCore.MySql` and `MySql.EntityFrameworkCore`, and registers an optimized MySQL strategy for clean supported MySQL contexts.
+`DCoding.Data.DVault.Sqlite` registers the optimized SQLite set-based save strategy. `DCoding.Data.DVault.Postgres` registers an optimized Npgsql/PostgreSQL strategy for clean contexts that use set-based `INSERT ... ON CONFLICT DO NOTHING` hub and link writes plus latest-state satellite checks. `DCoding.Data.DVault.SqlServer` registers an optimized SQL Server strategy for clean contexts with set-based unique-row inserts and latest-state satellite checks. `DCoding.Data.DVault.Oracle` registers an Oracle-gated insert strategy for clean `Oracle.EntityFrameworkCore` contexts that meet the native bulk gate, including ordinary hub, link, and satellite batches. `DCoding.Data.DVault.MySql` supports `Pomelo.EntityFrameworkCore.MySql` and `MySql.EntityFrameworkCore`, and registers an optimized MySQL strategy for clean supported MySQL contexts.
+
+Provider-native bulk dispatch is diagnostics-gated. Dirty tracked contexts, multi-active satellite batches, and provider-name mismatches decline to the provider-neutral writer. SQL Server native dispatch also requires at least `50` total operations and at most `500` satellite operations. MySQL native dispatch requires at least `50` total operations and accepts both Pomelo and official MySQL EF Core provider names. Oracle native dispatch requires at least `50` total operations.
 
 Provider-specific save-strategy registration and provider capability-profile selection are separate surfaces. The core package includes built-in capability profiles for the known SQLite, PostgreSQL, SQL Server, Oracle, Pomelo MySQL, and official MySQL EF provider names. Direct `ApplyDataVaultMetadata(...)` calls can pass an explicit `DataVaultProviderCapabilityProfile` when an application wants deterministic provider-specific schema projection at model-building time. Registry-backed `UseDataVaultMetadata(...)` remains the easiest path when one metadata source should drive schema, save, and read usage.
 
@@ -492,28 +494,29 @@ Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadS
 
 SQLite remains the default local live-schema proof because it does not require external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks require consumer-managed reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation. Keep those external provider checks opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
 
-## v0.13.0 Release Notes
+## v0.14.0 Release Notes
 
-The v0.13.0 release records the Code-First parity expansion while keeping the explicit DVault persistence and metadata-authority boundaries intact. See `docs/releases/v0.13.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
+The v0.14.0 release records provider bulk ingestion while keeping the explicit DVault persistence and metadata-authority boundaries intact. See `docs/releases/v0.14.0.md` for the release-note record, package scope, compatibility notes, validation evidence, benchmark evidence boundary, and package verification posture.
 
 Notable user-facing changes:
 
-- Code-First links continue to support explicit relationship names and derived names for non-repeated hub participants.
-- Repeated same-hub Code-First links are supported when the link has an explicit relationship name and every repeated participant uses a distinct non-blank `Participant<TEntity>(string role)` role.
-- Role-bearing same-hub participants produce stable role-based participant names and generated columns such as `SourceCustomerHashKey` and `MatchedCustomerHashKey`.
-- Code-First link-parent satellites are declared with `Link(...).Satellite<TSatellite>(...)` and project as satellites whose parent kind is `Link`.
-- Link-parent satellites use the existing `Payload(...)` and optional `DrivingKey(...)` selector surface, so effectivity can be modeled as caller-owned link-parent satellite state without a separate effectivity-specific API.
-- Model-first export and import preserve link-parent satellites and participant roles in `dvault.model.v1` artifacts.
-- Metadata-first and model-first remain authoritative alternatives for shared registries, reviewed artifacts, bridge/PIT declarations, custom naming, and model ownership outside the bounded Code-First surface.
-- The analyzer package remains optional developer tooling; v0.13 is not an analyzer-feature release.
+- `DataVaultBulkSaveRequest` persists ordered batches through `IDataVaultSaveService.SaveAsync(DbContext, DataVaultBulkSaveRequest)` without making Data Vault persistence implicit through EF tracking.
+- `DataVaultRegistryBulkSaveRequest` lets registry-backed callers resolve logical metadata names and delegate to the same explicit bulk pipeline.
+- Provider-neutral fallback remains the guaranteed behavior when no optimized provider strategy is registered or a provider strategy declines the current context and request batch.
+- Provider-native bulk dispatch is diagnostics-gated for clean contexts, no multi-active satellite operations, provider-name matching, and the SQL Server, MySQL, and Oracle operation thresholds documented above.
+- Optional PostgreSQL, SQL Server, Oracle, and MySQL integration lanes remain behind their existing `DVAULT_TEST_*_CONNECTION_STRING` variables and marker properties.
+- Benchmark artifacts are the documentation-ready performance evidence surface: `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` preserve provider, skip status, execution status, timing, persisted outcome, and machine/runtime context.
+- Code-First same-hub roles, link-parent satellites, model-first artifact governance, and analyzer guidance from earlier releases remain part of the current public baseline.
 
-## Current v0.13.0 Limitations
+## Current v0.14.0 Limitations
 
-Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.13.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
+Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.14.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
+
+Provider-native bulk dispatch is an optimization, not a separate persistence contract. Dirty tracked contexts, multi-active satellite batches, provider-name mismatches, below-threshold SQL Server, MySQL, or Oracle batches, and SQL Server batches with more than `500` satellite operations fall back to the provider-neutral writer. DVault does not provision Docker containers, databases, users, schemas, credentials, or checked-in benchmark result snapshots for optional external-provider proof.
 
 Model-first APIs continue to operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization. The metadata interceptor is opt-in and metadata-only: callers still own generated row creation, hash-key and hash-diff values, save ordering, and explicit service-based persistence when they use `IDataVaultSaveService`.
 
-Dependent child key modeling is not part of the v0.13 public claim set. Repeated same-hub runtime and metadata support does not imply typed link-mapper or source-generator parity for repeated same-hub mappings; generated and manual typed link mappers continue to use the existing unique-participant mapping boundary. Effectivity remains a generic link-parent satellite pattern rather than a first-class effectivity entity family, fluent builder, metadata kind, or technical column set. The analyzer package is not a complete model validator; it covers the documented Code-First selector diagnostics, duplicate-member diagnostics, bounded code fixes, and compile-time mapping declaration diagnostics only.
+Dependent child key modeling is not part of the current public claim set. Repeated same-hub runtime and metadata support does not imply typed link-mapper or source-generator parity for repeated same-hub mappings; generated and manual typed link mappers continue to use the existing unique-participant mapping boundary. Effectivity remains a generic link-parent satellite pattern rather than a first-class effectivity entity family, fluent builder, metadata kind, or technical column set. The analyzer package is not a complete model validator; it covers the documented Code-First selector diagnostics, duplicate-member diagnostics, bounded code fixes, and compile-time mapping declaration diagnostics only.
 
 ## Layout
 
@@ -563,8 +566,9 @@ Run the local SQLite scenario comparison benchmarks from the repository root:
 dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --iterations 1 --warmup 0
 ```
 
-The benchmark executable compares conventional EF and DVault flows for the shared customer profile history contract, a larger customer profile bulk-history contract, and the reduced order-product fulfillment history contract. It uses SQLite temporary files by default and does not require Postgres, SQL Server, Oracle, MySQL, Docker, `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, or `DVAULT_TEST_MYSQL_CONNECTION_STRING`.
-Increase `--iterations` and `--warmup` locally when collecting steadier timing numbers.
+The benchmark executable compares conventional EF and DVault flows for the shared customer profile history contract, a larger customer profile bulk-history contract, the reduced order-product fulfillment history contract, and the provider-native bulk-ingestion contract. It uses SQLite temporary files by default and does not require Postgres, SQL Server, Oracle, MySQL, Docker, `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, or `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Increase `--iterations` and `--warmup` locally when collecting steadier timing numbers.
+
+Pass `--output <directory>` to emit documentation-ready benchmark artifacts named `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json`. These artifacts keep scenario, provider, baseline, strategy family, dataset size, change ratio, execution status, skip reason, iteration count, mean/min/max milliseconds, persisted outcome, benchmark options, optional provider status, and machine/runtime context together. Optional PostgreSQL, SQL Server, MySQL, and Oracle provider-native bulk rows stay visible as skipped rows with `executionStatus` and `skipReason` when the provider is not configured or unavailable.
 
 ## Optional Local Postgres Integration Tests
 
@@ -632,7 +636,7 @@ To select only the live MySQL integration category, use the same configured conn
 DVAULT_TEST_MYSQL_CONNECTION_STRING='Server=localhost;Port=3306;Database=dvault_tests;User=dvault;Password=local-secret;AllowPublicKeyRetrieval=True;SslMode=Disabled' dotnet test DVault.slnx --nologo --filter "Category=ProviderIntegration.ExternalOptIn&Provider=MySQL" -p:DVAULT_TEST_MYSQL_CONNECTION_STRING=Configured
 ```
 
-The integration project conditionally restores `MySql.EntityFrameworkCore` only when the MySQL opt-in property is non-empty. When running the live MySQL path, keep the environment variable set for test execution and pass the non-secret MSBuild marker property shown above so the conditional provider package is available during restore and build. DVault does not provision Docker containers or databases for these tests. The configured database must already exist, and the configured user must be allowed to create and drop the temporary smoke and bulk-test tables. Keep credentials in local environment variables or another untracked secret store, not in repository files.
+The integration project conditionally restores `MySql.EntityFrameworkCore` only when the MySQL opt-in property is non-empty. When running the live MySQL path, keep the environment variable set for test execution and pass the non-secret MSBuild marker property shown above so the conditional provider package is available during restore and build. The live MySQL lane includes the existing smoke coverage plus an eligible ordered bulk hub, link, and satellite batch through the provider strategy. DVault does not provision Docker containers or databases for these tests. The configured database must already exist, and the configured user must be allowed to create and drop the temporary smoke and bulk-test tables. Keep credentials in local environment variables or another untracked secret store, not in repository files.
 
 ## License
 

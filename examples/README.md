@@ -14,13 +14,13 @@ The checked-in examples use project references so they can build against the cur
 Consumer applications install the provider-neutral package and exactly one provider package for the database they use. Keep every DVault package on one aligned version:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.13.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.13.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.13.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.13.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.13.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.13.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.13.0
+dotnet add package DCoding.Data.DVault --version 0.14.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.14.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.14.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.14.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.14.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.14.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.14.0
 ```
 
 Applications also need the normal Entity Framework Core provider package for their database, such as `Microsoft.EntityFrameworkCore.Sqlite`, `Npgsql.EntityFrameworkCore.PostgreSQL`, `Microsoft.EntityFrameworkCore.SqlServer`, `Oracle.EntityFrameworkCore`, or a MySQL EF Core provider.
@@ -83,7 +83,7 @@ Code-First and model-first adoption remain compatible alternatives:
 - Use Code-First metadata when a model is local to one EF model and fits the fluent hub, hub-parent satellite, link-parent satellite, multi-active driving-key, explicit or derived link, and repeated same-hub role-bearing link surface in the root [README quickstart](../README.md#quickstart).
 - Use model-first governance when a reviewed `dvault.model.v1` JSON artifact should be imported, projected into EF metadata, exported canonically, and compared against generated metadata. Follow [Model-First Governance Workflow](../docs/model-first-governance.md).
 
-Choose one authoritative declaration path for each model boundary. Do not mix multiple metadata authorities for the same EF model. The runnable quickstarts stay metadata-first; v0.13 documents Code-First same-hub roles and link-parent satellites in the README and release notes without adding a separate runnable Code-First example project.
+Choose one authoritative declaration path for each model boundary. Do not mix multiple metadata authorities for the same EF model. The runnable quickstarts stay metadata-first; the README and current release notes document Code-First same-hub roles, link-parent satellites, and explicit bulk ingestion without adding separate runnable Code-First or bulk-ingestion quickstart projects.
 
 ## Save And Read Flow
 
