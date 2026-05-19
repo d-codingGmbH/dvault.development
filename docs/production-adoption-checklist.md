@@ -43,7 +43,7 @@ Use this checklist when preparing a DVault-consuming application for production.
 - [ ] Treat `UseDataVaultSaveChangesMetadataInterceptor(...)` as optional and metadata-only. It fills missing `LoadTimestamp` and `RecordSource` values on already tracked generated DVault rows; it does not create rows, compute hash keys, compute hash diffs, or replace `IDataVaultSaveService`.
 - [ ] Prefer registry-backed requests or typed save helpers when they reduce repeated metadata declarations in loaders.
 - [ ] Use `IDataVaultReadService` for provider-neutral latest and as-of satellite reads with caller-owned typed projectors, as shown in the [README read examples](../README.md#read-typed-latest-and-as-of-satellite-projections).
-- [ ] Use PIT-backed and bridge read helpers only when the model already projects those tables and the application loading path has populated them. Current helpers do not refresh PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT or bridge read optimization.
+- [ ] Use PIT-backed read helpers only when the application loading path has populated PIT rows. Use `IDataVaultBridgeMaintenanceService` after source-link ingestion when bridge declarations should be materialized explicitly; bridge reads then consume those maintained rows. Current helpers do not refresh PIT rows, schedule automatic bridge maintenance, infer graph traversal APIs, or provide provider-specific PIT or bridge read optimization.
 
 ## Provider And Advanced Feature Posture
 
@@ -51,7 +51,7 @@ Use this checklist when preparing a DVault-consuming application for production.
 - [ ] Keep provider-specific save strategies as optimizations around the same public save contract. Unsupported request shapes or dirty tracked contexts can decline to the provider-neutral writer; see [DVault V1 Explicit Save Service](architecture/dvault-v1-explicit-save-service.md).
 - [ ] Treat provider-specific live database integration tests for PostgreSQL, SQL Server, Oracle, and MySQL as opt-in evidence behind their documented connection-string environment variables. Follow the [README local validation](../README.md#local-validation) guidance and the optional provider test sections for [PostgreSQL](../README.md#optional-local-postgres-integration-tests), [SQL Server](../README.md#optional-local-sql-server-integration-tests), [Oracle](../README.md#optional-local-oracle-integration-tests), and [MySQL](../README.md#optional-local-mysql-integration-tests).
 - [ ] Treat advanced configuration hooks as optional or future-facing unless the application has a specific deterministic rule to configure. The current source-backed custom path is record-source resolver replacement; broader naming, hashing, timestamp, and provider hooks are planned boundaries. See [Optional Advanced Configuration Hooks](plans/optional-advanced-configuration-hooks.md).
-- [ ] Do not make ordinary production adoption depend on PIT maintenance, bridge maintenance, multi-active PIT behavior, provider-specific physical tuning, custom hook matrices, or unpublished provider capabilities.
+- [ ] Do not make ordinary production adoption depend on PIT maintenance, automatic bridge maintenance orchestration, delete-aware hierarchy shrinking, multi-active PIT behavior, provider-specific physical tuning, custom hook matrices, or unpublished provider capabilities.
 
 ## Validation Evidence
 
@@ -74,6 +74,6 @@ bash tools/check-format.sh
 - Dependent child key modeling is outside the current public documentation baseline.
 - Repeated same-hub runtime and metadata support does not imply typed mapper or source-generator parity for repeated same-hub mappings.
 - Design-time guardrails are explicit library APIs owned by the consumer project. DVault does not intercept EF migration commands.
-- PIT-backed reads and bridge reads operate over already materialized tables and do not maintain those tables.
+- PIT-backed reads operate over already materialized PIT tables and do not maintain them. Bridge maintenance is available as an explicit caller-invoked service that rebuilds or incrementally maintains one bridge from persisted source-link rows; it is not automatic or delete-aware.
 - SQLite is the default local live-schema proof because it does not need external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema readers are built in but remain external opt-in operational checks.
 - Advanced configuration hooks beyond the documented record-source resolver path remain optional planning boundaries, not required setup.

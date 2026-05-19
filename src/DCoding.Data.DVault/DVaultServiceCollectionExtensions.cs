@@ -1,4 +1,4 @@
-using DCoding.Data.DVault.Modeling;
+﻿using DCoding.Data.DVault.Modeling;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DCoding.Data.DVault;
@@ -28,6 +28,7 @@ public static class DVaultServiceCollectionExtensions {
     TryAddSingleton(services, typeof(IDataVaultSaveService), typeof(DefaultDataVaultSaveService));
     TryAddSingleton(services, typeof(IDataVaultReadService), typeof(DefaultDataVaultReadService));
     TryAddSingleton(services, typeof(IDataVaultPitMaintenanceService), typeof(DefaultDataVaultPitMaintenanceService));
+    TryAddSingleton(services, typeof(IDataVaultBridgeMaintenanceService), typeof(DefaultDataVaultBridgeMaintenanceService));
 
     return services;
   }

@@ -31,6 +31,23 @@ type public sealed class DCoding.Data.DVault.DataVaultBridgeEndpointReadValue
   property public string EndpointName { get; }
   property public string HashKey { get; }
 
+type public sealed class DCoding.Data.DVault.DataVaultBridgeMaintenanceRequest
+  ctor public DataVaultBridgeMaintenanceRequest(DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata bridge)
+  property public DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata Bridge { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultBridgeMaintenanceResult
+  ctor public DataVaultBridgeMaintenanceResult(string metadataName, string tableName, int rowsInserted, int rowsUpdated, int rowsDeleted, int rowsUnchanged)
+  property public int RowsDeleted { get; }
+  property public int RowsInserted { get; }
+  property public int RowsUnchanged { get; }
+  property public int RowsUpdated { get; }
+  property public string MetadataName { get; }
+  property public string TableName { get; }
+
+type public static class DCoding.Data.DVault.DataVaultBridgeMaintenanceServiceRegistryExtensions
+  method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultBridgeMaintenanceResult> MaintainBridgeAsync(this DCoding.Data.DVault.IDataVaultBridgeMaintenanceService maintenanceService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryBridgeMaintenanceRequest request, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultBridgeMaintenanceResult> RebuildBridgeAsync(this DCoding.Data.DVault.IDataVaultBridgeMaintenanceService maintenanceService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryBridgeMaintenanceRequest request, System.Threading.CancellationToken cancellationToken = default)
+
 type public sealed class DCoding.Data.DVault.DataVaultBridgeProjectionRow
   method public int RequiredInt32(string name)
   method public string RequiredString(string name)
@@ -725,6 +742,10 @@ type public sealed class DCoding.Data.DVault.DataVaultRecordSourceResolutionCont
   property public DCoding.Data.DVault.DataVaultSaveRequest Request { get; }
   property public System.DateTimeOffset LoadTimestamp { get; }
 
+type public sealed class DCoding.Data.DVault.DataVaultRegistryBridgeMaintenanceRequest
+  ctor public DataVaultRegistryBridgeMaintenanceRequest(string bridgeName)
+  property public string BridgeName { get; }
+
 type public sealed class DCoding.Data.DVault.DataVaultRegistryBridgeReadRequest
   ctor public DataVaultRegistryBridgeReadRequest(string bridgeName, DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint endpoint, System.Collections.Generic.IEnumerable<string> endpointHashKeys)
   ctor public DataVaultRegistryBridgeReadRequest(string bridgeName, DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint endpoint, System.Collections.Generic.IEnumerable<string> endpointHashKeys, int? maximumDepth)
@@ -941,6 +962,10 @@ type public sealed class DCoding.Data.DVault.DataVaultValidationDiagnostics : Sy
   method public static bool op_Inequality(DCoding.Data.DVault.DataVaultValidationDiagnostics? left, DCoding.Data.DVault.DataVaultValidationDiagnostics? right)
   method public virtual bool Equals(DCoding.Data.DVault.DataVaultValidationDiagnostics? other)
   method public void Deconstruct(out bool IsValid, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultDiagnosticsIssue> Issues)
+
+type public interface DCoding.Data.DVault.IDataVaultBridgeMaintenanceService
+  method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultBridgeMaintenanceResult> MaintainBridgeAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultBridgeMaintenanceRequest request, System.Threading.CancellationToken cancellationToken = default)
+  method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultBridgeMaintenanceResult> RebuildBridgeAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultBridgeMaintenanceRequest request, System.Threading.CancellationToken cancellationToken = default)
 
 type public interface DCoding.Data.DVault.IDataVaultDiagnosticsService
   method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel)

@@ -7,13 +7,13 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.14.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.14.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.14.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.14.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.14.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.14.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.14.0
+dotnet add package DCoding.Data.DVault --version 0.15.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.15.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.15.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.15.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.15.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.15.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.15.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
@@ -250,7 +250,7 @@ The lower-level `ReadLatestSatelliteRowsAsync(...)` API remains available as the
 
 ### Read PIT and bridge projections
 
-PIT-backed as-of reads and bridge reads are provider-neutral read-service helpers over already materialized tables. They do not refresh PIT rows, maintain bridge rows, infer graph closure, or add provider-specific PIT/bridge optimization. Use them when the current model already projects the PIT or bridge table and application loading has populated the rows.
+PIT-backed as-of reads and bridge reads are provider-neutral read-service helpers over materialized read-model tables. PIT rows remain caller-populated; bridge rows can be populated through the explicit caller-invoked `IDataVaultBridgeMaintenanceService` after source-link ingestion. The baseline stays provider-neutral and does not add PIT refresh, automatic scheduling, implicit read-time maintenance, full graph traversal APIs, or provider-specific PIT/bridge optimization.
 
 PIT-backed reads target one `DataVaultPitMetadata` declaration, explicit parent hash keys, and an `asOf` timestamp. `ReadPitRowsAsync(...)` returns raw `DataVaultPitReadRecord` rows; `ReadPitAsync(...)` maps selected rows through a caller-owned projection delegate with exact-name access to `ParentHashKey`, `LoadTimestamp`, and declared satellite segments.
 
@@ -273,9 +273,12 @@ var snapshots = await readService.ReadPitAsync(
     cancellationToken);
 ```
 
+Bridge maintenance targets one `DataVaultBridgeMetadata` declaration at a time. `RebuildBridgeAsync(...)` recomputes the generated bridge table from persisted source-link rows. `MaintainBridgeAsync(...)` inserts missing rows from the current source-link state without deleting obsolete rows; for hierarchy bridges it lowers an existing `TraversalDepth` when a newly materialized shorter path is available and leaves equal or longer alternate paths unchanged. Many-to-many bridges maintain one row per distinct endpoint pair. Hierarchy bridges maintain one row per distinct ancestor/descendant pair, store the minimum positive hop count, treat direct edges as depth `1`, and do not add implicit self rows. Registry-backed callers can use `DataVaultRegistryBridgeMaintenanceRequest` to resolve the bridge by logical name from `UseDataVaultMetadata()`.
+
 Bridge reads target one `DataVaultBridgeMetadata` declaration and filter by endpoint hash keys. Many-to-many bridges support `DataVaultBridgeTraversalEndpoint.From` and `DataVaultBridgeTraversalEndpoint.To`. Hierarchy bridges support `DataVaultBridgeTraversalEndpoint.Ancestor` and `DataVaultBridgeTraversalEndpoint.Descendant`, require a bounded `maximumDepth`, and expose `TraversalDepth` on hierarchy rows.
 
 ```csharp
+var bridgeMaintenanceService = serviceProvider.GetRequiredService<IDataVaultBridgeMaintenanceService>();
 var customerOrder = new DataVaultLinkMetadata(
     "CustomerOrder",
     [customer.ToReference(), order.ToReference()]);
@@ -284,6 +287,11 @@ var customerOrderBridge = DataVaultBridgeMetadata.ManyToMany(
     customer.ToReference(),
     customerOrder.ToReference(),
     order.ToReference());
+
+await bridgeMaintenanceService.MaintainBridgeAsync(
+    context,
+    new DataVaultBridgeMaintenanceRequest(customerOrderBridge),
+    cancellationToken);
 
 var orderHashKeys = await readService.ReadBridgeAsync(
     context,
@@ -494,27 +502,27 @@ Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadS
 
 SQLite remains the default local live-schema proof because it does not require external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks require consumer-managed reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation. Keep those external provider checks opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
 
-## v0.14.0 Release Notes
+## v0.15.0 Release Notes
 
-The v0.14.0 release records provider bulk ingestion while keeping the explicit DVault persistence and metadata-authority boundaries intact. See `docs/releases/v0.14.0.md` for the release-note record, package scope, compatibility notes, validation evidence, benchmark evidence boundary, and package verification posture.
+The v0.15.0 release records explicit bridge maintenance while keeping bridge population caller-invoked and provider-neutral. See `docs/releases/v0.15.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
 
 Notable user-facing changes:
 
-- `DataVaultBulkSaveRequest` persists ordered batches through `IDataVaultSaveService.SaveAsync(DbContext, DataVaultBulkSaveRequest)` without making Data Vault persistence implicit through EF tracking.
-- `DataVaultRegistryBulkSaveRequest` lets registry-backed callers resolve logical metadata names and delegate to the same explicit bulk pipeline.
-- Provider-neutral fallback remains the guaranteed behavior when no optimized provider strategy is registered or a provider strategy declines the current context and request batch.
-- Provider-native bulk dispatch is diagnostics-gated for clean contexts, no multi-active satellite operations, provider-name matching, and the SQL Server, MySQL, and Oracle operation thresholds documented above.
-- Optional PostgreSQL, SQL Server, Oracle, and MySQL integration lanes remain behind their existing `DVAULT_TEST_*_CONNECTION_STRING` variables and marker properties.
-- Benchmark artifacts are the documentation-ready performance evidence surface: `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` preserve provider, skip status, execution status, timing, persisted outcome, and machine/runtime context.
-- Code-First same-hub roles, link-parent satellites, model-first artifact governance, and analyzer guidance from earlier releases remain part of the current public baseline.
+- `IDataVaultBridgeMaintenanceService` is registered by `AddDVault()` beside the explicit save and read services.
+- `RebuildBridgeAsync(...)` recomputes one bridge table from persisted source-link rows and converges with repeated execution over the same source state.
+- `MaintainBridgeAsync(...)` incrementally inserts newly reachable bridge rows without deleting obsolete rows; hierarchy maintenance also lowers an existing `TraversalDepth` when a newly persisted path is shorter.
+- Many-to-many bridge maintenance stores one row per distinct endpoint pair required by the bridge metadata.
+- Hierarchy bridge maintenance stores one row per distinct ancestor/descendant pair, uses the minimum positive hop count as `TraversalDepth`, treats direct edges as depth `1`, and does not add implicit self rows.
+- Registry-backed callers can resolve bridge metadata by logical name through `DataVaultRegistryBridgeMaintenanceRequest` when `UseDataVaultMetadata()` is the authoritative model source.
+- Provider-native bulk ingestion, Code-First same-hub roles, link-parent satellites, model-first artifact governance, and analyzer guidance from earlier releases remain part of the current public baseline.
 
-## Current v0.14.0 Limitations
+## Current v0.15.0 Limitations
 
-Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.14.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
+Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.15.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
 
 Provider-native bulk dispatch is an optimization, not a separate persistence contract. Dirty tracked contexts, multi-active satellite batches, provider-name mismatches, below-threshold SQL Server, MySQL, or Oracle batches, and SQL Server batches with more than `500` satellite operations fall back to the provider-neutral writer. DVault does not provision Docker containers, databases, users, schemas, credentials, or checked-in benchmark result snapshots for optional external-provider proof.
 
-Model-first APIs continue to operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. PIT-backed reads and bridge reads do not maintain PIT rows, maintain bridge rows, infer graph closure, or provide provider-specific PIT/bridge read optimization. The metadata interceptor is opt-in and metadata-only: callers still own generated row creation, hash-key and hash-diff values, save ordering, and explicit service-based persistence when they use `IDataVaultSaveService`.
+Model-first APIs continue to operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. PIT-backed reads do not maintain PIT rows. Bridge maintenance is explicit through `IDataVaultBridgeMaintenanceService`; it is not automatic, delete-aware, scheduler-driven, or provider-specific, and it does not add broader graph traversal APIs, PIT maintenance, PIT/bridge read optimization, effectivity windows, path payload columns, or closure-state columns. Use full rebuild when hierarchy deletions or topology shrinkage would require row removal or increased `TraversalDepth`. The metadata interceptor is opt-in and metadata-only: callers still own generated row creation, hash-key and hash-diff values, save ordering, and explicit service-based persistence when they use `IDataVaultSaveService`.
 
 Dependent child key modeling is not part of the current public claim set. Repeated same-hub runtime and metadata support does not imply typed link-mapper or source-generator parity for repeated same-hub mappings; generated and manual typed link mappers continue to use the existing unique-participant mapping boundary. Effectivity remains a generic link-parent satellite pattern rather than a first-class effectivity entity family, fluent builder, metadata kind, or technical column set. The analyzer package is not a complete model validator; it covers the documented Code-First selector diagnostics, duplicate-member diagnostics, bounded code fixes, and compile-time mapping declaration diagnostics only.
 

@@ -20,6 +20,7 @@ public sealed class ExplicitDataVaultSaveServiceTests {
 
     Assert.NotNull(provider.GetRequiredService<IDataVaultSaveService>());
     Assert.NotNull(provider.GetRequiredService<IDataVaultReadService>());
+    Assert.NotNull(provider.GetRequiredService<IDataVaultBridgeMaintenanceService>());
     Assert.Empty(provider.GetServices<ISaveChangesInterceptor>());
   }
 
@@ -34,6 +35,19 @@ public sealed class ExplicitDataVaultSaveServiceTests {
     using var provider = services.BuildServiceProvider(validateScopes: true);
 
     Assert.Same(replacement, provider.GetRequiredService<IDataVaultSaveService>());
+  }
+
+  [Fact]
+  public void AddDVaultPreservesCallerBridgeMaintenanceServiceOverride() {
+    var replacement = new ReplacementDataVaultBridgeMaintenanceService();
+    var services = new ServiceCollection();
+    services.AddSingleton<IDataVaultBridgeMaintenanceService>(replacement);
+
+    services.AddDVault();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+
+    Assert.Same(replacement, provider.GetRequiredService<IDataVaultBridgeMaintenanceService>());
   }
 
   [Fact]
@@ -503,6 +517,22 @@ public sealed class ExplicitDataVaultSaveServiceTests {
     public Task<DataVaultSaveResult> SaveAsync(
         DbContext dbContext,
         DataVaultBulkSaveRequest request,
+        CancellationToken cancellationToken = default) {
+      throw new NotSupportedException();
+    }
+  }
+
+  private sealed class ReplacementDataVaultBridgeMaintenanceService : IDataVaultBridgeMaintenanceService {
+    public Task<DataVaultBridgeMaintenanceResult> RebuildBridgeAsync(
+        DbContext dbContext,
+        DataVaultBridgeMaintenanceRequest request,
+        CancellationToken cancellationToken = default) {
+      throw new NotSupportedException();
+    }
+
+    public Task<DataVaultBridgeMaintenanceResult> MaintainBridgeAsync(
+        DbContext dbContext,
+        DataVaultBridgeMaintenanceRequest request,
         CancellationToken cancellationToken = default) {
       throw new NotSupportedException();
     }
