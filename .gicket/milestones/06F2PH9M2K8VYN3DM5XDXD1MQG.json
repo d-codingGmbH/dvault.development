@@ -3,6 +3,6 @@
   "milestoneId": "06F2PH9M2K8VYN3DM5XDXD1MQG",
   "name": "v0.15.0 - Current and as-of read optimization",
   "description": "Typed query APIs and provider-aware read strategies over maintained structures.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-15T10:53:36.1481609Z"
 }
