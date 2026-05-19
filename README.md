@@ -274,7 +274,7 @@ The lower-level `ReadCurrentSatelliteRowsAsync(...)`, `ReadAsOfSatelliteRowsAsyn
 
 ### Read PIT and bridge projections
 
-PIT-backed as-of reads and bridge reads are read-service helpers over materialized read-model tables with provider-neutral fallback behavior. `AddDVaultSqlite()` selects SQLite optimized read dispatch for supported PIT and bridge shapes; unsupported providers or declined shapes keep the provider-neutral pipelines. PIT rows remain caller-populated; bridge rows can be populated through the explicit caller-invoked `IDataVaultBridgeMaintenanceService` after source-link ingestion. The read surface does not add PIT refresh, automatic scheduling, implicit read-time maintenance, full graph traversal APIs, or non-SQLite PIT/bridge optimization.
+PIT-backed as-of reads and bridge reads are read-service helpers over materialized read-model tables with provider-neutral fallback behavior. PIT-backed reads consume explicitly maintained PIT rows populated through the caller-invoked `IDataVaultPitMaintenanceService`; bridge reads consume explicitly maintained bridge rows populated through the caller-invoked `IDataVaultBridgeMaintenanceService`. `AddDVaultSqlite()` selects SQLite optimized read dispatch for supported PIT and bridge shapes; unsupported providers or declined shapes keep the provider-neutral pipelines. The read surface does not add automatic PIT or bridge maintenance, scheduling, implicit read-time maintenance, registry-backed PIT maintenance, full graph traversal APIs, or non-SQLite PIT/bridge optimization.
 
 PIT-backed reads target one `DataVaultPitMetadata` declaration, explicit parent hash keys, and an `asOf` timestamp. `ReadPitRowsAsync(...)` returns raw `DataVaultPitReadRecord` rows; `ReadPitAsync(...)` maps selected rows through a caller-owned projection delegate with exact-name access to `ParentHashKey`, `LoadTimestamp`, and declared satellite segments.
 
@@ -294,6 +294,22 @@ var snapshots = await readService.ReadPitAsync(
           profile.RequiredString("CustomerStatus"),
           status?.NullableString("StatusCode"));
     },
+    cancellationToken);
+```
+
+PIT maintenance targets one `DataVaultPitMetadata` declaration at a time. `RebuildAsync(...)` recomputes the complete generated PIT table from persisted hub-parent satellite history. `MaintainParentsAsync(...)` recomputes complete PIT history for explicit parent hash keys, replacing the targeted parents' PIT rows so late-arriving satellite history can correct earlier snapshots. Empty parent-hash-key requests are no-ops. PIT maintenance is explicit caller work after ingestion; reads, saves, EF `SaveChanges`, provider startup, and background scheduling do not refresh PIT rows implicitly.
+
+```csharp
+var pitMaintenanceService = serviceProvider.GetRequiredService<IDataVaultPitMaintenanceService>();
+
+await pitMaintenanceService.RebuildAsync(
+    context,
+    new DataVaultPitRebuildRequest(pit),
+    cancellationToken);
+
+await pitMaintenanceService.MaintainParentsAsync(
+    context,
+    new DataVaultPitParentMaintenanceRequest(pit, [customerHashKey]),
     cancellationToken);
 ```
 
@@ -528,16 +544,21 @@ SQLite remains the default local live-schema proof because it does not require e
 
 ## v0.15.0 Release Notes
 
-The v0.15.0 release records explicit bridge maintenance while keeping bridge population caller-invoked and provider-neutral. See `docs/releases/v0.15.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
+The v0.15.0 release records explicit bridge maintenance, explicit PIT maintenance, current/as-of satellite read convenience overloads, and SQLite optimized PIT/bridge read dispatch while keeping read-model population caller-invoked. See `docs/releases/v0.15.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
 
 Notable user-facing changes:
 
 - `IDataVaultBridgeMaintenanceService` is registered by `AddDVault()` beside the explicit save and read services.
+- `IDataVaultPitMaintenanceService` is registered by `AddDVault()` beside the explicit save, read, and bridge maintenance services.
+- `DataVaultPitRebuildRequest` rebuilds one generated PIT table from persisted hub-parent satellite history.
+- `DataVaultPitParentMaintenanceRequest` recomputes complete PIT history for explicit parent hash keys and supports late-arriving history correction for those parents.
 - `RebuildBridgeAsync(...)` recomputes one bridge table from persisted source-link rows and converges with repeated execution over the same source state.
 - `MaintainBridgeAsync(...)` incrementally inserts newly reachable bridge rows without deleting obsolete rows; hierarchy maintenance also lowers an existing `TraversalDepth` when a newly persisted path is shorter.
 - Many-to-many bridge maintenance stores one row per distinct endpoint pair required by the bridge metadata.
 - Hierarchy bridge maintenance stores one row per distinct ancestor/descendant pair, uses the minimum positive hop count as `TraversalDepth`, treats direct edges as depth `1`, and does not add implicit self rows.
 - Registry-backed callers can resolve bridge metadata by logical name through `DataVaultRegistryBridgeMaintenanceRequest` when `UseDataVaultMetadata()` is the authoritative model source.
+- `ReadCurrentSatelliteAsync(...)` and `ReadAsOfSatelliteAsync(...)` remain additive convenience wrappers over the existing `DataVaultLatestSatelliteReadRequest` baseline for explicit and registry-backed callers.
+- `AddDVaultSqlite()` is the repository-proven optimized PIT/bridge read path; unsupported providers or unsupported request shapes fall back to the provider-neutral read pipelines without implicit maintenance side effects.
 - Provider-native bulk ingestion, Code-First same-hub roles, link-parent satellites, model-first artifact governance, and analyzer guidance from earlier releases remain part of the current public baseline.
 
 ## Current v0.15.0 Limitations
@@ -546,7 +567,7 @@ Lifecycle guardrails remain explicit library APIs hosted by the consumer applica
 
 Provider-native bulk dispatch is an optimization, not a separate persistence contract. Dirty tracked contexts, multi-active satellite batches, provider-name mismatches, below-threshold SQL Server, MySQL, or Oracle batches, and SQL Server batches with more than `500` satellite operations fall back to the provider-neutral writer. DVault does not provision Docker containers, databases, users, schemas, credentials, or checked-in benchmark result snapshots for optional external-provider proof.
 
-Model-first APIs continue to operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. PIT-backed reads do not maintain PIT rows. Bridge maintenance is explicit through `IDataVaultBridgeMaintenanceService`; it is not automatic, delete-aware, scheduler-driven, or provider-specific, and it does not add broader graph traversal APIs, PIT maintenance, non-SQLite PIT/bridge read optimization, effectivity windows, path payload columns, or closure-state columns. Use full rebuild when hierarchy deletions or topology shrinkage would require row removal or increased `TraversalDepth`. The metadata interceptor is opt-in and metadata-only: callers still own generated row creation, hash-key and hash-diff values, save ordering, and explicit service-based persistence when they use `IDataVaultSaveService`.
+Model-first APIs continue to operate on JSON artifacts, fluent Code-First declaration callbacks, and already-materialized metadata through `DataVaultModelArtifactImporter.ImportJson`, `DataVaultModelArtifactExporter.ExportJson`, `UseDataVaultMetadata(DataVaultModelImportResult)`, and `DataVaultModelDriftReporter.Compare`. PIT and bridge maintenance are explicit caller-invoked service boundaries through `IDataVaultPitMaintenanceService` and `IDataVaultBridgeMaintenanceService`; they are not automatic, scheduler-driven, trigger-driven, read-time maintenance, or provider-specific maintenance. PIT maintenance does not add registry-backed PIT resolution, link-parent PITs, multi-active PITs, or provider-specific PIT maintenance strategies. Bridge maintenance is not delete-aware and does not add broader graph traversal APIs, effectivity windows, path payload columns, or closure-state columns. Use full bridge rebuild when hierarchy deletions or topology shrinkage would require row removal or increased `TraversalDepth`. SQLite remains the only repository-proven optimized PIT/bridge read provider path; non-SQLite providers and unsupported shapes fall back to provider-neutral read pipelines. The metadata interceptor is opt-in and metadata-only: callers still own generated row creation, hash-key and hash-diff values, save ordering, and explicit service-based persistence when they use `IDataVaultSaveService`.
 
 Dependent child key modeling is not part of the current public claim set. Repeated same-hub runtime and metadata support does not imply typed link-mapper or source-generator parity for repeated same-hub mappings; generated and manual typed link mappers continue to use the existing unique-participant mapping boundary. Effectivity remains a generic link-parent satellite pattern rather than a first-class effectivity entity family, fluent builder, metadata kind, or technical column set. The analyzer package is not a complete model validator; it covers the documented Code-First selector diagnostics, duplicate-member diagnostics, bounded code fixes, and compile-time mapping declaration diagnostics only.
 
