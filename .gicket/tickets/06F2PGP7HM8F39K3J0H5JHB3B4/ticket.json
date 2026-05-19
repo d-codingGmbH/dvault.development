@@ -1,22 +1,21 @@
 ﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F2PGP7HM8F39K3J0H5JHB3B4",
-  "ticket-type": null,
+  "ticket-type": "epic",
   "title": "Epic: Maintenance and query operations",
-  "revision": "06F2PNMG80BBW5MGC2AQ5NCG2G",
-  "status": "todo",
+  "revision": "06F42HPTKDY8932GBXBS4J51XG",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/epic",
-    "area/read-models",
+    "area/documentation",
     "area/maintenance",
     "area/provider-support",
-    "area/documentation",
-    "needs-po"
+    "area/read-models",
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9M2K8VYN3DM5XDXD1MQG",
   "releaseId": "06F2PH9JDHV1GS17K0Y5128E5W",
   "created-at": "2026-05-15T10:50:57.6271104Z",
-  "updated-at": "2026-05-15T11:12:33.8568849Z"
+  "updated-at": "2026-05-19T17:27:03.0670000Z"
 }

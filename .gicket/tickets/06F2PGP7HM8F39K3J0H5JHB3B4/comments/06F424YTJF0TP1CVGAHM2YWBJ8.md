@@ -1,0 +1,41 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `3` selected relation flow(s) for source ticket `06F2PGP7HM8F39K3J0H5JHB3B4`.
+- Role `po` completed with outcome `po-refinement-ready` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `5`; dropped obsolete follow-up(s): `6`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `c4c2e3af261e4701b1bfc1f989b5578f`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06F2PGQ27NWVZ1B1R651S7SM4M` via `blocks` path `06F2PGP7HM8F39K3J0H5JHB3B4 -> 06F2PGQ27NWVZ1B1R651S7SM4M`
+- [queued] `blocked-follow-up-comment` -> `06F2PGQ6T5TGNWCBQBX3700D84` via `blocks` path `06F2PGP7HM8F39K3J0H5JHB3B4 -> 06F2PGQ6T5TGNWCBQBX3700D84`
+- [queued] `blocked-follow-up-comment` -> `06F2PGQBGNZPEEJE4KBET4JG24` via `blocks` path `06F2PGP7HM8F39K3J0H5JHB3B4 -> 06F2PGQBGNZPEEJE4KBET4JG24`
+- [queued] `blocked-follow-up-comment` -> `06F2PGQJ7THHNSYYBFFPBG4174` via `blocks` path `06F2PGP7HM8F39K3J0H5JHB3B4 -> 06F2PGQJ7THHNSYYBFFPBG4174`
+- [queued] `blocked-follow-up-comment` -> `06F2PGQQJB5FJGDB16M2G7CPCM` via `blocks` path `06F2PGP7HM8F39K3J0H5JHB3B4 -> 06F2PGQQJB5FJGDB16M2G7CPCM`
+- [dropped] `blocked-by-follow-up-comment` -> `06F2PGMFWSEC95ATBCGZ6HYT5W` via `blocks` path `06F2PGP7HM8F39K3J0H5JHB3B4 -> 06F2PGMFWSEC95ATBCGZ6HYT5W`
+- [dropped] `child-follow-up-comment` -> `06F2PGPBRFT48JG57SV57N9TVW` via `parentOf` path `06F2PGP7HM8F39K3J0H5JHB3B4 -> 06F2PGPBRFT48JG57SV57N9TVW`
+- [dropped] `child-follow-up-comment` -> `06F2PGPGXMJ3W8FR9JZHH3PJT8` via `parentOf` path `06F2PGP7HM8F39K3J0H5JHB3B4 -> 06F2PGPGXMJ3W8FR9JZHH3PJT8`
+- [dropped] `child-follow-up-comment` -> `06F2PGPKXWRFXNPFA1JR0X67XC` via `parentOf` path `06F2PGP7HM8F39K3J0H5JHB3B4 -> 06F2PGPKXWRFXNPFA1JR0X67XC`
+- [dropped] `child-follow-up-comment` -> `06F2PGPRGN0EVGD6RY5KY9M56W` via `parentOf` path `06F2PGP7HM8F39K3J0H5JHB3B4 -> 06F2PGPRGN0EVGD6RY5KY9M56W`
+- [dropped] `child-follow-up-comment` -> `06F2PGPXVAYRBC94RQ7X5V4DVG` via `parentOf` path `06F2PGP7HM8F39K3J0H5JHB3B4 -> 06F2PGPXVAYRBC94RQ7X5V4DVG`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06F2PGP7HM8F39K3J0H5JHB3B4` owner `ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations` base `develop` source-owner `ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGQ27NWVZ1B1R651S7SM4M` owner `ticket/06F2PGQ27NWVZ1B1R651S7SM4M-epic-observability-and-operations` base `develop` source-owner `ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations`: Target ticket owner branch 'ticket/06F2PGQ27NWVZ1B1R651S7SM4M-epic-observability-and-operations' differs from source owner branch 'ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGQ6T5TGNWCBQBX3700D84` owner `ticket/06F2PGQ6T5TGNWCBQBX3700D84-story-explain-save-and-read-strategy-decisions` base `develop` source-owner `ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations`: Target ticket owner branch 'ticket/06F2PGQ6T5TGNWCBQBX3700D84-story-explain-save-and-read-strategy-decisions' differs from source owner branch 'ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGQBGNZPEEJE4KBET4JG24` owner `ticket/06F2PGQBGNZPEEJE4KBET4JG24-story-add-save-read-telemetry-hooks-and-counters` base `develop` source-owner `ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations`: Target ticket owner branch 'ticket/06F2PGQBGNZPEEJE4KBET4JG24-story-add-save-read-telemetry-hooks-and-counters' differs from source owner branch 'ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGQJ7THHNSYYBFFPBG4174` owner `ticket/06F2PGQJ7THHNSYYBFFPBG4174-story-add-diagnostics-support-bundle-export` base `develop` source-owner `ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations`: Target ticket owner branch 'ticket/06F2PGQJ7THHNSYYBFFPBG4174-story-add-diagnostics-support-bundle-export' differs from source owner branch 'ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGQQJB5FJGDB16M2G7CPCM` owner `ticket/06F2PGQQJB5FJGDB16M2G7CPCM-task-update-v0-16-0-documentation-and-release-no` base `develop` source-owner `ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations`: Target ticket owner branch 'ticket/06F2PGQQJB5FJGDB16M2G7CPCM-task-update-v0-16-0-documentation-and-release-no' differs from source owner branch 'ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations'.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F2PGMFWSEC95ATBCGZ6HYT5W` owner `<base-terminal>` base `develop` source-owner `ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F2PGPBRFT48JG57SV57N9TVW` owner `<base-terminal>` base `develop` source-owner `ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F2PGPGXMJ3W8FR9JZHH3PJT8` owner `<base-terminal>` base `develop` source-owner `ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F2PGPKXWRFXNPFA1JR0X67XC` owner `<base-terminal>` base `develop` source-owner `ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F2PGPRGN0EVGD6RY5KY9M56W` owner `<base-terminal>` base `develop` source-owner `ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F2PGPXVAYRBC94RQ7X5V4DVG` owner `<base-terminal>` base `develop` source-owner `ticket/06F2PGP7HM8F39K3J0H5JHB3B4-epic-maintenance-and-query-operations`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGQ27NWVZ1B1R651S7SM4M` on owner branch `ticket/06F2PGQ27NWVZ1B1R651S7SM4M-epic-observability-and-operations` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGQ6T5TGNWCBQBX3700D84` on owner branch `ticket/06F2PGQ6T5TGNWCBQBX3700D84-story-explain-save-and-read-strategy-decisions` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGQBGNZPEEJE4KBET4JG24` on owner branch `ticket/06F2PGQBGNZPEEJE4KBET4JG24-story-add-save-read-telemetry-hooks-and-counters` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGQJ7THHNSYYBFFPBG4174` on owner branch `ticket/06F2PGQJ7THHNSYYBFFPBG4174-story-add-diagnostics-support-bundle-export` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGQQJB5FJGDB16M2G7CPCM` on owner branch `ticket/06F2PGQQJB5FJGDB16M2G7CPCM-task-update-v0-16-0-documentation-and-release-no` after that branch is refreshed/rebased.
