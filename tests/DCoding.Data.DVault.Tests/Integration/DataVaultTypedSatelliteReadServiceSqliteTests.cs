@@ -119,20 +119,35 @@ public sealed class DataVaultTypedSatelliteReadServiceSqliteTests {
         context,
         new DataVaultLatestSatelliteReadRequest(profile, [customerHashKey]),
         ProjectProfile);
-    var registryAsOfRows = await readService.ReadLatestSatelliteAsync(
+    var explicitCurrentRows = await readService.ReadCurrentSatelliteAsync(
         context,
-        new DataVaultRegistryLatestSatelliteReadRequest(
-            DataVaultMetadataReference.Hub("Customer"),
-            "Profile",
-            [customerHashKey],
-            firstLoadTimestamp),
+        profile,
+        [customerHashKey],
         ProjectProfile);
-    var linkParentRows = await readService.ReadLatestSatelliteAsync(
+    var explicitAsOfRows = await readService.ReadAsOfSatelliteAsync(
         context,
-        new DataVaultRegistryLatestSatelliteReadRequest(
-            DataVaultMetadataReference.Link("CustomerOrder"),
-            "State",
-            [customerOrderHashKey]),
+        profile,
+        [customerHashKey],
+        firstLoadTimestamp,
+        ProjectProfile);
+    var registryCurrentRows = await readService.ReadCurrentSatelliteAsync(
+        context,
+        DataVaultMetadataReference.Hub("Customer"),
+        "Profile",
+        [customerHashKey],
+        ProjectProfile);
+    var registryAsOfRows = await readService.ReadAsOfSatelliteAsync(
+        context,
+        DataVaultMetadataReference.Hub("Customer"),
+        "Profile",
+        [customerHashKey],
+        firstLoadTimestamp,
+        ProjectProfile);
+    var linkParentRows = await readService.ReadCurrentSatelliteAsync(
+        context,
+        DataVaultMetadataReference.Link("CustomerOrder"),
+        "State",
+        [customerOrderHashKey],
         row => new OrderStateRead(
             row.RequiredString("ParentHashKey"),
             row.RequiredString("HashDiff"),
@@ -141,6 +156,9 @@ public sealed class DataVaultTypedSatelliteReadServiceSqliteTests {
             row.RequiredString("State Code")));
 
     var explicitLatestRow = Assert.Single(explicitLatestRows);
+    var explicitCurrentRow = Assert.Single(explicitCurrentRows);
+    var explicitAsOfRow = Assert.Single(explicitAsOfRows);
+    var registryCurrentRow = Assert.Single(registryCurrentRows);
     var registryAsOfRow = Assert.Single(registryAsOfRows);
     var linkParentRow = Assert.Single(linkParentRows);
 
@@ -150,11 +168,14 @@ public sealed class DataVaultTypedSatelliteReadServiceSqliteTests {
     Assert.Equal("crm-change", explicitLatestRow.RecordSource);
     Assert.Equal("Alice Baker", explicitLatestRow.CustomerName);
     Assert.Equal("active", explicitLatestRow.CustomerStatus);
+    Assert.Equal(explicitLatestRow, explicitCurrentRow);
+    Assert.Equal(explicitLatestRow, registryCurrentRow);
 
     Assert.Equal(customerHashKey, registryAsOfRow.ParentHashKey);
     Assert.Equal("profile-hash-1", registryAsOfRow.HashDiff);
     Assert.Equal(firstLoadTimestamp, registryAsOfRow.LoadTimestamp);
     Assert.Equal("prospect", registryAsOfRow.CustomerStatus);
+    Assert.Equal(explicitAsOfRow, registryAsOfRow);
 
     Assert.Equal(customerOrderHashKey, linkParentRow.ParentHashKey);
     Assert.Equal("state-hash-2", linkParentRow.HashDiff);
@@ -241,9 +262,23 @@ public sealed class DataVaultTypedSatelliteReadServiceSqliteTests {
                     "contact-hash-3"),
             ]));
 
-    var rows = await readService.ReadLatestSatelliteAsync(
+    var rows = await readService.ReadCurrentSatelliteAsync(
         context,
-        new DataVaultLatestSatelliteReadRequest(contact, [customerHashKey]),
+        contact,
+        [customerHashKey],
+        row => new CustomerContactRead(
+            row.RequiredString("ParentHashKey"),
+            row.RequiredString("HashDiff"),
+            row.RequiredDateTimeOffset("LoadTimestamp"),
+            row.RequiredString("RecordSource"),
+            row.RequiredString("Contact Type"),
+            row.RequiredString("Region Code"),
+            row.NullableString("Email Address")));
+    var asOfRows = await readService.ReadAsOfSatelliteAsync(
+        context,
+        contact,
+        [customerHashKey],
+        firstLoadTimestamp,
         row => new CustomerContactRead(
             row.RequiredString("ParentHashKey"),
             row.RequiredString("HashDiff"),
@@ -261,6 +296,22 @@ public sealed class DataVaultTypedSatelliteReadServiceSqliteTests {
           Assert.Equal("billing-de-new@example.test", row.EmailAddress);
           Assert.Equal("contact-hash-3", row.HashDiff);
           Assert.Equal(changedLoadTimestamp, row.LoadTimestamp);
+        },
+        row => {
+          Assert.Equal("shipping", row.ContactType);
+          Assert.Equal("DE", row.RegionCode);
+          Assert.Equal("shipping-de@example.test", row.EmailAddress);
+          Assert.Equal("contact-hash-2", row.HashDiff);
+          Assert.Equal(firstLoadTimestamp, row.LoadTimestamp);
+        });
+    Assert.Collection(
+        asOfRows,
+        row => {
+          Assert.Equal("billing", row.ContactType);
+          Assert.Equal("DE", row.RegionCode);
+          Assert.Equal("billing-de@example.test", row.EmailAddress);
+          Assert.Equal("contact-hash-1", row.HashDiff);
+          Assert.Equal(firstLoadTimestamp, row.LoadTimestamp);
         },
         row => {
           Assert.Equal("shipping", row.ContactType);

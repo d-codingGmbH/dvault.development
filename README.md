@@ -205,7 +205,7 @@ For loaders that already have multiple source batches prepared, `DataVaultBulkSa
 
 ### Read typed latest and as-of satellite projections
 
-`IDataVaultReadService` provides provider-neutral latest and as-of satellite reads. The common path maps selected rows through a caller-owned projector delegate so application code can return typed read models without binding DTOs through reflection. Passing an `asOf` timestamp to `DataVaultLatestSatelliteReadRequest` selects the latest row visible at that point in time.
+`IDataVaultReadService` provides provider-neutral current and as-of satellite reads over the latest-satellite baseline. The common path maps selected rows through a caller-owned projector delegate so application code can return typed read models without binding DTOs through reflection. `ReadCurrentSatelliteAsync(...)` selects the latest visible row, and `ReadAsOfSatelliteAsync(...)` selects the latest row visible at the supplied cutoff. These convenience names delegate to the existing `DataVaultLatestSatelliteReadRequest` pipeline; `ReadLatestSatelliteAsync(...)` and `DataVaultLatestSatelliteReadRequest` remain supported for compatibility.
 
 ```csharp
 using DCoding.Data.DVault;
@@ -218,25 +218,49 @@ var profile = new DataVaultSatelliteMetadata(
     "Profile",
     customer.ToReference(),
     ["CustomerName", "CustomerStatus"]);
-
-var latestProfiles = await readService.ReadLatestSatelliteAsync(
-    context,
-    new DataVaultLatestSatelliteReadRequest(profile, [customerHashKey]),
-    row => new CustomerProfileRead(
+Func<DataVaultSatelliteProjectionRow, CustomerProfileRead> projectProfile = row =>
+    new CustomerProfileRead(
         row.RequiredString("ParentHashKey"),
         row.RequiredString("CustomerName"),
         row.RequiredString("CustomerStatus"),
-        row.RequiredDateTimeOffset("LoadTimestamp")),
+        row.RequiredDateTimeOffset("LoadTimestamp"));
+
+var currentProfiles = await readService.ReadCurrentSatelliteAsync(
+    context,
+    profile,
+    [customerHashKey],
+    projectProfile,
     cancellationToken);
 
 var asOfProfiles = await readService.ReadLatestSatelliteAsync(
     context,
     new DataVaultLatestSatelliteReadRequest(profile, [customerHashKey], asOfTimestamp),
-    row => new CustomerProfileRead(
-        row.RequiredString("ParentHashKey"),
-        row.RequiredString("CustomerName"),
-        row.RequiredString("CustomerStatus"),
-        row.RequiredDateTimeOffset("LoadTimestamp")),
+    projectProfile,
+    cancellationToken);
+
+var convenienceAsOfProfiles = await readService.ReadAsOfSatelliteAsync(
+    context,
+    profile,
+    [customerHashKey],
+    asOfTimestamp,
+    projectProfile,
+    cancellationToken);
+
+var registryCurrentProfiles = await readService.ReadCurrentSatelliteAsync(
+    context,
+    DataVaultMetadataReference.Hub("Customer"),
+    "Profile",
+    [customerHashKey],
+    projectProfile,
+    cancellationToken);
+
+var registryAsOfProfiles = await readService.ReadAsOfSatelliteAsync(
+    context,
+    DataVaultMetadataReference.Hub("Customer"),
+    "Profile",
+    [customerHashKey],
+    asOfTimestamp,
+    projectProfile,
     cancellationToken);
 
 public sealed record CustomerProfileRead(
@@ -246,7 +270,7 @@ public sealed record CustomerProfileRead(
     DateTimeOffset LoadTimestamp);
 ```
 
-The lower-level `ReadLatestSatelliteRowsAsync(...)` API remains available as the advanced escape hatch. It returns `DataVaultSatelliteReadRecord` values containing the parent hash key, driving-key values, hash diff, load timestamp, record source, and payload values for callers that need row-level dictionaries or custom projections.
+The lower-level `ReadCurrentSatelliteRowsAsync(...)`, `ReadAsOfSatelliteRowsAsync(...)`, and `ReadLatestSatelliteRowsAsync(...)` APIs remain available as advanced escape hatches. They return `DataVaultSatelliteReadRecord` values containing the parent hash key, driving-key values, hash diff, load timestamp, record source, and payload values for callers that need row-level dictionaries or custom projections.
 
 ### Read PIT and bridge projections
 

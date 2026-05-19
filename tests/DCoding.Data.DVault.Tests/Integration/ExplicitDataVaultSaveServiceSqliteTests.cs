@@ -993,7 +993,12 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
       var latestRows = await readService.ReadLatestSatelliteRowsAsync(
           context,
           new DataVaultLatestSatelliteReadRequest(profile, [customerHashKey]));
+      var currentRows = await readService.ReadCurrentSatelliteRowsAsync(
+          context,
+          profile,
+          [customerHashKey]);
       var latestRow = Assert.Single(latestRows);
+      var currentRow = Assert.Single(currentRows);
 
       Assert.Equal("Profile", latestRow.MetadataName);
       Assert.Equal("SatCustomerProfile", latestRow.TableName);
@@ -1004,19 +1009,41 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
       Assert.Equal("crm-change", latestRow.RecordSource);
       Assert.Equal("Alice Baker", latestRow.PayloadValues["customer_name"]);
       Assert.Equal("active", latestRow.PayloadValues["customer_status"]);
+      Assert.Equal(latestRow.MetadataName, currentRow.MetadataName);
+      Assert.Equal(latestRow.TableName, currentRow.TableName);
+      Assert.Equal(latestRow.ParentHashKey, currentRow.ParentHashKey);
+      Assert.Equal(latestRow.HashDiff, currentRow.HashDiff);
+      Assert.Equal(latestRow.LoadTimestamp, currentRow.LoadTimestamp);
+      Assert.Equal(latestRow.RecordSource, currentRow.RecordSource);
+      Assert.Equal(latestRow.PayloadValues, currentRow.PayloadValues);
 
       var asOfRows = await readService.ReadLatestSatelliteRowsAsync(
           context,
           new DataVaultLatestSatelliteReadRequest(profile, [customerHashKey], firstLoadTimestamp));
+      var convenienceAsOfRows = await readService.ReadAsOfSatelliteRowsAsync(
+          context,
+          profile,
+          [customerHashKey],
+          firstLoadTimestamp);
       var asOfRow = Assert.Single(asOfRows);
+      var convenienceAsOfRow = Assert.Single(convenienceAsOfRows);
 
       Assert.Equal("profile-hash-1", asOfRow.HashDiff);
       Assert.Equal(firstLoadTimestamp, asOfRow.LoadTimestamp);
       Assert.Equal("prospect", asOfRow.PayloadValues["customer_status"]);
+      Assert.Equal(asOfRow.ParentHashKey, convenienceAsOfRow.ParentHashKey);
+      Assert.Equal(asOfRow.HashDiff, convenienceAsOfRow.HashDiff);
+      Assert.Equal(asOfRow.LoadTimestamp, convenienceAsOfRow.LoadTimestamp);
+      Assert.Equal(asOfRow.RecordSource, convenienceAsOfRow.RecordSource);
+      Assert.Equal(asOfRow.PayloadValues, convenienceAsOfRow.PayloadValues);
 
       Assert.Empty(await readService.ReadLatestSatelliteRowsAsync(
           context,
           new DataVaultLatestSatelliteReadRequest(profile, ["missing-hash-key"])));
+      Assert.Empty(await readService.ReadCurrentSatelliteRowsAsync(
+          context,
+          profile,
+          ["missing-hash-key"]));
     }
   }
 
@@ -1104,6 +1131,11 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
               DataVaultMetadataReference.Hub("Customer"),
               "Profile",
               [customerHashKey]));
+      var currentRows = await readService.ReadCurrentSatelliteRowsAsync(
+          context,
+          DataVaultMetadataReference.Hub("Customer"),
+          "Profile",
+          [customerHashKey]);
       var asOfRows = await readService.ReadLatestSatelliteRowsAsync(
           context,
           new DataVaultRegistryLatestSatelliteReadRequest(
@@ -1111,16 +1143,32 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
               "Profile",
               [customerHashKey],
               firstLoadTimestamp));
+      var convenienceAsOfRows = await readService.ReadAsOfSatelliteRowsAsync(
+          context,
+          DataVaultMetadataReference.Hub("Customer"),
+          "Profile",
+          [customerHashKey],
+          firstLoadTimestamp);
       var linkRow = await context.Set<Dictionary<string, object>>("LinkCustomerOrder").AsNoTracking().SingleAsync();
       var latestRow = Assert.Single(latestRows);
+      var currentRow = Assert.Single(currentRows);
       var asOfRow = Assert.Single(asOfRows);
+      var convenienceAsOfRow = Assert.Single(convenienceAsOfRows);
 
       Assert.Equal(customerHashKey, linkRow["CustomerHashKey"]);
       Assert.Equal(orderHashKey, linkRow["OrderHashKey"]);
       Assert.Equal("profile-hash-2", latestRow.HashDiff);
       Assert.Equal("active", latestRow.PayloadValues["customer_status"]);
+      Assert.Equal(latestRow.ParentHashKey, currentRow.ParentHashKey);
+      Assert.Equal(latestRow.HashDiff, currentRow.HashDiff);
+      Assert.Equal(latestRow.LoadTimestamp, currentRow.LoadTimestamp);
+      Assert.Equal(latestRow.PayloadValues, currentRow.PayloadValues);
       Assert.Equal("profile-hash-1", asOfRow.HashDiff);
       Assert.Equal("prospect", asOfRow.PayloadValues["customer_status"]);
+      Assert.Equal(asOfRow.ParentHashKey, convenienceAsOfRow.ParentHashKey);
+      Assert.Equal(asOfRow.HashDiff, convenienceAsOfRow.HashDiff);
+      Assert.Equal(asOfRow.LoadTimestamp, convenienceAsOfRow.LoadTimestamp);
+      Assert.Equal(asOfRow.PayloadValues, convenienceAsOfRow.PayloadValues);
     }
   }
 
@@ -1226,9 +1274,24 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
                 DataVaultMetadataReference.Hub("Customer"),
                 "MissingProfile",
                 ["customer-hash"])));
+    var currentReadException = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        readService.ReadCurrentSatelliteRowsAsync(
+            context,
+            DataVaultMetadataReference.Hub("Customer"),
+            "MissingProfile",
+            ["customer-hash"]));
+    var asOfReadException = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        readService.ReadAsOfSatelliteRowsAsync(
+            context,
+            DataVaultMetadataReference.Hub("Customer"),
+            "MissingProfile",
+            ["customer-hash"],
+            loadTimestamp));
 
     Assert.Contains("link metadata 'MissingLink'", saveException.Message, StringComparison.Ordinal);
     Assert.Contains("satellite metadata 'MissingProfile'", readException.Message, StringComparison.Ordinal);
+    Assert.Contains("satellite metadata 'MissingProfile'", currentReadException.Message, StringComparison.Ordinal);
+    Assert.Contains("satellite metadata 'MissingProfile'", asOfReadException.Message, StringComparison.Ordinal);
     Assert.Empty(await context.Set<Dictionary<string, object>>("HubCustomer").AsNoTracking().ToListAsync());
   }
 
