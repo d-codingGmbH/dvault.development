@@ -3,19 +3,18 @@
   "ticket-id": "06F2PGQ6T5TGNWCBQBX3700D84",
   "ticket-type": null,
   "title": "Story: Explain save and read strategy decisions",
-  "revision": "06F2PNN2BWVZWNQ47JYEDGSN5C",
-  "status": "todo",
+  "revision": "06F43T6XM5QQ8JFEX2CEB5W0N8",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/story",
-    "area/observability",
     "area/diagnostics",
+    "area/observability",
     "area/provider-support",
-    "needs-po"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "milestoneId": "06F2PH9NNNK5VAFKHA1T3HYTZM",
   "releaseId": "06F2PH9MW3YQTVEZPYYR4ZXEJM",
   "created-at": "2026-05-15T10:51:05.8949571Z",
-  "updated-at": "2026-05-15T11:12:38.4951703Z"
+  "updated-at": "2026-05-19T20:24:00.6737634Z"
 }

@@ -1,0 +1,25 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `2` selected relation flow(s) for source ticket `06F2PGQ6T5TGNWCBQBX3700D84`.
+- Role `po-critic` completed with outcome `po-critic-non-blocking-apply` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `3`; dropped obsolete follow-up(s): `1`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `e92ceea6039a400b921c64eeeefd5982`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06F2PGQBGNZPEEJE4KBET4JG24` via `blocks` path `06F2PGQ6T5TGNWCBQBX3700D84 -> 06F2PGQBGNZPEEJE4KBET4JG24`
+- [queued] `blocked-follow-up-comment` -> `06F2PGQJ7THHNSYYBFFPBG4174` via `blocks` path `06F2PGQ6T5TGNWCBQBX3700D84 -> 06F2PGQJ7THHNSYYBFFPBG4174`
+- [queued] `blocked-follow-up-comment` -> `06F2PGQQJB5FJGDB16M2G7CPCM` via `blocks` path `06F2PGQ6T5TGNWCBQBX3700D84 -> 06F2PGQQJB5FJGDB16M2G7CPCM`
+- [dropped] `blocked-by-follow-up-comment` -> `06F2PGP7HM8F39K3J0H5JHB3B4` via `blocks` path `06F2PGQ6T5TGNWCBQBX3700D84 -> 06F2PGP7HM8F39K3J0H5JHB3B4`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06F2PGQ6T5TGNWCBQBX3700D84` owner `ticket/06F2PGQ6T5TGNWCBQBX3700D84-story-explain-save-and-read-strategy-decisions` base `develop` source-owner `ticket/06F2PGQ6T5TGNWCBQBX3700D84-story-explain-save-and-read-strategy-decisions`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGQBGNZPEEJE4KBET4JG24` owner `ticket/06F2PGQBGNZPEEJE4KBET4JG24-story-add-save-read-telemetry-hooks-and-counters` base `develop` source-owner `ticket/06F2PGQ6T5TGNWCBQBX3700D84-story-explain-save-and-read-strategy-decisions`: Target ticket owner branch 'ticket/06F2PGQBGNZPEEJE4KBET4JG24-story-add-save-read-telemetry-hooks-and-counters' differs from source owner branch 'ticket/06F2PGQ6T5TGNWCBQBX3700D84-story-explain-save-and-read-strategy-decisions'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGQJ7THHNSYYBFFPBG4174` owner `ticket/06F2PGQJ7THHNSYYBFFPBG4174-story-add-diagnostics-support-bundle-export` base `develop` source-owner `ticket/06F2PGQ6T5TGNWCBQBX3700D84-story-explain-save-and-read-strategy-decisions`: Target ticket owner branch 'ticket/06F2PGQJ7THHNSYYBFFPBG4174-story-add-diagnostics-support-bundle-export' differs from source owner branch 'ticket/06F2PGQ6T5TGNWCBQBX3700D84-story-explain-save-and-read-strategy-decisions'.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F2PGQQJB5FJGDB16M2G7CPCM` owner `ticket/06F2PGQQJB5FJGDB16M2G7CPCM-task-update-v0-16-0-documentation-and-release-no` base `develop` source-owner `ticket/06F2PGQ6T5TGNWCBQBX3700D84-story-explain-save-and-read-strategy-decisions`: Target ticket owner branch 'ticket/06F2PGQQJB5FJGDB16M2G7CPCM-task-update-v0-16-0-documentation-and-release-no' differs from source owner branch 'ticket/06F2PGQ6T5TGNWCBQBX3700D84-story-explain-save-and-read-strategy-decisions'.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F2PGP7HM8F39K3J0H5JHB3B4` owner `<base-terminal>` base `develop` source-owner `ticket/06F2PGQ6T5TGNWCBQBX3700D84-story-explain-save-and-read-strategy-decisions`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGQBGNZPEEJE4KBET4JG24` on owner branch `ticket/06F2PGQBGNZPEEJE4KBET4JG24-story-add-save-read-telemetry-hooks-and-counters` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGQJ7THHNSYYBFFPBG4174` on owner branch `ticket/06F2PGQJ7THHNSYYBFFPBG4174-story-add-diagnostics-support-bundle-export` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F2PGQQJB5FJGDB16M2G7CPCM` on owner branch `ticket/06F2PGQQJB5FJGDB16M2G7CPCM-task-update-v0-16-0-documentation-and-release-no` after that branch is refreshed/rebased.

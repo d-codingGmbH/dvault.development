@@ -80,6 +80,10 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
     Assert.Equal(KnownProviderNames.Sqlite, result.SaveStrategy.ProviderName);
     Assert.Equal("SqliteDataVaultSaveStrategy", result.SaveStrategy.SelectedStrategyName);
     Assert.Equal(100, result.SaveStrategy.SelectedStrategyPriority);
+    Assert.Contains(
+        "save strategy ProviderStrategySelected (SqliteDataVaultSaveStrategy)",
+        result.ToDisplayString(),
+        StringComparison.Ordinal);
 
     var candidate = Assert.Single(result.SaveStrategy.Candidates);
     Assert.Equal(0, candidate.Ordinal);
@@ -107,6 +111,10 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
     Assert.Equal(KnownProviderNames.Sqlite, result.ReadStrategy.ProviderName);
     Assert.Equal("SqliteDataVaultReadStrategy", result.ReadStrategy.SelectedStrategyName);
     Assert.Equal(100, result.ReadStrategy.SelectedStrategyPriority);
+    Assert.Contains(
+        "read strategy ProviderStrategySelected (SqliteDataVaultReadStrategy)",
+        result.ToDisplayString(),
+        StringComparison.Ordinal);
 
     var candidate = Assert.Single(result.ReadStrategy.Candidates);
     Assert.Equal(0, candidate.Ordinal);
@@ -138,6 +146,7 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
 
     Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback, result.ReadStrategy.Status);
     Assert.Null(result.ReadStrategy.SelectedStrategyName);
+    Assert.Contains("read strategy ProviderNeutralFallback", result.ToDisplayString(), StringComparison.Ordinal);
 
     var candidate = Assert.Single(result.ReadStrategy.Candidates);
     Assert.False(candidate.CanRead);
@@ -221,6 +230,7 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
 
     Assert.Equal(DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback, result.SaveStrategy.Status);
     Assert.Null(result.SaveStrategy.SelectedStrategyName);
+    Assert.Contains("save strategy ProviderNeutralFallback", result.ToDisplayString(), StringComparison.Ordinal);
 
     var candidate = Assert.Single(result.SaveStrategy.Candidates);
     Assert.False(candidate.CanSave);
@@ -262,6 +272,39 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
           Assert.Equal(1, candidate.Ordinal);
           Assert.Equal("SqliteDataVaultSaveStrategy", candidate.StrategyName);
           Assert.True(candidate.CanSave);
+        });
+  }
+
+  [Fact]
+  public void AnalyzeReadRequestKeepsCandidateOrderingWhenHigherPriorityStrategyDeclines() {
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var rejectingStrategy = new RecordingProviderReadStrategy(priority: 200, _ => false);
+    var services = new ServiceCollection();
+    services.AddSingleton<IDataVaultProviderReadStrategy>(rejectingStrategy);
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+    using var context = new DiagnosticsContext(CreateOptions(database));
+
+    var result = diagnostics.Analyze(context, CreateProfileReadRequest(["customer-hk"]));
+
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected, result.ReadStrategy.Status);
+    Assert.Equal("SqliteDataVaultReadStrategy", result.ReadStrategy.SelectedStrategyName);
+    Assert.Collection(
+        result.ReadStrategy.Candidates,
+        candidate => {
+          Assert.Equal(0, candidate.Ordinal);
+          Assert.Equal(nameof(RecordingProviderReadStrategy), candidate.StrategyName);
+          Assert.False(candidate.CanRead);
+          Assert.Contains(
+              candidate.FallbackCauses,
+              cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.StrategyDeclined);
+        },
+        candidate => {
+          Assert.Equal(1, candidate.Ordinal);
+          Assert.Equal("SqliteDataVaultReadStrategy", candidate.StrategyName);
+          Assert.True(candidate.CanRead);
         });
   }
 
@@ -340,6 +383,33 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
         DataVaultProviderSaveStrategyContext context,
         CancellationToken cancellationToken = default) {
       throw new NotSupportedException("Recording diagnostics strategy is never used for persistence.");
+    }
+  }
+
+  private sealed class RecordingProviderReadStrategy(
+      int priority,
+      Func<DataVaultLatestSatelliteReadRequest, bool> canRead) : IDataVaultProviderReadStrategy {
+    public int Priority { get; } = priority;
+
+    public bool CanReadLatestSatelliteRows(
+        DbContext dbContext,
+        DataVaultLatestSatelliteReadRequest request) {
+      ArgumentNullException.ThrowIfNull(dbContext);
+      ArgumentNullException.ThrowIfNull(request);
+
+      return canRead(request);
+    }
+
+    public Task<IReadOnlyList<DataVaultSatelliteReadRecord>> ReadLatestSatelliteRowsAsync(
+        DataVaultProviderReadStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      throw new NotSupportedException("Recording diagnostics strategy is never used for reads.");
+    }
+
+    public Task<IReadOnlyList<DataVaultSatelliteProjectionRow>> ReadLatestSatelliteProjectionRowsAsync(
+        DataVaultProviderReadStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      throw new NotSupportedException("Recording diagnostics strategy is never used for reads.");
     }
   }
 }
