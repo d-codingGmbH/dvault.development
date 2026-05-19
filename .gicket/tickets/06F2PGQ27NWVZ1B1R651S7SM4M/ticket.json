@@ -1,7 +1,7 @@
 ﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F2PGQ27NWVZ1B1R651S7SM4M",
-  "ticket-type": null,
+  "ticket-type": "epic",
   "title": "Epic: Observability and operations",
   "revision": "06F2PNN0MCC4W11T1X3M17MFQW",
   "status": "todo",
