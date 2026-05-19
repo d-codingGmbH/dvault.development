@@ -86,13 +86,10 @@ internal static class DataVaultBridgeReadPipeline {
       }
     }
 
-    return readRows
-        .OrderBy(row => CreateOrdinalSignature(getEndpointHashKeys(row)), StringComparer.Ordinal)
-        .ThenBy(row => getTraversalDepth(row) ?? -1)
-        .ToArray();
+    return OrderBridgeRows(readRows, getEndpointHashKeys, getTraversalDepth);
   }
 
-  private static BridgeReadProjection CreateBridgeProjection(
+  internal static BridgeReadProjection CreateBridgeProjection(
       DbContext dbContext,
       DataVaultBridgeReadRequest request) {
     var bridge = request.Bridge;
@@ -136,7 +133,7 @@ internal static class DataVaultBridgeReadPipeline {
         request.MaximumDepth);
   }
 
-  private static DataVaultBridgeReadRecord CreateReadRecord(
+  internal static DataVaultBridgeReadRecord CreateReadRecord(
       BridgeReadProjection projection,
       Dictionary<string, object> row) {
     var endpoints = ReadEndpointValues(projection, row);
@@ -149,7 +146,7 @@ internal static class DataVaultBridgeReadPipeline {
         traversalDepth);
   }
 
-  private static BridgeProjectionReadRow CreateProjectionReadRow(
+  internal static BridgeProjectionReadRow CreateProjectionReadRow(
       BridgeReadProjection projection,
       Dictionary<string, object> row) {
     var endpoints = ReadEndpointValues(projection, row);
@@ -170,6 +167,17 @@ internal static class DataVaultBridgeReadPipeline {
         new DataVaultBridgeProjectionRow(
             projection.MetadataName,
             new ReadOnlyDictionary<string, DataVaultBridgeProjectionValue>(values)));
+  }
+
+  internal static IReadOnlyList<TReadRow> OrderBridgeRows<TReadRow>(
+      IEnumerable<TReadRow> readRows,
+      Func<TReadRow, IEnumerable<string>> getEndpointHashKeys,
+      Func<TReadRow, int?> getTraversalDepth)
+      where TReadRow : class {
+    return readRows
+        .OrderBy(row => CreateOrdinalSignature(getEndpointHashKeys(row)), StringComparer.Ordinal)
+        .ThenBy(row => getTraversalDepth(row) ?? -1)
+        .ToArray();
   }
 
   private static IReadOnlyList<DataVaultBridgeEndpointReadValue> ReadEndpointValues(
@@ -463,7 +471,7 @@ internal static class DataVaultBridgeReadPipeline {
     return string.Join('\u001f', values);
   }
 
-  private sealed record BridgeReadProjection(
+  internal sealed record BridgeReadProjection(
       string MetadataName,
       DataVaultBridgeKind Kind,
       string TableName,
@@ -472,12 +480,12 @@ internal static class DataVaultBridgeReadPipeline {
       string? TraversalDepthColumnName,
       int? MaximumDepth);
 
-  private sealed record BridgeEndpointProjection(
+  internal sealed record BridgeEndpointProjection(
       DataVaultBridgeTraversalEndpoint Endpoint,
       string EndpointName,
       string ColumnName);
 
-  private sealed record BridgeProjectionReadRow(
+  internal sealed record BridgeProjectionReadRow(
       IReadOnlyList<string> EndpointHashKeys,
       int? TraversalDepth,
       DataVaultBridgeProjectionRow ProjectionRow);

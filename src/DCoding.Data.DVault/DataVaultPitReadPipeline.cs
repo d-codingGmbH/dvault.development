@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 namespace DCoding.Data.DVault;
 
 internal static class DataVaultPitReadPipeline {
-  private const int ParentHashKeyBatchSize = 500;
+  internal const int ParentHashKeyBatchSize = 500;
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
 
   public static async Task<IReadOnlyList<DataVaultPitReadRecord>> ReadPitReadRecordsAsync(
@@ -39,26 +39,13 @@ internal static class DataVaultPitReadPipeline {
 
     var records = new List<DataVaultPitReadRecord>();
     foreach (var pitRow in matchedPitRows.Values.OrderBy(row => row.ParentHashKey, StringComparer.Ordinal)) {
-      var snapshots = new DataVaultPitSatelliteSnapshot[projection.Satellites.Count];
-      for (var index = 0; index < projection.Satellites.Count; index++) {
-        snapshots[index] = CreateSatelliteSnapshot(
-            projection,
-            projection.Satellites[index],
-            index,
-            pitRow,
-            satelliteRowsByOrdinal[index]);
-      }
-
-      records.Add(new DataVaultPitReadRecord(
-          pitRow.ParentHashKey,
-          pitRow.LoadTimestamp,
-          snapshots));
+      records.Add(CreatePitReadRecord(projection, pitRow, satelliteRowsByOrdinal));
     }
 
     return records;
   }
 
-  private static async Task<IReadOnlyDictionary<string, MatchedPitRow>> ReadMatchedPitRowsAsync(
+  internal static async Task<IReadOnlyDictionary<string, MatchedPitRow>> ReadMatchedPitRowsAsync(
       DbContext dbContext,
       PitReadProjection projection,
       DataVaultPitAsOfReadRequest request,
@@ -83,32 +70,14 @@ internal static class DataVaultPitReadPipeline {
       }
 
       foreach (var row in persistedRows) {
-        var parentHashKey = ReadRequiredString(
-            projection.MetadataName,
-            projection.TableName,
-            row,
-            projection.ParentHashKeyColumnName,
-            "PIT parent hash-key");
-        var loadTimestamp = ReadRequiredTimestamp(
-            projection.MetadataName,
-            projection.TableName,
-            row,
-            projection.LoadTimestampColumnName,
-            "PIT load timestamp");
-        if (loadTimestamp > request.AsOf) {
+        var matchedRow = CreateMatchedPitRow(projection, row);
+        if (matchedRow.LoadTimestamp > request.AsOf) {
           continue;
         }
 
-        var snapshotLoadTimestamps = projection.Satellites
-            .Select(satellite => ReadOptionalTimestamp(
-                projection.MetadataName,
-                projection.TableName,
-                row,
-                satellite.SnapshotReferenceColumnName,
-                "PIT satellite snapshot reference"))
-            .ToArray();
-        if (!matchedRows.TryGetValue(parentHashKey, out var current) || loadTimestamp >= current.LoadTimestamp) {
-          matchedRows[parentHashKey] = new MatchedPitRow(parentHashKey, loadTimestamp, snapshotLoadTimestamps);
+        if (!matchedRows.TryGetValue(matchedRow.ParentHashKey, out var current) ||
+            matchedRow.LoadTimestamp >= current.LoadTimestamp) {
+          matchedRows[matchedRow.ParentHashKey] = matchedRow;
         }
       }
     }
@@ -116,7 +85,7 @@ internal static class DataVaultPitReadPipeline {
     return matchedRows;
   }
 
-  private static async Task<IReadOnlyDictionary<SatelliteSnapshotKey, Dictionary<string, object>>> ReadSatelliteRowsAsync(
+  internal static async Task<IReadOnlyDictionary<SatelliteSnapshotKey, Dictionary<string, object>>> ReadSatelliteRowsAsync(
       DbContext dbContext,
       PitReadProjection pitProjection,
       PitSatelliteProjection pitSatellite,
@@ -187,7 +156,54 @@ internal static class DataVaultPitReadPipeline {
     return satelliteRows;
   }
 
-  private static DataVaultPitSatelliteSnapshot CreateSatelliteSnapshot(
+  internal static DataVaultPitReadRecord CreatePitReadRecord(
+      PitReadProjection projection,
+      MatchedPitRow pitRow,
+      IReadOnlyDictionary<int, IReadOnlyDictionary<SatelliteSnapshotKey, Dictionary<string, object>>> satelliteRowsByOrdinal) {
+    var snapshots = new DataVaultPitSatelliteSnapshot[projection.Satellites.Count];
+    for (var index = 0; index < projection.Satellites.Count; index++) {
+      snapshots[index] = CreateSatelliteSnapshot(
+          projection,
+          projection.Satellites[index],
+          index,
+          pitRow,
+          satelliteRowsByOrdinal[index]);
+    }
+
+    return new DataVaultPitReadRecord(
+        pitRow.ParentHashKey,
+        pitRow.LoadTimestamp,
+        snapshots);
+  }
+
+  internal static MatchedPitRow CreateMatchedPitRow(
+      PitReadProjection projection,
+      Dictionary<string, object> row) {
+    var parentHashKey = ReadRequiredString(
+        projection.MetadataName,
+        projection.TableName,
+        row,
+        projection.ParentHashKeyColumnName,
+        "PIT parent hash-key");
+    var loadTimestamp = ReadRequiredTimestamp(
+        projection.MetadataName,
+        projection.TableName,
+        row,
+        projection.LoadTimestampColumnName,
+        "PIT load timestamp");
+    var snapshotLoadTimestamps = projection.Satellites
+        .Select(satellite => ReadOptionalTimestamp(
+            projection.MetadataName,
+            projection.TableName,
+            row,
+            satellite.SnapshotReferenceColumnName,
+            "PIT satellite snapshot reference"))
+        .ToArray();
+
+    return new MatchedPitRow(parentHashKey, loadTimestamp, snapshotLoadTimestamps);
+  }
+
+  internal static DataVaultPitSatelliteSnapshot CreateSatelliteSnapshot(
       PitReadProjection pitProjection,
       PitSatelliteProjection pitSatellite,
       int satelliteOrdinal,
@@ -237,7 +253,7 @@ internal static class DataVaultPitReadPipeline {
         payloadValues);
   }
 
-  private static PitReadProjection CreatePitProjection(
+  internal static PitReadProjection CreatePitProjection(
       DbContext dbContext,
       DataVaultPitAsOfReadRequest request) {
     var pit = request.Pit;
@@ -639,19 +655,19 @@ internal static class DataVaultPitReadPipeline {
         innerException);
   }
 
-  private sealed record PitReadProjection(
+  internal sealed record PitReadProjection(
       string MetadataName,
       string TableName,
       string ParentHashKeyColumnName,
       string LoadTimestampColumnName,
       IReadOnlyList<PitSatelliteProjection> Satellites);
 
-  private sealed record PitSatelliteProjection(
+  internal sealed record PitSatelliteProjection(
       string MetadataName,
       string SnapshotReferenceColumnName,
       SatelliteReadProjection Satellite);
 
-  private sealed record SatelliteReadProjection(
+  internal sealed record SatelliteReadProjection(
       string TableName,
       string ParentHashKeyColumnName,
       string HashDiffColumnName,
@@ -659,12 +675,12 @@ internal static class DataVaultPitReadPipeline {
       string RecordSourceColumnName,
       IReadOnlyList<PayloadProjection> Payloads);
 
-  private sealed record PayloadProjection(string MetadataName, string ColumnName);
+  internal sealed record PayloadProjection(string MetadataName, string ColumnName);
 
-  private sealed record MatchedPitRow(
+  internal sealed record MatchedPitRow(
       string ParentHashKey,
       DateTimeOffset LoadTimestamp,
       IReadOnlyList<DateTimeOffset?> SnapshotLoadTimestamps);
 
-  private readonly record struct SatelliteSnapshotKey(string ParentHashKey, DateTimeOffset LoadTimestamp);
+  internal readonly record struct SatelliteSnapshotKey(string ParentHashKey, DateTimeOffset LoadTimestamp);
 }

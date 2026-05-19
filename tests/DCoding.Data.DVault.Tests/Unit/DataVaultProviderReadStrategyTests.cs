@@ -104,6 +104,45 @@ public sealed class DataVaultProviderReadStrategyTests {
   }
 
   [Fact]
+  public async Task PitReadDispatchUsesSelectedProviderStrategy() {
+    var strategy = new DispatchProbePitReadStrategy(priority: 100, canRead: true);
+    var readService = new DefaultDataVaultReadService(
+        Array.Empty<IDataVaultProviderReadStrategy>(),
+        [strategy],
+        Array.Empty<IDataVaultProviderBridgeReadStrategy>());
+
+    await using var context = new DbContext(new DbContextOptionsBuilder().Options);
+    var rows = await readService.ReadPitRowsAsync(
+        context,
+        CreatePitReadRequest(["customer-hk"]));
+
+    var row = Assert.Single(rows);
+    Assert.Equal("customer-hk", row.ParentHashKey);
+    Assert.Equal(1, strategy.CanReadCallCount);
+    Assert.Equal(1, strategy.ReadCallCount);
+  }
+
+  [Fact]
+  public async Task BridgeReadExtensionUsesSelectedProviderStrategy() {
+    var strategy = new DispatchProbeBridgeReadStrategy(priority: 100, canRead: true);
+    IDataVaultReadService readService = new DefaultDataVaultReadService(
+        Array.Empty<IDataVaultProviderReadStrategy>(),
+        Array.Empty<IDataVaultProviderPitReadStrategy>(),
+        [strategy]);
+
+    await using var context = new DbContext(new DbContextOptionsBuilder().Options);
+    var rows = await readService.ReadBridgeRowsAsync(
+        context,
+        CreateBridgeReadRequest(["customer-hk"]));
+
+    var row = Assert.Single(rows);
+    Assert.Equal("StrategyProbeBridge", row.MetadataName);
+    Assert.Equal("customer-hk", Assert.Single(row.EndpointHashKeys).HashKey);
+    Assert.Equal(1, strategy.CanReadCallCount);
+    Assert.Equal(1, strategy.ReadCallCount);
+  }
+
+  [Fact]
   public async Task ReadDispatchFallsBackWhenNoProviderStrategyIsRegistered() {
     var readService = new DefaultDataVaultReadService();
 
@@ -121,6 +160,32 @@ public sealed class DataVaultProviderReadStrategyTests {
         ["Name"]);
 
     return new DataVaultLatestSatelliteReadRequest(profile, parentHashKeys);
+  }
+
+  private static DataVaultPitAsOfReadRequest CreatePitReadRequest(IEnumerable<string> parentHashKeys) {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var pit = new DataVaultPitMetadata(customer.ToReference(), ["Profile"]);
+
+    return new DataVaultPitAsOfReadRequest(
+        pit,
+        parentHashKeys,
+        new DateTimeOffset(2026, 5, 11, 12, 0, 0, TimeSpan.Zero));
+  }
+
+  private static DataVaultBridgeReadRequest CreateBridgeReadRequest(IEnumerable<string> endpointHashKeys) {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+    var customerOrder = new DataVaultLinkMetadata("CustomerOrder", [customer.ToReference(), order.ToReference()]);
+    var bridge = DataVaultBridgeMetadata.ManyToMany(
+        "CustomerOrder",
+        customer.ToReference(),
+        customerOrder.ToReference(),
+        order.ToReference());
+
+    return new DataVaultBridgeReadRequest(
+        bridge,
+        DataVaultBridgeTraversalEndpoint.From,
+        endpointHashKeys);
   }
 
   private sealed class DispatchProbeReadStrategy(
@@ -188,6 +253,105 @@ public sealed class DataVaultProviderReadStrategyTests {
                 ["LoadTimestamp"] = DataVaultSatelliteProjectionValue.Present(LoadTimestamp),
                 ["RecordSource"] = DataVaultSatelliteProjectionValue.Present(strategyName),
                 ["Name"] = DataVaultSatelliteProjectionValue.Present(strategyName + " name"),
+              }),
+      ]);
+    }
+  }
+
+  private sealed class DispatchProbePitReadStrategy(
+      int priority,
+      bool canRead) : IDataVaultProviderPitReadStrategy {
+    private static readonly DateTimeOffset LoadTimestamp = new(2026, 5, 11, 12, 0, 0, TimeSpan.Zero);
+
+    public int CanReadCallCount { get; private set; }
+
+    public int ReadCallCount { get; private set; }
+
+    public int Priority { get; } = priority;
+
+    public bool CanReadPitRows(
+        DbContext dbContext,
+        DataVaultPitAsOfReadRequest request) {
+      ArgumentNullException.ThrowIfNull(dbContext);
+      ArgumentNullException.ThrowIfNull(request);
+
+      CanReadCallCount++;
+
+      return canRead;
+    }
+
+    public Task<IReadOnlyList<DataVaultPitReadRecord>> ReadPitRowsAsync(
+        DataVaultProviderPitReadStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      ArgumentNullException.ThrowIfNull(context);
+
+      ReadCallCount++;
+
+      return Task.FromResult<IReadOnlyList<DataVaultPitReadRecord>>([
+          new DataVaultPitReadRecord(
+              "customer-hk",
+              LoadTimestamp,
+              [DataVaultPitSatelliteSnapshot.Missing("Profile", 0)]),
+      ]);
+    }
+  }
+
+  private sealed class DispatchProbeBridgeReadStrategy(
+      int priority,
+      bool canRead) : IDataVaultProviderBridgeReadStrategy {
+    public int CanReadCallCount { get; private set; }
+
+    public int ReadCallCount { get; private set; }
+
+    public int ProjectionReadCallCount { get; private set; }
+
+    public int Priority { get; } = priority;
+
+    public bool CanReadBridgeRows(
+        DbContext dbContext,
+        DataVaultBridgeReadRequest request) {
+      ArgumentNullException.ThrowIfNull(dbContext);
+      ArgumentNullException.ThrowIfNull(request);
+
+      CanReadCallCount++;
+
+      return canRead;
+    }
+
+    public Task<IReadOnlyList<DataVaultBridgeReadRecord>> ReadBridgeRowsAsync(
+        DataVaultProviderBridgeReadStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      ArgumentNullException.ThrowIfNull(context);
+
+      ReadCallCount++;
+
+      return Task.FromResult<IReadOnlyList<DataVaultBridgeReadRecord>>([
+          new DataVaultBridgeReadRecord(
+              "StrategyProbeBridge",
+              "StrategyProbeBridge",
+              [
+                  new DataVaultBridgeEndpointReadValue(
+                      DataVaultBridgeTraversalEndpoint.From,
+                      "Customer",
+                      "CustomerHashKey",
+                      "customer-hk"),
+              ],
+              traversalDepth: null),
+      ]);
+    }
+
+    public Task<IReadOnlyList<DataVaultBridgeProjectionRow>> ReadBridgeProjectionRowsAsync(
+        DataVaultProviderBridgeReadStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      ArgumentNullException.ThrowIfNull(context);
+
+      ProjectionReadCallCount++;
+
+      return Task.FromResult<IReadOnlyList<DataVaultBridgeProjectionRow>>([
+          new DataVaultBridgeProjectionRow(
+              "StrategyProbeBridge",
+              new Dictionary<string, DataVaultBridgeProjectionValue>(StringComparer.Ordinal) {
+                ["CustomerHashKey"] = DataVaultBridgeProjectionValue.Present("customer-hk"),
               }),
       ]);
     }

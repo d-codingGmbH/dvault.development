@@ -746,6 +746,8 @@ type public enum DCoding.Data.DVault.DataVaultReadStrategyFallbackCauseKind
   value UnsupportedSatelliteParent = 3
   value MultiActiveSatelliteUnsupported = 4
   value StrategyDeclined = 5
+  value UnsupportedPitShape = 6
+  value UnsupportedBridgeShape = 7
 
 type public sealed class DCoding.Data.DVault.DataVaultRecordSourceResolutionContext
   ctor public DataVaultRecordSourceResolutionContext(DCoding.Data.DVault.DataVaultSaveRequest request, System.DateTimeOffset loadTimestamp)
@@ -1027,7 +1029,10 @@ type public interface DCoding.Data.DVault.IDataVaultProviderSaveStrategy
   method public abstract bool CanSave(Microsoft.EntityFrameworkCore.DbContext dbContext, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> requests)
 
 type public interface DCoding.Data.DVault.IDataVaultReadDiagnosticsService
+  method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultBridgeReadRequest request)
   method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultLatestSatelliteReadRequest request)
+  method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultPitAsOfReadRequest request)
+  method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryBridgeReadRequest request)
   method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryLatestSatelliteReadRequest request)
 
 type public interface DCoding.Data.DVault.IDataVaultReadService

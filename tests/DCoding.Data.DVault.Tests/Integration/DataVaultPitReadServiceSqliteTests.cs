@@ -35,6 +35,12 @@ public sealed class DataVaultPitReadServiceSqliteTests {
     using var provider = services.BuildServiceProvider(validateScopes: true);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
     var readService = provider.GetRequiredService<IDataVaultReadService>();
+    var readDiagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+    var fallbackServices = new ServiceCollection();
+    fallbackServices.AddDVault();
+    using var fallbackProvider = fallbackServices.BuildServiceProvider(validateScopes: true);
+    var fallbackReadService = fallbackProvider.GetRequiredService<IDataVaultReadService>();
+    var fallbackReadDiagnostics = fallbackProvider.GetRequiredService<IDataVaultReadDiagnosticsService>();
     string customerHashKey;
 
     await using (var context = new PitReadContext(options, loadTimestampStorage)) {
@@ -104,6 +110,7 @@ public sealed class DataVaultPitReadServiceSqliteTests {
           metadata.Pit,
           [customerHashKey, "customer-hash-missing"],
           asOf);
+      var diagnostics = readDiagnostics.Analyze(context, request);
       var records = await readService.ReadPitRowsAsync(context, request);
       var projectedRows = await readService.ReadPitAsync(
           context,
@@ -125,10 +132,22 @@ public sealed class DataVaultPitReadServiceSqliteTests {
               metadata.Pit,
               [customerHashKey],
               olderPitTimestamp.AddMinutes(-1)));
+      var fallbackDiagnostics = fallbackReadDiagnostics.Analyze(context, request);
+      var fallbackRecords = await fallbackReadService.ReadPitRowsAsync(context, request);
+
+      Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected, diagnostics.ReadStrategy.Status);
+      Assert.Equal("SqliteDataVaultReadStrategy", diagnostics.ReadStrategy.SelectedStrategyName);
+      Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback, fallbackDiagnostics.ReadStrategy.Status);
+      Assert.Contains(
+          fallbackDiagnostics.ReadStrategy.FallbackCauses,
+          cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered);
 
       var record = Assert.Single(records);
+      var fallbackRecord = Assert.Single(fallbackRecords);
       Assert.Equal(customerHashKey, record.ParentHashKey);
+      Assert.Equal(record.ParentHashKey, fallbackRecord.ParentHashKey);
       Assert.Equal(selectedPitTimestamp, record.LoadTimestamp);
+      Assert.Equal(record.LoadTimestamp, fallbackRecord.LoadTimestamp);
       Assert.True(record.SatelliteSnapshotsByName.ContainsKey("Profile"));
       Assert.True(record.SatelliteSnapshotsByName.ContainsKey("Status"));
       Assert.Collection(

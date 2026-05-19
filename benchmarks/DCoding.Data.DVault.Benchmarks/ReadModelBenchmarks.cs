@@ -43,6 +43,7 @@ internal sealed class LatestSatelliteReadBenchmark : IScenarioBenchmark {
     using var provider = ReadBenchmarkServices.CreateProvider(_strategy);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
     var readService = provider.GetRequiredService<IDataVaultReadService>();
+    var readDiagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
 
     try {
       await using (var context = new CustomerProfileReadContext(options, providerCapabilities)) {
@@ -59,14 +60,21 @@ internal sealed class LatestSatelliteReadBenchmark : IScenarioBenchmark {
               cancellationToken)
           .ConfigureAwait(false);
       IReadOnlyList<DataVaultSatelliteReadRecord> readRows = [];
+      var request = new DataVaultLatestSatelliteReadRequest(
+          ScenarioContracts.CustomerProfileSatellite,
+          customerHashKeys);
+      await using (var diagnosticsContext = new CustomerProfileReadContext(options, providerCapabilities)) {
+        ReadBenchmarkServices.AssertReadStrategySelection(
+            _strategy,
+            readDiagnostics.Analyze(diagnosticsContext, request));
+      }
+
       var elapsed = await BenchmarkClock.MeasureAsync(async () => {
         await using var context = new CustomerProfileReadContext(options, providerCapabilities);
         readRows = await readService
             .ReadLatestSatelliteRowsAsync(
                 context,
-                new DataVaultLatestSatelliteReadRequest(
-                    ScenarioContracts.CustomerProfileSatellite,
-                    customerHashKeys),
+                request,
                 cancellationToken)
             .ConfigureAwait(false);
       }).ConfigureAwait(false);
@@ -149,6 +157,7 @@ internal sealed class PitAsOfReadBenchmark : IScenarioBenchmark {
     using var provider = ReadBenchmarkServices.CreateProvider(_strategy);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
     var readService = provider.GetRequiredService<IDataVaultReadService>();
+    var readDiagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
 
     try {
       await using (var context = new PitAsOfReadContext(options, providerCapabilities)) {
@@ -172,15 +181,22 @@ internal sealed class PitAsOfReadBenchmark : IScenarioBenchmark {
           cancellationToken).ConfigureAwait(false);
 
       IReadOnlyList<DataVaultPitReadRecord> readRows = [];
+      var request = new DataVaultPitAsOfReadRequest(
+          PitReadScenario.Metadata.Pit,
+          customerHashKeys,
+          PitReadScenario.AsOf);
+      await using (var diagnosticsContext = new PitAsOfReadContext(options, providerCapabilities)) {
+        ReadBenchmarkServices.AssertReadStrategySelection(
+            _strategy,
+            readDiagnostics.Analyze(diagnosticsContext, request));
+      }
+
       var elapsed = await BenchmarkClock.MeasureAsync(async () => {
         await using var context = new PitAsOfReadContext(options, providerCapabilities);
         readRows = await readService
             .ReadPitRowsAsync(
                 context,
-                new DataVaultPitAsOfReadRequest(
-                    PitReadScenario.Metadata.Pit,
-                    customerHashKeys,
-                    PitReadScenario.AsOf),
+                request,
                 cancellationToken)
             .ConfigureAwait(false);
       }).ConfigureAwait(false);
@@ -321,6 +337,7 @@ internal sealed class BridgeTraversalReadBenchmark : IScenarioBenchmark {
     var providerCapabilities = _provider.GetProviderCapabilities(_loadTimestampStorage);
     using var provider = ReadBenchmarkServices.CreateProvider(_strategy);
     var readService = provider.GetRequiredService<IDataVaultReadService>();
+    var readDiagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
 
     try {
       await using (var context = new BridgeTraversalReadContext(options, providerCapabilities)) {
@@ -330,16 +347,23 @@ internal sealed class BridgeTraversalReadBenchmark : IScenarioBenchmark {
       }
 
       IReadOnlyList<DataVaultBridgeReadRecord> readRows = [];
+      var request = new DataVaultBridgeReadRequest(
+          BridgeReadScenario.Metadata.Bridge,
+          DataVaultBridgeTraversalEndpoint.Ancestor,
+          [AncestorHashKey],
+          MaximumDepth);
+      await using (var diagnosticsContext = new BridgeTraversalReadContext(options, providerCapabilities)) {
+        ReadBenchmarkServices.AssertReadStrategySelection(
+            _strategy,
+            readDiagnostics.Analyze(diagnosticsContext, request));
+      }
+
       var elapsed = await BenchmarkClock.MeasureAsync(async () => {
         await using var context = new BridgeTraversalReadContext(options, providerCapabilities);
         readRows = await readService
             .ReadBridgeRowsAsync(
                 context,
-                new DataVaultBridgeReadRequest(
-                    BridgeReadScenario.Metadata.Bridge,
-                    DataVaultBridgeTraversalEndpoint.Ancestor,
-                    [AncestorHashKey],
-                    MaximumDepth),
+                request,
                 cancellationToken)
             .ConfigureAwait(false);
       }).ConfigureAwait(false);
@@ -402,6 +426,15 @@ internal static class ReadBenchmarkServices {
     DataVaultBenchmarkHelpers.AddDataVaultServices(services, strategy);
 
     return services.BuildServiceProvider(validateScopes: true);
+  }
+
+  public static void AssertReadStrategySelection(
+      DataVaultBenchmarkStrategy strategy,
+      DataVaultDiagnosticsResult diagnostics) {
+    var expectedStrategyName = DataVaultBenchmarkHelpers.GetProviderReadStrategyName(strategy);
+    if (expectedStrategyName is not null) {
+      DataVaultBenchmarkHelpers.AssertProviderReadStrategySelected(diagnostics, expectedStrategyName);
+    }
   }
 
   public static async Task<IReadOnlyList<string>> SeedCustomerProfileHistoryAsync<TContext>(

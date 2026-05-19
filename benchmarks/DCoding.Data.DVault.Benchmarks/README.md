@@ -13,9 +13,9 @@ The executable always uses SQLite temporary files as the required local baseline
 - `DVAULT_TEST_MYSQL_CONNECTION_STRING`
 - `DVAULT_TEST_ORACLE_CONNECTION_STRING`
 
-When a provider is configured, the default report includes DVault fallback plus provider-specific optimized rows for the provider-native bulk-ingestion scenario. The optimized row first checks DVault diagnostics and fails the row if the named provider save strategy is not selected. When a provider is not configured, its dependency is unavailable, or the connection cannot be opened, the command still emits provider rows with `executionStatus=skipped` and a normalized `skipReason`.
+When a provider is configured, the default report includes DVault fallback plus provider-specific optimized rows for the provider-native bulk-ingestion scenario. The optimized row first checks DVault diagnostics and fails the row if the named provider save strategy is not selected. SQLite read optimized rows likewise check read-strategy diagnostics before timing and fail if the SQLite provider read strategy is not selected. When a provider is not configured, its dependency is unavailable, or the connection cannot be opened, the command still emits provider rows with `executionStatus=skipped` and a normalized `skipReason`.
 
-The required SQLite matrix includes read baselines for latest satellite, PIT as-of, and bridge traversal scenarios. Fixture creation and seeding run before the timed operation so the measured read rows focus on the `IDataVaultReadService` latest satellite path, the `DataVaultPitAsOfReadRequest`/`DataVaultPitReadRecord` path, and the provider-neutral `DataVaultBridgeReadRequest`/`DataVaultBridgeReadRecord` path. SQLite latest-satellite read rows compare the provider-neutral `AddDVault()` fallback with the `AddDVaultSqlite()` optimized provider read strategy. PIT and bridge read rows remain provider-neutral baselines, and non-SQLite provider rows are not emitted as provider-specific read evidence in the default matrix.
+The required SQLite matrix includes read baselines for latest satellite, PIT as-of, and bridge traversal scenarios. Fixture creation, seeding, and strategy-diagnostic checks run before the timed operation so the measured read rows focus on the `IDataVaultReadService` latest satellite path, the `DataVaultPitAsOfReadRequest`/`DataVaultPitReadRecord` path, and the `DataVaultBridgeReadRequest`/`DataVaultBridgeReadRecord` path. SQLite latest-satellite, PIT, and bridge read rows compare the provider-neutral `AddDVault()` fallback with the `AddDVaultSqlite()` optimized provider read strategy. Non-SQLite provider rows are not emitted as provider-specific PIT or bridge read evidence in the default matrix.
 
 Increase `--iterations` and `--warmup` locally when collecting steadier timing numbers.
 
@@ -80,7 +80,7 @@ For write-history scenarios, SQLite emits one row for each strategy family:
 - `provider-neutral-dvault-fallback`
 - `sqlite-optimized-dvault`
 
-Read baselines emit the current provider-neutral read-service path through the DVault fallback registration and the selected provider package registration for SQLite only. For SQLite latest-satellite reads, the provider package row uses the SQLite optimized read strategy for the supported hub-parent, non-multi-active latest/as-of satellite shape. When PostgreSQL, SQL Server, MySQL, or Oracle is configured and reachable in the default matrix, the provider-native bulk-ingestion scenario emits:
+Read baselines emit the current provider-neutral read-service path through the DVault fallback registration and the selected provider package registration for SQLite only. For SQLite reads, the provider package row uses the SQLite optimized read strategy for supported hub-parent, non-multi-active latest/as-of satellite reads, supported maintained PIT reads, and supported many-to-many or hierarchy bridge reads. When PostgreSQL, SQL Server, MySQL, or Oracle is configured and reachable in the default matrix, the provider-native bulk-ingestion scenario emits:
 
 - `provider-neutral-dvault-fallback`
 - the provider-specific optimized DVault strategy family

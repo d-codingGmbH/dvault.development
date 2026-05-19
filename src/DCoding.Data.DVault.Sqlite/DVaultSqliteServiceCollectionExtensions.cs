@@ -29,6 +29,8 @@ public static class DVaultSqliteServiceCollectionExtensions {
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBehavior, SqliteDataVaultProviderBehavior>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, SqliteDataVaultSaveStrategy>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderReadStrategy, SqliteDataVaultReadStrategy>());
+    services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderPitReadStrategy, SqliteDataVaultReadStrategy>());
+    services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBridgeReadStrategy, SqliteDataVaultReadStrategy>());
 
     return services;
   }

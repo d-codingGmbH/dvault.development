@@ -18,6 +18,10 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
         .Options;
     using var provider = CreateProvider();
     var readService = provider.GetRequiredService<IDataVaultReadService>();
+    var readDiagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+    using var fallbackProvider = CreateFallbackProvider();
+    var fallbackReadService = fallbackProvider.GetRequiredService<IDataVaultReadService>();
+    var fallbackReadDiagnostics = fallbackProvider.GetRequiredService<IDataVaultReadDiagnosticsService>();
 
     await using var context = new ManyToManyBridgeReadContext(options);
     await context.Database.EnsureCreatedAsync();
@@ -26,18 +30,17 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
     await SeedManyToManyBridgeRowAsync(context, "customer-2", "order-3");
     await SeedManyToManyBridgeRowAsync(context, "customer-1", "order-1");
 
+    var request = new DataVaultBridgeReadRequest(
+        bridge,
+        DataVaultBridgeTraversalEndpoint.From,
+        ["customer-1"]);
+    var diagnostics = readDiagnostics.Analyze(context, request);
     var readRows = await readService.ReadBridgeRowsAsync(
         context,
-        new DataVaultBridgeReadRequest(
-            bridge,
-            DataVaultBridgeTraversalEndpoint.From,
-            ["customer-1"]));
+        request);
     var projectedOrderKeys = await readService.ReadBridgeAsync(
         context,
-        new DataVaultBridgeReadRequest(
-            bridge,
-            DataVaultBridgeTraversalEndpoint.From,
-            ["customer-1"]),
+        request,
         row => row.RequiredString("OrderHashKey"));
     var reverseRows = await readService.ReadBridgeRowsAsync(
         context,
@@ -51,11 +54,21 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
             bridge,
             DataVaultBridgeTraversalEndpoint.From,
             ["missing-customer"]));
+    var fallbackDiagnostics = fallbackReadDiagnostics.Analyze(context, request);
+    var fallbackRows = await fallbackReadService.ReadBridgeRowsAsync(context, request);
+
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected, diagnostics.ReadStrategy.Status);
+    Assert.Equal("SqliteDataVaultReadStrategy", diagnostics.ReadStrategy.SelectedStrategyName);
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback, fallbackDiagnostics.ReadStrategy.Status);
+    Assert.Contains(
+        fallbackDiagnostics.ReadStrategy.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered);
 
     Assert.Collection(
         readRows,
         row => AssertManyToManyRow(row, "customer-1", "order-1"),
         row => AssertManyToManyRow(row, "customer-1", "order-2"));
+    Assert.Equal(readRows.Select(row => row.EndpointHashKeys[1].HashKey), fallbackRows.Select(row => row.EndpointHashKeys[1].HashKey));
     Assert.Equal(["order-1", "order-2"], projectedOrderKeys);
     Assert.Collection(reverseRows, row => AssertManyToManyRow(row, "customer-2", "order-3"));
     Assert.Empty(missingRows);
@@ -93,6 +106,7 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
         .Options;
     using var provider = CreateProvider();
     var readService = provider.GetRequiredService<IDataVaultReadService>();
+    var readDiagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
 
     await using var context = new HierarchyBridgeReadContext(options);
     await context.Database.EnsureCreatedAsync();
@@ -102,13 +116,15 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
     await SeedHierarchyBridgeRowAsync(context, "region-b", "region-c", 1);
     await SeedHierarchyBridgeRowAsync(context, "region-a", "region-b", 1);
 
+    var ancestorRequest = new DataVaultBridgeReadRequest(
+        bridge,
+        DataVaultBridgeTraversalEndpoint.Ancestor,
+        ["region-a"],
+        maximumDepth: 2);
+    var diagnostics = readDiagnostics.Analyze(context, ancestorRequest);
     var ancestorRows = await readService.ReadBridgeRowsAsync(
         context,
-        new DataVaultBridgeReadRequest(
-            bridge,
-            DataVaultBridgeTraversalEndpoint.Ancestor,
-            ["region-a"],
-            maximumDepth: 2));
+        ancestorRequest);
     var descendantRows = await readService.ReadBridgeRowsAsync(
         context,
         new DataVaultBridgeReadRequest(
@@ -118,12 +134,11 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
             maximumDepth: 1));
     var projectedDepths = await readService.ReadBridgeAsync(
         context,
-        new DataVaultBridgeReadRequest(
-            bridge,
-            DataVaultBridgeTraversalEndpoint.Ancestor,
-            ["region-a"],
-            maximumDepth: 2),
+        ancestorRequest,
         row => row.RequiredInt32("TraversalDepth"));
+
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected, diagnostics.ReadStrategy.Status);
+    Assert.Equal("SqliteDataVaultReadStrategy", diagnostics.ReadStrategy.SelectedStrategyName);
 
     Assert.Collection(
         ancestorRows,
@@ -167,6 +182,13 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
   private static ServiceProvider CreateProvider() {
     var services = new ServiceCollection();
     services.AddDVaultSqlite();
+
+    return services.BuildServiceProvider(validateScopes: true);
+  }
+
+  private static ServiceProvider CreateFallbackProvider() {
+    var services = new ServiceCollection();
+    services.AddDVault();
 
     return services.BuildServiceProvider(validateScopes: true);
   }

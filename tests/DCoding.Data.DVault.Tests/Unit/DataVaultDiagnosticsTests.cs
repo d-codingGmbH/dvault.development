@@ -246,6 +246,15 @@ public sealed class DataVaultDiagnosticsTests {
         customer.ToReference(),
         ["EmailAddress"],
         ["ContactType"]);
+    var pit = new DataVaultPitMetadata(customer.ToReference(), ["Profile"]);
+    var unsupportedPit = new DataVaultPitMetadata(DataVaultMetadataReference.Link("OrderProduct"), ["Fulfillment"]);
+    var order = new DataVaultHubMetadata("Order", ["OrderNumber"]);
+    var customerOrder = new DataVaultLinkMetadata("CustomerOrder", [customer.ToReference(), order.ToReference()]);
+    var bridge = DataVaultBridgeMetadata.ManyToMany(
+        "CustomerOrder",
+        customer.ToReference(),
+        customerOrder.ToReference(),
+        order.ToReference());
 
     var supported = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlite(
         KnownProviderNames.Sqlite,
@@ -259,9 +268,31 @@ public sealed class DataVaultDiagnosticsTests {
     var multiActive = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlite(
         KnownProviderNames.Sqlite,
         new DataVaultLatestSatelliteReadRequest(multiActiveSatellite, ["customer-hk"]));
+    var supportedPit = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlite(
+        KnownProviderNames.Sqlite,
+        new DataVaultPitAsOfReadRequest(
+            pit,
+            ["customer-hk"],
+            new DateTimeOffset(2026, 5, 11, 12, 0, 0, TimeSpan.Zero)));
+    var unsupportedPitParent = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlite(
+        KnownProviderNames.Sqlite,
+        new DataVaultPitAsOfReadRequest(
+            unsupportedPit,
+            ["link-hk"],
+            new DateTimeOffset(2026, 5, 11, 12, 0, 0, TimeSpan.Zero)));
+    var supportedBridge = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlite(
+        KnownProviderNames.Sqlite,
+        new DataVaultBridgeReadRequest(
+            bridge,
+            DataVaultBridgeTraversalEndpoint.From,
+            ["customer-hk"]));
 
     Assert.True(supported.CanRead);
     Assert.Empty(supported.FallbackCauses);
+    Assert.True(supportedPit.CanRead);
+    Assert.Empty(supportedPit.FallbackCauses);
+    Assert.True(supportedBridge.CanRead);
+    Assert.Empty(supportedBridge.FallbackCauses);
     Assert.Contains(
         unknownProvider.FallbackCauses,
         cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch);
@@ -271,6 +302,9 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains(
         multiActive.FallbackCauses,
         cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
+    Assert.Contains(
+        unsupportedPitParent.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape);
   }
 
   [Fact]

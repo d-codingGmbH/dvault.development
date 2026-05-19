@@ -75,6 +75,18 @@ internal static class DataVaultBenchmarkHelpers {
     };
   }
 
+  public static string? GetProviderReadStrategyName(DataVaultBenchmarkStrategy strategy) {
+    return strategy switch {
+      DataVaultBenchmarkStrategy.ProviderNeutralFallback => null,
+      DataVaultBenchmarkStrategy.SqliteOptimized => "SqliteDataVaultReadStrategy",
+      DataVaultBenchmarkStrategy.PostgresOptimized => null,
+      DataVaultBenchmarkStrategy.SqlServerOptimized => null,
+      DataVaultBenchmarkStrategy.MySqlOptimized => null,
+      DataVaultBenchmarkStrategy.OracleOptimized => null,
+      _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Unsupported benchmark strategy."),
+    };
+  }
+
   public static void AssertProviderSaveStrategySelected(
       DataVaultDiagnosticsResult diagnostics,
       string expectedStrategyName) {
@@ -93,6 +105,26 @@ internal static class DataVaultBenchmarkHelpers {
     BenchmarkAssert.True(
         diagnostics.SaveStrategy.Candidates.Any(candidate => string.Equals(candidate.StrategyName, expectedStrategyName, StringComparison.Ordinal) && candidate.CanSave),
         "The optimized benchmark row must expose the selected provider strategy as an accepted diagnostics candidate.");
+  }
+
+  public static void AssertProviderReadStrategySelected(
+      DataVaultDiagnosticsResult diagnostics,
+      string expectedStrategyName) {
+    ArgumentNullException.ThrowIfNull(diagnostics);
+    ArgumentException.ThrowIfNullOrWhiteSpace(expectedStrategyName);
+
+    BenchmarkAssert.Equal(
+        DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected,
+        diagnostics.ReadStrategy.Status,
+        "The optimized benchmark row must select the provider-specific Data Vault read strategy.");
+    BenchmarkAssert.Equal(
+        expectedStrategyName,
+        diagnostics.ReadStrategy.SelectedStrategyName,
+        "The optimized benchmark row selected an unexpected provider-specific Data Vault read strategy.");
+    BenchmarkAssert.Equal(0, diagnostics.ReadStrategy.FallbackCauses.Count, "The optimized benchmark row must not have fallback causes.");
+    BenchmarkAssert.True(
+        diagnostics.ReadStrategy.Candidates.Any(candidate => string.Equals(candidate.StrategyName, expectedStrategyName, StringComparison.Ordinal) && candidate.CanRead),
+        "The optimized benchmark row must expose the selected provider read strategy as an accepted diagnostics candidate.");
   }
 
   public static string GetHashKey(DataVaultSaveResult result, DataVaultTableKind kind, string metadataName) {

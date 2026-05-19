@@ -23,6 +23,13 @@ public static class DataVaultReadServiceBridgeExtensions {
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(request);
 
+    if (readService is DefaultDataVaultReadService defaultReadService) {
+      return defaultReadService.ReadBridgeRowsAsync(
+          dbContext,
+          request,
+          cancellationToken);
+    }
+
     return DataVaultBridgeReadPipeline.ReadBridgeReadRecordsAsync(
         dbContext,
         request,
@@ -50,10 +57,15 @@ public static class DataVaultReadServiceBridgeExtensions {
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(projector);
 
-    var rows = await DataVaultBridgeReadPipeline.ReadBridgeProjectionRowsAsync(
-        dbContext,
-        request,
-        cancellationToken).ConfigureAwait(false);
+    var rows = readService is DefaultDataVaultReadService defaultReadService
+        ? await defaultReadService.ReadBridgeProjectionRowsAsync(
+            dbContext,
+            request,
+            cancellationToken).ConfigureAwait(false)
+        : await DataVaultBridgeReadPipeline.ReadBridgeProjectionRowsAsync(
+            dbContext,
+            request,
+            cancellationToken).ConfigureAwait(false);
     var projections = new TProjection[rows.Count];
 
     for (var index = 0; index < rows.Count; index++) {
