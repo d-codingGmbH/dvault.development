@@ -1,0 +1,1 @@
+﻿Profile explicit DVault save workflows for EF Core change-tracker cost, metadata defaulting cost, batching behavior, and unnecessary entity state churn. Apply targeted tuning only when supported by benchmark evidence.

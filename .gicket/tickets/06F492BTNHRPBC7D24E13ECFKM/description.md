@@ -1,0 +1,1 @@
+﻿Improve DVault performance through evidence-first EF Core analysis and targeted tuning for read/save paths. Non-goals: dashboards, observability platforms, workload orchestration, or provider-specific magic without measurable benefit.

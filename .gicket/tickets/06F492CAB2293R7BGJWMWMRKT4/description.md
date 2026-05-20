@@ -1,0 +1,1 @@
+﻿Profile current/as-of/PIT/bridge reads for allocations and materialization overhead. Tune provider-neutral code paths where benchmarks show meaningful wins without reducing API clarity or provider compatibility.

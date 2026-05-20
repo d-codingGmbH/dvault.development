@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F492CTREZEDXVKJ839YGCPWW",
+  "ticket-type": null,
+  "title": "Story: Add provider optimization regression baselines",
+  "revision": "06F492GVRHVBND1MQ6CVBDFMRC",
+  "status": "todo",
+  "labels": [
+    "area/performance",
+    "area/provider-support",
+    "area/benchmarks",
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F492A2MRBR0G0137V22KAGKG",
+  "releaseId": "06F492A0EZ3N8E2T605F7ZHHB0",
+  "created-at": "2026-05-20T08:38:49.4106051Z",
+  "updated-at": "2026-05-20T08:39:22.3081261Z"
+}

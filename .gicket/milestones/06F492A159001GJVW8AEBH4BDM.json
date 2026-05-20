@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F492A159001GJVW8AEBH4BDM",
+  "name": "v0.18.0 - Performance diagnostics contract",
+  "description": "Benchmark artifact contract, repeatable measurements, and diagnostics shape for focused performance work.",
+  "status": "planned",
+  "createdAt": "2026-05-20T08:38:26.3467131Z"
+}

@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F492A3MPSGP3KXDNZECN01QM",
+  "ticket-type": null,
+  "title": "Epic: EF Core safety and preflight",
+  "revision": "06F492DVSQ8N0EV89DHDJXA7ER",
+  "status": "todo",
+  "labels": [
+    "area/ef-core",
+    "area/diagnostics",
+    "area/migrations",
+    "area/drift",
+    "area/developer-experience",
+    "automation/bot-ready",
+    "type/epic"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F4929YA7582ENPQ9KEYMXGEM",
+  "releaseId": "06F4929XH1QPVKC80WBYQKGC3W",
+  "created-at": "2026-05-20T08:38:27.1204486Z",
+  "updated-at": "2026-05-20T08:38:57.7412209Z"
+}

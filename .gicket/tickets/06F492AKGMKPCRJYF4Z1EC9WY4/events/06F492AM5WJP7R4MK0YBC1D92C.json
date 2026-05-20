@@ -1,0 +1,13 @@
+{
+  "event-id": "06F492AM5WJP7R4MK0YBC1D92C",
+  "occurred-at": "2026-05-20T08:38:31.2159964Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Verify DVault EF model cache-key isolation",
+    "status": "todo"
+  }
+}

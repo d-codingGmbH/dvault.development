@@ -1,0 +1,13 @@
+{
+  "event-id": "06F492CGJQCET7VTTZKZ454Q2G",
+  "occurred-at": "2026-05-20T08:38:46.6771040Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Measure and tune explicit save change-tracker overhead",
+    "status": "todo"
+  }
+}

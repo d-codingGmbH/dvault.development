@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F492BG6BZYYFMBE5WK7CB024",
+  "ticket-type": null,
+  "title": "Story: Add consumer-owned preflight command aggregator",
+  "revision": "06F492EZ03SYA5GHGD4N7NNGFM",
+  "status": "todo",
+  "labels": [
+    "area/design-time",
+    "area/diagnostics",
+    "area/migrations",
+    "area/drift",
+    "area/ef-core",
+    "automation/bot-ready",
+    "type/story"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F4929YA7582ENPQ9KEYMXGEM",
+  "releaseId": "06F4929XH1QPVKC80WBYQKGC3W",
+  "created-at": "2026-05-20T08:38:38.5137686Z",
+  "updated-at": "2026-05-20T08:39:06.7527318Z"
+}

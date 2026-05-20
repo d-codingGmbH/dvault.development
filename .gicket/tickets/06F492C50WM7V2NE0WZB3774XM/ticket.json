@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F492C50WM7V2NE0WZB3774XM",
+  "ticket-type": null,
+  "title": "Story: Add query-shape performance diagnostics and index hints",
+  "revision": "06F492GGBXS3ES9GP8JB4M2BJR",
+  "status": "todo",
+  "labels": [
+    "area/performance",
+    "area/read-models",
+    "area/diagnostics",
+    "area/provider-support",
+    "automation/bot-ready",
+    "type/story"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F492A1Y2D14XJWEXVYP2C6Q8",
+  "releaseId": "06F492A0EZ3N8E2T605F7ZHHB0",
+  "created-at": "2026-05-20T08:38:43.8618229Z",
+  "updated-at": "2026-05-20T08:39:19.3916818Z"
+}

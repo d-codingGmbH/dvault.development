@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F492CAB2293R7BGJWMWMRKT4",
+  "ticket-type": null,
+  "title": "Story: Measure and tune provider-neutral read allocations",
+  "revision": "06F492GK7ZZ58MEZX3Z479FDZ8",
+  "status": "todo",
+  "labels": [
+    "area/performance",
+    "area/read-models",
+    "area/ef-core",
+    "automation/bot-ready",
+    "type/story"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F492A1Y2D14XJWEXVYP2C6Q8",
+  "releaseId": "06F492A0EZ3N8E2T605F7ZHHB0",
+  "created-at": "2026-05-20T08:38:45.2112085Z",
+  "updated-at": "2026-05-20T08:39:20.1271912Z"
+}

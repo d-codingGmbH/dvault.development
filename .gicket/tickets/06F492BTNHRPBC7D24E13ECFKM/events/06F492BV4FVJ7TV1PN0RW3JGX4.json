@@ -1,0 +1,13 @@
+{
+  "event-id": "06F492BV4FVJ7TV1PN0RW3JGX4",
+  "occurred-at": "2026-05-20T08:38:41.1870425Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Epic: Performance analysis and query tuning",
+    "status": "todo"
+  }
+}

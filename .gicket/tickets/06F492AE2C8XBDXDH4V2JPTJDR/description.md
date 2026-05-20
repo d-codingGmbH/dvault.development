@@ -1,0 +1,1 @@
+﻿Detect meaningful drift between DVault metadata, the EF runtime model, and ModelSnapshot output before consumers ship migrations. Keep the feature library-local and return structured results suitable for CI or app startup checks.

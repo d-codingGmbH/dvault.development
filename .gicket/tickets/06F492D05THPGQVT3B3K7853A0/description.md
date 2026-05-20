@@ -1,0 +1,1 @@
+﻿Document performance evidence, benchmark artifacts, provider notes, query-shape tuning guidance, and consumer recommendations for compiled models, compiled queries, and DbContext pooling.

@@ -1,0 +1,1 @@
+﻿Build on v0.17 query-shape diagnostics with performance-oriented signals: projected columns, join count, predicate shape, ordering, likely index needs, and provider-specific caveats. Output should guide consumers without pretending to be a full database advisor.

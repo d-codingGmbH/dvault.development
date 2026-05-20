@@ -1,0 +1,1 @@
+﻿Prove that multiple DVault models, tenants, or option profiles cannot accidentally share incompatible EF model cache entries. Add tests and documentation for the supported customization path.

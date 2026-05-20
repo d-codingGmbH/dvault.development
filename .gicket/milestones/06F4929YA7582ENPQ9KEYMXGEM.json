@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F4929YA7582ENPQ9KEYMXGEM",
+  "name": "v0.17.0 - Migration and model preflight",
+  "description": "Migration guardrails, EF ModelSnapshot drift checks, model cache isolation evidence, and a consumer-owned preflight entry point.",
+  "status": "planned",
+  "createdAt": "2026-05-20T08:38:25.6174884Z"
+}

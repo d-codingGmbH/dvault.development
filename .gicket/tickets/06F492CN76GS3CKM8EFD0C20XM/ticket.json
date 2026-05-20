@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F492CN76GS3CKM8EFD0C20XM",
+  "ticket-type": null,
+  "title": "Story: Add compiled model, compiled query, and DbContext pooling performance evidence",
+  "revision": "06F492GRYHZE50CVV5MK9HZA58",
+  "status": "todo",
+  "labels": [
+    "area/performance",
+    "area/ef-core",
+    "area/benchmarks",
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F492A1Y2D14XJWEXVYP2C6Q8",
+  "releaseId": "06F492A0EZ3N8E2T605F7ZHHB0",
+  "created-at": "2026-05-20T08:38:48.0416097Z",
+  "updated-at": "2026-05-20T08:39:21.5887896Z"
+}

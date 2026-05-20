@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F492ARW2N6SNYJH15RHMZEN8",
+  "ticket-type": null,
+  "title": "Story: Add EF Core misuse analyzers for DVault invariants",
+  "revision": "06F492EJY979TPTSV962X4T4MC",
+  "status": "todo",
+  "labels": [
+    "area/analyzers",
+    "area/ef-core",
+    "area/developer-experience",
+    "automation/bot-ready",
+    "type/story"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F4929Z19N3QMX10M3KGCGYNM",
+  "releaseId": "06F4929XH1QPVKC80WBYQKGC3W",
+  "created-at": "2026-05-20T08:38:32.5987954Z",
+  "updated-at": "2026-05-20T08:39:03.6662401Z"
+}

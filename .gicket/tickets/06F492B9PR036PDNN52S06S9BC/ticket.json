@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F492B9PR036PDNN52S06S9BC",
+  "ticket-type": null,
+  "title": "Story: Add query-shape diagnostics for DVault reads",
+  "revision": "06F492FP1T9GESJS6V22ZK9E8C",
+  "status": "todo",
+  "labels": [
+    "area/read-models",
+    "area/diagnostics",
+    "area/performance",
+    "area/ef-core",
+    "automation/bot-ready",
+    "type/story"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F4929ZR8SMFQHZ84A19RS9M4",
+  "releaseId": "06F4929XH1QPVKC80WBYQKGC3W",
+  "created-at": "2026-05-20T08:38:36.9117157Z",
+  "updated-at": "2026-05-20T08:39:12.6544699Z"
+}

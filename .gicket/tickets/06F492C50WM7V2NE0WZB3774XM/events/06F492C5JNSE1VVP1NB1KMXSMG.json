@@ -1,0 +1,13 @@
+{
+  "event-id": "06F492C5JNSE1VVP1NB1KMXSMG",
+  "occurred-at": "2026-05-20T08:38:43.8618229Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add query-shape performance diagnostics and index hints",
+    "status": "todo"
+  }
+}

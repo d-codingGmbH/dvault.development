@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F492AKGMKPCRJYF4Z1EC9WY4",
+  "ticket-type": null,
+  "title": "Story: Verify DVault EF model cache-key isolation",
+  "revision": "06F492EG5GC6K0HMN6SW8WTFC0",
+  "status": "todo",
+  "labels": [
+    "area/ef-core",
+    "area/modeling",
+    "area/quality",
+    "automation/bot-ready",
+    "type/story"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F4929YA7582ENPQ9KEYMXGEM",
+  "releaseId": "06F4929XH1QPVKC80WBYQKGC3W",
+  "created-at": "2026-05-20T08:38:31.2159964Z",
+  "updated-at": "2026-05-20T08:39:02.9560296Z"
+}

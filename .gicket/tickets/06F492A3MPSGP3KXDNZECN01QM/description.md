@@ -1,0 +1,1 @@
+﻿Keep DVault easy to adopt as an EF Core library by improving preflight checks, diagnostics, and guardrails for migrations, model drift, cache isolation, provider capabilities, and common misuse. Non-goals: platform features, dashboards, orchestration, or deployment tooling.

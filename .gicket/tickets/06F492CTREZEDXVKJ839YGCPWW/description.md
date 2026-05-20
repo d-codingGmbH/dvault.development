@@ -1,0 +1,1 @@
+﻿Capture provider-level performance baselines for supported providers where practical, including generated SQL or provider-native execution details. The goal is to prevent accidental regressions in DVault abstractions and provider strategies.

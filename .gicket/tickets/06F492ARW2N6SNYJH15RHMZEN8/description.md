@@ -1,0 +1,1 @@
+﻿Add high-confidence analyzer diagnostics for DVault-specific EF Core mistakes, such as unsupported DbSet exposure, missing model registration, unsafe direct writes, or bypassed technical metadata conventions. Prefer precise diagnostics and useful fixes over broad noisy rules.

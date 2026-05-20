@@ -1,0 +1,1 @@
+﻿Define how performance work proves value: benchmark scenarios, provider matrix, warmup rules, allocation metrics, SQL capture, before/after storage, and acceptable regression thresholds. This ticket should unblock tuning work.

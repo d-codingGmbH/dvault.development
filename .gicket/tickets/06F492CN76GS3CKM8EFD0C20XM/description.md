@@ -1,0 +1,1 @@
+﻿Document and test how DVault behaves with EF Core compiled models, compiled queries, and DbContext pooling. Add examples or guardrails only where DVault-specific behavior could surprise consumers.

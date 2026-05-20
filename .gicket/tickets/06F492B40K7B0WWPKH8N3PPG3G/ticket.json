@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F492B40K7B0WWPKH8N3PPG3G",
+  "ticket-type": null,
+  "title": "Story: Expand provider capability and strategy explain output",
+  "revision": "06F492ES2MR2E61GJN2G62QJM8",
+  "status": "todo",
+  "labels": [
+    "area/diagnostics",
+    "area/provider-support",
+    "area/ef-core",
+    "automation/bot-ready",
+    "type/story"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F4929ZR8SMFQHZ84A19RS9M4",
+  "releaseId": "06F4929XH1QPVKC80WBYQKGC3W",
+  "created-at": "2026-05-20T08:38:35.4270546Z",
+  "updated-at": "2026-05-20T08:39:05.2379259Z"
+}

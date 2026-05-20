@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "releaseId": "06F4929XH1QPVKC80WBYQKGC3W",
+  "name": "v0.17.0 - EF Core Safety and Preflight",
+  "description": "Focused EF Core library hardening: migration guardrails, model/cache safety, analyzers, diagnostics, and consumer-owned preflight without turning DVault into a platform or tool suite.",
+  "status": "planned",
+  "createdAt": "2026-05-20T08:38:25.4167057Z"
+}

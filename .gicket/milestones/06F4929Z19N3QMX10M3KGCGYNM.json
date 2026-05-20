@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F4929Z19N3QMX10M3KGCGYNM",
+  "name": "v0.17.0 - EF usage analyzers and runtime guardrails",
+  "description": "Compile-time and optional runtime EF Core guardrails for common DVault misuse patterns.",
+  "status": "planned",
+  "createdAt": "2026-05-20T08:38:25.8020760Z"
+}

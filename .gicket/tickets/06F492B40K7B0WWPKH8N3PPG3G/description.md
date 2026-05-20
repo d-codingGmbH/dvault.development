@@ -1,0 +1,1 @@
+﻿Extend capability explanations so consumers can understand provider-specific behavior, missing capabilities, fallback reasons, and relevant tuning choices without reading provider source code.

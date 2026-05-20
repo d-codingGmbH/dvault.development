@@ -1,0 +1,1 @@
+﻿Improve migration validation output so consumers can see exactly which generated operations are safe, risky, or incompatible with DVault structures. Include provider-aware wording, deterministic diagnostics, and tests for destructive or ambiguous changes.

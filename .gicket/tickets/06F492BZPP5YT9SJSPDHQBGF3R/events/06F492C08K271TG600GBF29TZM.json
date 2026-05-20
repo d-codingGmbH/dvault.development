@@ -1,0 +1,13 @@
+{
+  "event-id": "06F492C08K271TG600GBF29TZM",
+  "occurred-at": "2026-05-20T08:38:42.5004496Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define performance evidence and benchmark artifact contract",
+    "status": "todo"
+  }
+}

@@ -1,0 +1,1 @@
+﻿Provide an opt-in runtime guard mode using EF Core interception or validation hooks to catch unsafe direct SaveChanges patterns around DVault-managed entities. It must be off by default and explainable when it blocks or warns.

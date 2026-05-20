@@ -1,0 +1,1 @@
+﻿Create a small library-owned preflight facade that consumers can call from tests, CI, or startup. It should aggregate migration, drift, model-cache, provider capability, and query-shape checks without introducing a standalone platform or service.

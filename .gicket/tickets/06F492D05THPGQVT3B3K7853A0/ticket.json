@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F492D05THPGQVT3B3K7853A0",
+  "ticket-type": null,
+  "title": "Task: Update v0.18.0 documentation and release notes",
+  "revision": "06F492D4X2Y528PNX4J76J8B18",
+  "status": "todo",
+  "labels": [
+    "area/documentation",
+    "area/performance",
+    "area/ef-core",
+    "automation/bot-ready",
+    "type/task"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F492A2MRBR0G0137V22KAGKG",
+  "releaseId": "06F492A0EZ3N8E2T605F7ZHHB0",
+  "created-at": "2026-05-20T08:38:50.8133765Z",
+  "updated-at": "2026-05-20T08:38:51.8809783Z"
+}

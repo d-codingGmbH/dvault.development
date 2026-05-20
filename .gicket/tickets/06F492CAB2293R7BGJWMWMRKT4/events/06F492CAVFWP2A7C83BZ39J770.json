@@ -1,0 +1,13 @@
+{
+  "event-id": "06F492CAVFWP2A7C83BZ39J770",
+  "occurred-at": "2026-05-20T08:38:45.2112085Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Measure and tune provider-neutral read allocations",
+    "status": "todo"
+  }
+}

@@ -1,0 +1,1 @@
+﻿Document the v0.17 EF Core safety/preflight scope, public APIs, analyzer IDs, runtime guard behavior, provider explanations, and migration/drift examples. Keep non-goals explicit so DVault remains a focused EF Core library.

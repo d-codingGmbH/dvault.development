@@ -1,0 +1,1 @@
+﻿Expose diagnostics for current/as-of/PIT/bridge read shapes, including joins, filters, ordering assumptions, provider caveats, and indexes that DVault expects consumers to have available.
