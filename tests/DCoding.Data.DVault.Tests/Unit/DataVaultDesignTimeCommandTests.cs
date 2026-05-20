@@ -17,6 +17,7 @@ public sealed class DataVaultDesignTimeCommandTests {
 
     Assert.Equal(0, help.ExitCode);
     Assert.Contains("Usage: dvault validate", help.Output, StringComparison.Ordinal);
+    Assert.Contains("dvault support-bundle", help.Output, StringComparison.Ordinal);
     Assert.Empty(help.Error);
 
     Assert.Equal(2, unknown.ExitCode);
@@ -64,6 +65,73 @@ public sealed class DataVaultDesignTimeCommandTests {
     Assert.Empty(failure.Output);
     Assert.Contains("DVault export failed:", failure.Error, StringComparison.Ordinal);
     Assert.Contains("Legacy PointInTimeTables metadata is not serializable", failure.Error, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void SupportBundleExportsDeterministicRedactedDiagnosticsAndPreservesRequestBoundStrategies() {
+    var diagnostics = CreateSupportBundleDiagnosticsResult();
+    var host = CreateHost(createSupportBundleDiagnostics: _ => diagnostics);
+
+    var first = Run(host, "support-bundle");
+    var second = Run(host, "support-bundle");
+
+    Assert.Equal(0, first.ExitCode);
+    Assert.Equal(first.Output, second.Output);
+    Assert.Empty(first.Error);
+    Assert.Contains("\"schemaVersion\": \"dvault.support-bundle.v1\"", first.Output, StringComparison.Ordinal);
+    Assert.Contains("\"metadataSourceKind\": \"command-test\"", first.Output, StringComparison.Ordinal);
+    Assert.Contains("\"saveStrategy\"", first.Output, StringComparison.Ordinal);
+    Assert.Contains("\"selectedStrategyName\": \"UnitSaveStrategy\"", first.Output, StringComparison.Ordinal);
+    Assert.Contains("\"readStrategy\"", first.Output, StringComparison.Ordinal);
+    Assert.Contains("\"selectedStrategyName\": \"UnitReadStrategy\"", first.Output, StringComparison.Ordinal);
+    Assert.Contains("Password=<redacted>", first.Output, StringComparison.Ordinal);
+    Assert.Contains("User Id=<redacted>", first.Output, StringComparison.Ordinal);
+    Assert.DoesNotContain("hunter2", first.Output, StringComparison.Ordinal);
+    Assert.DoesNotContain("admin", first.Output, StringComparison.Ordinal);
+    Assert.DoesNotContain("\"liveSchema\"", first.Output, StringComparison.Ordinal);
+    Assert.DoesNotContain("\"drift\"", first.Output, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void SupportBundleWritesOutputPathAndIncludesOptInLiveSchemaAndDrift() {
+    var artifactJson = DataVaultModelArtifactExporter.ExportJson(CreateCustomerMetadataModel());
+    var artifactPath = WriteArtifactFile(artifactJson);
+    var bundlePath = Path.Combine(
+        Path.GetTempPath(),
+        "dvault-command-" + Guid.NewGuid().ToString("N") + ".support-bundle.json");
+    var host = CreateHost(
+        contextModel: CreateCustomerMetadataModel(),
+        liveSchemaReader: new StubLiveSchemaReader(
+            DataVaultLiveSchemaReadResult.Unavailable(
+                "Unit.Provider",
+                "Password=server-secret;Uid=dbadmin;Host=prod")));
+
+    try {
+      var result = Run(
+          host,
+          "support-bundle",
+          "--artifact",
+          artifactPath,
+          "--live-schema",
+          "--output",
+          bundlePath);
+      var bundleJson = File.ReadAllText(bundlePath);
+
+      Assert.Equal(0, result.ExitCode);
+      Assert.Contains("Exported DVault support bundle", result.Output, StringComparison.Ordinal);
+      Assert.Empty(result.Error);
+      Assert.Contains("\"liveSchema\"", bundleJson, StringComparison.Ordinal);
+      Assert.Contains("\"drift\"", bundleJson, StringComparison.Ordinal);
+      Assert.Contains("Unit.Provider", bundleJson, StringComparison.Ordinal);
+      Assert.Contains("Password=<redacted>", bundleJson, StringComparison.Ordinal);
+      Assert.Contains("Uid=<redacted>", bundleJson, StringComparison.Ordinal);
+      Assert.DoesNotContain("server-secret", bundleJson, StringComparison.Ordinal);
+      Assert.DoesNotContain("dbadmin", bundleJson, StringComparison.Ordinal);
+    }
+    finally {
+      File.Delete(artifactPath);
+      File.Delete(bundlePath);
+    }
   }
 
   [Fact]
@@ -157,6 +225,7 @@ public sealed class DataVaultDesignTimeCommandTests {
       IDataVaultDiagnosticsService? diagnostics = null,
       DataVaultDesignTimeExportSource? exportSource = null,
       Func<string, IEnumerable<MigrationOperation>>? resolveMigrationOperations = null,
+      Func<DbContext, DataVaultDiagnosticsResult>? createSupportBundleDiagnostics = null,
       IDataVaultLiveSchemaReader? liveSchemaReader = null) {
     var selectedContextModel = contextModel ?? CreateCustomerMetadataModel();
 
@@ -165,6 +234,7 @@ public sealed class DataVaultDesignTimeCommandTests {
         () => CreateContext(selectedContextModel),
         exportSource ?? DataVaultDesignTimeExportSource.FromMetadataModel(selectedContextModel),
         resolveMigrationOperations ?? (_ => Array.Empty<MigrationOperation>())) {
+      CreateSupportBundleDiagnostics = createSupportBundleDiagnostics,
       LiveSchemaReader = liveSchemaReader,
     };
   }
@@ -258,6 +328,49 @@ public sealed class DataVaultDesignTimeCommandTests {
             Candidates: Array.Empty<DataVaultSaveStrategyCandidateDiagnostics>(),
             FallbackCauses: Array.Empty<DataVaultSaveStrategyFallbackCause>()),
         issues);
+  }
+
+  private static DataVaultDiagnosticsResult CreateSupportBundleDiagnosticsResult() {
+    return CreateDiagnosticsResult(isValid: true) with {
+      SaveStrategy = new DataVaultSaveStrategyDiagnostics(
+          DataVaultSaveStrategyDiagnosticsStatus.ProviderStrategySelected,
+          ProviderName: "Unit.Provider",
+          SelectedStrategyName: "UnitSaveStrategy",
+          SelectedStrategyPriority: 10,
+          Candidates: [
+            new DataVaultSaveStrategyCandidateDiagnostics(
+                0,
+                "UnitSaveStrategy",
+                10,
+                true,
+                Array.Empty<DataVaultSaveStrategyFallbackCause>()),
+            new DataVaultSaveStrategyCandidateDiagnostics(
+                1,
+                "ProviderNeutralSaveStrategy",
+                0,
+                false,
+                [
+                  new DataVaultSaveStrategyFallbackCause(
+                      DataVaultSaveStrategyFallbackCauseKind.StrategyDeclined,
+                      "Provider text contained Password=hunter2;User Id=admin."),
+                ]),
+          ],
+          FallbackCauses: Array.Empty<DataVaultSaveStrategyFallbackCause>()),
+      ReadStrategy = new DataVaultReadStrategyDiagnostics(
+          DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected,
+          ProviderName: "Unit.Provider",
+          SelectedStrategyName: "UnitReadStrategy",
+          SelectedStrategyPriority: 20,
+          Candidates: [
+            new DataVaultReadStrategyCandidateDiagnostics(
+                0,
+                "UnitReadStrategy",
+                20,
+                true,
+                Array.Empty<DataVaultReadStrategyFallbackCause>()),
+          ],
+          FallbackCauses: Array.Empty<DataVaultReadStrategyFallbackCause>()),
+    };
   }
 
   private sealed class DesignTimeCommandContext(DbContextOptions<DesignTimeCommandContext> options) : DbContext(options) {

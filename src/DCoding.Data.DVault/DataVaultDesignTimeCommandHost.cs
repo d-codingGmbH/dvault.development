@@ -41,6 +41,11 @@ public sealed class DataVaultDesignTimeCommandHost {
   public Func<DbContext> CreateDbContext { get; }
 
   /// <summary>
+  /// Gets an optional consumer-owned factory for support-bundle diagnostics with caller-supplied request context.
+  /// </summary>
+  public Func<DbContext, DataVaultDiagnosticsResult>? CreateSupportBundleDiagnostics { get; init; }
+
+  /// <summary>
   /// Gets the explicit metadata source used by the export command.
   /// </summary>
   public DataVaultDesignTimeExportSource ExportSource { get; }

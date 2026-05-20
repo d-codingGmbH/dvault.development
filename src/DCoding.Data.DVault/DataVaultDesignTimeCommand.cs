@@ -57,6 +57,14 @@ public static class DataVaultDesignTimeCommand {
       return options.Verb switch {
         "validate" => RunValidate(output, host),
         "export" => RunExport(output, host, options.OutputPath),
+        "support-bundle" => await RunSupportBundleAsync(
+            output,
+            error,
+            host,
+            options.OutputPath,
+            options.ArtifactPath,
+            options.UseLiveSchema,
+            cancellationToken).ConfigureAwait(false),
         "drift" => await RunDriftAsync(
             output,
             error,
@@ -95,6 +103,66 @@ public static class DataVaultDesignTimeCommand {
     File.WriteAllText(outputPath, json);
     output.WriteLine("Exported DVault model artifact to '" + outputPath + "'.");
     return 0;
+  }
+
+  private static async Task<int> RunSupportBundleAsync(
+      TextWriter output,
+      TextWriter error,
+      DataVaultDesignTimeCommandHost host,
+      string? outputPath,
+      string? artifactPath,
+      bool useLiveSchema,
+      CancellationToken cancellationToken) {
+    using var dbContext = CreateRequiredDbContext(host);
+    var diagnostics = host.CreateSupportBundleDiagnostics is null
+        ? host.Diagnostics.Analyze(dbContext)
+        : host.CreateSupportBundleDiagnostics(dbContext);
+    if (diagnostics is null) {
+      throw new InvalidOperationException("The configured support-bundle diagnostics factory returned null.");
+    }
+
+    DataVaultLiveSchemaReadResult? liveSchema = null;
+    if (useLiveSchema) {
+      liveSchema = await ReadLiveSchemaAsync(host, dbContext, cancellationToken).ConfigureAwait(false);
+    }
+
+    DataVaultModelDriftReport? drift = null;
+    if (!string.IsNullOrWhiteSpace(artifactPath)) {
+      var importResult = DataVaultModelArtifactImporter.ImportJson(
+          File.ReadAllText(artifactPath),
+          artifactPath);
+      if (!importResult.IsValid) {
+        error.WriteLine("DVault support-bundle failed to import artifact:");
+        error.WriteLine(DataVaultModelImportResult.FormatDiagnostics(importResult.Diagnostics));
+        return 1;
+      }
+
+      drift = useLiveSchema
+          ? DataVaultLiveSchemaDriftReporter.Compare(
+              importResult,
+              liveSchema!,
+              DataVaultProviderCapabilityProfileSelection.Select(dbContext.Database.ProviderName))
+          : DataVaultModelDriftReporter.Compare(importResult, dbContext);
+    }
+
+    var json = DataVaultSupportBundleExporter.ExportJson(diagnostics, liveSchema, drift);
+    if (string.IsNullOrWhiteSpace(outputPath)) {
+      output.Write(json);
+      return 0;
+    }
+
+    File.WriteAllText(outputPath, json);
+    output.WriteLine("Exported DVault support bundle to '" + outputPath + "'.");
+    return 0;
+  }
+
+  private static async Task<DataVaultLiveSchemaReadResult> ReadLiveSchemaAsync(
+      DataVaultDesignTimeCommandHost host,
+      DbContext dbContext,
+      CancellationToken cancellationToken) {
+    return host.LiveSchemaReader is null
+        ? await DataVaultLiveSchemaReader.ReadAsync(dbContext, cancellationToken).ConfigureAwait(false)
+        : await host.LiveSchemaReader.ReadAsync(dbContext, cancellationToken).ConfigureAwait(false);
   }
 
   private static async Task<int> RunDriftAsync(
@@ -178,6 +246,7 @@ public static class DataVaultDesignTimeCommand {
     return verb switch {
       "validate" => ParseValidate(args, error),
       "export" => ParseExport(args, error),
+      "support-bundle" => ParseSupportBundle(args, error),
       "drift" => ParseDrift(args, error),
       "guardrail" => ParseGuardrail(args, error),
       _ => UnknownCommand(verb, error),
@@ -221,6 +290,45 @@ public static class DataVaultDesignTimeCommand {
     }
 
     return new CommandOptions("export", OutputPath: outputPath);
+  }
+
+  private static CommandOptions? ParseSupportBundle(string[] args, TextWriter error) {
+    string? outputPath = null;
+    string? artifactPath = null;
+    var useLiveSchema = false;
+    for (var index = 1; index < args.Length; index++) {
+      var arg = args[index];
+      if (IsHelpOption(arg)) {
+        return CommandOptions.Help;
+      }
+
+      if (string.Equals(arg, "--live-schema", StringComparison.Ordinal)) {
+        useLiveSchema = true;
+      }
+      else if (string.Equals(arg, "-o", StringComparison.Ordinal) ||
+          string.Equals(arg, "--output", StringComparison.Ordinal)) {
+        if (!TryReadOptionValue(args, ref index, arg, error, out outputPath)) {
+          return null;
+        }
+      }
+      else if (string.Equals(arg, "-a", StringComparison.Ordinal) ||
+          string.Equals(arg, "--artifact", StringComparison.Ordinal)) {
+        if (!TryReadOptionValue(args, ref index, arg, error, out artifactPath)) {
+          return null;
+        }
+      }
+      else {
+        error.WriteLine("Unexpected argument '" + arg + "'.");
+        WriteUsage(error);
+        return null;
+      }
+    }
+
+    return new CommandOptions(
+        "support-bundle",
+        OutputPath: outputPath,
+        ArtifactPath: artifactPath,
+        UseLiveSchema: useLiveSchema);
   }
 
   private static CommandOptions? ParseDrift(string[] args, TextWriter error) {
@@ -336,6 +444,7 @@ public static class DataVaultDesignTimeCommand {
   private static void WriteUsage(TextWriter writer) {
     writer.WriteLine("Usage: dvault validate");
     writer.WriteLine("       dvault export [--output <path>]");
+    writer.WriteLine("       dvault support-bundle [--output <path>] [--artifact <path>] [--live-schema]");
     writer.WriteLine("       dvault drift [--live-schema] (--artifact <path>|<path>)");
     writer.WriteLine("       dvault guardrail (--migration <name>|<name>)");
   }

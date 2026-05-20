@@ -32,7 +32,7 @@ Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has
 - Metadata-first declarations through a shared `DataVaultMetadataModel` or `DataVaultMetadataRegistry` when one public metadata object should drive schema projection, explicit saves, typed latest/as-of reads, diagnostics, examples, or provider setup.
 - Model-first governance for reviewed `dvault.model.v1` JSON artifacts that should be imported, projected into EF metadata, exported canonically, and compared against generated metadata for drift evidence.
 
-Choose one authoritative path for a model boundary and keep the others as compatible alternatives for different ownership needs. See [Model-First Governance Workflow](docs/model-first-governance.md) for the current `dvault.model.v1` JSON artifact contract and [DVault EF Design-Time Workflow](docs/architecture/dvault-dotnet-ef-design-time-workflow.md) for the current consumer-owned design-time command workflow around reviewed artifacts, EF metadata, migrations, and live schema drift.
+Choose one authoritative path for a model boundary and keep the others as compatible alternatives for different ownership needs. See [Model-First Governance Workflow](docs/model-first-governance.md) for the current `dvault.model.v1` JSON artifact contract and [DVault EF Design-Time Workflow](docs/architecture/dvault-dotnet-ef-design-time-workflow.md) for the current consumer-owned design-time command workflow around reviewed artifacts, EF metadata, migrations, live schema drift, and redacted support-bundle export.
 
 ### Register DVault services
 

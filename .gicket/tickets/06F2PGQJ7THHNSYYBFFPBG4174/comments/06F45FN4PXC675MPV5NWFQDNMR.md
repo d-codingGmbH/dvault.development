@@ -1,0 +1,263 @@
+﻿[gicket-bot] integrator-handoff-v1
+
+```json
+{
+  "sourceRole": "test",
+  "targetRole": "integrator",
+  "summary": "Tester verified 6/6 acceptance criteria and 4/4 definition-of-done expectations on branch \u0027ticket/06F2PGQJ7THHNSYYBFFPBG4174-story-add-diagnostics-support-bundle-export\u0027 at commit \u00270c512229b6f6\u0027.",
+  "implementationReference": {
+    "branchName": "ticket/06F2PGQJ7THHNSYYBFFPBG4174-story-add-diagnostics-support-bundle-export",
+    "commitSha": "0c512229b6f6",
+    "pullRequestReference": null,
+    "changeReference": null
+  },
+  "acceptanceCriteria": [
+    {
+      "expectation": "DVault exposes a deterministic redacted support-bundle export that emits one machine-readable JSON artifact from existing diagnostics/design-time data and can write to stdout or an explicit output path, mirroring the current design-time export ergonomics.",
+      "satisfied": true,
+      "reason": "DataVaultDesignTimeCommand adds a support-bundle verb, writes JSON to stdout by default, supports --output, and DataVaultDesignTimeCommandTests verify deterministic identical dvault.support-bundle.v1 output plus explicit output-path export."
+    },
+    {
+      "expectation": "The default support-bundle lane can be produced from the configured design-time DbContext without requiring a live database connection and includes enough existing diagnostics data to identify metadata source kind/fingerprint, provider name, capability profile, provider-behavior profile, load-timestamp storage format, and translated Data Vault entities/tables.",
+      "satisfied": true,
+      "reason": "The default support-bundle path constructs the design-time DbContext and runs Analyze(dbContext) without live-schema work unless explicitly requested; the updated workflow doc states no live database is required, and existing diagnostics tests show the reused Explain payload includes metadata source, provider/capability/behavior profiles, load-timestamp storage, and translated table names."
+    },
+    {
+      "expectation": "When the input diagnostics result was produced from the existing save or read diagnostics APIs, the bundle preserves the structured SaveStrategy and ReadStrategy sections, including status, selected strategy name/priority, candidate ordering, and fallback causes, rather than inventing a second explanation schema.",
+      "satisfied": true,
+      "reason": "DataVaultDesignTimeCommandHost now exposes CreateSupportBundleDiagnostics for caller-supplied request-bound diagnostics, the exporter serializes DataVaultDiagnosticsResult directly, and diagnostics tests cover selected strategy, priority, candidate ordering, and fallback-cause fields that the support-bundle flow preserves instead of inventing a second schema."
+    },
+    {
+      "expectation": "Any live-schema or drift data included in the bundle is opt-in, reuses the existing DataVaultLiveSchemaReadResult and DataVaultModelDriftReport semantics, and does not make non-SQLite external-provider connectivity part of the default local support-bundle path.",
+      "satisfied": true,
+      "reason": "Live-schema and drift sections are opt-in through --live-schema and --artifact; the default support-bundle test asserts those sections are absent, the opt-in test asserts both sections are included, and the workflow documentation keeps SQLite as the first-class local path while external-provider connectivity remains opt-in."
+    },
+    {
+      "expectation": "Redaction rules remove or mask secret-bearing provider failure text such as connection-string or credential details while preserving provider names, diagnostic codes, profile names, and other troubleshooting-relevant contract data.",
+      "satisfied": true,
+      "reason": "DataVaultSupportBundleExporter applies targeted redaction to credential-like key/value fragments and URI credentials, and unit tests confirm provider-identifying text remains while passwords and user IDs are masked and raw secret strings are absent from emitted JSON."
+    },
+    {
+      "expectation": "Automated coverage locks JSON contract shape, deterministic output, redaction behavior, and any required command/API snapshot/source-local documentation updates for the support-bundle surface.",
+      "satisfied": true,
+      "reason": "Automated coverage was added for command help/usage, deterministic support-bundle output, redaction, output-path behavior, and opt-in live-schema/drift sections; dotnet test DVault.slnx --nologo and bash tools/check-format.sh both succeeded; the public API snapshot and source-local docs/README were updated."
+    }
+  ],
+  "definitionOfDone": [
+    {
+      "expectation": "Unit and any applicable integration tests prove the bundle contract, redaction behavior, and command/export path for the touched surfaces.",
+      "satisfied": true,
+      "reason": "Repository tests cover the support-bundle command/export path, deterministic JSON contract, redaction, and opt-in sections, and the verified dotnet test run passed at commit 0c512229b6f6."
+    },
+    {
+      "expectation": "Any changed public API, snapshot, XML/source-local docs, or README content is updated consistently enough that the downstream v0.16 documentation ticket can consume the contract without reopening scope.",
+      "satisfied": true,
+      "reason": "The changed public API snapshot now includes DataVaultSupportBundle, DataVaultSupportBundleExporter, and CreateSupportBundleDiagnostics, while the design-time workflow doc and README were updated consistently enough for downstream documentation work without reopening this ticket\u0027s scope."
+    },
+    {
+      "expectation": "The final implementation reuses existing diagnostics/drift result shapes as the bundle payload source instead of maintaining a separate divergent troubleshooting model.",
+      "satisfied": true,
+      "reason": "The implementation reuses existing DataVaultDiagnosticsResult, DataVaultLiveSchemaReadResult, and DataVaultModelDriftReport directly as the support-bundle payload sources rather than introducing a divergent troubleshooting model."
+    },
+    {
+      "expectation": "Deferred work remains explicitly in the already-related telemetry and documentation tickets, and no secret-bearing sample output is left in tests or docs.",
+      "satisfied": true,
+      "reason": "Deferred telemetry and broader release-note/documentation work remain explicitly separated into related tickets in the persisted contract/history, and the support-bundle tests/docs verify redacted emitted output rather than leaving raw credential-bearing output artifacts behind."
+    }
+  ],
+  "evidence": [
+    "Verified repository HEAD commit \u00270c512229b6f6\u0027 on branch \u0027ticket/06F2PGQJ7THHNSYYBFFPBG4174-story-add-diagnostics-support-bundle-export\u0027.",
+    "Committed repository path \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027 exists at verified commit \u00270c512229b6f6\u0027.",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: # DVault Dotnet EF Design-Time Workflow",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: Status: v1 implementation note",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: Ticket: 06F1XPVPKVGYKCV04PY98TSS78",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: ## Decision",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: DVault v1 supports one \u0060dotnet ef\u0060 composition boundary: the application that owns the configured \u0060DbContext\u0060 also owns an Entity Framework Core \u0060IDesignTimeDbContextFactory\u003CTConte...",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: The DVault package does not provide \u0060IDesignTimeServices\u0060, does not provide a custom \u0060dotnet ef\u0060 shim, does not intercept EF CLI commands, and does not reference \u0060Microsoft.EntityF...",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: Startup-project and target-project splits, host discovery from a separate executable, and other multi-project design-time layouts are unsupported in v1. A later ticket may add a br...",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: DVault exposes \u0060DataVaultDesignTimeCommand\u0060 and \u0060DataVaultDesignTimeCommandHost\u0060 so consumers can keep one small executable entrypoint in the project that owns the configured \u0060DbCo...",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: capability profile, provider-behavior profile, load-timestamp storage details, translated Data Vault entities and tables, and",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: The reusable command runner prints \u0060DataVaultDiagnosticsResult.ToDisplayString()\u0060 and exits with a non-zero status when validation is invalid. The equivalent low-level shape is \u0060ID...",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: if: ${{ github.event_name == \u0027workflow_dispatch\u0027 \u0026\u0026 github.event.inputs.migration_name != \u0027\u0027 }}",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: MIGRATION_NAME: ${{ github.event.inputs.migration_name }}",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: return DataVaultDesignTimeCommand.Run(args, Console.Out, Console.Error, host);",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: \u0060DataVaultDesignTimeExportSource\u0060 should point at the same Code-First declarations, metadata model, or metadata registry that the configured context uses. The \u0060export\u0060 verb is for ...",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: Stable diagnostic identifiers come from the existing DVault diagnostics surfaces. Model validation uses the \u0060DMV####\u0060 family and migration guardrails use the \u0060DVM2xxx\u0060 family. Do n...",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: When the consumer project has a reviewed \u0060dvault.model.v1\u0060 artifact committed to source control, compare that artifact against the configured design-time model as the default drift...",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: Use the live-schema lane only inside the documented boundary. SQLite is the first-class local live-schema reader. PostgreSQL, SQL Server, Oracle, and MySQL have built-in reader dis...",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: Console.Error.WriteLine(\u0022Pass the generated migration type name.\u0022);",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: var migrationType = Type.GetType(args[0], throwOnError: true)!;",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: The following adopter workflow keeps the design-time checks in the consumer repository. It assumes \u0060src/SalesVault/SalesVault.csproj\u0060 contains the configured \u0060DbContext\u0060, the \u0060IDes...",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: workflow_dispatch:",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: description: \u0022Optional migration name to scaffold and guard before apply.\u0022",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: env:",
+    "Observed committed repository file \u0027docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0027: exit 0",
+    "Committed repository path \u0027README.md\u0027 exists at verified commit \u00270c512229b6f6\u0027.",
+    "Observed committed repository file \u0027README.md\u0027: # DVault",
+    "Observed committed repository file \u0027README.md\u0027: DVault is the repository for the \u0060DCoding.Data.DVault\u0060 .NET library.",
+    "Observed committed repository file \u0027README.md\u0027: ## Installation",
+    "Observed committed repository file \u0027README.md\u0027: Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is vers...",
+    "Observed committed repository file \u0027README.md\u0027: \u0060\u0060\u0060sh",
+    "Observed committed repository file \u0027README.md\u0027: dotnet add package DCoding.Data.DVault --version 0.15.0",
+    "Observed committed repository file \u0027README.md\u0027: Code-First metadata is additive. It does not ask callers to put DVault hash-key, load-timestamp, or record-source technical fields on domain entities, and it does not create a publ...",
+    "Observed committed repository file \u0027README.md\u0027: Persistence remains an explicit service boundary. \u0060DataVaultSaveRequest\u0060 carries the load timestamp and record source, and callers choose when to write vault rows through \u0060IDataVau...",
+    "Observed committed repository file \u0027README.md\u0027: DVault also provides an explicit opt-in \u0060SaveChanges\u0060 metadata interceptor for applications that already add generated DVault rows through EF tracking. The interceptor only fills m...",
+    "Observed committed repository file \u0027README.md\u0027: .UseLoadTimestamp(() =\u003E DateTimeOffset.UtcNow)",
+    "Observed committed repository file \u0027README.md\u0027: var loadTimestamp = new DateTimeOffset(2026, 5, 11, 10, 15, 0, TimeSpan.Zero);",
+    "Observed committed repository file \u0027README.md\u0027: loadTimestamp,",
+    "Observed committed repository file \u0027README.md\u0027: For loaders that already have multiple source batches prepared, \u0060DataVaultBulkSaveRequest\u0060 processes ordered save requests through the same explicit service. Each contained request...",
+    "Observed committed repository file \u0027README.md\u0027: row.RequiredDateTimeOffset(\u0022LoadTimestamp\u0022));",
+    "Observed committed repository file \u0027README.md\u0027: new DataVaultLatestSatelliteReadRequest(profile, [customerHashKey], asOfTimestamp),",
+    "Observed committed repository file \u0027README.md\u0027: asOfTimestamp,",
+    "Observed committed repository file \u0027README.md\u0027: DateTimeOffset LoadTimestamp);",
+    "Observed committed repository file \u0027README.md\u0027: The lower-level \u0060ReadCurrentSatelliteRowsAsync(...)\u0060, \u0060ReadAsOfSatelliteRowsAsync(...)\u0060, and \u0060ReadLatestSatelliteRowsAsync(...)\u0060 APIs remain available as advanced escape hatches. T...",
+    "Observed committed repository file \u0027README.md\u0027: PIT-backed reads target one \u0060DataVaultPitMetadata\u0060 declaration, explicit parent hash keys, and an \u0060asOf\u0060 timestamp. \u0060ReadPitRowsAsync(...)\u0060 returns raw \u0060DataVaultPitReadRecord\u0060 row...",
+    "Observed committed repository file \u0027README.md\u0027: new DataVaultPitAsOfReadRequest(pit, [customerHashKey], asOfTimestamp),",
+    "Observed committed repository file \u0027README.md\u0027: - Model-first governance for reviewed \u0060dvault.model.v1\u0060 JSON artifacts that should be imported, projected into EF metadata, exported canonically, and compared against generated met...",
+    "Observed committed repository file \u0027README.md\u0027: Choose one authoritative path for a model boundary and keep the others as compatible alternatives for different ownership needs. See [Model-First Governance Workflow](docs/model-fi...",
+    "Committed repository path \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027 exists at verified commit \u00270c512229b6f6\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: using Microsoft.EntityFrameworkCore;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: using Microsoft.EntityFrameworkCore.Migrations.Operations;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: namespace DCoding.Data.DVault;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: /// \u003Csummary\u003E",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: /// Runs the reusable DVault design-time verbs from a consumer-owned executable host.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: /// \u003C/summary\u003E",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: /// \u003Cparam name=\u0022error\u0022\u003EThe deterministic error writer.\u003C/param\u003E",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: /// \u003Creturns\u003EThe process-style command exit code.\u003C/returns\u003E",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: TextWriter error,",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: return RunAsync(args, output, error, host).GetAwaiter().GetResult();",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: ArgumentNullException.ThrowIfNull(error);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: var options = Parse(args, error);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: error,",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: error.WriteLine(\u0022DVault \u0022 \u002B options.Verb \u002B \u0022 failed: \u0022 \u002B exception.Message);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: error.WriteLine(\u0022DVault support-bundle failed to import artifact:\u0022);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: error.WriteLine(DataVaultModelImportResult.FormatDiagnostics(importResult.Diagnostics));",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: error.WriteLine(\u0022DVault drift failed to import artifact:\u0022);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: private static CommandOptions? Parse(string[] args, TextWriter error) {",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: error.WriteLine(\u0022Missing DVault command.\u0022);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: WriteUsage(error);",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs\u0027: error.WriteLine(\u0022Unknown option \u0027\u0022 \u002B verb \u002B \u0022\u0027.\u0022);",
+    "Committed repository path \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommandHost.cs\u0027 exists at verified commit \u00270c512229b6f6\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommandHost.cs\u0027: using Microsoft.EntityFrameworkCore;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommandHost.cs\u0027: using Microsoft.EntityFrameworkCore.Migrations.Operations;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommandHost.cs\u0027: namespace DCoding.Data.DVault;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommandHost.cs\u0027: /// \u003Csummary\u003E",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommandHost.cs\u0027: /// Supplies the consumer-owned dependencies used by the reusable DVault design-time command runner.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultDesignTimeCommandHost.cs\u0027: /// \u003C/summary\u003E",
+    "Committed repository path \u0027src/DCoding.Data.DVault/DataVaultSupportBundle.cs\u0027 exists at verified commit \u00270c512229b6f6\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultSupportBundle.cs\u0027: using System.Text.Json.Serialization;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultSupportBundle.cs\u0027: namespace DCoding.Data.DVault;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultSupportBundle.cs\u0027: /// \u003Csummary\u003E",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultSupportBundle.cs\u0027: /// Stable redacted support-bundle payload for Data Vault configuration and provider-behavior troubleshooting.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultSupportBundle.cs\u0027: /// \u003C/summary\u003E",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultSupportBundle.cs\u0027: public sealed class DataVaultSupportBundle {",
+    "Committed repository path \u0027src/DCoding.Data.DVault/DataVaultSupportBundleExporter.cs\u0027 exists at verified commit \u00270c512229b6f6\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultSupportBundleExporter.cs\u0027: using System.Text.Encodings.Web;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultSupportBundleExporter.cs\u0027: using System.Text.Json;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultSupportBundleExporter.cs\u0027: using System.Text.Json.Nodes;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultSupportBundleExporter.cs\u0027: using System.Text.Json.Serialization;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultSupportBundleExporter.cs\u0027: using System.Text.RegularExpressions;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultSupportBundleExporter.cs\u0027: namespace DCoding.Data.DVault;",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault/DataVaultSupportBundleExporter.cs\u0027: Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,",
+    "Committed repository path \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027 exists at verified commit \u00270c512229b6f6\u0027.",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: using DCoding.Data.DVault.Modeling;",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: using Microsoft.EntityFrameworkCore;",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: using Microsoft.EntityFrameworkCore.Migrations.Operations;",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: using Microsoft.Extensions.DependencyInjection;",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: using Xunit;",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: namespace DCoding.Data.DVault.Tests.Unit;",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: public void RunPrintsHelpAndReturnsUsageErrorsDeterministically() {",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Equal(0, help.ExitCode);",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Empty(help.Error);",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Equal(2, unknown.ExitCode);",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Contains(\u0022Unknown DVault command \u0027missing\u0027.\u0022, unknown.Error, StringComparison.Ordinal);",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Contains(\u0022Usage: dvault validate\u0022, unknown.Error, StringComparison.Ordinal);",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Equal(2, missingArtifact.ExitCode);",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Contains(\u0022Missing artifact path for drift command.\u0022, missingArtifact.Error, StringComparison.Ordinal);",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Equal(0, valid.ExitCode);",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Empty(valid.Error);",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Equal(1, invalid.ExitCode);",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Empty(invalid.Error);",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Equal(0, success.ExitCode);",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Empty(success.Error);",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Equal(1, failure.ExitCode);",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Contains(\u0022DVault export failed:\u0022, failure.Error, StringComparison.Ordinal);",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Contains(\u0022Legacy PointInTimeTables metadata is not serializable\u0022, failure.Error, StringComparison.Ordinal);",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs\u0027: Assert.Equal(0, first.ExitCode);",
+    "Committed repository path \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDotnetEfDesignTimeWorkflowTests.cs\u0027 exists at verified commit \u00270c512229b6f6\u0027.",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDotnetEfDesignTimeWorkflowTests.cs\u0027: using Microsoft.EntityFrameworkCore;",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDotnetEfDesignTimeWorkflowTests.cs\u0027: using Microsoft.EntityFrameworkCore.Migrations.Operations;",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDotnetEfDesignTimeWorkflowTests.cs\u0027: using Microsoft.Extensions.DependencyInjection;",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDotnetEfDesignTimeWorkflowTests.cs\u0027: using Xunit;",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDotnetEfDesignTimeWorkflowTests.cs\u0027: namespace DCoding.Data.DVault.Tests.Unit;",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDotnetEfDesignTimeWorkflowTests.cs\u0027: public sealed class DataVaultDotnetEfDesignTimeWorkflowTests {",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDotnetEfDesignTimeWorkflowTests.cs\u0027: private const string WorkflowDocumentPath = \u0022docs/architecture/dvault-dotnet-ef-design-time-workflow.md\u0022;",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDotnetEfDesignTimeWorkflowTests.cs\u0027: public void DocumentationDefinesOneConsumerOwnedFactoryWorkflow() {",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/DataVaultDotnetEfDesignTimeWorkflowTests.cs\u0027: var document = ReadRepositoryFile(WorkflowDocumentPath);",
+    "Committed repository path \u0027tests/DCoding.Data.DVault.Tests/Unit/Snapshots/PublicApi/DCoding.Data.DVault.approved.txt\u0027 exists at verified commit \u00270c512229b6f6\u0027.",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/Snapshots/PublicApi/DCoding.Data.DVault.approved.txt\u0027: # DVault public API snapshot",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/Snapshots/PublicApi/DCoding.Data.DVault.approved.txt\u0027: # Package: DCoding.Data.DVault",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/Snapshots/PublicApi/DCoding.Data.DVault.approved.txt\u0027: # Assembly: DCoding.Data.DVault",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/Snapshots/PublicApi/DCoding.Data.DVault.approved.txt\u0027: # Generated from built assembly output.",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/Snapshots/PublicApi/DCoding.Data.DVault.approved.txt\u0027: # Update intentionally with: DVAULT_UPDATE_API_SNAPSHOTS=1 dotnet test DVault.slnx --nologo --filter FullyQualifiedName~ApiSurfaceSnapshotTests",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/Snapshots/PublicApi/DCoding.Data.DVault.approved.txt\u0027: type public static class DCoding.Data.DVault.DVaultServiceCollectionExtensions",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/Snapshots/PublicApi/DCoding.Data.DVault.approved.txt\u0027: method public static Microsoft.EntityFrameworkCore.ModelBuilder ApplyDataVaultMetadata(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, System.Action\u003CDCoding.Data.DVau...",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/Snapshots/PublicApi/DCoding.Data.DVault.approved.txt\u0027: method public static System.Threading.Tasks.Task\u003Cint\u003E RunAsync(string[] args, System.IO.TextWriter output, System.IO.TextWriter error, DCoding.Data.DVault.DataVaultDesignTimeComman...",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/Snapshots/PublicApi/DCoding.Data.DVault.approved.txt\u0027: method public static int Run(string[] args, System.IO.TextWriter output, System.IO.TextWriter error, DCoding.Data.DVault.DataVaultDesignTimeCommandHost host)",
+    "Observed committed repository file \u0027tests/DCoding.Data.DVault.Tests/Unit/Snapshots/PublicApi/DCoding.Data.DVault.approved.txt\u0027: value Error = 2",
+    "Committed branch delta contains 9 inspectable repository path(s): Modified: docs/architecture/dvault-dotnet-ef-design-time-workflow.md, Modified: README.md, Modified: src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs, Modified: src/DCoding.Data.DVault/DataVaultDesignTimeCommandHost.cs, Added: src/DCoding.Data.DVault/DataVaultSupportBundle.cs, Added: src/DCoding.Data.DVault/DataVaultSupportBundleExporter.cs, Modified: tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs, Modified: tests/DCoding.Data.DVault.Tests/Unit/DataVaultDotnetEfDesignTimeWorkflowTests.cs.",
+    "Test command \u0060dotnet test DVault.slnx --nologo\u0060 succeeded (exit code 0).",
+    "Observed stdout: Determining projects to restore...",
+    "Observed stdout: All projects are up-to-date for restore.",
+    "Observed stdout: DCoding.Data.DVault -\u003E C:\\Projects\\DVault\\src\\DCoding.Data.DVault\\bin\\Debug\\net10.0\\DCoding.Data.DVault.dll",
+    "Test command \u0060bash tools/check-format.sh\u0060 succeeded (exit code 0).",
+    "Observed stdout: One-member-per-file check passed for 162 packable source files.",
+    "Observed stdout: Formatting check passed.",
+    "Ticket status at verification time is \u0027todo\u0027.",
+    "Ticket labels at verification time: [area/developer-experience, area/diagnostics, area/observability, automation/bot-ready, needs-test, type/story, bot/lease:hp-ai-2026-001.1].",
+    "Configured tester success handoff role is \u0027integrator\u0027.",
+    "Ticket description contains a persisted delivery contract block.",
+    "Observed behavior: a visible delivery contract is persisted in the ticket description.",
+    "Ticket description contains persisted acceptance criteria.",
+    "Observed behavior: acceptance criteria are explicitly persisted in the ticket description.",
+    "Ticket description contains persisted definition-of-done expectations.",
+    "Observed behavior: definition of done is explicitly persisted in the ticket description.",
+    "Ticket history contains 3 persisted runtime-orchestration template comment(s).",
+    "Observed behavior: role handoff templates are persisted in ticket history.",
+    "Tester success path hands the ticket to integrator; final accept/rework decision happens after tester gate.",
+    "Observed behavior: tester success continues at the integrator gate, so the final human integrator decision itself is not required yet.",
+    "Observed behavior: tester success routes to \u0027integrator\u0027 while rework routes to \u0027dev\u0027, so handoff and rework paths are structurally distinguishable.",
+    "Ticket history contains 1 runtime-orchestration template comment(s) targeting role \u0027dev\u0027.",
+    "Observed behavior: ticket history contains persisted handoff evidence for role \u0027dev\u0027.",
+    "Ticket history contains 1 runtime-orchestration template comment(s) targeting role \u0027po-critic\u0027.",
+    "Observed behavior: ticket history contains persisted handoff evidence for role \u0027po-critic\u0027.",
+    "Ticket history contains 1 runtime-orchestration template comment(s) targeting role \u0027test\u0027.",
+    "Observed behavior: ticket history contains persisted handoff evidence for role \u0027test\u0027.",
+    "Observed behavior: the ticket history shows a multi-role delivery loop across dev, po-critic, test.",
+    "Ticket history references implementation branch \u0027ticket/06F2PGQQJB5FJGDB16M2G7CPCM-task-update-v0-16-0-documentation-and-release-no\u0027.",
+    "Ticket history references implementation commit \u00270c512229b6f6\u0027.",
+    "Observed behavior: ticket history contains traceable implementation branch/commit references.",
+    "Observed behavior: the tester handoff already contains branch, commit, or structured delivery-outcome context that a human integrator can use for a decision.",
+    "Ticket history contains an explicit tester handoff hint in a runtime-orchestration comment."
+  ],
+  "findings": [],
+  "nextSteps": [
+    "Route the ticket to integrator using verified commit 0c512229b6f6.",
+    "Keep the broader v0.16 documentation and release-note wrap-up on the already-related downstream documentation ticket."
+  ]
+}
+```
+
+[gicket-bot] runtime-orchestration template
+
+- template: `handover-integrator`
+- transaction-point: `TP4`
+- ticket-id: `06F2PGQJ7THHNSYYBFFPBG4174`
+- target-role: `integrator`
+- verification-summary: Tester verified 6/6 acceptance criteria and 4/4 definition-of-done expectations on branch 'ticket/06F2PGQJ7THHNSYYBFFPBG4174-story-add-diagnostics-support-bundle-export' at commit '0c512229b6f6'.
+- acceptance-criteria: `6/6` satisfied
+- definition-of-done: `4/4` satisfied
+- implementation-branch: `ticket/06F2PGQJ7THHNSYYBFFPBG4174-story-add-diagnostics-support-bundle-export`
+- implementation-commit: `0c512229b6f6`
+- implementation-pr: `<none>`
+- implementation-change: `<none>`

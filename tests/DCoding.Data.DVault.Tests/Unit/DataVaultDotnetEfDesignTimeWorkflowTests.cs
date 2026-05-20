@@ -21,6 +21,11 @@ public sealed class DataVaultDotnetEfDesignTimeWorkflowTests {
     Assert.Contains("Startup-project and target-project splits", document, StringComparison.Ordinal);
     Assert.Contains("IDataVaultDiagnosticsService.Analyze(DbContext)", document, StringComparison.Ordinal);
     Assert.Contains("DataVaultDiagnosticsResult.ToDisplayString()", document, StringComparison.Ordinal);
+    Assert.Contains("support-bundle", document, StringComparison.Ordinal);
+    Assert.Contains("dvault.support-bundle.v1", document, StringComparison.Ordinal);
+    Assert.Contains("CreateSupportBundleDiagnostics", document, StringComparison.Ordinal);
+    Assert.Contains("DataVaultLiveSchemaReadResult", document, StringComparison.Ordinal);
+    Assert.Contains("DataVaultModelDriftReport", document, StringComparison.Ordinal);
     Assert.Contains("DataVaultMigrationOperationDiagnostics.AnalyzeReport", document, StringComparison.Ordinal);
     Assert.Contains("DataVaultMigrationGuardrailReport.ToDisplayString()", document, StringComparison.Ordinal);
     Assert.Contains("dotnet ef migrations add", document, StringComparison.Ordinal);

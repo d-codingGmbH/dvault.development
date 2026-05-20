@@ -134,6 +134,7 @@ type public sealed class DCoding.Data.DVault.DataVaultDesignTimeCommandHost
   property public DCoding.Data.DVault.DataVaultDesignTimeExportSource ExportSource { get; }
   property public DCoding.Data.DVault.IDataVaultDiagnosticsService Diagnostics { get; }
   property public DCoding.Data.DVault.IDataVaultLiveSchemaReader? LiveSchemaReader { get; init; }
+  property public System.Func<Microsoft.EntityFrameworkCore.DbContext, DCoding.Data.DVault.DataVaultDiagnosticsResult>? CreateSupportBundleDiagnostics { get; init; }
   property public System.Func<Microsoft.EntityFrameworkCore.DbContext> CreateDbContext { get; }
   property public System.Func<string, System.Collections.Generic.IEnumerable<Microsoft.EntityFrameworkCore.Migrations.Operations.MigrationOperation>> ResolveMigrationOperations { get; }
 
@@ -958,6 +959,18 @@ type public sealed class DCoding.Data.DVault.DataVaultSavedRecord
   property public string HashKey { get; }
   property public string MetadataName { get; }
   property public string TableName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultSupportBundle
+  ctor public DataVaultSupportBundle(DCoding.Data.DVault.DataVaultDiagnosticsResult diagnostics, DCoding.Data.DVault.DataVaultLiveSchemaReadResult? liveSchema = null, DCoding.Data.DVault.DataVaultModelDriftReport? drift = null)
+  field public const string CurrentSchemaVersion = "dvault.support-bundle.v1"
+  property public DCoding.Data.DVault.DataVaultDiagnosticsResult Diagnostics { get; }
+  property public DCoding.Data.DVault.DataVaultLiveSchemaReadResult? LiveSchema { get; }
+  property public DCoding.Data.DVault.DataVaultModelDriftReport? Drift { get; }
+  property public string SchemaVersion { get; }
+
+type public static class DCoding.Data.DVault.DataVaultSupportBundleExporter
+  method public static string ExportJson(DCoding.Data.DVault.DataVaultDiagnosticsResult diagnostics, DCoding.Data.DVault.DataVaultLiveSchemaReadResult? liveSchema = null, DCoding.Data.DVault.DataVaultModelDriftReport? drift = null)
+  method public static string ExportJson(DCoding.Data.DVault.DataVaultSupportBundle bundle)
 
 type public enum DCoding.Data.DVault.DataVaultUnsupportedIncludedIndexColumnMode
   value Ignore = 0

@@ -145,6 +145,41 @@ dotnet run --project src/SalesVault/SalesVault.csproj -- export --output src/Sal
 
 Do not make `export` the default blocking CI gate. A blocking pre-integration gate should validate the configured design-time model and compare it against an already reviewed artifact when that artifact exists.
 
+## Support Bundle Export
+
+The `support-bundle` verb emits one deterministic redacted JSON document for configuration and provider-behavior
+troubleshooting:
+
+```sh
+dotnet run --project src/SalesVault/SalesVault.csproj -- support-bundle --output src/SalesVault/dvault-support-bundle.json
+```
+
+The default bundle constructs the configured design-time `DbContext`, runs `IDataVaultDiagnosticsService.Analyze(DbContext)`,
+and serializes the resulting `DataVaultDiagnosticsResult` under the `dvault.support-bundle.v1` contract. That default path
+does not open a live database connection and includes validation status, metadata source kind and fingerprint, provider name,
+capability profile, provider-behavior profile, load-timestamp storage details, translated Data Vault entities and tables, and
+any already-populated save/read strategy diagnostics.
+
+When an application already has a representative save or read request, keep that request in application code and supply the
+request-bound diagnostics through the host instead of having the generic command runner invent one:
+
+```csharp
+var host = new DataVaultDesignTimeCommandHost(
+    diagnostics,
+    () => new SalesVaultDesignTimeFactory().CreateDbContext(args),
+    DataVaultDesignTimeExportSource.FromMetadataModel(SalesVaultMetadata.CreateModel()),
+    ResolveMigrationOperations) {
+  CreateSupportBundleDiagnostics = context => diagnostics.Analyze(
+      context,
+      SalesVaultRepresentativeRequests.CreateCustomerProfileSave()),
+};
+```
+
+Opt-in sections stay explicit. `--artifact <path>` adds a `DataVaultModelDriftReport` from the reviewed artifact and current
+design-time model. `--live-schema` adds a `DataVaultLiveSchemaReadResult`; with `--artifact`, the drift section is based on the
+classified live-schema read result. Provider exception text and connection-string fragments are redacted from the exported JSON
+while provider names, profile names, diagnostic codes, and metadata identifiers remain available for troubleshooting.
+
 ## Preflight Validation
 
 Run DVault validation explicitly before deciding whether to apply a generated migration. The validation step constructs the configured `DbContext` through the same factory and analyzes the in-memory EF design-time model. It does not require opening a live database connection.
