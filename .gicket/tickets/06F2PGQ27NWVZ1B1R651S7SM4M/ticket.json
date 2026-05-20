@@ -3,20 +3,20 @@
   "ticket-id": "06F2PGQ27NWVZ1B1R651S7SM4M",
   "ticket-type": "epic",
   "title": "Epic: Observability and operations",
-  "revision": "06F2PNN0MCC4W11T1X3M17MFQW",
-  "status": "todo",
+  "revision": "06F478D8EH5Z93H98T8HJ2MJY8",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/epic",
-    "area/observability",
     "area/diagnostics",
-    "area/performance",
     "area/documentation",
-    "needs-po"
+    "area/observability",
+    "area/performance",
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
+  "isBlocked": false,
   "milestoneId": "06F2PH9PEY6Q1CWXZRV2BKD0E4",
   "releaseId": "06F2PH9MW3YQTVEZPYYR4ZXEJM",
   "created-at": "2026-05-15T10:51:04.5302343Z",
-  "updated-at": "2026-05-15T11:12:38.0515252Z"
+  "updated-at": "2026-05-20T04:25:28.4360000Z"
 }
