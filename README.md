@@ -7,13 +7,13 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.15.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.15.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.15.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.15.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.15.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.15.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.15.0
+dotnet add package DCoding.Data.DVault --version 0.16.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.16.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.16.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.16.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.16.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.16.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.16.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
@@ -450,6 +450,18 @@ Treat the JSON artifact and any drift report as review evidence. `dvault.model.v
 
 `IDataVaultDiagnosticsService` can analyze metadata models, registries, Code-First declarations, and configured DbContexts. Validation and explain output can run without a save request. Provider-specific save-strategy dispatch diagnostics are request-bound, so strategy status remains not evaluated until a single save request or ordered bulk save request is supplied.
 
+### Export redacted support bundles
+
+DVault exposes `DataVaultDesignTimeCommand` and `DataVaultDesignTimeCommandHost` so applications can host design-time verbs from the project that owns the configured `DbContext`, EF design-time factory, migrations, and metadata source. The `support-bundle` verb emits one deterministic redacted JSON document under the `dvault.support-bundle.v1` contract:
+
+```sh
+dotnet run --project src/SalesVault/SalesVault.csproj -- support-bundle --output src/SalesVault/dvault-support-bundle.json
+```
+
+The default support bundle constructs the configured design-time context, runs `IDataVaultDiagnosticsService.Analyze(DbContext)`, and serializes validation, explain, save-strategy, and read-strategy diagnostics without opening a live database connection. Use `--artifact <path>` to add reviewed `dvault.model.v1` drift evidence and `--live-schema` only when the consumer application owns the reachable database, credentials, lifecycle cleanup, and CI isolation for that check.
+
+Applications that want representative request-bound save or read strategy evidence should supply that diagnostics result from application code through `DataVaultDesignTimeCommandHost.CreateSupportBundleDiagnostics`. The reusable command host does not invent representative requests, publish support bundles, attach them to tickets, intercept `dotnet ef`, or ship a standalone `dvault` CLI.
+
 ### Multi-active satellite opt-in
 
 Ordinary satellites remain the default. A satellite becomes multi-active only when it declares one or more driving keys, and those names define the canonical identity tuple for each active satellite row. Driving-key values stay separate from payload values, and `hashDiff` continues to represent payload state for change detection rather than driving-key identity.
@@ -555,28 +567,29 @@ Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadS
 
 SQLite remains the default local live-schema proof because it does not require external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks require consumer-managed reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation. Keep those external provider checks opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
 
-## v0.15.0 Release Notes
+## v0.16.0 Release Notes
 
-The v0.15.0 release records explicit bridge maintenance, explicit PIT maintenance, current/as-of satellite read convenience overloads, and SQLite optimized PIT/bridge read dispatch while keeping read-model population caller-invoked. See `docs/releases/v0.15.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
+The v0.16.0 release records opt-in save/read telemetry, deterministic redacted support-bundle export, and the current coordinated seven-package baseline while preserving the explicit service and consumer-owned design-time boundaries from earlier releases. See `docs/releases/v0.16.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
 
 Notable user-facing changes:
 
-- `IDataVaultBridgeMaintenanceService` is registered by `AddDVault()` beside the explicit save and read services.
-- `IDataVaultPitMaintenanceService` is registered by `AddDVault()` beside the explicit save, read, and bridge maintenance services.
-- `DataVaultPitRebuildRequest` rebuilds one generated PIT table from persisted hub-parent satellite history.
-- `DataVaultPitParentMaintenanceRequest` recomputes complete PIT history for explicit parent hash keys and supports late-arriving history correction for those parents.
-- `RebuildBridgeAsync(...)` recomputes one bridge table from persisted source-link rows and converges with repeated execution over the same source state.
-- `MaintainBridgeAsync(...)` incrementally inserts newly reachable bridge rows without deleting obsolete rows; hierarchy maintenance also lowers an existing `TraversalDepth` when a newly persisted path is shorter.
-- Many-to-many bridge maintenance stores one row per distinct endpoint pair required by the bridge metadata.
-- Hierarchy bridge maintenance stores one row per distinct ancestor/descendant pair, uses the minimum positive hop count as `TraversalDepth`, treats direct edges as depth `1`, and does not add implicit self rows.
-- Registry-backed callers can resolve bridge metadata by logical name through `DataVaultRegistryBridgeMaintenanceRequest` when `UseDataVaultMetadata()` is the authoritative model source.
-- `ReadCurrentSatelliteAsync(...)` and `ReadAsOfSatelliteAsync(...)` remain additive convenience wrappers over the existing `DataVaultLatestSatelliteReadRequest` baseline for explicit and registry-backed callers.
-- `AddDVaultSqlite()` is the repository-proven optimized PIT/bridge read path; unsupported providers or unsupported request shapes fall back to the provider-neutral read pipelines without implicit maintenance side effects.
-- Provider-native bulk ingestion, Code-First same-hub roles, link-parent satellites, model-first artifact governance, and analyzer guidance from earlier releases remain part of the current public baseline.
+- `AddDVault()` remains telemetry-free by default.
+- `AddDVaultTelemetry()` registers the built-in `System.Diagnostics.Metrics` observer for explicit DVault save and read attempts.
+- `IDataVaultTelemetryObserver` lets applications observe bounded `DataVaultSaveTelemetrySummary` and `DataVaultReadTelemetrySummary` values without changing save or read behavior.
+- Save telemetry covers explicit single and bulk saves with request counts, operation counts, rows written, saved records, duration, provider name, selected strategy name, strategy status, and finite fallback-cause kinds.
+- Read telemetry covers latest/current/as-of satellite reads, PIT reads, and bridge reads with read family, requested-key counts, returned rows, duration, provider name, selected strategy name, strategy status, and finite fallback-cause kinds.
+- The `support-bundle` design-time verb emits deterministic redacted JSON under `dvault.support-bundle.v1` from the consumer-owned command host.
+- Support bundles include diagnostics validation and explain output by default, optional reviewed-artifact drift evidence through `--artifact`, and optional live-schema evidence through `--live-schema`.
+- `DataVaultDesignTimeCommandHost.CreateSupportBundleDiagnostics` lets applications include representative request-bound save or read strategy diagnostics without having the generic command runner invent requests.
+- Explicit bridge maintenance, explicit PIT maintenance, current/as-of satellite read convenience overloads, SQLite optimized PIT/bridge read dispatch, provider-native bulk ingestion, Code-First same-hub roles, link-parent satellites, model-first artifact governance, and analyzer guidance from earlier releases remain part of the current public baseline.
 
-## Current v0.15.0 Limitations
+## Current v0.16.0 Limitations
 
-Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.15.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
+Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.16.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
+
+Telemetry remains explicit opt-in application wiring. DVault does not configure metric listeners, exporters, dashboards, alert rules, or backend-specific observability pipelines, and it does not emit high-cardinality raw values such as exception messages, hash keys, record sources, metadata names, table names, generated SQL, or full diagnostics text as metric tags.
+
+Support bundles are consumer-invoked diagnostic artifacts. DVault does not upload, attach, archive, retain, or route support-bundle JSON, and it does not open a live database connection unless the consumer explicitly invokes the live-schema option in an environment they manage.
 
 Provider-native bulk dispatch is an optimization, not a separate persistence contract. Dirty tracked contexts, multi-active satellite batches, provider-name mismatches, below-threshold SQL Server, MySQL, or Oracle batches, and SQL Server batches with more than `500` satellite operations fall back to the provider-neutral writer. DVault does not provision Docker containers, databases, users, schemas, credentials, or checked-in benchmark result snapshots for optional external-provider proof.
 

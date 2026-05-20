@@ -1,4 +1,4 @@
-﻿# DVault public API snapshot
+# DVault public API snapshot
 # Package: DCoding.Data.DVault
 # Assembly: DCoding.Data.DVault
 # Generated from built assembly output.
@@ -469,6 +469,7 @@ type public sealed class DCoding.Data.DVault.DataVaultModelDriftReport : System.
 
 type public static class DCoding.Data.DVault.DataVaultModelDriftReporter
   method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.DataVaultModelImportResult expectedImport, Microsoft.EntityFrameworkCore.DbContext currentContext)
+  method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.DataVaultModelImportResult expectedImport, Microsoft.EntityFrameworkCore.Metadata.IReadOnlyModel currentModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
   method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, Microsoft.EntityFrameworkCore.DbContext currentContext)
   method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, Microsoft.EntityFrameworkCore.Metadata.IReadOnlyModel currentModel)
   method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, Microsoft.EntityFrameworkCore.Metadata.IReadOnlyModel currentModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
@@ -916,6 +917,7 @@ type public static class DCoding.Data.DVault.DataVaultSaveServiceTypedExtensions
 
 type public sealed class DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics>
   ctor public DataVaultSaveStrategyCandidateDiagnostics(int Ordinal, string StrategyName, int Priority, bool CanSave, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause> FallbackCauses)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause> FallbackCauses { get; init; }
   property public bool CanSave { get; init; }
   property public int Ordinal { get; init; }
   property public int Priority { get; init; }
