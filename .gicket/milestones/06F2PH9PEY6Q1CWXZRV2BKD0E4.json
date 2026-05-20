@@ -3,6 +3,6 @@
   "milestoneId": "06F2PH9PEY6Q1CWXZRV2BKD0E4",
   "name": "v0.16.0 - Operational metrics and diagnostics",
   "description": "Structured telemetry, counters, and support bundle exports for production diagnosis.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-15T10:53:36.7592176Z"
 }

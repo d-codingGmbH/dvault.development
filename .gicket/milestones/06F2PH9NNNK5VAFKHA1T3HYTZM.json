@@ -3,6 +3,6 @@
   "milestoneId": "06F2PH9NNNK5VAFKHA1T3HYTZM",
   "name": "v0.16.0 - Strategy explainability",
   "description": "Human-readable explanations for save/read strategy selection and fallback reasons.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-15T10:53:36.5570633Z"
 }
