@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Diagnostics;
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -785,6 +786,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
   private readonly IDataVaultRecordSourceResolver _recordSourceResolver;
   private readonly IStableHashService _stableHashService;
   private readonly IStableHashNormalizer _stableHashNormalizer;
+  private readonly IReadOnlyList<IDataVaultTelemetryObserver> _telemetryObservers;
 
   public DefaultDataVaultSaveService(
       IStableHashService stableHashService,
@@ -814,12 +816,29 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       IStableHashNormalizer stableHashNormalizer,
       IEnumerable<IDataVaultLoadTimestampResolver> loadTimestampResolvers,
       IEnumerable<IDataVaultRecordSourceResolver> recordSourceResolvers,
-      IEnumerable<IDataVaultProviderSaveStrategy> providerSaveStrategies) {
+      IEnumerable<IDataVaultProviderSaveStrategy> providerSaveStrategies)
+      : this(
+          stableHashService,
+          stableHashNormalizer,
+          loadTimestampResolvers,
+          recordSourceResolvers,
+          providerSaveStrategies,
+          []) {
+  }
+
+  public DefaultDataVaultSaveService(
+      IStableHashService stableHashService,
+      IStableHashNormalizer stableHashNormalizer,
+      IEnumerable<IDataVaultLoadTimestampResolver> loadTimestampResolvers,
+      IEnumerable<IDataVaultRecordSourceResolver> recordSourceResolvers,
+      IEnumerable<IDataVaultProviderSaveStrategy> providerSaveStrategies,
+      IEnumerable<IDataVaultTelemetryObserver> telemetryObservers) {
     ArgumentNullException.ThrowIfNull(stableHashService);
     ArgumentNullException.ThrowIfNull(stableHashNormalizer);
     ArgumentNullException.ThrowIfNull(loadTimestampResolvers);
     ArgumentNullException.ThrowIfNull(recordSourceResolvers);
     ArgumentNullException.ThrowIfNull(providerSaveStrategies);
+    ArgumentNullException.ThrowIfNull(telemetryObservers);
 
     _stableHashService = stableHashService;
     _stableHashNormalizer = stableHashNormalizer;
@@ -834,6 +853,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     _providerSaveStrategies = providerSaveStrategies
         .OrderByDescending(strategy => strategy.Priority)
         .ToArray();
+    _telemetryObservers = DataVaultTelemetryDispatcher.CreateObservers(telemetryObservers);
   }
 
   public async Task<DataVaultSaveResult> SaveAsync(
@@ -843,7 +863,11 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(request);
 
-    return await SaveRequestsAsync(dbContext, [request], cancellationToken).ConfigureAwait(false);
+    return await SaveRequestsAsync(
+        dbContext,
+        [request],
+        DataVaultSaveTelemetryOperationKind.SingleRequest,
+        cancellationToken).ConfigureAwait(false);
   }
 
   public async Task<DataVaultSaveResult> SaveAsync(
@@ -853,29 +877,70 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(request);
 
-    return await SaveRequestsAsync(dbContext, request.Requests, cancellationToken).ConfigureAwait(false);
+    return await SaveRequestsAsync(
+        dbContext,
+        request.Requests,
+        DataVaultSaveTelemetryOperationKind.BulkRequest,
+        cancellationToken).ConfigureAwait(false);
   }
 
   private async Task<DataVaultSaveResult> SaveRequestsAsync(
       DbContext dbContext,
       IReadOnlyList<DataVaultSaveRequest> requests,
+      DataVaultSaveTelemetryOperationKind operationKind,
       CancellationToken cancellationToken) {
-    var resolvedRequests = ResolveRequests(requests);
+    var stopwatch = Stopwatch.StartNew();
+    var strategySelection = DataVaultSaveTelemetryStrategySelection.NotEvaluated(
+        DataVaultTelemetryStrategySelector.GetProviderName(dbContext));
 
-    foreach (var strategy in _providerSaveStrategies) {
-      if (!strategy.CanSave(dbContext, requests)) {
-        continue;
+    try {
+      var resolvedRequests = ResolveRequests(requests);
+      strategySelection = DataVaultTelemetryStrategySelector.SelectSaveStrategy(dbContext, _providerSaveStrategies, requests);
+
+      DataVaultSaveResult result;
+      if (strategySelection.Strategy is not null) {
+        var context = new DataVaultProviderSaveStrategyContext(
+            dbContext,
+            requests,
+            resolvedRequests,
+            _stableHashService,
+            _stableHashNormalizer);
+        result = await strategySelection.Strategy.SaveAsync(context, cancellationToken).ConfigureAwait(false);
+      }
+      else {
+        result = await SaveProviderNeutralAsync(dbContext, resolvedRequests, cancellationToken).ConfigureAwait(false);
       }
 
-      var context = new DataVaultProviderSaveStrategyContext(
-          dbContext,
-          requests,
-          resolvedRequests,
-          _stableHashService,
-          _stableHashNormalizer);
-      return await strategy.SaveAsync(context, cancellationToken).ConfigureAwait(false);
-    }
+      DataVaultTelemetryDispatcher.RecordSave(
+          _telemetryObservers,
+          DataVaultTelemetrySummaryFactory.CreateSaveSummary(
+              operationKind,
+              DataVaultTelemetryOutcome.Succeeded,
+              requests,
+              result,
+              DataVaultTelemetrySummaryFactory.GetElapsed(stopwatch),
+              strategySelection));
 
+      return result;
+    }
+    catch {
+      DataVaultTelemetryDispatcher.RecordSave(
+          _telemetryObservers,
+          DataVaultTelemetrySummaryFactory.CreateSaveSummary(
+              operationKind,
+              DataVaultTelemetryOutcome.Failed,
+              requests,
+              result: null,
+              DataVaultTelemetrySummaryFactory.GetElapsed(stopwatch),
+              strategySelection));
+      throw;
+    }
+  }
+
+  private async Task<DataVaultSaveResult> SaveProviderNeutralAsync(
+      DbContext dbContext,
+      IReadOnlyList<DataVaultResolvedSaveRequest> resolvedRequests,
+      CancellationToken cancellationToken) {
     var savedRecords = new List<DataVaultSavedRecord>();
     var rowsWritten = 0;
 

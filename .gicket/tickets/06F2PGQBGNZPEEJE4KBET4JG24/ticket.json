@@ -3,19 +3,19 @@
   "ticket-id": "06F2PGQBGNZPEEJE4KBET4JG24",
   "ticket-type": null,
   "title": "Story: Add save/read telemetry hooks and counters",
-  "revision": "06F2PNN4X6P8T05BTFFVVD2810",
-  "status": "todo",
+  "revision": "06F46EK64R0Y3R31F92BBH73BW",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "type/story",
     "area/observability",
     "area/performance",
     "area/persistence",
-    "needs-po"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
+  "isBlocked": false,
   "milestoneId": "06F2PH9PEY6Q1CWXZRV2BKD0E4",
   "releaseId": "06F2PH9MW3YQTVEZPYYR4ZXEJM",
   "created-at": "2026-05-15T10:51:07.6345694Z",
-  "updated-at": "2026-05-15T11:12:39.1458638Z"
+  "updated-at": "2026-05-20T02:32:41.2547014Z"
 }

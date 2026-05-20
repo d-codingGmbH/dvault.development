@@ -1,4 +1,4 @@
-# DVault public API snapshot
+﻿# DVault public API snapshot
 # Package: DCoding.Data.DVault
 # Assembly: DCoding.Data.DVault
 # Generated from built assembly output.
@@ -365,6 +365,13 @@ type public enum DCoding.Data.DVault.DataVaultLogicalPropertyKind
   value BridgeDepth = 8
   value DrivingKey = 9
 
+type public sealed class DCoding.Data.DVault.DataVaultMeterTelemetryObserver : DCoding.Data.DVault.IDataVaultTelemetryObserver, System.IDisposable
+  ctor public DataVaultMeterTelemetryObserver()
+  field public const string MeterName = "DCoding.Data.DVault"
+  method public virtual void Dispose()
+  method public virtual void RecordRead(DCoding.Data.DVault.DataVaultReadTelemetrySummary summary)
+  method public virtual void RecordSave(DCoding.Data.DVault.DataVaultSaveTelemetrySummary summary)
+
 type public sealed class DCoding.Data.DVault.DataVaultMigrationGuardrailIssue : System.IEquatable<DCoding.Data.DVault.DataVaultMigrationGuardrailIssue>
   ctor public DataVaultMigrationGuardrailIssue(DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity Severity, string Code, string Path, string Message, string Remediation)
   property public DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity Severity { get; init; }
@@ -462,7 +469,6 @@ type public sealed class DCoding.Data.DVault.DataVaultModelDriftReport : System.
 
 type public static class DCoding.Data.DVault.DataVaultModelDriftReporter
   method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.DataVaultModelImportResult expectedImport, Microsoft.EntityFrameworkCore.DbContext currentContext)
-  method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.DataVaultModelImportResult expectedImport, Microsoft.EntityFrameworkCore.Metadata.IReadOnlyModel currentModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
   method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, Microsoft.EntityFrameworkCore.DbContext currentContext)
   method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, Microsoft.EntityFrameworkCore.Metadata.IReadOnlyModel currentModel)
   method public static DCoding.Data.DVault.DataVaultModelDriftReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, Microsoft.EntityFrameworkCore.Metadata.IReadOnlyModel currentModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
@@ -750,6 +756,23 @@ type public enum DCoding.Data.DVault.DataVaultReadStrategyFallbackCauseKind
   value UnsupportedPitShape = 6
   value UnsupportedBridgeShape = 7
 
+type public enum DCoding.Data.DVault.DataVaultReadTelemetryFamily
+  value LatestSatellite = 0
+  value Pit = 1
+  value Bridge = 2
+
+type public sealed class DCoding.Data.DVault.DataVaultReadTelemetrySummary
+  ctor public DataVaultReadTelemetrySummary(DCoding.Data.DVault.DataVaultReadTelemetryFamily family, DCoding.Data.DVault.DataVaultTelemetryOutcome outcome, int requestedKeyCount, int returnedRowCount, System.TimeSpan duration, DCoding.Data.DVault.DataVaultReadStrategyDiagnosticsStatus strategyStatus, string? providerName, string? selectedStrategyName, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultReadStrategyFallbackCauseKind> fallbackCauseKinds)
+  property public DCoding.Data.DVault.DataVaultReadStrategyDiagnosticsStatus StrategyStatus { get; }
+  property public DCoding.Data.DVault.DataVaultReadTelemetryFamily Family { get; }
+  property public DCoding.Data.DVault.DataVaultTelemetryOutcome Outcome { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyFallbackCauseKind> FallbackCauseKinds { get; }
+  property public System.TimeSpan Duration { get; }
+  property public int RequestedKeyCount { get; }
+  property public int ReturnedRowCount { get; }
+  property public string? ProviderName { get; }
+  property public string? SelectedStrategyName { get; }
+
 type public sealed class DCoding.Data.DVault.DataVaultRecordSourceResolutionContext
   ctor public DataVaultRecordSourceResolutionContext(DCoding.Data.DVault.DataVaultSaveRequest request, System.DateTimeOffset loadTimestamp)
   property public DCoding.Data.DVault.DataVaultSaveRequest Request { get; }
@@ -893,7 +916,6 @@ type public static class DCoding.Data.DVault.DataVaultSaveServiceTypedExtensions
 
 type public sealed class DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics>
   ctor public DataVaultSaveStrategyCandidateDiagnostics(int Ordinal, string StrategyName, int Priority, bool CanSave, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause> FallbackCauses)
-  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause> FallbackCauses { get; init; }
   property public bool CanSave { get; init; }
   property public int Ordinal { get; init; }
   property public int Priority { get; init; }
@@ -951,6 +973,27 @@ type public enum DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind
   value OracleMinimumOperationThreshold = 8
   value StrategyDeclined = 9
 
+type public enum DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind
+  value SingleRequest = 0
+  value BulkRequest = 1
+
+type public sealed class DCoding.Data.DVault.DataVaultSaveTelemetrySummary
+  ctor public DataVaultSaveTelemetrySummary(DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind operationKind, DCoding.Data.DVault.DataVaultTelemetryOutcome outcome, int requestCount, int hubOperationCount, int linkOperationCount, int satelliteOperationCount, int rowsWritten, int savedRecordCount, System.TimeSpan duration, DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus strategyStatus, string? providerName, string? selectedStrategyName, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind> fallbackCauseKinds)
+  property public DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus StrategyStatus { get; }
+  property public DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind OperationKind { get; }
+  property public DCoding.Data.DVault.DataVaultTelemetryOutcome Outcome { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind> FallbackCauseKinds { get; }
+  property public System.TimeSpan Duration { get; }
+  property public int HubOperationCount { get; }
+  property public int LinkOperationCount { get; }
+  property public int OperationCount { get; }
+  property public int RequestCount { get; }
+  property public int RowsWritten { get; }
+  property public int SatelliteOperationCount { get; }
+  property public int SavedRecordCount { get; }
+  property public string? ProviderName { get; }
+  property public string? SelectedStrategyName { get; }
+
 type public sealed class DCoding.Data.DVault.DataVaultSavedRecord
   ctor public DataVaultSavedRecord(DCoding.Data.DVault.Modeling.DataVaultTableKind kind, string metadataName, string tableName, string hashKey)
   ctor public DataVaultSavedRecord(DCoding.Data.DVault.Modeling.DataVaultTableKind kind, string metadataName, string tableName, string hashKey, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> drivingKeyValues)
@@ -971,6 +1014,13 @@ type public sealed class DCoding.Data.DVault.DataVaultSupportBundle
 type public static class DCoding.Data.DVault.DataVaultSupportBundleExporter
   method public static string ExportJson(DCoding.Data.DVault.DataVaultDiagnosticsResult diagnostics, DCoding.Data.DVault.DataVaultLiveSchemaReadResult? liveSchema = null, DCoding.Data.DVault.DataVaultModelDriftReport? drift = null)
   method public static string ExportJson(DCoding.Data.DVault.DataVaultSupportBundle bundle)
+
+type public enum DCoding.Data.DVault.DataVaultTelemetryOutcome
+  value Succeeded = 0
+  value Failed = 1
+
+type public static class DCoding.Data.DVault.DataVaultTelemetryServiceCollectionExtensions
+  method public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddDVaultTelemetry(this Microsoft.Extensions.DependencyInjection.IServiceCollection services)
 
 type public enum DCoding.Data.DVault.DataVaultUnsupportedIncludedIndexColumnMode
   value Ignore = 0
@@ -1061,6 +1111,10 @@ type public interface DCoding.Data.DVault.IDataVaultSatelliteMapper
 type public interface DCoding.Data.DVault.IDataVaultSaveService
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultBulkSaveRequest request, System.Threading.CancellationToken cancellationToken = default)
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultSaveRequest request, System.Threading.CancellationToken cancellationToken = default)
+
+type public interface DCoding.Data.DVault.IDataVaultTelemetryObserver
+  method public abstract void RecordRead(DCoding.Data.DVault.DataVaultReadTelemetrySummary summary)
+  method public abstract void RecordSave(DCoding.Data.DVault.DataVaultSaveTelemetrySummary summary)
 
 type public interface DCoding.Data.DVault.IStableHashNormalizer
   method public abstract string NormalizeFields(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> fields)

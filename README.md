@@ -203,6 +203,19 @@ public static class SalesVaultWriter {
 
 For loaders that already have multiple source batches prepared, `DataVaultBulkSaveRequest` processes ordered save requests through the same explicit service. Each contained request keeps its caller-supplied load timestamp, record source, hub operations, link operations, and satellite operations. The provider-neutral writer keeps satellite HashDiff state in memory across the ordered batch, and provider packages can select native bulk strategies when diagnostics gates accept the current clean context. Registry-backed callers can use `DataVaultRegistryBulkSaveRequest` to resolve logical metadata names once and delegate to the same bulk pipeline.
 
+### Observe explicit save and read attempts
+
+Save/read telemetry is opt-in. The default `AddDVault()` registration does not add counters or listeners. Applications can enable the built-in `System.Diagnostics.Metrics` observer with `AddDVaultTelemetry()` and can register additional `IDataVaultTelemetryObserver` implementations for bounded per-attempt summaries.
+
+```csharp
+services.AddDVault();
+services.AddDVaultTelemetry();
+```
+
+The built-in meter name is `DCoding.Data.DVault`. It records save attempt, row, saved-record, request-count, operation-count, duration, and fallback-cause instruments, plus read attempt, returned-row, requested-key, duration, and fallback-cause instruments. Metric tags stay low-cardinality: operation kind, read family, success/failure outcome, provider name, selected strategy type name, strategy status, and finite fallback-cause enum names.
+
+`IDataVaultTelemetryObserver` receives one `DataVaultSaveTelemetrySummary` for each explicit single or bulk save attempt and one `DataVaultReadTelemetrySummary` for each latest/current/as-of satellite, PIT, or bridge read attempt handled by the DVault read path. Failure summaries include duration and strategy classification without raw exception messages, hash keys, record sources, metadata names, table names, or full diagnostic text.
+
 ### Read typed latest and as-of satellite projections
 
 `IDataVaultReadService` provides provider-neutral current and as-of satellite reads over the latest-satellite baseline. The common path maps selected rows through a caller-owned projector delegate so application code can return typed read models without binding DTOs through reflection. `ReadCurrentSatelliteAsync(...)` selects the latest visible row, and `ReadAsOfSatelliteAsync(...)` selects the latest row visible at the supplied cutoff. These convenience names delegate to the existing `DataVaultLatestSatelliteReadRequest` pipeline; `ReadLatestSatelliteAsync(...)` and `DataVaultLatestSatelliteReadRequest` remain supported for compatibility.
