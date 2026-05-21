@@ -3,20 +3,19 @@
   "ticket-id": "06F492AKGMKPCRJYF4Z1EC9WY4",
   "ticket-type": "story",
   "title": "Story: Verify DVault EF model cache-key isolation",
-  "revision": "06F4NV0DQFQ5DCRN7RWTCNWAEG",
-  "status": "todo",
+  "revision": "06F4RCHCEYAG35DY8MEXRTQD4W",
+  "status": "done",
   "labels": [
     "area/ef-core",
     "area/modeling",
     "area/quality",
     "automation/bot-ready",
-    "type/story",
-    "needs-po"
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F4929YA7582ENPQ9KEYMXGEM",
   "releaseId": "06F4929XH1QPVKC80WBYQKGC3W",
   "created-at": "2026-05-20T08:38:31.2159964Z",
-  "updated-at": "2026-05-21T14:24:04.5395887Z"
+  "updated-at": "2026-05-21T20:20:17.1438427Z"
 }

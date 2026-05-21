@@ -411,6 +411,63 @@ public sealed class SalesVaultContext(DbContextOptions<SalesVaultContext> option
 
 `UseDataVaultMetadata()` consumes the app-level registry registered by `AddDVault(...)`. A context can override that default by passing an explicit `DataVaultMetadataModel` or `DataVaultMetadataRegistry` to `UseDataVaultMetadata(...)`. If the same EF model receives two different DVault metadata sources, model building fails with a DVault source-conflict diagnostic instead of merging or duplicating projection. The SQLite and PostgreSQL quickstarts intentionally use this registry-backed path; see `examples/README.md` for exact commands and provider setup.
 
+### Isolate EF model cache entries
+
+Entity Framework Core caches realized models for a `DbContext` CLR type. DVault replaces the EF model-cache key for contexts configured with `UseDataVaultMetadata(...)` so the key carries the DVault metadata source kind and the deterministic metadata fingerprint. This built-in isolation covers the app-default registry selected by `UseDataVaultMetadata()`, explicit `DataVaultMetadataModel` and `DataVaultMetadataRegistry` values, and `UseDataVaultMetadata(DataVaultModelImportResult)` because a successful import resolves to a registry before projection. Distinct authoritative registries or reviewed artifacts for the same context type therefore receive distinct EF models, and the realized model records `MetadataSourceKind` and `MetadataSourceFingerprint` annotations for the active source.
+
+That guarantee is intentionally limited to DVault-owned registry-backed metadata selection. DVault does not auto-discover arbitrary caller state used by `OnModelCreating`, constructor fields, ambient tenant values, naming overrides, schema selection, load-timestamp storage profiles, or provider-specific identifier tweaks. When those values can change the EF model shape, the application must replace `IModelCacheKeyFactory` and include every caller-owned discriminator that affects the model.
+
+```csharp
+using DCoding.Data.DVault;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+
+var options = new DbContextOptionsBuilder<SalesVaultContext>()
+    .UseSqlite(connectionString)
+    .ReplaceService<IModelCacheKeyFactory, SalesVaultModelCacheKeyFactory>()
+    .Options;
+
+using var context = new SalesVaultContext(
+    options,
+    tenantSchema: "tenant_blue",
+    tablePrefix: "Blue_",
+    loadTimestampProfile: "utc-ticks");
+
+public sealed class SalesVaultContext(
+    DbContextOptions<SalesVaultContext> options,
+    string tenantSchema,
+    string tablePrefix,
+    string loadTimestampProfile) : DbContext(options) {
+  public string TenantSchema { get; } = tenantSchema;
+  public string TablePrefix { get; } = tablePrefix;
+  public string LoadTimestampProfile { get; } = loadTimestampProfile;
+
+  protected override void OnModelCreating(ModelBuilder modelBuilder) {
+    modelBuilder.HasDefaultSchema(TenantSchema);
+    modelBuilder.ApplyDataVaultMetadata(CreateSalesVaultMetadata());
+
+    modelBuilder.SharedTypeEntity<Dictionary<string, object>>("HubCustomer", entity => {
+      entity.ToTable(TablePrefix + "HubCustomer", TenantSchema);
+    });
+  }
+}
+
+public sealed class SalesVaultModelCacheKeyFactory : IModelCacheKeyFactory {
+  public object Create(DbContext context, bool designTime) {
+    return context is SalesVaultContext salesVaultContext
+        ? (
+            context.GetType(),
+            salesVaultContext.TenantSchema,
+            salesVaultContext.TablePrefix,
+            salesVaultContext.LoadTimestampProfile,
+            designTime)
+        : (object)(context.GetType(), designTime);
+  }
+}
+```
+
+Direct `ApplyDataVaultMetadata(...)` usage is safe with EF's default cache key only when the model shape is stable for the context type and design-time flag. Once callers add tenant-, schema-, naming-, provider-, or profile-dependent branches around that projection, those inputs belong in the consumer-owned cache key.
+
 ### Model-first governed artifacts
 
 Use model-first governance when a source-controlled `dvault.model.v1` JSON artifact should be the reviewed authority for a Data Vault model. This path is separate from app-local Code-First declarations and from registry-backed metadata-first setup: JSON artifacts are imported with `DataVaultModelArtifactImporter.ImportJson`, projected through `UseDataVaultMetadata(DataVaultModelImportResult)`, exported from fluent Code-First declaration callbacks or already-materialized metadata with `DataVaultModelArtifactExporter.ExportJson`, and compared against generated EF metadata with `DataVaultModelDriftReporter.Compare`.

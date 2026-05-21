@@ -1,6 +1,7 @@
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -30,6 +31,24 @@ public sealed class DataVaultMetadataRegistrationIntegrationTests {
   }
 
   [Fact]
+  public void DbContextOptionsAppDefaultRegistryParticipatesInModelCacheKey() {
+    using var customerProvider = CreateAppDefaultProvider(CreateCustomerMetadataModel());
+    using var orderProvider = CreateAppDefaultProvider(CreateOrderMetadataModel());
+    using var customerScope = customerProvider.CreateScope();
+    using var orderScope = orderProvider.CreateScope();
+    using var customerContext = customerScope.ServiceProvider.GetRequiredService<RegistryProjectionContext>();
+    using var orderContext = orderScope.ServiceProvider.GetRequiredService<RegistryProjectionContext>();
+
+    Assert.Contains("HubCustomer", EntityNames(customerContext.Model));
+    Assert.DoesNotContain("HubOrder", EntityNames(customerContext.Model));
+    Assert.Contains("HubOrder", EntityNames(orderContext.Model));
+    Assert.DoesNotContain("HubCustomer", EntityNames(orderContext.Model));
+    Assert.Equal("app-default-registry", MetadataSourceKind(customerContext.Model));
+    Assert.Equal("app-default-registry", MetadataSourceKind(orderContext.Model));
+    Assert.NotEqual(MetadataSourceFingerprint(customerContext.Model), MetadataSourceFingerprint(orderContext.Model));
+  }
+
+  [Fact]
   public void DbContextOptionsExplicitRegistryParticipatesInModelCacheKey() {
     var customerOptionsBuilder = new DbContextOptionsBuilder<RegistryProjectionContext>();
     customerOptionsBuilder
@@ -47,6 +66,34 @@ public sealed class DataVaultMetadataRegistrationIntegrationTests {
     Assert.DoesNotContain("HubOrder", EntityNames(customerContext.Model));
     Assert.Contains("HubOrder", EntityNames(orderContext.Model));
     Assert.DoesNotContain("HubCustomer", EntityNames(orderContext.Model));
+    Assert.Equal("dbcontext-registry", MetadataSourceKind(customerContext.Model));
+    Assert.Equal("dbcontext-registry", MetadataSourceKind(orderContext.Model));
+    Assert.NotEqual(MetadataSourceFingerprint(customerContext.Model), MetadataSourceFingerprint(orderContext.Model));
+  }
+
+  [Fact]
+  public void DbContextOptionsImportResultParticipatesInModelCacheKey() {
+    var customerImportResult = ImportModelArtifact("Customer", "Customer Id");
+    var orderImportResult = ImportModelArtifact("Order", "Order Id");
+    var customerOptionsBuilder = new DbContextOptionsBuilder<RegistryProjectionContext>();
+    customerOptionsBuilder
+        .UseSqlite("Data Source=:memory:")
+        .UseDataVaultMetadata(customerImportResult);
+    var orderOptionsBuilder = new DbContextOptionsBuilder<RegistryProjectionContext>();
+    orderOptionsBuilder
+        .UseSqlite("Data Source=:memory:")
+        .UseDataVaultMetadata(orderImportResult);
+
+    using var customerContext = new RegistryProjectionContext(customerOptionsBuilder.Options);
+    using var orderContext = new RegistryProjectionContext(orderOptionsBuilder.Options);
+
+    Assert.Contains("HubCustomer", EntityNames(customerContext.Model));
+    Assert.DoesNotContain("HubOrder", EntityNames(customerContext.Model));
+    Assert.Contains("HubOrder", EntityNames(orderContext.Model));
+    Assert.DoesNotContain("HubCustomer", EntityNames(orderContext.Model));
+    Assert.Equal("dbcontext-registry", MetadataSourceKind(customerContext.Model));
+    Assert.Equal("dbcontext-registry", MetadataSourceKind(orderContext.Model));
+    Assert.NotEqual(MetadataSourceFingerprint(customerContext.Model), MetadataSourceFingerprint(orderContext.Model));
   }
 
   [Fact]
@@ -85,6 +132,34 @@ public sealed class DataVaultMetadataRegistrationIntegrationTests {
     Assert.Contains("one authoritative DVault metadata source", exception.Message, StringComparison.Ordinal);
   }
 
+  [Fact]
+  public void CallerOwnedModelShapeStateIsolatesCacheWhenCustomKeyIncludesDiscriminator() {
+    var optionsBuilder = new DbContextOptionsBuilder<CallerOwnedProjectionContext>();
+    optionsBuilder
+        .UseSqlite("Data Source=:memory:")
+        .ReplaceService<IModelCacheKeyFactory, CallerOwnedProjectionModelCacheKeyFactory>();
+
+    using var archiveContext = new CallerOwnedProjectionContext(optionsBuilder.Options, "Archive_");
+    using var liveContext = new CallerOwnedProjectionContext(optionsBuilder.Options, "Live_");
+
+    Assert.Equal("Archive_HubCustomer", TableName(archiveContext.Model, "HubCustomer"));
+    Assert.Equal("Live_HubCustomer", TableName(liveContext.Model, "HubCustomer"));
+    Assert.Equal("model-metadata", MetadataSourceKind(archiveContext.Model));
+    Assert.Equal("model-metadata", MetadataSourceKind(liveContext.Model));
+    Assert.Equal(MetadataSourceFingerprint(archiveContext.Model), MetadataSourceFingerprint(liveContext.Model));
+  }
+
+  private static ServiceProvider CreateAppDefaultProvider(DataVaultMetadataModel metadataModel) {
+    var services = new ServiceCollection();
+    services.AddDVault(options => options.UseMetadataModel(metadataModel));
+    services.AddDbContext<RegistryProjectionContext>(
+        options => options
+            .UseSqlite("Data Source=:memory:")
+            .UseDataVaultMetadata());
+
+    return services.BuildServiceProvider(validateScopes: true);
+  }
+
   private static DataVaultMetadataModel CreateCustomerMetadataModel() {
     return new DataVaultMetadataModel(
         [new DataVaultHubMetadata("Customer", ["Customer Id"])],
@@ -99,11 +174,46 @@ public sealed class DataVaultMetadataRegistrationIntegrationTests {
         []);
   }
 
+  private static DataVaultModelImportResult ImportModelArtifact(
+      string hubName,
+      string businessKeyName) {
+    var importResult = DataVaultModelArtifactImporter.ImportJson(
+        "{" + Environment.NewLine +
+        "  \"schemaVersion\": \"dvault.model.v1\"," + Environment.NewLine +
+        "  \"hubs\": [" + Environment.NewLine +
+        "    {" + Environment.NewLine +
+        "      \"name\": \"" + hubName + "\"," + Environment.NewLine +
+        "      \"businessKeys\": [\"" + businessKeyName + "\"]" + Environment.NewLine +
+        "    }" + Environment.NewLine +
+        "  ]" + Environment.NewLine +
+        "}");
+
+    Assert.True(importResult.IsValid, DataVaultModelImportResult.FormatDiagnostics(importResult.Diagnostics));
+
+    return importResult;
+  }
+
   private static string[] EntityNames(IModel model) {
     return model.GetEntityTypes()
         .Select(entityType => entityType.Name)
         .Order(StringComparer.Ordinal)
         .ToArray();
+  }
+
+  private static string MetadataSourceKind(IModel model) {
+    return Assert.IsType<string>(model.FindAnnotation(DataVaultAnnotationNames.MetadataSourceKind)?.Value);
+  }
+
+  private static string MetadataSourceFingerprint(IModel model) {
+    return Assert.IsType<string>(model.FindAnnotation(DataVaultAnnotationNames.MetadataSourceFingerprint)?.Value);
+  }
+
+  private static string TableName(IModel model, string entityName) {
+    var entityType = model.FindEntityType(entityName);
+
+    Assert.NotNull(entityType);
+
+    return entityType!.GetTableName() ?? entityType.Name;
   }
 
   private sealed class RegistryProjectionContext(DbContextOptions<RegistryProjectionContext> options) : DbContext(options) {
@@ -112,6 +222,28 @@ public sealed class DataVaultMetadataRegistrationIntegrationTests {
   private sealed class ExplicitCustomerMetadataContext(DbContextOptions<ExplicitCustomerMetadataContext> options) : DbContext(options) {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
       modelBuilder.ApplyDataVaultMetadata(CreateCustomerMetadataModel());
+    }
+  }
+
+  private sealed class CallerOwnedProjectionContext(
+      DbContextOptions<CallerOwnedProjectionContext> options,
+      string tableNamePrefix) : DbContext(options) {
+    public string TableNamePrefix { get; } = tableNamePrefix;
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(CreateCustomerMetadataModel());
+
+      modelBuilder.SharedTypeEntity<Dictionary<string, object>>("HubCustomer", entity => {
+        entity.ToTable(TableNamePrefix + "HubCustomer");
+      });
+    }
+  }
+
+  private sealed class CallerOwnedProjectionModelCacheKeyFactory : IModelCacheKeyFactory {
+    public object Create(DbContext context, bool designTime) {
+      return context is CallerOwnedProjectionContext projectionContext
+          ? (context.GetType(), projectionContext.TableNamePrefix, designTime)
+          : (object)(context.GetType(), designTime);
     }
   }
 }

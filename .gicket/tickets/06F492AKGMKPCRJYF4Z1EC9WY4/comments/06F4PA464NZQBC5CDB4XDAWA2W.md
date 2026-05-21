@@ -1,69 +1,55 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the story around two bounded outcomes: prove the built-in DVault model-cache isolation for registry-backed metadata sources, and document the supported consumer-owned cache-key customization path when model shape varies by tenant/schema/profile state outside that built-in path.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Registry-backed `UseDataVaultMetadata()` is the default supported isolation path for multiple DVault metadata sources because the current implementation already keys the EF model cache by DVault source kind plus metadata fingerprint.
 - `UseDataVaultMetadata(DataVaultModelImportResult)` is in scope under the same registry-backed isolation boundary because it resolves to a metadata registry before projection.
 - Caller-owned model-shaping inputs that are not encoded by the DVault options extension, such as tenant/schema selection, naming overrides, or load-timestamp/profile variants applied in `OnModelCreating`, are supported only through a caller-supplied `IModelCacheKeyFactory` that includes those discriminators.
 - The ticket should document the guarantee boundary explicitly: DVault prevents incompatible cache reuse for its own registry-backed metadata-selection path, but it does not auto-discover arbitrary consumer-specific model-shaping state.
 
-### Scope In
+Scope In
 - Add regression coverage proving that the same `DbContext` CLR type can use different DVault metadata registries or imported artifacts without reusing an incompatible EF model cache entry.
 - Add regression coverage for at least one documented consumer-owned customization example where model shape varies by caller state outside the DVault options extension and a custom `IModelCacheKeyFactory` isolates the models correctly.
 - Document the supported usage guidance for model-cache isolation, including when `UseDataVaultMetadata(...)` is sufficient and when consumers must replace `IModelCacheKeyFactory`.
 - Keep the proof aligned with the current DVault metadata source annotations, fingerprinting, and one-authoritative-source rules rather than introducing a new metadata selection mechanism.
 
-### Scope Out
+Scope Out
 - No new multi-tenant runtime abstraction, tenant resolver, naming-policy platform, or automatic per-tenant orchestration feature.
 - No attempt to make DVault infer arbitrary constructor fields, ambient state, or custom `OnModelCreating` branches automatically for cache-key purposes.
 - No compiled-model generator, EF CLI shim, or preflight aggregator work beyond the cache-isolation proof and documentation this story owns.
 - No redesign of the existing metadata-source conflict diagnostics or provider capability architecture unless a narrow change is required to support the proof.
 
-## Acceptance Criteria
-- Given one `DbContext` CLR type configured through `UseDataVaultMetadata(...)`, tests prove that distinct authoritative DVault metadata sources produce distinct realized EF models and do not leak entities/annotations across cache entries.
-- The proof covers the supported registry-backed variants already present in the repository, including app-default or explicit registry selection and the model-first import path when it flows through `UseDataVaultMetadata(DataVaultModelImportResult)`.
-- Given a context whose DVault model shape changes from caller-owned state outside the built-in DVault options extension, tests prove the documented `ReplaceService<IModelCacheKeyFactory,...>` customization pattern isolates the EF model cache when the custom key includes those state discriminators.
-- Public documentation states the default guarantee boundary, names the supported customization path, and includes at least one concrete example of the cache-key discriminators a consumer must carry for tenant/schema/profile-dependent models.
-- Documentation does not claim that DVault automatically protects arbitrary consumer-specific model variations that are not part of the built-in registry-backed metadata source path.
-
-## Definition of Done
-- Repository tests covering registry-backed cache isolation and the documented custom-cache-key pattern are added or updated and pass in the normal automated test suite for this slice.
-- Reader-facing documentation is updated in the appropriate public guidance surface so adopters can tell when the default DVault behavior is sufficient and when they must replace `IModelCacheKeyFactory`.
-- The resulting docs and tests use the current DVault vocabulary around authoritative metadata sources, metadata fingerprints, `UseDataVaultMetadata(...)`, and `ApplyDataVaultMetadata(...)` without reopening settled architecture decisions.
-- No blocking PO questions remain about the supported boundary for models, tenants, or option-profile isolation.
-
-## Implementation Notes
-- Re-use the existing `DataVaultDbContextOptionsExtension` and `DataVaultModelCacheKeyFactory` behavior as the baseline proof surface instead of inventing a second model-cache mechanism.
-- Leverage the existing repository patterns that already replace `IModelCacheKeyFactory` for dynamic model-shape inputs such as load-timestamp storage, schema selection, or provider-specific naming overrides as the documentation baseline for the supported customization path.
-- Keep the mandatory proof on repository-supported local test baselines where possible; if a tenant/schema example depends on an external provider fixture, pair it with a provider-agnostic or SQLite-friendly custom-key example so the contract stays easy to validate in ordinary CI.
-- Make the docs explicit that direct `ApplyDataVaultMetadata(...)` usage is safe by default only when the model shape is otherwise stable for the context type and design-time flag; once callers add extra model-shaping state, they own extending the cache key.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should a later diagnostics or preflight ticket add an advisory check that points consumers toward a custom `IModelCacheKeyFactory` when their DVault model shape appears to vary by caller-owned state?
 - Should the later v0.17 documentation pass add provider-specific tenant examples, such as schema-per-tenant or prefix-per-tenant, once this story establishes the core cache-isolation guidance?
 
-## Risks
+Risks
 - If the docs blur the line between built-in registry-backed isolation and consumer-owned dynamic model variation, adopters may assume unsafe tenant/profile permutations are automatically protected when they are not.
 - A proof that relies only on external-provider schema tests could make the regression story harder to run locally; the implementation should keep at least one stable non-external example for the supported custom-cache-key pattern.
 - Changes around model-cache keys must preserve the current compiled/runtime metadata behavior and should avoid accidental service-provider churn or over-broad cache fragmentation.
 
-## Split Recommendations
+Split recommendations
 - none
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Prove that multiple DVault models, tenants, or option profiles cannot accidentally share incompatible EF model cache entries. Add tests and documentation for the supported customization path.
+Run mode
+- apply: planned updates are applied after this comment
