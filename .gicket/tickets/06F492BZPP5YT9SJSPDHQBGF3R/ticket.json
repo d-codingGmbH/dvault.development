@@ -1,9 +1,9 @@
 ﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F492BZPP5YT9SJSPDHQBGF3R",
-  "ticket-type": null,
+  "ticket-type": "story",
   "title": "Story: Define performance evidence and benchmark artifact contract",
-  "revision": "06F492GDT4J7J8YRG6Y9PPEDHW",
+  "revision": "06F4NV0QNRDSRMSHR6MT2XCTH4",
   "status": "todo",
   "labels": [
     "area/performance",
@@ -11,12 +11,13 @@
     "area/testing",
     "area/documentation",
     "automation/bot-ready",
-    "type/story"
+    "type/story",
+    "needs-po"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F492A159001GJVW8AEBH4BDM",
   "releaseId": "06F492A0EZ3N8E2T605F7ZHHB0",
   "created-at": "2026-05-20T08:38:42.5004496Z",
-  "updated-at": "2026-05-20T08:39:18.7371886Z"
+  "updated-at": "2026-05-21T14:24:07.0868271Z"
 }

@@ -1,21 +1,22 @@
 ﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F492CFSJHN0RGXXRG3KT63FM",
-  "ticket-type": null,
+  "ticket-type": "story",
   "title": "Story: Measure and tune explicit save change-tracker overhead",
-  "revision": "06F492GP8N8JRRBEGKK2EECTZW",
+  "revision": "06F4NV0T0D8XY12YWRFC8SVCCW",
   "status": "todo",
   "labels": [
     "area/performance",
     "area/persistence",
     "area/ef-core",
     "automation/bot-ready",
-    "type/story"
+    "type/story",
+    "needs-po"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F492A1Y2D14XJWEXVYP2C6Q8",
   "releaseId": "06F492A0EZ3N8E2T605F7ZHHB0",
   "created-at": "2026-05-20T08:38:46.6771040Z",
-  "updated-at": "2026-05-20T08:39:20.9018130Z"
+  "updated-at": "2026-05-21T14:24:07.6836966Z"
 }

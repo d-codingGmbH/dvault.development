@@ -1,21 +1,22 @@
 ﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F492BNDPWS9P4EDSV0W7G6VM",
-  "ticket-type": null,
+  "ticket-type": "task",
   "title": "Task: Update v0.17.0 documentation and release notes",
-  "revision": "06F492W5VF5R3DBV3177S6B6NW",
+  "revision": "06F4NV0NZHKTD7QMS6Z8VQKCJ4",
   "status": "todo",
   "labels": [
     "area/documentation",
     "area/ef-core",
     "area/diagnostics",
     "automation/bot-ready",
-    "type/task"
+    "type/task",
+    "needs-po"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F4929ZR8SMFQHZ84A19RS9M4",
   "releaseId": "06F4929XH1QPVKC80WBYQKGC3W",
   "created-at": "2026-05-20T08:38:39.8700220Z",
-  "updated-at": "2026-05-20T08:40:55.0037272Z"
+  "updated-at": "2026-05-21T14:24:06.6529540Z"
 }

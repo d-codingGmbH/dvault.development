@@ -1,21 +1,22 @@
 ﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F492A8WV0EP2V03CWXXWH71G",
-  "ticket-type": null,
+  "ticket-type": "story",
   "title": "Story: Strengthen migration guardrail reports",
-  "revision": "06F492EB18TSX7H78SFG8KJ33G",
+  "revision": "06F4NV0BFAN31QTNFH9ZCSY4QR",
   "status": "todo",
   "labels": [
     "area/migrations",
     "area/diagnostics",
     "area/ef-core",
     "automation/bot-ready",
-    "type/story"
+    "type/story",
+    "needs-po"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F4929YA7582ENPQ9KEYMXGEM",
   "releaseId": "06F4929XH1QPVKC80WBYQKGC3W",
   "created-at": "2026-05-20T08:38:28.4643305Z",
-  "updated-at": "2026-05-20T08:39:01.6420022Z"
+  "updated-at": "2026-05-21T14:24:03.9622710Z"
 }

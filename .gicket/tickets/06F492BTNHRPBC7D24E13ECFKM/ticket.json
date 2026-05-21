@@ -1,9 +1,9 @@
 ﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F492BTNHRPBC7D24E13ECFKM",
-  "ticket-type": null,
+  "ticket-type": "epic",
   "title": "Epic: Performance analysis and query tuning",
-  "revision": "06F492FGV6B6KT17R1XH6J9G04",
+  "revision": "06F4NV0PVKPRB0T5XNKSNZK4CG",
   "status": "todo",
   "labels": [
     "area/performance",
@@ -12,12 +12,13 @@
     "area/persistence",
     "area/provider-support",
     "automation/bot-ready",
-    "type/epic"
+    "type/epic",
+    "needs-po"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F492A159001GJVW8AEBH4BDM",
   "releaseId": "06F492A0EZ3N8E2T605F7ZHHB0",
   "created-at": "2026-05-20T08:38:41.1870425Z",
-  "updated-at": "2026-05-20T08:39:11.3214127Z"
+  "updated-at": "2026-05-21T14:24:06.8760833Z"
 }
