@@ -13,4 +13,14 @@ public sealed record DataVaultMigrationGuardrailIssue(
     string Code,
     string Path,
     string Message,
-    string Remediation);
+    string Remediation) {
+  internal static DataVaultMigrationGuardrailIssue Create(DataVaultDiagnosticsIssue issue) {
+    var definition = DataVaultDiagnosticCatalog.GetMigrationOperationDefinition(issue.Code);
+    return new DataVaultMigrationGuardrailIssue(
+        issue.Severity,
+        issue.Code,
+        issue.Path ?? string.Empty,
+        issue.Message,
+        definition.Remediation);
+  }
+}

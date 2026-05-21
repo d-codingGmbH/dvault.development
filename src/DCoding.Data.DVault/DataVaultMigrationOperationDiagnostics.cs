@@ -17,24 +17,7 @@ public static class DataVaultMigrationOperationDiagnostics {
   public static DataVaultDiagnosticsResult Analyze(
       DataVaultDiagnosticsResult baseline,
       IEnumerable<MigrationOperation> operations) {
-    ArgumentNullException.ThrowIfNull(baseline);
-    ArgumentNullException.ThrowIfNull(operations);
-
-    var schema = DataVaultMigrationSchemaBaseline.Create(baseline.Explain);
-    var issues = baseline.Issues
-        .Concat(operations.SelectMany(operation => AnalyzeOperation(schema, operation)))
-        .ToArray();
-    var validationIssues = issues
-        .Where(issue => issue.Severity == DataVaultDiagnosticsIssueSeverity.Error)
-        .ToArray();
-
-    return new DataVaultDiagnosticsResult(
-        new DataVaultValidationDiagnostics(validationIssues.Length == 0, validationIssues),
-        baseline.Explain,
-        baseline.SaveStrategy,
-        issues) {
-      ReadStrategy = baseline.ReadStrategy,
-    };
+    return AnalyzeCore(baseline, operations).Diagnostics;
   }
 
   /// <summary>
@@ -46,7 +29,10 @@ public static class DataVaultMigrationOperationDiagnostics {
   public static DataVaultMigrationGuardrailReport AnalyzeReport(
       DataVaultDiagnosticsResult baseline,
       IEnumerable<MigrationOperation> operations) {
-    return DataVaultMigrationGuardrailReport.Create(Analyze(baseline, operations));
+    var analysis = AnalyzeCore(baseline, operations);
+    return DataVaultMigrationGuardrailReport.Create(
+        analysis.Diagnostics,
+        analysis.OperationSummaries);
   }
 
   /// <summary>
@@ -111,6 +97,134 @@ public static class DataVaultMigrationOperationDiagnostics {
     ArgumentNullException.ThrowIfNull(diagnostics);
 
     return AnalyzeReport(diagnostics.Analyze(dbContext), operations);
+  }
+
+  private static DataVaultMigrationOperationAnalysis AnalyzeCore(
+      DataVaultDiagnosticsResult baseline,
+      IEnumerable<MigrationOperation> operations) {
+    ArgumentNullException.ThrowIfNull(baseline);
+    ArgumentNullException.ThrowIfNull(operations);
+
+    var schema = DataVaultMigrationSchemaBaseline.Create(baseline.Explain);
+    var operationIssues = new List<DataVaultDiagnosticsIssue>();
+    var operationSummaries = new List<DataVaultMigrationGuardrailOperationSummary>();
+    var ordinal = 0;
+
+    foreach (var operation in operations) {
+      var currentIssues = AnalyzeOperation(schema, operation).ToArray();
+      operationIssues.AddRange(currentIssues);
+      operationSummaries.Add(CreateOperationSummary(ordinal, operation, currentIssues));
+      ordinal++;
+    }
+
+    var issues = baseline.Issues
+        .Concat(operationIssues)
+        .ToArray();
+    var validationIssues = issues
+        .Where(issue => issue.Severity == DataVaultDiagnosticsIssueSeverity.Error)
+        .ToArray();
+    var diagnostics = new DataVaultDiagnosticsResult(
+        new DataVaultValidationDiagnostics(validationIssues.Length == 0, validationIssues),
+        baseline.Explain,
+        baseline.SaveStrategy,
+        issues) {
+      ReadStrategy = baseline.ReadStrategy,
+    };
+
+    return new DataVaultMigrationOperationAnalysis(diagnostics, operationSummaries);
+  }
+
+  private static DataVaultMigrationGuardrailOperationSummary CreateOperationSummary(
+      int ordinal,
+      MigrationOperation operation,
+      IReadOnlyList<DataVaultDiagnosticsIssue> issues) {
+    var descriptor = DescribeOperation(operation);
+    var guardrailIssues = issues
+        .Select(DataVaultMigrationGuardrailIssue.Create)
+        .ToArray();
+
+    return new DataVaultMigrationGuardrailOperationSummary(
+        ordinal,
+        descriptor.OperationName,
+        descriptor.TargetName,
+        descriptor.MemberName,
+        descriptor.Path,
+        GetOperationOutcome(guardrailIssues),
+        guardrailIssues);
+  }
+
+  private static DataVaultMigrationGuardrailOperationOutcome GetOperationOutcome(
+      IReadOnlyList<DataVaultMigrationGuardrailIssue> issues) {
+    if (issues.Any(issue => issue.Severity == DataVaultDiagnosticsIssueSeverity.Error)) {
+      return DataVaultMigrationGuardrailOperationOutcome.Incompatible;
+    }
+
+    return issues.Any(issue => issue.Severity == DataVaultDiagnosticsIssueSeverity.Warning)
+        ? DataVaultMigrationGuardrailOperationOutcome.Risky
+        : DataVaultMigrationGuardrailOperationOutcome.Safe;
+  }
+
+  private static MigrationOperationDescriptor DescribeOperation(MigrationOperation operation) {
+    ArgumentNullException.ThrowIfNull(operation);
+
+    return operation switch {
+      CreateTableOperation createTable => CreateOperationDescriptor("CreateTable", createTable.Name, memberName: null),
+      AddColumnOperation addColumn => CreateOperationDescriptor("AddColumn", addColumn.Table, addColumn.Name),
+      DropColumnOperation dropColumn => CreateOperationDescriptor("DropColumn", dropColumn.Table, dropColumn.Name),
+      AlterColumnOperation alterColumn => CreateOperationDescriptor("AlterColumn", alterColumn.Table, alterColumn.Name),
+      RenameColumnOperation renameColumn => CreateOperationDescriptor("RenameColumn", renameColumn.Table, renameColumn.Name),
+      CreateIndexOperation createIndex => CreateOperationDescriptor("CreateIndex", createIndex.Table, createIndex.Name),
+      DropIndexOperation dropIndex => CreateOperationDescriptor("DropIndex", dropIndex.Table, dropIndex.Name),
+      RenameIndexOperation renameIndex => CreateOperationDescriptor("RenameIndex", renameIndex.Table, renameIndex.Name),
+      AddPrimaryKeyOperation addPrimaryKey => CreateOperationDescriptor(
+          "AddPrimaryKey",
+          addPrimaryKey.Table,
+          NormalizeName(addPrimaryKey.Name) ?? "<unnamed>"),
+      DropPrimaryKeyOperation dropPrimaryKey => CreateOperationDescriptor("DropPrimaryKey", dropPrimaryKey.Table, dropPrimaryKey.Name),
+      DropTableOperation dropTable => CreateOperationDescriptor("DropTable", dropTable.Name, memberName: null),
+      _ => CreateOperationDescriptor(GetOperationName(operation), targetName: null, memberName: null),
+    };
+  }
+
+  private static MigrationOperationDescriptor CreateOperationDescriptor(
+      string operationName,
+      string? targetName,
+      string? memberName) {
+    var normalizedTargetName = NormalizeName(targetName);
+    var normalizedMemberName = NormalizeName(memberName);
+
+    return new MigrationOperationDescriptor(
+        operationName,
+        normalizedTargetName,
+        normalizedMemberName,
+        CreateOperationPath(operationName, normalizedTargetName, normalizedMemberName));
+  }
+
+  private static string CreateOperationPath(
+      string operationName,
+      string? targetName,
+      string? memberName) {
+    if (string.IsNullOrWhiteSpace(targetName)) {
+      return string.IsNullOrWhiteSpace(memberName)
+          ? "migration/" + operationName
+          : "migration/" + operationName + "/" + memberName;
+    }
+
+    return string.IsNullOrWhiteSpace(memberName)
+        ? "migration/" + operationName + "/" + targetName
+        : "migration/" + operationName + "/" + targetName + "/" + memberName;
+  }
+
+  private static string? NormalizeName(string? value) {
+    return string.IsNullOrWhiteSpace(value) ? null : value;
+  }
+
+  private static string GetOperationName(MigrationOperation operation) {
+    const string operationSuffix = "Operation";
+    var name = operation.GetType().Name;
+    return name.EndsWith(operationSuffix, StringComparison.Ordinal)
+        ? name[..^operationSuffix.Length]
+        : name;
   }
 
   private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeOperation(
@@ -471,6 +585,16 @@ public static class DataVaultMigrationOperationDiagnostics {
   private static string FormatTableKind(DataVaultTableKind kind) {
     return kind.ToString().ToLowerInvariant();
   }
+
+  private sealed record DataVaultMigrationOperationAnalysis(
+      DataVaultDiagnosticsResult Diagnostics,
+      IReadOnlyList<DataVaultMigrationGuardrailOperationSummary> OperationSummaries);
+
+  private sealed record MigrationOperationDescriptor(
+      string OperationName,
+      string? TargetName,
+      string? MemberName,
+      string Path);
 
   private sealed class DataVaultMigrationSchemaBaseline {
     private DataVaultMigrationSchemaBaseline(IReadOnlyDictionary<string, DataVaultMigrationEntityBaseline> entities) {

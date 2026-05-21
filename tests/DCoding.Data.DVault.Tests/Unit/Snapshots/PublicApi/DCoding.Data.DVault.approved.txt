@@ -387,9 +387,32 @@ type public sealed class DCoding.Data.DVault.DataVaultMigrationGuardrailIssue : 
   method public virtual bool Equals(DCoding.Data.DVault.DataVaultMigrationGuardrailIssue? other)
   method public void Deconstruct(out DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity Severity, out string Code, out string Path, out string Message, out string Remediation)
 
+type public enum DCoding.Data.DVault.DataVaultMigrationGuardrailOperationOutcome
+  value Safe = 0
+  value Risky = 1
+  value Incompatible = 2
+
+type public sealed class DCoding.Data.DVault.DataVaultMigrationGuardrailOperationSummary : System.IEquatable<DCoding.Data.DVault.DataVaultMigrationGuardrailOperationSummary>
+  ctor public DataVaultMigrationGuardrailOperationSummary(int Ordinal, string OperationName, string? TargetName, string? MemberName, string Path, DCoding.Data.DVault.DataVaultMigrationGuardrailOperationOutcome Outcome, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultMigrationGuardrailIssue> Issues)
+  property public DCoding.Data.DVault.DataVaultMigrationGuardrailOperationOutcome Outcome { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultMigrationGuardrailIssue> Issues { get; init; }
+  property public int Ordinal { get; init; }
+  property public string OperationName { get; init; }
+  property public string Path { get; init; }
+  property public string? MemberName { get; init; }
+  property public string? TargetName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultMigrationGuardrailOperationSummary? left, DCoding.Data.DVault.DataVaultMigrationGuardrailOperationSummary? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultMigrationGuardrailOperationSummary? left, DCoding.Data.DVault.DataVaultMigrationGuardrailOperationSummary? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultMigrationGuardrailOperationSummary? other)
+  method public void Deconstruct(out int Ordinal, out string OperationName, out string? TargetName, out string? MemberName, out string Path, out DCoding.Data.DVault.DataVaultMigrationGuardrailOperationOutcome Outcome, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultMigrationGuardrailIssue> Issues)
+
 type public sealed class DCoding.Data.DVault.DataVaultMigrationGuardrailReport : System.IEquatable<DCoding.Data.DVault.DataVaultMigrationGuardrailReport>
   property public DCoding.Data.DVault.DataVaultDiagnosticsResult Diagnostics { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultMigrationGuardrailIssue> Issues { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultMigrationGuardrailOperationSummary> OperationSummaries { get; }
   property public bool HasFindings { get; }
   property public bool IsValid { get; }
   method public override bool Equals(object? obj)

@@ -54,13 +54,21 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
         ]);
 
     var issue = Assert.Single(report.Issues);
+    var summary = Assert.Single(report.OperationSummaries);
     Assert.Equal("DVM2006", issue.Code);
     Assert.Equal(DataVaultDiagnosticsIssueSeverity.Error, issue.Severity);
     Assert.Equal("migration/DropTable/HubCustomer", issue.Path);
+    Assert.Equal(DataVaultMigrationGuardrailOperationOutcome.Incompatible, summary.Outcome);
+    Assert.Equal("migration/DropTable/HubCustomer", summary.Path);
+    Assert.Equal(issue, Assert.Single(summary.Issues));
     Assert.False(report.IsValid);
     Assert.Same(report.Diagnostics.Issues.Single(), Assert.Single(report.Diagnostics.Validation.Issues));
     Assert.NotEmpty(issue.Remediation);
     Assert.Contains("DVault migration guardrails: invalid", report.ToDisplayString(), StringComparison.Ordinal);
+    Assert.Contains(
+        "provider Microsoft.EntityFrameworkCore.Sqlite, capability sqlite-v1, provider behavior sqlite-provider-v1",
+        report.ToDisplayString(),
+        StringComparison.Ordinal);
   }
 
   [Fact]

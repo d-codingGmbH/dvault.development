@@ -9,12 +9,15 @@ namespace DCoding.Data.DVault;
 public sealed record DataVaultMigrationGuardrailReport {
   internal DataVaultMigrationGuardrailReport(
       DataVaultDiagnosticsResult diagnostics,
-      IReadOnlyList<DataVaultMigrationGuardrailIssue> issues) {
+      IReadOnlyList<DataVaultMigrationGuardrailIssue> issues,
+      IReadOnlyList<DataVaultMigrationGuardrailOperationSummary> operationSummaries) {
     ArgumentNullException.ThrowIfNull(diagnostics);
     ArgumentNullException.ThrowIfNull(issues);
+    ArgumentNullException.ThrowIfNull(operationSummaries);
 
     Diagnostics = diagnostics;
     Issues = issues.ToArray();
+    OperationSummaries = operationSummaries.ToArray();
   }
 
   /// <summary>
@@ -26,6 +29,11 @@ public sealed record DataVaultMigrationGuardrailReport {
   /// Gets the migration-operation findings with remediation guidance from the central DVM catalog.
   /// </summary>
   public IReadOnlyList<DataVaultMigrationGuardrailIssue> Issues { get; }
+
+  /// <summary>
+  /// Gets the ordered safe, risky, or incompatible outcome for each inspected migration operation.
+  /// </summary>
+  public IReadOnlyList<DataVaultMigrationGuardrailOperationSummary> OperationSummaries { get; }
 
   /// <summary>
   /// Gets a value indicating whether the underlying diagnostics result contains no error-severity validation issues.
@@ -47,42 +55,92 @@ public sealed record DataVaultMigrationGuardrailReport {
     builder.Append(IsValid ? "valid" : "invalid");
     builder.Append(", findings ");
     builder.Append(Issues.Count.ToString(CultureInfo.InvariantCulture));
+    builder.Append(", operations ");
+    builder.Append(OperationSummaries.Count.ToString(CultureInfo.InvariantCulture));
+    builder.Append(", provider ");
+    builder.Append(FormatProviderName(Diagnostics.Explain.ProviderName));
+    builder.Append(", capability ");
+    builder.Append(Diagnostics.Explain.CapabilityProfileName);
+    if (Diagnostics.Explain.CapabilityProfileDefaulted) {
+      builder.Append(" (defaulted)");
+    }
 
-    foreach (var issue in Issues) {
+    builder.Append(", provider behavior ");
+    builder.Append(Diagnostics.Explain.ProviderBehaviorProfileName);
+    if (Diagnostics.Explain.ProviderBehaviorDefaulted) {
+      builder.Append(" (defaulted)");
+    }
+
+    foreach (var summary in OperationSummaries) {
       builder.AppendLine();
       builder.Append("- ");
-      builder.Append(issue.Severity);
+      builder.Append(FormatOutcome(summary.Outcome));
       builder.Append(' ');
-      builder.Append(issue.Code);
-      builder.Append(' ');
-      builder.Append(issue.Path);
+      builder.Append(summary.Path);
       builder.Append(": ");
-      builder.Append(issue.Message);
-      builder.Append(" Remediation: ");
-      builder.Append(issue.Remediation);
+      if (summary.Issues.Count == 0) {
+        builder.Append("no DVM findings");
+        continue;
+      }
+
+      builder.Append("findings ");
+      builder.Append(summary.Issues.Count.ToString(CultureInfo.InvariantCulture));
+
+      foreach (var issue in summary.Issues) {
+        builder.AppendLine();
+        builder.Append("  - ");
+        AppendIssue(builder, issue);
+      }
+    }
+
+    if (OperationSummaries.Count == 0) {
+      foreach (var issue in Issues) {
+        builder.AppendLine();
+        builder.Append("- ");
+        AppendIssue(builder, issue);
+      }
     }
 
     return builder.ToString();
   }
 
-  internal static DataVaultMigrationGuardrailReport Create(DataVaultDiagnosticsResult diagnostics) {
+  internal static DataVaultMigrationGuardrailReport Create(
+      DataVaultDiagnosticsResult diagnostics,
+      IReadOnlyList<DataVaultMigrationGuardrailOperationSummary>? operationSummaries = null) {
     ArgumentNullException.ThrowIfNull(diagnostics);
 
     var issues = diagnostics.Issues
         .Where(issue => issue.Code.StartsWith("DVM", StringComparison.Ordinal))
-        .Select(CreateIssue)
+        .Select(DataVaultMigrationGuardrailIssue.Create)
         .ToArray();
 
-    return new DataVaultMigrationGuardrailReport(diagnostics, issues);
+    return new DataVaultMigrationGuardrailReport(
+        diagnostics,
+        issues,
+        operationSummaries ?? Array.Empty<DataVaultMigrationGuardrailOperationSummary>());
   }
 
-  private static DataVaultMigrationGuardrailIssue CreateIssue(DataVaultDiagnosticsIssue issue) {
-    var definition = DataVaultDiagnosticCatalog.GetMigrationOperationDefinition(issue.Code);
-    return new DataVaultMigrationGuardrailIssue(
-        issue.Severity,
-        issue.Code,
-        issue.Path ?? string.Empty,
-        issue.Message,
-        definition.Remediation);
+  private static void AppendIssue(
+      StringBuilder builder,
+      DataVaultMigrationGuardrailIssue issue) {
+    builder.Append(issue.Severity);
+    builder.Append(' ');
+    builder.Append(issue.Code);
+    builder.Append(' ');
+    builder.Append(issue.Path);
+    builder.Append(": ");
+    builder.Append(issue.Message);
+    builder.Append(" Remediation: ");
+    builder.Append(issue.Remediation);
+  }
+
+  private static string FormatProviderName(string? providerName) {
+    return string.IsNullOrWhiteSpace(providerName)
+        ? "<none>"
+        : providerName;
+  }
+
+  private static string FormatOutcome(DataVaultMigrationGuardrailOperationOutcome outcome) {
+    return outcome.ToString().ToLowerInvariant();
   }
 }

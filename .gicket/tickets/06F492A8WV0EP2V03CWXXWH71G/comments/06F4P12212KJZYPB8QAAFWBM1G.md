@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the story against the checked-in ticket and relation state: the existing DVM2001-DVM2006 guardrail catalog remains authoritative, the current blocks relations to 06F492BG6BZYYFMBE5WK7CB024 and 06F492BNDPWS9P4EDSV0W7G6VM were verified and retained, and no child tickets, relation writes, description updates, attachments, or planning documents were materialized.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Checked-in ticket state shows no human scope comments or attachments for 06F492A8WV0EP2V03CWXXWH71G, so the authoritative refinement inputs were the current repository source plus the persisted ticket and relation files under .gicket.
 - Done story 06F2PGGW8ZBW80V6B8RPWNVM70 and done child task 06F2PGH42B6BT1708MYGMXP5GM already ratify the current provider-neutral migration-guardrail matrix and CreateTable coverage; this story is about strengthening report structure and wording on top of that baseline, not reopening rule coverage or command ownership.
 - The existing DVM2001-DVM2006 catalog and severity mapping stay authoritative for findings: DVM2001, DVM2002, DVM2003, and DVM2006 are incompatible or error findings, while DVM2004 and DVM2005 are risky or warning findings.
@@ -17,7 +16,7 @@
 - The authoritative public boundary remains DataVaultMigrationOperationDiagnostics.AnalyzeReport(...), DataVaultMigrationGuardrailReport, DataVaultMigrationGuardrailIssue, and DataVaultMigrationGuardrailReport.ToDisplayString(); strengthening can add ordered operation-summary data, but downstream callers must not be forced to recover safe, risky, or incompatible status by parsing ad hoc CLI text.
 - The verified live relations remain parent epic 06F492A3MPSGP3KXDNZECN01QM plus blocks links to 06F492BG6BZYYFMBE5WK7CB024 and 06F492BNDPWS9P4EDSV0W7G6VM; no relation cleanup was justified by the current evidence.
 
-### Scope In
+Scope In
 - Strengthen migration guardrail reporting so every inspected MigrationOperation can be surfaced with a deterministic safe, risky, or incompatible outcome instead of limiting the report to finding-only rows.
 - Keep the current DVM2001-DVM2006 codes, severities, remediation text, and migration/{Operation}/{Target}/{Member?} paths as the single finding taxonomy behind those outcomes.
 - Preserve the underlying Diagnostics, IsValid, HasFindings, and existing finding list behavior while adding a machine-readable ordered operation-summary surface and matching human-readable rendering.
@@ -25,78 +24,42 @@
 - Cover representative destructive or ambiguous migration shapes already represented in the existing guardrail matrix, including dropped DVault tables, dropped or altered required technical or structural columns, wrong key or index coverage, renamed DVault-owned columns, and malformed created DVault tables.
 - Add tests for safe, risky, and incompatible report outcomes, deterministic ordering, and at least one SQLite-backed provider-context example.
 
-### Scope Out
+Scope Out
 - No new migration diagnostic code family or parallel taxonomy outside the existing DVM2001-DVM2006 catalog.
 - No provider-specific SQL parsing, store-type validation, default-SQL comparison, collation analysis, or engine-specific migration rewriting.
 - No changes to EF command ownership, DataVaultDesignTimeCommand verb shape, migration execution, or automatic dotnet ef interception.
 - No redesign of sibling preflight aggregator story 06F492BG6BZYYFMBE5WK7CB024 or blocked documentation task 06F492BNDPWS9P4EDSV0W7G6VM beyond keeping this report surface reusable by those tickets.
 - No live-schema drift, ModelSnapshot comparison, or prior-schema inference beyond the current migration-operation plus diagnostics baseline.
 
-## Acceptance Criteria
-- AnalyzeReport produces a strengthened DataVaultMigrationGuardrailReport that preserves the current Diagnostics and Issues surfaces and also exposes deterministic ordered outcome data for every inspected migration operation.
-- An operation with no DVM finding is explicitly reported as safe without creating a synthetic DMV or DVM informational issue, and operation ordering matches the input MigrationOperation sequence with stable per-operation detail ordering.
-- Warning-severity findings are surfaced as risky and error-severity findings are surfaced as incompatible, reusing the current DVM2001-DVM2006 codes, severities, paths, messages, and remediation text.
-- The report's human-readable rendering identifies safe, risky, and incompatible results and includes provider-aware context from the active diagnostics baseline rather than generic wording that ignores the configured provider state.
-- Underlying model-validation problems remain visible through the report's existing diagnostics surface and overall validity state; report strengthening does not hide an invalid baseline when migration findings are also present.
-- Automated coverage asserts structured safe, risky, and incompatible payloads and deterministic ordering for representative create, add, drop, alter, rename, index, key, and table scenarios, including destructive and ambiguous cases.
-- At least one SQLite-backed integration path proves provider-aware wording against a real configured DbContext, while unit coverage keeps provider-neutral or defaulted wording deterministic and automation-safe.
-- Existing callers that rely on AnalyzeReport, Issues, remediation lookup, and guardrail command exit behavior continue to work without needing a second report taxonomy or ad hoc text parsing.
-
-## Definition of Done
-- Any public API changes are additive and aligned with the current DVault package and test layout conventions, and API snapshot coverage is updated if new report DTO members or types are exposed.
-- The repository keeps one authoritative migration-guardrail taxonomy through DVM2001-DVM2006, with stable severity mapping, remediation guidance, and migration/{Operation}/{Target}/{Member?} path behavior.
-- Unit and integration tests cover the new structured operation outcomes, provider-aware display text, deterministic ordering, and backward-compatible finding surfaces.
-- The existing guardrail command path keeps using DataVaultMigrationOperationDiagnostics.AnalyzeReport(...) and DataVaultMigrationGuardrailReport.ToDisplayString() rather than introducing a parallel formatter or aggregator-only classification pass.
-- The story completes without absorbing sibling docs or aggregator scope and without requiring child-ticket splits, relation rewrites, attachments, or planning-document materialization.
-
-## Implementation Notes
-- Extend DataVaultMigrationGuardrailReport with additive ordered operation-summary data and keep Issues as the backward-compatible finding-only surface already used by current tests and command code.
-- Derive safe, risky, and incompatible outcomes from the current guardrail evaluation results: no finding means safe, warning-severity DVM findings mean risky, and error-severity DVM findings mean incompatible.
-- Reuse existing diagnostics explain data for provider-aware context; if provider mapping defaulted or provider behavior is still provider-neutral, wording must say so instead of implying fully provider-specific support.
-- Keep summary ordering anchored to the incoming MigrationOperation sequence and the deterministic member ordering already used by CreateTable analysis and finding-path generation.
-- Preserve the current single report and rendering lane so DataVaultDesignTimeCommand and the blocked preflight aggregator story 06F492BG6BZYYFMBE5WK7CB024 can consume the same structured surface instead of reclassifying text later.
-- The current blocks relations to 06F492BG6BZYYFMBE5WK7CB024 and 06F492BNDPWS9P4EDSV0W7G6VM were verified and retained; no durable planning writes were needed to keep the ticket contract consistent with live relation state.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Once this report contract lands, should story 06F492BG6BZYYFMBE5WK7CB024 expose the same structured safe, risky, and incompatible matrix through its aggregated preflight surface without reshaping it?
 - Once implementation is done, should task 06F492BNDPWS9P4EDSV0W7G6VM publish one canonical example each for safe, risky, and incompatible guardrail output in release notes and adoption guidance?
 - Should a later provider-focused story add optional provider-specific hints for store types or engine limitations after this provider-aware but provider-neutral report baseline proves stable?
 
-## Risks
+Risks
 - If implementation only changes ToDisplayString() and does not add a machine-readable ordered operation surface, downstream automation and the preflight aggregator will still need to parse text or reimplement classification.
 - Provider-aware wording can become misleading if it hard-codes engine claims instead of reflecting the actual diagnostics baseline, especially when provider or profile selection defaulted.
 - Building safe, risky, or incompatible summaries from unordered dictionaries or merged finding sets instead of the input operation order will destabilize CI baselines and human review output.
 - Because the current guardrail engine remains provider-neutral structural analysis, consumers may overread provider-aware wording as provider-specific validation unless non-goals stay explicit in code, tests, and downstream docs.
 
-## Split Recommendations
+Split recommendations
 - No new split is recommended; repository evidence already shows the guardrail rule catalog and operation matrix are in place, so this story can stay focused on report-surface strengthening.
 - Keep story 06F492BG6BZYYFMBE5WK7CB024 and task 06F492BNDPWS9P4EDSV0W7G6VM as downstream consumers of the finalized report contract rather than pulling their scope into this ticket.
 - If later work needs provider-specific SQL or store-type hints, migration-history reasoning, or ModelSnapshot-aware inference, raise that as a separate follow-up story instead of widening this ticket.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 8
+- definition-of-done items: 5
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Improve migration validation output so consumers can see exactly which generated operations are safe, risky, or incompatible with DVault structures. Include provider-aware wording, deterministic diagnostics, and tests for destructive or ambiguous changes.
-
-<!-- gicket-bot:developer-delivery:v1:start -->
-## Developer Delivery
-
-### Summary
-- Added an additive ordered operation-summary surface to `DataVaultMigrationGuardrailReport` so each inspected migration operation reports `Safe`, `Risky`, or `Incompatible` without requiring text parsing.
-- Preserved the existing `Diagnostics`, `Issues`, `IsValid`, `HasFindings`, and DVM2001-DVM2006 finding taxonomy while grouping per-operation findings for consumers.
-- Updated `ToDisplayString()` to include provider, capability profile, provider-behavior profile, operation counts, and deterministic outcome rows.
-- Added unit coverage for safe/risky/incompatible outcomes, deterministic ordering, representative migration operation shapes, and mixed warning-plus-error classification.
-- Added SQLite-backed integration assertions for provider-aware guardrail wording from a real configured `DbContext`.
-
-### Verification
-- Passed: `bash tools/check-format.sh`
-- Blocked locally before compilation: `dotnet test DVault.slnx --nologo --no-restore --filter FullyQualifiedName~DataVaultMigrationOperationDiagnosticsTests` because `Microsoft.EntityFrameworkCore.Analyzers` version `10.0.8` is missing from the local NuGet package cache.
-- Blocked locally before compilation: `dotnet build src/DCoding.Data.DVault/DCoding.Data.DVault.csproj --nologo --no-restore` for the same missing local package.
-- Network restore was not run inside this unattended execution boundary.
-<!-- gicket-bot:developer-delivery:v1:end -->
+Run mode
+- apply: planned updates are applied after this comment

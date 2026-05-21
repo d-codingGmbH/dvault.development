@@ -294,6 +294,120 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
   }
 
   [Fact]
+  public void AnalyzeMigrationOperationsReportExposesOrderedOperationOutcomes() {
+    using var provider = CreateServiceProvider();
+    var baseline = provider
+        .GetRequiredService<IDataVaultDiagnosticsService>()
+        .Analyze(CreateMigrationGuardrailMetadataModel());
+    MigrationOperation[] operations = [
+        CreateMatchingCreateTableOperation(baseline, "HubCustomer"),
+        new AddColumnOperation {
+          Table = "SatCustomerContact",
+          Name = "PhoneNumber",
+          ClrType = typeof(string),
+        },
+        new DropColumnOperation {
+          Table = "SatCustomerContact",
+          Name = "HashDiff",
+        },
+        new AlterColumnOperation {
+          Table = "HubCustomer",
+          Name = "RecordSource",
+          ClrType = typeof(string),
+        },
+        new RenameColumnOperation {
+          Table = "HubCustomer",
+          Name = "LoadTimestamp",
+          NewName = "LoadedAt",
+        },
+        new CreateIndexOperation {
+          Table = "BridgeCustomerOrder",
+          Name = "IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey",
+          Columns = ["CustomerHashKey"],
+          IsUnique = false,
+        },
+        new AddPrimaryKeyOperation {
+          Table = "HubCustomer",
+          Name = "PkHubCustomerWrongName",
+          Columns = ["CustomerHashKey"],
+        },
+        new DropTableOperation {
+          Name = "BridgeCustomerOrder",
+        },
+    ];
+
+    var report = DataVaultMigrationOperationDiagnostics.AnalyzeReport(baseline, operations);
+
+    Assert.False(report.IsValid);
+    Assert.True(report.HasFindings);
+    Assert.Equal(
+        [
+            DataVaultMigrationGuardrailOperationOutcome.Safe,
+            DataVaultMigrationGuardrailOperationOutcome.Safe,
+            DataVaultMigrationGuardrailOperationOutcome.Incompatible,
+            DataVaultMigrationGuardrailOperationOutcome.Incompatible,
+            DataVaultMigrationGuardrailOperationOutcome.Risky,
+            DataVaultMigrationGuardrailOperationOutcome.Risky,
+            DataVaultMigrationGuardrailOperationOutcome.Risky,
+            DataVaultMigrationGuardrailOperationOutcome.Incompatible,
+        ],
+        report.OperationSummaries.Select(summary => summary.Outcome));
+    Assert.Equal(Enumerable.Range(0, operations.Length), report.OperationSummaries.Select(summary => summary.Ordinal));
+    Assert.Equal(
+        [
+            "migration/CreateTable/HubCustomer",
+            "migration/AddColumn/SatCustomerContact/PhoneNumber",
+            "migration/DropColumn/SatCustomerContact/HashDiff",
+            "migration/AlterColumn/HubCustomer/RecordSource",
+            "migration/RenameColumn/HubCustomer/LoadTimestamp",
+            "migration/CreateIndex/BridgeCustomerOrder/IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey",
+            "migration/AddPrimaryKey/HubCustomer/PkHubCustomerWrongName",
+            "migration/DropTable/BridgeCustomerOrder",
+        ],
+        report.OperationSummaries.Select(summary => summary.Path));
+    Assert.Empty(report.OperationSummaries[0].Issues);
+    Assert.Empty(report.OperationSummaries[1].Issues);
+    Assert.Equal(
+        ["DVM2002", "DVM2002", "DVM2005", "DVM2004", "DVM2004", "DVM2006"],
+        report.Issues.Select(issue => issue.Code));
+    Assert.Equal(report.Issues, report.OperationSummaries.SelectMany(summary => summary.Issues));
+
+    var display = report.ToDisplayString();
+    Assert.Contains(
+        "provider <none>, capability sqlite-v1, provider behavior provider-neutral-v1",
+        display,
+        StringComparison.Ordinal);
+    Assert.Contains("- safe migration/CreateTable/HubCustomer: no DVM findings", display, StringComparison.Ordinal);
+    Assert.Contains("- risky migration/RenameColumn/HubCustomer/LoadTimestamp: findings 1", display, StringComparison.Ordinal);
+    Assert.Contains("- incompatible migration/DropTable/BridgeCustomerOrder: findings 1", display, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void AnalyzeMigrationOperationsReportTreatsAnyErrorFindingAsIncompatible() {
+    using var provider = CreateServiceProvider();
+    var baseline = provider
+        .GetRequiredService<IDataVaultDiagnosticsService>()
+        .Analyze(CreateMigrationGuardrailMetadataModel());
+    var hubCreate = CreateMatchingCreateTableOperation(baseline, "HubCustomer");
+    RemoveCreateTableColumn(hubCreate, "LoadTimestamp");
+    hubCreate.PrimaryKey = new AddPrimaryKeyOperation {
+      Table = "HubCustomer",
+      Name = "PkHubCustomerWrongName",
+      Columns = ["CustomerHashKey"],
+    };
+
+    var report = DataVaultMigrationOperationDiagnostics.AnalyzeReport(baseline, [hubCreate]);
+
+    var summary = Assert.Single(report.OperationSummaries);
+    Assert.Equal(DataVaultMigrationGuardrailOperationOutcome.Incompatible, summary.Outcome);
+    Assert.Equal("migration/CreateTable/HubCustomer", summary.Path);
+    Assert.Equal(["DVM2002", "DVM2004"], summary.Issues.Select(issue => issue.Code));
+    Assert.Equal(
+        [DataVaultDiagnosticsIssueSeverity.Error, DataVaultDiagnosticsIssueSeverity.Warning],
+        summary.Issues.Select(issue => issue.Severity));
+  }
+
+  [Fact]
   public void AnalyzeCreateTableOperationReportIncludesRemediationAndDeterministicDisplayString() {
     using var provider = CreateServiceProvider();
     var baseline = provider
@@ -346,8 +460,9 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
         DataVaultDiagnosticCatalog.GetMigrationOperationDefinition("DVM2006").Remediation,
         issue.Remediation);
     Assert.Equal(
-        "DVault migration guardrails: invalid, findings 1" + Environment.NewLine +
-        "- Error DVM2006 migration/DropTable/BridgeCustomerOrder: MI-5 violation: migration drops Data Vault-produced table 'BridgeCustomerOrder'. Remediation: " +
+        "DVault migration guardrails: invalid, findings 1, operations 1, provider <none>, capability sqlite-v1, provider behavior provider-neutral-v1" + Environment.NewLine +
+        "- incompatible migration/DropTable/BridgeCustomerOrder: findings 1" + Environment.NewLine +
+        "  - Error DVM2006 migration/DropTable/BridgeCustomerOrder: MI-5 violation: migration drops Data Vault-produced table 'BridgeCustomerOrder'. Remediation: " +
         issue.Remediation,
         report.ToDisplayString());
   }
