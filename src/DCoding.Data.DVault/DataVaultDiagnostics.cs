@@ -206,6 +206,15 @@ public sealed record DataVaultPropertyExplain(
     DataVaultProviderValueFormat ValueFormat);
 
 /// <summary>
+/// Machine-readable explanation of one provider capability type mapping.
+/// </summary>
+public sealed record DataVaultProviderTypeMappingExplain(
+    DataVaultLogicalPropertyKind LogicalPropertyKind,
+    string ModelClrTypeName,
+    string StoreType,
+    DataVaultProviderValueFormat ValueFormat);
+
+/// <summary>
 /// Machine-readable explanation of one translated Data Vault key.
 /// </summary>
 public sealed record DataVaultKeyExplain(
@@ -256,7 +265,52 @@ public sealed record DataVaultExplainDiagnostics(
     string LoadTimestampStoreType,
     string ProviderBehaviorProfileName,
     bool ProviderBehaviorDefaulted,
-    IReadOnlyList<DataVaultEntityExplain> Entities);
+    IReadOnlyList<DataVaultEntityExplain> Entities) {
+  /// <summary>
+  /// Gets the value format used when PIT rows persist satellite snapshot load-timestamp references.
+  /// </summary>
+  public DataVaultProviderValueFormat SatelliteSnapshotReferenceValueFormat { get; init; } =
+      DataVaultProviderValueFormat.Text;
+
+  /// <summary>
+  /// Gets the provider store type used when PIT rows persist satellite snapshot load-timestamp references.
+  /// </summary>
+  public string SatelliteSnapshotReferenceStoreType { get; init; } = string.Empty;
+
+  /// <summary>
+  /// Gets the deterministic provider type-mapping facts declared by the selected capability profile.
+  /// </summary>
+  public IReadOnlyList<DataVaultProviderTypeMappingExplain> TypeMappings { get; init; } =
+      Array.Empty<DataVaultProviderTypeMappingExplain>();
+
+  /// <summary>
+  /// Gets the provider-specific maximum physical identifier length, if the selected capability profile declares one.
+  /// </summary>
+  public int? MaximumIdentifierLength { get; init; }
+
+  /// <summary>
+  /// Gets a value indicating whether the selected capability profile accepts secondary indexes covered by primary keys.
+  /// </summary>
+  public bool AllowsIndexesCoveredByPrimaryKey { get; init; } = true;
+
+  /// <summary>
+  /// Gets how the selected capability profile projects index include columns without native include-column support.
+  /// </summary>
+  public DataVaultUnsupportedIncludedIndexColumnMode UnsupportedIncludedIndexColumnMode { get; init; } =
+      DataVaultUnsupportedIncludedIndexColumnMode.AppendToKey;
+
+  /// <summary>
+  /// Gets the SQL-function posture declared by the selected capability profile.
+  /// </summary>
+  public DataVaultProviderSqlFunctionSupport SqlFunctionSupport { get; init; } =
+      DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported;
+
+  /// <summary>
+  /// Gets the concurrency posture declared by the selected capability profile.
+  /// </summary>
+  public DataVaultProviderConcurrencySupport ConcurrencySupport { get; init; } =
+      DataVaultProviderConcurrencySupport.NoneInV1Unsupported;
+}
 
 /// <summary>
 /// Machine-readable cause explaining provider-specific save-strategy fallback.
@@ -266,6 +320,14 @@ public sealed record DataVaultSaveStrategyFallbackCause(
     string Message);
 
 /// <summary>
+/// Machine-readable declared gate for provider-specific save-strategy eligibility.
+/// </summary>
+public sealed record DataVaultSaveStrategyGateRequirement(
+    DataVaultSaveStrategyFallbackCauseKind Kind,
+    int? MinimumTotalOperationCount = null,
+    int? MaximumSatelliteOperationCount = null);
+
+/// <summary>
 /// Machine-readable diagnostics for one provider-specific save-strategy candidate.
 /// </summary>
 public sealed record DataVaultSaveStrategyCandidateDiagnostics(
@@ -273,7 +335,18 @@ public sealed record DataVaultSaveStrategyCandidateDiagnostics(
     string StrategyName,
     int Priority,
     bool CanSave,
-    IReadOnlyList<DataVaultSaveStrategyFallbackCause> FallbackCauses);
+    IReadOnlyList<DataVaultSaveStrategyFallbackCause> FallbackCauses) {
+  /// <summary>
+  /// Gets the provider names this candidate declares as eligible, when the strategy is known to DVault diagnostics.
+  /// </summary>
+  public IReadOnlyList<string> SupportedProviderNames { get; init; } = Array.Empty<string>();
+
+  /// <summary>
+  /// Gets the bounded eligibility gates this candidate declares, when the strategy is known to DVault diagnostics.
+  /// </summary>
+  public IReadOnlyList<DataVaultSaveStrategyGateRequirement> GateRequirements { get; init; } =
+      Array.Empty<DataVaultSaveStrategyGateRequirement>();
+}
 
 /// <summary>
 /// Machine-readable diagnostics for request-bound provider-specific save-strategy dispatch.
@@ -294,6 +367,11 @@ public sealed record DataVaultReadStrategyFallbackCause(
     string Message);
 
 /// <summary>
+/// Machine-readable declared gate for provider-specific read-strategy eligibility.
+/// </summary>
+public sealed record DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind Kind);
+
+/// <summary>
 /// Machine-readable diagnostics for one provider-specific read-strategy candidate.
 /// </summary>
 public sealed record DataVaultReadStrategyCandidateDiagnostics(
@@ -301,7 +379,18 @@ public sealed record DataVaultReadStrategyCandidateDiagnostics(
     string StrategyName,
     int Priority,
     bool CanRead,
-    IReadOnlyList<DataVaultReadStrategyFallbackCause> FallbackCauses);
+    IReadOnlyList<DataVaultReadStrategyFallbackCause> FallbackCauses) {
+  /// <summary>
+  /// Gets the provider names this candidate declares as eligible, when the strategy is known to DVault diagnostics.
+  /// </summary>
+  public IReadOnlyList<string> SupportedProviderNames { get; init; } = Array.Empty<string>();
+
+  /// <summary>
+  /// Gets the bounded eligibility gates this candidate declares, when the strategy is known to DVault diagnostics.
+  /// </summary>
+  public IReadOnlyList<DataVaultReadStrategyGateRequirement> GateRequirements { get; init; } =
+      Array.Empty<DataVaultReadStrategyGateRequirement>();
+}
 
 /// <summary>
 /// Machine-readable diagnostics for request-bound provider-specific read-strategy dispatch.
@@ -346,6 +435,26 @@ public sealed record DataVaultDiagnosticsResult(
       builder.Append(" (defaulted)");
     }
 
+    builder.Append(", provider ");
+    builder.Append(string.IsNullOrWhiteSpace(Explain.ProviderName) ? "<none>" : Explain.ProviderName);
+    builder.Append(", load timestamp ");
+    builder.Append(Explain.LoadTimestampValueFormat);
+    builder.Append('/');
+    builder.Append(Explain.LoadTimestampStoreType);
+    builder.Append(", snapshot reference ");
+    builder.Append(Explain.SatelliteSnapshotReferenceValueFormat);
+    builder.Append('/');
+    builder.Append(Explain.SatelliteSnapshotReferenceStoreType);
+    builder.Append(", identifier max ");
+    builder.Append(Explain.MaximumIdentifierLength.HasValue
+        ? Explain.MaximumIdentifierLength.Value.ToString(CultureInfo.InvariantCulture)
+        : "<provider-default>");
+    builder.Append(", included indexes ");
+    builder.Append(Explain.UnsupportedIncludedIndexColumnMode);
+    builder.Append(", SQL functions ");
+    builder.Append(Explain.SqlFunctionSupport);
+    builder.Append(", concurrency ");
+    builder.Append(Explain.ConcurrencySupport);
     builder.Append(", provider behavior ");
     builder.Append(Explain.ProviderBehaviorProfileName);
     if (Explain.ProviderBehaviorDefaulted) {
@@ -362,6 +471,7 @@ public sealed record DataVaultDiagnosticsResult(
       builder.Append(')');
     }
 
+    AppendSaveStrategyDisplayDetails(builder, SaveStrategy);
     builder.Append(", read strategy ");
     builder.Append(ReadStrategy.Status.ToString());
     if (!string.IsNullOrWhiteSpace(ReadStrategy.SelectedStrategyName)) {
@@ -370,6 +480,7 @@ public sealed record DataVaultDiagnosticsResult(
       builder.Append(')');
     }
 
+    AppendReadStrategyDisplayDetails(builder, ReadStrategy);
     if (Issues.Count > 0) {
       builder.AppendLine();
       foreach (var issue in Issues) {
@@ -384,6 +495,38 @@ public sealed record DataVaultDiagnosticsResult(
     }
 
     return builder.ToString().TrimEnd();
+  }
+
+  private static void AppendSaveStrategyDisplayDetails(
+      StringBuilder builder,
+      DataVaultSaveStrategyDiagnostics strategy) {
+    if (strategy.SelectedStrategyPriority.HasValue) {
+      builder.Append(", save priority ");
+      builder.Append(strategy.SelectedStrategyPriority.Value.ToString(CultureInfo.InvariantCulture));
+    }
+
+    builder.Append(", save candidates ");
+    builder.Append(strategy.Candidates.Count.ToString(CultureInfo.InvariantCulture));
+    if (strategy.FallbackCauses.Count > 0) {
+      builder.Append(", save fallback causes ");
+      builder.Append(string.Join(", ", strategy.FallbackCauses.Select(cause => cause.Kind.ToString())));
+    }
+  }
+
+  private static void AppendReadStrategyDisplayDetails(
+      StringBuilder builder,
+      DataVaultReadStrategyDiagnostics strategy) {
+    if (strategy.SelectedStrategyPriority.HasValue) {
+      builder.Append(", read priority ");
+      builder.Append(strategy.SelectedStrategyPriority.Value.ToString(CultureInfo.InvariantCulture));
+    }
+
+    builder.Append(", read candidates ");
+    builder.Append(strategy.Candidates.Count.ToString(CultureInfo.InvariantCulture));
+    if (strategy.FallbackCauses.Count > 0) {
+      builder.Append(", read fallback causes ");
+      builder.Append(string.Join(", ", strategy.FallbackCauses.Select(cause => cause.Kind.ToString())));
+    }
   }
 }
 
@@ -872,6 +1015,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     var orderedStrategies = _providerSaveStrategies
         .Select((strategy, registrationOrdinal) => new SaveStrategyRegistration(strategy, registrationOrdinal))
         .OrderByDescending(registration => registration.Strategy.Priority)
+        .ThenBy(registration => registration.RegistrationOrdinal)
         .ToArray();
     var candidates = new List<DataVaultSaveStrategyCandidateDiagnostics>();
 
@@ -897,7 +1041,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         canSave = false;
         fallbackCauses = [new DataVaultSaveStrategyFallbackCause(
             DataVaultSaveStrategyFallbackCauseKind.StrategyDeclined,
-            "Provider save strategy '" + strategy.GetType().Name + "' failed compatibility evaluation: " + exception.Message)];
+            "Provider save strategy '" + strategy.GetType().Name + "' failed compatibility evaluation.")];
       }
 
       var candidate = new DataVaultSaveStrategyCandidateDiagnostics(
@@ -905,7 +1049,10 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
           strategy.GetType().Name,
           strategy.Priority,
           canSave,
-          fallbackCauses);
+          fallbackCauses) {
+        SupportedProviderNames = DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(strategy),
+        GateRequirements = DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(strategy),
+      };
       candidates.Add(candidate);
 
       if (canSave) {
@@ -959,6 +1106,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     var orderedStrategies = _providerReadStrategies
         .Select((strategy, registrationOrdinal) => new ReadStrategyRegistration(strategy, registrationOrdinal))
         .OrderByDescending(registration => registration.Strategy.Priority)
+        .ThenBy(registration => registration.RegistrationOrdinal)
         .ToArray();
     var candidates = new List<DataVaultReadStrategyCandidateDiagnostics>();
 
@@ -984,7 +1132,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         canRead = false;
         fallbackCauses = [new DataVaultReadStrategyFallbackCause(
             DataVaultReadStrategyFallbackCauseKind.StrategyDeclined,
-            "Provider read strategy '" + strategy.GetType().Name + "' failed compatibility evaluation: " + exception.Message)];
+            "Provider read strategy '" + strategy.GetType().Name + "' failed compatibility evaluation.")];
       }
 
       var candidate = new DataVaultReadStrategyCandidateDiagnostics(
@@ -992,7 +1140,10 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
           strategy.GetType().Name,
           strategy.Priority,
           canRead,
-          fallbackCauses);
+          fallbackCauses) {
+        SupportedProviderNames = DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(strategy),
+        GateRequirements = DataVaultProviderReadStrategyGateEvaluator.GetKnownLatestSatelliteGateRequirements(strategy),
+      };
       candidates.Add(candidate);
 
       if (canRead) {
@@ -1046,6 +1197,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     var orderedStrategies = _providerPitReadStrategies
         .Select((strategy, registrationOrdinal) => new PitReadStrategyRegistration(strategy, registrationOrdinal))
         .OrderByDescending(registration => registration.Strategy.Priority)
+        .ThenBy(registration => registration.RegistrationOrdinal)
         .ToArray();
     var candidates = new List<DataVaultReadStrategyCandidateDiagnostics>();
 
@@ -1071,7 +1223,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         canRead = false;
         fallbackCauses = [new DataVaultReadStrategyFallbackCause(
             DataVaultReadStrategyFallbackCauseKind.StrategyDeclined,
-            "Provider read strategy '" + strategy.GetType().Name + "' failed compatibility evaluation: " + exception.Message)];
+            "Provider read strategy '" + strategy.GetType().Name + "' failed compatibility evaluation.")];
       }
 
       var candidate = new DataVaultReadStrategyCandidateDiagnostics(
@@ -1079,7 +1231,10 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
           strategy.GetType().Name,
           strategy.Priority,
           canRead,
-          fallbackCauses);
+          fallbackCauses) {
+        SupportedProviderNames = DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(strategy),
+        GateRequirements = DataVaultProviderReadStrategyGateEvaluator.GetKnownPitGateRequirements(strategy),
+      };
       candidates.Add(candidate);
 
       if (canRead) {
@@ -1110,6 +1265,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     var orderedStrategies = _providerBridgeReadStrategies
         .Select((strategy, registrationOrdinal) => new BridgeReadStrategyRegistration(strategy, registrationOrdinal))
         .OrderByDescending(registration => registration.Strategy.Priority)
+        .ThenBy(registration => registration.RegistrationOrdinal)
         .ToArray();
     var candidates = new List<DataVaultReadStrategyCandidateDiagnostics>();
 
@@ -1135,7 +1291,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         canRead = false;
         fallbackCauses = [new DataVaultReadStrategyFallbackCause(
             DataVaultReadStrategyFallbackCauseKind.StrategyDeclined,
-            "Provider read strategy '" + strategy.GetType().Name + "' failed compatibility evaluation: " + exception.Message)];
+            "Provider read strategy '" + strategy.GetType().Name + "' failed compatibility evaluation.")];
       }
 
       var candidate = new DataVaultReadStrategyCandidateDiagnostics(
@@ -1143,7 +1299,10 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
           strategy.GetType().Name,
           strategy.Priority,
           canRead,
-          fallbackCauses);
+          fallbackCauses) {
+        SupportedProviderNames = DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(strategy),
+        GateRequirements = DataVaultProviderReadStrategyGateEvaluator.GetKnownBridgeGateRequirements(strategy),
+      };
       candidates.Add(candidate);
 
       if (canRead) {
@@ -1249,6 +1408,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       bool capabilityProfileDefaulted,
       bool providerBehaviorDefaulted) {
     var loadTimestampMapping = GetLoadTimestampMapping(providerCapabilities);
+    var satelliteSnapshotReferenceMapping = GetSatelliteSnapshotReferenceMapping(providerCapabilities);
     var entities = model
         .GetEntityTypes()
         .Where(IsDataVaultEntity)
@@ -1268,7 +1428,16 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         loadTimestampMapping.NativeStoreType,
         providerBehaviorProfile.ProfileName,
         providerBehaviorDefaulted,
-        entities);
+        entities) {
+      SatelliteSnapshotReferenceValueFormat = satelliteSnapshotReferenceMapping.ValueFormat,
+      SatelliteSnapshotReferenceStoreType = satelliteSnapshotReferenceMapping.NativeStoreType,
+      TypeMappings = CreateTypeMappingExplain(providerCapabilities),
+      MaximumIdentifierLength = providerCapabilities.MaximumIdentifierLength,
+      AllowsIndexesCoveredByPrimaryKey = providerCapabilities.AllowsIndexesCoveredByPrimaryKey,
+      UnsupportedIncludedIndexColumnMode = providerCapabilities.UnsupportedIncludedIndexColumnMode,
+      SqlFunctionSupport = providerCapabilities.SqlFunctionSupport,
+      ConcurrencySupport = providerCapabilities.ConcurrencySupport,
+    };
   }
 
   private static DataVaultExplainDiagnostics CreateEmptyExplain(
@@ -1280,6 +1449,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       bool capabilityProfileDefaulted,
       bool providerBehaviorDefaulted) {
     var loadTimestampMapping = GetLoadTimestampMapping(providerCapabilities);
+    var satelliteSnapshotReferenceMapping = GetSatelliteSnapshotReferenceMapping(providerCapabilities);
     return new DataVaultExplainDiagnostics(
         sourceKind,
         sourceFingerprint,
@@ -1290,7 +1460,16 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         loadTimestampMapping.NativeStoreType,
         providerBehaviorProfile.ProfileName,
         providerBehaviorDefaulted,
-        Array.Empty<DataVaultEntityExplain>());
+        Array.Empty<DataVaultEntityExplain>()) {
+      SatelliteSnapshotReferenceValueFormat = satelliteSnapshotReferenceMapping.ValueFormat,
+      SatelliteSnapshotReferenceStoreType = satelliteSnapshotReferenceMapping.NativeStoreType,
+      TypeMappings = CreateTypeMappingExplain(providerCapabilities),
+      MaximumIdentifierLength = providerCapabilities.MaximumIdentifierLength,
+      AllowsIndexesCoveredByPrimaryKey = providerCapabilities.AllowsIndexesCoveredByPrimaryKey,
+      UnsupportedIncludedIndexColumnMode = providerCapabilities.UnsupportedIncludedIndexColumnMode,
+      SqlFunctionSupport = providerCapabilities.SqlFunctionSupport,
+      ConcurrencySupport = providerCapabilities.ConcurrencySupport,
+    };
   }
 
   private static DataVaultEntityExplain CreateEntityExplain(IReadOnlyEntityType entityType) {
@@ -1603,16 +1782,39 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
 
   private static DataVaultProviderTypeMapping GetLoadTimestampMapping(
       DataVaultProviderCapabilityProfile providerCapabilities) {
+    return GetTypeMappingOrMissing(providerCapabilities, DataVaultLogicalPropertyKind.LoadTimestamp);
+  }
+
+  private static DataVaultProviderTypeMapping GetSatelliteSnapshotReferenceMapping(
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    return GetTypeMappingOrMissing(providerCapabilities, DataVaultLogicalPropertyKind.SatelliteSnapshotReference);
+  }
+
+  private static DataVaultProviderTypeMapping GetTypeMappingOrMissing(
+      DataVaultProviderCapabilityProfile providerCapabilities,
+      DataVaultLogicalPropertyKind logicalPropertyKind) {
     try {
-      return providerCapabilities.GetRequiredTypeMapping(DataVaultLogicalPropertyKind.LoadTimestamp);
+      return providerCapabilities.GetRequiredTypeMapping(logicalPropertyKind);
     }
     catch (NotSupportedException) {
       return new DataVaultProviderTypeMapping(
-          DataVaultLogicalPropertyKind.LoadTimestamp,
+          logicalPropertyKind,
           typeof(DateTimeOffset),
           "<missing>",
           DataVaultProviderValueFormat.Text);
     }
+  }
+
+  private static IReadOnlyList<DataVaultProviderTypeMappingExplain> CreateTypeMappingExplain(
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    return providerCapabilities.TypeMappings
+        .OrderBy(mapping => mapping.LogicalPropertyKind)
+        .Select(mapping => new DataVaultProviderTypeMappingExplain(
+            mapping.LogicalPropertyKind,
+            mapping.ModelClrType.FullName ?? mapping.ModelClrType.Name,
+            mapping.NativeStoreType,
+            mapping.ValueFormat))
+        .ToArray();
   }
 
   private static string FormatParent(DataVaultMetadataReference parent) {
@@ -1807,6 +2009,57 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
     };
 
     return evaluation.FallbackCauses.Count > 0 || evaluation.CanSave;
+  }
+
+  public static IReadOnlyList<string> GetKnownStrategySupportedProviderNames(IDataVaultProviderSaveStrategy strategy) {
+    ArgumentNullException.ThrowIfNull(strategy);
+
+    return strategy.GetType().Name switch {
+      "SqliteDataVaultSaveStrategy" => [KnownProviderNames.Sqlite],
+      "PostgresDataVaultSaveStrategy" => [KnownProviderNames.Postgres],
+      "SqlServerDataVaultSaveStrategy" => [KnownProviderNames.SqlServer],
+      "MySqlDataVaultSaveStrategy" => [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
+      "OracleDataVaultSaveStrategy" => [KnownProviderNames.Oracle],
+      _ => Array.Empty<string>(),
+    };
+  }
+
+  public static IReadOnlyList<DataVaultSaveStrategyGateRequirement> GetKnownStrategyGateRequirements(
+      IDataVaultProviderSaveStrategy strategy) {
+    ArgumentNullException.ThrowIfNull(strategy);
+
+    var commonRequirements = new[]
+    {
+        new DataVaultSaveStrategyGateRequirement(DataVaultSaveStrategyFallbackCauseKind.ProviderNameMismatch),
+        new DataVaultSaveStrategyGateRequirement(DataVaultSaveStrategyFallbackCauseKind.DirtyDbContext),
+        new DataVaultSaveStrategyGateRequirement(DataVaultSaveStrategyFallbackCauseKind.MultiActiveSatelliteOperations),
+    };
+
+    return strategy.GetType().Name switch {
+      "SqliteDataVaultSaveStrategy" => commonRequirements,
+      "PostgresDataVaultSaveStrategy" => commonRequirements,
+      "SqlServerDataVaultSaveStrategy" => commonRequirements
+          .Concat([
+              new DataVaultSaveStrategyGateRequirement(
+                  DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
+                  MinimumTotalOperationCount: MinimumSqlServerOptimizedBatchOperationCount),
+              new DataVaultSaveStrategyGateRequirement(
+                  DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold,
+                  MaximumSatelliteOperationCount: MaximumSqlServerOptimizedSatelliteOperationCount),
+          ])
+          .ToArray(),
+      "MySqlDataVaultSaveStrategy" => commonRequirements
+          .Append(new DataVaultSaveStrategyGateRequirement(
+              DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold,
+              MinimumTotalOperationCount: MinimumMySqlOptimizedBatchOperationCount))
+          .ToArray(),
+      "OracleDataVaultSaveStrategy" => commonRequirements
+          .Append(new DataVaultSaveStrategyGateRequirement(
+              DataVaultSaveStrategyFallbackCauseKind.OracleMinimumOperationThreshold,
+              MinimumTotalOperationCount: MinimumOracleOptimizedBatchOperationCount))
+          .ToArray(),
+      _ => Array.Empty<DataVaultSaveStrategyGateRequirement>(),
+    };
   }
 
   public static bool HasPendingTrackedChanges(DbContext dbContext) {
@@ -2028,6 +2281,64 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
     return evaluation.FallbackCauses.Count > 0 || evaluation.CanRead;
   }
 
+  public static IReadOnlyList<string> GetKnownStrategySupportedProviderNames(IDataVaultProviderReadStrategy strategy) {
+    ArgumentNullException.ThrowIfNull(strategy);
+
+    return GetKnownStrategySupportedProviderNames(strategy.GetType().Name);
+  }
+
+  public static IReadOnlyList<string> GetKnownStrategySupportedProviderNames(IDataVaultProviderPitReadStrategy strategy) {
+    ArgumentNullException.ThrowIfNull(strategy);
+
+    return GetKnownStrategySupportedProviderNames(strategy.GetType().Name);
+  }
+
+  public static IReadOnlyList<string> GetKnownStrategySupportedProviderNames(IDataVaultProviderBridgeReadStrategy strategy) {
+    ArgumentNullException.ThrowIfNull(strategy);
+
+    return GetKnownStrategySupportedProviderNames(strategy.GetType().Name);
+  }
+
+  public static IReadOnlyList<DataVaultReadStrategyGateRequirement> GetKnownLatestSatelliteGateRequirements(
+      IDataVaultProviderReadStrategy strategy) {
+    ArgumentNullException.ThrowIfNull(strategy);
+
+    return strategy.GetType().Name switch {
+      "SqliteDataVaultReadStrategy" => [
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported),
+      ],
+      _ => Array.Empty<DataVaultReadStrategyGateRequirement>(),
+    };
+  }
+
+  public static IReadOnlyList<DataVaultReadStrategyGateRequirement> GetKnownPitGateRequirements(
+      IDataVaultProviderPitReadStrategy strategy) {
+    ArgumentNullException.ThrowIfNull(strategy);
+
+    return strategy.GetType().Name switch {
+      "SqliteDataVaultReadStrategy" => [
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape),
+      ],
+      _ => Array.Empty<DataVaultReadStrategyGateRequirement>(),
+    };
+  }
+
+  public static IReadOnlyList<DataVaultReadStrategyGateRequirement> GetKnownBridgeGateRequirements(
+      IDataVaultProviderBridgeReadStrategy strategy) {
+    ArgumentNullException.ThrowIfNull(strategy);
+
+    return strategy.GetType().Name switch {
+      "SqliteDataVaultReadStrategy" => [
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedBridgeShape),
+      ],
+      _ => Array.Empty<DataVaultReadStrategyGateRequirement>(),
+    };
+  }
+
   private static DataVaultProviderReadStrategyGateEvaluation EvaluateLatestSatellite(
       DataVaultKnownProviderReadStrategy strategy,
       string? providerName,
@@ -2132,6 +2443,13 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
     }
 
     return causes;
+  }
+
+  private static IReadOnlyList<string> GetKnownStrategySupportedProviderNames(string strategyName) {
+    return strategyName switch {
+      "SqliteDataVaultReadStrategy" => [KnownProviderNames.Sqlite],
+      _ => Array.Empty<string>(),
+    };
   }
 
   private static string FormatStrategyName(DataVaultKnownProviderReadStrategy strategy) {

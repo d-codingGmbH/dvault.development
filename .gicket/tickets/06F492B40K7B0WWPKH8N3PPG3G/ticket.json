@@ -3,20 +3,19 @@
   "ticket-id": "06F492B40K7B0WWPKH8N3PPG3G",
   "ticket-type": "story",
   "title": "Story: Expand provider capability and strategy explain output",
-  "revision": "06F4NV0JG98PX9D3AF6234JEEW",
-  "status": "todo",
+  "revision": "06F4T1282G3TZF1D699G1681XR",
+  "status": "done",
   "labels": [
     "area/diagnostics",
-    "area/provider-support",
     "area/ef-core",
+    "area/provider-support",
     "automation/bot-ready",
-    "type/story",
-    "needs-po"
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F4929ZR8SMFQHZ84A19RS9M4",
   "releaseId": "06F4929XH1QPVKC80WBYQKGC3W",
   "created-at": "2026-05-20T08:38:35.4270546Z",
-  "updated-at": "2026-05-21T14:24:05.7626411Z"
+  "updated-at": "2026-05-22T00:09:46.7722912Z"
 }

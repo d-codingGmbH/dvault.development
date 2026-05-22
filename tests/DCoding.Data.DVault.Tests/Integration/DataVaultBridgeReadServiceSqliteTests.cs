@@ -59,6 +59,11 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
 
     Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected, diagnostics.ReadStrategy.Status);
     Assert.Equal("SqliteDataVaultReadStrategy", diagnostics.ReadStrategy.SelectedStrategyName);
+    var selectedCandidate = Assert.Single(diagnostics.ReadStrategy.Candidates);
+    Assert.Equal([KnownProviderNames.Sqlite], selectedCandidate.SupportedProviderNames);
+    Assert.Contains(
+        selectedCandidate.GateRequirements,
+        requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedBridgeShape);
     Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback, fallbackDiagnostics.ReadStrategy.Status);
     Assert.Contains(
         fallbackDiagnostics.ReadStrategy.FallbackCauses,

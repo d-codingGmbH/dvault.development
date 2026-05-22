@@ -97,6 +97,13 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
     Assert.Equal(0, candidate.Ordinal);
     Assert.Equal("SqliteDataVaultSaveStrategy", candidate.StrategyName);
     Assert.True(candidate.CanSave);
+    Assert.Equal([KnownProviderNames.Sqlite], candidate.SupportedProviderNames);
+    Assert.Contains(
+        candidate.GateRequirements,
+        requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.ProviderNameMismatch);
+    Assert.Contains(
+        candidate.GateRequirements,
+        requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.DirtyDbContext);
     Assert.Empty(candidate.FallbackCauses);
     Assert.Empty(result.SaveStrategy.FallbackCauses);
   }
@@ -128,6 +135,13 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
     Assert.Equal(0, candidate.Ordinal);
     Assert.Equal("SqliteDataVaultReadStrategy", candidate.StrategyName);
     Assert.True(candidate.CanRead);
+    Assert.Equal([KnownProviderNames.Sqlite], candidate.SupportedProviderNames);
+    Assert.Contains(
+        candidate.GateRequirements,
+        requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent);
+    Assert.Contains(
+        candidate.GateRequirements,
+        requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
     Assert.Empty(candidate.FallbackCauses);
     Assert.Empty(result.ReadStrategy.FallbackCauses);
   }
@@ -158,6 +172,10 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
 
     var candidate = Assert.Single(result.ReadStrategy.Candidates);
     Assert.False(candidate.CanRead);
+    Assert.Equal([KnownProviderNames.Sqlite], candidate.SupportedProviderNames);
+    Assert.Contains(
+        candidate.GateRequirements,
+        requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
     Assert.Contains(
         candidate.FallbackCauses,
         cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
@@ -242,6 +260,10 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
 
     var candidate = Assert.Single(result.SaveStrategy.Candidates);
     Assert.False(candidate.CanSave);
+    Assert.Equal([KnownProviderNames.Sqlite], candidate.SupportedProviderNames);
+    Assert.Contains(
+        candidate.GateRequirements,
+        requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.DirtyDbContext);
     Assert.Contains(
         candidate.FallbackCauses,
         cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.DirtyDbContext);
@@ -280,6 +302,7 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
           Assert.Equal(1, candidate.Ordinal);
           Assert.Equal("SqliteDataVaultSaveStrategy", candidate.StrategyName);
           Assert.True(candidate.CanSave);
+          Assert.Equal([KnownProviderNames.Sqlite], candidate.SupportedProviderNames);
         });
   }
 
@@ -313,6 +336,7 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
           Assert.Equal(1, candidate.Ordinal);
           Assert.Equal("SqliteDataVaultReadStrategy", candidate.StrategyName);
           Assert.True(candidate.CanRead);
+          Assert.Equal([KnownProviderNames.Sqlite], candidate.SupportedProviderNames);
         });
   }
 

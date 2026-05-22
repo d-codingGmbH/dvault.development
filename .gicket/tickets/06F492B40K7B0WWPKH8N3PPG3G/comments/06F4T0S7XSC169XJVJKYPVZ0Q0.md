@@ -1,0 +1,23 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `1` selected relation flow(s) for source ticket `06F492B40K7B0WWPKH8N3PPG3G`.
+- Role `test` completed with outcome `test-workflow-awaiting-integrator` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `3`; dropped obsolete follow-up(s): `0`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `e186b5eaf9f5434a861e841f3dd58692`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06F492B9PR036PDNN52S06S9BC` via `blocks` path `06F492B40K7B0WWPKH8N3PPG3G -> 06F492B9PR036PDNN52S06S9BC`
+- [queued] `blocked-follow-up-comment` -> `06F492BG6BZYYFMBE5WK7CB024` via `blocks` path `06F492B40K7B0WWPKH8N3PPG3G -> 06F492BG6BZYYFMBE5WK7CB024`
+- [queued] `blocked-follow-up-comment` -> `06F492BNDPWS9P4EDSV0W7G6VM` via `blocks` path `06F492B40K7B0WWPKH8N3PPG3G -> 06F492BNDPWS9P4EDSV0W7G6VM`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06F492B40K7B0WWPKH8N3PPG3G` owner `ticket/06F492B40K7B0WWPKH8N3PPG3G-story-expand-provider-capability-and-strategy-ex` base `develop` source-owner `ticket/06F492B40K7B0WWPKH8N3PPG3G-story-expand-provider-capability-and-strategy-ex`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F492B9PR036PDNN52S06S9BC` owner `ticket/06F492B9PR036PDNN52S06S9BC-story-add-query-shape-diagnostics-for-dvault-rea` base `develop` source-owner `ticket/06F492B40K7B0WWPKH8N3PPG3G-story-expand-provider-capability-and-strategy-ex`: Mutation targets 'ticket/06F492B9PR036PDNN52S06S9BC-story-add-query-shape-diagnostics-for-dvault-rea', not current branch 'ticket/06F492B40K7B0WWPKH8N3PPG3G-story-expand-provider-capability-and-strategy-ex'; queue for target-branch replay.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F492BG6BZYYFMBE5WK7CB024` owner `ticket/06F492BG6BZYYFMBE5WK7CB024-story-add-consumer-owned-preflight-command-aggre` base `develop` source-owner `ticket/06F492B40K7B0WWPKH8N3PPG3G-story-expand-provider-capability-and-strategy-ex`: Mutation targets 'ticket/06F492BG6BZYYFMBE5WK7CB024-story-add-consumer-owned-preflight-command-aggre', not current branch 'ticket/06F492B40K7B0WWPKH8N3PPG3G-story-expand-provider-capability-and-strategy-ex'; queue for target-branch replay.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F492BNDPWS9P4EDSV0W7G6VM` owner `ticket/06F492BNDPWS9P4EDSV0W7G6VM-task-update-v0-17-0-documentation-and-release-no` base `develop` source-owner `ticket/06F492B40K7B0WWPKH8N3PPG3G-story-expand-provider-capability-and-strategy-ex`: Mutation targets 'ticket/06F492BNDPWS9P4EDSV0W7G6VM-task-update-v0-17-0-documentation-and-release-no', not current branch 'ticket/06F492B40K7B0WWPKH8N3PPG3G-story-expand-provider-capability-and-strategy-ex'; queue for target-branch replay.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F492B9PR036PDNN52S06S9BC` on owner branch `ticket/06F492B9PR036PDNN52S06S9BC-story-add-query-shape-diagnostics-for-dvault-rea` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F492BG6BZYYFMBE5WK7CB024` on owner branch `ticket/06F492BG6BZYYFMBE5WK7CB024-story-add-consumer-owned-preflight-command-aggre` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F492BNDPWS9P4EDSV0W7G6VM` on owner branch `ticket/06F492BNDPWS9P4EDSV0W7G6VM-task-update-v0-17-0-documentation-and-release-no` after that branch is refreshed/rebased.

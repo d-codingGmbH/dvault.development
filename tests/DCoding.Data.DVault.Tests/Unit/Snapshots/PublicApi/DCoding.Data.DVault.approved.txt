@@ -198,14 +198,22 @@ type public sealed class DCoding.Data.DVault.DataVaultEntityExplain : System.IEq
 
 type public sealed class DCoding.Data.DVault.DataVaultExplainDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultExplainDiagnostics>
   ctor public DataVaultExplainDiagnostics(string MetadataSourceKind, string? MetadataSourceFingerprint, string? ProviderName, string CapabilityProfileName, bool CapabilityProfileDefaulted, DCoding.Data.DVault.DataVaultProviderValueFormat LoadTimestampValueFormat, string LoadTimestampStoreType, string ProviderBehaviorProfileName, bool ProviderBehaviorDefaulted, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultEntityExplain> Entities)
+  property public DCoding.Data.DVault.DataVaultProviderConcurrencySupport ConcurrencySupport { get; init; }
+  property public DCoding.Data.DVault.DataVaultProviderSqlFunctionSupport SqlFunctionSupport { get; init; }
   property public DCoding.Data.DVault.DataVaultProviderValueFormat LoadTimestampValueFormat { get; init; }
+  property public DCoding.Data.DVault.DataVaultProviderValueFormat SatelliteSnapshotReferenceValueFormat { get; init; }
+  property public DCoding.Data.DVault.DataVaultUnsupportedIncludedIndexColumnMode UnsupportedIncludedIndexColumnMode { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultEntityExplain> Entities { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultProviderTypeMappingExplain> TypeMappings { get; init; }
+  property public bool AllowsIndexesCoveredByPrimaryKey { get; init; }
   property public bool CapabilityProfileDefaulted { get; init; }
   property public bool ProviderBehaviorDefaulted { get; init; }
+  property public int? MaximumIdentifierLength { get; init; }
   property public string CapabilityProfileName { get; init; }
   property public string LoadTimestampStoreType { get; init; }
   property public string MetadataSourceKind { get; init; }
   property public string ProviderBehaviorProfileName { get; init; }
+  property public string SatelliteSnapshotReferenceStoreType { get; init; }
   property public string? MetadataSourceFingerprint { get; init; }
   property public string? ProviderName { get; init; }
   method public override bool Equals(object? obj)
@@ -689,6 +697,20 @@ type public sealed class DCoding.Data.DVault.DataVaultProviderTypeMapping : Syst
   method public static bool op_Inequality(DCoding.Data.DVault.DataVaultProviderTypeMapping? left, DCoding.Data.DVault.DataVaultProviderTypeMapping? right)
   method public virtual bool Equals(DCoding.Data.DVault.DataVaultProviderTypeMapping? other)
 
+type public sealed class DCoding.Data.DVault.DataVaultProviderTypeMappingExplain : System.IEquatable<DCoding.Data.DVault.DataVaultProviderTypeMappingExplain>
+  ctor public DataVaultProviderTypeMappingExplain(DCoding.Data.DVault.DataVaultLogicalPropertyKind LogicalPropertyKind, string ModelClrTypeName, string StoreType, DCoding.Data.DVault.DataVaultProviderValueFormat ValueFormat)
+  property public DCoding.Data.DVault.DataVaultLogicalPropertyKind LogicalPropertyKind { get; init; }
+  property public DCoding.Data.DVault.DataVaultProviderValueFormat ValueFormat { get; init; }
+  property public string ModelClrTypeName { get; init; }
+  property public string StoreType { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultProviderTypeMappingExplain? left, DCoding.Data.DVault.DataVaultProviderTypeMappingExplain? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultProviderTypeMappingExplain? left, DCoding.Data.DVault.DataVaultProviderTypeMappingExplain? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultProviderTypeMappingExplain? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultLogicalPropertyKind LogicalPropertyKind, out string ModelClrTypeName, out string StoreType, out DCoding.Data.DVault.DataVaultProviderValueFormat ValueFormat)
+
 type public enum DCoding.Data.DVault.DataVaultProviderValueFormat
   value Text = 0
   value Iso8601UtcText = 1
@@ -725,6 +747,8 @@ type public static class DCoding.Data.DVault.DataVaultReadServiceTypedProjection
 type public sealed class DCoding.Data.DVault.DataVaultReadStrategyCandidateDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultReadStrategyCandidateDiagnostics>
   ctor public DataVaultReadStrategyCandidateDiagnostics(int Ordinal, string StrategyName, int Priority, bool CanRead, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyFallbackCause> FallbackCauses)
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyFallbackCause> FallbackCauses { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyGateRequirement> GateRequirements { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<string> SupportedProviderNames { get; init; }
   property public bool CanRead { get; init; }
   property public int Ordinal { get; init; }
   property public int Priority { get; init; }
@@ -779,6 +803,17 @@ type public enum DCoding.Data.DVault.DataVaultReadStrategyFallbackCauseKind
   value StrategyDeclined = 5
   value UnsupportedPitShape = 6
   value UnsupportedBridgeShape = 7
+
+type public sealed class DCoding.Data.DVault.DataVaultReadStrategyGateRequirement : System.IEquatable<DCoding.Data.DVault.DataVaultReadStrategyGateRequirement>
+  ctor public DataVaultReadStrategyGateRequirement(DCoding.Data.DVault.DataVaultReadStrategyFallbackCauseKind Kind)
+  property public DCoding.Data.DVault.DataVaultReadStrategyFallbackCauseKind Kind { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultReadStrategyGateRequirement? left, DCoding.Data.DVault.DataVaultReadStrategyGateRequirement? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultReadStrategyGateRequirement? left, DCoding.Data.DVault.DataVaultReadStrategyGateRequirement? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultReadStrategyGateRequirement? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultReadStrategyFallbackCauseKind Kind)
 
 type public enum DCoding.Data.DVault.DataVaultReadTelemetryFamily
   value LatestSatellite = 0
@@ -941,6 +976,8 @@ type public static class DCoding.Data.DVault.DataVaultSaveServiceTypedExtensions
 type public sealed class DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics>
   ctor public DataVaultSaveStrategyCandidateDiagnostics(int Ordinal, string StrategyName, int Priority, bool CanSave, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause> FallbackCauses)
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause> FallbackCauses { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyGateRequirement> GateRequirements { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<string> SupportedProviderNames { get; init; }
   property public bool CanSave { get; init; }
   property public int Ordinal { get; init; }
   property public int Priority { get; init; }
@@ -997,6 +1034,19 @@ type public enum DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind
   value MySqlMinimumOperationThreshold = 7
   value OracleMinimumOperationThreshold = 8
   value StrategyDeclined = 9
+
+type public sealed class DCoding.Data.DVault.DataVaultSaveStrategyGateRequirement : System.IEquatable<DCoding.Data.DVault.DataVaultSaveStrategyGateRequirement>
+  ctor public DataVaultSaveStrategyGateRequirement(DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind Kind, int? MinimumTotalOperationCount = null, int? MaximumSatelliteOperationCount = null)
+  property public DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind Kind { get; init; }
+  property public int? MaximumSatelliteOperationCount { get; init; }
+  property public int? MinimumTotalOperationCount { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultSaveStrategyGateRequirement? left, DCoding.Data.DVault.DataVaultSaveStrategyGateRequirement? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultSaveStrategyGateRequirement? left, DCoding.Data.DVault.DataVaultSaveStrategyGateRequirement? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultSaveStrategyGateRequirement? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind Kind, out int? MinimumTotalOperationCount, out int? MaximumSatelliteOperationCount)
 
 type public enum DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind
   value SingleRequest = 0

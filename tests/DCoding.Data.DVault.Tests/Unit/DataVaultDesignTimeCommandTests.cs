@@ -84,6 +84,13 @@ public sealed class DataVaultDesignTimeCommandTests {
     Assert.Contains("\"selectedStrategyName\": \"UnitSaveStrategy\"", first.Output, StringComparison.Ordinal);
     Assert.Contains("\"readStrategy\"", first.Output, StringComparison.Ordinal);
     Assert.Contains("\"selectedStrategyName\": \"UnitReadStrategy\"", first.Output, StringComparison.Ordinal);
+    Assert.Contains("\"satelliteSnapshotReferenceStoreType\": \"TEXT\"", first.Output, StringComparison.Ordinal);
+    Assert.Contains("\"typeMappings\"", first.Output, StringComparison.Ordinal);
+    Assert.Contains("\"maximumIdentifierLength\": 64", first.Output, StringComparison.Ordinal);
+    Assert.Contains("\"unsupportedIncludedIndexColumnMode\": \"Ignore\"", first.Output, StringComparison.Ordinal);
+    Assert.Contains("\"supportedProviderNames\"", first.Output, StringComparison.Ordinal);
+    Assert.Contains("\"minimumTotalOperationCount\": 50", first.Output, StringComparison.Ordinal);
+    Assert.Contains("\"gateRequirements\"", first.Output, StringComparison.Ordinal);
     Assert.Contains("Password=<redacted>", first.Output, StringComparison.Ordinal);
     Assert.Contains("User Id=<redacted>", first.Output, StringComparison.Ordinal);
     Assert.DoesNotContain("hunter2", first.Output, StringComparison.Ordinal);
@@ -319,7 +326,22 @@ public sealed class DataVaultDesignTimeCommandTests {
             "TEXT",
             DataVaultProviderBehaviorProfiles.ProviderNeutral.ProfileName,
             false,
-            Array.Empty<DataVaultEntityExplain>()),
+            Array.Empty<DataVaultEntityExplain>()) {
+          SatelliteSnapshotReferenceValueFormat = DataVaultProviderValueFormat.Iso8601UtcText,
+          SatelliteSnapshotReferenceStoreType = "TEXT",
+          TypeMappings = [
+            new DataVaultProviderTypeMappingExplain(
+                DataVaultLogicalPropertyKind.LoadTimestamp,
+                typeof(DateTimeOffset).FullName!,
+                "TEXT",
+                DataVaultProviderValueFormat.Iso8601UtcText),
+          ],
+          MaximumIdentifierLength = 64,
+          AllowsIndexesCoveredByPrimaryKey = true,
+          UnsupportedIncludedIndexColumnMode = DataVaultUnsupportedIncludedIndexColumnMode.Ignore,
+          SqlFunctionSupport = DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported,
+          ConcurrencySupport = DataVaultProviderConcurrencySupport.NoneInV1Unsupported,
+        },
         new DataVaultSaveStrategyDiagnostics(
             DataVaultSaveStrategyDiagnosticsStatus.NotEvaluated,
             ProviderName: "Unit.Provider",
@@ -343,7 +365,14 @@ public sealed class DataVaultDesignTimeCommandTests {
                 "UnitSaveStrategy",
                 10,
                 true,
-                Array.Empty<DataVaultSaveStrategyFallbackCause>()),
+                Array.Empty<DataVaultSaveStrategyFallbackCause>()) {
+              SupportedProviderNames = ["Unit.Provider"],
+              GateRequirements = [
+                new DataVaultSaveStrategyGateRequirement(
+                    DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
+                    MinimumTotalOperationCount: 50),
+              ],
+            },
             new DataVaultSaveStrategyCandidateDiagnostics(
                 1,
                 "ProviderNeutralSaveStrategy",
@@ -353,7 +382,10 @@ public sealed class DataVaultDesignTimeCommandTests {
                   new DataVaultSaveStrategyFallbackCause(
                       DataVaultSaveStrategyFallbackCauseKind.StrategyDeclined,
                       "Provider text contained Password=hunter2;User Id=admin."),
-                ]),
+                ]) {
+              SupportedProviderNames = [],
+              GateRequirements = [],
+            },
           ],
           FallbackCauses: Array.Empty<DataVaultSaveStrategyFallbackCause>()),
       ReadStrategy = new DataVaultReadStrategyDiagnostics(
@@ -367,7 +399,12 @@ public sealed class DataVaultDesignTimeCommandTests {
                 "UnitReadStrategy",
                 20,
                 true,
-                Array.Empty<DataVaultReadStrategyFallbackCause>()),
+                Array.Empty<DataVaultReadStrategyFallbackCause>()) {
+              SupportedProviderNames = ["Unit.Provider"],
+              GateRequirements = [
+                new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
+              ],
+            },
           ],
           FallbackCauses: Array.Empty<DataVaultReadStrategyFallbackCause>()),
     };

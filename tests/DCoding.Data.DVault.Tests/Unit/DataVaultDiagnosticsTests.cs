@@ -1,5 +1,6 @@
 using System.Text.Json;
 using DCoding.Data.DVault.Modeling;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -28,9 +29,18 @@ public sealed class DataVaultDiagnosticsTests {
             .Properties
             .Single(property => property.TechnicalRole == TechnicalMetadataColumnRole.LoadTimestamp)
             .LogicalPropertyKind);
+    Assert.Equal(DataVaultProviderValueFormat.Iso8601UtcText, result.Explain.SatelliteSnapshotReferenceValueFormat);
+    Assert.Equal("TEXT", result.Explain.SatelliteSnapshotReferenceStoreType);
+    Assert.Contains(
+        result.Explain.TypeMappings,
+        mapping => mapping.LogicalPropertyKind == DataVaultLogicalPropertyKind.SatelliteSnapshotReference &&
+            mapping.StoreType == "TEXT");
+    Assert.Equal(DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported, result.Explain.SqlFunctionSupport);
+    Assert.Equal(DataVaultProviderConcurrencySupport.NoneInV1Unsupported, result.Explain.ConcurrencySupport);
 
     var json = JsonSerializer.Serialize(result);
     Assert.Contains("HubCustomer", json, StringComparison.Ordinal);
+    Assert.Contains("SatelliteSnapshotReference", json, StringComparison.Ordinal);
     Assert.Contains("not", result.ToDisplayString(), StringComparison.OrdinalIgnoreCase);
   }
 
@@ -83,11 +93,23 @@ public sealed class DataVaultDiagnosticsTests {
         Assert.True(result.Validation.IsValid);
         Assert.Equal(selectedProfile.ProfileName, result.Explain.CapabilityProfileName);
         Assert.NotEmpty(result.Explain.LoadTimestampStoreType);
+        Assert.NotEmpty(result.Explain.SatelliteSnapshotReferenceStoreType);
+        Assert.NotEmpty(result.Explain.TypeMappings);
+        Assert.Equal(selectedProfile.MaximumIdentifierLength, result.Explain.MaximumIdentifierLength);
+        Assert.Equal(selectedProfile.AllowsIndexesCoveredByPrimaryKey, result.Explain.AllowsIndexesCoveredByPrimaryKey);
+        Assert.Equal(selectedProfile.UnsupportedIncludedIndexColumnMode, result.Explain.UnsupportedIncludedIndexColumnMode);
         Assert.All(
             result.Explain.Entities.SelectMany(entity => entity.Properties),
             property => Assert.Equal(selectedProfile.ProfileName, property.ProviderProfileName));
       }
     }
+
+    var mySqlResult = diagnostics.Analyze(metadataModel, DataVaultProviderCapabilityProfiles.MySql);
+    Assert.Equal(64, mySqlResult.Explain.MaximumIdentifierLength);
+    Assert.Equal(DataVaultUnsupportedIncludedIndexColumnMode.Ignore, mySqlResult.Explain.UnsupportedIncludedIndexColumnMode);
+
+    var oracleResult = diagnostics.Analyze(metadataModel, DataVaultProviderCapabilityProfiles.Oracle);
+    Assert.False(oracleResult.Explain.AllowsIndexesCoveredByPrimaryKey);
   }
 
   [Fact]
@@ -305,6 +327,12 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains(
         unsupportedPitParent.FallbackCauses,
         cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape);
+
+    var readStrategy = new SqliteDataVaultReadStrategy();
+    Assert.Equal([KnownProviderNames.Sqlite], DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(readStrategy));
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownLatestSatelliteGateRequirements(readStrategy),
+        requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
   }
 
   [Fact]
@@ -360,6 +388,17 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains(
         unknownProvider.FallbackCauses,
         cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.ProviderNameMismatch);
+
+    var saveStrategy = new SqlServerDataVaultSaveStrategy();
+    Assert.Equal([KnownProviderNames.SqlServer], DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(saveStrategy));
+    Assert.Contains(
+        DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(saveStrategy),
+        requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold &&
+            requirement.MinimumTotalOperationCount == 50);
+    Assert.Contains(
+        DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(saveStrategy),
+        requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold &&
+            requirement.MaximumSatelliteOperationCount == 500);
   }
 
   private static ServiceProvider CreateServiceProvider() {
@@ -468,4 +507,41 @@ public sealed class DataVaultDiagnosticsTests {
 
     public string Name { get; set; } = string.Empty;
   }
+
+  private sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStrategy {
+    public int Priority => 100;
+
+    public bool CanSave(DbContext dbContext, IReadOnlyList<DataVaultSaveRequest> requests) {
+      return false;
+    }
+
+    public Task<DataVaultSaveResult> SaveAsync(
+        DataVaultProviderSaveStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      throw new NotSupportedException("Probe strategy is not used for persistence.");
+    }
+  }
+
+  private sealed class SqliteDataVaultReadStrategy : IDataVaultProviderReadStrategy {
+    public int Priority => 100;
+
+    public bool CanReadLatestSatelliteRows(
+        DbContext dbContext,
+        DataVaultLatestSatelliteReadRequest request) {
+      return false;
+    }
+
+    public Task<IReadOnlyList<DataVaultSatelliteReadRecord>> ReadLatestSatelliteRowsAsync(
+        DataVaultProviderReadStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      throw new NotSupportedException("Probe strategy is not used for reads.");
+    }
+
+    public Task<IReadOnlyList<DataVaultSatelliteProjectionRow>> ReadLatestSatelliteProjectionRowsAsync(
+        DataVaultProviderReadStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      throw new NotSupportedException("Probe strategy is not used for reads.");
+    }
+  }
+
 }
