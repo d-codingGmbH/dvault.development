@@ -109,6 +109,41 @@ public static class DataVaultDbContextOptionsBuilderExtensions {
     return optionsBuilder;
   }
 
+  /// <summary>
+  /// Opts a DbContext into the optional Data Vault SaveChanges runtime guard interceptor.
+  /// </summary>
+  /// <param name="optionsBuilder">The Entity Framework DbContext options builder.</param>
+  /// <param name="configure">The guard options callback that selects blocking or warning behavior.</param>
+  /// <returns>The same options builder so DbContext configuration can continue fluently.</returns>
+  public static DbContextOptionsBuilder UseDataVaultSaveChangesGuardInterceptor(
+      this DbContextOptionsBuilder optionsBuilder,
+      Action<DataVaultSaveChangesGuardOptions> configure) {
+    ArgumentNullException.ThrowIfNull(optionsBuilder);
+    ArgumentNullException.ThrowIfNull(configure);
+
+    var options = new DataVaultSaveChangesGuardOptions();
+    configure(options);
+
+    return optionsBuilder.UseDataVaultSaveChangesGuardInterceptor(options);
+  }
+
+  /// <summary>
+  /// Opts a DbContext into the optional Data Vault SaveChanges runtime guard interceptor.
+  /// </summary>
+  /// <param name="optionsBuilder">The Entity Framework DbContext options builder.</param>
+  /// <param name="options">The guard options that select blocking or warning behavior.</param>
+  /// <returns>The same options builder so DbContext configuration can continue fluently.</returns>
+  public static DbContextOptionsBuilder UseDataVaultSaveChangesGuardInterceptor(
+      this DbContextOptionsBuilder optionsBuilder,
+      DataVaultSaveChangesGuardOptions options) {
+    ArgumentNullException.ThrowIfNull(optionsBuilder);
+    ArgumentNullException.ThrowIfNull(options);
+
+    optionsBuilder.AddInterceptors(new DataVaultSaveChangesGuardInterceptor(options));
+
+    return optionsBuilder;
+  }
+
   private static void AddOrUpdateExtension(
       DbContextOptionsBuilder optionsBuilder,
       DataVaultDbContextOptionsExtension extension) {

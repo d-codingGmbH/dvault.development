@@ -3,20 +3,19 @@
   "ticket-id": "06F492AYE4A3PKA2D20DDPQ37C",
   "ticket-type": "story",
   "title": "Story: Add optional EF runtime guard interceptor mode",
-  "revision": "06F4NV0GB8MEW0XKNTT6Z3498G",
-  "status": "todo",
+  "revision": "06F4ZJ1N7MN8YS7FCYR5W6NH0W",
+  "status": "done",
   "labels": [
+    "area/diagnostics",
     "area/ef-core",
     "area/persistence",
-    "area/diagnostics",
     "automation/bot-ready",
-    "type/story",
-    "needs-po"
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F4929Z19N3QMX10M3KGCGYNM",
   "releaseId": "06F4929XH1QPVKC80WBYQKGC3W",
   "created-at": "2026-05-20T08:38:34.0220507Z",
-  "updated-at": "2026-05-21T14:24:05.2106908Z"
+  "updated-at": "2026-05-22T13:03:01.4377039Z"
 }

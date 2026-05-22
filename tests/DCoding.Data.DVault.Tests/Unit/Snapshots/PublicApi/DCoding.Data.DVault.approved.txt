@@ -154,6 +154,8 @@ type public static class DCoding.Data.DVault.DataVaultDbContextOptionsBuilderExt
   method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultMetadata(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, DCoding.Data.DVault.DataVaultModelImportResult importResult)
   method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultMetadata(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, DCoding.Data.DVault.Modeling.DataVaultMetadataModel metadataModel)
   method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultMetadata(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, DCoding.Data.DVault.Modeling.DataVaultMetadataRegistry metadataRegistry)
+  method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultSaveChangesGuardInterceptor(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, DCoding.Data.DVault.DataVaultSaveChangesGuardOptions options)
+  method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultSaveChangesGuardInterceptor(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, System.Action<DCoding.Data.DVault.DataVaultSaveChangesGuardOptions> configure)
   method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultSaveChangesMetadataInterceptor(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, DCoding.Data.DVault.DataVaultSaveChangesMetadataInterceptorOptions options)
   method public static Microsoft.EntityFrameworkCore.DbContextOptionsBuilder UseDataVaultSaveChangesMetadataInterceptor(this Microsoft.EntityFrameworkCore.DbContextOptionsBuilder optionsBuilder, System.Action<DCoding.Data.DVault.DataVaultSaveChangesMetadataInterceptorOptions> configure)
 
@@ -1188,6 +1190,35 @@ type public sealed class DCoding.Data.DVault.DataVaultSatelliteSaveOperation
   property public System.Collections.Generic.IReadOnlyDictionary<string, string> PayloadValues { get; }
   property public string HashDiff { get; }
   property public string ParentHashKey { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultSaveChangesGuardException : System.InvalidOperationException, System.Runtime.Serialization.ISerializable
+  ctor public DataVaultSaveChangesGuardException(DCoding.Data.DVault.DataVaultSaveChangesGuardReport report)
+  property public DCoding.Data.DVault.DataVaultSaveChangesGuardReport Report { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultSaveChangesGuardFinding
+  ctor public DataVaultSaveChangesGuardFinding(string tableName, DCoding.Data.DVault.Modeling.DataVaultTableKind entityKind, string metadataName, Microsoft.EntityFrameworkCore.EntityState state, System.Collections.Generic.IEnumerable<string> reasons)
+  property public DCoding.Data.DVault.Modeling.DataVaultTableKind EntityKind { get; }
+  property public Microsoft.EntityFrameworkCore.EntityState State { get; }
+  property public System.Collections.Generic.IReadOnlyList<string> Reasons { get; }
+  property public string MetadataName { get; }
+  property public string TableName { get; }
+  method public string ToDisplayString()
+
+type public enum DCoding.Data.DVault.DataVaultSaveChangesGuardMode
+  value Blocking = 0
+  value Warning = 1
+
+type public sealed class DCoding.Data.DVault.DataVaultSaveChangesGuardOptions
+  ctor public DataVaultSaveChangesGuardOptions()
+  property public DCoding.Data.DVault.DataVaultSaveChangesGuardMode Mode { get; }
+  method public DCoding.Data.DVault.DataVaultSaveChangesGuardOptions UseBlockingMode()
+  method public DCoding.Data.DVault.DataVaultSaveChangesGuardOptions UseWarningMode(System.Action<DCoding.Data.DVault.DataVaultSaveChangesGuardReport> reportWarning)
+
+type public sealed class DCoding.Data.DVault.DataVaultSaveChangesGuardReport
+  ctor public DataVaultSaveChangesGuardReport(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveChangesGuardFinding> findings)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveChangesGuardFinding> Findings { get; }
+  property public bool HasFindings { get; }
+  method public string ToDisplayString()
 
 type public sealed class DCoding.Data.DVault.DataVaultSaveChangesMetadataInterceptorOptions
   ctor public DataVaultSaveChangesMetadataInterceptorOptions()
