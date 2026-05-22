@@ -126,6 +126,42 @@ public sealed class BenchmarkScenarioExecutionTests {
           "sqlite-optimized-dvault",
           "1 hierarchy ancestor with 100 descendant bridge rows",
           "maximum depth 3 of 5"),
+      CompletedSqlite(
+          "compiled-model-startup",
+          "dvault-design-model",
+          "ef-model-build",
+          "1 generated order hub row",
+          "runtime model precomputed outside measured operation"),
+      CompletedSqlite(
+          "compiled-model-startup",
+          "dvault-usemodel-runtime-model",
+          "ef-usemodel-runtime-model",
+          "1 generated order hub row",
+          "runtime model precomputed outside measured operation"),
+      CompletedSqlite(
+          "compiled-query-hub-read",
+          "ordinary-ef-query",
+          "direct-ef-query",
+          "1 generated order hub row",
+          "stable shared-type table projection"),
+      CompletedSqlite(
+          "compiled-query-hub-read",
+          "ef-compilequery",
+          "compiled-ef-query",
+          "1 generated order hub row",
+          "stable shared-type table projection"),
+      CompletedSqlite(
+          "dbcontext-pooling-dvault-operation",
+          "adddbcontext",
+          "non-pooled-dvault-context",
+          "1 generated order hub row",
+          "fixed metadata source and options-only context"),
+      CompletedSqlite(
+          "dbcontext-pooling-dvault-operation",
+          "adddbcontextpool",
+          "pooled-dvault-context",
+          "1 generated order hub row",
+          "fixed metadata source and options-only context"),
       SkippedExternal(
           PostgresProviderName,
           "provider-native-bulk-ingestion",
@@ -218,8 +254,14 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Contains("100 latest profile satellite rows read from 1000 seeded profile states", text);
     Assert.Contains("100 PIT as-of rows read across profile and status satellite snapshots", text);
     Assert.Contains("60 bridge traversal rows read from 100 seeded hierarchy rows", text);
-    Assert.Contains("Recorded 26 benchmark report rows.", text);
-    Assert.Contains("Executed 18 benchmark report rows.", text);
+    Assert.Contains("1 generated order hub row read through ordinary DVault model building", text);
+    Assert.Contains("1 generated order hub row read through precomputed UseModel(runtimeModel)", text);
+    Assert.Contains("1 generated order hub row read through equivalent ordinary EF projection", text);
+    Assert.Contains("1 generated order hub row read through EF.CompileQuery stable projection", text);
+    Assert.Contains("1 generated order hub row saved and read through AddDbContext fixed-model configuration", text);
+    Assert.Contains("1 generated order hub row saved and read through AddDbContextPool fixed-model configuration", text);
+    Assert.Contains("Recorded 32 benchmark report rows.", text);
+    Assert.Contains("Executed 24 benchmark report rows.", text);
     Assert.Contains("Skipped 8 benchmark report rows.", text);
   }
 
@@ -266,7 +308,7 @@ public sealed class BenchmarkScenarioExecutionTests {
 
       var csv = await File.ReadAllTextAsync(csvPath).ConfigureAwait(false);
       var csvLines = csv.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
-      Assert.Equal(27, csvLines.Length);
+      Assert.Equal(33, csvLines.Length);
       Assert.Equal(
           "scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,meanAllocatedBytes,minAllocatedBytes,maxAllocatedBytes,persistedOutcome",
           csvLines[0]);
@@ -317,7 +359,7 @@ public sealed class BenchmarkScenarioExecutionTests {
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable));
 
       var results = json.RootElement.GetProperty("results").EnumerateArray().ToArray();
-      Assert.Equal(26, results.Length);
+      Assert.Equal(32, results.Length);
 
       foreach (var expectedRow in ExpectedRows) {
         var matchingResults = results.Where(result =>

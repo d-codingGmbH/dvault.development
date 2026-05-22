@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the story around SQLite-backed benchmark evidence and bounded consumer guardrails for the repository-owned compiled-model, compiled-query, and pooled-DbContext paths, reusing the existing benchmark artifact contract instead of redefining it.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Ticket 06F492BZPP5YT9SJSPDHQBGF3R is already done, so this story should consume the existing benchmark artifact, allocation, SQL-capture, and regression-budget contract instead of reopening those decisions.
 - The current repository already proves compiled-model and compiled-query compatibility on SQLite in docs/architecture/dvault-ef-compiled-compatibility.md and tests/DCoding.Data.DVault.Tests/Integration/DataVaultCompiledCompatibilitySqliteTests.cs, but that note explicitly says no performance claim exists yet.
 - The repository-owned compiled-model boundary for this story is the documented UseModel(runtimeModel) path built from a DVault-projected design model; DVault does not need to generate, own, or benchmark EF consumer-owned compiled-model code artifacts separately in v1.
@@ -16,63 +15,47 @@
 - SQLite is the required local evidence baseline for this story; provider-specific compiled-model, compiled-query, or pooling guarantees for PostgreSQL, SQL Server, MySQL, and Oracle are follow-up expansion work rather than a blocker for v0.18.
 - The pool-friendly v1 baseline should use a standard DbContextOptions<TContext>-only context plus one fixed metadata source per context model, because the README already documents that caller-owned model-shape discriminators outside DVault registry selection require caller-owned model-cache-key handling.
 
-### Scope In
+Scope In
 - Add benchmark evidence for the bounded compiled-model path, compiled-query path, and DbContext pooling path within the existing benchmarks/DCoding.Data.DVault.Benchmarks harness and artifact contract.
 - Define or update repository documentation so the compiled-model/query note moves from compatibility-only wording to compatibility plus bounded performance-evidence wording where evidence now exists.
 - Document only the DVault-specific consumer guardrails that matter for these features, such as stable generated-table query shapes and fixed metadata/model-shape assumptions for pooled contexts.
 - Add automated verification that the new benchmark rows, artifact fields, and scenario naming stay stable enough for downstream regression-baseline and documentation tickets to consume.
 - Produce evidence that downstream tickets 06F492CTREZEDXVKJ839YGCPWW and 06F492D05THPGQVT3B3K7853A0 can reuse without inventing separate benchmark formats or baseline assumptions.
 
-### Scope Out
+Scope Out
 - Adding a DVault-owned compiled-model generator, design-time command wrapper, or provider-specific compiled-query optimizer.
 - Reworking dynamic IDataVaultReadService APIs into compiled delegates or promising compiled support for dynamic request-built read shapes.
 - General provider-neutral read-allocation tuning, save change-tracker tuning, or provider-optimization work already covered by sibling tickets 06F492CAB2293R7BGJWMWMRKT4, 06F492CFSJHN0RGXXRG3KT63FM, and 06F492CTREZEDXVKJ839YGCPWW.
 - A broad external-provider performance matrix for compiled or pooled scenarios beyond the required SQLite baseline.
 - Final v0.18.0 release-note packaging and broad end-user documentation rollup, which remain with ticket 06F492D05THPGQVT3B3K7853A0.
 
-## Acceptance Criteria
-- The benchmark harness gains deterministic SQLite scenario rows for compiled-model, compiled-query, and DbContext-pooling evidence, and those rows are emitted through benchmark-summary.md, benchmark-summary.csv, and benchmark-summary.json under the existing performance-evidence contract.
-- Compiled-model evidence measures the documented repository-owned boundary: a DVault-projected design model initialized into an EF runtime model and supplied through UseModel(...), with no claim that DVault owns EF compiled-model code generation.
-- Compiled-query evidence compares EF.CompileQuery(...) against an equivalent non-compiled EF query for a stable generated shared-type DVault table/projection on SQLite with deterministic seeded data and no dynamic IDataVaultReadService request building inside the compiled delegate.
-- DbContext-pooling evidence compares a non-pooled baseline with a pooled DI baseline for representative DVault operations under the same provider, metadata source, load-timestamp-storage setting, and artifact-reporting rules, and the resulting docs state the supported pooled-context assumptions and exclusions.
-- Automated tests are updated so the new scenario names, expected row counts, and persisted artifact fields cannot drift silently from the agreed benchmark contract.
-- If any compiled-query or pooling performance claim depends on emitted SQL shape rather than only wall-clock or allocation behavior, representative SQL is captured beside the before/after artifact set as required by the performance-evidence contract.
-
-## Definition of Done
-- Repository benchmark evidence exists for compiled model, compiled query, and DbContext pooling on the required SQLite baseline, and it is archived through the standard artifact writer rather than ad hoc console output.
-- Repository docs consistently describe the bounded claim: compatibility is already proven, performance evidence is now available only for the measured SQLite scenarios, and unsupported compiled or pooled shapes remain clearly outside the promise boundary.
-- Automated tests cover both the benchmark artifact surface and the focused compatibility/performance assumptions needed so downstream tickets can rely on the new evidence without reopening scenario naming or baseline questions.
-- The ticket leaves downstream documentation and regression-baseline work with no unresolved PO-level ambiguity about which compiled-model, compiled-query, and pooling paths were actually measured.
-
-## Implementation Notes
-- Extend benchmarks/DCoding.Data.DVault.Benchmarks and tests/DCoding.Data.DVault.Tests/Integration/BenchmarkScenarioExecutionTests.cs instead of adding ad hoc measurement scripts, so the new evidence inherits the current provider discovery, allocation capture, and artifact-writing behavior.
-- Reuse the seeded SQLite metadata and runtime-model setup patterns already visible in tests/DCoding.Data.DVault.Tests/Integration/DataVaultCompiledCompatibilitySqliteTests.cs for the compiled-model and compiled-query scenarios.
-- For compiled-query measurement, use the stable generated shared-type table pattern already documented in docs/architecture/dvault-ef-compiled-compatibility.md and compare it to the equivalent ordinary EF query shape under identical seeded data.
-- For compiled-model measurement, isolate the attributable boundary by precomputing any one-time setup that should not be charged to the measured iterations, then compare otherwise identical operations with and without UseModel(runtimeModel).
-- For pooling measurement, prefer a standard AddDbContextPool<TContext> baseline with a DbContextOptions<TContext>-only context and a fixed metadata source selected through UseDataVaultMetadata(...) or another fixed model path; do not treat per-request constructor state or caller-owned model-shape discriminators as part of the supported pooled baseline.
-- Keep docs/architecture/dvault-ef-compiled-compatibility.md, the benchmark README, and any benchmark scenario naming aligned so the current note no longer ends with a compatibility-only disclaimer once the benchmark rows land.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the SQLite baseline lands, should configured PostgreSQL, SQL Server, MySQL, or Oracle providers gain matching compiled-model, compiled-query, or pooling scenario rows, or should those remain SQLite-only until a provider-specific need appears?
 - After AddDbContextPool<TContext> is covered, should a separate follow-up benchmark AddPooledDbContextFactory<TContext> for background-worker or factory-driven consumer patterns?
 - When ticket 06F492D05THPGQVT3B3K7853A0 packages the v0.18 evidence, should it publish per-scenario artifact links and SQL captures or summarize the recommendations once and link one artifact bundle per release?
 
-## Risks
+Risks
 - Compiled-model wins are easy to misattribute if the timed window mixes database setup, seeding, runtime-model creation, and steady-state work instead of isolating the actual UseModel(...) effect.
 - DbContext-pooling numbers will be misleading if each iteration rebuilds the service provider, metadata registry, or SQLite database instead of reusing a fixed pooled configuration and measuring only the intended context-acquisition or operation path.
 - If the documentation generalizes SQLite measurements into provider-neutral promises, consumers may infer compiled or pooling guarantees that the repository has not actually measured.
 - If the story stops at prose and compatibility tests without new benchmark rows and artifact assertions, downstream tickets will still lack reusable performance evidence despite the documentation update.
 
-## Split Recommendations
+Split recommendations
 - No split recommended; keep compiled model, compiled query, and DbContext pooling evidence together because they share the same benchmark harness, SQLite baseline, and consumer-guardrail documentation boundary.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 4
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Document and test how DVault behaves with EF Core compiled models, compiled queries, and DbContext pooling. Add examples or guardrails only where DVault-specific behavior could surprise consumers.
+Run mode
+- apply: planned updates are applied after this comment

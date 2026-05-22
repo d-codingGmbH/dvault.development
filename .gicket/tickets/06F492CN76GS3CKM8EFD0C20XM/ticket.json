@@ -3,21 +3,20 @@
   "ticket-id": "06F492CN76GS3CKM8EFD0C20XM",
   "ticket-type": "story",
   "title": "Story: Add compiled model, compiled query, and DbContext pooling performance evidence",
-  "revision": "06F4NV0TGME8ZEPFTAWP83BHY0",
-  "status": "todo",
+  "revision": "06F538VVWZSSHHJXB0KS9HEA2W",
+  "status": "done",
   "labels": [
-    "area/performance",
-    "area/ef-core",
     "area/benchmarks",
+    "area/ef-core",
+    "area/performance",
     "area/testing",
     "automation/bot-ready",
-    "type/story",
-    "needs-po"
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F492A1Y2D14XJWEXVYP2C6Q8",
   "releaseId": "06F492A0EZ3N8E2T605F7ZHHB0",
   "created-at": "2026-05-20T08:38:48.0416097Z",
-  "updated-at": "2026-05-21T14:24:07.8130383Z"
+  "updated-at": "2026-05-22T21:42:09.1275773Z"
 }

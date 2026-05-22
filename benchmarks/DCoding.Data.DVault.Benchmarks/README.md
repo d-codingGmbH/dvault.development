@@ -17,6 +17,14 @@ When a provider is configured, the default report includes DVault fallback plus 
 
 The required SQLite matrix includes read baselines for latest satellite, PIT as-of, and bridge traversal scenarios. Fixture creation, seeding, and strategy-diagnostic checks run before the timed operation so the measured read rows focus on the `IDataVaultReadService` latest satellite path, the `DataVaultPitAsOfReadRequest`/`DataVaultPitReadRecord` path, and the `DataVaultBridgeReadRequest`/`DataVaultBridgeReadRecord` path. SQLite latest-satellite, PIT, and bridge read rows compare the provider-neutral `AddDVault()` fallback with the `AddDVaultSqlite()` optimized provider read strategy. Non-SQLite provider rows are not emitted as provider-specific PIT or bridge read evidence in the default matrix.
 
+The required SQLite matrix also includes bounded EF Core compiled and pooled-context evidence:
+
+- compiled-model startup compares ordinary DVault model building with a DVault-projected design model initialized into an EF runtime model and supplied through `UseModel(runtimeModel)`
+- compiled-query hub read compares `EF.CompileQuery(...)` with an equivalent ordinary direct EF query over the generated `HubOrder` shared-type table and deterministic projection
+- DbContext pooling compares `AddDbContext<TContext>` with `AddDbContextPool<TContext>` for the same options-only context, fixed metadata source, SQLite provider, and generated order hub save/read operation
+
+These rows are SQLite evidence only. They do not claim provider-specific compiled-model generation, dynamic `IDataVaultReadService` request compilation, provider-specific SQL shape changes, or pooled contexts whose model shape depends on per-request constructor state.
+
 Increase `--iterations` and `--warmup` locally when collecting steadier timing numbers.
 
 Use `--provider` to restrict a run to one provider while tuning a specific backend:
@@ -74,6 +82,9 @@ The benchmark command executes the required comparisons:
 - latest satellite read: 100 seeded customers with 10 profile states each, measured through `ReadLatestSatelliteRowsAsync(...)`
 - PIT as-of read: 100 seeded customers with profile and status snapshots plus one PIT row per customer, measured through `ReadPitRowsAsync(...)`
 - bridge traversal read: one seeded hierarchy ancestor with 100 descendant bridge rows and a bounded maximum depth, measured through `ReadBridgeRowsAsync(...)`
+- compiled-model startup: one seeded generated order hub row, measured once through ordinary DVault model building and once through precomputed `UseModel(runtimeModel)`
+- compiled-query hub read: one seeded generated order hub row, measured once through ordinary direct EF projection and once through `EF.CompileQuery(...)`
+- DbContext pooling DVault operation: one generated order hub save/read operation, measured once through `AddDbContext<TContext>` and once through `AddDbContextPool<TContext>`
 - optional provider-native bulk ingestion: 20 order-product pairs, 20 order-product links, and three ordered fulfillment satellite operations including one unchanged replay in a single provider-eligible bulk request
 
 For write-history scenarios, SQLite emits one row for each strategy family:
@@ -83,6 +94,19 @@ For write-history scenarios, SQLite emits one row for each strategy family:
 - `sqlite-optimized-dvault`
 
 Read baselines emit the current provider-neutral read-service path through the DVault fallback registration and the selected provider package registration for SQLite only. For SQLite reads, the provider package row uses the SQLite optimized read strategy for supported hub-parent, non-multi-active latest/as-of satellite reads, supported maintained PIT reads, and supported many-to-many or hierarchy bridge reads. When PostgreSQL, SQL Server, MySQL, or Oracle is configured and reachable in the default matrix, the provider-native bulk-ingestion scenario emits:
+
+Compiled and pooled SQLite evidence emits these strategy families:
+
+- `ef-model-build`
+- `ef-usemodel-runtime-model`
+- `direct-ef-query`
+- `compiled-ef-query`
+- `non-pooled-dvault-context`
+- `pooled-dvault-context`
+
+The compiled-model row precomputes runtime-model initialization outside the timed operation so the measured `UseModel(...)` row is not charged for design-model creation. The pooling rows use an options-only context with one fixed metadata model; caller-owned tenant, schema, naming, provider, or profile discriminators remain outside the supported pooled baseline unless the caller owns the corresponding EF model-cache-key behavior.
+
+When PostgreSQL, SQL Server, MySQL, or Oracle is configured and reachable in the default matrix, the provider-native bulk-ingestion scenario emits:
 
 - `provider-neutral-dvault-fallback`
 - the provider-specific optimized DVault strategy family

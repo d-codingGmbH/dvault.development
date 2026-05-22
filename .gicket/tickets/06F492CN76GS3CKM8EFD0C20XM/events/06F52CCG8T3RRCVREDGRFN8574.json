@@ -1,0 +1,20 @@
+{
+  "event-id": "06F52CCG8T3RRCVREDGRFN8574",
+  "occurred-at": "2026-05-22T19:37:43.2385978Z",
+  "event-type": "TicketEdited",
+  "actor": {
+    "name": "system",
+    "email": "system@example.invalid"
+  },
+  "payload": {
+    "changes": [
+      {
+        "field": "description-markdown",
+        "op": "set"
+      }
+    ],
+    "description-changed": true,
+    "description-hash": "3297C30DE835288A46A8201FCFE450676B427BC815030EAD4A948EF502414C9D",
+    "previous-description-hash": "EB9A42CB71F0A292313E818D3AA1D554EE58B1BE63C3AADF11A4BE15FA6FA14E"
+  }
+}

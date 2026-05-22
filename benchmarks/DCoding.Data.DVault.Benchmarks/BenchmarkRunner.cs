@@ -235,6 +235,12 @@ internal static class BenchmarkRunner {
         new PitAsOfReadBenchmark(provider, DataVaultBenchmarkStrategy.SqliteOptimized, options.LoadTimestampStorage),
         new BridgeTraversalReadBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
         new BridgeTraversalReadBenchmark(provider, DataVaultBenchmarkStrategy.SqliteOptimized, options.LoadTimestampStorage),
+        new CompiledModelBenchmark(useRuntimeModel: false),
+        new CompiledModelBenchmark(useRuntimeModel: true),
+        new CompiledQueryBenchmark(compiledQuery: false),
+        new CompiledQueryBenchmark(compiledQuery: true),
+        new DbContextPoolingBenchmark(pooled: false),
+        new DbContextPoolingBenchmark(pooled: true),
     ];
   }
 
