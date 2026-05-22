@@ -1,0 +1,10 @@
+﻿[gicket-bot] transactional writeback linkage
+
+- ticket-id: `06F492B9PR036PDNN52S06S9BC`
+- transaction-point: `TP8`
+- write-group: `wg-return-po-refinement`
+- source-role: `po-critic`
+- target-role: `po`
+- branch: `ticket/06F492B9PR036PDNN52S06S9BC-story-add-query-shape-diagnostics-for-dvault-rea`
+- commit: `54347e022dc8`
+- push-mode: `commit-only-on-write`

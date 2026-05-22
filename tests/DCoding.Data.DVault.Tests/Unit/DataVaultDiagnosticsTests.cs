@@ -68,6 +68,122 @@ public sealed class DataVaultDiagnosticsTests {
   }
 
   [Fact]
+  public void ReadDiagnosticsPopulateReadShapeForExplicitRegistryPitAndBridgeRequests() {
+    var metadata = CreateReadShapeMetadata();
+    var optionsBuilder = new DbContextOptionsBuilder<ReadShapeDiagnosticsContext>()
+        .UseSqlite("Data Source=:memory:");
+    optionsBuilder.UseDataVaultMetadata(DataVaultMetadataRegistry.Create(metadata.Model));
+    var options = optionsBuilder.Options;
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+    var asOf = new DateTimeOffset(2026, 5, 11, 12, 0, 0, TimeSpan.Zero);
+
+    using var context = new ReadShapeDiagnosticsContext(options);
+    var explicitLatest = diagnostics.Analyze(
+        context,
+        new DataVaultLatestSatelliteReadRequest(metadata.Profile, ["customer-hk"], asOf));
+    var registryLatest = diagnostics.Analyze(
+        context,
+        new DataVaultRegistryLatestSatelliteReadRequest(
+            metadata.Customer.ToReference(),
+            "Profile",
+            ["different-customer-hk"],
+            asOf));
+    var pit = diagnostics.Analyze(
+        context,
+        new DataVaultPitAsOfReadRequest(metadata.Pit, ["customer-hk"], asOf));
+    var explicitBridge = diagnostics.Analyze(
+        context,
+        new DataVaultBridgeReadRequest(
+            metadata.Bridge,
+            DataVaultBridgeTraversalEndpoint.From,
+            ["customer-hk"]));
+    var registryBridge = diagnostics.Analyze(
+        context,
+        new DataVaultRegistryBridgeReadRequest(
+            "CustomerOrder",
+            DataVaultBridgeTraversalEndpoint.From,
+            ["different-customer-hk"]));
+
+    Assert.NotNull(explicitLatest.ReadShape);
+    var latestShape = explicitLatest.ReadShape!;
+    Assert.Equal(DataVaultReadShapeKind.LatestSatellite, latestShape.Kind);
+    Assert.NotNull(latestShape.Satellite);
+    var latestSatelliteShape = latestShape.Satellite!;
+    Assert.Equal(DataVaultSatelliteReadSemantics.AsOf, latestSatelliteShape.Semantics);
+    Assert.Equal("SatCustomerProfile", latestSatelliteShape.Satellite.TableName);
+    Assert.Equal(["CustomerHashKey"], latestSatelliteShape.FilterColumns[0].ColumnNames);
+    Assert.Equal(["LoadTimestamp"], latestSatelliteShape.FilterColumns[1].ColumnNames);
+    Assert.Contains(
+        latestSatelliteShape.ExpectedIndexBaseline,
+        index => index.Kind == "secondary-index" && index.DescendingColumnNames.Contains("LoadTimestamp"));
+    Assert.NotNull(registryLatest.ReadShape);
+    Assert.NotNull(registryLatest.ReadShape!.Satellite);
+    var registrySatelliteShape = registryLatest.ReadShape.Satellite!;
+    Assert.Equal(latestSatelliteShape.Semantics, registrySatelliteShape.Semantics);
+    Assert.Equal(latestSatelliteShape.Satellite, registrySatelliteShape.Satellite);
+    Assert.Equal(
+        latestSatelliteShape.FilterColumns.SelectMany(columns => columns.ColumnNames),
+        registrySatelliteShape.FilterColumns.SelectMany(columns => columns.ColumnNames));
+
+    Assert.NotNull(pit.ReadShape);
+    var pitShape = pit.ReadShape!;
+    Assert.Equal(DataVaultReadShapeKind.PitAsOf, pitShape.Kind);
+    Assert.NotNull(pitShape.Pit);
+    var pitReadShape = pitShape.Pit!;
+    Assert.Equal("PitCustomerProfileStatus", pitReadShape.Pit.TableName);
+    Assert.Equal(["Profile", "Status"], pitReadShape.ReferencedSatellites.Select(satellite => satellite.MetadataName).ToArray());
+    Assert.Contains("no latest-satellite fallback", pitReadShape.NoLatestFallbackBehavior, StringComparison.Ordinal);
+    Assert.Contains(pitReadShape.ExpectedIndexBaseline, index => index.Kind == "primary-key");
+
+    Assert.NotNull(explicitBridge.ReadShape);
+    var bridgeShape = explicitBridge.ReadShape!;
+    Assert.Equal(DataVaultReadShapeKind.Bridge, bridgeShape.Kind);
+    Assert.NotNull(bridgeShape.Bridge);
+    var bridgeReadShape = bridgeShape.Bridge!;
+    Assert.Equal(DataVaultBridgeKind.ManyToMany, bridgeReadShape.BridgeKind);
+    Assert.Equal("BridgeCustomerOrder", bridgeReadShape.Bridge.TableName);
+    Assert.Equal(["CustomerHashKey"], bridgeReadShape.EndpointFilter.ColumnNames);
+    Assert.Contains(
+        bridgeReadShape.ExpectedTraversalIndexBaseline,
+        index => index.Kind == "secondary-index" && index.ColumnNames.SequenceEqual(["OrderHashKey", "CustomerHashKey"]));
+    Assert.NotNull(registryBridge.ReadShape);
+    Assert.NotNull(registryBridge.ReadShape!.Bridge);
+    var registryBridgeShape = registryBridge.ReadShape.Bridge!;
+    Assert.Equal(bridgeReadShape.Bridge, registryBridgeShape.Bridge);
+    Assert.Equal(bridgeReadShape.FilterEndpoint, registryBridgeShape.FilterEndpoint);
+    Assert.Equal(bridgeReadShape.EndpointFilter.ColumnNames, registryBridgeShape.EndpointFilter.ColumnNames);
+  }
+
+  [Fact]
+  public void SupportBundleSerializesReadShapeWithoutRequestValues() {
+    var metadata = CreateReadShapeMetadata();
+    var optionsBuilder = new DbContextOptionsBuilder<ReadShapeDiagnosticsContext>()
+        .UseSqlite("Data Source=:memory:");
+    optionsBuilder.UseDataVaultMetadata(DataVaultMetadataRegistry.Create(metadata.Model));
+    var options = optionsBuilder.Options;
+    var services = new ServiceCollection();
+    services.AddDVault();
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+
+    using var context = new ReadShapeDiagnosticsContext(options);
+    var result = diagnostics.Analyze(
+        context,
+        new DataVaultLatestSatelliteReadRequest(metadata.Profile, ["secret-customer-hash-key"]));
+
+    var json = DataVaultSupportBundleExporter.ExportJson(result);
+
+    Assert.Contains("\"readShape\"", json, StringComparison.Ordinal);
+    Assert.Contains("\"kind\": \"LatestSatellite\"", json, StringComparison.Ordinal);
+    Assert.Contains("\"readStrategyStatus\": \"ProviderNeutralFallback\"", json, StringComparison.Ordinal);
+    Assert.Contains("\"parentHashKeyFilter\"", json, StringComparison.Ordinal);
+    Assert.DoesNotContain("secret-customer-hash-key", json, StringComparison.Ordinal);
+  }
+
+  [Fact]
   public void AnalyzeBuiltInProviderProfilesAndLoadTimestampStorageVariants() {
     using var provider = CreateServiceProvider();
     var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
@@ -437,6 +553,35 @@ public sealed class DataVaultDiagnosticsTests {
     return new DataVaultMetadataModel([customer, order], [customerOrder], [contact, channel]);
   }
 
+  private static ReadShapeMetadata CreateReadShapeMetadata() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+    var customerOrder = new DataVaultLinkMetadata("CustomerOrder", [customer.ToReference(), order.ToReference()]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["Customer Name", "Customer Tier"]);
+    var status = new DataVaultSatelliteMetadata(
+        "Status",
+        customer.ToReference(),
+        ["Status Code"]);
+    var pit = new DataVaultPitMetadata(customer.ToReference(), ["Profile", "Status"]);
+    var bridge = DataVaultBridgeMetadata.ManyToMany(
+        "CustomerOrder",
+        customer.ToReference(),
+        customerOrder.ToReference(),
+        order.ToReference());
+    var model = new DataVaultMetadataModel(
+        [customer, order],
+        [customerOrder],
+        [profile, status],
+        Array.Empty<DataVaultPointInTimeMetadata>(),
+        [bridge],
+        [pit]);
+
+    return new ReadShapeMetadata(model, customer, profile, pit, bridge);
+  }
+
   private static void AssertMigrationIssue(
       DataVaultDiagnosticsIssue issue,
       string code,
@@ -506,6 +651,16 @@ public sealed class DataVaultDiagnosticsTests {
     public string CustomerNumber { get; set; } = string.Empty;
 
     public string Name { get; set; } = string.Empty;
+  }
+
+  private sealed record ReadShapeMetadata(
+      DataVaultMetadataModel Model,
+      DataVaultHubMetadata Customer,
+      DataVaultSatelliteMetadata Profile,
+      DataVaultPitMetadata Pit,
+      DataVaultBridgeMetadata Bridge);
+
+  private sealed class ReadShapeDiagnosticsContext(DbContextOptions<ReadShapeDiagnosticsContext> options) : DbContext(options) {
   }
 
   private sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStrategy {

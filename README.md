@@ -507,6 +507,8 @@ Treat the JSON artifact and any drift report as review evidence. `dvault.model.v
 
 `IDataVaultDiagnosticsService` can analyze metadata models, registries, Code-First declarations, and configured DbContexts. Validation and explain output can run without a save request. Provider-specific save-strategy dispatch diagnostics are request-bound, so strategy status remains not evaluated until a single save request or ordered bulk save request is supplied.
 
+`IDataVaultReadDiagnosticsService` analyzes representative latest/current/as-of satellite, PIT as-of, and bridge read requests. Request-bound read diagnostics keep provider strategy selection in `ReadStrategy` and add a separate `ReadShape` payload that describes translated table identity, filter columns, deterministic row-selection and ordering rules, expected key/index access paths, and provider fallback caveats. Registry-backed latest-satellite and bridge diagnostics resolve metadata first, then emit the same read-shape payload as the equivalent explicit request. The read-shape payload includes metadata and generated schema identifiers but not raw hash-key values, as-of values, request keys, SQL text, or provider query plans.
+
 ### Export redacted support bundles
 
 DVault exposes `DataVaultDesignTimeCommand` and `DataVaultDesignTimeCommandHost` so applications can host design-time verbs from the project that owns the configured `DbContext`, EF design-time factory, migrations, and metadata source. The `support-bundle` verb emits one deterministic redacted JSON document under the `dvault.support-bundle.v1` contract:
@@ -515,7 +517,7 @@ DVault exposes `DataVaultDesignTimeCommand` and `DataVaultDesignTimeCommandHost`
 dotnet run --project src/SalesVault/SalesVault.csproj -- support-bundle --output src/SalesVault/dvault-support-bundle.json
 ```
 
-The default support bundle constructs the configured design-time context, runs `IDataVaultDiagnosticsService.Analyze(DbContext)`, and serializes validation, explain, save-strategy, and read-strategy diagnostics without opening a live database connection. Use `--artifact <path>` to add reviewed `dvault.model.v1` drift evidence and `--live-schema` only when the consumer application owns the reachable database, credentials, lifecycle cleanup, and CI isolation for that check.
+The default support bundle constructs the configured design-time context, runs `IDataVaultDiagnosticsService.Analyze(DbContext)`, and serializes validation, explain, save-strategy, and read-strategy diagnostics without opening a live database connection. When application code supplies representative request-bound read diagnostics, the same deterministic redacted JSON also includes the additive `readShape` section. Use `--artifact <path>` to add reviewed `dvault.model.v1` drift evidence and `--live-schema` only when the consumer application owns the reachable database, credentials, lifecycle cleanup, and CI isolation for that check.
 
 Applications that want representative request-bound save or read strategy evidence should supply that diagnostics result from application code through `DataVaultDesignTimeCommandHost.CreateSupportBundleDiagnostics`. The reusable command host does not invent representative requests, publish support bundles, attach them to tickets, intercept `dotnet ef`, or ship a standalone `dvault` CLI.
 

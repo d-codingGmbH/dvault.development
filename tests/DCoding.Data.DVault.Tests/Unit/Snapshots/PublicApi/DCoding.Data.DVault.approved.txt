@@ -25,6 +25,19 @@ type public static class DCoding.Data.DVault.DataVaultAnnotationNames
   field public const string ProviderValueFormat = "DCoding.Data.DVault:ProviderValueFormat"
   field public const string TechnicalColumnRole = "DCoding.Data.DVault:TechnicalColumnRole"
 
+type public sealed class DCoding.Data.DVault.DataVaultBridgeEndpointReadShapeDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultBridgeEndpointReadShapeDiagnostics>
+  ctor public DataVaultBridgeEndpointReadShapeDiagnostics(DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint Endpoint, string EndpointName, string ColumnName)
+  property public DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint Endpoint { get; init; }
+  property public string ColumnName { get; init; }
+  property public string EndpointName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultBridgeEndpointReadShapeDiagnostics? left, DCoding.Data.DVault.DataVaultBridgeEndpointReadShapeDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultBridgeEndpointReadShapeDiagnostics? left, DCoding.Data.DVault.DataVaultBridgeEndpointReadShapeDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultBridgeEndpointReadShapeDiagnostics? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint Endpoint, out string EndpointName, out string ColumnName)
+
 type public sealed class DCoding.Data.DVault.DataVaultBridgeEndpointReadValue
   property public DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint Endpoint { get; }
   property public string ColumnName { get; }
@@ -65,6 +78,25 @@ type public sealed class DCoding.Data.DVault.DataVaultBridgeReadRequest
   property public DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata Bridge { get; }
   property public System.Collections.Generic.IReadOnlyList<string> EndpointHashKeys { get; }
   property public int? MaximumDepth { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultBridgeReadShapeDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultBridgeReadShapeDiagnostics>
+  ctor public DataVaultBridgeReadShapeDiagnostics(DCoding.Data.DVault.Modeling.DataVaultBridgeKind BridgeKind, DCoding.Data.DVault.DataVaultReadShapeEntity Bridge, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultBridgeEndpointReadShapeDiagnostics> Endpoints, DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint FilterEndpoint, DCoding.Data.DVault.DataVaultReadShapeColumnSet EndpointFilter, DCoding.Data.DVault.DataVaultReadShapeColumnSet? DepthPredicate, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> DeterministicOrdering, System.Collections.Generic.IReadOnlyList<string> SupportedEndpointRules, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeIndexBaseline> ExpectedTraversalIndexBaseline)
+  property public DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint FilterEndpoint { get; init; }
+  property public DCoding.Data.DVault.DataVaultReadShapeColumnSet EndpointFilter { get; init; }
+  property public DCoding.Data.DVault.DataVaultReadShapeColumnSet? DepthPredicate { get; init; }
+  property public DCoding.Data.DVault.DataVaultReadShapeEntity Bridge { get; init; }
+  property public DCoding.Data.DVault.Modeling.DataVaultBridgeKind BridgeKind { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultBridgeEndpointReadShapeDiagnostics> Endpoints { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> DeterministicOrdering { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeIndexBaseline> ExpectedTraversalIndexBaseline { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<string> SupportedEndpointRules { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultBridgeReadShapeDiagnostics? left, DCoding.Data.DVault.DataVaultBridgeReadShapeDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultBridgeReadShapeDiagnostics? left, DCoding.Data.DVault.DataVaultBridgeReadShapeDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultBridgeReadShapeDiagnostics? other)
+  method public void Deconstruct(out DCoding.Data.DVault.Modeling.DataVaultBridgeKind BridgeKind, out DCoding.Data.DVault.DataVaultReadShapeEntity Bridge, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultBridgeEndpointReadShapeDiagnostics> Endpoints, out DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint FilterEndpoint, out DCoding.Data.DVault.DataVaultReadShapeColumnSet EndpointFilter, out DCoding.Data.DVault.DataVaultReadShapeColumnSet? DepthPredicate, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> DeterministicOrdering, out System.Collections.Generic.IReadOnlyList<string> SupportedEndpointRules, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeIndexBaseline> ExpectedTraversalIndexBaseline)
 
 type public enum DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint
   value From = 0
@@ -165,6 +197,7 @@ type public enum DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity
 type public sealed class DCoding.Data.DVault.DataVaultDiagnosticsResult : System.IEquatable<DCoding.Data.DVault.DataVaultDiagnosticsResult>
   ctor public DataVaultDiagnosticsResult(DCoding.Data.DVault.DataVaultValidationDiagnostics Validation, DCoding.Data.DVault.DataVaultExplainDiagnostics Explain, DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics SaveStrategy, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultDiagnosticsIssue> Issues)
   property public DCoding.Data.DVault.DataVaultExplainDiagnostics Explain { get; init; }
+  property public DCoding.Data.DVault.DataVaultReadShapeDiagnostics? ReadShape { get; init; }
   property public DCoding.Data.DVault.DataVaultReadStrategyDiagnostics ReadStrategy { get; init; }
   property public DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics SaveStrategy { get; init; }
   property public DCoding.Data.DVault.DataVaultValidationDiagnostics Validation { get; init; }
@@ -603,9 +636,43 @@ type public sealed class DCoding.Data.DVault.DataVaultPitReadRecord
   property public System.DateTimeOffset LoadTimestamp { get; }
   property public string ParentHashKey { get; }
 
+type public sealed class DCoding.Data.DVault.DataVaultPitReadShapeDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultPitReadShapeDiagnostics>
+  ctor public DataVaultPitReadShapeDiagnostics(DCoding.Data.DVault.DataVaultReadShapeEntity Pit, DCoding.Data.DVault.DataVaultParentReferenceExplain ParentReference, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics> ReferencedSatellites, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> FilterColumns, string PitRowSelectionRule, string SnapshotLookupBehavior, string NoLatestFallbackBehavior, string MaintainedPitPrerequisite, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeIndexBaseline> ExpectedIndexBaseline)
+  property public DCoding.Data.DVault.DataVaultParentReferenceExplain ParentReference { get; init; }
+  property public DCoding.Data.DVault.DataVaultReadShapeEntity Pit { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics> ReferencedSatellites { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> FilterColumns { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeIndexBaseline> ExpectedIndexBaseline { get; init; }
+  property public string MaintainedPitPrerequisite { get; init; }
+  property public string NoLatestFallbackBehavior { get; init; }
+  property public string PitRowSelectionRule { get; init; }
+  property public string SnapshotLookupBehavior { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultPitReadShapeDiagnostics? left, DCoding.Data.DVault.DataVaultPitReadShapeDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultPitReadShapeDiagnostics? left, DCoding.Data.DVault.DataVaultPitReadShapeDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultPitReadShapeDiagnostics? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultReadShapeEntity Pit, out DCoding.Data.DVault.DataVaultParentReferenceExplain ParentReference, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics> ReferencedSatellites, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> FilterColumns, out string PitRowSelectionRule, out string SnapshotLookupBehavior, out string NoLatestFallbackBehavior, out string MaintainedPitPrerequisite, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeIndexBaseline> ExpectedIndexBaseline)
+
 type public sealed class DCoding.Data.DVault.DataVaultPitRebuildRequest
   ctor public DataVaultPitRebuildRequest(DCoding.Data.DVault.Modeling.DataVaultPitMetadata pit)
   property public DCoding.Data.DVault.Modeling.DataVaultPitMetadata Pit { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics>
+  ctor public DataVaultPitReferencedSatelliteReadShapeDiagnostics(string MetadataName, string TableName, string SnapshotReferenceColumnName, string ParentHashKeyColumnName, string LoadTimestampColumnName)
+  property public string LoadTimestampColumnName { get; init; }
+  property public string MetadataName { get; init; }
+  property public string ParentHashKeyColumnName { get; init; }
+  property public string SnapshotReferenceColumnName { get; init; }
+  property public string TableName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics? left, DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics? left, DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics? other)
+  method public void Deconstruct(out string MetadataName, out string TableName, out string SnapshotReferenceColumnName, out string ParentHashKeyColumnName, out string LoadTimestampColumnName)
 
 type public sealed class DCoding.Data.DVault.DataVaultPitSatelliteProjectionRow
   property public string SatelliteName { get; }
@@ -826,6 +893,84 @@ type public static class DCoding.Data.DVault.DataVaultReadServiceRegistryExtensi
 type public static class DCoding.Data.DVault.DataVaultReadServiceTypedProjectionExtensions
   method public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TProjection?>> ReadLatestSatelliteAsync<TProjection>(this DCoding.Data.DVault.IDataVaultReadService readService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultLatestSatelliteReadRequest request, System.Func<DCoding.Data.DVault.DataVaultSatelliteProjectionRow, TProjection?> projector, System.Threading.CancellationToken cancellationToken = default)
 
+type public sealed class DCoding.Data.DVault.DataVaultReadShapeColumnSet : System.IEquatable<DCoding.Data.DVault.DataVaultReadShapeColumnSet>
+  ctor public DataVaultReadShapeColumnSet(string Role, System.Collections.Generic.IReadOnlyList<string> ColumnNames)
+  property public System.Collections.Generic.IReadOnlyList<string> ColumnNames { get; init; }
+  property public string Role { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultReadShapeColumnSet? left, DCoding.Data.DVault.DataVaultReadShapeColumnSet? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultReadShapeColumnSet? left, DCoding.Data.DVault.DataVaultReadShapeColumnSet? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultReadShapeColumnSet? other)
+  method public void Deconstruct(out string Role, out System.Collections.Generic.IReadOnlyList<string> ColumnNames)
+
+type public sealed class DCoding.Data.DVault.DataVaultReadShapeDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultReadShapeDiagnostics>
+  ctor public DataVaultReadShapeDiagnostics(DCoding.Data.DVault.DataVaultReadShapeKind Kind, DCoding.Data.DVault.DataVaultReadShapeProviderDiagnostics Provider, DCoding.Data.DVault.DataVaultSatelliteReadShapeDiagnostics? Satellite = null, DCoding.Data.DVault.DataVaultPitReadShapeDiagnostics? Pit = null, DCoding.Data.DVault.DataVaultBridgeReadShapeDiagnostics? Bridge = null)
+  property public DCoding.Data.DVault.DataVaultBridgeReadShapeDiagnostics? Bridge { get; init; }
+  property public DCoding.Data.DVault.DataVaultPitReadShapeDiagnostics? Pit { get; init; }
+  property public DCoding.Data.DVault.DataVaultReadShapeKind Kind { get; init; }
+  property public DCoding.Data.DVault.DataVaultReadShapeProviderDiagnostics Provider { get; init; }
+  property public DCoding.Data.DVault.DataVaultSatelliteReadShapeDiagnostics? Satellite { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultReadShapeDiagnostics? left, DCoding.Data.DVault.DataVaultReadShapeDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultReadShapeDiagnostics? left, DCoding.Data.DVault.DataVaultReadShapeDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultReadShapeDiagnostics? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultReadShapeKind Kind, out DCoding.Data.DVault.DataVaultReadShapeProviderDiagnostics Provider, out DCoding.Data.DVault.DataVaultSatelliteReadShapeDiagnostics? Satellite, out DCoding.Data.DVault.DataVaultPitReadShapeDiagnostics? Pit, out DCoding.Data.DVault.DataVaultBridgeReadShapeDiagnostics? Bridge)
+
+type public sealed class DCoding.Data.DVault.DataVaultReadShapeEntity : System.IEquatable<DCoding.Data.DVault.DataVaultReadShapeEntity>
+  ctor public DataVaultReadShapeEntity(string MetadataName, DCoding.Data.DVault.Modeling.DataVaultTableKind TableKind, string TableName)
+  property public DCoding.Data.DVault.Modeling.DataVaultTableKind TableKind { get; init; }
+  property public string MetadataName { get; init; }
+  property public string TableName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultReadShapeEntity? left, DCoding.Data.DVault.DataVaultReadShapeEntity? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultReadShapeEntity? left, DCoding.Data.DVault.DataVaultReadShapeEntity? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultReadShapeEntity? other)
+  method public void Deconstruct(out string MetadataName, out DCoding.Data.DVault.Modeling.DataVaultTableKind TableKind, out string TableName)
+
+type public sealed class DCoding.Data.DVault.DataVaultReadShapeIndexBaseline : System.IEquatable<DCoding.Data.DVault.DataVaultReadShapeIndexBaseline>
+  ctor public DataVaultReadShapeIndexBaseline(string Name, string Kind, System.Collections.Generic.IReadOnlyList<string> ColumnNames, bool IsUnique, System.Collections.Generic.IReadOnlyList<string> DescendingColumnNames, System.Collections.Generic.IReadOnlyList<string> IncludedColumnNames)
+  property public System.Collections.Generic.IReadOnlyList<string> ColumnNames { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<string> DescendingColumnNames { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<string> IncludedColumnNames { get; init; }
+  property public bool IsUnique { get; init; }
+  property public string Kind { get; init; }
+  property public string Name { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultReadShapeIndexBaseline? left, DCoding.Data.DVault.DataVaultReadShapeIndexBaseline? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultReadShapeIndexBaseline? left, DCoding.Data.DVault.DataVaultReadShapeIndexBaseline? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultReadShapeIndexBaseline? other)
+  method public void Deconstruct(out string Name, out string Kind, out System.Collections.Generic.IReadOnlyList<string> ColumnNames, out bool IsUnique, out System.Collections.Generic.IReadOnlyList<string> DescendingColumnNames, out System.Collections.Generic.IReadOnlyList<string> IncludedColumnNames)
+
+type public enum DCoding.Data.DVault.DataVaultReadShapeKind
+  value LatestSatellite = 0
+  value PitAsOf = 1
+  value Bridge = 2
+
+type public sealed class DCoding.Data.DVault.DataVaultReadShapeProviderDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultReadShapeProviderDiagnostics>
+  ctor public DataVaultReadShapeProviderDiagnostics(string? ProviderName, string CapabilityProfileName, bool CapabilityProfileDefaulted, string ProviderBehaviorProfileName, bool ProviderBehaviorDefaulted, DCoding.Data.DVault.DataVaultReadStrategyDiagnosticsStatus ReadStrategyStatus, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyFallbackCause> ReadStrategyFallbackCauses)
+  property public DCoding.Data.DVault.DataVaultReadStrategyDiagnosticsStatus ReadStrategyStatus { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyFallbackCause> ReadStrategyFallbackCauses { get; init; }
+  property public bool CapabilityProfileDefaulted { get; init; }
+  property public bool ProviderBehaviorDefaulted { get; init; }
+  property public string CapabilityProfileName { get; init; }
+  property public string ProviderBehaviorProfileName { get; init; }
+  property public string? ProviderName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultReadShapeProviderDiagnostics? left, DCoding.Data.DVault.DataVaultReadShapeProviderDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultReadShapeProviderDiagnostics? left, DCoding.Data.DVault.DataVaultReadShapeProviderDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultReadShapeProviderDiagnostics? other)
+  method public void Deconstruct(out string? ProviderName, out string CapabilityProfileName, out bool CapabilityProfileDefaulted, out string ProviderBehaviorProfileName, out bool ProviderBehaviorDefaulted, out DCoding.Data.DVault.DataVaultReadStrategyDiagnosticsStatus ReadStrategyStatus, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyFallbackCause> ReadStrategyFallbackCauses)
+
 type public sealed class DCoding.Data.DVault.DataVaultReadStrategyCandidateDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultReadStrategyCandidateDiagnostics>
   ctor public DataVaultReadStrategyCandidateDiagnostics(int Ordinal, string StrategyName, int Priority, bool CanRead, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyFallbackCause> FallbackCauses)
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyFallbackCause> FallbackCauses { get; init; }
@@ -1012,6 +1157,28 @@ type public sealed class DCoding.Data.DVault.DataVaultSatelliteReadRecord
   property public string ParentHashKey { get; }
   property public string RecordSource { get; }
   property public string TableName { get; }
+
+type public enum DCoding.Data.DVault.DataVaultSatelliteReadSemantics
+  value Current = 0
+  value AsOf = 1
+
+type public sealed class DCoding.Data.DVault.DataVaultSatelliteReadShapeDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultSatelliteReadShapeDiagnostics>
+  ctor public DataVaultSatelliteReadShapeDiagnostics(DCoding.Data.DVault.DataVaultSatelliteReadSemantics Semantics, DCoding.Data.DVault.DataVaultReadShapeEntity Satellite, DCoding.Data.DVault.DataVaultParentReferenceExplain ParentReference, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> FilterColumns, string SeriesSelectionRule, string CutoffRule, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> DeterministicOrdering, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeIndexBaseline> ExpectedIndexBaseline)
+  property public DCoding.Data.DVault.DataVaultParentReferenceExplain ParentReference { get; init; }
+  property public DCoding.Data.DVault.DataVaultReadShapeEntity Satellite { get; init; }
+  property public DCoding.Data.DVault.DataVaultSatelliteReadSemantics Semantics { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> DeterministicOrdering { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> FilterColumns { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeIndexBaseline> ExpectedIndexBaseline { get; init; }
+  property public string CutoffRule { get; init; }
+  property public string SeriesSelectionRule { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultSatelliteReadShapeDiagnostics? left, DCoding.Data.DVault.DataVaultSatelliteReadShapeDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultSatelliteReadShapeDiagnostics? left, DCoding.Data.DVault.DataVaultSatelliteReadShapeDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultSatelliteReadShapeDiagnostics? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultSatelliteReadSemantics Semantics, out DCoding.Data.DVault.DataVaultReadShapeEntity Satellite, out DCoding.Data.DVault.DataVaultParentReferenceExplain ParentReference, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> FilterColumns, out string SeriesSelectionRule, out string CutoffRule, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> DeterministicOrdering, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeIndexBaseline> ExpectedIndexBaseline)
 
 type public sealed class DCoding.Data.DVault.DataVaultSatelliteSaveOperation
   ctor public DataVaultSatelliteSaveOperation(DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata metadata, string parentHashKey, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> drivingKeyValues, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> payloadValues, string hashDiff)

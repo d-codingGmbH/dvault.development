@@ -25,6 +25,7 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
     Assert.True(result.Validation.IsValid);
     Assert.Equal(DataVaultSaveStrategyDiagnosticsStatus.NotEvaluated, result.SaveStrategy.Status);
     Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.NotEvaluated, result.ReadStrategy.Status);
+    Assert.Null(result.ReadShape);
     Assert.Equal(KnownProviderNames.Sqlite, result.SaveStrategy.ProviderName);
     Assert.Equal(KnownProviderNames.Sqlite, result.ReadStrategy.ProviderName);
     Assert.Empty(result.SaveStrategy.Candidates);
@@ -113,12 +114,18 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
     using var database = SqliteTestDatabase.CreateTemporaryFile();
     var services = new ServiceCollection();
     services.AddDVaultSqlite();
+    var fallbackServices = new ServiceCollection();
+    fallbackServices.AddDVault();
 
     using var provider = services.BuildServiceProvider(validateScopes: true);
+    using var fallbackProvider = fallbackServices.BuildServiceProvider(validateScopes: true);
     var diagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+    var fallbackDiagnostics = fallbackProvider.GetRequiredService<IDataVaultReadDiagnosticsService>();
     using var context = new DiagnosticsContext(CreateOptions(database));
+    var request = CreateProfileReadRequest(["customer-hk"]);
 
-    var result = diagnostics.Analyze(context, CreateProfileReadRequest(["customer-hk"]));
+    var result = diagnostics.Analyze(context, request);
+    var fallbackResult = fallbackDiagnostics.Analyze(context, request);
 
     Assert.True(result.Validation.IsValid);
     Assert.Equal(DataVaultSaveStrategyDiagnosticsStatus.NotEvaluated, result.SaveStrategy.Status);
@@ -144,6 +151,80 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
         requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
     Assert.Empty(candidate.FallbackCauses);
     Assert.Empty(result.ReadStrategy.FallbackCauses);
+    Assert.NotNull(result.ReadShape);
+    var readShape = result.ReadShape!;
+    Assert.Equal(DataVaultReadShapeKind.LatestSatellite, readShape.Kind);
+    Assert.NotNull(readShape.Satellite);
+    var satelliteShape = readShape.Satellite!;
+    Assert.Equal(DataVaultSatelliteReadSemantics.Current, satelliteShape.Semantics);
+    Assert.Equal("SatCustomerProfile", satelliteShape.Satellite.TableName);
+    Assert.Equal(["CustomerHashKey"], satelliteShape.FilterColumns.Single().ColumnNames);
+    Assert.Contains(
+        satelliteShape.ExpectedIndexBaseline,
+        index => index.Kind == "secondary-index" && index.ColumnNames.Contains("CustomerHashKey"));
+
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback, fallbackResult.ReadShape!.Provider.ReadStrategyStatus);
+    Assert.Contains(
+        fallbackResult.ReadShape.Provider.ReadStrategyFallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered);
+  }
+
+  [Fact]
+  public void AnalyzeSqliteDbContextRegistryReadRequestsPopulateEquivalentReadShape() {
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var metadataModel = CreateReadShapeMetadataModel();
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+    var optionsBuilder = new DbContextOptionsBuilder<ReadShapeDiagnosticsContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False");
+    optionsBuilder.UseDataVaultMetadata(DataVaultMetadataRegistry.Create(metadataModel));
+    var options = optionsBuilder.Options;
+    using var context = new ReadShapeDiagnosticsContext(options);
+    var profile = metadataModel.Satellites.Single(satellite => satellite.Name == "Profile");
+    var bridge = metadataModel.Bridges.Single();
+    var asOf = new DateTimeOffset(2026, 5, 11, 12, 0, 0, TimeSpan.Zero);
+
+    var explicitLatest = diagnostics.Analyze(
+        context,
+        new DataVaultLatestSatelliteReadRequest(profile, ["customer-hk"], asOf));
+    var registryLatest = diagnostics.Analyze(
+        context,
+        new DataVaultRegistryLatestSatelliteReadRequest(
+            DataVaultMetadataReference.Hub("Customer"),
+            "Profile",
+            ["other-customer-hk"],
+            asOf));
+    var explicitBridge = diagnostics.Analyze(
+        context,
+        new DataVaultBridgeReadRequest(
+            bridge,
+            DataVaultBridgeTraversalEndpoint.From,
+            ["customer-hk"]));
+    var registryBridge = diagnostics.Analyze(
+        context,
+        new DataVaultRegistryBridgeReadRequest(
+            "CustomerOrder",
+            DataVaultBridgeTraversalEndpoint.From,
+            ["other-customer-hk"]));
+
+    Assert.NotNull(explicitLatest.ReadShape);
+    Assert.NotNull(registryLatest.ReadShape);
+    Assert.NotNull(explicitLatest.ReadShape!.Satellite);
+    Assert.NotNull(registryLatest.ReadShape!.Satellite);
+    Assert.Equal(explicitLatest.ReadShape.Satellite!.Satellite, registryLatest.ReadShape.Satellite!.Satellite);
+    Assert.Equal(explicitLatest.ReadShape.Satellite.FilterColumns.SelectMany(columns => columns.ColumnNames),
+        registryLatest.ReadShape.Satellite.FilterColumns.SelectMany(columns => columns.ColumnNames));
+    Assert.Equal(DataVaultSatelliteReadSemantics.AsOf, registryLatest.ReadShape.Satellite.Semantics);
+    Assert.NotNull(explicitBridge.ReadShape);
+    Assert.NotNull(registryBridge.ReadShape);
+    Assert.NotNull(explicitBridge.ReadShape!.Bridge);
+    Assert.NotNull(registryBridge.ReadShape!.Bridge);
+    Assert.Equal(explicitBridge.ReadShape.Bridge!.Bridge, registryBridge.ReadShape.Bridge!.Bridge);
+    Assert.Equal(explicitBridge.ReadShape.Bridge.EndpointFilter.ColumnNames, registryBridge.ReadShape.Bridge.EndpointFilter.ColumnNames);
+    Assert.Equal(DataVaultBridgeKind.ManyToMany, registryBridge.ReadShape.Bridge.BridgeKind);
   }
 
   [Fact]
@@ -398,6 +479,29 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
     return new DataVaultMetadataModel([customerHub], [], [customerSatellite]);
   }
 
+  private static DataVaultMetadataModel CreateReadShapeMetadataModel() {
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerNumber"]);
+    var order = new DataVaultHubMetadata("Order", ["OrderNumber"]);
+    var customerOrder = new DataVaultLinkMetadata("CustomerOrder", [customer.ToReference(), order.ToReference()]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["Name"]);
+    var bridge = DataVaultBridgeMetadata.ManyToMany(
+        "CustomerOrder",
+        customer.ToReference(),
+        customerOrder.ToReference(),
+        order.ToReference());
+
+    return new DataVaultMetadataModel(
+        [customer, order],
+        [customerOrder],
+        [profile],
+        Array.Empty<DataVaultPointInTimeMetadata>(),
+        [bridge],
+        Array.Empty<DataVaultPitMetadata>());
+  }
+
   private static DataVaultLatestSatelliteReadRequest CreateProfileReadRequest(IEnumerable<string> parentHashKeys) {
     var customerHub = new DataVaultHubMetadata("Customer", ["CustomerNumber"]);
     var customerSatellite = new DataVaultSatelliteMetadata(
@@ -426,6 +530,9 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
       modelBuilder.Entity<TrackedCustomer>();
     }
+  }
+
+  private sealed class ReadShapeDiagnosticsContext(DbContextOptions<ReadShapeDiagnosticsContext> options) : DbContext(options) {
   }
 
   private sealed class TrackedCustomer {

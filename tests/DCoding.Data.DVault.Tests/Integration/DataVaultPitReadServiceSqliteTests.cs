@@ -146,6 +146,20 @@ public sealed class DataVaultPitReadServiceSqliteTests {
       Assert.Contains(
           fallbackDiagnostics.ReadStrategy.FallbackCauses,
           cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered);
+      Assert.NotNull(diagnostics.ReadShape);
+      var pitShape = diagnostics.ReadShape!;
+      Assert.Equal(DataVaultReadShapeKind.PitAsOf, pitShape.Kind);
+      Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected, pitShape.Provider.ReadStrategyStatus);
+      Assert.NotNull(pitShape.Pit);
+      var pitReadShape = pitShape.Pit!;
+      Assert.Equal("PitCustomerProfileStatus", pitReadShape.Pit.TableName);
+      Assert.Equal(["CustomerHashKey"], pitReadShape.FilterColumns[0].ColumnNames);
+      Assert.Equal(["LoadTimestamp"], pitReadShape.FilterColumns[1].ColumnNames);
+      Assert.Equal(["Profile", "Status"], pitReadShape.ReferencedSatellites.Select(satellite => satellite.MetadataName).ToArray());
+      Assert.Contains(
+          pitReadShape.ExpectedIndexBaseline,
+          index => index.Kind == "primary-key" && index.ColumnNames.SequenceEqual(["CustomerHashKey", "LoadTimestamp"]));
+      Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback, fallbackDiagnostics.ReadShape!.Provider.ReadStrategyStatus);
 
       var record = Assert.Single(records);
       var fallbackRecord = Assert.Single(fallbackRecords);

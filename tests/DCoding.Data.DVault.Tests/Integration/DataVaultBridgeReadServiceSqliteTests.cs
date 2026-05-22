@@ -68,6 +68,20 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
     Assert.Contains(
         fallbackDiagnostics.ReadStrategy.FallbackCauses,
         cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered);
+    Assert.NotNull(diagnostics.ReadShape);
+    var bridgeShape = diagnostics.ReadShape!;
+    Assert.Equal(DataVaultReadShapeKind.Bridge, bridgeShape.Kind);
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected, bridgeShape.Provider.ReadStrategyStatus);
+    Assert.NotNull(bridgeShape.Bridge);
+    var bridgeReadShape = bridgeShape.Bridge!;
+    Assert.Equal(DataVaultBridgeKind.ManyToMany, bridgeReadShape.BridgeKind);
+    Assert.Equal("BridgeCustomerOrder", bridgeReadShape.Bridge.TableName);
+    Assert.Equal(DataVaultBridgeTraversalEndpoint.From, bridgeReadShape.FilterEndpoint);
+    Assert.Equal(["CustomerHashKey"], bridgeReadShape.EndpointFilter.ColumnNames);
+    Assert.Contains(
+        bridgeReadShape.ExpectedTraversalIndexBaseline,
+        index => index.Kind == "secondary-index" && index.ColumnNames.SequenceEqual(["OrderHashKey", "CustomerHashKey"]));
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback, fallbackDiagnostics.ReadShape!.Provider.ReadStrategyStatus);
 
     Assert.Collection(
         readRows,
@@ -77,6 +91,46 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
     Assert.Equal(["order-1", "order-2"], projectedOrderKeys);
     Assert.Collection(reverseRows, row => AssertManyToManyRow(row, "customer-2", "order-3"));
     Assert.Empty(missingRows);
+  }
+
+  [Fact]
+  public void RegistryBackedBridgeDiagnosticsMatchExplicitReadShapeAfterResolution() {
+    var bridge = ManyToManyMetadataModel.Bridges.Single();
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var services = new ServiceCollection();
+    services.AddDVault(options => options.UseMetadataModel(ManyToManyMetadataModel));
+    services.AddDVaultSqlite();
+    services.AddDbContext<RegistryBridgeReadContext>(
+        options => options
+            .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+            .UseDataVaultMetadata());
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var readDiagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+    using var scope = provider.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<RegistryBridgeReadContext>();
+
+    var explicitResult = readDiagnostics.Analyze(
+        context,
+        new DataVaultBridgeReadRequest(
+            bridge,
+            DataVaultBridgeTraversalEndpoint.From,
+            ["customer-1"]));
+    var registryResult = readDiagnostics.Analyze(
+        context,
+        new DataVaultRegistryBridgeReadRequest(
+            "CustomerOrder",
+            DataVaultBridgeTraversalEndpoint.From,
+            ["different-customer"]));
+
+    Assert.NotNull(explicitResult.ReadShape);
+    Assert.NotNull(registryResult.ReadShape);
+    Assert.NotNull(explicitResult.ReadShape!.Bridge);
+    Assert.NotNull(registryResult.ReadShape!.Bridge);
+    Assert.Equal(explicitResult.ReadShape.Bridge!.Bridge, registryResult.ReadShape.Bridge!.Bridge);
+    Assert.Equal(explicitResult.ReadShape.Bridge.EndpointFilter.ColumnNames, registryResult.ReadShape.Bridge.EndpointFilter.ColumnNames);
+    Assert.Equal(DataVaultBridgeKind.ManyToMany, registryResult.ReadShape.Bridge.BridgeKind);
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected, registryResult.ReadShape.Provider.ReadStrategyStatus);
   }
 
   [Fact]

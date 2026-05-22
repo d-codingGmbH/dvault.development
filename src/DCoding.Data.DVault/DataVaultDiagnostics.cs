@@ -404,6 +404,148 @@ public sealed record DataVaultReadStrategyDiagnostics(
     IReadOnlyList<DataVaultReadStrategyFallbackCause> FallbackCauses);
 
 /// <summary>
+/// Identifies the request-bound Data Vault read shape analyzed by diagnostics.
+/// </summary>
+public enum DataVaultReadShapeKind {
+  /// <summary>
+  /// Latest or as-of satellite read over one satellite table.
+  /// </summary>
+  LatestSatellite,
+
+  /// <summary>
+  /// PIT-backed as-of read over one maintained PIT table.
+  /// </summary>
+  PitAsOf,
+
+  /// <summary>
+  /// Bridge read over one maintained bridge table.
+  /// </summary>
+  Bridge,
+}
+
+/// <summary>
+/// Identifies whether a latest-satellite request is current or as-of bounded.
+/// </summary>
+public enum DataVaultSatelliteReadSemantics {
+  /// <summary>
+  /// The request selects current/latest persisted rows without an as-of cutoff.
+  /// </summary>
+  Current,
+
+  /// <summary>
+  /// The request selects rows visible at the supplied as-of cutoff.
+  /// </summary>
+  AsOf,
+}
+
+/// <summary>
+/// Machine-readable translated table identity for one read-shape diagnostics target.
+/// </summary>
+public sealed record DataVaultReadShapeEntity(
+    string MetadataName,
+    DataVaultTableKind TableKind,
+    string TableName);
+
+/// <summary>
+/// Machine-readable named set of translated columns used by a read shape.
+/// </summary>
+public sealed record DataVaultReadShapeColumnSet(
+    string Role,
+    IReadOnlyList<string> ColumnNames);
+
+/// <summary>
+/// Machine-readable expected translated index or key baseline for a read shape.
+/// </summary>
+public sealed record DataVaultReadShapeIndexBaseline(
+    string Name,
+    string Kind,
+    IReadOnlyList<string> ColumnNames,
+    bool IsUnique,
+    IReadOnlyList<string> DescendingColumnNames,
+    IReadOnlyList<string> IncludedColumnNames);
+
+/// <summary>
+/// Provider caveat and fallback facts attached to request-bound read-shape diagnostics.
+/// </summary>
+public sealed record DataVaultReadShapeProviderDiagnostics(
+    string? ProviderName,
+    string CapabilityProfileName,
+    bool CapabilityProfileDefaulted,
+    string ProviderBehaviorProfileName,
+    bool ProviderBehaviorDefaulted,
+    DataVaultReadStrategyDiagnosticsStatus ReadStrategyStatus,
+    IReadOnlyList<DataVaultReadStrategyFallbackCause> ReadStrategyFallbackCauses);
+
+/// <summary>
+/// Machine-readable diagnostics for latest/current/as-of satellite read shape.
+/// </summary>
+public sealed record DataVaultSatelliteReadShapeDiagnostics(
+    DataVaultSatelliteReadSemantics Semantics,
+    DataVaultReadShapeEntity Satellite,
+    DataVaultParentReferenceExplain ParentReference,
+    IReadOnlyList<DataVaultReadShapeColumnSet> FilterColumns,
+    string SeriesSelectionRule,
+    string CutoffRule,
+    IReadOnlyList<DataVaultReadShapeColumnSet> DeterministicOrdering,
+    IReadOnlyList<DataVaultReadShapeIndexBaseline> ExpectedIndexBaseline);
+
+/// <summary>
+/// Machine-readable PIT satellite reference facts used by PIT read-shape diagnostics.
+/// </summary>
+public sealed record DataVaultPitReferencedSatelliteReadShapeDiagnostics(
+    string MetadataName,
+    string TableName,
+    string SnapshotReferenceColumnName,
+    string ParentHashKeyColumnName,
+    string LoadTimestampColumnName);
+
+/// <summary>
+/// Machine-readable diagnostics for PIT-backed as-of read shape.
+/// </summary>
+public sealed record DataVaultPitReadShapeDiagnostics(
+    DataVaultReadShapeEntity Pit,
+    DataVaultParentReferenceExplain ParentReference,
+    IReadOnlyList<DataVaultPitReferencedSatelliteReadShapeDiagnostics> ReferencedSatellites,
+    IReadOnlyList<DataVaultReadShapeColumnSet> FilterColumns,
+    string PitRowSelectionRule,
+    string SnapshotLookupBehavior,
+    string NoLatestFallbackBehavior,
+    string MaintainedPitPrerequisite,
+    IReadOnlyList<DataVaultReadShapeIndexBaseline> ExpectedIndexBaseline);
+
+/// <summary>
+/// Machine-readable endpoint facts used by bridge read-shape diagnostics.
+/// </summary>
+public sealed record DataVaultBridgeEndpointReadShapeDiagnostics(
+    DataVaultBridgeTraversalEndpoint Endpoint,
+    string EndpointName,
+    string ColumnName);
+
+/// <summary>
+/// Machine-readable diagnostics for bridge read shape.
+/// </summary>
+public sealed record DataVaultBridgeReadShapeDiagnostics(
+    DataVaultBridgeKind BridgeKind,
+    DataVaultReadShapeEntity Bridge,
+    IReadOnlyList<DataVaultBridgeEndpointReadShapeDiagnostics> Endpoints,
+    DataVaultBridgeTraversalEndpoint FilterEndpoint,
+    DataVaultReadShapeColumnSet EndpointFilter,
+    DataVaultReadShapeColumnSet? DepthPredicate,
+    IReadOnlyList<DataVaultReadShapeColumnSet> DeterministicOrdering,
+    IReadOnlyList<string> SupportedEndpointRules,
+    IReadOnlyList<DataVaultReadShapeIndexBaseline> ExpectedTraversalIndexBaseline);
+
+/// <summary>
+/// Machine-readable request-bound Data Vault read/query-shape diagnostics.
+/// </summary>
+public sealed record DataVaultReadShapeDiagnostics(
+    DataVaultReadShapeKind Kind,
+    DataVaultReadShapeProviderDiagnostics Provider,
+    DataVaultSatelliteReadShapeDiagnostics? Satellite = null,
+    DataVaultPitReadShapeDiagnostics? Pit = null,
+    DataVaultBridgeReadShapeDiagnostics? Bridge = null);
+
+/// <summary>
 /// Stable structured Data Vault diagnostics payload.
 /// </summary>
 public sealed record DataVaultDiagnosticsResult(
@@ -421,6 +563,11 @@ public sealed record DataVaultDiagnosticsResult(
       SelectedStrategyPriority: null,
       Candidates: Array.Empty<DataVaultReadStrategyCandidateDiagnostics>(),
       FallbackCauses: Array.Empty<DataVaultReadStrategyFallbackCause>());
+
+  /// <summary>
+  /// Gets request-bound read/query-shape diagnostics for supported Data Vault read requests.
+  /// </summary>
+  public DataVaultReadShapeDiagnostics? ReadShape { get; init; }
 
   /// <summary>
   /// Produces a concise human-readable rendering of the structured diagnostics payload.
@@ -481,6 +628,12 @@ public sealed record DataVaultDiagnosticsResult(
     }
 
     AppendReadStrategyDisplayDetails(builder, ReadStrategy);
+    if (ReadShape is not null) {
+      builder.Append(", read shape ");
+      builder.Append(ReadShape.Kind);
+      AppendReadShapeDisplayDetails(builder, ReadShape);
+    }
+
     if (Issues.Count > 0) {
       builder.AppendLine();
       foreach (var issue in Issues) {
@@ -526,6 +679,34 @@ public sealed record DataVaultDiagnosticsResult(
     if (strategy.FallbackCauses.Count > 0) {
       builder.Append(", read fallback causes ");
       builder.Append(string.Join(", ", strategy.FallbackCauses.Select(cause => cause.Kind.ToString())));
+    }
+  }
+
+  private static void AppendReadShapeDisplayDetails(
+      StringBuilder builder,
+      DataVaultReadShapeDiagnostics readShape) {
+    switch (readShape.Kind) {
+      case DataVaultReadShapeKind.LatestSatellite when readShape.Satellite is not null:
+        builder.Append(" (");
+        builder.Append(readShape.Satellite.Satellite.TableName);
+        builder.Append(", ");
+        builder.Append(readShape.Satellite.Semantics);
+        builder.Append(')');
+        return;
+
+      case DataVaultReadShapeKind.PitAsOf when readShape.Pit is not null:
+        builder.Append(" (");
+        builder.Append(readShape.Pit.Pit.TableName);
+        builder.Append(')');
+        return;
+
+      case DataVaultReadShapeKind.Bridge when readShape.Bridge is not null:
+        builder.Append(" (");
+        builder.Append(readShape.Bridge.Bridge.TableName);
+        builder.Append(", ");
+        builder.Append(readShape.Bridge.FilterEndpoint);
+        builder.Append(')');
+        return;
     }
   }
 }
@@ -1003,8 +1184,9 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       DataVaultBridgeReadRequest bridgeRequest => EvaluateBridgeReadStrategy(dbContext, bridgeRequest, capabilityProfileDefaulted),
       _ => NotEvaluatedReadStrategy with { ProviderName = providerName },
     };
+    var readShape = CreateReadShapeDiagnostics(explain, readStrategy, readRequest);
 
-    return CreateResult(explain, strategy, readStrategy, issues);
+    return CreateResult(explain, strategy, readStrategy, issues, readShape);
   }
 
   private DataVaultSaveStrategyDiagnostics EvaluateSaveStrategy(
@@ -1364,11 +1546,248 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         DistinctFallbackCauses(fallbackCauseList));
   }
 
+  private static DataVaultReadShapeDiagnostics? CreateReadShapeDiagnostics(
+      DataVaultExplainDiagnostics explain,
+      DataVaultReadStrategyDiagnostics readStrategy,
+      object? readRequest) {
+    return readRequest switch {
+      DataVaultLatestSatelliteReadRequest latestRequest => new DataVaultReadShapeDiagnostics(
+          DataVaultReadShapeKind.LatestSatellite,
+          CreateReadShapeProviderDiagnostics(explain, readStrategy),
+          Satellite: CreateSatelliteReadShapeDiagnostics(explain, latestRequest)),
+      DataVaultPitAsOfReadRequest pitRequest => new DataVaultReadShapeDiagnostics(
+          DataVaultReadShapeKind.PitAsOf,
+          CreateReadShapeProviderDiagnostics(explain, readStrategy),
+          Pit: CreatePitReadShapeDiagnostics(explain, pitRequest)),
+      DataVaultBridgeReadRequest bridgeRequest => new DataVaultReadShapeDiagnostics(
+          DataVaultReadShapeKind.Bridge,
+          CreateReadShapeProviderDiagnostics(explain, readStrategy),
+          Bridge: CreateBridgeReadShapeDiagnostics(explain, bridgeRequest)),
+      _ => null,
+    };
+  }
+
+  private static DataVaultReadShapeProviderDiagnostics CreateReadShapeProviderDiagnostics(
+      DataVaultExplainDiagnostics explain,
+      DataVaultReadStrategyDiagnostics readStrategy) {
+    return new DataVaultReadShapeProviderDiagnostics(
+        readStrategy.ProviderName ?? explain.ProviderName,
+        explain.CapabilityProfileName,
+        explain.CapabilityProfileDefaulted,
+        explain.ProviderBehaviorProfileName,
+        explain.ProviderBehaviorDefaulted,
+        readStrategy.Status,
+        readStrategy.FallbackCauses);
+  }
+
+  private static DataVaultSatelliteReadShapeDiagnostics CreateSatelliteReadShapeDiagnostics(
+      DataVaultExplainDiagnostics explain,
+      DataVaultLatestSatelliteReadRequest request) {
+    var projection = DataVaultSatelliteReadPipeline.CreateSatelliteProjection(request.Satellite);
+    var entity = FindEntityExplain(
+        explain,
+        DataVaultTableKind.Satellite,
+        request.Satellite.Name,
+        projection.TableName);
+    var filterColumns = new List<DataVaultReadShapeColumnSet>
+    {
+        new("parentHashKeyFilter", [projection.ParentHashKeyColumnName]),
+    };
+    if (request.AsOf.HasValue) {
+      filterColumns.Add(new DataVaultReadShapeColumnSet("asOfCutoff", [projection.LoadTimestampColumnName]));
+    }
+
+    var orderingColumns = new[]
+    {
+        projection.ParentHashKeyColumnName,
+    }
+        .Concat(projection.DrivingKeyColumnNames)
+        .ToArray();
+
+    return new DataVaultSatelliteReadShapeDiagnostics(
+        request.AsOf.HasValue
+            ? DataVaultSatelliteReadSemantics.AsOf
+            : DataVaultSatelliteReadSemantics.Current,
+        new DataVaultReadShapeEntity(request.Satellite.Name, DataVaultTableKind.Satellite, projection.TableName),
+        new DataVaultParentReferenceExplain(request.Satellite.Parent.Kind, request.Satellite.Parent.Name),
+        filterColumns,
+        "Select the latest load timestamp per parent hash key and driving-key series.",
+        request.AsOf.HasValue
+            ? "Apply " + projection.LoadTimestampColumnName + " <= supplied as-of cutoff; the cutoff value is not included in diagnostics."
+            : "No as-of cutoff is applied; current reads consider all persisted satellite rows.",
+        [new DataVaultReadShapeColumnSet("resultOrdering", orderingColumns)],
+        CreateIndexBaseline(entity));
+  }
+
+  private static DataVaultPitReadShapeDiagnostics CreatePitReadShapeDiagnostics(
+      DataVaultExplainDiagnostics explain,
+      DataVaultPitAsOfReadRequest request) {
+    var pit = request.Pit;
+    var tableName = GetPitTableName(pit.Name);
+    var parentHashKeyColumnName = DefaultDataVaultNamingPolicy.Instance.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, pit.Parent.Name, tableName));
+    var loadTimestampColumnName = DefaultDataVaultNamingPolicy.Instance.GetTechnicalColumnName(
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, pit.Name, tableName));
+    var snapshotColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        pit.Satellites.Select(satellite => satellite.SatelliteName + " Load Timestamp"),
+        [parentHashKeyColumnName, loadTimestampColumnName]);
+    var entity = FindEntityExplain(explain, DataVaultTableKind.Pit, pit.Name, tableName);
+    var referencedSatellites = pit.Satellites
+        .Select((satellite, index) => {
+          var satelliteTableName = DefaultDataVaultNamingPolicy.Instance.GetSatelliteTableName(
+              new DataVaultSatelliteNameContext(pit.Parent.Name, satellite.SatelliteName));
+          var satelliteParentHashKeyColumnName = DefaultDataVaultNamingPolicy.Instance.GetTechnicalColumnName(
+              new DataVaultTechnicalColumnNameContext(
+                  DataVaultTechnicalColumnKind.HashKey,
+                  pit.Parent.Name,
+                  satelliteTableName));
+          var satelliteLoadTimestampColumnName = DefaultDataVaultNamingPolicy.Instance.GetTechnicalColumnName(
+              new DataVaultTechnicalColumnNameContext(
+                  DataVaultTechnicalColumnKind.LoadTimestamp,
+                  satellite.SatelliteName,
+                  satelliteTableName));
+
+          return new DataVaultPitReferencedSatelliteReadShapeDiagnostics(
+              satellite.SatelliteName,
+              satelliteTableName,
+              snapshotColumnNames[index],
+              satelliteParentHashKeyColumnName,
+              satelliteLoadTimestampColumnName);
+        })
+        .ToArray();
+
+    return new DataVaultPitReadShapeDiagnostics(
+        new DataVaultReadShapeEntity(pit.Name, DataVaultTableKind.Pit, tableName),
+        new DataVaultParentReferenceExplain(pit.Parent.Kind, pit.Parent.Name),
+        referencedSatellites,
+        [
+            new DataVaultReadShapeColumnSet("parentHashKeyFilter", [parentHashKeyColumnName]),
+            new DataVaultReadShapeColumnSet("asOfCutoff", [loadTimestampColumnName]),
+        ],
+        "Select the latest PIT row per parent hash key with " + loadTimestampColumnName + " <= supplied as-of cutoff.",
+        "Resolve each satellite snapshot by parent hash key and the snapshot load-timestamp reference stored on the selected PIT row.",
+        "Missing PIT rows or null satellite snapshot references yield no latest-satellite fallback.",
+        "PIT rows must already be maintained; diagnostics and reads do not rebuild or refresh PIT tables.",
+        CreateIndexBaseline(entity));
+  }
+
+  private static DataVaultBridgeReadShapeDiagnostics CreateBridgeReadShapeDiagnostics(
+      DataVaultExplainDiagnostics explain,
+      DataVaultBridgeReadRequest request) {
+    var bridge = request.Bridge;
+    var tableName = GetBridgeTableName(bridge);
+    var endpoints = bridge.Endpoints
+        .Select(endpoint => new DataVaultBridgeEndpointReadShapeDiagnostics(
+            ToPublicEndpoint(endpoint.Role),
+            endpoint.SourceEndpointName,
+            GetBridgeEndpointHashKeyColumnName(endpoint)))
+        .ToArray();
+    var filterEndpoint = endpoints.Single(endpoint => endpoint.Endpoint == request.Endpoint);
+    var entity = FindEntityExplain(explain, DataVaultTableKind.Bridge, bridge.Name, tableName);
+    var orderingColumns = request.MaximumDepth.HasValue
+        ? endpoints.Select(endpoint => endpoint.ColumnName).Append(DataVaultBridgeProjectionRow.TraversalDepthName).ToArray()
+        : endpoints.Select(endpoint => endpoint.ColumnName).ToArray();
+
+    return new DataVaultBridgeReadShapeDiagnostics(
+        bridge.Kind,
+        new DataVaultReadShapeEntity(bridge.Name, DataVaultTableKind.Bridge, tableName),
+        endpoints,
+        request.Endpoint,
+        new DataVaultReadShapeColumnSet("endpointHashKeyFilter", [filterEndpoint.ColumnName]),
+        request.MaximumDepth.HasValue
+            ? new DataVaultReadShapeColumnSet("maximumDepthPredicate", [DataVaultBridgeProjectionRow.TraversalDepthName])
+            : null,
+        [new DataVaultReadShapeColumnSet("resultOrdering", orderingColumns)],
+        GetSupportedBridgeEndpointRules(bridge.Kind),
+        CreateIndexBaseline(entity));
+  }
+
+  private static DataVaultEntityExplain? FindEntityExplain(
+      DataVaultExplainDiagnostics explain,
+      DataVaultTableKind tableKind,
+      string metadataName,
+      string tableName) {
+    return explain.Entities.FirstOrDefault(entity =>
+        entity.TableKind == tableKind &&
+        string.Equals(entity.MetadataName, metadataName, StringComparison.Ordinal) &&
+        string.Equals(entity.TableName, tableName, StringComparison.Ordinal));
+  }
+
+  private static IReadOnlyList<DataVaultReadShapeIndexBaseline> CreateIndexBaseline(
+      DataVaultEntityExplain? entity) {
+    if (entity is null) {
+      return Array.Empty<DataVaultReadShapeIndexBaseline>();
+    }
+
+    var baselines = new List<DataVaultReadShapeIndexBaseline>();
+    if (!string.Equals(entity.PrimaryKey.Name, "<none>", StringComparison.Ordinal)) {
+      baselines.Add(new DataVaultReadShapeIndexBaseline(
+          entity.PrimaryKey.Name,
+          "primary-key",
+          entity.PrimaryKey.PropertyNames,
+          IsUnique: true,
+          DescendingColumnNames: Array.Empty<string>(),
+          IncludedColumnNames: Array.Empty<string>()));
+    }
+
+    baselines.AddRange(entity.Indexes.Select(index => new DataVaultReadShapeIndexBaseline(
+        index.Name,
+        "secondary-index",
+        index.PropertyNames,
+        index.IsUnique,
+        index.DescendingPropertyNames,
+        index.IncludedPropertyNames)));
+
+    return baselines;
+  }
+
+  private static IReadOnlyList<string> GetSupportedBridgeEndpointRules(DataVaultBridgeKind bridgeKind) {
+    return bridgeKind switch {
+      DataVaultBridgeKind.ManyToMany => [
+          "Many-to-many bridge reads support From and To endpoint filters.",
+      ],
+      DataVaultBridgeKind.Hierarchy => [
+          "Hierarchy bridge reads support Ancestor and Descendant endpoint filters.",
+          "Hierarchy bridge reads require a bounded maximumDepth predicate.",
+      ],
+      _ => Array.Empty<string>(),
+    };
+  }
+
+  private static DataVaultBridgeTraversalEndpoint ToPublicEndpoint(DataVaultBridgeEndpointRole endpointRole) {
+    return endpointRole switch {
+      DataVaultBridgeEndpointRole.From => DataVaultBridgeTraversalEndpoint.From,
+      DataVaultBridgeEndpointRole.To => DataVaultBridgeTraversalEndpoint.To,
+      DataVaultBridgeEndpointRole.Ancestor => DataVaultBridgeTraversalEndpoint.Ancestor,
+      DataVaultBridgeEndpointRole.Descendant => DataVaultBridgeTraversalEndpoint.Descendant,
+      _ => throw new ArgumentOutOfRangeException(nameof(endpointRole), endpointRole, "Unsupported bridge endpoint role."),
+    };
+  }
+
+  private static string GetPitTableName(string pitName) {
+    return "Pit" + DefaultNamingPolicy.Instance.NormalizeProducedIdentifier(pitName);
+  }
+
+  private static string GetBridgeTableName(DataVaultBridgeMetadata bridge) {
+    return "Bridge" + DefaultNamingPolicy.Instance.NormalizeProducedIdentifier(bridge.Name);
+  }
+
+  private static string GetBridgeEndpointHashKeyColumnName(DataVaultBridgeEndpointMetadata endpoint) {
+    var baseName = endpoint.Role switch {
+      DataVaultBridgeEndpointRole.Ancestor => "Ancestor" + DefaultNamingPolicy.Instance.NormalizeProducedIdentifier(endpoint.HubReference.Name),
+      DataVaultBridgeEndpointRole.Descendant => "Descendant" + DefaultNamingPolicy.Instance.NormalizeProducedIdentifier(endpoint.HubReference.Name),
+      _ => endpoint.HubReference.Name,
+    };
+
+    return DefaultNamingPolicy.Instance.NormalizeProducedIdentifier(baseName) + "HashKey";
+  }
+
   private static DataVaultDiagnosticsResult CreateResult(
       DataVaultExplainDiagnostics explain,
       DataVaultSaveStrategyDiagnostics strategy,
       DataVaultReadStrategyDiagnostics readStrategy,
-      IReadOnlyList<DataVaultDiagnosticsIssue> issues) {
+      IReadOnlyList<DataVaultDiagnosticsIssue> issues,
+      DataVaultReadShapeDiagnostics? readShape = null) {
     var issueArray = issues.ToArray();
     var validationIssues = issueArray
         .Where(issue => issue.Severity == DataVaultDiagnosticsIssueSeverity.Error)
@@ -1377,6 +1796,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
 
     return new DataVaultDiagnosticsResult(validation, explain, strategy, issueArray) {
       ReadStrategy = readStrategy,
+      ReadShape = readShape,
     };
   }
 

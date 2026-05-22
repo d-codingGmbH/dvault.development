@@ -158,7 +158,8 @@ The default bundle constructs the configured design-time `DbContext`, runs `IDat
 and serializes the resulting `DataVaultDiagnosticsResult` under the `dvault.support-bundle.v1` contract. That default path
 does not open a live database connection and includes validation status, metadata source kind and fingerprint, provider name,
 capability profile, provider-behavior profile, load-timestamp storage details, translated Data Vault entities and tables, and
-any already-populated save/read strategy diagnostics.
+any already-populated save/read strategy diagnostics. Request-bound read diagnostics may also carry the additive `readShape`
+section, which records translated latest-satellite, PIT, or bridge query-shape facts without raw request values or SQL text.
 
 When an application already has a representative save or read request, keep that request in application code and supply the
 request-bound diagnostics through the host instead of having the generic command runner invent one:
