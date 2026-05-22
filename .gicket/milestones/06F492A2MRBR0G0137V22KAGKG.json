@@ -3,6 +3,6 @@
   "milestoneId": "06F492A2MRBR0G0137V22KAGKG",
   "name": "v0.18.0 - Benchmark evidence and docs",
   "description": "Provider regression baselines plus documentation and release-note evidence for performance changes.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-20T08:38:26.7265676Z"
 }
