@@ -304,10 +304,12 @@ internal static class BenchmarkRunner {
     }
 
     var elapsedTimes = new List<TimeSpan>();
+    var allocatedBytes = new List<long>();
     var persistedOutcome = string.Empty;
     for (var iteration = 0; iteration < options.Iterations; iteration++) {
       var result = await benchmark.ExecuteAsync(cancellationToken).ConfigureAwait(false);
       elapsedTimes.Add(result.Elapsed);
+      allocatedBytes.Add(result.AllocatedBytes);
       persistedOutcome = result.PersistedOutcome;
     }
 
@@ -319,6 +321,7 @@ internal static class BenchmarkRunner {
         benchmark.DatasetSize,
         benchmark.ChangeRatio,
         elapsedTimes,
+        allocatedBytes,
         persistedOutcome);
   }
 
@@ -364,7 +367,13 @@ internal interface IScenarioBenchmark {
   Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken);
 }
 
-internal sealed record ScenarioBenchmarkResult(TimeSpan Elapsed, string PersistedOutcome);
+internal sealed record BenchmarkMeasurement(TimeSpan Elapsed, long AllocatedBytes);
+
+internal sealed record ScenarioBenchmarkResult(BenchmarkMeasurement Measurement, string PersistedOutcome) {
+  public TimeSpan Elapsed => Measurement.Elapsed;
+
+  public long AllocatedBytes => Measurement.AllocatedBytes;
+}
 
 internal sealed record BenchmarkSummary(
     string ScenarioName,
@@ -379,6 +388,9 @@ internal sealed record BenchmarkSummary(
     double? MeanMilliseconds,
     double? MinMilliseconds,
     double? MaxMilliseconds,
+    double? MeanAllocatedBytes,
+    long? MinAllocatedBytes,
+    long? MaxAllocatedBytes,
     string PersistedOutcome) {
   public static BenchmarkSummary Create(
       string scenarioName,
@@ -388,6 +400,7 @@ internal sealed record BenchmarkSummary(
       string datasetSize,
       string changeRatio,
       IReadOnlyList<TimeSpan> elapsedTimes,
+      IReadOnlyList<long> allocatedBytes,
       string persistedOutcome) {
     ArgumentException.ThrowIfNullOrWhiteSpace(scenarioName);
     ArgumentException.ThrowIfNullOrWhiteSpace(providerName);
@@ -397,9 +410,14 @@ internal sealed record BenchmarkSummary(
     ArgumentException.ThrowIfNullOrWhiteSpace(changeRatio);
     ArgumentException.ThrowIfNullOrWhiteSpace(persistedOutcome);
     ArgumentNullException.ThrowIfNull(elapsedTimes);
+    ArgumentNullException.ThrowIfNull(allocatedBytes);
 
     if (elapsedTimes.Count == 0) {
       throw new ArgumentException("At least one benchmark iteration is required.", nameof(elapsedTimes));
+    }
+
+    if (allocatedBytes.Count != elapsedTimes.Count) {
+      throw new ArgumentException("Allocation measurements must match benchmark iterations.", nameof(allocatedBytes));
     }
 
     return new BenchmarkSummary(
@@ -415,6 +433,9 @@ internal sealed record BenchmarkSummary(
         elapsedTimes.Average(value => value.TotalMilliseconds),
         elapsedTimes.Min(value => value.TotalMilliseconds),
         elapsedTimes.Max(value => value.TotalMilliseconds),
+        allocatedBytes.Average(),
+        allocatedBytes.Min(),
+        allocatedBytes.Max(),
         persistedOutcome);
   }
 
@@ -434,6 +455,9 @@ internal sealed record BenchmarkSummary(
         BenchmarkExecutionStatus.Skipped,
         skipReason.DisplayText,
         0,
+        null,
+        null,
+        null,
         null,
         null,
         null,
@@ -459,6 +483,9 @@ internal sealed record BenchmarkSummary(
         null,
         null,
         null,
+        null,
+        null,
+        null,
         "not executed");
   }
 }
@@ -470,13 +497,16 @@ internal static class BenchmarkExecutionStatus {
 }
 
 internal static class BenchmarkClock {
-  public static async Task<TimeSpan> MeasureAsync(Func<Task> operation) {
+  public static async Task<BenchmarkMeasurement> MeasureAsync(Func<Task> operation) {
     ArgumentNullException.ThrowIfNull(operation);
 
+    var allocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
     var stopwatch = Stopwatch.StartNew();
     await operation().ConfigureAwait(false);
     stopwatch.Stop();
+    var allocatedAfter = GC.GetTotalAllocatedBytes(precise: true);
+    var allocatedBytes = Math.Max(0, allocatedAfter - allocatedBefore);
 
-    return stopwatch.Elapsed;
+    return new BenchmarkMeasurement(stopwatch.Elapsed, allocatedBytes);
   }
 }

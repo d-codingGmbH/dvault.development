@@ -251,12 +251,14 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.Contains("- PostgreSQL skip reason: " + NotConfiguredSkipReason, markdown);
       Assert.Contains("- Iterations: 1", markdown);
       Assert.Contains("- Warmup iterations: 0", markdown);
+      Assert.Contains("- Load timestamp storage: ProviderDefault", markdown);
+      Assert.Contains("- Provider filter: all", markdown);
       Assert.Contains("- OS description: ", markdown);
       Assert.Contains("- OS architecture: ", markdown);
       Assert.Contains("- Process architecture: ", markdown);
       Assert.Contains("- Processor count: ", markdown);
       Assert.Contains("- .NET runtime version: ", markdown);
-      Assert.Contains("| Scenario | Provider | Baseline | Strategy family | Dataset size | Change ratio | Execution status | Skip reason | Iterations | Mean ms | Min ms | Max ms | Persisted outcome |", markdown);
+      Assert.Contains("| Scenario | Provider | Baseline | Strategy family | Dataset size | Change ratio | Execution status | Skip reason | Iterations | Mean ms | Min ms | Max ms | Mean allocated bytes | Min allocated bytes | Max allocated bytes | Persisted outcome |", markdown);
 
       foreach (var expectedRow in ExpectedRows) {
         Assert.Contains(CreateMarkdownRowPrefix(expectedRow), markdown);
@@ -266,7 +268,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       var csvLines = csv.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
       Assert.Equal(27, csvLines.Length);
       Assert.Equal(
-          "scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,persistedOutcome",
+          "scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,meanAllocatedBytes,minAllocatedBytes,maxAllocatedBytes,persistedOutcome",
           csvLines[0]);
 
       foreach (var expectedRow in ExpectedRows) {
@@ -283,12 +285,36 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.Equal(NotConfiguredSkipReason, context.GetProperty("postgresSkipReason").GetString());
       Assert.Equal(1, context.GetProperty("iterations").GetInt32());
       Assert.Equal(0, context.GetProperty("warmupIterations").GetInt32());
+      Assert.Equal("ProviderDefault", context.GetProperty("loadTimestampStorage").GetString());
+      Assert.Equal("all", context.GetProperty("providerFilter").GetString());
       Assert.False(string.IsNullOrWhiteSpace(context.GetProperty("osDescription").GetString()));
       Assert.False(string.IsNullOrWhiteSpace(context.GetProperty("osArchitecture").GetString()));
       Assert.False(string.IsNullOrWhiteSpace(context.GetProperty("processArchitecture").GetString()));
       Assert.True(context.GetProperty("processorCount").GetInt32() > 0);
       Assert.False(string.IsNullOrWhiteSpace(context.GetProperty("dotNetRuntimeDescription").GetString()));
       Assert.False(string.IsNullOrWhiteSpace(context.GetProperty("dotNetRuntimeVersion").GetString()));
+      var optionalProviders = context.GetProperty("optionalProviders").EnumerateArray().ToArray();
+      Assert.Equal(4, optionalProviders.Length);
+      AssertOptionalProviderContext(
+          optionalProviders,
+          PostgresProviderName,
+          BenchmarkExternalProviderDefinitions.Postgres.ConnectionStringEnvironmentVariable,
+          NotConfiguredSkipReason);
+      AssertOptionalProviderContext(
+          optionalProviders,
+          SqlServerProviderName,
+          BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable,
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable));
+      AssertOptionalProviderContext(
+          optionalProviders,
+          MySqlProviderName,
+          BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable,
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable));
+      AssertOptionalProviderContext(
+          optionalProviders,
+          OracleProviderName,
+          BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable,
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable));
 
       var results = json.RootElement.GetProperty("results").EnumerateArray().ToArray();
       Assert.Equal(26, results.Length);
@@ -312,7 +338,15 @@ public sealed class BenchmarkScenarioExecutionTests {
           Assert.Equal(JsonValueKind.Null, result.GetProperty("meanMilliseconds").ValueKind);
           Assert.Equal(JsonValueKind.Null, result.GetProperty("minMilliseconds").ValueKind);
           Assert.Equal(JsonValueKind.Null, result.GetProperty("maxMilliseconds").ValueKind);
+          Assert.Equal(JsonValueKind.Null, result.GetProperty("meanAllocatedBytes").ValueKind);
+          Assert.Equal(JsonValueKind.Null, result.GetProperty("minAllocatedBytes").ValueKind);
+          Assert.Equal(JsonValueKind.Null, result.GetProperty("maxAllocatedBytes").ValueKind);
           Assert.Equal("not executed", result.GetProperty("persistedOutcome").GetString());
+        }
+        else {
+          Assert.True(result.GetProperty("meanAllocatedBytes").GetDouble() >= 0);
+          Assert.True(result.GetProperty("minAllocatedBytes").GetInt64() >= 0);
+          Assert.True(result.GetProperty("maxAllocatedBytes").GetInt64() >= 0);
         }
       }
     }
@@ -516,6 +550,19 @@ public sealed class BenchmarkScenarioExecutionTests {
 
   private static string NotConfiguredSkipReasonFor(string connectionStringEnvironmentVariable) {
     return BenchmarkSkipReason.NotConfigured(connectionStringEnvironmentVariable).DisplayText;
+  }
+
+  private static void AssertOptionalProviderContext(
+      JsonElement[] optionalProviders,
+      string providerName,
+      string connectionStringEnvironmentVariable,
+      string skipReason) {
+    var provider = Assert.Single(optionalProviders, candidate =>
+        candidate.GetProperty("providerName").GetString() == providerName);
+
+    Assert.Equal(connectionStringEnvironmentVariable, provider.GetProperty("connectionStringEnvironmentVariable").GetString());
+    Assert.Equal("skipped", provider.GetProperty("executionStatus").GetString());
+    Assert.Equal(skipReason, provider.GetProperty("skipReason").GetString());
   }
 
   private static ExpectedBenchmarkRow CompletedSqlite(
