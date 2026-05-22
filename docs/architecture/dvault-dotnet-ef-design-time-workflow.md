@@ -308,6 +308,54 @@ public static class SalesVaultDvaultPreflight {
 
 This step does not promise guardrail output inside `dotnet ef migrations add` or `dotnet ef database update`; those commands remain ordinary EF Core commands. The consumer decides whether to continue to `database update` after reading the preflight summary.
 
+`DataVaultMigrationOperationDiagnostics.AnalyzeReport(...)` classifies each inspected operation as `Safe`, `Risky`, or `Incompatible`. A safe operation has no DVM findings. A risky operation has warning-severity DVM findings that should be reviewed before integration. An incompatible operation has one or more error-severity DVM findings and should block apply until the generated migration is corrected. The report keeps deterministic operation paths such as `migration/CreateTable/HubCustomer`, `migration/RenameColumn/HubCustomer/LoadTimestamp`, and `migration/DropTable/BridgeCustomerOrder` so a consumer-owned script can fail on incompatible output without parsing raw EF operation objects.
+
+## Aggregate Preflight Facade
+
+Consumers that want one application-owned entrypoint can aggregate the explicit lanes through `DataVaultPreflight.Run(...)`. The facade validates the configured model through `IDataVaultDiagnosticsService.Analyze(DbContext)` and evaluates only the optional inputs supplied on `DataVaultPreflightRequest`: reviewed artifact import, consumer-materialized snapshot model, migration operations, precomputed representative diagnostics, and representative diagnostics factories.
+
+```csharp
+using DCoding.Data.DVault;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.Extensions.DependencyInjection;
+
+public static class SalesVaultDvaultPreflight {
+  public static int RunAggregatePreflight(string[] args) {
+    using var services = new ServiceCollection()
+        .AddDVault()
+        .BuildServiceProvider(validateScopes: true);
+
+    var diagnostics = services.GetRequiredService<IDataVaultDiagnosticsService>();
+    var readDiagnostics = services.GetRequiredService<IDataVaultReadDiagnosticsService>();
+    using var context = new SalesVaultDesignTimeFactory().CreateDbContext(args);
+
+    Migration migration = SalesVaultMigrationResolver.Resolve("AddCustomerProfile");
+    IReadOnlyModel snapshotModel = SalesVaultSnapshotMaterializer.CreateSnapshotModel();
+
+    var report = DataVaultPreflight.Run(
+        diagnostics,
+        new DataVaultPreflightRequest(context, SalesVaultMetadata.CreateModel()) {
+          ReviewedArtifactImport = SalesVaultArtifacts.ImportReviewedModel(),
+          SnapshotModel = snapshotModel,
+          MigrationOperations = migration.UpOperations,
+          RepresentativeDiagnosticsRequests = [
+            new DataVaultPreflightRepresentativeDiagnosticsRequest(
+                "latest-profile",
+                dbContext => readDiagnostics.Analyze(
+                    dbContext,
+                    SalesVaultRepresentativeRequests.CreateLatestProfileRead())),
+          ],
+        });
+
+    Console.WriteLine(report.ToDisplayString());
+    return report.IsBlocked ? 1 : 0;
+  }
+}
+```
+
+This facade does not change the ownership boundary. The consumer still owns the `DbContext`, factory, reviewed artifact path, snapshot materialization, migration resolution, representative request selection, command hosting, and CI failure policy. If an optional lane is not supplied, the aggregate report marks that lane as skipped; DVault does not scan the repository, discover EF snapshot files, discover migrations, invent representative save/read requests, open a live database, execute migrations, or repair schema.
+
 ## GitHub Actions Example
 
 The following adopter workflow keeps the design-time checks in the consumer repository. It assumes `src/SalesVault/SalesVault.csproj` contains the configured `DbContext`, the `IDesignTimeDbContextFactory<TContext>`, the command host entrypoint shown above, and the EF migrations.
@@ -413,7 +461,8 @@ If an adopter adds a live-schema drift lane, keep it separate from the default j
 5. Scaffold the migration normally with `dotnet ef migrations add`.
 6. Run `dotnet run --project <consumer-project> -- guardrail --migration <migration-name>` against the proposed migration `MigrationOperation` set.
 7. Print `DataVaultMigrationGuardrailReport.ToDisplayString()` and stop when guardrail findings exist.
-8. Run `dotnet ef database update` only after the explicit preflight steps pass.
+8. Optionally run a consumer-owned aggregate entrypoint backed by `DataVaultPreflight.Run(...)` when the project wants one report that preserves validation, drift, migration, and representative diagnostics sections together.
+9. Run `dotnet ef database update` only after the explicit preflight steps pass.
 
 ## Unsupported In V1
 
@@ -423,6 +472,7 @@ If an adopter adds a live-schema drift lane, keep it separate from the default j
 - Repo-owned `Microsoft.EntityFrameworkCore.Design` dependencies in DVault packages.
 - Startup-project and target-project split layouts.
 - Live-database validation as a default CI gate, automatic snapshot discovery, or provider-wide live schema drift as a first-class boundary beyond SQLite.
+- Automatic reviewed-artifact discovery, migration discovery, or representative request generation for aggregate preflight.
 - Provider-specific online migration runners.
 
-The default no-live-database design-time proof remains the existing diagnostics and artifact-versus-design-time-model drift path. Downstream command aggregation, broad snapshot-model documentation, and broader provider live schema drift work stay outside this v1 workflow.
+The default no-live-database design-time proof remains the existing diagnostics and artifact-versus-design-time-model drift path. Broader command orchestration, broad snapshot-model documentation, and broader provider live schema drift work stay outside this v1 workflow.

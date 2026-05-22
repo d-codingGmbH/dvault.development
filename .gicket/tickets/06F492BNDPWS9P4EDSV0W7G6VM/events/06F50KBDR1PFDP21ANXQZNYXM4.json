@@ -1,0 +1,13 @@
+{
+  "event-id": "06F50KBDR1PFDP21ANXQZNYXM4",
+  "occurred-at": "2026-05-22T15:28:32.1924649Z",
+  "event-type": "TicketTransitioned",
+  "actor": {
+    "name": "system",
+    "email": "system@example.invalid"
+  },
+  "payload": {
+    "from-status": "todo",
+    "to-status": "ready-for-integration"
+  }
+}

@@ -6,9 +6,9 @@ Use this checklist when preparing a DVault-consuming application for production.
 
 - [ ] Install the provider-neutral `DCoding.Data.DVault` package from NuGet and use the published installation guidance in the [README](../README.md#installation).
 - [ ] Select the DVault provider package that matches the application database and keep every DVault package on one aligned published release version.
-- [ ] Treat [v0.16.0 release notes](releases/v0.16.0.md) as the current public baseline for coordinated package scope, opt-in telemetry, support-bundle export, compatibility notes, limitations, and validation evidence.
+- [ ] Treat [v0.17.0 release notes](releases/v0.17.0.md) as the current public baseline for coordinated package scope, EF safety and preflight behavior, opt-in telemetry, support-bundle export, compatibility notes, limitations, and validation evidence.
 - [ ] Treat the coordinated DVault package family as exactly these package ids: `DCoding.Data.DVault`, `DCoding.Data.DVault.Analyzers`, `DCoding.Data.DVault.MySql`, `DCoding.Data.DVault.Oracle`, `DCoding.Data.DVault.Postgres`, `DCoding.Data.DVault.Sqlite`, and `DCoding.Data.DVault.SqlServer`.
-- [ ] Install `DCoding.Data.DVault.Analyzers` only in projects that own DVault Code-First declarations or compile-time generated row mapping declarations, and keep it local with `PrivateAssets="all"`.
+- [ ] Install `DCoding.Data.DVault.Analyzers` only in projects that own DVault Code-First declarations or compile-time generated row mapping declarations, and keep it local with `PrivateAssets="all"`. Treat `DMV1910` and `DMV1911` as project-local EF Core misuse diagnostics for generated shared-type tables, not runtime provider behavior.
 - [ ] Also install and configure the normal Entity Framework Core database provider package used by the application, such as SQLite, PostgreSQL, SQL Server, Oracle, or MySQL.
 - [ ] Do not treat `src/DCoding.Data` as a consumer package. It is the non-packable source-root build anchor for the namespace family.
 - [ ] Register `AddDVault()` and, when using a provider package, the matching provider startup extension shown in the [README quickstart](../README.md#register-dvault-services).
@@ -31,8 +31,11 @@ Use this checklist when preparing a DVault-consuming application for production.
 - [ ] Add a consumer-owned CI step that invokes `dotnet run --project <consumer-project> -- validate` through the application's design-time command host.
 - [ ] Use `dotnet run --project <consumer-project> -- export --output <path>` only for artifact maintenance or reviewed refresh workflows, not as the default blocking CI gate.
 - [ ] When a reviewed `dvault.model.v1` artifact exists, make `dotnet run --project <consumer-project> -- drift --artifact <path>` a blocking artifact-versus-design-time-model check. Do not generate a fresh artifact with `export` as the default CI gate.
+- [ ] When the project owns a materialized EF snapshot model, compare it explicitly with `DataVaultModelDriftPreflightReporter.Compare(...)`; do not pass EF `ModelSnapshot` itself as a DVault public contract or expect DVault to discover snapshot files.
+- [ ] Use `DataVaultPreflight.Run(...)` when one consumer-owned entrypoint should aggregate validation/provider explain, reviewed-artifact drift, snapshot-model drift, migration guardrail, and representative request diagnostics. Supply every optional lane explicitly.
 - [ ] Add `dotnet run --project <consumer-project> -- support-bundle --output <path>` as a consumer-invoked troubleshooting artifact when configuration or provider-behavior evidence must be shared. Keep the command host in the consumer project that owns the configured context.
 - [ ] Run `dotnet run --project <consumer-project> -- guardrail --migration <name>` after scaffolding a migration and before apply or integration.
+- [ ] Review migration guardrail output as operation-level `Safe`, `Risky`, or `Incompatible` evidence from `DataVaultMigrationOperationDiagnostics.AnalyzeReport(...)`; treat incompatible outcomes as blocking until the migration is corrected.
 - [ ] Use live-schema drift checks only within the documented boundary. Built-in reader coverage includes SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, with both `MySql.EntityFrameworkCore` and Pomelo mapped to the MySQL reader.
 - [ ] Keep PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks opt-in and operationally managed by the consumer application, including connection strings, credentials, reachable databases, lifecycle cleanup, and CI isolation.
 - [ ] Do not expect DVault to ship a `dotnet ef` command shim, intercept EF CLI commands, auto-run migrations, or apply schema repairs. Those behaviors are outside the current v1 workflow.
@@ -43,6 +46,7 @@ Use this checklist when preparing a DVault-consuming application for production.
 - [ ] Treat generated mapper helpers as compile-time ergonomics around the same explicit save boundary: they construct registry-backed operations but do not choose timestamps, record sources, contexts, providers, or save orchestration.
 - [ ] Keep ordinary EF `SaveChanges` separate from DVault persistence unless the application deliberately owns generated DVault rows and opts into metadata fill.
 - [ ] Treat `UseDataVaultSaveChangesMetadataInterceptor(...)` as optional and metadata-only. It fills missing `LoadTimestamp` and `RecordSource` values on already tracked generated DVault rows; it does not create rows, compute hash keys, compute hash diffs, or replace `IDataVaultSaveService`.
+- [ ] Treat `UseDataVaultSaveChangesGuardInterceptor(...)` as a separate optional runtime guard. Choose blocking mode for hard failures or warning mode for caller-observed reports; do not expect `AddDVault()` to enable it automatically.
 - [ ] Prefer registry-backed requests or typed save helpers when they reduce repeated metadata declarations in loaders.
 - [ ] Use `IDataVaultReadService` for provider-neutral latest and as-of satellite reads with caller-owned typed projectors, as shown in the [README read examples](../README.md#read-typed-latest-and-as-of-satellite-projections).
 - [ ] Use `IDataVaultPitMaintenanceService` after satellite ingestion when PIT declarations should be materialized explicitly; PIT-backed reads then consume those maintained rows. Use full PIT rebuilds for one generated PIT table and bounded parent maintenance for explicit parent hash keys, including late-arriving history correction for those parents.
@@ -50,12 +54,13 @@ Use this checklist when preparing a DVault-consuming application for production.
 - [ ] Treat `AddDVaultSqlite()` as the only repository-proven optimized PIT/bridge read provider path. Unsupported providers or unsupported PIT/bridge request shapes fall back to the provider-neutral read pipelines without implicit maintenance side effects.
 - [ ] Do not expect current/as-of satellite helpers, PIT-backed reads, or bridge reads to refresh read-model rows, schedule automatic PIT or bridge maintenance, infer graph traversal APIs, or change the explicit service boundaries.
 
-## Telemetry And Support Evidence
+## Telemetry, Explainability, And Support Evidence
 
 - [ ] Keep `AddDVault()` as the default telemetry-free startup path unless the application intentionally opts into observability.
 - [ ] Register `AddDVaultTelemetry()` only when the application wants the built-in `System.Diagnostics.Metrics` observer for explicit DVault save/read attempts.
 - [ ] Register custom `IDataVaultTelemetryObserver` implementations when code-facing bounded summaries are needed. Observer failures are ignored by DVault and must not be used as persistence or read control flow.
 - [ ] Treat telemetry as bounded operational evidence only. Do not expect DVault to configure metric listeners, exporters, dashboards, alert rules, backend-specific pipelines, or high-cardinality raw tags.
+- [ ] Treat provider capability profile, provider-behavior profile, save strategy, read strategy, and read-shape diagnostics as deterministic explain output. Do not treat them as raw SQL validation, provider query plans, credential-bearing dumps, or provider-specific orchestration.
 - [ ] Use the `support-bundle` design-time verb for redacted diagnostic snapshots under the `dvault.support-bundle.v1` contract. The default path analyzes the configured design-time model and does not open a live database connection.
 - [ ] Use `--artifact <path>` to include reviewed `dvault.model.v1` drift evidence when a committed artifact exists.
 - [ ] Use `--live-schema` only in an environment where the consumer application owns the reachable database, credentials, lifecycle cleanup, and CI isolation. Keep non-SQLite live-schema checks external opt-in evidence.
@@ -89,6 +94,8 @@ bash tools/check-format.sh
 
 - DVault's default path is explicit and service-based. It does not make Data Vault persistence implicit through EF entity tracking.
 - `AddDVault()` remains telemetry-free by default. Telemetry requires explicit `AddDVaultTelemetry()` or custom `IDataVaultTelemetryObserver` registration and is limited to explicit DVault save/read attempts.
+- `UseDataVaultSaveChangesGuardInterceptor(...)` remains an explicit runtime opt-in. It supports warning and blocking modes for generated-row guard findings, but it does not replace `IDataVaultSaveService` or turn ordinary EF tracking into the default DVault persistence path.
+- `DataVaultPreflight.Run(...)` aggregates supplied validation, drift, migration, and representative diagnostics lanes. It does not discover snapshots, scan repositories, invent representative requests, run migrations, repair schemas, or open live databases by default.
 - The `support-bundle` verb is hosted by the consumer application and exports redacted JSON only when invoked. DVault does not ship a standalone CLI, upload support bundles, attach them to tickets, or open live database connections by default.
 - Dependent child key modeling is outside the current public documentation baseline.
 - Repeated same-hub runtime and metadata support does not imply typed mapper or source-generator parity for repeated same-hub mappings.

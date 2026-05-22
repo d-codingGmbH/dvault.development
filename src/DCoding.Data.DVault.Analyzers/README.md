@@ -16,7 +16,7 @@ Install the analyzer package in projects that declare DVault Code-First metadata
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="0.16.0" PrivateAssets="all" />
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="0.17.0" PrivateAssets="all" />
 </ItemGroup>
 ```
 
@@ -36,7 +36,7 @@ The EF Core misuse analyzer keeps the generated DVault table boundary explicit. 
 
 `DMV1910` reports exposed `DbContext` properties or fields whose type is `DbSet<Dictionary<string, object>>` when the member source visibly resolves a DVault generated table name through `Set<Dictionary<string, object>>(producedName)`. `DMV1911` reports direct mutating calls such as `Add(...)`, `AddRange(...)`, `Update(...)`, `Remove(...)`, or `Attach(...)` on source-visible generated shared-type sets. The rule intentionally does not report arbitrary non-DVault dictionary shared-type tables, documented read-only query shapes over `context.Set<Dictionary<string, object>>(producedName)`, including `AsNoTracking()` and compiled-query projections, or a local source scope that visibly opts into `UseDataVaultSaveChangesMetadataInterceptor(...)`.
 
-The analyzer does not attempt whole-application DI inference and does not treat `UseDataVaultSaveChangesMetadataInterceptor(...)` as a replacement for the explicit save boundary. That interceptor remains an opt-in metadata filler for tracked generated rows; ordinary hub, link, and satellite writes should flow through `IDataVaultSaveService`.
+The analyzer does not attempt whole-application DI inference and does not treat `UseDataVaultSaveChangesMetadataInterceptor(...)` as a replacement for the explicit save boundary. That interceptor remains an opt-in metadata filler for tracked generated rows; ordinary hub, link, and satellite writes should flow through `IDataVaultSaveService`. The runtime `UseDataVaultSaveChangesGuardInterceptor(...)` is a separate opt-in blocking or warning guard for applications that want SaveChanges-time enforcement; it is not enabled by `AddDVault()` and does not broaden the analyzer into arbitrary dataflow or provider-specific SQL analysis.
 
 ## Generated Mapper Scope
 

@@ -7,18 +7,18 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.16.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.16.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.16.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.16.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.16.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.16.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.16.0
+dotnet add package DCoding.Data.DVault --version 0.17.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.17.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.17.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.17.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.17.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.17.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.17.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
 
-`DCoding.Data.DVault.Analyzers` is optional developer tooling. Prefer `PrivateAssets="all"` for that package so analyzer and source-generator assets stay local to the project that declares DVault Code-First metadata or compile-time mapping declarations. See `src/DCoding.Data.DVault.Analyzers/README.md` for the package-local diagnostic, code-fix, source-generator, suppression, and configuration guidance.
+`DCoding.Data.DVault.Analyzers` is optional developer tooling. Prefer `PrivateAssets="all"` for that package so analyzer and source-generator assets stay local to the project that declares DVault Code-First metadata or compile-time mapping declarations. The v0.17.0 analyzer surface includes `DMV1910` and `DMV1911` for high-confidence EF Core misuse patterns around generated shared-type tables. See `src/DCoding.Data.DVault.Analyzers/README.md` for the package-local diagnostic, code-fix, source-generator, suppression, and configuration guidance.
 
 Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
 
@@ -137,6 +137,21 @@ services.AddDbContext<SalesVaultContext>(options => {
       .UseRecordSource("crm-import"));
 });
 ```
+
+Applications that want an early runtime check for unsafe generated-row EF tracking can opt into the separate SaveChanges guard interceptor. `AddDVault()` does not enable this guard, and the guard does not replace `IDataVaultSaveService` as the default write boundary. It can run beside `UseDataVaultSaveChangesMetadataInterceptor(...)`: the metadata interceptor fills caller-owned metadata on already tracked rows, while the guard reports or blocks direct generated-table writes that should normally flow through the explicit save service.
+
+```csharp
+services.AddDbContext<SalesVaultContext>(options => {
+  options.UseSqlite(connectionString);
+  options.UseDataVaultMetadata(salesVaultMetadata);
+  options.UseDataVaultSaveChangesMetadataInterceptor(interceptor => interceptor
+      .UseLoadTimestamp(() => DateTimeOffset.UtcNow)
+      .UseRecordSource("crm-import"));
+  options.UseDataVaultSaveChangesGuardInterceptor(guard => guard.UseBlockingMode());
+});
+```
+
+Use `UseWarningMode(...)` when an application needs a deterministic `DataVaultSaveChangesGuardReport` while it is migrating callers away from direct generated-row writes. Use `UseBlockingMode()` when those writes should fail before `SaveChanges` persists them.
 
 The raw request example below uses explicit metadata objects. Applications that want to avoid repeating those metadata declarations in loaders can opt the `DbContext` into a `DataVaultMetadataRegistry` with `UseDataVaultMetadata()` and then use registry-backed requests or the typed mapper helpers such as `SaveHubAsync(...)`, `SaveLinkAsync(...)`, and `SaveOrdinaryHubSatelliteAsync(...)`.
 
@@ -507,6 +522,8 @@ Treat the JSON artifact and any drift report as review evidence. `dvault.model.v
 
 `IDataVaultDiagnosticsService` can analyze metadata models, registries, Code-First declarations, and configured DbContexts. Validation and explain output can run without a save request. Provider-specific save-strategy dispatch diagnostics are request-bound, so strategy status remains not evaluated until a single save request or ordered bulk save request is supplied.
 
+Explain output includes the selected provider capability profile, the selected provider-behavior profile, validation status, generated Data Vault entity facts, and any request-bound save/read strategy diagnostics supplied by the caller. Provider explainability is deterministic and bounded: it records provider names, profile names, strategy status, selected strategy names, finite fallback causes, and generated schema identifiers. It does not validate provider-specific SQL text, include raw SQL, expose provider query plans, or serialize credentials.
+
 `IDataVaultReadDiagnosticsService` analyzes representative latest/current/as-of satellite, PIT as-of, and bridge read requests. Request-bound read diagnostics keep provider strategy selection in `ReadStrategy` and add a separate `ReadShape` payload that describes translated table identity, filter columns, deterministic row-selection and ordering rules, expected key/index access paths, and provider fallback caveats. Registry-backed latest-satellite and bridge diagnostics resolve metadata first, then emit the same read-shape payload as the equivalent explicit request. The read-shape payload includes metadata and generated schema identifiers but not raw hash-key values, as-of values, request keys, SQL text, or provider query plans.
 
 ### Export redacted support bundles
@@ -520,6 +537,46 @@ dotnet run --project src/SalesVault/SalesVault.csproj -- support-bundle --output
 The default support bundle constructs the configured design-time context, runs `IDataVaultDiagnosticsService.Analyze(DbContext)`, and serializes validation, explain, save-strategy, and read-strategy diagnostics without opening a live database connection. When application code supplies representative request-bound read diagnostics, the same deterministic redacted JSON also includes the additive `readShape` section. Use `--artifact <path>` to add reviewed `dvault.model.v1` drift evidence and `--live-schema` only when the consumer application owns the reachable database, credentials, lifecycle cleanup, and CI isolation for that check.
 
 Applications that want representative request-bound save or read strategy evidence should supply that diagnostics result from application code through `DataVaultDesignTimeCommandHost.CreateSupportBundleDiagnostics`. The reusable command host does not invent representative requests, publish support bundles, attach them to tickets, intercept `dotnet ef`, or ship a standalone `dvault` CLI.
+
+### Run aggregate preflight checks
+
+`DataVaultPreflight.Run(...)` aggregates the library-local validation lanes that a consumer-owned design-time entrypoint may already run separately: configured-model diagnostics, reviewed-artifact drift, explicit snapshot-model drift, migration-operation guardrails, and representative request-bound diagnostics. Each optional lane is caller-supplied; omitted lanes are reported as skipped rather than auto-discovered.
+
+```csharp
+using DCoding.Data.DVault;
+using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.Extensions.DependencyInjection;
+
+using var services = new ServiceCollection()
+    .AddDVaultSqlite()
+    .BuildServiceProvider(validateScopes: true);
+
+var diagnostics = services.GetRequiredService<IDataVaultDiagnosticsService>();
+var readDiagnostics = services.GetRequiredService<IDataVaultReadDiagnosticsService>();
+using var context = new SalesVaultDesignTimeFactory().CreateDbContext(args);
+
+Migration migration = SalesVaultMigrationResolver.Resolve("AddCustomerProfile");
+
+var report = DataVaultPreflight.Run(
+    diagnostics,
+    new DataVaultPreflightRequest(context, SalesVaultMetadata.CreateModel()) {
+      ReviewedArtifactImport = SalesVaultArtifacts.ImportReviewedModel(),
+      SnapshotModel = SalesVaultSnapshotMaterializer.CreateSnapshotModel(),
+      MigrationOperations = migration.UpOperations,
+      RepresentativeDiagnosticsRequests = [
+        new DataVaultPreflightRepresentativeDiagnosticsRequest(
+            "latest-profile",
+            dbContext => readDiagnostics.Analyze(
+                dbContext,
+                SalesVaultRepresentativeRequests.CreateLatestProfileRead())),
+      ],
+    });
+
+Console.WriteLine(report.ToDisplayString());
+return report.IsBlocked ? 1 : 0;
+```
+
+The aggregate facade does not couple DVault to EF `ModelSnapshot`, scan the repository for migrations or artifacts, generate representative requests, open a live database by default, execute migrations, or repair schema. Snapshot-model input is an explicit consumer-materialized `IReadOnlyModel`; migration input is an explicit reviewed `MigrationOperation` list; representative save/read diagnostics are either precomputed by application code or produced by caller-owned factories.
 
 ### Multi-active satellite opt-in
 
@@ -626,25 +683,27 @@ Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadS
 
 SQLite remains the default local live-schema proof because it does not require external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks require consumer-managed reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation. Keep those external provider checks opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
 
-## v0.16.0 Release Notes
+## v0.17.0 Release Notes
 
-The v0.16.0 release records opt-in save/read telemetry, deterministic redacted support-bundle export, and the current coordinated seven-package baseline while preserving the explicit service and consumer-owned design-time boundaries from earlier releases. See `docs/releases/v0.16.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
+The v0.17.0 release records EF safety and aggregate preflight guidance as the current coordinated seven-package baseline while preserving the explicit service, opt-in telemetry, redacted support-bundle, and consumer-owned design-time boundaries from earlier releases. See `docs/releases/v0.17.0.md` for the release-note record, package scope, compatibility notes, validation evidence, and package verification posture.
 
 Notable user-facing changes:
 
-- `AddDVault()` remains telemetry-free by default.
-- `AddDVaultTelemetry()` registers the built-in `System.Diagnostics.Metrics` observer for explicit DVault save and read attempts.
-- `IDataVaultTelemetryObserver` lets applications observe bounded `DataVaultSaveTelemetrySummary` and `DataVaultReadTelemetrySummary` values without changing save or read behavior.
-- Save telemetry covers explicit single and bulk saves with request counts, operation counts, rows written, saved records, duration, provider name, selected strategy name, strategy status, and finite fallback-cause kinds.
-- Read telemetry covers latest/current/as-of satellite reads, PIT reads, and bridge reads with read family, requested-key counts, returned rows, duration, provider name, selected strategy name, strategy status, and finite fallback-cause kinds.
-- The `support-bundle` design-time verb emits deterministic redacted JSON under `dvault.support-bundle.v1` from the consumer-owned command host.
-- Support bundles include diagnostics validation and explain output by default, optional reviewed-artifact drift evidence through `--artifact`, and optional live-schema evidence through `--live-schema`.
-- `DataVaultDesignTimeCommandHost.CreateSupportBundleDiagnostics` lets applications include representative request-bound save or read strategy diagnostics without having the generic command runner invent requests.
-- Explicit bridge maintenance, explicit PIT maintenance, current/as-of satellite read convenience overloads, SQLite optimized PIT/bridge read dispatch, provider-native bulk ingestion, Code-First same-hub roles, link-parent satellites, model-first artifact governance, and analyzer guidance from earlier releases remain part of the current public baseline.
+- `DCoding.Data.DVault.Analyzers` reports `DMV1910` for exposed generated shared-type `DbSet<Dictionary<string, object>>` members and `DMV1911` for direct mutating calls against generated shared-type sets.
+- `UseDataVaultSaveChangesGuardInterceptor(...)` is an explicit runtime guard opt-in with blocking and warning modes. It is separate from `AddDVault()`, can coexist with `UseDataVaultSaveChangesMetadataInterceptor(...)`, and does not replace `IDataVaultSaveService`.
+- `DataVaultModelDriftPreflightReporter.Compare(...)` compares authoritative DVault metadata, the configured runtime model, and a consumer-materialized snapshot model without treating EF `ModelSnapshot` as a DVault public contract.
+- `DataVaultMigrationOperationDiagnostics.AnalyzeReport(...)` preserves per-operation `Safe`, `Risky`, and `Incompatible` migration guardrail outcomes with deterministic DVM findings and remediation text.
+- `DataVaultPreflight.Run(...)` aggregates validation/provider explain, artifact drift, snapshot drift, migration guardrail, and representative request-diagnostics lanes when the consumer supplies those inputs.
+- Provider explainability covers capability profiles, provider-behavior profiles, save strategy diagnostics, read strategy diagnostics, and request-bound read-shape facts as deterministic redacted explain output rather than raw SQL or provider-magic claims.
+- `AddDVaultTelemetry()`, `IDataVaultTelemetryObserver`, `support-bundle`, explicit bridge maintenance, explicit PIT maintenance, current/as-of satellite reads, provider-native bulk ingestion, Code-First same-hub roles, link-parent satellites, and model-first artifact governance from earlier releases remain part of the current public baseline.
 
-## Current v0.16.0 Limitations
+## Current v0.17.0 Limitations
 
-Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.16.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
+Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.17.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
+
+The SaveChanges guard is opt-in and generated-row focused. `AddDVault()` does not enable it automatically, warning mode is caller-observed, and blocking mode protects only the unsafe generated-table changes it can identify at `SaveChanges` time. It does not compute hash keys, compute hash diffs, create generated rows, replace `IDataVaultSaveService`, or make ordinary EF entity tracking the default DVault persistence path.
+
+Aggregate preflight is an explicit facade over caller-owned inputs. DVault does not discover EF snapshots, scan repositories for migrations or reviewed artifacts, generate representative save or read requests, open live databases by default, publish dashboards, or route support-bundle artifacts. Consumers must supply snapshot models, reviewed imports, migration operations, and representative diagnostics when they want those lanes evaluated.
 
 Telemetry remains explicit opt-in application wiring. DVault does not configure metric listeners, exporters, dashboards, alert rules, or backend-specific observability pipelines, and it does not emit high-cardinality raw values such as exception messages, hash keys, record sources, metadata names, table names, generated SQL, or full diagnostics text as metric tags.
 
