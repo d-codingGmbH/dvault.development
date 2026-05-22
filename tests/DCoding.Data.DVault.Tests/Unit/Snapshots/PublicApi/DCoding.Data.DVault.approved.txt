@@ -622,6 +622,68 @@ type public sealed class DCoding.Data.DVault.DataVaultPitSatelliteSnapshot
   property public string? HashDiff { get; }
   property public string? RecordSource { get; }
 
+type public static class DCoding.Data.DVault.DataVaultPreflight
+  method public static DCoding.Data.DVault.DataVaultPreflightReport Run(DCoding.Data.DVault.IDataVaultDiagnosticsService diagnostics, DCoding.Data.DVault.DataVaultPreflightRequest request)
+
+type public sealed class DCoding.Data.DVault.DataVaultPreflightReport
+  ctor public DataVaultPreflightReport(DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultDiagnosticsResult> validationProvider, DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultModelDriftReport> artifactDrift, DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultModelDriftPreflightReport> snapshotDrift, DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultMigrationGuardrailReport> migrationGuardrail, DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultPreflightRequestDiagnosticsReport> requestDiagnostics)
+  property public DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultDiagnosticsResult> ValidationProvider { get; }
+  property public DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultMigrationGuardrailReport> MigrationGuardrail { get; }
+  property public DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultModelDriftPreflightReport> SnapshotDrift { get; }
+  property public DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultModelDriftReport> ArtifactDrift { get; }
+  property public DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultPreflightRequestDiagnosticsReport> RequestDiagnostics { get; }
+  property public DCoding.Data.DVault.DataVaultPreflightStatus Status { get; }
+  property public bool IsBlocked { get; }
+  method public string ToDisplayString()
+
+type public sealed class DCoding.Data.DVault.DataVaultPreflightRepresentativeDiagnostics
+  ctor public DataVaultPreflightRepresentativeDiagnostics(string name, DCoding.Data.DVault.DataVaultDiagnosticsResult diagnostics)
+  property public DCoding.Data.DVault.DataVaultDiagnosticsResult Diagnostics { get; }
+  property public bool IsBlocked { get; }
+  property public string Name { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultPreflightRepresentativeDiagnosticsRequest
+  ctor public DataVaultPreflightRepresentativeDiagnosticsRequest(string name, System.Func<Microsoft.EntityFrameworkCore.DbContext, DCoding.Data.DVault.DataVaultDiagnosticsResult> createDiagnostics)
+  property public System.Func<Microsoft.EntityFrameworkCore.DbContext, DCoding.Data.DVault.DataVaultDiagnosticsResult> CreateDiagnostics { get; }
+  property public string Name { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultPreflightRequest
+  ctor public DataVaultPreflightRequest(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultModelImportResult expectedImport)
+  ctor public DataVaultPreflightRequest(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel)
+  property public DCoding.Data.DVault.DataVaultModelImportResult? ExpectedImport { get; }
+  property public DCoding.Data.DVault.DataVaultModelImportResult? ReviewedArtifactImport { get; init; }
+  property public DCoding.Data.DVault.Modeling.DataVaultMetadataModel? ExpectedMetadataModel { get; }
+  property public Microsoft.EntityFrameworkCore.DbContext DbContext { get; }
+  property public Microsoft.EntityFrameworkCore.Metadata.IReadOnlyModel? SnapshotModel { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPreflightRepresentativeDiagnostics> RepresentativeDiagnostics { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPreflightRepresentativeDiagnosticsRequest> RepresentativeDiagnosticsRequests { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<Microsoft.EntityFrameworkCore.Migrations.Operations.MigrationOperation>? MigrationOperations { get; init; }
+
+type public sealed class DCoding.Data.DVault.DataVaultPreflightRequestDiagnosticsReport
+  ctor public DataVaultPreflightRequestDiagnosticsReport(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultPreflightRepresentativeDiagnostics> results)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPreflightRepresentativeDiagnostics> Results { get; }
+  property public bool HasBlockingDiagnostics { get; }
+  property public int BlockingResultCount { get; }
+  method public string ToDisplayString()
+
+type public sealed class DCoding.Data.DVault.DataVaultPreflightSection where TReport : class
+  ctor public DataVaultPreflightSection(string name, DCoding.Data.DVault.DataVaultPreflightSectionStatus status, TReport? report, string? skipReason = null)
+  property public DCoding.Data.DVault.DataVaultPreflightSectionStatus Status { get; }
+  property public TReport? Report { get; }
+  property public bool IsBlocked { get; }
+  property public bool IsSkipped { get; }
+  property public string Name { get; }
+  property public string? SkipReason { get; }
+
+type public enum DCoding.Data.DVault.DataVaultPreflightSectionStatus
+  value Passed = 0
+  value Blocked = 1
+  value Skipped = 2
+
+type public enum DCoding.Data.DVault.DataVaultPreflightStatus
+  value Passed = 0
+  value Blocked = 1
+
 type public sealed class DCoding.Data.DVault.DataVaultPropertyExplain : System.IEquatable<DCoding.Data.DVault.DataVaultPropertyExplain>
   ctor public DataVaultPropertyExplain(string Name, DCoding.Data.DVault.DataVaultPropertyRole Role, DCoding.Data.DVault.TechnicalMetadataColumnRole? TechnicalRole, string MetadataName, int Ordinal, DCoding.Data.DVault.DataVaultLogicalPropertyKind LogicalPropertyKind, string ProviderProfileName, string StoreType, DCoding.Data.DVault.DataVaultProviderValueFormat ValueFormat)
   property public DCoding.Data.DVault.DataVaultLogicalPropertyKind LogicalPropertyKind { get; init; }

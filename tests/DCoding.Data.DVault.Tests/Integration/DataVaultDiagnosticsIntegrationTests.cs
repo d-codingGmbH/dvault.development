@@ -147,6 +147,43 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
   }
 
   [Fact]
+  public void PreflightAggregatesSqliteValidationMigrationAndReadDiagnostics() {
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    var readDiagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+    using var context = new DiagnosticsContext(CreateOptions(database));
+
+    var report = DataVaultPreflight.Run(
+        diagnostics,
+        new DataVaultPreflightRequest(context, CreateCustomerMetadataModel()) {
+          MigrationOperations = Array.Empty<MigrationOperation>(),
+          RepresentativeDiagnosticsRequests = [
+            new DataVaultPreflightRepresentativeDiagnosticsRequest(
+                "latest-profile",
+                dbContext => readDiagnostics.Analyze(dbContext, CreateProfileReadRequest(["customer-hk"]))),
+          ],
+        });
+
+    Assert.Equal(DataVaultPreflightStatus.Passed, report.Status);
+    Assert.Equal(DataVaultPreflightSectionStatus.Passed, report.ValidationProvider.Status);
+    Assert.Equal(DataVaultPreflightSectionStatus.Passed, report.MigrationGuardrail.Status);
+    Assert.Equal(DataVaultPreflightSectionStatus.Passed, report.RequestDiagnostics.Status);
+    Assert.Equal(KnownProviderNames.Sqlite, report.ValidationProvider.Report!.Explain.ProviderName);
+    Assert.Empty(report.MigrationGuardrail.Report!.OperationSummaries);
+
+    var requestDiagnostics = Assert.Single(report.RequestDiagnostics.Report!.Results);
+    Assert.Equal("latest-profile", requestDiagnostics.Name);
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected, requestDiagnostics.Diagnostics.ReadStrategy.Status);
+    Assert.Equal("SqliteDataVaultReadStrategy", requestDiagnostics.Diagnostics.ReadStrategy.SelectedStrategyName);
+    Assert.Contains("DVault preflight: passed", report.ToDisplayString(), StringComparison.Ordinal);
+    Assert.Contains("request-diagnostics: passed", report.ToDisplayString(), StringComparison.Ordinal);
+  }
+
+  [Fact]
   public void AnalyzeSqliteDbContextReadRequestReportsDeclineFallbackCause() {
     using var database = SqliteTestDatabase.CreateTemporaryFile();
     var services = new ServiceCollection();

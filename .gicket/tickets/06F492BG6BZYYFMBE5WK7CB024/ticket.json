@@ -3,22 +3,21 @@
   "ticket-id": "06F492BG6BZYYFMBE5WK7CB024",
   "ticket-type": "story",
   "title": "Story: Add consumer-owned preflight command aggregator",
-  "revision": "06F4NV0N2QW99PH3929H56SK3R",
-  "status": "todo",
+  "revision": "06F4WD3PEBVSVAYCAWBQ3GX95M",
+  "status": "done",
   "labels": [
     "area/design-time",
     "area/diagnostics",
-    "area/migrations",
     "area/drift",
     "area/ef-core",
+    "area/migrations",
     "automation/bot-ready",
-    "type/story",
-    "needs-po"
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F4929YA7582ENPQ9KEYMXGEM",
   "releaseId": "06F4929XH1QPVKC80WBYQKGC3W",
   "created-at": "2026-05-20T08:38:38.5137686Z",
-  "updated-at": "2026-05-21T14:24:06.4211234Z"
+  "updated-at": "2026-05-22T05:42:01.5862050Z"
 }
