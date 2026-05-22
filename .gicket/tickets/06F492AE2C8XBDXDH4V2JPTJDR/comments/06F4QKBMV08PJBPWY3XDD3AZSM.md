@@ -1,28 +1,33 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Verified the ticket, comments, relations, and repo-local package/API boundaries. The authoritative contract now fixes the snapshot input to a consumer-materialized IReadOnlyModel, keeps src/DCoding.Data.DVault design-package-free, and is ready for PO-critic.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+PO-critic checklist responses
+- critic-item-1: `answered` - The additive preflight takes one authoritative snapshot input boundary: a consumer-materialized IReadOnlyModel. EF ModelSnapshot types or generated snapshot-derived classes stay outside the src/DCoding.Data.DVault public API and remain consumer-owned conversion details.
+- critic-item-2: `answered` - Repo-local evidence supports the chosen boundary without adding Microsoft.EntityFrameworkCore.Design. The core package already depends on Microsoft.EntityFrameworkCore and Microsoft.EntityFrameworkCore.Relational, and the design-time workflow document explicitly keeps EF design tooling in the consumer project. If a consumer owns an EF ModelSnapshot, converting it into the required IReadOnlyModel remains consumer-owned code outside src/DCoding.Data.DVault.
+- critic-item-3: `answered` - The feasibility boundary is now grounded on existing repo-local APIs: src/DCoding.Data.DVault already publishes IReadOnlyModel-based comparison overloads, so the new story can compose metadata-versus-runtime and metadata-versus-snapshot-model comparisons without taking a direct dependency on EF ModelSnapshot or Microsoft.EntityFrameworkCore.Design. The runtime lane is additive over DbContext.Model, while existing DbContext drift APIs keep their design-time semantics.
+- critic-item-4: `answered` - The contract no longer mixes snapshot-input shapes. Scope In, Acceptance Criteria, Definition of Done, and Implementation Notes consistently refer to a consumer-materialized snapshot-model IReadOnlyModel, while existing Compare(..., DbContext) behavior remains a separate design-time path and is explicitly not redefined.
+
+Clarifications
 - gicket-read-ticket-comments returned only bot workflow artifacts; recent human comments remain none, so the ticket body and referenced repository documents are the authoritative scope inputs.
 - gicket-read-ticket-relations confirms that this ticket remains a child of epic 06F492A3MPSGP3KXDNZECN01QM and still blocks 06F492BG6BZYYFMBE5WK7CB024 and 06F492BNDPWS9P4EDSV0W7G6VM; no relation cleanup or relinking was needed.
 - src/DCoding.Data.DVault/DCoding.Data.DVault.csproj stays design-package-free with Microsoft.EntityFrameworkCore and Microsoft.EntityFrameworkCore.Relational only, matching docs/architecture/dvault-dotnet-ef-design-time-workflow.md.
 - No checked-in *ModelSnapshot.cs files are present in the repository outside build output, so DVault must not assume a repo-owned migrations snapshot file, fixed path, or automatic discovery boundary.
 - tests/DCoding.Data.DVault.Tests/Integration/DataVaultCompiledCompatibilitySqliteTests.cs uses compiledContext.Model and preserves DVault annotations, which is sufficient repo-local evidence for the additive runtime-model lane.
 
-### Scope In
+Scope In
 - An additive library-owned preflight/report API that evaluates drift across DVault metadata, DbContext.Model, and an explicit consumer-materialized snapshot IReadOnlyModel.
 - Support for both existing expected-model authorities: DataVaultMetadataModel and successful DataVaultModelImportResult.
 - Use within the documented single-project consumer boundary where the same project owns the configured DbContext, migrations, design-time factory, and any consumer code that materializes snapshot-model input.
 - Deterministic structured output with overall blocking status plus per-comparison detail suitable for CI tests or app-startup checks without a live database connection.
 - Additive unit and integration coverage for matching and drifted runtime and snapshot-model lanes without requiring checked-in migration snapshot files in this repository.
 
-### Scope Out
+Scope Out
 - A DVault-owned dotnet ef shim, IDesignTimeServices, automatic migration execution, or automatic drift repair.
 - Any core-package requirement to reference Microsoft.EntityFrameworkCore.Design, accept EF ModelSnapshot as a public input type, instantiate snapshot classes, or discover migrations automatically.
 - A new top-level preflight command aggregator or orchestration UX; that remains with 06F492BG6BZYYFMBE5WK7CB024.
@@ -30,48 +35,32 @@
 - Repo scanning, fixed snapshot file paths, or DVault-owned migration discovery heuristics.
 - Standalone release-note and broad documentation rollout work; that remains with 06F492BNDPWS9P4EDSV0W7G6VM.
 
-## Acceptance Criteria
-- Consumers can execute one library-local preflight call against a configured DbContext plus an explicit snapshot-model IReadOnlyModel input and receive one structured result with metadata-versus-runtime, metadata-versus-snapshot-model, and runtime-versus-snapshot-model sections plus an overall blocking status.
-- The authoritative snapshot input boundary is the consumer-materialized IReadOnlyModel; if a consumer owns an EF ModelSnapshot, converting it to the required model input remains consumer-owned code outside src/DCoding.Data.DVault.
-- The new preflight is additive: existing DataVaultModelDriftReporter.Compare(..., DbContext) and current artifact-based drift behavior keep their present design-time semantics and are not silently redefined to use the runtime model.
-- The preflight uses the same provider capability/profile resolution and DVault annotation semantics as current drift reporters and does not open a live database connection.
-- Matching runtime and snapshot-model surfaces produce deterministic no-difference output, while meaningful entity, property, key, index, provider-profile, or metadata-source drift yields stable blocking or informational findings suitable for CI assertions and startup gates.
-- The result surface reuses the existing drift finding vocabulary and severities instead of introducing a separate snapshot-only diagnostic code family.
-- The core src/DCoding.Data.DVault package remains design-package-free and the feature assumes no repo-owned migrations folder, fixed snapshot file path, or automatic snapshot discovery heuristic.
-
-## Definition of Done
-- Public API snapshots and XML documentation are updated for any new public preflight/report types or overloads.
-- Unit and integration tests cover matching and drifted snapshot-model and runtime cases while keeping existing artifact drift behavior backward compatible.
-- Implementation keeps snapshot acquisition and materialization consumer-owned and introduces no core-package Microsoft.EntityFrameworkCore.Design dependency, repo-layout assumption, or automatic migration discovery heuristic.
-- Any narrow source tests or architecture assertions that currently mark snapshot drift comparison as unsupported are updated only as needed for the new consumer-materialized snapshot-model boundary; broader v0.17 docs rollout stays with 06F492BNDPWS9P4EDSV0W7G6VM.
-
-## Implementation Notes
-- Keep DataVaultModelDriftReporter as the pairwise comparison engine and compose it into an additive composite preflight surface instead of duplicating drift classification logic.
-- Use DbContext.Model for the runtime lane and an explicit consumer-materialized snapshot IReadOnlyModel for the snapshot lane.
-- Do not silently change DataVaultModelDriftReporter.Compare(..., DbContext) or existing drift --artifact behavior; the existing DbContext overloads remain the design-time path over IDesignTimeModel.
-- If a consumer owns an EF ModelSnapshot, that consumer may materialize the snapshot model before calling DVault, but src/DCoding.Data.DVault must not expose ModelSnapshot as its public contract or add Microsoft.EntityFrameworkCore.Design to do so.
-- Expose stable machine-readable findings and deterministic display rendering so the later command-aggregation ticket can reuse the same result surface without reclassifying drift outcomes.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - When 06F492BG6BZYYFMBE5WK7CB024 is implemented, should snapshot-model drift surface through the existing design-time command host, a new facade, or both?
 - Should the later documentation task recommend snapshot-model preflight only for applications that ship migrations, or as a broader optional startup check whenever an authoritative snapshot-model input is available?
 - Should support-bundle export eventually record a snapshot-preflight section once this reusable result surface exists?
 
-## Risks
+Risks
 - False positives are possible if runtime model, snapshot-model, and metadata are not materialized under the same provider/profile or if consumer model-cache behavior is wrong; this story should surface that drift, while cache-key hardening remains with 06F492AKGMKPCRJYF4Z1EC9WY4.
 - Reintroducing direct EF ModelSnapshot or design-package coupling into src/DCoding.Data.DVault would violate the documented package boundary and recreate the feasibility problem raised in PO-critic.
 - Redefining existing artifact or design-time drift APIs instead of adding a new composite preflight surface would create compatibility risk for current tests, docs, and the blocked aggregator story.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended; command aggregation and documentation are already separated into blocked follow-on tickets, so this story stays bounded to reusable runtime and consumer-materialized snapshot-model drift APIs and tests.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 7
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Detect meaningful drift between DVault metadata, the EF runtime model, and ModelSnapshot output before consumers ship migrations. Keep the feature library-local and return structured results suitable for CI or app startup checks.
+Run mode
+- apply: planned updates are applied after this comment

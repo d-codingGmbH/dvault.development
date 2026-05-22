@@ -26,6 +26,10 @@ public sealed class DataVaultDotnetEfDesignTimeWorkflowTests {
     Assert.Contains("CreateSupportBundleDiagnostics", document, StringComparison.Ordinal);
     Assert.Contains("DataVaultLiveSchemaReadResult", document, StringComparison.Ordinal);
     Assert.Contains("DataVaultModelDriftReport", document, StringComparison.Ordinal);
+    Assert.Contains("DataVaultModelDriftPreflightReporter.Compare", document, StringComparison.Ordinal);
+    Assert.Contains("IReadOnlyModel snapshotModel", document, StringComparison.Ordinal);
+    Assert.Contains("MetadataVersusRuntime", document, StringComparison.Ordinal);
+    Assert.Contains("RuntimeVersusSnapshotModel", document, StringComparison.Ordinal);
     Assert.Contains("DataVaultMigrationOperationDiagnostics.AnalyzeReport", document, StringComparison.Ordinal);
     Assert.Contains("DataVaultMigrationGuardrailReport.ToDisplayString()", document, StringComparison.Ordinal);
     Assert.Contains("dotnet ef migrations add", document, StringComparison.Ordinal);

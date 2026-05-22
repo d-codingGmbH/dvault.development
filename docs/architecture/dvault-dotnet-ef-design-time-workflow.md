@@ -231,6 +231,35 @@ dotnet run --project src/SalesVault/SalesVault.csproj -- drift --artifact src/Sa
 
 Use the live-schema lane only inside the documented boundary. SQLite is the first-class local live-schema reader. PostgreSQL, SQL Server, Oracle, and MySQL have built-in reader dispatch, but their checks require external opt-in evidence with consumer-managed databases, credentials, lifecycle cleanup, and CI isolation rather than a default DVault-provided CI environment.
 
+## Snapshot-Model Drift Preflight
+
+When a consumer project owns an EF model snapshot, the consumer can materialize that snapshot as an `IReadOnlyModel` and pass it
+to DVault without adding EF design tooling to the DVault package. `DataVaultModelDriftPreflightReporter.Compare(...)` compares
+the authoritative DVault metadata, the configured `DbContext.Model` runtime surface, and the explicit snapshot model in one
+structured report:
+
+```csharp
+using DCoding.Data.DVault;
+using Microsoft.EntityFrameworkCore.Metadata;
+
+using var context = new SalesVaultDesignTimeFactory().CreateDbContext(args);
+IReadOnlyModel snapshotModel = SalesVaultSnapshotMaterializer.CreateSnapshotModel();
+
+var report = DataVaultModelDriftPreflightReporter.Compare(
+    SalesVaultMetadata.CreateModel(),
+    context,
+    snapshotModel);
+
+Console.WriteLine(report.ToDisplayString());
+return report.HasBlockingDifferences ? 1 : 0;
+```
+
+The report has separate `MetadataVersusRuntime`, `MetadataVersusSnapshotModel`, and `RuntimeVersusSnapshotModel` sections plus
+an overall blocking status. The runtime lane deliberately uses `DbContext.Model`; the existing
+`DataVaultModelDriftReporter.Compare(..., DbContext)` overloads remain the design-time model comparison path over EF's
+`IDesignTimeModel`. Snapshot acquisition is consumer-owned: DVault accepts the materialized `IReadOnlyModel`, does not expose
+EF `ModelSnapshot` as a public contract, and does not discover migrations or snapshot files.
+
 ## Migration Guardrail Preflight
 
 The migration guardrail step runs after scaffolding and before applying the migration:
@@ -392,7 +421,7 @@ If an adopter adds a live-schema drift lane, keep it separate from the default j
 - Automatic migration guardrail output during `migrations add` or `database update`.
 - Repo-owned `Microsoft.EntityFrameworkCore.Design` dependencies in DVault packages.
 - Startup-project and target-project split layouts.
-- Live-database validation as a default CI gate, model snapshot drift comparison, or provider-wide live schema drift as a first-class boundary beyond SQLite.
+- Live-database validation as a default CI gate, automatic snapshot discovery, or provider-wide live schema drift as a first-class boundary beyond SQLite.
 - Provider-specific online migration runners.
 
-The default no-live-database design-time proof remains the existing diagnostics and artifact-versus-design-time-model drift path. Downstream model snapshot and broader provider live schema drift work stays outside this v1 workflow.
+The default no-live-database design-time proof remains the existing diagnostics and artifact-versus-design-time-model drift path. Downstream command aggregation, broad snapshot-model documentation, and broader provider live schema drift work stay outside this v1 workflow.

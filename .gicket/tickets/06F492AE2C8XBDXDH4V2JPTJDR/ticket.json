@@ -3,21 +3,20 @@
   "ticket-id": "06F492AE2C8XBDXDH4V2JPTJDR",
   "ticket-type": "story",
   "title": "Story: Harden EF model and snapshot drift preflight",
-  "revision": "06F4NV0CJ4PYWYY74SW40X4M98",
-  "status": "todo",
+  "revision": "06F4VNNPFCCWTV2XNJVZ6F53YR",
+  "status": "done",
   "labels": [
-    "area/drift",
     "area/design-time",
+    "area/drift",
     "area/ef-core",
     "area/modeling",
     "automation/bot-ready",
-    "type/story",
-    "needs-po"
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F4929YA7582ENPQ9KEYMXGEM",
   "releaseId": "06F4929XH1QPVKC80WBYQKGC3W",
   "created-at": "2026-05-20T08:38:29.7734766Z",
-  "updated-at": "2026-05-21T14:24:04.2419483Z"
+  "updated-at": "2026-05-22T03:59:37.5955475Z"
 }

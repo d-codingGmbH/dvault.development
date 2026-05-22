@@ -102,6 +102,15 @@ public static class DataVaultModelDriftReporter {
         DataVaultProviderCapabilityProfileSelection.Select(currentContext.Database.ProviderName));
   }
 
+  internal static DataVaultModelDriftReport CompareModels(
+      IReadOnlyModel expectedModel,
+      IReadOnlyModel currentModel) {
+    ArgumentNullException.ThrowIfNull(expectedModel);
+    ArgumentNullException.ThrowIfNull(currentModel);
+
+    return CompareSnapshots(CreateSnapshot(expectedModel), CreateSnapshot(currentModel));
+  }
+
   private static IReadOnlyModel BuildExpectedModel(
       DataVaultMetadataModel metadataModel,
       DataVaultProviderCapabilityProfile providerCapabilities) {
@@ -532,7 +541,7 @@ public static class DataVaultModelDriftReporter {
         expected.Ordinal.ToString(CultureInfo.InvariantCulture),
         actual.Ordinal.ToString(CultureInfo.InvariantCulture),
         "The current EF index has a different declaration ordinal.");
-    AddPropertyReferenceDifference(
+    AddOptionalPropertyReferenceDifference(
         differences,
         DataVaultModelDriftSeverity.Blocking,
         "index-descending-property-mismatch",
@@ -673,7 +682,7 @@ public static class DataVaultModelDriftReporter {
 
   private static EntitySnapshot CreateEntitySnapshot(IReadOnlyEntityType entityType) {
     var producedName = GetStringAnnotation(entityType, DataVaultAnnotationNames.ProducedName) ??
-        entityType.GetTableName() ??
+        TryGetTableName(entityType) ??
         entityType.Name;
     var kind = GetAnnotationValue<DataVaultTableKind>(entityType, DataVaultAnnotationNames.EntityKind);
     var metadataName = GetStringAnnotation(entityType, DataVaultAnnotationNames.MetadataName) ?? producedName;
@@ -692,7 +701,7 @@ public static class DataVaultModelDriftReporter {
         ? new KeySnapshot("<none>", Array.Empty<PropertyReferenceSnapshot>())
         : new KeySnapshot(
             GetStringAnnotation(primaryKey, DataVaultAnnotationNames.ProducedName) ??
-                primaryKey.GetName() ??
+                TryGetKeyName(primaryKey) ??
                 "Pk" + producedName,
             primaryKey.Properties.Select(CreatePropertyReferenceSnapshot).ToArray());
     var indexes = entityType
@@ -717,10 +726,10 @@ public static class DataVaultModelDriftReporter {
         GetNullableAnnotationValue<DataVaultPropertyRole>(property, DataVaultAnnotationNames.PropertyRole),
         GetNullableAnnotationValue<TechnicalMetadataColumnRole>(property, DataVaultAnnotationNames.TechnicalColumnRole),
         GetStringAnnotation(property, DataVaultAnnotationNames.MetadataName) ?? property.Name,
-        GetNullableAnnotationValue<int>(property, DataVaultAnnotationNames.Ordinal) ?? property.GetColumnOrder() ?? 0,
+        GetNullableAnnotationValue<int>(property, DataVaultAnnotationNames.Ordinal) ?? TryGetColumnOrder(property) ?? 0,
         GetNullableAnnotationValue<DataVaultLogicalPropertyKind>(property, DataVaultAnnotationNames.ProviderLogicalPropertyKind),
         GetStringAnnotation(property, DataVaultAnnotationNames.ProviderProfile) ?? string.Empty,
-        GetStringAnnotation(property, DataVaultAnnotationNames.ProviderStorageType) ?? property.GetColumnType() ?? string.Empty,
+        GetStringAnnotation(property, DataVaultAnnotationNames.ProviderStorageType) ?? TryGetColumnType(property) ?? string.Empty,
         GetNullableAnnotationValue<DataVaultProviderValueFormat>(property, DataVaultAnnotationNames.ProviderValueFormat));
   }
 
@@ -728,12 +737,12 @@ public static class DataVaultModelDriftReporter {
     var properties = index.Properties.Select(CreatePropertyReferenceSnapshot).ToArray();
     return new IndexSnapshot(
         GetStringAnnotation(index, DataVaultAnnotationNames.ProducedName) ??
-            index.GetDatabaseName() ??
+            TryGetIndexDatabaseName(index) ??
             string.Join("_", properties.Select(property => property.ProducedName)),
         properties,
         index.IsUnique,
         GetNullableAnnotationValue<int>(index, DataVaultAnnotationNames.Ordinal) ?? 0,
-        GetDescendingProperties(index).ToArray(),
+        TryGetDescendingProperties(index),
         GetIncludedProperties(index));
   }
 
@@ -745,16 +754,24 @@ public static class DataVaultModelDriftReporter {
         GetNullableAnnotationValue<TechnicalMetadataColumnRole>(property, DataVaultAnnotationNames.TechnicalColumnRole));
   }
 
-  private static IEnumerable<PropertyReferenceSnapshot> GetDescendingProperties(IReadOnlyIndex index) {
-    if (index.IsDescending is null) {
-      yield break;
+  private static IReadOnlyList<PropertyReferenceSnapshot>? TryGetDescendingProperties(IReadOnlyIndex index) {
+    var isDescending = TryGetIsDescending(index, out var isUnavailable);
+    if (isUnavailable) {
+      return null;
     }
 
-    for (var ordinal = 0; ordinal < index.Properties.Count && ordinal < index.IsDescending.Count; ordinal++) {
-      if (index.IsDescending[ordinal]) {
-        yield return CreatePropertyReferenceSnapshot(index.Properties[ordinal]);
+    if (isDescending is null) {
+      return Array.Empty<PropertyReferenceSnapshot>();
+    }
+
+    var descendingProperties = new List<PropertyReferenceSnapshot>();
+    for (var ordinal = 0; ordinal < index.Properties.Count && ordinal < isDescending.Count; ordinal++) {
+      if (isDescending[ordinal]) {
+        descendingProperties.Add(CreatePropertyReferenceSnapshot(index.Properties[ordinal]));
       }
     }
+
+    return descendingProperties.ToArray();
   }
 
   private static IReadOnlyList<PropertyReferenceSnapshot> GetIncludedProperties(IReadOnlyIndex index) {
@@ -770,6 +787,62 @@ public static class DataVaultModelDriftReporter {
     }
 
     return Array.Empty<PropertyReferenceSnapshot>();
+  }
+
+  private static string? TryGetTableName(IReadOnlyEntityType entityType) {
+    try {
+      return entityType.GetTableName();
+    }
+    catch (InvalidOperationException exception) when (IsReadOptimizedModelConfigurationUnavailable(exception)) {
+      return null;
+    }
+  }
+
+  private static string? TryGetKeyName(IReadOnlyKey key) {
+    try {
+      return key.GetName();
+    }
+    catch (InvalidOperationException exception) when (IsReadOptimizedModelConfigurationUnavailable(exception)) {
+      return null;
+    }
+  }
+
+  private static int? TryGetColumnOrder(IReadOnlyProperty property) {
+    try {
+      return property.GetColumnOrder();
+    }
+    catch (InvalidOperationException exception) when (IsReadOptimizedModelConfigurationUnavailable(exception)) {
+      return null;
+    }
+  }
+
+  private static string? TryGetColumnType(IReadOnlyProperty property) {
+    try {
+      return property.GetColumnType();
+    }
+    catch (InvalidOperationException exception) when (IsReadOptimizedModelConfigurationUnavailable(exception)) {
+      return null;
+    }
+  }
+
+  private static string? TryGetIndexDatabaseName(IReadOnlyIndex index) {
+    try {
+      return index.GetDatabaseName();
+    }
+    catch (InvalidOperationException exception) when (IsReadOptimizedModelConfigurationUnavailable(exception)) {
+      return null;
+    }
+  }
+
+  private static IReadOnlyList<bool>? TryGetIsDescending(IReadOnlyIndex index, out bool isUnavailable) {
+    try {
+      isUnavailable = false;
+      return index.IsDescending;
+    }
+    catch (InvalidOperationException exception) when (IsReadOptimizedModelConfigurationUnavailable(exception)) {
+      isUnavailable = true;
+      return null;
+    }
   }
 
   private static PropertyReferenceSnapshot CreateIncludedPropertyReference(IReadOnlyIndex index, string propertyName) {
@@ -899,6 +972,34 @@ public static class DataVaultModelDriftReporter {
         message);
   }
 
+  private static void AddOptionalPropertyReferenceDifference(
+      ICollection<DataVaultModelDriftDifference> differences,
+      DataVaultModelDriftSeverity severity,
+      string code,
+      DataVaultModelDriftElementKind elementKind,
+      string logicalName,
+      string? producedName,
+      string propertyPath,
+      IReadOnlyList<PropertyReferenceSnapshot>? expectedValue,
+      IReadOnlyList<PropertyReferenceSnapshot>? actualValue,
+      string message) {
+    if (expectedValue is null || actualValue is null) {
+      return;
+    }
+
+    AddPropertyReferenceDifference(
+        differences,
+        severity,
+        code,
+        elementKind,
+        logicalName,
+        producedName,
+        propertyPath,
+        expectedValue,
+        actualValue,
+        message);
+  }
+
   private static void AddDifference(
       ICollection<DataVaultModelDriftDifference> differences,
       DataVaultModelDriftSeverity severity,
@@ -929,8 +1030,16 @@ public static class DataVaultModelDriftReporter {
   private static bool HasSameIndexSignature(IndexSnapshot expected, IndexSnapshot actual) {
     return expected.IsUnique == actual.IsUnique &&
         HasSamePropertyReferenceShape(expected.Properties, actual.Properties) &&
-        HasSamePropertyReferenceShape(expected.DescendingProperties, actual.DescendingProperties) &&
+        HasSameOptionalPropertyReferenceShape(expected.DescendingProperties, actual.DescendingProperties) &&
         HasSamePropertyReferenceShape(expected.IncludedProperties, actual.IncludedProperties);
+  }
+
+  private static bool HasSameOptionalPropertyReferenceShape(
+      IReadOnlyList<PropertyReferenceSnapshot>? expected,
+      IReadOnlyList<PropertyReferenceSnapshot>? actual) {
+    return expected is null ||
+        actual is null ||
+        HasSamePropertyReferenceShape(expected, actual);
   }
 
   private static bool HasSamePropertyReferenceShape(
@@ -973,7 +1082,11 @@ public static class DataVaultModelDriftReporter {
         DataVaultLogicalPropertyKind.SatelliteSnapshotReference;
   }
 
-  private static string FormatPropertyReferences(IReadOnlyList<PropertyReferenceSnapshot> values) {
+  private static string FormatPropertyReferences(IReadOnlyList<PropertyReferenceSnapshot>? values) {
+    if (values is null) {
+      return "<unavailable>";
+    }
+
     return values.Count == 0
         ? "<none>"
         : string.Join("|", values.Select(value => value.MetadataName + "=>" + value.ProducedName));
@@ -1023,6 +1136,10 @@ public static class DataVaultModelDriftReporter {
     return value is T typed ? typed : null;
   }
 
+  private static bool IsReadOptimizedModelConfigurationUnavailable(InvalidOperationException exception) {
+    return exception.Message.Contains("read-optimized model", StringComparison.Ordinal);
+  }
+
   private sealed record ModelSnapshot(
       string? ProviderProfile,
       string? MetadataSourceKind,
@@ -1070,6 +1187,6 @@ public static class DataVaultModelDriftReporter {
       IReadOnlyList<PropertyReferenceSnapshot> Properties,
       bool IsUnique,
       int Ordinal,
-      IReadOnlyList<PropertyReferenceSnapshot> DescendingProperties,
+      IReadOnlyList<PropertyReferenceSnapshot>? DescendingProperties,
       IReadOnlyList<PropertyReferenceSnapshot> IncludedProperties);
 }

@@ -485,6 +485,26 @@ type public enum DCoding.Data.DVault.DataVaultModelDriftElementKind
   value Key = 3
   value Index = 4
 
+type public sealed class DCoding.Data.DVault.DataVaultModelDriftPreflightReport : System.IEquatable<DCoding.Data.DVault.DataVaultModelDriftPreflightReport>
+  ctor public DataVaultModelDriftPreflightReport(DCoding.Data.DVault.DataVaultModelDriftReport metadataVersusRuntime, DCoding.Data.DVault.DataVaultModelDriftReport metadataVersusSnapshotModel, DCoding.Data.DVault.DataVaultModelDriftReport runtimeVersusSnapshotModel)
+  property public DCoding.Data.DVault.DataVaultModelDriftReport MetadataVersusRuntime { get; }
+  property public DCoding.Data.DVault.DataVaultModelDriftReport MetadataVersusSnapshotModel { get; }
+  property public DCoding.Data.DVault.DataVaultModelDriftReport RuntimeVersusSnapshotModel { get; }
+  property public bool HasBlockingDifferences { get; }
+  property public int BlockingDifferenceCount { get; }
+  property public int DifferenceCount { get; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultModelDriftPreflightReport? left, DCoding.Data.DVault.DataVaultModelDriftPreflightReport? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultModelDriftPreflightReport? left, DCoding.Data.DVault.DataVaultModelDriftPreflightReport? right)
+  method public string ToDisplayString()
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultModelDriftPreflightReport? other)
+
+type public static class DCoding.Data.DVault.DataVaultModelDriftPreflightReporter
+  method public static DCoding.Data.DVault.DataVaultModelDriftPreflightReport Compare(DCoding.Data.DVault.DataVaultModelImportResult expectedImport, Microsoft.EntityFrameworkCore.DbContext currentContext, Microsoft.EntityFrameworkCore.Metadata.IReadOnlyModel snapshotModel)
+  method public static DCoding.Data.DVault.DataVaultModelDriftPreflightReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, Microsoft.EntityFrameworkCore.DbContext currentContext, Microsoft.EntityFrameworkCore.Metadata.IReadOnlyModel snapshotModel)
+
 type public sealed class DCoding.Data.DVault.DataVaultModelDriftReport : System.IEquatable<DCoding.Data.DVault.DataVaultModelDriftReport>
   ctor public DataVaultModelDriftReport(System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultModelDriftDifference> Differences)
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultModelDriftDifference> Differences { get; init; }

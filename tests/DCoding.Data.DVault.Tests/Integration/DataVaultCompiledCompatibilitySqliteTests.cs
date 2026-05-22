@@ -66,6 +66,30 @@ public sealed class DataVaultCompiledCompatibilitySqliteTests {
   }
 
   [Fact]
+  public void ModelDriftPreflightComparesCompiledRuntimeModelAgainstExplicitSnapshotModelWithoutDatabaseConnection() {
+    var metadataModel = CreateOrderMetadataModel();
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var designOptions = CreateOptions(database);
+
+    using var designContext = new CompiledCompatibilityContext(designOptions, metadataModel);
+    var snapshotModel = designContext.GetService<IDesignTimeModel>().Model;
+    var compiledRuntimeModel = CreateCompiledRuntimeModel(designContext);
+    var compiledOptions = new DbContextOptionsBuilder<CompiledCompatibilityContext>()
+        .UseSqlite(CreateConnectionString(database))
+        .UseModel(compiledRuntimeModel)
+        .Options;
+
+    using var compiledContext = new CompiledCompatibilityContext(compiledOptions, metadataModel);
+
+    var report = DataVaultModelDriftPreflightReporter.Compare(metadataModel, compiledContext, snapshotModel);
+
+    Assert.False(report.HasBlockingDifferences, report.ToDisplayString());
+    Assert.Empty(report.MetadataVersusRuntime.Differences);
+    Assert.Empty(report.MetadataVersusSnapshotModel.Differences);
+    Assert.Empty(report.RuntimeVersusSnapshotModel.Differences);
+  }
+
+  [Fact]
   public async Task CompiledQueryReadsGeneratedSharedTypeProjectionWithDeterministicValuesThroughSqlite() {
     var metadataModel = CreateOrderMetadataModel();
     var order = metadataModel.Hubs.Single(hub => hub.Name == "Order");
