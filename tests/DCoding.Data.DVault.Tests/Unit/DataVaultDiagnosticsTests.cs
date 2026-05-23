@@ -100,6 +100,13 @@ public sealed class DataVaultDiagnosticsTests {
             metadata.Bridge,
             DataVaultBridgeTraversalEndpoint.From,
             ["customer-hk"]));
+    var hierarchyBridge = diagnostics.Analyze(
+        context,
+        new DataVaultBridgeReadRequest(
+            metadata.HierarchyBridge,
+            DataVaultBridgeTraversalEndpoint.Ancestor,
+            ["sales-region-hk"],
+            maximumDepth: 2));
     var registryBridge = diagnostics.Analyze(
         context,
         new DataVaultRegistryBridgeReadRequest(
@@ -116,6 +123,15 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal("SatCustomerProfile", latestSatelliteShape.Satellite.TableName);
     Assert.Equal(["CustomerHashKey"], latestSatelliteShape.FilterColumns[0].ColumnNames);
     Assert.Equal(["LoadTimestamp"], latestSatelliteShape.FilterColumns[1].ColumnNames);
+    AssertColumnSet(
+        latestSatelliteShape.ProjectedColumns.Single(columns => columns.Role == "technicalProjection"),
+        "technicalProjection",
+        ["CustomerHashKey", "HashDiff", "LoadTimestamp", "RecordSource"]);
+    AssertColumnSet(
+        latestSatelliteShape.ProjectedColumns.Single(columns => columns.Role == "payloadProjection"),
+        "payloadProjection",
+        ["CustomerName", "CustomerTier"]);
+    Assert.DoesNotContain(latestSatelliteShape.ProjectedColumns, columns => columns.Role == "drivingKeyProjection");
     Assert.Contains(
         latestSatelliteShape.ExpectedIndexBaseline,
         index => index.Kind == "secondary-index" && index.DescendingColumnNames.Contains("LoadTimestamp"));
@@ -127,6 +143,12 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal(
         latestSatelliteShape.FilterColumns.SelectMany(columns => columns.ColumnNames),
         registrySatelliteShape.FilterColumns.SelectMany(columns => columns.ColumnNames));
+    Assert.Equal(
+        latestSatelliteShape.ProjectedColumns.Select(columns => columns.Role),
+        registrySatelliteShape.ProjectedColumns.Select(columns => columns.Role));
+    Assert.Equal(
+        latestSatelliteShape.ProjectedColumns.SelectMany(columns => columns.ColumnNames),
+        registrySatelliteShape.ProjectedColumns.SelectMany(columns => columns.ColumnNames));
 
     Assert.NotNull(pit.ReadShape);
     var pitShape = pit.ReadShape!;
@@ -135,6 +157,19 @@ public sealed class DataVaultDiagnosticsTests {
     var pitReadShape = pitShape.Pit!;
     Assert.Equal("PitCustomerProfileStatus", pitReadShape.Pit.TableName);
     Assert.Equal(["Profile", "Status"], pitReadShape.ReferencedSatellites.Select(satellite => satellite.MetadataName).ToArray());
+    Assert.Equal(2, pitReadShape.ReferencedSatelliteLookupCount);
+    AssertColumnSet(
+        pitReadShape.ProjectedColumns.Single(columns => columns.Role == "pitTechnicalProjection"),
+        "pitTechnicalProjection",
+        ["CustomerHashKey", "LoadTimestamp"]);
+    AssertColumnSet(
+        pitReadShape.ProjectedColumns.Single(columns => columns.Role == "snapshotReferenceProjection"),
+        "snapshotReferenceProjection",
+        ["ProfileLoadTimestamp", "StatusLoadTimestamp"]);
+    AssertColumnSet(
+        pitReadShape.ProjectedColumns.Single(columns => columns.Role == "satellitePayloadProjection"),
+        "satellitePayloadProjection",
+        ["CustomerName", "CustomerTier", "StatusCode"]);
     Assert.Contains("no latest-satellite fallback", pitReadShape.NoLatestFallbackBehavior, StringComparison.Ordinal);
     Assert.Contains(pitReadShape.ExpectedIndexBaseline, index => index.Kind == "primary-key");
 
@@ -146,9 +181,26 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal(DataVaultBridgeKind.ManyToMany, bridgeReadShape.BridgeKind);
     Assert.Equal("BridgeCustomerOrder", bridgeReadShape.Bridge.TableName);
     Assert.Equal(["CustomerHashKey"], bridgeReadShape.EndpointFilter.ColumnNames);
+    AssertColumnSet(
+        bridgeReadShape.ProjectedColumns.Single(columns => columns.Role == "endpointProjection"),
+        "endpointProjection",
+        ["CustomerHashKey", "OrderHashKey"]);
+    Assert.DoesNotContain(bridgeReadShape.ProjectedColumns, columns => columns.Role == "depthProjection");
     Assert.Contains(
         bridgeReadShape.ExpectedTraversalIndexBaseline,
         index => index.Kind == "secondary-index" && index.ColumnNames.SequenceEqual(["OrderHashKey", "CustomerHashKey"]));
+    Assert.NotNull(hierarchyBridge.ReadShape);
+    Assert.NotNull(hierarchyBridge.ReadShape!.Bridge);
+    var hierarchyBridgeShape = hierarchyBridge.ReadShape.Bridge!;
+    Assert.Equal(DataVaultBridgeKind.Hierarchy, hierarchyBridgeShape.BridgeKind);
+    AssertColumnSet(
+        hierarchyBridgeShape.ProjectedColumns.Single(columns => columns.Role == "endpointProjection"),
+        "endpointProjection",
+        ["AncestorSalesRegionHashKey", "DescendantSalesRegionHashKey"]);
+    AssertColumnSet(
+        hierarchyBridgeShape.ProjectedColumns.Single(columns => columns.Role == "depthProjection"),
+        "depthProjection",
+        ["TraversalDepth"]);
     Assert.NotNull(registryBridge.ReadShape);
     Assert.NotNull(registryBridge.ReadShape!.Bridge);
     var registryBridgeShape = registryBridge.ReadShape.Bridge!;
@@ -556,7 +608,14 @@ public sealed class DataVaultDiagnosticsTests {
   private static ReadShapeMetadata CreateReadShapeMetadata() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+    var salesRegion = new DataVaultHubMetadata("SalesRegion", ["Region Code"]);
     var customerOrder = new DataVaultLinkMetadata("CustomerOrder", [customer.ToReference(), order.ToReference()]);
+    var salesRegionParentChild = new DataVaultLinkMetadata(
+        "SalesRegionParentChild",
+        [
+            new DataVaultLinkParticipantMetadata(salesRegion.ToReference(), "ParentRegion"),
+            new DataVaultLinkParticipantMetadata(salesRegion.ToReference(), "ChildRegion"),
+        ]);
     var profile = new DataVaultSatelliteMetadata(
         "Profile",
         customer.ToReference(),
@@ -571,15 +630,37 @@ public sealed class DataVaultDiagnosticsTests {
         customer.ToReference(),
         customerOrder.ToReference(),
         order.ToReference());
+    var hierarchyBridge = new DataVaultBridgeMetadata(
+        "SalesRegionHierarchy",
+        DataVaultBridgeKind.Hierarchy,
+        DataVaultMetadataReference.Link("SalesRegionParentChild"),
+        [
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.Ancestor,
+                salesRegion.ToReference(),
+                "ParentRegion"),
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.Descendant,
+                salesRegion.ToReference(),
+                "ChildRegion"),
+        ]);
     var model = new DataVaultMetadataModel(
-        [customer, order],
-        [customerOrder],
+        [customer, order, salesRegion],
+        [customerOrder, salesRegionParentChild],
         [profile, status],
         Array.Empty<DataVaultPointInTimeMetadata>(),
-        [bridge],
+        [bridge, hierarchyBridge],
         [pit]);
 
-    return new ReadShapeMetadata(model, customer, profile, pit, bridge);
+    return new ReadShapeMetadata(model, customer, profile, pit, bridge, hierarchyBridge);
+  }
+
+  private static void AssertColumnSet(
+      DataVaultReadShapeColumnSet columnSet,
+      string role,
+      IReadOnlyList<string> columnNames) {
+    Assert.Equal(role, columnSet.Role);
+    Assert.Equal(columnNames, columnSet.ColumnNames);
   }
 
   private static void AssertMigrationIssue(
@@ -658,7 +739,8 @@ public sealed class DataVaultDiagnosticsTests {
       DataVaultHubMetadata Customer,
       DataVaultSatelliteMetadata Profile,
       DataVaultPitMetadata Pit,
-      DataVaultBridgeMetadata Bridge);
+      DataVaultBridgeMetadata Bridge,
+      DataVaultBridgeMetadata HierarchyBridge);
 
   private sealed class ReadShapeDiagnosticsContext(DbContextOptions<ReadShapeDiagnosticsContext> options) : DbContext(options) {
   }

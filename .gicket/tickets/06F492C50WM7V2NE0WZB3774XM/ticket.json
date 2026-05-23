@@ -3,21 +3,20 @@
   "ticket-id": "06F492C50WM7V2NE0WZB3774XM",
   "ticket-type": "story",
   "title": "Story: Add query-shape performance diagnostics and index hints",
-  "revision": "06F4NV0RX7K9WT22ECW1ECS4BC",
-  "status": "todo",
+  "revision": "06F5B6G6G4JK1780CW9VB6HSGW",
+  "status": "done",
   "labels": [
-    "area/performance",
-    "area/read-models",
     "area/diagnostics",
+    "area/performance",
     "area/provider-support",
+    "area/read-models",
     "automation/bot-ready",
-    "type/story",
-    "needs-po"
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F492A1Y2D14XJWEXVYP2C6Q8",
   "releaseId": "06F492A0EZ3N8E2T605F7ZHHB0",
   "created-at": "2026-05-20T08:38:43.8618229Z",
-  "updated-at": "2026-05-21T14:24:07.4014834Z"
+  "updated-at": "2026-05-23T16:10:18.1132872Z"
 }

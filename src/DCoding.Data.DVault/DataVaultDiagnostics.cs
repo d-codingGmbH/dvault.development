@@ -487,7 +487,13 @@ public sealed record DataVaultSatelliteReadShapeDiagnostics(
     string SeriesSelectionRule,
     string CutoffRule,
     IReadOnlyList<DataVaultReadShapeColumnSet> DeterministicOrdering,
-    IReadOnlyList<DataVaultReadShapeIndexBaseline> ExpectedIndexBaseline);
+    IReadOnlyList<DataVaultReadShapeIndexBaseline> ExpectedIndexBaseline) {
+  /// <summary>
+  /// Gets deterministic projected-column groups for the translated satellite read.
+  /// </summary>
+  public IReadOnlyList<DataVaultReadShapeColumnSet> ProjectedColumns { get; init; } =
+      Array.Empty<DataVaultReadShapeColumnSet>();
+}
 
 /// <summary>
 /// Machine-readable PIT satellite reference facts used by PIT read-shape diagnostics.
@@ -511,7 +517,18 @@ public sealed record DataVaultPitReadShapeDiagnostics(
     string SnapshotLookupBehavior,
     string NoLatestFallbackBehavior,
     string MaintainedPitPrerequisite,
-    IReadOnlyList<DataVaultReadShapeIndexBaseline> ExpectedIndexBaseline);
+    IReadOnlyList<DataVaultReadShapeIndexBaseline> ExpectedIndexBaseline) {
+  /// <summary>
+  /// Gets deterministic projected-column groups for the translated PIT read.
+  /// </summary>
+  public IReadOnlyList<DataVaultReadShapeColumnSet> ProjectedColumns { get; init; } =
+      Array.Empty<DataVaultReadShapeColumnSet>();
+
+  /// <summary>
+  /// Gets the number of referenced satellite snapshot lookups required by the PIT read.
+  /// </summary>
+  public int ReferencedSatelliteLookupCount { get; init; }
+}
 
 /// <summary>
 /// Machine-readable endpoint facts used by bridge read-shape diagnostics.
@@ -533,7 +550,13 @@ public sealed record DataVaultBridgeReadShapeDiagnostics(
     DataVaultReadShapeColumnSet? DepthPredicate,
     IReadOnlyList<DataVaultReadShapeColumnSet> DeterministicOrdering,
     IReadOnlyList<string> SupportedEndpointRules,
-    IReadOnlyList<DataVaultReadShapeIndexBaseline> ExpectedTraversalIndexBaseline);
+    IReadOnlyList<DataVaultReadShapeIndexBaseline> ExpectedTraversalIndexBaseline) {
+  /// <summary>
+  /// Gets deterministic projected-column groups for the translated bridge read.
+  /// </summary>
+  public IReadOnlyList<DataVaultReadShapeColumnSet> ProjectedColumns { get; init; } =
+      Array.Empty<DataVaultReadShapeColumnSet>();
+}
 
 /// <summary>
 /// Machine-readable request-bound Data Vault read/query-shape diagnostics.
@@ -1616,7 +1639,9 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
             ? "Apply " + projection.LoadTimestampColumnName + " <= supplied as-of cutoff; the cutoff value is not included in diagnostics."
             : "No as-of cutoff is applied; current reads consider all persisted satellite rows.",
         [new DataVaultReadShapeColumnSet("resultOrdering", orderingColumns)],
-        CreateIndexBaseline(entity));
+        CreateIndexBaseline(entity)) {
+      ProjectedColumns = CreateSatelliteProjectedColumns(projection),
+    };
   }
 
   private static DataVaultPitReadShapeDiagnostics CreatePitReadShapeDiagnostics(
@@ -1668,7 +1693,15 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         "Resolve each satellite snapshot by parent hash key and the snapshot load-timestamp reference stored on the selected PIT row.",
         "Missing PIT rows or null satellite snapshot references yield no latest-satellite fallback.",
         "PIT rows must already be maintained; diagnostics and reads do not rebuild or refresh PIT tables.",
-        CreateIndexBaseline(entity));
+        CreateIndexBaseline(entity)) {
+      ProjectedColumns = CreatePitProjectedColumns(
+          explain,
+          pit,
+          parentHashKeyColumnName,
+          loadTimestampColumnName,
+          referencedSatellites),
+      ReferencedSatelliteLookupCount = referencedSatellites.Length,
+    };
   }
 
   private static DataVaultBridgeReadShapeDiagnostics CreateBridgeReadShapeDiagnostics(
@@ -1699,7 +1732,94 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
             : null,
         [new DataVaultReadShapeColumnSet("resultOrdering", orderingColumns)],
         GetSupportedBridgeEndpointRules(bridge.Kind),
-        CreateIndexBaseline(entity));
+        CreateIndexBaseline(entity)) {
+      ProjectedColumns = CreateBridgeProjectedColumns(endpoints, request.MaximumDepth.HasValue),
+    };
+  }
+
+  private static IReadOnlyList<DataVaultReadShapeColumnSet> CreateSatelliteProjectedColumns(
+      DataVaultSatelliteReadPipeline.SatelliteReadProjection projection) {
+    var columnSets = new List<DataVaultReadShapeColumnSet>
+    {
+        new(
+            "technicalProjection",
+            [
+                projection.ParentHashKeyColumnName,
+                projection.HashDiffColumnName,
+                projection.LoadTimestampColumnName,
+                projection.RecordSourceColumnName,
+            ]),
+        new("payloadProjection", projection.PayloadColumnNames),
+    };
+
+    if (projection.DrivingKeyColumnNames.Count > 0) {
+      columnSets.Add(new DataVaultReadShapeColumnSet("drivingKeyProjection", projection.DrivingKeyColumnNames));
+    }
+
+    return columnSets;
+  }
+
+  private static IReadOnlyList<DataVaultReadShapeColumnSet> CreatePitProjectedColumns(
+      DataVaultExplainDiagnostics explain,
+      DataVaultPitMetadata pit,
+      string parentHashKeyColumnName,
+      string loadTimestampColumnName,
+      IReadOnlyList<DataVaultPitReferencedSatelliteReadShapeDiagnostics> referencedSatellites) {
+    return
+    [
+        new DataVaultReadShapeColumnSet(
+            "pitTechnicalProjection",
+            [
+                parentHashKeyColumnName,
+                loadTimestampColumnName,
+            ]),
+        new DataVaultReadShapeColumnSet(
+            "snapshotReferenceProjection",
+            referencedSatellites.Select(satellite => satellite.SnapshotReferenceColumnName).ToArray()),
+        new DataVaultReadShapeColumnSet(
+            "satellitePayloadProjection",
+            CreatePitSatellitePayloadProjectionColumns(explain, pit)),
+    ];
+  }
+
+  private static IReadOnlyList<string> CreatePitSatellitePayloadProjectionColumns(
+      DataVaultExplainDiagnostics explain,
+      DataVaultPitMetadata pit) {
+    return pit.Satellites
+        .SelectMany(satellite => FindSatellitePayloadColumnNames(explain, pit.Parent, satellite.SatelliteName))
+        .ToArray();
+  }
+
+  private static IReadOnlyList<string> FindSatellitePayloadColumnNames(
+      DataVaultExplainDiagnostics explain,
+      DataVaultMetadataReference parent,
+      string satelliteName) {
+    return explain.Entities
+        .Where(entity =>
+            entity.TableKind == DataVaultTableKind.Satellite &&
+            string.Equals(entity.MetadataName, satelliteName, StringComparison.Ordinal) &&
+            entity.ParentReference is not null &&
+            entity.ParentReference.Kind == parent.Kind &&
+            string.Equals(entity.ParentReference.Name, parent.Name, StringComparison.Ordinal))
+        .SelectMany(entity => entity.Properties
+            .Where(property => property.Role == DataVaultPropertyRole.Payload)
+            .Select(property => property.Name))
+        .ToArray();
+  }
+
+  private static IReadOnlyList<DataVaultReadShapeColumnSet> CreateBridgeProjectedColumns(
+      IReadOnlyList<DataVaultBridgeEndpointReadShapeDiagnostics> endpoints,
+      bool includeDepthProjection) {
+    var columnSets = new List<DataVaultReadShapeColumnSet>
+    {
+        new("endpointProjection", endpoints.Select(endpoint => endpoint.ColumnName).ToArray()),
+    };
+
+    if (includeDepthProjection) {
+      columnSets.Add(new DataVaultReadShapeColumnSet("depthProjection", [DataVaultBridgeProjectionRow.TraversalDepthName]));
+    }
+
+    return columnSets;
   }
 
   private static DataVaultEntityExplain? FindEntityExplain(

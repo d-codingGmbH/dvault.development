@@ -88,6 +88,7 @@ type public sealed class DCoding.Data.DVault.DataVaultBridgeReadShapeDiagnostics
   property public DCoding.Data.DVault.Modeling.DataVaultBridgeKind BridgeKind { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultBridgeEndpointReadShapeDiagnostics> Endpoints { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> DeterministicOrdering { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> ProjectedColumns { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeIndexBaseline> ExpectedTraversalIndexBaseline { get; init; }
   property public System.Collections.Generic.IReadOnlyList<string> SupportedEndpointRules { get; init; }
   method public override bool Equals(object? obj)
@@ -644,7 +645,9 @@ type public sealed class DCoding.Data.DVault.DataVaultPitReadShapeDiagnostics : 
   property public DCoding.Data.DVault.DataVaultReadShapeEntity Pit { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics> ReferencedSatellites { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> FilterColumns { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> ProjectedColumns { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeIndexBaseline> ExpectedIndexBaseline { get; init; }
+  property public int ReferencedSatelliteLookupCount { get; init; }
   property public string MaintainedPitPrerequisite { get; init; }
   property public string NoLatestFallbackBehavior { get; init; }
   property public string PitRowSelectionRule { get; init; }
@@ -1171,6 +1174,7 @@ type public sealed class DCoding.Data.DVault.DataVaultSatelliteReadShapeDiagnost
   property public DCoding.Data.DVault.DataVaultSatelliteReadSemantics Semantics { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> DeterministicOrdering { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> FilterColumns { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> ProjectedColumns { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeIndexBaseline> ExpectedIndexBaseline { get; init; }
   property public string CutoffRule { get; init; }
   property public string SeriesSelectionRule { get; init; }
