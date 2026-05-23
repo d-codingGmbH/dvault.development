@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "amendedTicketId": "06F492BZPP5YT9SJSPDHQBGF3R",
+  "amendmentType": "terminal-relation-follow-up-evidence",
+  "supersededClaims": [
+    "Historical relation follow-up targeted owner branch \u0027develop\u0027 after base branch \u0027develop\u0027 already recorded terminal status \u0027done\u0027.",
+    "The original follow-up evidence is preserved append-only instead of reopening the terminal ticket or recreating its owner branch."
+  ],
+  "landedEvidence": [
+    "Relation follow-up from ticket \u002706F492CFSJHN0RGXXRG3KT63FM\u0027 via flow \u0027blocked-by-follow-up-comment\u0027 and action \u0027blocked-by-follow-up-target\u0027 became available after the target ticket was terminal.",
+    "Base branch \u0027develop\u0027 records target status \u0027done\u0027.",
+    "Original follow-up comment: [gicket-bot] relation follow-up\n\nSummary\n- Source ticket \u006006F492CFSJHN0RGXXRG3KT63FM\u0060 completed a bot run for role \u0060dev\u0060 with outcome \u0060dev-workflow-apply\u0060.\n- Source run summary: Developer workflow prepared branch \u0027ticket/06F492CFSJHN0RGXXRG3KT63FM-story-measure-and-tune-explicit-save-change-trac\u0027 and commit \u0027d64ca89daf1e\u0027 for ticket \u002706F492CFSJHN0RGXXRG3KT63FM\u0027.\n- Selected flow \u0060blocked-by-follow-up-comment\u0060 reached this ticket via \u0060blocks\u0060 path \u006006F492CFSJHN0RGXXRG3KT63FM -\u003E 06F492BZPP5YT9SJSPD..."
+  ],
+  "baseBranch": "develop",
+  "sourceTicketId": "06F492CFSJHN0RGXXRG3KT63FM",
+  "sourceRunId": "60d9d2517c004abd84686035bd12a271",
+  "sourceRoleToken": "dev",
+  "sourceKind": "relation-follow-up",
+  "createdAtUtc": "2026-05-23T13:58:24.5202512+00:00",
+  "semanticIdempotencyKey": "closure-evidence-amendment-ledger:06f492bzpp5yt9sjspdhqbgf3r:terminal-relation-follow-up-evidence:develop:06f492cfsjhn0rgxxrg3kt63fm:relation-follow-up:a5365ed240d46727"
+}
