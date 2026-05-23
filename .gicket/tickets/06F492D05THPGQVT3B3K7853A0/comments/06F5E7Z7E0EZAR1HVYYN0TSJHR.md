@@ -1,0 +1,273 @@
+﻿[gicket-bot] integrator-handoff-v1
+
+```json
+{
+  "sourceRole": "test",
+  "targetRole": "integrator",
+  "summary": "Tester verified 6/6 acceptance criteria and 5/5 definition-of-done expectations on branch \u0027ticket/06F492D05THPGQVT3B3K7853A0-task-update-v0-18-0-documentation-and-release-no\u0027 at commit \u0027ae7b85f8fbd2\u0027.",
+  "implementationReference": {
+    "branchName": "ticket/06F492D05THPGQVT3B3K7853A0-task-update-v0-18-0-documentation-and-release-no",
+    "commitSha": "ae7b85f8fbd2",
+    "pullRequestReference": null,
+    "changeReference": null
+  },
+  "acceptanceCriteria": [
+    {
+      "expectation": "\u0060docs/releases/v0.18.0.md\u0060 exists and records the coordinated seven-package release scope, either the approved intended release date or the exact placeholder \u0060Intended release date: pending final release approval\u0060 plus a cross-reference to the final approval record described by \u0060docs/manual-nuget-publication.md\u0060, notable user-facing performance and documentation changes, compatibility notes, known limitations, validation evidence, and the manual-publication boundary already defined by \u0060docs/manual-nuget-publication.md\u0060.",
+      "satisfied": true,
+      "reason": "\u0060docs/releases/v0.18.0.md\u0060 exists and includes the authorized pending-approval placeholder, the final-approval-record cross-reference, seven-package scope, performance/documentation changes, compatibility and limitation notes, benchmark-based validation evidence, and the manual-publication boundary."
+    },
+    {
+      "expectation": "The \u0060v0.18.0\u0060 release notes summarize the landed evidence for \u0060compiled-model-startup\u0060, \u0060compiled-query-hub-read\u0060, and \u0060dbcontext-pooling-dvault-operation\u0060 using the bounded SQLite claim from \u0060docs/architecture/dvault-ef-compiled-compatibility.md\u0060: \u0060UseModel(runtimeModel)\u0060 is consumer-owned runtime-model usage, compiled queries stay on stable direct EF shared-type-table expressions, and pooled contexts require one fixed metadata/model shape.",
+      "satisfied": true,
+      "reason": "The release notes bind compiled-model/query/pooling claims to the SQLite-only compatibility note and named benchmark rows, including consumer-owned \u0060UseModel(runtimeModel)\u0060 usage, stable direct-EF shared-type-table compiled-query guidance, and pooled-context guardrails from the linked architecture note."
+    },
+    {
+      "expectation": "The \u0060v0.18.0\u0060 release notes summarize the landed provider-neutral read, explicit-save, and provider-optimization evidence using the existing artifact contract and checked-in artifact bundles, including the rule that optional PostgreSQL, SQL Server, MySQL, and Oracle rows remain visible as completed or skipped rather than silently disappearing.",
+      "satisfied": true,
+      "reason": "The release notes summarize provider-neutral read, explicit-save, and provider-optimization evidence through the root benchmark triplet, the three checked-in artifact bundles, and the shared artifact contract, while preserving optional PostgreSQL, SQL Server, MySQL, and Oracle lanes as completed or skipped."
+    },
+    {
+      "expectation": "\u0060README.md\u0060, \u0060docs/production-adoption-checklist.md\u0060, \u0060docs/model-first-governance.md\u0060, and each other current-baseline user-facing document touched by the rollout stop describing \u0060v0.17.0\u0060 as the current public baseline and instead point readers at \u0060v0.18.0\u0060 while preserving earlier release notes as historical.",
+      "satisfied": true,
+      "reason": "\u0060README.md\u0060, \u0060docs/production-adoption-checklist.md\u0060, and \u0060docs/model-first-governance.md\u0060 now treat \u0060v0.18.0\u0060 as the current baseline, and the rollout preserves earlier release notes as historical context rather than current guidance."
+    },
+    {
+      "expectation": "The documentation explains that query-shape tuning guidance comes from the existing request-bound read-shape diagnostics surface plus bounded benchmark evidence, not from raw SQL output, automatic index creation, or provider-specific physical-plan promises.",
+      "satisfied": true,
+      "reason": "The updated docs state that query-shape tuning comes from request-bound read-shape diagnostics plus bounded benchmark evidence, and they explicitly reject raw SQL output, automatic index creation, and provider-specific physical-plan promises."
+    },
+    {
+      "expectation": "The documentation explicitly states that SQL capture is required only when a claim depends on SQL shape or index/materialization behavior; compiled-model/query/pooling rollout prose does not promise per-scenario SQL captures because the checked-in architecture note already limits those claims to timing and allocation evidence, and the final docs point readers to the shared artifact contract and checked-in benchmark bundles for supporting detail.",
+      "satisfied": true,
+      "reason": "The docs explicitly limit SQL capture to claims about SQL shape, index usage, batching, or materialization behavior; compiled-model/query/pooling rollout prose instead points readers to timing/allocation evidence, the shared artifact contract, and checked-in benchmark bundles."
+    }
+  ],
+  "definitionOfDone": [
+    {
+      "expectation": "User-facing current-release documentation consistently treats \u0060v0.18.0\u0060 as the latest coordinated baseline and leaves earlier version notes as historical context rather than competing current guidance.",
+      "satisfied": true,
+      "reason": "The release notes, README, production checklist, and model-first guidance consistently treat \u0060v0.18.0\u0060 as the latest coordinated baseline and keep earlier release notes historical."
+    },
+    {
+      "expectation": "Release-note and supporting-document prose accurately matches the checked-in repository evidence for compiled-model/query/pooling, provider-neutral read allocations, explicit-save tuning, provider-optimization baselines, and bounded query-shape guidance without inventing broader guarantees.",
+      "satisfied": true,
+      "reason": "The verified prose tracks the checked-in benchmark summaries, artifact bundles, and compatibility note, and it keeps compiled/pooling/provider claims bounded instead of inventing broader guarantees."
+    },
+    {
+      "expectation": "Consumers can follow the docs to the existing benchmark evidence and understand the required SQLite baseline, optional external-provider behavior, and when SQL capture is or is not part of the claim.",
+      "satisfied": true,
+      "reason": "The docs route consumers to the benchmark summary triplet, artifact contract, and checked-in bundles, and they explain the required SQLite baseline, optional external-provider visibility, and when SQL capture is or is not required."
+    },
+    {
+      "expectation": "The release note does not invent schedule data: it either records an approved intended release date or uses the exact pending-approval placeholder and approval-record cross-reference authorized by this contract.",
+      "satisfied": true,
+      "reason": "\u0060docs/releases/v0.18.0.md\u0060 uses the exact pending-approval placeholder and points to the manual-publication final-approval record instead of inventing schedule data."
+    },
+    {
+      "expectation": "No PO-level ambiguity remains about which benchmark artifacts, provider notes, query-shape guardrails, pooled-context assumptions, and release-date fallback the \u0060v0.18.0\u0060 documentation must present.",
+      "satisfied": true,
+      "reason": "No open questions remain in the persisted contract, and the verified docs cover the required artifacts, provider notes, query-shape guardrails, pooled-context assumptions, and release-date fallback."
+    }
+  ],
+  "evidence": [
+    "Verified repository HEAD commit \u0027ae7b85f8fbd2\u0027 on branch \u0027ticket/06F492D05THPGQVT3B3K7853A0-task-update-v0-18-0-documentation-and-release-no\u0027.",
+    "Committed repository path \u0027docs/manual-nuget-publication.md\u0027 exists at verified commit \u0027ae7b85f8fbd2\u0027.",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: # Manual NuGet Publication Checklist",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: This checklist governs manual publication for the coordinated DVault NuGet family. It documents release criteria, required evidence, package validation, publish order, stop conditi...",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: Publishing remains manual. This document does not introduce release credentials, CI/CD automation, package push tooling, product-code behavior changes, package metadata changes, or...",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: ## Package Family",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: The v1 coordinated release family contains exactly these seven packable packages:",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: - \u0060DCoding.Data.DVault\u0060",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: Manual publication must not proceed for only a subset of this family. The release is approved, validated, and published as one synchronized package family.",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: Developer and consumer setup is NuGet-based for published releases. The README installation guidance is the current baseline and should show \u0060dotnet add package\u0060 commands for \u0060DCod...",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: Source or project-reference consumption remains useful for repository development, debugging, and unpublished local changes, but it is no longer the primary consumer installation p...",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: ## Release Criteria",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: Before final publish approval, the maintainer performing the release must confirm:",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: - the release covers all seven package ids listed in this document",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: - one aligned release version is used for all seven packages",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: - the planned version is intentional for the coordinated release and is not being applied to only a provider-specific subset",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: - release notes or changelog content has been prepared and reviewed for the coordinated release",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: - all required pre-publish validation commands have passed against the same checkout and release version",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: - package verification confirms each provider package depends on the packed \u0060DCoding.Data.DVault\u0060 package version",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: ## Release Notes Evidence",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: The release operator must prepare and review release notes or changelog content before final publish approval. A dedicated changelog file is not required by this checklist. When no...",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: Minimum auditable release-note content is:",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: - coordinated release version",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: - release date or intended release date",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: - the seven package ids covered by the release",
+    "Observed committed repository file \u0027docs/manual-nuget-publication.md\u0027: Do not push packages until this release-note evidence has been reviewed as part of final approval.",
+    "Committed repository path \u0027docs/model-first-governance.md\u0027 exists at verified commit \u0027ae7b85f8fbd2\u0027.",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: # Model-First Governance Workflow",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: Status: v0.18.0 public guidance",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: This guide describes how teams should use governed \u0060dvault.model.v1\u0060 JSON artifacts alongside the existing Code-First and metadata-first DVault paths. Earlier release notes remain ...",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: ## Choose A Declaration Path",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: Use Code-First declarations when the Data Vault model is local to one EF model and fits the implemented fluent surface for hubs, hub-parent satellites, link-parent satellites, mult...",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: Use metadata-first registry-backed metadata when one shared authoritative \u0060DataVaultMetadataModel\u0060 or \u0060DataVaultMetadataRegistry\u0060 should drive EF projection, explicit save requests...",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: Canonical v1 JSON uses the stable top-level declaration categories \u0060hubs\u0060, \u0060links\u0060, \u0060satellites\u0060, \u0060pits\u0060, and \u0060bridges\u0060, with \u0060naming.policy\u0060 defaulting to \u0060default\u0060 and \u0060loadTimes...",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: \u0022loadTimestampStorage\u0022: \u0022provider-default\u0022,",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: Store the canonical JSON artifact in source control and review changes like source code. Reviewers should check the exact \u0060schemaVersion\u0060, \u0060naming.policy\u0060, \u0060loadTimestampStorage\u0060, ...",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: Import the artifact with \u0060DataVaultModelArtifactImporter.ImportJson\u0060 and treat \u0060DataVaultModelImportResult.Diagnostics\u0060 as validation evidence. A valid import exposes \u0060MetadataMode...",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: The live-schema workflow is separate from the design-time workflow above. Required local live-schema coverage uses SQLite and does initialize a test database. PostgreSQL, SQL Serve...",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: Use model-first governance when the authoritative model should be a reviewed, versioned \u0060dvault.model.v1\u0060 JSON artifact. This path is intended for source-controlled artifact review...",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: ## Review Workflow",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: Environment.NewLine,",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: Export canonical JSON from fluent Code-First declarations or already-materialized metadata with \u0060DataVaultModelArtifactExporter.ExportJson\u0060. The exporter accepts a Code-First decla...",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: Compare the expected artifact or metadata model against generated/current EF metadata with \u0060DataVaultModelDriftReporter.Compare\u0060. Use the structured differences and \u0060ToDisplayStrin...",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: ## Workflow Test Evidence",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: Run the focused design-time workflow coverage from the repository root with:",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: dotnet test DVault.slnx --nologo --filter FullyQualifiedName~DataVaultModelFirstDesignTimeWorkflowTests",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: The valid workflow imports the representative \u0060models/sales-vault.json\u0060 \u0060dvault.model.v1\u0060 fixture with \u0060DataVaultModelArtifactImporter.ImportJson\u0060, configures a SQLite-backed desig...",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: The seeded v1 baseline is the importer/projection family below, in ascending code order. All current entries are \u0060error\u0060 severity.",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: | \u0060DMV1501\u0060 | \u0060capability\u0060 | Unsupported metadata capability | Use only supported \u0060dvault.model.v1\u0060 capabilities or split the model into declarations the current runtime can map. |",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: | \u0060DMV1801\u0060 | \u0060projection\u0060 | Artifact projection failed | Review the projection error, adjust the affected declaration, and retry the import before applying metadata. |",
+    "Observed committed repository file \u0027docs/model-first-governance.md\u0027: error schema-version DMV1002 models/sales-vault.json/schemaVersion: Unsupported schemaVersion \u0027dvault.model.v2\u0027. Expected \u0027dvault.model.v1\u0027.",
+    "Committed repository path \u0027docs/plans/fluent-code-first-api-contract.md\u0027 exists at verified commit \u0027ae7b85f8fbd2\u0027.",
+    "Observed committed repository file \u0027docs/plans/fluent-code-first-api-contract.md\u0027: # Fluent Code-First Hub, Satellite, and Link Contract",
+    "Observed committed repository file \u0027docs/plans/fluent-code-first-api-contract.md\u0027: Status: v1 planning contract",
+    "Observed committed repository file \u0027docs/plans/fluent-code-first-api-contract.md\u0027: Superseding shipped note: v0.13.0 extends the original bounded planning baseline with repeated same-hub participant roles and link-parent satellites. Use the current README and lat...",
+    "Observed committed repository file \u0027docs/plans/fluent-code-first-api-contract.md\u0027: Ticket: 06F0ME976PM5455JK04S6GPNNW",
+    "Observed committed repository file \u0027docs/plans/fluent-code-first-api-contract.md\u0027: Parent story: 06F0ME8NFJX6CD20MEA10J761R",
+    "Observed committed repository file \u0027docs/plans/fluent-code-first-api-contract.md\u0027: Implementation children: 06F0ME9PM8KXH3VP59TQR0ETA8, 06F0MEA1FF743S14XQW02H4A3W, 06F0MEAD1BAA5QEVM3F9QJA38G",
+    "Observed committed repository file \u0027docs/plans/fluent-code-first-api-contract.md\u0027: - The fluent hub contract does not ask callers to surface \u0060HashKey\u0060, \u0060LoadTimestamp\u0060, or \u0060RecordSource\u0060 on the domain entity.",
+    "Observed committed repository file \u0027docs/plans/fluent-code-first-api-contract.md\u0027: - The contract keeps \u0060LoadTimestamp\u0060 and \u0060RecordSource\u0060 out of domain entities by default and leaves them on the explicit save-request boundary.",
+    "Observed committed repository file \u0027docs/plans/fluent-code-first-api-contract.md\u0027: - The original bounded v1 Code-First implementation baseline for this planning story was hub-parent satellites only. v0.13 later added link-parent satellites through \u0060DataVaultCode...",
+    "Committed repository path \u0027docs/production-adoption-checklist.md\u0027 exists at verified commit \u0027ae7b85f8fbd2\u0027.",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: # Production Adoption Checklist",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: Use this checklist when preparing a DVault-consuming application for production. It is a routing document for adopter readiness; follow the linked source documents for setup exampl...",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: ## Package And Provider Baseline",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Install the provider-neutral \u0060DCoding.Data.DVault\u0060 package from NuGet and use the published installation guidance in the [README](../README.md#installation).",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Select the DVault provider package that matches the application database and keep every DVault package on one aligned published release version.",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Treat [v0.18.0 release notes](releases/v0.18.0.md) as the current public baseline for coordinated package scope, EF safety and preflight behavior, opt-in telemetry, support-b...",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Use \u0060IDataVaultSaveService\u0060 as the default write boundary. Each save request should carry an explicit UTC load timestamp and record source.",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Treat generated mapper helpers as compile-time ergonomics around the same explicit save boundary: they construct registry-backed operations but do not choose timestamps, reco...",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Treat \u0060UseDataVaultSaveChangesMetadataInterceptor(...)\u0060 as optional and metadata-only. It fills missing \u0060LoadTimestamp\u0060 and \u0060RecordSource\u0060 values on already tracked generated...",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Treat provider-specific live database integration tests for PostgreSQL, SQL Server, Oracle, and MySQL as opt-in evidence behind their documented connection-string environment...",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Treat advanced configuration hooks as optional or future-facing unless the application has a specific deterministic rule to configure. The current source-backed custom path i...",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Install \u0060DCoding.Data.DVault.Analyzers\u0060 only in projects that own DVault Code-First declarations or compile-time generated row mapping declarations, and keep it local with \u0060P...",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Use the runnable SQLite or PostgreSQL quickstarts as setup evidence when a small local proof is useful; see [examples/README.md](../examples/README.md).",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Use model-first governance when source-controlled \u0060dvault.model.v1\u0060 JSON artifacts need review, strict import diagnostics, canonical export, projection into EF metadata, and ...",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Run DVault diagnostics against the configured design-time model before applying migrations. Use [DVault Dotnet EF Design-Time Workflow](architecture/dvault-dotnet-ef-design-t...",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Use \u0060dotnet run --project \u003Cconsumer-project\u003E -- export --output \u003Cpath\u003E\u0060 only for artifact maintenance or reviewed refresh workflows, not as the default blocking CI gate.",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Add \u0060dotnet run --project \u003Cconsumer-project\u003E -- support-bundle --output \u003Cpath\u003E\u0060 as a consumer-invoked troubleshooting artifact when configuration or provider-behavior evidenc...",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Review migration guardrail output as operation-level \u0060Safe\u0060, \u0060Risky\u0060, or \u0060Incompatible\u0060 evidence from \u0060DataVaultMigrationOperationDiagnostics.AnalyzeReport(...)\u0060; treat incom...",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Do not expect DVault to ship a \u0060dotnet ef\u0060 command shim, intercept EF CLI commands, auto-run migrations, or apply schema repairs. Those behaviors are outside the current v1 w...",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Treat \u0060UseDataVaultSaveChangesGuardInterceptor(...)\u0060 as a separate optional runtime guard. Choose blocking mode for hard failures or warning mode for caller-observed reports;...",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: ## Telemetry, Explainability, And Support Evidence",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Treat telemetry as bounded operational evidence only. Do not expect DVault to configure metric listeners, exporters, dashboards, alert rules, backend-specific pipelines, or h...",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Use request-bound read-shape diagnostics and bounded benchmark evidence for query-shape tuning guidance. Do not expect DVault to emit raw SQL, create indexes automatically, i...",
+    "Observed committed repository file \u0027docs/production-adoption-checklist.md\u0027: - [ ] Capture SQL only when a claim depends on emitted SQL shape, index usage, batching behavior, or materialization behavior. Do not require companion SQL captures for compiled-mo...",
+    "Committed repository path \u0027docs/releases/v0.18.0.md\u0027 exists at verified commit \u0027ae7b85f8fbd2\u0027.",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: # DVault v0.18.0 Release Notes",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: Release: \u0060v0.18.0 - Performance Evidence And Release Baseline\u0060",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: Intended release date: pending final release approval",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: The final approval record described by [Manual NuGet Publication Checklist](../manual-nuget-publication.md#final-approval-record) must record the approved release date or intended ...",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: ## Package Scope",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: This is a coordinated release for the seven-package DVault NuGet family:",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: The current local evidence baseline is the root \u0060benchmark-summary.md\u0060, \u0060benchmark-summary.csv\u0060, and \u0060benchmark-summary.json\u0060 triplet. That triplet uses SQLite local temporary file...",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: All packages are version-aligned at \u00600.18.0\u0060. Package publication remains a separate manual release activity; these notes do not record a NuGet push, package hashes, final publicat...",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: - Published v0.18.0 as the current coordinated public baseline while preserving earlier release notes as historical feature-introduction records.",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: - Rolled up the current benchmark summary triplet and checked-in benchmark bundles for provider-neutral read allocations, explicit-save change-tracker tuning, provider-optimization...",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: ## Performance Evidence Rollup",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: The v0.18.0 performance evidence also includes these checked-in before/after or regression-baseline bundles:",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: The shared artifact contract remains [Performance Evidence And Benchmark Artifact Contract](../plans/performance-evidence-benchmark-artifact-contract.md). Release prose summarizes ...",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: The compiled-model, compiled-query, and pooled-context evidence is intentionally bounded to the SQLite local compatibility and performance baseline documented in [DVault EF Compile...",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: - \u0060compiled-model-startup\u0060 compares ordinary DVault model building with a precomputed EF runtime model supplied through \u0060UseModel(runtimeModel)\u0060. The measured rows cover consumer-o...",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: Consumers should keep dynamic \u0060IDataVaultReadService\u0060 request APIs as the default path for runtime-built reads. Compiled queries are appropriate only when table names, column names...",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: ## Read And Save Tuning Evidence",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: Provider-neutral read allocation work is represented by \u0060latest-satellite-read\u0060, \u0060pit-as-of-read\u0060, and \u0060bridge-traversal-read\u0060 rows in the root benchmark triplet and the \u006006F492CAB...",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: Explicit-save change-tracker tuning is represented by the \u0060customer-profile-history\u0060, \u0060customer-profile-bulk-insert-only\u0060, \u0060customer-profile-bulk-history\u0060, and \u0060order-product-fulfi...",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: Provider-optimization regression baselines are represented by \u0060provider-native-bulk-ingestion\u0060 rows and the \u006006F492CTREZEDXVKJ839YGCPWW-provider-optimization-regression-baselines\u0060 ...",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: The diagnostics output is deterministic and redacted. It does not include raw SQL, provider query plans, raw request keys, hash-key values, as-of values, credentials, connection st...",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: - \u0060README.md\u0060 now uses aligned \u00600.18.0\u0060 package examples and points current-release readers at v0.18.0.",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: Historical release notes remain historical. Earlier notes still describe the release in which a feature first appeared, but \u0060docs/releases/v0.18.0.md\u0060 is the current coordinated re...",
+    "Observed committed repository file \u0027docs/releases/v0.18.0.md\u0027: - Existing applications that call \u0060AddDVault()\u0060 keep the same default registration behavior. Compiled-model usage, compiled queries, context pooling, telemetry, support bundles, ru...",
+    "Committed repository path \u0027README.md\u0027 exists at verified commit \u0027ae7b85f8fbd2\u0027.",
+    "Observed committed repository file \u0027README.md\u0027: # DVault",
+    "Observed committed repository file \u0027README.md\u0027: DVault is the repository for the \u0060DCoding.Data.DVault\u0060 .NET library.",
+    "Observed committed repository file \u0027README.md\u0027: ## Installation",
+    "Observed committed repository file \u0027README.md\u0027: Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is vers...",
+    "Observed committed repository file \u0027README.md\u0027: \u0060\u0060\u0060sh",
+    "Observed committed repository file \u0027README.md\u0027: dotnet add package DCoding.Data.DVault --version 0.18.0",
+    "Observed committed repository file \u0027README.md\u0027: Code-First metadata is additive. It does not ask callers to put DVault hash-key, load-timestamp, or record-source technical fields on domain entities, and it does not create a publ...",
+    "Observed committed repository file \u0027README.md\u0027: Persistence remains an explicit service boundary. \u0060DataVaultSaveRequest\u0060 carries the load timestamp and record source, and callers choose when to write vault rows through \u0060IDataVau...",
+    "Observed committed repository file \u0027README.md\u0027: DVault also provides an explicit opt-in \u0060SaveChanges\u0060 metadata interceptor for applications that already add generated DVault rows through EF tracking. The interceptor only fills m...",
+    "Observed committed repository file \u0027README.md\u0027: .UseLoadTimestamp(() =\u003E DateTimeOffset.UtcNow)",
+    "Observed committed repository file \u0027README.md\u0027: var loadTimestamp = new DateTimeOffset(2026, 5, 11, 10, 15, 0, TimeSpan.Zero);",
+    "Observed committed repository file \u0027README.md\u0027: loadTimestamp,",
+    "Observed committed repository file \u0027README.md\u0027: For loaders that already have multiple source batches prepared, \u0060DataVaultBulkSaveRequest\u0060 processes ordered save requests through the same explicit service. Each contained request...",
+    "Observed committed repository file \u0027README.md\u0027: row.RequiredDateTimeOffset(\u0022LoadTimestamp\u0022));",
+    "Observed committed repository file \u0027README.md\u0027: new DataVaultLatestSatelliteReadRequest(profile, [customerHashKey], asOfTimestamp),",
+    "Observed committed repository file \u0027README.md\u0027: - Model-first governance for reviewed \u0060dvault.model.v1\u0060 JSON artifacts that should be imported, projected into EF metadata, exported canonically, and compared against generated met...",
+    "Observed committed repository file \u0027README.md\u0027: Choose one authoritative path for a model boundary and keep the others as compatible alternatives for different ownership needs. See [Model-First Governance Workflow](docs/model-fi...",
+    "Observed committed repository file \u0027README.md\u0027: Applications that want an early runtime check for unsafe generated-row EF tracking can opt into the separate SaveChanges guard interceptor. \u0060AddDVault()\u0060 does not enable this guard...",
+    "Committed repository path \u0027src/DCoding.Data.DVault.Analyzers/README.md\u0027 exists at verified commit \u0027ae7b85f8fbd2\u0027.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Analyzers/README.md\u0027: # DCoding.Data.DVault.Analyzers",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Analyzers/README.md\u0027: Roslyn analyzers and source generators for DVault compile-time metadata declarations. The v1 package reports:",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Analyzers/README.md\u0027: - \u0060DMV1901\u0060 for unsupported \u0060BusinessKey(...)\u0060, \u0060Payload(...)\u0060, or \u0060DrivingKey(...)\u0060 selector shapes.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Analyzers/README.md\u0027: - \u0060DMV1902\u0060 for duplicate logical member declarations inside the same applicable Code-First builder lambda scope.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Analyzers/README.md\u0027: - \u0060DMV1910\u0060 for exposing DVault generated shared-type tables as \u0060DbSet\u003CDictionary\u003Cstring, object\u003E\u003E\u0060 members on a \u0060DbContext\u0060.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Analyzers/README.md\u0027: - \u0060DMV1911\u0060 for direct EF write calls against DVault generated shared-type \u0060DbSet\u003CDictionary\u003Cstring, object\u003E\u003E\u0060 sets.",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Analyzers/README.md\u0027: The package also provides bounded code fixes for DMV1901 anonymous-object direct-member expansion and DMV1902 later-duplicate removal. Its source generator emits registry-backed ty...",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Analyzers/README.md\u0027: Generated code implements the existing \u0060IDataVaultHubMapper\u003CTSource\u003E\u0060, \u0060IDataVaultLinkMapper\u003CTSource\u003E\u0060, or \u0060IDataVaultSatelliteMapper\u003CTSource\u003E\u0060 contracts and constructs \u0060DataVaultR...",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Analyzers/README.md\u0027: \u0060PrivateAssets=\u0022all\u0022\u0060 keeps the analyzer local to the project that owns the declarations. The package supplies analyzer assets and does not require a runtime reference from applica...",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Analyzers/README.md\u0027: The analyzer does not attempt whole-application DI inference and does not treat \u0060UseDataVaultSaveChangesMetadataInterceptor(...)\u0060 as a replacement for the explicit save boundary. T...",
+    "Observed committed repository file \u0027src/DCoding.Data.DVault.Analyzers/README.md\u0027: The source generator recognizes mapping declarations from \u0060DCoding.Data.DVault\u0060 runtime attributes on one source type:",
+    "Committed branch delta contains 6 inspectable repository path(s): Modified: docs/model-first-governance.md, Modified: docs/plans/fluent-code-first-api-contract.md, Modified: docs/production-adoption-checklist.md, Added: docs/releases/v0.18.0.md, Modified: README.md, Modified: src/DCoding.Data.DVault.Analyzers/README.md.",
+    "Test command \u0060dotnet test DVault.slnx --nologo\u0060 succeeded (exit code 0).",
+    "Observed stdout: Determining projects to restore...",
+    "Observed stdout: All projects are up-to-date for restore.",
+    "Observed stdout: DCoding.Data.DVault -\u003E C:\\Projects\\DVault\\src\\DCoding.Data.DVault\\bin\\Debug\\net10.0\\DCoding.Data.DVault.dll",
+    "Test command \u0060bash tools/check-format.sh\u0060 succeeded (exit code 0).",
+    "Observed stdout: One-member-per-file check passed for 190 packable source files.",
+    "Observed stdout: Formatting check passed.",
+    "Ticket status at verification time is \u0027todo\u0027.",
+    "Ticket labels at verification time: [area/documentation, area/ef-core, area/performance, automation/bot-ready, needs-test, type/task, bot/lease:hp-ai-2026-001.1].",
+    "Configured tester success handoff role is \u0027integrator\u0027.",
+    "Ticket description contains a persisted delivery contract block.",
+    "Observed behavior: a visible delivery contract is persisted in the ticket description.",
+    "Ticket description contains persisted acceptance criteria.",
+    "Observed behavior: acceptance criteria are explicitly persisted in the ticket description.",
+    "Ticket description contains persisted definition-of-done expectations.",
+    "Observed behavior: definition of done is explicitly persisted in the ticket description.",
+    "Ticket history contains 5 persisted runtime-orchestration template comment(s).",
+    "Observed behavior: role handoff templates are persisted in ticket history.",
+    "Tester success path hands the ticket to integrator; final accept/rework decision happens after tester gate.",
+    "Observed behavior: tester success continues at the integrator gate, so the final human integrator decision itself is not required yet.",
+    "Observed behavior: tester success routes to \u0027integrator\u0027 while rework routes to \u0027dev\u0027, so handoff and rework paths are structurally distinguishable.",
+    "Ticket history contains 1 runtime-orchestration template comment(s) targeting role \u0027dev\u0027.",
+    "Observed behavior: ticket history contains persisted handoff evidence for role \u0027dev\u0027.",
+    "Ticket history contains 1 runtime-orchestration template comment(s) targeting role \u0027po\u0027.",
+    "Observed behavior: ticket history contains persisted handoff evidence for role \u0027po\u0027.",
+    "Ticket history contains 2 runtime-orchestration template comment(s) targeting role \u0027po-critic\u0027.",
+    "Observed behavior: ticket history contains persisted handoff evidence for role \u0027po-critic\u0027.",
+    "Ticket history contains 1 runtime-orchestration template comment(s) targeting role \u0027test\u0027.",
+    "Observed behavior: ticket history contains persisted handoff evidence for role \u0027test\u0027.",
+    "Observed behavior: the ticket history shows a multi-role delivery loop across dev, po, po-critic, test.",
+    "Ticket history references implementation branch \u0027develop\u0027.",
+    "Ticket history references implementation commit \u0027ae7b85f8fbd2\u0027.",
+    "Observed behavior: ticket history contains traceable implementation branch/commit references.",
+    "Observed behavior: the tester handoff already contains branch, commit, or structured delivery-outcome context that a human integrator can use for a decision.",
+    "Ticket history contains an explicit tester handoff hint in a runtime-orchestration comment."
+  ],
+  "findings": [],
+  "nextSteps": [
+    "Hand off to the integrator gate using branch \u0060ticket/06F492D05THPGQVT3B3K7853A0-task-update-v0-18-0-documentation-and-release-no\u0060 at commit \u0060ae7b85f8fbd2\u0060.",
+    "Use the passing \u0060dotnet test DVault.slnx --nologo\u0060 and \u0060bash tools/check-format.sh\u0060 results as supporting tester evidence for the integrator review."
+  ]
+}
+```
+
+[gicket-bot] runtime-orchestration template
+
+- template: `handover-integrator`
+- transaction-point: `TP4`
+- ticket-id: `06F492D05THPGQVT3B3K7853A0`
+- target-role: `integrator`
+- verification-summary: Tester verified 6/6 acceptance criteria and 5/5 definition-of-done expectations on branch 'ticket/06F492D05THPGQVT3B3K7853A0-task-update-v0-18-0-documentation-and-release-no' at commit 'ae7b85f8fbd2'.
+- acceptance-criteria: `6/6` satisfied
+- definition-of-done: `5/5` satisfied
+- implementation-branch: `ticket/06F492D05THPGQVT3B3K7853A0-task-update-v0-18-0-documentation-and-release-no`
+- implementation-commit: `ae7b85f8fbd2`
+- implementation-pr: `<none>`
+- implementation-change: `<none>`

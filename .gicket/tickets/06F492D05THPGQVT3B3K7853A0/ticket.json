@@ -3,20 +3,19 @@
   "ticket-id": "06F492D05THPGQVT3B3K7853A0",
   "ticket-type": "task",
   "title": "Task: Update v0.18.0 documentation and release notes",
-  "revision": "06F4NV0VVGCYP0ZTXXZH5TWD70",
-  "status": "todo",
+  "revision": "06F5E8EQ5VY7GVYKBAJA656F2G",
+  "status": "done",
   "labels": [
     "area/documentation",
-    "area/performance",
     "area/ef-core",
+    "area/performance",
     "automation/bot-ready",
-    "type/task",
-    "needs-po"
+    "type/task"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F492A2MRBR0G0137V22KAGKG",
   "releaseId": "06F492A0EZ3N8E2T605F7ZHHB0",
   "created-at": "2026-05-20T08:38:50.8133765Z",
-  "updated-at": "2026-05-21T14:24:08.1569431Z"
+  "updated-at": "2026-05-23T23:18:16.1105708Z"
 }
