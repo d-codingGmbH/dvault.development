@@ -21,6 +21,7 @@ public sealed class DataVaultPitSatelliteSnapshot {
     HashDiff = hashDiff;
     RecordSource = recordSource;
     PayloadValues = new ReadOnlyDictionary<string, string?>(
+        payloadValues as IDictionary<string, string?> ??
         payloadValues.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal));
   }
 

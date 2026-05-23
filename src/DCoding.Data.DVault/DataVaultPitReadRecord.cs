@@ -6,15 +6,16 @@ namespace DCoding.Data.DVault;
 /// Describes one materialized PIT-backed as-of row returned by a Data Vault read service.
 /// </summary>
 public sealed class DataVaultPitReadRecord {
+  private IReadOnlyDictionary<string, DataVaultPitSatelliteSnapshot>? _satelliteSnapshotsByName;
+
   internal DataVaultPitReadRecord(
       string parentHashKey,
       DateTimeOffset loadTimestamp,
       IReadOnlyList<DataVaultPitSatelliteSnapshot> satelliteSnapshots) {
     ParentHashKey = parentHashKey;
     LoadTimestamp = loadTimestamp.ToUniversalTime();
-    SatelliteSnapshots = new ReadOnlyCollection<DataVaultPitSatelliteSnapshot>(satelliteSnapshots.ToArray());
-    SatelliteSnapshotsByName = new ReadOnlyDictionary<string, DataVaultPitSatelliteSnapshot>(
-        satelliteSnapshots.ToDictionary(snapshot => snapshot.SatelliteName, snapshot => snapshot, StringComparer.Ordinal));
+    var snapshotArray = satelliteSnapshots as DataVaultPitSatelliteSnapshot[] ?? satelliteSnapshots.ToArray();
+    SatelliteSnapshots = new ReadOnlyCollection<DataVaultPitSatelliteSnapshot>(snapshotArray);
   }
 
   /// <summary>
@@ -35,5 +36,19 @@ public sealed class DataVaultPitReadRecord {
   /// <summary>
   /// Gets satellite snapshot segments keyed by declared satellite name using ordinal comparison.
   /// </summary>
-  public IReadOnlyDictionary<string, DataVaultPitSatelliteSnapshot> SatelliteSnapshotsByName { get; }
+  public IReadOnlyDictionary<string, DataVaultPitSatelliteSnapshot> SatelliteSnapshotsByName =>
+      _satelliteSnapshotsByName ??= new ReadOnlyDictionary<string, DataVaultPitSatelliteSnapshot>(
+          CreateSnapshotMap(SatelliteSnapshots));
+
+  private static Dictionary<string, DataVaultPitSatelliteSnapshot> CreateSnapshotMap(
+      IReadOnlyList<DataVaultPitSatelliteSnapshot> satelliteSnapshots) {
+    var snapshotsByName = new Dictionary<string, DataVaultPitSatelliteSnapshot>(
+        satelliteSnapshots.Count,
+        StringComparer.Ordinal);
+    foreach (var snapshot in satelliteSnapshots) {
+      snapshotsByName.Add(snapshot.SatelliteName, snapshot);
+    }
+
+    return snapshotsByName;
+  }
 }

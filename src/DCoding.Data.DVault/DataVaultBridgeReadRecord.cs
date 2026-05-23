@@ -13,7 +13,8 @@ public sealed class DataVaultBridgeReadRecord {
       int? traversalDepth) {
     MetadataName = metadataName;
     TableName = tableName;
-    EndpointHashKeys = new ReadOnlyCollection<DataVaultBridgeEndpointReadValue>(endpointHashKeys.ToArray());
+    var endpointHashKeyArray = endpointHashKeys as DataVaultBridgeEndpointReadValue[] ?? endpointHashKeys.ToArray();
+    EndpointHashKeys = new ReadOnlyCollection<DataVaultBridgeEndpointReadValue>(endpointHashKeyArray);
     TraversalDepth = traversalDepth;
   }
 

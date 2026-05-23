@@ -12,14 +12,53 @@ internal static class DataVaultSatelliteReadPipeline {
       DbContext dbContext,
       DataVaultLatestSatelliteReadRequest request,
       CancellationToken cancellationToken) {
-    return ReadLatestRowsAsync(
-        dbContext,
-        request,
-        TryCreateReadRecord,
-        record => record.ParentHashKey,
-        record => record.DrivingKeyValues.Values,
-        record => record.LoadTimestamp,
-        cancellationToken);
+    return ReadLatestReadRecordsCoreAsync(dbContext, request, cancellationToken);
+  }
+
+  private static async Task<IReadOnlyList<DataVaultSatelliteReadRecord>> ReadLatestReadRecordsCoreAsync(
+      DbContext dbContext,
+      DataVaultLatestSatelliteReadRequest request,
+      CancellationToken cancellationToken) {
+    if (request.ParentHashKeys.Count == 0) {
+      return [];
+    }
+
+    var projection = CreateSatelliteProjection(request.Satellite);
+    var latestRows = new Dictionary<SatelliteReadSeriesKey, SatelliteReadRecordCandidate>();
+    var rows = dbContext.Set<Dictionary<string, object>>(projection.TableName);
+
+    foreach (var parentHashKeyBatch in request.ParentHashKeys.Chunk(ParentHashKeyBatchSize)) {
+      var persistedRows = await rows
+          .AsNoTracking()
+          .WhereStringPropertyEqualsAny(projection.ParentHashKeyColumnName, parentHashKeyBatch)
+          .ToListAsync(cancellationToken)
+          .ConfigureAwait(false);
+
+      foreach (var row in persistedRows) {
+        if (!TryCreateReadRecordCandidate(projection, row, out var candidate) ||
+            (request.AsOf is not null && candidate.LoadTimestamp > request.AsOf.Value)) {
+          continue;
+        }
+
+        var key = new SatelliteReadSeriesKey(candidate.ParentHashKey, candidate.DrivingKeyValueSignature);
+        if (!latestRows.TryGetValue(key, out var current) ||
+            candidate.LoadTimestamp >= current.LoadTimestamp) {
+          latestRows[key] = candidate;
+        }
+      }
+    }
+
+    var records = new List<DataVaultSatelliteReadRecord>(latestRows.Count);
+    foreach (var candidate in latestRows.Values
+        .OrderBy(row => row.ParentHashKey, StringComparer.Ordinal)
+        .ThenBy(row => row.DrivingKeyValueSignature, StringComparer.Ordinal)) {
+      var record = TryCreateReadRecord(projection, candidate.Row);
+      if (record is not null) {
+        records.Add(record);
+      }
+    }
+
+    return records;
   }
 
   public static async Task<IReadOnlyList<DataVaultSatelliteProjectionRow>> ReadLatestProjectionRowsAsync(
@@ -71,7 +110,9 @@ internal static class DataVaultSatelliteReadPipeline {
           continue;
         }
 
-        var key = new SatelliteReadSeriesKey(getParentHashKey(readRow), getDrivingKeyValues(readRow));
+        var key = new SatelliteReadSeriesKey(
+            getParentHashKey(readRow),
+            CreateOrdinalSignature(getDrivingKeyValues(readRow)));
         if (!latestRows.TryGetValue(key, out var current) ||
             getLoadTimestamp(readRow) >= getLoadTimestamp(current)) {
           latestRows[key] = readRow;
@@ -235,6 +276,64 @@ internal static class DataVaultSatelliteReadPipeline {
     return true;
   }
 
+  private static bool TryCreateReadRecordCandidate(
+      SatelliteReadProjection projection,
+      Dictionary<string, object> row,
+      out SatelliteReadRecordCandidate candidate) {
+    if (!TryReadString(row, projection.ParentHashKeyColumnName, out var parentHashKey) ||
+        !TryReadString(row, projection.HashDiffColumnName, out _) ||
+        !TryReadString(row, projection.RecordSourceColumnName, out _) ||
+        !row.TryGetValue(projection.LoadTimestampColumnName, out var loadTimestampValue) ||
+        !DataVaultLoadTimestampValueConverter.TryReadProviderValue(loadTimestampValue, out var loadTimestamp) ||
+        !TryReadStringValues(row, projection.DrivingKeyColumnNames, out var drivingKeyValues) ||
+        !HasStringValues(row, projection.PayloadColumnNames)) {
+      candidate = default;
+      return false;
+    }
+
+    candidate = new SatelliteReadRecordCandidate(
+        row,
+        parentHashKey,
+        CreateOrdinalSignature(drivingKeyValues),
+        loadTimestamp);
+    return true;
+  }
+
+  private static bool TryReadStringValues(
+      Dictionary<string, object> row,
+      IReadOnlyList<string> columnNames,
+      out IReadOnlyList<string> values) {
+    if (columnNames.Count == 0) {
+      values = [];
+      return true;
+    }
+
+    var currentValues = new string[columnNames.Count];
+    for (var index = 0; index < columnNames.Count; index++) {
+      if (!TryReadString(row, columnNames[index], out var value)) {
+        values = [];
+        return false;
+      }
+
+      currentValues[index] = value;
+    }
+
+    values = currentValues;
+    return true;
+  }
+
+  private static bool HasStringValues(
+      Dictionary<string, object> row,
+      IReadOnlyList<string> columnNames) {
+    foreach (var columnName in columnNames) {
+      if (!TryReadString(row, columnName, out _)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   private static bool TryReadString(
       Dictionary<string, object> row,
       string columnName,
@@ -271,35 +370,13 @@ internal static class DataVaultSatelliteReadPipeline {
       DateTimeOffset LoadTimestamp,
       DataVaultSatelliteProjectionRow ProjectionRow);
 
-  private sealed class SatelliteReadSeriesKey : IEquatable<SatelliteReadSeriesKey> {
-    private readonly string _drivingKeyValueSignature;
+  private readonly record struct SatelliteReadRecordCandidate(
+      Dictionary<string, object> Row,
+      string ParentHashKey,
+      string DrivingKeyValueSignature,
+      DateTimeOffset LoadTimestamp);
 
-    public SatelliteReadSeriesKey(
-        string parentHashKey,
-        IEnumerable<string> drivingKeyValues) {
-      ParentHashKey = parentHashKey;
-      DrivingKeyValues = drivingKeyValues.ToArray();
-      _drivingKeyValueSignature = CreateOrdinalSignature(DrivingKeyValues);
-    }
-
-    public string ParentHashKey { get; }
-
-    public IReadOnlyList<string> DrivingKeyValues { get; }
-
-    public bool Equals(SatelliteReadSeriesKey? other) {
-      return other is not null &&
-          string.Equals(ParentHashKey, other.ParentHashKey, StringComparison.Ordinal) &&
-          string.Equals(_drivingKeyValueSignature, other._drivingKeyValueSignature, StringComparison.Ordinal);
-    }
-
-    public override bool Equals(object? obj) {
-      return Equals(obj as SatelliteReadSeriesKey);
-    }
-
-    public override int GetHashCode() {
-      return HashCode.Combine(
-          StringComparer.Ordinal.GetHashCode(ParentHashKey),
-          StringComparer.Ordinal.GetHashCode(_drivingKeyValueSignature));
-    }
-  }
+  private readonly record struct SatelliteReadSeriesKey(
+      string ParentHashKey,
+      string DrivingKeyValueSignature);
 }

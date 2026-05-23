@@ -56,9 +56,16 @@ internal static class DataVaultBridgeReadPipeline {
     foreach (var endpointHashKeyBatch in request.EndpointHashKeys.Chunk(EndpointHashKeyBatchSize)) {
       List<Dictionary<string, object>> persistedRows;
       try {
-        persistedRows = await rows
+        var query = rows
             .AsNoTracking()
-            .WhereStringPropertyEqualsAny(projection.FilterColumnName, endpointHashKeyBatch)
+            .WhereStringPropertyEqualsAny(projection.FilterColumnName, endpointHashKeyBatch);
+        if (projection.MaximumDepth.HasValue && projection.TraversalDepthColumnName is not null) {
+          query = query.WhereIntPropertyLessThanOrEqual(
+              projection.TraversalDepthColumnName,
+              projection.MaximumDepth.Value);
+        }
+
+        persistedRows = await query
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
       }
