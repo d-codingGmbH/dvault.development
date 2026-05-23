@@ -3,20 +3,19 @@
   "ticket-id": "06F492CFSJHN0RGXXRG3KT63FM",
   "ticket-type": "story",
   "title": "Story: Measure and tune explicit save change-tracker overhead",
-  "revision": "06F4NV0T0D8XY12YWRFC8SVCCW",
-  "status": "todo",
+  "revision": "06F5AE0BEEK284C5N6F0D0MM5W",
+  "status": "done",
   "labels": [
+    "area/ef-core",
     "area/performance",
     "area/persistence",
-    "area/ef-core",
     "automation/bot-ready",
-    "type/story",
-    "needs-po"
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F492A1Y2D14XJWEXVYP2C6Q8",
   "releaseId": "06F492A0EZ3N8E2T605F7ZHHB0",
   "created-at": "2026-05-20T08:38:46.6771040Z",
-  "updated-at": "2026-05-21T14:24:07.6836966Z"
+  "updated-at": "2026-05-23T14:23:16.8511137Z"
 }

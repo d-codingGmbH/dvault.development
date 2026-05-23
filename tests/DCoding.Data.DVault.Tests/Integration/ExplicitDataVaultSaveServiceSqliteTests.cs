@@ -1,6 +1,9 @@
+using System.Data.Common;
+using System.Globalization;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -74,6 +77,51 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
       Assert.Equal(orderRow["OrderHashKey"], linkRow["OrderHashKey"]);
       Assert.Matches("^[0-9a-f]{64}$", Assert.IsType<string>(linkRow["CustomerOrderHashKey"]));
     }
+  }
+
+  [Fact]
+  public async Task DefaultSaveServiceBatchesUniqueRowExistenceChecksPerTable() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var loadTimestamp = new DateTimeOffset(2026, 5, 22, 10, 0, 0, TimeSpan.Zero);
+    var replayTimestamp = loadTimestamp.AddMinutes(5);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var commandCounter = new TableSelectCommandCounter("HubCustomer");
+    var options = new DbContextOptionsBuilder<ExplicitSaveServiceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .AddInterceptors(commandCounter)
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVault();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var hubOperations = Enumerable.Range(0, 5)
+        .Select(customerIndex => new DataVaultHubSaveOperation(
+            customer,
+            [new("Customer Id", "C-BATCH-" + customerIndex.ToString("0000", CultureInfo.InvariantCulture))]))
+        .ToArray();
+
+    await using var context = new ExplicitSaveServiceContext(options);
+    await context.Database.EnsureCreatedAsync();
+
+    commandCounter.Reset();
+    var firstResult = await saveService.SaveAsync(
+        context,
+        new DataVaultSaveRequest(loadTimestamp, "crm-import", hubOperations, []));
+
+    Assert.Equal(5, firstResult.RowsWritten);
+    Assert.Equal(5, firstResult.SavedRecords.Count);
+    Assert.Equal(1, commandCounter.SelectCount);
+
+    commandCounter.Reset();
+    var replayResult = await saveService.SaveAsync(
+        context,
+        new DataVaultSaveRequest(replayTimestamp, "crm-replay", hubOperations, []));
+
+    Assert.Equal(0, replayResult.RowsWritten);
+    Assert.Equal(5, replayResult.SavedRecords.Count);
+    Assert.Equal(0, commandCounter.SelectCount);
+    AssertSavedRecordsEqual(firstResult.SavedRecords, replayResult.SavedRecords);
   }
 
   [Fact]
@@ -1697,6 +1745,30 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
 
       CallCount++;
       return recordSource;
+    }
+  }
+
+  private sealed class TableSelectCommandCounter(string tableName) : DbCommandInterceptor {
+    public int SelectCount { get; private set; }
+
+    public void Reset() {
+      SelectCount = 0;
+    }
+
+    public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+        DbCommand command,
+        CommandEventData eventData,
+        InterceptionResult<DbDataReader> result,
+        CancellationToken cancellationToken = default) {
+      CountSelect(command);
+      return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
+    }
+
+    private void CountSelect(DbCommand command) {
+      if (command.CommandText.TrimStart().StartsWith("SELECT", StringComparison.OrdinalIgnoreCase) &&
+          command.CommandText.Contains(tableName, StringComparison.Ordinal)) {
+        SelectCount++;
+      }
     }
   }
 

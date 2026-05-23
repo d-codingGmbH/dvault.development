@@ -943,22 +943,15 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       CancellationToken cancellationToken) {
     var savedRecords = new List<DataVaultSavedRecord>();
     var rowsWritten = 0;
+    var uniqueResults = await AddUniqueRowsAsync(
+        dbContext,
+        CreateUniqueRowSavePlans(resolvedRequests),
+        cancellationToken).ConfigureAwait(false);
 
-    foreach (var resolvedRequest in resolvedRequests) {
-      foreach (var operation in resolvedRequest.Request.HubOperations) {
-        var result = await AddHubAsync(dbContext, resolvedRequest, operation, cancellationToken).ConfigureAwait(false);
-        savedRecords.Add(result.SavedRecord);
-        if (result.RowWritten) {
-          rowsWritten++;
-        }
-      }
-
-      foreach (var operation in resolvedRequest.Request.LinkOperations) {
-        var result = await AddLinkAsync(dbContext, resolvedRequest, operation, cancellationToken).ConfigureAwait(false);
-        savedRecords.Add(result.SavedRecord);
-        if (result.RowWritten) {
-          rowsWritten++;
-        }
+    foreach (var result in uniqueResults) {
+      savedRecords.Add(result.SavedRecord);
+      if (result.RowWritten) {
+        rowsWritten++;
       }
     }
 
@@ -1001,22 +994,107 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     return resolvedRequests;
   }
 
-  private async Task<SaveOperationResult> AddHubAsync(
+  private async Task<IReadOnlyList<SaveOperationResult>> AddUniqueRowsAsync(
       DbContext dbContext,
-      DataVaultResolvedSaveRequest request,
-      DataVaultHubSaveOperation operation,
+      IReadOnlyList<UniqueRowSavePlan> plans,
       CancellationToken cancellationToken) {
-    var plan = CreateHubSavePlan(request, operation);
-    ApplyModelValueFormats(dbContext, plan.Table.TableName, plan.Row);
-    var rowWritten = await AddRowIfMissingAsync(
-        dbContext,
-        plan.Table.TableName,
-        plan.Table.HashKeyColumnName,
-        plan.HashKey,
-        plan.Row,
-        cancellationToken).ConfigureAwait(false);
+    var results = new SaveOperationResult[plans.Count];
 
-    return new SaveOperationResult(plan.SavedRecord, rowWritten);
+    foreach (var group in plans.GroupBy(plan => plan.Table)) {
+      var trackedHashKeys = GetTrackedHashKeys(
+          dbContext,
+          group.Key.TableName,
+          group.Key.HashKeyColumnName);
+      var candidateHashKeys = group
+          .Select(plan => plan.HashKey)
+          .Where(hashKey => !trackedHashKeys.Contains(hashKey))
+          .Distinct(StringComparer.Ordinal)
+          .ToArray();
+      var persistedHashKeys = await LoadPersistedUniqueHashKeysAsync(
+          dbContext,
+          group.Key,
+          candidateHashKeys,
+          cancellationToken).ConfigureAwait(false);
+      var rows = dbContext.Set<Dictionary<string, object>>(group.Key.TableName);
+
+      foreach (var plan in group) {
+        var rowWritten = !trackedHashKeys.Contains(plan.HashKey) &&
+            !persistedHashKeys.Contains(plan.HashKey);
+        if (rowWritten) {
+          ApplyModelValueFormats(dbContext, group.Key.TableName, plan.Row);
+          rows.Add(plan.Row);
+          trackedHashKeys.Add(plan.HashKey);
+        }
+
+        results[plan.Ordinal] = new SaveOperationResult(plan.SavedRecord, rowWritten);
+      }
+    }
+
+    return results;
+  }
+
+  private IReadOnlyList<UniqueRowSavePlan> CreateUniqueRowSavePlans(
+      IReadOnlyList<DataVaultResolvedSaveRequest> requests) {
+    var plans = new List<UniqueRowSavePlan>();
+
+    foreach (var request in requests) {
+      foreach (var operation in request.Request.HubOperations) {
+        plans.Add(CreateHubSavePlan(request, operation));
+      }
+
+      foreach (var operation in request.Request.LinkOperations) {
+        plans.Add(CreateLinkSavePlan(request, operation));
+      }
+    }
+
+    return plans
+        .Select((plan, index) => plan with { Ordinal = index })
+        .ToArray();
+  }
+
+  private static async Task<HashSet<string>> LoadPersistedUniqueHashKeysAsync(
+      DbContext dbContext,
+      UniqueTableProjection table,
+      IReadOnlyCollection<string> hashKeys,
+      CancellationToken cancellationToken) {
+    var persistedHashKeys = new HashSet<string>(StringComparer.Ordinal);
+    if (hashKeys.Count == 0) {
+      return persistedHashKeys;
+    }
+
+    var rows = dbContext.Set<Dictionary<string, object>>(table.TableName);
+    foreach (var hashKeyBatch in hashKeys.Chunk(500)) {
+      var persistedRows = await rows
+          .AsNoTracking()
+          .WhereStringPropertyEqualsAny(table.HashKeyColumnName, hashKeyBatch)
+          .ToListAsync(cancellationToken)
+          .ConfigureAwait(false);
+
+      foreach (var persistedRow in persistedRows) {
+        if (persistedRow.TryGetValue(table.HashKeyColumnName, out var value) &&
+            value is string hashKey) {
+          persistedHashKeys.Add(hashKey);
+        }
+      }
+    }
+
+    return persistedHashKeys;
+  }
+
+  private static HashSet<string> GetTrackedHashKeys(
+      DbContext dbContext,
+      string tableName,
+      string hashKeyColumnName) {
+    var hashKeys = new HashSet<string>(StringComparer.Ordinal);
+
+    foreach (var trackedRow in GetTrackedRows(dbContext, tableName)) {
+      if (trackedRow.TryGetValue(hashKeyColumnName, out var value) &&
+          value is string hashKey) {
+        hashKeys.Add(hashKey);
+      }
+    }
+
+    return hashKeys;
   }
 
   private UniqueRowSavePlan CreateHubSavePlan(
@@ -1055,24 +1133,6 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         row,
         new DataVaultSavedRecord(DataVaultTableKind.Hub, hub.Name, tableName, hashKey),
         Ordinal: -1);
-  }
-
-  private async Task<SaveOperationResult> AddLinkAsync(
-      DbContext dbContext,
-      DataVaultResolvedSaveRequest request,
-      DataVaultLinkSaveOperation operation,
-      CancellationToken cancellationToken) {
-    var plan = CreateLinkSavePlan(request, operation);
-    ApplyModelValueFormats(dbContext, plan.Table.TableName, plan.Row);
-    var rowWritten = await AddRowIfMissingAsync(
-        dbContext,
-        plan.Table.TableName,
-        plan.Table.HashKeyColumnName,
-        plan.HashKey,
-        plan.Row,
-        cancellationToken).ConfigureAwait(false);
-
-    return new SaveOperationResult(plan.SavedRecord, rowWritten);
   }
 
   private UniqueRowSavePlan CreateLinkSavePlan(
@@ -1115,34 +1175,6 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         row,
         new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, tableName, linkHashKey),
         Ordinal: -1);
-  }
-
-  private static async Task<bool> AddRowIfMissingAsync(
-      DbContext dbContext,
-      string tableName,
-      string hashKeyColumnName,
-      string hashKey,
-      Dictionary<string, object> row,
-      CancellationToken cancellationToken) {
-    var rows = dbContext.Set<Dictionary<string, object>>(tableName);
-
-    if (GetTrackedRows(dbContext, tableName)
-        .Any(existingRow => HasHashKey(existingRow, hashKeyColumnName, hashKey))) {
-      return false;
-    }
-
-    var exists = await rows
-        .AsNoTracking()
-        .AnyAsync(existingRow => EF.Property<string>(existingRow, hashKeyColumnName) == hashKey, cancellationToken)
-        .ConfigureAwait(false);
-
-    if (exists) {
-      return false;
-    }
-
-    rows.Add(row);
-
-    return true;
   }
 
   private async Task<IReadOnlyList<SaveOperationResult>> AddSatellitesAsync(
@@ -1459,15 +1491,6 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         yield return row;
       }
     }
-  }
-
-  private static bool HasHashKey(Dictionary<string, object> row, string hashKeyColumnName, string hashKey) {
-    return HasColumnValue(row, hashKeyColumnName, hashKey);
-  }
-
-  private static bool HasColumnValue(Dictionary<string, object> row, string columnName, string value) {
-    return row.TryGetValue(columnName, out var currentValue) &&
-        string.Equals(currentValue as string, value, StringComparison.Ordinal);
   }
 
   private string ComputeHash(IEnumerable<KeyValuePair<string, string>> fields) {
