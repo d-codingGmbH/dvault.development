@@ -6,6 +6,10 @@ namespace DCoding.Data.DVault.Benchmarks;
 
 internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark {
   private const int PairCount = 20;
+  private const int RequestCount = 5;
+  private const int HubOperationCount = PairCount * 2;
+  private const int LinkOperationCount = PairCount;
+  private const int SatelliteOperationCount = 3;
   private const int ExpectedRowsWritten = PairCount * 3 + 2;
   private const int ExpectedSavedRecordCount = PairCount * 3 + 3;
 
@@ -60,9 +64,17 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark 
         await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
       }
 
+      var executionDetail = BenchmarkExecutionDetails.CreatePlanned(this);
       var elapsed = await BenchmarkClock.MeasureAsync(async () => {
         await using var context = new ProviderNativeBulkIngestionContext(options, providerCapabilities);
-        AssertStrategySelection(diagnostics.Analyze(context, scenario.Request));
+        var strategyDiagnostics = diagnostics.Analyze(context, scenario.Request);
+        AssertStrategySelection(strategyDiagnostics);
+        executionDetail = BenchmarkExecutionDetails.CreateSaveStrategyDetail(
+            strategyDiagnostics,
+            RequestCount,
+            HubOperationCount,
+            LinkOperationCount,
+            SatelliteOperationCount);
 
         var result = await saveService.SaveAsync(context, scenario.Request, cancellationToken).ConfigureAwait(false);
 
@@ -82,7 +94,8 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark 
           PairCount.ToString(CultureInfo.InvariantCulture) +
           " product hubs, " +
           PairCount.ToString(CultureInfo.InvariantCulture) +
-          " order-product links, and 2 fulfillment satellite rows");
+          " order-product links, and 2 fulfillment satellite rows",
+          executionDetail);
     }
     finally {
       await using var cleanupContext = new ProviderNativeBulkIngestionContext(options, providerCapabilities);

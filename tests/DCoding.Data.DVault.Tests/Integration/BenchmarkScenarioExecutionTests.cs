@@ -300,7 +300,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.Contains("- Process architecture: ", markdown);
       Assert.Contains("- Processor count: ", markdown);
       Assert.Contains("- .NET runtime version: ", markdown);
-      Assert.Contains("| Scenario | Provider | Baseline | Strategy family | Dataset size | Change ratio | Execution status | Skip reason | Iterations | Mean ms | Min ms | Max ms | Mean allocated bytes | Min allocated bytes | Max allocated bytes | Persisted outcome |", markdown);
+      Assert.Contains("| Scenario | Provider | Baseline | Strategy family | Dataset size | Change ratio | Execution status | Skip reason | Iterations | Mean ms | Min ms | Max ms | Mean allocated bytes | Min allocated bytes | Max allocated bytes | Execution detail | Persisted outcome |", markdown);
 
       foreach (var expectedRow in ExpectedRows) {
         Assert.Contains(CreateMarkdownRowPrefix(expectedRow), markdown);
@@ -310,7 +310,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       var csvLines = csv.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
       Assert.Equal(33, csvLines.Length);
       Assert.Equal(
-          "scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,meanAllocatedBytes,minAllocatedBytes,maxAllocatedBytes,persistedOutcome",
+          "scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,meanAllocatedBytes,minAllocatedBytes,maxAllocatedBytes,executionDetail,persistedOutcome",
           csvLines[0]);
 
       foreach (var expectedRow in ExpectedRows) {
@@ -375,6 +375,12 @@ public sealed class BenchmarkScenarioExecutionTests {
         Assert.Equal(expectedRow.ExecutionStatus, result.GetProperty("executionStatus").GetString());
         Assert.Equal(expectedRow.SkipReason, result.GetProperty("skipReason").GetString());
         Assert.Equal(expectedRow.Iterations, result.GetProperty("iterations").GetInt32());
+        var executionDetail = result.GetProperty("executionDetail").GetString();
+        Assert.False(string.IsNullOrWhiteSpace(executionDetail));
+        Assert.Contains("scenario=" + expectedRow.ScenarioName, executionDetail);
+        if (expectedRow.StrategyFamily.EndsWith("-optimized-dvault", StringComparison.Ordinal)) {
+          Assert.Contains("selectedStrategy=", executionDetail);
+        }
 
         if (expectedRow.ExecutionStatus == "skipped") {
           Assert.Equal(JsonValueKind.Null, result.GetProperty("meanMilliseconds").ValueKind);
@@ -409,6 +415,12 @@ public sealed class BenchmarkScenarioExecutionTests {
     var result = await benchmark.ExecuteAsync(CancellationToken.None).ConfigureAwait(false);
 
     Assert.Contains("20 order hubs, 20 product hubs, 20 order-product links, and 2 fulfillment satellite rows", result.PersistedOutcome);
+    Assert.Contains("saveStrategyStatus=ProviderStrategySelected", result.ExecutionDetail);
+    Assert.Contains("selectedStrategy=SqliteDataVaultSaveStrategy", result.ExecutionDetail);
+    Assert.Contains("requestCount=5", result.ExecutionDetail);
+    Assert.Contains("hubOperations=40", result.ExecutionDetail);
+    Assert.Contains("linkOperations=20", result.ExecutionDetail);
+    Assert.Contains("satelliteOperations=3", result.ExecutionDetail);
     Assert.True(result.Elapsed > TimeSpan.Zero);
   }
 

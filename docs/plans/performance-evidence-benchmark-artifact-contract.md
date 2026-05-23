@@ -69,9 +69,10 @@ Markdown, CSV, and JSON rows describe the same comparison rows. The core row con
 - mean allocated bytes
 - minimum allocated bytes
 - maximum allocated bytes
+- execution detail
 - persisted outcome
 
-Completed rows must carry timing and allocation values. Skipped and failed rows must keep the row visible, set `iterations=0`, preserve the skip or failure reason, use blank markdown/CSV metric cells and JSON `null` metric values, and keep `persistedOutcome` as `not executed`.
+Completed rows must carry timing and allocation values. Skipped and failed rows must keep the row visible, set `iterations=0`, preserve the skip or failure reason, use blank markdown/CSV metric cells and JSON `null` metric values, and keep `persistedOutcome` as `not executed`. Every row must keep a deterministic `executionDetail` string that identifies the exercised or planned execution path. Provider-optimized rows must include the selected provider strategy name when the row completes, or the planned provider strategy name when the row is skipped before execution.
 
 ## Minimum Scenario Baseline
 
@@ -87,7 +88,7 @@ The required local baseline is SQLite temporary files. A standard local evidence
 
 When the claim depends on scale behavior, include the scale matrix mode. When the claim depends on latest-satellite lookup/index behavior, include the latest-index matrix mode.
 
-The optional external-provider matrix is limited to PostgreSQL, SQL Server, MySQL, and Oracle. Those providers emit provider-native bulk-ingestion comparison rows only when the provider is configured and reachable. If an optional provider is not configured, its rows must remain present as `executionStatus=skipped` with the normalized skip reason.
+The optional external-provider matrix is limited to PostgreSQL, SQL Server, MySQL, and Oracle. Those providers emit provider-native bulk-ingestion comparison rows only when the provider is configured and reachable. If an optional provider is not configured, its rows must remain present as `executionStatus=skipped` with the normalized skip reason and an `executionDetail` value that preserves the planned provider-native strategy boundary.
 
 ## Allocation Evidence
 
@@ -102,7 +103,7 @@ SQL capture is required when a claim depends on emitted query shape, index usage
 - `artifacts/benchmarks/<label>/before/sql/<scenario>-<provider>-<baseline>.sql`
 - `artifacts/benchmarks/<label>/after/sql/<scenario>-<provider>-<baseline>.sql`
 
-Save-path scenarios that only claim change-tracker or allocation wins do not need duplicate SQL capture unless emitted SQL is part of the claim.
+Save-path scenarios that only claim change-tracker or allocation wins do not need duplicate SQL capture unless emitted SQL is part of the claim. For provider-native bulk-ingestion rows, the artifact row `executionDetail` may serve as the stable execution proof when raw SQL text is too provider- or version-sensitive to persist as the regression boundary.
 
 ## Regression Budget
 

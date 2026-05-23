@@ -47,8 +47,8 @@ internal static class BenchmarkArtifacts {
     ArgumentNullException.ThrowIfNull(summaries);
 
     var builder = new StringBuilder();
-    builder.AppendLine("| Scenario | Provider | Baseline | Strategy family | Dataset size | Change ratio | Execution status | Skip reason | Iterations | Mean ms | Min ms | Max ms | Mean allocated bytes | Min allocated bytes | Max allocated bytes | Persisted outcome |");
-    builder.AppendLine("| --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |");
+    builder.AppendLine("| Scenario | Provider | Baseline | Strategy family | Dataset size | Change ratio | Execution status | Skip reason | Iterations | Mean ms | Min ms | Max ms | Mean allocated bytes | Min allocated bytes | Max allocated bytes | Execution detail | Persisted outcome |");
+    builder.AppendLine("| --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |");
 
     foreach (var summary in summaries) {
       builder
@@ -82,6 +82,8 @@ internal static class BenchmarkArtifacts {
           .Append(FormatBytes(summary.MinAllocatedBytes))
           .Append(" | ")
           .Append(FormatBytes(summary.MaxAllocatedBytes))
+          .Append(" | ")
+          .Append(EscapeMarkdownCell(summary.ExecutionDetail))
           .Append(" | ")
           .Append(EscapeMarkdownCell(summary.PersistedOutcome))
           .AppendLine(" |");
@@ -174,7 +176,7 @@ internal static class BenchmarkArtifacts {
 
   private static string CreateCsv(IEnumerable<BenchmarkSummary> summaries) {
     var builder = new StringBuilder();
-    builder.AppendLine("scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,meanAllocatedBytes,minAllocatedBytes,maxAllocatedBytes,persistedOutcome");
+    builder.AppendLine("scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,meanAllocatedBytes,minAllocatedBytes,maxAllocatedBytes,executionDetail,persistedOutcome");
 
     foreach (var summary in summaries) {
       AppendCsvRow(
@@ -194,6 +196,7 @@ internal static class BenchmarkArtifacts {
           FormatBytes(summary.MeanAllocatedBytes),
           FormatBytes(summary.MinAllocatedBytes),
           FormatBytes(summary.MaxAllocatedBytes),
+          summary.ExecutionDetail,
           summary.PersistedOutcome);
     }
 

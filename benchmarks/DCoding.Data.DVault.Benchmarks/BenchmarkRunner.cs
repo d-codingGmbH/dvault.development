@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using DCoding.Data.DVault;
 
 namespace DCoding.Data.DVault.Benchmarks;
 
@@ -312,11 +313,13 @@ internal static class BenchmarkRunner {
     var elapsedTimes = new List<TimeSpan>();
     var allocatedBytes = new List<long>();
     var persistedOutcome = string.Empty;
+    var executionDetail = string.Empty;
     for (var iteration = 0; iteration < options.Iterations; iteration++) {
       var result = await benchmark.ExecuteAsync(cancellationToken).ConfigureAwait(false);
       elapsedTimes.Add(result.Elapsed);
       allocatedBytes.Add(result.AllocatedBytes);
       persistedOutcome = result.PersistedOutcome;
+      executionDetail = result.ExecutionDetail;
     }
 
     return BenchmarkSummary.Create(
@@ -328,7 +331,10 @@ internal static class BenchmarkRunner {
         benchmark.ChangeRatio,
         elapsedTimes,
         allocatedBytes,
-        persistedOutcome);
+        persistedOutcome,
+        string.IsNullOrWhiteSpace(executionDetail)
+            ? BenchmarkExecutionDetails.CreatePlanned(benchmark)
+            : executionDetail);
   }
 
   private static async Task<BenchmarkSummary> TryExecuteBenchmarkAsync(
@@ -375,7 +381,16 @@ internal interface IScenarioBenchmark {
 
 internal sealed record BenchmarkMeasurement(TimeSpan Elapsed, long AllocatedBytes);
 
-internal sealed record ScenarioBenchmarkResult(BenchmarkMeasurement Measurement, string PersistedOutcome) {
+internal sealed record ScenarioBenchmarkResult(
+    BenchmarkMeasurement Measurement,
+    string PersistedOutcome,
+    string ExecutionDetail) {
+  public ScenarioBenchmarkResult(
+      BenchmarkMeasurement measurement,
+      string persistedOutcome)
+      : this(measurement, persistedOutcome, string.Empty) {
+  }
+
   public TimeSpan Elapsed => Measurement.Elapsed;
 
   public long AllocatedBytes => Measurement.AllocatedBytes;
@@ -397,6 +412,7 @@ internal sealed record BenchmarkSummary(
     double? MeanAllocatedBytes,
     long? MinAllocatedBytes,
     long? MaxAllocatedBytes,
+    string ExecutionDetail,
     string PersistedOutcome) {
   public static BenchmarkSummary Create(
       string scenarioName,
@@ -407,7 +423,8 @@ internal sealed record BenchmarkSummary(
       string changeRatio,
       IReadOnlyList<TimeSpan> elapsedTimes,
       IReadOnlyList<long> allocatedBytes,
-      string persistedOutcome) {
+      string persistedOutcome,
+      string executionDetail) {
     ArgumentException.ThrowIfNullOrWhiteSpace(scenarioName);
     ArgumentException.ThrowIfNullOrWhiteSpace(providerName);
     ArgumentException.ThrowIfNullOrWhiteSpace(baselineName);
@@ -415,6 +432,7 @@ internal sealed record BenchmarkSummary(
     ArgumentException.ThrowIfNullOrWhiteSpace(datasetSize);
     ArgumentException.ThrowIfNullOrWhiteSpace(changeRatio);
     ArgumentException.ThrowIfNullOrWhiteSpace(persistedOutcome);
+    ArgumentException.ThrowIfNullOrWhiteSpace(executionDetail);
     ArgumentNullException.ThrowIfNull(elapsedTimes);
     ArgumentNullException.ThrowIfNull(allocatedBytes);
 
@@ -442,6 +460,7 @@ internal sealed record BenchmarkSummary(
         allocatedBytes.Average(),
         allocatedBytes.Min(),
         allocatedBytes.Max(),
+        executionDetail,
         persistedOutcome);
   }
 
@@ -467,6 +486,7 @@ internal sealed record BenchmarkSummary(
         null,
         null,
         null,
+        BenchmarkExecutionDetails.CreatePlanned(benchmark),
         "not executed");
   }
 
@@ -492,7 +512,79 @@ internal sealed record BenchmarkSummary(
         null,
         null,
         null,
+        BenchmarkExecutionDetails.CreatePlanned(benchmark),
         "not executed");
+  }
+}
+
+internal static class BenchmarkExecutionDetails {
+  public static string CreatePlanned(IScenarioBenchmark benchmark) {
+    ArgumentNullException.ThrowIfNull(benchmark);
+
+    return "scenario=" + benchmark.ScenarioName +
+        "; provider=" + benchmark.ProviderName +
+        "; baseline=" + benchmark.BaselineName +
+        "; strategyFamily=" + benchmark.StrategyFamily +
+        "; executionPath=" + GetExecutionPath(benchmark);
+  }
+
+  public static string CreateSaveStrategyDetail(
+      DataVaultDiagnosticsResult diagnostics,
+      int requestCount,
+      int hubOperationCount,
+      int linkOperationCount,
+      int satelliteOperationCount) {
+    ArgumentNullException.ThrowIfNull(diagnostics);
+
+    return "saveStrategyStatus=" + diagnostics.SaveStrategy.Status +
+        "; provider=" + (diagnostics.SaveStrategy.ProviderName ?? "<none>") +
+        "; selectedStrategy=" + (diagnostics.SaveStrategy.SelectedStrategyName ?? "<none>") +
+        "; candidates=" + diagnostics.SaveStrategy.Candidates.Count.ToString(CultureInfo.InvariantCulture) +
+        "; fallbackCauses=" + FormatFallbackCauses(diagnostics.SaveStrategy.FallbackCauses) +
+        "; requestCount=" + requestCount.ToString(CultureInfo.InvariantCulture) +
+        "; hubOperations=" + hubOperationCount.ToString(CultureInfo.InvariantCulture) +
+        "; linkOperations=" + linkOperationCount.ToString(CultureInfo.InvariantCulture) +
+        "; satelliteOperations=" + satelliteOperationCount.ToString(CultureInfo.InvariantCulture) +
+        "; nativeBulkGate=clean-context,no-multi-active-satellites,provider-eligible-bulk-request";
+  }
+
+  private static string GetExecutionPath(IScenarioBenchmark benchmark) {
+    return benchmark.StrategyFamily switch {
+      DataVaultBenchmarkHelpers.ClassicEfStrategyFamily => "classic EF baseline",
+      DataVaultBenchmarkHelpers.ProviderNeutralFallbackStrategyFamily =>
+          "DVault provider-neutral fallback path; selectedStrategy=<none>",
+      DataVaultBenchmarkHelpers.SqliteOptimizedStrategyFamily =>
+          "DVault SQLite optimized path; selectedStrategy=" + GetSqliteStrategyName(benchmark.ScenarioName),
+      DataVaultBenchmarkHelpers.PostgresOptimizedStrategyFamily =>
+          "DVault PostgreSQL optimized save path; selectedStrategy=PostgresDataVaultSaveStrategy",
+      DataVaultBenchmarkHelpers.SqlServerOptimizedStrategyFamily =>
+          "DVault SQL Server optimized save path; selectedStrategy=SqlServerDataVaultSaveStrategy",
+      DataVaultBenchmarkHelpers.MySqlOptimizedStrategyFamily =>
+          "DVault MySQL optimized save path; selectedStrategy=MySqlDataVaultSaveStrategy",
+      DataVaultBenchmarkHelpers.OracleOptimizedStrategyFamily =>
+          "DVault Oracle optimized save path; selectedStrategy=OracleDataVaultSaveStrategy",
+      "ef-model-build" => "ordinary EF model-building startup path",
+      "ef-usemodel-runtime-model" => "precomputed EF runtime model path",
+      "direct-ef-query" => "ordinary direct EF query path",
+      "compiled-ef-query" => "EF.CompileQuery path",
+      "non-pooled-dvault-context" => "AddDbContext DVault context path",
+      "pooled-dvault-context" => "AddDbContextPool DVault context path",
+      _ => "benchmark-defined path",
+    };
+  }
+
+  private static string GetSqliteStrategyName(string scenarioName) {
+    return scenarioName is "latest-satellite-read" or "pit-as-of-read" or "bridge-traversal-read"
+        ? "SqliteDataVaultReadStrategy"
+        : "SqliteDataVaultSaveStrategy";
+  }
+
+  private static string FormatFallbackCauses(IReadOnlyList<DataVaultSaveStrategyFallbackCause> fallbackCauses) {
+    if (fallbackCauses.Count == 0) {
+      return "none";
+    }
+
+    return string.Join("|", fallbackCauses.Select(cause => cause.Kind.ToString()));
   }
 }
 

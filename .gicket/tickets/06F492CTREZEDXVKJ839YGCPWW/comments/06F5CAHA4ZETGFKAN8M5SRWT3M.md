@@ -1,0 +1,23 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `2` selected relation flow(s) for source ticket `06F492CTREZEDXVKJ839YGCPWW`.
+- Role `po-critic` completed with outcome `po-critic-non-blocking-apply` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `1`; dropped obsolete follow-up(s): `3`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `e18f7f675d54413099d65862bc1f8d4e`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06F492D05THPGQVT3B3K7853A0` via `blocks` path `06F492CTREZEDXVKJ839YGCPWW -> 06F492D05THPGQVT3B3K7853A0`
+- [dropped] `blocked-by-follow-up-comment` -> `06F492CAB2293R7BGJWMWMRKT4` via `blocks` path `06F492CTREZEDXVKJ839YGCPWW -> 06F492CAB2293R7BGJWMWMRKT4`
+- [dropped] `blocked-by-follow-up-comment` -> `06F492CFSJHN0RGXXRG3KT63FM` via `blocks` path `06F492CTREZEDXVKJ839YGCPWW -> 06F492CFSJHN0RGXXRG3KT63FM`
+- [dropped] `blocked-by-follow-up-comment` -> `06F492CN76GS3CKM8EFD0C20XM` via `blocks` path `06F492CTREZEDXVKJ839YGCPWW -> 06F492CN76GS3CKM8EFD0C20XM`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06F492CTREZEDXVKJ839YGCPWW` owner `ticket/06F492CTREZEDXVKJ839YGCPWW-story-add-provider-optimization-regression-basel` base `develop` source-owner `ticket/06F492CTREZEDXVKJ839YGCPWW-story-add-provider-optimization-regression-basel`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F492D05THPGQVT3B3K7853A0` owner `ticket/06F492D05THPGQVT3B3K7853A0-task-update-v0-18-0-documentation-and-release-no` base `develop` source-owner `ticket/06F492CTREZEDXVKJ839YGCPWW-story-add-provider-optimization-regression-basel`: Mutation targets 'ticket/06F492D05THPGQVT3B3K7853A0-task-update-v0-18-0-documentation-and-release-no', not current branch 'ticket/06F492CTREZEDXVKJ839YGCPWW-story-add-provider-optimization-regression-basel'; queue for target-branch replay.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F492CAB2293R7BGJWMWMRKT4` owner `develop` base `develop` source-owner `ticket/06F492CTREZEDXVKJ839YGCPWW-story-add-provider-optimization-regression-basel`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F492CFSJHN0RGXXRG3KT63FM` owner `develop` base `develop` source-owner `ticket/06F492CTREZEDXVKJ839YGCPWW-story-add-provider-optimization-regression-basel`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F492CN76GS3CKM8EFD0C20XM` owner `develop` base `develop` source-owner `ticket/06F492CTREZEDXVKJ839YGCPWW-story-add-provider-optimization-regression-basel`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F492D05THPGQVT3B3K7853A0` on owner branch `ticket/06F492D05THPGQVT3B3K7853A0-task-update-v0-18-0-documentation-and-release-no` after that branch is refreshed/rebased.
