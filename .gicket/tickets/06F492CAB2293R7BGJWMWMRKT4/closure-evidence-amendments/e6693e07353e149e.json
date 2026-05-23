@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "amendedTicketId": "06F492CAB2293R7BGJWMWMRKT4",
+  "amendmentType": "terminal-relation-follow-up-evidence",
+  "supersededClaims": [
+    "Historical relation follow-up targeted owner branch \u0027develop\u0027 after base branch \u0027develop\u0027 already recorded terminal status \u0027done\u0027.",
+    "The original follow-up evidence is preserved append-only instead of reopening the terminal ticket or recreating its owner branch."
+  ],
+  "landedEvidence": [
+    "Relation follow-up from ticket \u002706F492CTREZEDXVKJ839YGCPWW\u0027 via flow \u0027blocked-by-follow-up-comment\u0027 and action \u0027blocked-by-follow-up-target\u0027 became available after the target ticket was terminal.",
+    "Base branch \u0027develop\u0027 records target status \u0027done\u0027.",
+    "Original follow-up comment: [gicket-bot] relation follow-up\n\nSummary\n- Source ticket \u006006F492CTREZEDXVKJ839YGCPWW\u0060 completed a bot run for role \u0060po\u0060 with outcome \u0060po-refinement-ready\u0060.\n- Source run summary: PO refinement processed ticket \u002706F492CTREZEDXVKJ839YGCPWW\u0027. Ticket is ready for handoff to role \u0027po-critic\u0027 according to runtime-orchestration policy.\n- Selected flow \u0060blocked-by-follow-up-comment\u0060 reached this ticket via \u0060blocks\u0060 path \u006006F492CTREZEDXVKJ839YGCPWW -\u003E 06F492CAB2293R7BGJWMWMRKT4\u0060.\n\nRun metadata\n- run-id: \u0060..."
+  ],
+  "baseBranch": "develop",
+  "sourceTicketId": "06F492CTREZEDXVKJ839YGCPWW",
+  "sourceRunId": "d5f00757239c4e32a690308a05f2d23c",
+  "sourceRoleToken": "po",
+  "sourceKind": "relation-follow-up",
+  "createdAtUtc": "2026-05-23T18:36:21.7624985+00:00",
+  "semanticIdempotencyKey": "closure-evidence-amendment-ledger:06f492cab2293r7bgjwmwmrkt4:terminal-relation-follow-up-evidence:develop:06f492ctrezedxvkj839ygcpww:relation-follow-up:ad7758b4e18924f3"
+}
