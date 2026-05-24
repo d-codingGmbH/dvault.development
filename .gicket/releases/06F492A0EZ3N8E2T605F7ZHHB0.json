@@ -3,6 +3,6 @@
   "releaseId": "06F492A0EZ3N8E2T605F7ZHHB0",
   "name": "v0.18.0 - Performance Analysis and Query Tuning",
   "description": "Evidence-driven performance analysis and targeted EF Core tuning for DVault save/read paths without adding platform, dashboard, or deployment responsibilities.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-20T08:38:26.1675556Z"
 }

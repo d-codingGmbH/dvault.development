@@ -3,6 +3,6 @@
   "milestoneId": "06F492A1Y2D14XJWEXVYP2C6Q8",
   "name": "v0.18.0 - Read and save path tuning",
   "description": "Measured query, allocation, change-tracker, compiled query/model, and DbContext pooling tuning.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-20T08:38:26.5443184Z"
 }
