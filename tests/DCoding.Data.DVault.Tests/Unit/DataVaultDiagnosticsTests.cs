@@ -522,6 +522,10 @@ public sealed class DataVaultDiagnosticsTests {
         KnownProviderNames.SqlServer,
         hasPendingTrackedChanges: false,
         CreateRequests(totalOperationCount: 501, satelliteOperationCount: 501));
+    var oracleTooManySatellites = DataVaultProviderSaveStrategyGateEvaluator.EvaluateOracle(
+        KnownProviderNames.Oracle,
+        hasPendingTrackedChanges: false,
+        CreateRequests(totalOperationCount: 10001, satelliteOperationCount: 10001));
     var dirtyContext = DataVaultProviderSaveStrategyGateEvaluator.EvaluateSqlite(
         KnownProviderNames.Sqlite,
         hasPendingTrackedChanges: true,
@@ -548,6 +552,9 @@ public sealed class DataVaultDiagnosticsTests {
         sqlServerTooManySatellites.FallbackCauses,
         cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold);
     Assert.Contains(
+        oracleTooManySatellites.FallbackCauses,
+        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.OracleMaximumSatelliteOperationThreshold);
+    Assert.Contains(
         dirtyContext.FallbackCauses,
         cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.DirtyDbContext);
     Assert.Contains(
@@ -567,11 +574,32 @@ public sealed class DataVaultDiagnosticsTests {
         DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(saveStrategy),
         requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold &&
             requirement.MaximumSatelliteOperationCount == 500);
+
+    using var oracleProvider = CreateOracleServiceProvider();
+    var oracleSaveStrategy = oracleProvider
+        .GetRequiredService<IEnumerable<IDataVaultProviderSaveStrategy>>()
+        .Single(strategy => string.Equals(strategy.GetType().Name, "OracleDataVaultSaveStrategy", StringComparison.Ordinal));
+    Assert.Equal([KnownProviderNames.Oracle], DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(oracleSaveStrategy));
+    Assert.Contains(
+        DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(oracleSaveStrategy),
+        requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.OracleMinimumOperationThreshold &&
+            requirement.MinimumTotalOperationCount == 50);
+    Assert.Contains(
+        DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(oracleSaveStrategy),
+        requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.OracleMaximumSatelliteOperationThreshold &&
+            requirement.MaximumSatelliteOperationCount == 10000);
   }
 
   private static ServiceProvider CreateServiceProvider() {
     var services = new ServiceCollection();
     services.AddDVault();
+
+    return services.BuildServiceProvider(validateScopes: true);
+  }
+
+  private static ServiceProvider CreateOracleServiceProvider() {
+    var services = new ServiceCollection();
+    services.AddDVaultOracle();
 
     return services.BuildServiceProvider(validateScopes: true);
   }

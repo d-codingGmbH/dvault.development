@@ -1318,6 +1318,7 @@ type public enum DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind
   value MySqlMinimumOperationThreshold = 7
   value OracleMinimumOperationThreshold = 8
   value StrategyDeclined = 9
+  value OracleMaximumSatelliteOperationThreshold = 10
 
 type public sealed class DCoding.Data.DVault.DataVaultSaveStrategyGateRequirement : System.IEquatable<DCoding.Data.DVault.DataVaultSaveStrategyGateRequirement>
   ctor public DataVaultSaveStrategyGateRequirement(DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind Kind, int? MinimumTotalOperationCount = null, int? MaximumSatelliteOperationCount = null)

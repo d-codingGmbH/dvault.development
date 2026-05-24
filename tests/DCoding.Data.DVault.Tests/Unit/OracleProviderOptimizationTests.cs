@@ -67,6 +67,26 @@ public sealed class OracleProviderOptimizationTests {
         commandText);
   }
 
+  [Fact]
+  public void OracleChunkSizeUsesLargerCapWhenArrayBindingIsAvailable() {
+    var chunkSize = InvokeOracleIntFactory(
+        "CalculateOracleInsertChunkSize",
+        6,
+        true);
+
+    Assert.Equal(5000, chunkSize);
+  }
+
+  [Fact]
+  public void OracleChunkSizeKeepsInsertAllCapWithoutArrayBinding() {
+    var chunkSize = InvokeOracleIntFactory(
+        "CalculateOracleInsertChunkSize",
+        6,
+        false);
+
+    Assert.Equal(250, chunkSize);
+  }
+
   private static string InvokeOracleCommandTextFactory(string methodName, params object[] arguments) {
     var strategyType = typeof(DVaultOracleServiceCollectionExtensions).Assembly.GetType(
         "DCoding.Data.DVault.OracleDataVaultSaveStrategy",
@@ -76,6 +96,17 @@ public sealed class OracleProviderOptimizationTests {
         .Single(method => string.Equals(method.Name, methodName, StringComparison.Ordinal));
 
     return Assert.IsType<string>(method.Invoke(null, arguments));
+  }
+
+  private static int InvokeOracleIntFactory(string methodName, params object[] arguments) {
+    var strategyType = typeof(DVaultOracleServiceCollectionExtensions).Assembly.GetType(
+        "DCoding.Data.DVault.OracleDataVaultSaveStrategy",
+        throwOnError: true);
+    var method = strategyType!
+        .GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+        .Single(method => string.Equals(method.Name, methodName, StringComparison.Ordinal));
+
+    return Assert.IsType<int>(method.Invoke(null, arguments));
   }
 
   private static int CountOccurrences(string value, string searchValue) {

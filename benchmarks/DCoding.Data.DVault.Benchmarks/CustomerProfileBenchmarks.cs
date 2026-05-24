@@ -472,6 +472,7 @@ internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark
 
     using var provider = services.BuildServiceProvider(validateScopes: true);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
 
     try {
       await using (var context = new CustomerProfileBulkDataVaultContext(options, providerCapabilities)) {
@@ -479,6 +480,7 @@ internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark
         await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
       }
 
+      var executionDetail = BenchmarkExecutionDetails.CreatePlanned(this);
       var elapsed = await BenchmarkClock.MeasureAsync(async () => {
         await using var context = new CustomerProfileBulkDataVaultContext(options, providerCapabilities);
         var hubResult = await saveService.SaveAsync(
@@ -515,10 +517,18 @@ internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark
                     })
                     .ToArray()))
             .ToArray();
+        var satelliteBulkRequest = new DataVaultBulkSaveRequest(satelliteRequests);
+        var strategyDiagnostics = diagnostics.Analyze(context, satelliteBulkRequest);
+        executionDetail = BenchmarkExecutionDetails.CreateSaveStrategyDetail(
+            strategyDiagnostics,
+            satelliteRequests.Length,
+            hubOperationCount: 0,
+            linkOperationCount: 0,
+            satelliteOperationCount: _scenario.TotalChangeCount);
 
         await saveService.SaveAsync(
             context,
-            new DataVaultBulkSaveRequest(satelliteRequests),
+            satelliteBulkRequest,
             cancellationToken).ConfigureAwait(false);
       }).ConfigureAwait(false);
 
@@ -529,7 +539,8 @@ internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark
           _scenario.CustomerCount.ToString(CultureInfo.InvariantCulture) +
           " customer hubs and " +
           _scenario.TotalChangeCount.ToString(CultureInfo.InvariantCulture) +
-          " profile satellite rows");
+          " profile satellite rows",
+          executionDetail);
     }
     finally {
       await using var cleanupContext = new CustomerProfileBulkDataVaultContext(options, providerCapabilities);

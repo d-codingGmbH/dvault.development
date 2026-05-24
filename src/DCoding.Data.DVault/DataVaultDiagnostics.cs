@@ -101,6 +101,11 @@ public enum DataVaultSaveStrategyFallbackCauseKind {
   /// A custom or unclassified strategy declined the request batch.
   /// </summary>
   StrategyDeclined,
+
+  /// <summary>
+  /// Oracle optimized dispatch accepts at most 10000 satellite operations.
+  /// </summary>
+  OracleMaximumSatelliteOperationThreshold,
 }
 
 /// <summary>
@@ -2423,6 +2428,7 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
   private const int MaximumSqlServerOptimizedSatelliteOperationCount = 500;
   private const int MinimumMySqlOptimizedBatchOperationCount = 50;
   private const int MinimumOracleOptimizedBatchOperationCount = 50;
+  private const int MaximumOracleOptimizedSatelliteOperationCount = 10000;
 
   public static DataVaultProviderSaveStrategyGateEvaluation EvaluateSqlite(
       DbContext dbContext,
@@ -2531,7 +2537,7 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
         requests,
         supportedProviderNames: [KnownProviderNames.Oracle],
         minimumOperationCount: MinimumOracleOptimizedBatchOperationCount,
-        maximumSatelliteOperationCount: null);
+        maximumSatelliteOperationCount: MaximumOracleOptimizedSatelliteOperationCount);
   }
 
   public static bool TryEvaluateKnownStrategy(
@@ -2594,9 +2600,14 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
               MinimumTotalOperationCount: MinimumMySqlOptimizedBatchOperationCount))
           .ToArray(),
       "OracleDataVaultSaveStrategy" => commonRequirements
-          .Append(new DataVaultSaveStrategyGateRequirement(
-              DataVaultSaveStrategyFallbackCauseKind.OracleMinimumOperationThreshold,
-              MinimumTotalOperationCount: MinimumOracleOptimizedBatchOperationCount))
+          .Concat([
+              new DataVaultSaveStrategyGateRequirement(
+                  DataVaultSaveStrategyFallbackCauseKind.OracleMinimumOperationThreshold,
+                  MinimumTotalOperationCount: MinimumOracleOptimizedBatchOperationCount),
+              new DataVaultSaveStrategyGateRequirement(
+                  DataVaultSaveStrategyFallbackCauseKind.OracleMaximumSatelliteOperationThreshold,
+                  MaximumSatelliteOperationCount: MaximumOracleOptimizedSatelliteOperationCount),
+          ])
           .ToArray(),
       _ => Array.Empty<DataVaultSaveStrategyGateRequirement>(),
     };
@@ -2685,8 +2696,9 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
       var satelliteOperationCount = CountSatelliteOperations(requests);
       if (satelliteOperationCount > maximumSatelliteOperationCount.Value) {
         causes.Add(new DataVaultSaveStrategyFallbackCause(
-            DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold,
-            "SQL Server optimized dispatch accepts at most " +
+            GetMaximumSatelliteThresholdCauseKind(strategy),
+            FormatStrategyName(strategy) +
+            " optimized dispatch accepts at most " +
             maximumSatelliteOperationCount.Value.ToString(CultureInfo.InvariantCulture) +
             " satellite operations; the request batch contains " +
             satelliteOperationCount.ToString(CultureInfo.InvariantCulture) +
@@ -2703,6 +2715,15 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
       DataVaultKnownProviderSaveStrategy.SqlServer => DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
       DataVaultKnownProviderSaveStrategy.MySql => DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold,
       DataVaultKnownProviderSaveStrategy.Oracle => DataVaultSaveStrategyFallbackCauseKind.OracleMinimumOperationThreshold,
+      _ => DataVaultSaveStrategyFallbackCauseKind.StrategyDeclined,
+    };
+  }
+
+  private static DataVaultSaveStrategyFallbackCauseKind GetMaximumSatelliteThresholdCauseKind(
+      DataVaultKnownProviderSaveStrategy strategy) {
+    return strategy switch {
+      DataVaultKnownProviderSaveStrategy.SqlServer => DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold,
+      DataVaultKnownProviderSaveStrategy.Oracle => DataVaultSaveStrategyFallbackCauseKind.OracleMaximumSatelliteOperationThreshold,
       _ => DataVaultSaveStrategyFallbackCauseKind.StrategyDeclined,
     };
   }

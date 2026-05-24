@@ -12,7 +12,9 @@ namespace DCoding.Data.DVault;
 internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrategy {
   private const int OracleMaxCommandParameterCount = 60000;
   private const int OracleMaxRowsPerCommand = 250;
+  private const int OracleMaxArrayBindRowsPerCommand = 5000;
   private const int MinimumOptimizedBatchOperationCount = 50;
+  private const int MaximumOptimizedSatelliteOperationCount = 10000;
   private const string OrdinalColumnName = "__dvault_ordinal";
   private const string RowNumberColumnName = "__dvault_row_number";
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
@@ -71,11 +73,14 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     ArgumentNullException.ThrowIfNull(requests);
 
     var operationCount = 0;
+    var satelliteOperationCount = 0;
     foreach (var request in requests) {
       operationCount += request.HubOperations.Count + request.LinkOperations.Count + request.SatelliteOperations.Count;
+      satelliteOperationCount += request.SatelliteOperations.Count;
     }
 
-    return operationCount >= MinimumOptimizedBatchOperationCount;
+    return operationCount >= MinimumOptimizedBatchOperationCount &&
+        satelliteOperationCount <= MaximumOptimizedSatelliteOperationCount;
   }
 
   private static bool ContainsMultiActiveSatelliteOperations(IReadOnlyList<DataVaultSaveRequest> requests) {
@@ -449,19 +454,21 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
 
     try {
       var rowsWritten = 0;
+      var supportsArrayBinding = SupportsOracleArrayBinding(connection);
       foreach (var group in rowArray.GroupBy(row => new OracleInsertRowShape(
           row.TableName,
           row.HashKeyColumnName,
           CreateColumnSignature(row.Values.Keys),
           row.ConflictBehavior))) {
+        var groupRows = group.ToArray();
         var columns = group.First().Values.Keys.ToArray();
         var parameterCountPerRow = columns.Length +
             (group.Key.ConflictBehavior == OracleInsertConflictBehavior.Ignore ? 1 : 0);
-        var chunkSize = Math.Min(
-            OracleMaxRowsPerCommand,
-            Math.Max(1, OracleMaxCommandParameterCount / parameterCountPerRow));
+        var chunkSize = CalculateOracleInsertChunkSize(
+            parameterCountPerRow,
+            CanUseOracleArrayBinding(groupRows, group.Key, supportsArrayBinding));
 
-        foreach (var chunk in group.Chunk(chunkSize)) {
+        foreach (var chunk in groupRows.Chunk(chunkSize)) {
           rowsWritten += group.Key.ConflictBehavior == OracleInsertConflictBehavior.Ignore
               ? await ExecuteOracleUniqueInsertChunkAsync(
                   connection,
@@ -851,6 +858,32 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     return true;
   }
 
+  private static bool CanUseOracleArrayBinding(
+      IReadOnlyList<OracleInsertRow> rows,
+      OracleInsertRowShape shape,
+      bool supportsArrayBinding) {
+    if (!supportsArrayBinding) {
+      return false;
+    }
+
+    if (shape.ConflictBehavior == OracleInsertConflictBehavior.Fail) {
+      return true;
+    }
+
+    return shape.HashKeyColumnName is not null &&
+        HasDistinctHashKeys(rows, shape.HashKeyColumnName);
+  }
+
+  private static int CalculateOracleInsertChunkSize(int parameterCountPerRow, bool canUseArrayBinding) {
+    if (parameterCountPerRow <= 0) {
+      throw new ArgumentOutOfRangeException(nameof(parameterCountPerRow));
+    }
+
+    return canUseArrayBinding
+        ? OracleMaxArrayBindRowsPerCommand
+        : Math.Min(OracleMaxRowsPerCommand, Math.Max(1, OracleMaxCommandParameterCount / parameterCountPerRow));
+  }
+
   private static object CreateOracleArrayParameterValue(IEnumerable<object> values) {
     var valueArray = values.ToArray();
     if (valueArray.All(value => value is string)) {
@@ -876,17 +909,29 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     return valueArray;
   }
 
+  private static bool SupportsOracleArrayBinding(DbConnection connection) {
+    using var command = connection.CreateCommand();
+
+    return CanSetOracleArrayBindCount(command);
+  }
+
   private static bool TrySetOracleArrayBindCount(DbCommand command, int rowCount) {
-    var arrayBindCountProperty = command.GetType().GetProperty("ArrayBindCount");
-    if (arrayBindCountProperty is null ||
-        arrayBindCountProperty.PropertyType != typeof(int) ||
-        !arrayBindCountProperty.CanWrite) {
+    if (!CanSetOracleArrayBindCount(command)) {
       return false;
     }
 
-    arrayBindCountProperty.SetValue(command, rowCount);
+    var arrayBindCountProperty = command.GetType().GetProperty("ArrayBindCount");
+    arrayBindCountProperty!.SetValue(command, rowCount);
 
     return true;
+  }
+
+  private static bool CanSetOracleArrayBindCount(DbCommand command) {
+    var arrayBindCountProperty = command.GetType().GetProperty("ArrayBindCount");
+
+    return arrayBindCountProperty is not null &&
+        arrayBindCountProperty.PropertyType == typeof(int) &&
+        arrayBindCountProperty.CanWrite;
   }
 
   private static string ResolvePhysicalTableName(DbContext dbContext, string producedTableName) {
