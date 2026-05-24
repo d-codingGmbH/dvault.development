@@ -1,23 +1,22 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q8X261DQHG7N1445NGXB5W",
   "ticket-type": "story",
   "title": "Story: Define streaming explicit-save contract and non-goals",
-  "revision": "06F5Q97BW2NAFXJQ6EJ6B5J1M0",
-  "status": "todo",
+  "revision": "06F5RS260ZQWGPHPHX85JAABPC",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
     "area/architecture",
     "area/ef-core",
+    "area/performance",
     "area/persistence",
-    "area/performance"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WE0ASFFGJD5EG5G1EEKC",
   "releaseId": "06F5Q8W98RVXB5Z5NQWRCQ3VC8",
   "created-at": "2026-05-24T20:18:31.2360063Z",
-  "updated-at": "2026-05-24T20:19:55.4886491Z"
+  "updated-at": "2026-05-24T23:48:55.9430110Z"
 }
