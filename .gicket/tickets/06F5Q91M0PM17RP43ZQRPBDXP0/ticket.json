@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F5Q91M0PM17RP43ZQRPBDXP0",
+  "ticket-type": "task",
+  "title": "Task: Update v0.21.0 PIT and bridge completeness documentation",
+  "revision": "06F5Q9952JQ44CC6X159MXDER0",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/documentation",
+    "area/ef-core",
+    "area/maintenance",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F5Q8WMTG3GXZSBBT18EWF20G",
+  "releaseId": "06F5Q8WBS0Q69JVAHATNXHBWAW",
+  "created-at": "2026-05-24T20:19:08.7689408Z",
+  "updated-at": "2026-05-24T20:20:10.1325064Z"
+}

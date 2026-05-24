@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F5Q916BXE2N372SWMH1X776G",
+  "ticket-type": "story",
+  "title": "Story: Add delete-aware bridge maintenance for topology shrink",
+  "revision": "06F5Q98XDTJAK85TBWXF47E43C",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/story",
+    "area/ef-core",
+    "area/maintenance",
+    "area/read-models",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F5Q8WM2ZVJH04HEX8H4H066M",
+  "releaseId": "06F5Q8WBS0Q69JVAHATNXHBWAW",
+  "created-at": "2026-05-24T20:19:05.0762901Z",
+  "updated-at": "2026-05-24T20:20:08.1741328Z"
+}

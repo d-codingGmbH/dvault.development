@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F5Q8WQ2RZXNARCD7T4M57H6M",
+  "name": "v0.22.0 - Generator and hash docs",
+  "description": "Analyzer guidance, docs, benchmarks, and release documentation for typed reads and hash governance.",
+  "status": "planned",
+  "createdAt": "2026-05-24T20:18:28.2462218Z"
+}

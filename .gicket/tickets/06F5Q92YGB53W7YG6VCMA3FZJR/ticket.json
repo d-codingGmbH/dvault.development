@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F5Q92YGB53W7YG6VCMA3FZJR",
+  "ticket-type": "story",
+  "title": "Story: Add analyzers and code fixes for typed read generators",
+  "revision": "06F5Q99HNNHKJGE7JEYC3C8VGC",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/story",
+    "area/analyzers",
+    "area/developer-experience",
+    "area/ef-core",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F5Q8WQ2RZXNARCD7T4M57H6M",
+  "releaseId": "06F5Q8WCGVYM0PMGBHXGM01RZC",
+  "created-at": "2026-05-24T20:19:19.4473953Z",
+  "updated-at": "2026-05-24T20:20:13.3572165Z"
+}

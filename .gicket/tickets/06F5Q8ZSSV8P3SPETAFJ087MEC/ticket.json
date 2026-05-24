@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F5Q8ZSSV8P3SPETAFJ087MEC",
+  "ticket-type": "story",
+  "title": "Story: Evaluate and implement MySQL staged bulk save strategy",
+  "revision": "06F5Q98CQHEV1AAR5CEPGXTDX8",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/story",
+    "area/ef-core",
+    "area/performance",
+    "area/persistence",
+    "area/provider-support",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F5Q8WH0CG92WHM5BMSHXQ89R",
+  "releaseId": "06F5Q8WAWQMZ22WMK10XYDEFQG",
+  "created-at": "2026-05-24T20:18:53.7549178Z",
+  "updated-at": "2026-05-24T20:20:03.9004972Z"
+}

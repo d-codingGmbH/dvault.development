@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F5Q93H60W6X8FJ88PWTR6NG4",
+  "ticket-type": "task",
+  "title": "Task: Update v0.22.0 typed read and hash governance documentation",
+  "revision": "06F5Q99QP3BRH7VVCG526D2BPM",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/analyzers",
+    "area/documentation",
+    "area/ef-core",
+    "area/modeling",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F5Q8WQ2RZXNARCD7T4M57H6M",
+  "releaseId": "06F5Q8WCGVYM0PMGBHXGM01RZC",
+  "created-at": "2026-05-24T20:19:24.2304415Z",
+  "updated-at": "2026-05-24T20:20:14.8969997Z"
+}

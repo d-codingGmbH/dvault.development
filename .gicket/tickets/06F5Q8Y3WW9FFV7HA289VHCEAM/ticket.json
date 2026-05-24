@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F5Q8Y3WW9FFV7HA289VHCEAM",
+  "ticket-type": "task",
+  "title": "Task: Update v0.19.0 streaming save documentation and release notes",
+  "revision": "06F5Q97VMA5MXFKVWNNRD0NT60",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/documentation",
+    "area/ef-core",
+    "area/performance",
+    "area/persistence"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F5Q8WFGQ63X9B1PZ5C53XH08",
+  "releaseId": "06F5Q8W98RVXB5Z5NQWRCQ3VC8",
+  "created-at": "2026-05-24T20:18:40.1391256Z",
+  "updated-at": "2026-05-24T20:19:59.5226979Z"
+}

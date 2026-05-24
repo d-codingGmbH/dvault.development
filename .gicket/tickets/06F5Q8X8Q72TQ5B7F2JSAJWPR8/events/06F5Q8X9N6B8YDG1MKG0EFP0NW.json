@@ -1,0 +1,13 @@
+{
+  "event-id": "06F5Q8X9N6B8YDG1MKG0EFP0NW",
+  "occurred-at": "2026-05-24T20:18:33.0010072Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Implement provider-neutral chunked save execution",
+    "status": "todo"
+  }
+}

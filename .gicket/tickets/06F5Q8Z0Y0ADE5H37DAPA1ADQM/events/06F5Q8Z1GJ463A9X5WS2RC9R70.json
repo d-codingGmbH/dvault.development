@@ -1,0 +1,13 @@
+{
+  "event-id": "06F5Q8Z1GJ463A9X5WS2RC9R70",
+  "occurred-at": "2026-05-24T20:18:47.3007579Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add actionable staged-bulk fallback diagnostics",
+    "status": "todo"
+  }
+}

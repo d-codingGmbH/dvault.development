@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F5Q8XXSBGW1B8RDRMGVF557W",
+  "ticket-type": "story",
+  "title": "Story: Add streaming save benchmark evidence",
+  "revision": "06F5Q97RA9C6Y61RR782TAPSH4",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/story",
+    "area/benchmarks",
+    "area/performance",
+    "area/persistence",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F5Q8WFGQ63X9B1PZ5C53XH08",
+  "releaseId": "06F5Q8W98RVXB5Z5NQWRCQ3VC8",
+  "created-at": "2026-05-24T20:18:38.3105267Z",
+  "updated-at": "2026-05-24T20:19:58.6745086Z"
+}

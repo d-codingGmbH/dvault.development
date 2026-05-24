@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F5Q90KC6JGQPSP285XQYSPK8",
+  "ticket-type": "story",
+  "title": "Story: Add registry-backed PIT maintenance requests",
+  "revision": "06F5Q98QHFAS5GWMGTJ7TYERT0",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/story",
+    "area/ef-core",
+    "area/maintenance",
+    "area/modeling",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F5Q8WJKS4Z654A4T682GTDCR",
+  "releaseId": "06F5Q8WBS0Q69JVAHATNXHBWAW",
+  "created-at": "2026-05-24T20:19:00.2091787Z",
+  "updated-at": "2026-05-24T20:20:06.6673764Z"
+}

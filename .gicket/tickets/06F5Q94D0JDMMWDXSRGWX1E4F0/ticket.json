@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F5Q94D0JDMMWDXSRGWX1E4F0",
+  "ticket-type": "story",
+  "title": "Story: Add Activity tracing for PIT and bridge maintenance",
+  "revision": "06F5Q9A4Z0Y2JX6Q9NE4473DX4",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/story",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/maintenance",
+    "area/observability",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F5Q8WR6NCE3Y4EMP5K71KF8W",
+  "releaseId": "06F5Q8WD8Q7AE054Z6G961E6D4",
+  "created-at": "2026-05-24T20:19:31.4428523Z",
+  "updated-at": "2026-05-24T20:20:18.2962119Z"
+}

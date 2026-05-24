@@ -1,0 +1,13 @@
+{
+  "event-id": "06F5Q94MFHXXJ1B44K31HYQE7R",
+  "occurred-at": "2026-05-24T20:19:33.1164154Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add benchmark-backed performance profile guidance",
+    "status": "todo"
+  }
+}

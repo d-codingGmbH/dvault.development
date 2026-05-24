@@ -1,0 +1,13 @@
+{
+  "event-id": "06F5Q8ZTQBBQMYGZJ1YNCE1HFG",
+  "occurred-at": "2026-05-24T20:18:53.7549178Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Evaluate and implement MySQL staged bulk save strategy",
+    "status": "todo"
+  }
+}

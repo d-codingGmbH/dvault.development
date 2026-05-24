@@ -1,0 +1,13 @@
+{
+  "event-id": "06F5Q907M4G7HBG7XEYY44MZZW",
+  "occurred-at": "2026-05-24T20:18:57.0574182Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Document staged bulk guidance and stored-procedure boundary for v0.20.0",
+    "status": "todo"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "releaseId": "06F5Q8W98RVXB5Z5NQWRCQ3VC8",
+  "name": "v0.19.0 - Streaming Save Pipeline",
+  "description": "Streaming and chunked explicit save inputs for large DVault loads, keeping the EF Core library boundary and avoiding platform or scheduler responsibilities.",
+  "status": "active",
+  "createdAt": "2026-05-24T20:18:24.7101045Z"
+}

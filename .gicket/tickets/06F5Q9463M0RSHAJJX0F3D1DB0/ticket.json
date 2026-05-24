@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F5Q9463M0RSHAJJX0F3D1DB0",
+  "ticket-type": "story",
+  "title": "Story: Add Activity tracing for save and read operations",
+  "revision": "06F5Q9A2H7HY7G64JF6ACK3ZVM",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/story",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/observability",
+    "area/persistence",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F5Q8WR6NCE3Y4EMP5K71KF8W",
+  "releaseId": "06F5Q8WD8Q7AE054Z6G961E6D4",
+  "created-at": "2026-05-24T20:19:29.5827192Z",
+  "updated-at": "2026-05-24T20:20:17.6735844Z"
+}

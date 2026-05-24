@@ -1,0 +1,13 @@
+{
+  "event-id": "06F5Q94DY88R7X2WD5G0FDQJ04",
+  "occurred-at": "2026-05-24T20:19:31.4428523Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add Activity tracing for PIT and bridge maintenance",
+    "status": "todo"
+  }
+}

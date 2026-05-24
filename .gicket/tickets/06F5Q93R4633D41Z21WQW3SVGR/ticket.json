@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F5Q93R4633D41Z21WQW3SVGR",
+  "ticket-type": "epic",
+  "title": "Epic: Tracing and performance guidance",
+  "revision": "06F5Q977T42MAR2MBARCYPC98M",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/epic",
+    "area/diagnostics",
+    "area/documentation",
+    "area/ef-core",
+    "area/observability",
+    "area/performance"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F5Q8WR6NCE3Y4EMP5K71KF8W",
+  "releaseId": "06F5Q8WD8Q7AE054Z6G961E6D4",
+  "created-at": "2026-05-24T20:19:26.0056484Z",
+  "updated-at": "2026-05-24T20:19:54.4497372Z"
+}

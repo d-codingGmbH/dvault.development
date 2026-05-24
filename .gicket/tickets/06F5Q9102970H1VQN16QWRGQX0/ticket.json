@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F5Q9102970H1VQN16QWRGQX0",
+  "ticket-type": "story",
+  "title": "Story: Support PIT over multi-active satellites",
+  "revision": "06F5Q98TVR1WV8T000S6573324",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/story",
+    "area/ef-core",
+    "area/maintenance",
+    "area/modeling",
+    "area/read-models",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F5Q8WJKS4Z654A4T682GTDCR",
+  "releaseId": "06F5Q8WBS0Q69JVAHATNXHBWAW",
+  "created-at": "2026-05-24T20:19:03.4636873Z",
+  "updated-at": "2026-05-24T20:20:07.5183175Z"
+}

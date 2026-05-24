@@ -1,0 +1,13 @@
+{
+  "event-id": "06F5Q92Z2ZRS4A6RF5MJWTPXBG",
+  "occurred-at": "2026-05-24T20:19:19.4473953Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add analyzers and code fixes for typed read generators",
+    "status": "todo"
+  }
+}

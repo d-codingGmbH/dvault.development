@@ -1,0 +1,13 @@
+{
+  "event-id": "06F5Q946NR7NAW5HE030NPB4D4",
+  "occurred-at": "2026-05-24T20:19:29.5827192Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add Activity tracing for save and read operations",
+    "status": "todo"
+  }
+}

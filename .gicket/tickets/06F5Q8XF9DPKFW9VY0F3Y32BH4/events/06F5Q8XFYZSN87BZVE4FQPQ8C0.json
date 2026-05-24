@@ -1,0 +1,13 @@
+{
+  "event-id": "06F5Q8XFYZSN87BZVE4FQPQ8C0",
+  "occurred-at": "2026-05-24T20:18:34.6156405Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Bound streaming hash state and memory diagnostics",
+    "status": "todo"
+  }
+}

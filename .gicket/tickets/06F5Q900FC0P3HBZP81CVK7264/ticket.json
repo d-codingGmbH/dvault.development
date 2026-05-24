@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F5Q900FC0P3HBZP81CVK7264",
+  "ticket-type": "story",
+  "title": "Story: Add staged bulk benchmark matrix and regression budgets",
+  "revision": "06F5Q98G28JP8NNFEDR6KE68M4",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/story",
+    "area/benchmarks",
+    "area/performance",
+    "area/provider-support",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F5Q8WHV80016VN9N48KP6AGG",
+  "releaseId": "06F5Q8WAWQMZ22WMK10XYDEFQG",
+  "created-at": "2026-05-24T20:18:55.3851051Z",
+  "updated-at": "2026-05-24T20:20:04.7542009Z"
+}

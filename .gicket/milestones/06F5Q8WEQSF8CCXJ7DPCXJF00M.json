@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F5Q8WEQSF8CCXJ7DPCXJF00M",
+  "name": "v0.19.0 - Chunked save implementation",
+  "description": "Provider-neutral chunked save behavior, hash state, diagnostics, and safety gates.",
+  "status": "active",
+  "createdAt": "2026-05-24T20:18:26.1107399Z"
+}

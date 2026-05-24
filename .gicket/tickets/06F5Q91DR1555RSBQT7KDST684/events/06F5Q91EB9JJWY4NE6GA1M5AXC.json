@@ -1,0 +1,13 @@
+{
+  "event-id": "06F5Q91EB9JJWY4NE6GA1M5AXC",
+  "occurred-at": "2026-05-24T20:19:06.9702916Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add PIT and bridge diagnostics and benchmark evidence",
+    "status": "todo"
+  }
+}

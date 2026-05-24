@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F5Q91DR1555RSBQT7KDST684",
+  "ticket-type": "story",
+  "title": "Story: Add PIT and bridge diagnostics and benchmark evidence",
+  "revision": "06F5Q98Z609QCA6PQ9BGPTAYBG",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/story",
+    "area/benchmarks",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/performance",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F5Q8WMTG3GXZSBBT18EWF20G",
+  "releaseId": "06F5Q8WBS0Q69JVAHATNXHBWAW",
+  "created-at": "2026-05-24T20:19:06.9702916Z",
+  "updated-at": "2026-05-24T20:20:08.6249133Z"
+}

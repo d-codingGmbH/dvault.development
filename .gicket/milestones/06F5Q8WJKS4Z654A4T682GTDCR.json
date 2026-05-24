@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F5Q8WJKS4Z654A4T682GTDCR",
+  "name": "v0.21.0 - PIT completeness",
+  "description": "Registry-backed, link-parent, and multi-active PIT maintenance/read support.",
+  "status": "planned",
+  "createdAt": "2026-05-24T20:18:27.1024308Z"
+}

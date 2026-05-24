@@ -1,0 +1,13 @@
+{
+  "event-id": "06F5Q91NC2MSEEJ0WMD598HH6R",
+  "occurred-at": "2026-05-24T20:19:08.7689408Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Update v0.21.0 PIT and bridge completeness documentation",
+    "status": "todo"
+  }
+}

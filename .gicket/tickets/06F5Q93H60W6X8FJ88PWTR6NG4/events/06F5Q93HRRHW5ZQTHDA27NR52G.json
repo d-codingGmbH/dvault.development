@@ -1,0 +1,13 @@
+{
+  "event-id": "06F5Q93HRRHW5ZQTHDA27NR52G",
+  "occurred-at": "2026-05-24T20:19:24.2304415Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Update v0.22.0 typed read and hash governance documentation",
+    "status": "todo"
+  }
+}

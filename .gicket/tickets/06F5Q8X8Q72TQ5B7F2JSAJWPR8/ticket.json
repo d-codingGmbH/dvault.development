@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F5Q8X8Q72TQ5B7F2JSAJWPR8",
+  "ticket-type": "story",
+  "title": "Story: Implement provider-neutral chunked save execution",
+  "revision": "06F5Q97HXRK5ZEMWRFD5FGGX78",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/story",
+    "area/ef-core",
+    "area/persistence",
+    "area/performance",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F5Q8WEQSF8CCXJ7DPCXJF00M",
+  "releaseId": "06F5Q8W98RVXB5Z5NQWRCQ3VC8",
+  "created-at": "2026-05-24T20:18:33.0010072Z",
+  "updated-at": "2026-05-24T20:19:57.0383408Z"
+}

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "releaseId": "06F5Q8WBS0Q69JVAHATNXHBWAW",
+  "name": "v0.21.0 - PIT and Bridge Completeness",
+  "description": "Focused Data Vault read-model completeness for PIT and bridge maintenance/read paths without adding background schedulers or operational platform features.",
+  "status": "planned",
+  "createdAt": "2026-05-24T20:18:25.3527761Z"
+}

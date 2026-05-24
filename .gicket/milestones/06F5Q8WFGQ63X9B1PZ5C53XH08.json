@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F5Q8WFGQ63X9B1PZ5C53XH08",
+  "name": "v0.19.0 - Streaming evidence and docs",
+  "description": "Benchmarks, allocation evidence, adoption guidance, and release documentation for streaming saves.",
+  "status": "active",
+  "createdAt": "2026-05-24T20:18:26.3090701Z"
+}

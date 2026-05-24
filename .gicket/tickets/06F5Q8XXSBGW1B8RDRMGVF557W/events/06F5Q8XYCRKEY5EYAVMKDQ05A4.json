@@ -1,0 +1,13 @@
+{
+  "event-id": "06F5Q8XYCRKEY5EYAVMKDQ05A4",
+  "occurred-at": "2026-05-24T20:18:38.3105267Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add streaming save benchmark evidence",
+    "status": "todo"
+  }
+}
