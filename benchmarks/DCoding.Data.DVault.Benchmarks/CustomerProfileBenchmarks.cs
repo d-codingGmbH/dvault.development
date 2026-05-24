@@ -520,6 +520,7 @@ internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark
         var satelliteBulkRequest = new DataVaultBulkSaveRequest(satelliteRequests);
         var strategyDiagnostics = diagnostics.Analyze(context, satelliteBulkRequest);
         executionDetail = BenchmarkExecutionDetails.CreateSaveStrategyDetail(
+            this,
             strategyDiagnostics,
             satelliteRequests.Length,
             hubOperationCount: 0,

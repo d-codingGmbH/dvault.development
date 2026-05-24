@@ -529,14 +529,17 @@ internal static class BenchmarkExecutionDetails {
   }
 
   public static string CreateSaveStrategyDetail(
+      IScenarioBenchmark benchmark,
       DataVaultDiagnosticsResult diagnostics,
       int requestCount,
       int hubOperationCount,
       int linkOperationCount,
       int satelliteOperationCount) {
+    ArgumentNullException.ThrowIfNull(benchmark);
     ArgumentNullException.ThrowIfNull(diagnostics);
 
-    return "saveStrategyStatus=" + diagnostics.SaveStrategy.Status +
+    return CreatePlanned(benchmark) +
+        "; saveStrategyStatus=" + diagnostics.SaveStrategy.Status +
         "; provider=" + (diagnostics.SaveStrategy.ProviderName ?? "<none>") +
         "; selectedStrategy=" + (diagnostics.SaveStrategy.SelectedStrategyName ?? "<none>") +
         "; candidates=" + diagnostics.SaveStrategy.Candidates.Count.ToString(CultureInfo.InvariantCulture) +

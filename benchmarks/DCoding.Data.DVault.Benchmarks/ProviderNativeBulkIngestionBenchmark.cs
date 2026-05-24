@@ -70,6 +70,7 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark 
         var strategyDiagnostics = diagnostics.Analyze(context, scenario.Request);
         AssertStrategySelection(strategyDiagnostics);
         executionDetail = BenchmarkExecutionDetails.CreateSaveStrategyDetail(
+            this,
             strategyDiagnostics,
             RequestCount,
             HubOperationCount,
