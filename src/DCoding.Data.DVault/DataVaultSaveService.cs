@@ -34,6 +34,18 @@ public interface IDataVaultSaveService {
       DbContext dbContext,
       DataVaultBulkSaveRequest request,
       CancellationToken cancellationToken = default);
+
+  /// <summary>
+  /// Persists ordered chunks of explicit Data Vault save requests through the supplied Entity Framework context.
+  /// </summary>
+  /// <param name="dbContext">The context whose model has been configured with Data Vault metadata.</param>
+  /// <param name="request">The explicit chunked save request containing ordered bounded chunks.</param>
+  /// <param name="cancellationToken">A token used to observe cancellation before continuing to later chunks.</param>
+  /// <returns>The persisted row summary, including saved hash-key values.</returns>
+  Task<DataVaultSaveResult> SaveAsync(
+      DbContext dbContext,
+      DataVaultChunkedSaveRequest request,
+      CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -511,6 +523,59 @@ public sealed class DataVaultBulkSaveRequest {
 }
 
 /// <summary>
+/// Groups ordered bounded chunks of explicit DVault save requests for provider-neutral chunked execution.
+/// </summary>
+public sealed class DataVaultChunkedSaveRequest {
+  /// <summary>
+  /// Initializes a new explicit chunked save request.
+  /// </summary>
+  /// <param name="chunks">The chunks to process in caller-supplied order.</param>
+  public DataVaultChunkedSaveRequest(IEnumerable<DataVaultSaveChunk> chunks) {
+    ArgumentNullException.ThrowIfNull(chunks);
+
+    Chunks = RequireChunks(chunks, nameof(chunks));
+  }
+
+  /// <summary>
+  /// Gets the chunks processed in caller-supplied order.
+  /// </summary>
+  public IReadOnlyList<DataVaultSaveChunk> Chunks { get; }
+
+  private static IReadOnlyList<DataVaultSaveChunk> RequireChunks(
+      IEnumerable<DataVaultSaveChunk> chunks,
+      string parameterName) {
+    var values = chunks.ToArray();
+    foreach (var value in values) {
+      if (value is null) {
+        throw new ArgumentException("Data Vault chunked save request collections must not contain null chunks.", parameterName);
+      }
+    }
+
+    return values;
+  }
+}
+
+/// <summary>
+/// Groups one bounded ordered chunk of explicit DVault save requests.
+/// </summary>
+public sealed class DataVaultSaveChunk {
+  /// <summary>
+  /// Initializes a new explicit save chunk.
+  /// </summary>
+  /// <param name="requests">The save requests to process in caller-supplied order within this chunk.</param>
+  public DataVaultSaveChunk(IEnumerable<DataVaultSaveRequest> requests) {
+    ArgumentNullException.ThrowIfNull(requests);
+
+    Requests = new DataVaultBulkSaveRequest(requests).Requests;
+  }
+
+  /// <summary>
+  /// Gets the save requests processed in caller-supplied order within this chunk.
+  /// </summary>
+  public IReadOnlyList<DataVaultSaveRequest> Requests { get; }
+}
+
+/// <summary>
 /// Describes one hub row to persist through the explicit DVault save service.
 /// </summary>
 public sealed class DataVaultHubSaveOperation {
@@ -882,6 +947,53 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         request.Requests,
         DataVaultSaveTelemetryOperationKind.BulkRequest,
         cancellationToken).ConfigureAwait(false);
+  }
+
+  public async Task<DataVaultSaveResult> SaveAsync(
+      DbContext dbContext,
+      DataVaultChunkedSaveRequest request,
+      CancellationToken cancellationToken = default) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(request);
+
+    return await SaveChunksAsync(
+        dbContext,
+        request.Chunks,
+        cancellationToken).ConfigureAwait(false);
+  }
+
+  private async Task<DataVaultSaveResult> SaveChunksAsync(
+      DbContext dbContext,
+      IReadOnlyList<DataVaultSaveChunk> chunks,
+      CancellationToken cancellationToken) {
+    var rowsWritten = 0;
+    var uniqueSavedRecords = new List<DataVaultSavedRecord>();
+    var satelliteSavedRecords = new List<DataVaultSavedRecord>();
+
+    foreach (var chunk in chunks) {
+      cancellationToken.ThrowIfCancellationRequested();
+      if (chunk.Requests.Count == 0) {
+        continue;
+      }
+
+      var result = await SaveRequestsAsync(
+          dbContext,
+          chunk.Requests,
+          DataVaultSaveTelemetryOperationKind.BulkRequest,
+          cancellationToken).ConfigureAwait(false);
+
+      rowsWritten += result.RowsWritten;
+      foreach (var savedRecord in result.SavedRecords) {
+        if (savedRecord.Kind == DataVaultTableKind.Satellite) {
+          satelliteSavedRecords.Add(savedRecord);
+        }
+        else {
+          uniqueSavedRecords.Add(savedRecord);
+        }
+      }
+    }
+
+    return new DataVaultSaveResult(rowsWritten, uniqueSavedRecords.Concat(satelliteSavedRecords));
   }
 
   private async Task<DataVaultSaveResult> SaveRequestsAsync(

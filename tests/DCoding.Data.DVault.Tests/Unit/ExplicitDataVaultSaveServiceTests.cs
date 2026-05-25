@@ -452,6 +452,35 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   }
 
   [Fact]
+  public void ChunkedSaveRequestKeepsCallerSuppliedChunkAndRequestOrder() {
+    var first = new DataVaultSaveRequest(
+        new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero),
+        "first-source",
+        [],
+        []);
+    var second = new DataVaultSaveRequest(
+        new DateTimeOffset(2026, 4, 29, 11, 15, 0, TimeSpan.Zero),
+        "second-source",
+        [],
+        []);
+    var firstChunk = new DataVaultSaveChunk([first]);
+    var secondChunk = new DataVaultSaveChunk([second]);
+    var chunkedRequest = new DataVaultChunkedSaveRequest([firstChunk, secondChunk]);
+
+    Assert.Equal([firstChunk, secondChunk], chunkedRequest.Chunks);
+    Assert.Equal([first], firstChunk.Requests);
+    Assert.Equal([second], secondChunk.Requests);
+  }
+
+  [Fact]
+  public void ChunkedSaveRequestRejectsNullChunksAndRequests() {
+    Assert.Throws<ArgumentNullException>(() => new DataVaultChunkedSaveRequest(null!));
+    Assert.Throws<ArgumentException>(() => new DataVaultChunkedSaveRequest([null!]));
+    Assert.Throws<ArgumentNullException>(() => new DataVaultSaveChunk(null!));
+    Assert.Throws<ArgumentException>(() => new DataVaultSaveChunk([null!]));
+  }
+
+  [Fact]
   public void SaveOperationsRequireNamedValuesWithoutDuplicates() {
     var hub = new DataVaultHubMetadata("Customer", ["Customer Id"]);
 
@@ -521,6 +550,13 @@ public sealed class ExplicitDataVaultSaveServiceTests {
     public Task<DataVaultSaveResult> SaveAsync(
         DbContext dbContext,
         DataVaultBulkSaveRequest request,
+        CancellationToken cancellationToken = default) {
+      throw new NotSupportedException();
+    }
+
+    public Task<DataVaultSaveResult> SaveAsync(
+        DbContext dbContext,
+        DataVaultChunkedSaveRequest request,
         CancellationToken cancellationToken = default) {
       throw new NotSupportedException();
     }

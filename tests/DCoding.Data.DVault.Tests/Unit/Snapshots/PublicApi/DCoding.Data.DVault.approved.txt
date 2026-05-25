@@ -115,6 +115,10 @@ type public sealed class DCoding.Data.DVault.DataVaultBusinessKeyBindingAttribut
   property public string BusinessKeyName { get; }
   property public string SourceMemberName { get; }
 
+type public sealed class DCoding.Data.DVault.DataVaultChunkedSaveRequest
+  ctor public DataVaultChunkedSaveRequest(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveChunk> chunks)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveChunk> Chunks { get; }
+
 type public sealed class DCoding.Data.DVault.DataVaultCodeFirstHubBuilder where TEntity : class
   method public DCoding.Data.DVault.DataVaultCodeFirstHubBuilder<TEntity> BusinessKey<TProperty>(System.Linq.Expressions.Expression<System.Func<TEntity, TProperty?>> propertySelector)
   method public DCoding.Data.DVault.DataVaultCodeFirstHubBuilder<TEntity> Satellite(string satelliteName, System.Action<DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TEntity>>? configure = null)
@@ -1231,6 +1235,10 @@ type public sealed class DCoding.Data.DVault.DataVaultSaveChangesMetadataInterce
   method public DCoding.Data.DVault.DataVaultSaveChangesMetadataInterceptorOptions UseRecordSource(System.Func<string> recordSourceProvider)
   method public DCoding.Data.DVault.DataVaultSaveChangesMetadataInterceptorOptions UseRecordSource(string recordSource)
 
+type public sealed class DCoding.Data.DVault.DataVaultSaveChunk
+  ctor public DataVaultSaveChunk(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveRequest> requests)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> Requests { get; }
+
 type public sealed class DCoding.Data.DVault.DataVaultSaveRequest
   ctor public DataVaultSaveRequest(System.DateTimeOffset loadTimestamp, string recordSource, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultHubSaveOperation> hubOperations, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultLinkSaveOperation> linkOperations)
   ctor public DataVaultSaveRequest(System.DateTimeOffset loadTimestamp, string recordSource, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultHubSaveOperation> hubOperations, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultLinkSaveOperation> linkOperations, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSatelliteSaveOperation> satelliteOperations)
@@ -1470,6 +1478,7 @@ type public interface DCoding.Data.DVault.IDataVaultSatelliteMapper
 
 type public interface DCoding.Data.DVault.IDataVaultSaveService
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultBulkSaveRequest request, System.Threading.CancellationToken cancellationToken = default)
+  method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultChunkedSaveRequest request, System.Threading.CancellationToken cancellationToken = default)
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultSaveRequest request, System.Threading.CancellationToken cancellationToken = default)
 
 type public interface DCoding.Data.DVault.IDataVaultTelemetryObserver

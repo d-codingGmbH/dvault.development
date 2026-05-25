@@ -847,6 +847,90 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
   }
 
   [Fact]
+  public async Task ChunkedSaveTreatsEmptySequenceAndEmptyChunksAsNoOps() {
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateExplicitSaveServiceOptions(database);
+    var services = new ServiceCollection();
+    services.AddDVault();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+
+    await using var context = new ExplicitSaveServiceContext(options);
+    await context.Database.EnsureCreatedAsync();
+
+    var emptySequenceResult = await saveService.SaveAsync(
+        context,
+        new DataVaultChunkedSaveRequest([]));
+    var emptyChunkResult = await saveService.SaveAsync(
+        context,
+        new DataVaultChunkedSaveRequest([new DataVaultSaveChunk([])]));
+
+    Assert.Equal(0, emptySequenceResult.RowsWritten);
+    Assert.Empty(emptySequenceResult.SavedRecords);
+    Assert.Equal(0, emptyChunkResult.RowsWritten);
+    Assert.Empty(emptyChunkResult.SavedRecords);
+  }
+
+  [Fact]
+  public async Task ChunkedSaveMatchesEquivalentBulkSavedRecordOrderingAcrossOperationKinds() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"]);
+    var parentHashKey = "customer-hash";
+    var requests = new[]
+    {
+        new DataVaultSaveRequest(
+            new DateTimeOffset(2026, 5, 24, 9, 0, 0, TimeSpan.Zero),
+            "satellite-import",
+            [],
+            [],
+            [new(contact, parentHashKey, [new("Email Address", "first@example.test")], "contact-hash-1")]),
+        new DataVaultSaveRequest(
+            new DateTimeOffset(2026, 5, 24, 9, 5, 0, TimeSpan.Zero),
+            "hub-import",
+            [new(customer, [new("Customer Id", "C-100")])],
+            []),
+    };
+    var services = new ServiceCollection();
+    services.AddDVault();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    using var bulkDatabase = SqliteTestDatabase.CreateTemporaryFile();
+    using var chunkedDatabase = SqliteTestDatabase.CreateTemporaryFile();
+    var bulkOptions = CreateExplicitSaveServiceOptions(bulkDatabase);
+    var chunkedOptions = CreateExplicitSaveServiceOptions(chunkedDatabase);
+
+    DataVaultSaveResult bulkResult;
+    await using (var context = new ExplicitSaveServiceContext(bulkOptions)) {
+      await context.Database.EnsureCreatedAsync();
+
+      bulkResult = await saveService.SaveAsync(
+          context,
+          new DataVaultBulkSaveRequest(requests));
+    }
+
+    DataVaultSaveResult chunkedResult;
+    await using (var context = new ExplicitSaveServiceContext(chunkedOptions)) {
+      await context.Database.EnsureCreatedAsync();
+
+      chunkedResult = await saveService.SaveAsync(
+          context,
+          new DataVaultChunkedSaveRequest(
+              [
+                  new DataVaultSaveChunk([requests[0]]),
+                  new DataVaultSaveChunk([requests[1]]),
+              ]));
+    }
+
+    Assert.Equal(bulkResult.RowsWritten, chunkedResult.RowsWritten);
+    AssertSavedRecordsEqual(bulkResult.SavedRecords, chunkedResult.SavedRecords);
+  }
+
+  [Fact]
   public async Task ChunkedSaveMatchesEquivalentBulkOrderingForHubAndLinkRequests() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var order = new DataVaultHubMetadata("Order", ["Order Id"]);
@@ -890,13 +974,12 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     await using (var context = new ExplicitSaveServiceContext(chunkedOptions)) {
       await context.Database.EnsureCreatedAsync();
 
-      chunkedResult = await SaveChunkedContractAsync(
-          saveService,
+      chunkedResult = await saveService.SaveAsync(
           context,
-          new ChunkedSaveContractRequest(
+          new DataVaultChunkedSaveRequest(
               [
-                  new ChunkedSaveContractChunk([requests[0]]),
-                  new ChunkedSaveContractChunk([requests[1]]),
+                  new DataVaultSaveChunk([requests[0]]),
+                  new DataVaultSaveChunk([requests[1]]),
               ]));
     }
 
@@ -930,13 +1013,12 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     await using var context = new ExplicitSaveServiceContext(options);
 
     await Assert.ThrowsAsync<OperationCanceledException>(() =>
-        SaveChunkedContractAsync(
-            saveService,
+        saveService.SaveAsync(
             context,
-            new ChunkedSaveContractRequest(
+            new DataVaultChunkedSaveRequest(
                 [
-                    new ChunkedSaveContractChunk([firstRequest]),
-                    new ChunkedSaveContractChunk([secondRequest]),
+                    new DataVaultSaveChunk([firstRequest]),
+                    new DataVaultSaveChunk([secondRequest]),
                 ]),
             cancellationSource.Token));
 
@@ -964,12 +1046,11 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
       await context.Database.EnsureCreatedAsync();
       await using var transaction = await context.Database.BeginTransactionAsync();
 
-      var result = await SaveChunkedContractAsync(
-          saveService,
+      var result = await saveService.SaveAsync(
           context,
-          new ChunkedSaveContractRequest(
+          new DataVaultChunkedSaveRequest(
               [
-                  new ChunkedSaveContractChunk([
+                  new DataVaultSaveChunk([
                       new DataVaultSaveRequest(
                           loadTimestamp,
                           "crm-import",
@@ -979,7 +1060,7 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
                           ],
                           []),
                   ]),
-                  new ChunkedSaveContractChunk([
+                  new DataVaultSaveChunk([
                       new DataVaultSaveRequest(
                           loadTimestamp.AddMinutes(1),
                           "crm-import",
@@ -1032,13 +1113,12 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     await using (var context = new ExplicitSaveServiceContext(options)) {
       await context.Database.EnsureCreatedAsync();
 
-      result = await SaveChunkedContractAsync(
-          saveService,
+      result = await saveService.SaveAsync(
           context,
-          new ChunkedSaveContractRequest(
+          new DataVaultChunkedSaveRequest(
               [
-                  new ChunkedSaveContractChunk([request]),
-                  new ChunkedSaveContractChunk([request]),
+                  new DataVaultSaveChunk([request]),
+                  new DataVaultSaveChunk([request]),
               ]));
     }
 
@@ -1078,12 +1158,11 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     await using (var context = new ExplicitSaveServiceContext(options)) {
       await context.Database.EnsureCreatedAsync();
 
-      result = await SaveChunkedContractAsync(
-          saveService,
+      result = await saveService.SaveAsync(
           context,
-          new ChunkedSaveContractRequest(
+          new DataVaultChunkedSaveRequest(
               [
-                  new ChunkedSaveContractChunk([
+                  new DataVaultSaveChunk([
                       new DataVaultSaveRequest(
                           firstLoadTimestamp,
                           "crm-import",
@@ -1091,7 +1170,7 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
                           [],
                           [new(contact, parentHashKey, [new("Email Address", "first@example.test")], "contact-hash-1")]),
                   ]),
-                  new ChunkedSaveContractChunk([
+                  new DataVaultSaveChunk([
                       new DataVaultSaveRequest(
                           replayLoadTimestamp,
                           "crm-replay",
@@ -1099,7 +1178,7 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
                           [],
                           [new(contact, parentHashKey, [new("Email Address", "ignored@example.test")], "contact-hash-1")]),
                   ]),
-                  new ChunkedSaveContractChunk([
+                  new DataVaultSaveChunk([
                       new DataVaultSaveRequest(
                           changedLoadTimestamp,
                           "crm-change",
@@ -1925,36 +2004,6 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
         .HashKey;
   }
 
-  private static async Task<DataVaultSaveResult> SaveChunkedContractAsync(
-      IDataVaultSaveService saveService,
-      DbContext dbContext,
-      ChunkedSaveContractRequest request,
-      CancellationToken cancellationToken = default) {
-    ArgumentNullException.ThrowIfNull(saveService);
-    ArgumentNullException.ThrowIfNull(dbContext);
-    ArgumentNullException.ThrowIfNull(request);
-
-    var rowsWritten = 0;
-    var savedRecords = new List<DataVaultSavedRecord>();
-    foreach (var chunk in request.Chunks) {
-      cancellationToken.ThrowIfCancellationRequested();
-
-      if (chunk.Requests.Count == 0) {
-        continue;
-      }
-
-      var result = await saveService.SaveAsync(
-          dbContext,
-          new DataVaultBulkSaveRequest(chunk.Requests),
-          cancellationToken).ConfigureAwait(false);
-
-      rowsWritten += result.RowsWritten;
-      savedRecords.AddRange(result.SavedRecords);
-    }
-
-    return new DataVaultSaveResult(rowsWritten, savedRecords);
-  }
-
   private static DbContextOptions<ExplicitSaveServiceContext> CreateExplicitSaveServiceOptions(SqliteTestDatabase database) {
     return new DbContextOptionsBuilder<ExplicitSaveServiceContext>()
         .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
@@ -2127,39 +2176,6 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
 
       return Task.FromResult(new DataVaultSaveResult(0, []));
     }
-  }
-
-  private sealed class ChunkedSaveContractRequest {
-    public ChunkedSaveContractRequest(IEnumerable<ChunkedSaveContractChunk> chunks) {
-      ArgumentNullException.ThrowIfNull(chunks);
-
-      Chunks = RequireChunks(chunks, nameof(chunks));
-    }
-
-    public IReadOnlyList<ChunkedSaveContractChunk> Chunks { get; }
-
-    private static IReadOnlyList<ChunkedSaveContractChunk> RequireChunks(
-        IEnumerable<ChunkedSaveContractChunk> chunks,
-        string parameterName) {
-      var values = chunks.ToArray();
-      foreach (var value in values) {
-        if (value is null) {
-          throw new ArgumentException("Data Vault chunked save contract requests must not contain null chunks.", parameterName);
-        }
-      }
-
-      return values;
-    }
-  }
-
-  private sealed class ChunkedSaveContractChunk {
-    public ChunkedSaveContractChunk(IEnumerable<DataVaultSaveRequest> requests) {
-      ArgumentNullException.ThrowIfNull(requests);
-
-      Requests = new DataVaultBulkSaveRequest(requests).Requests;
-    }
-
-    public IReadOnlyList<DataVaultSaveRequest> Requests { get; }
   }
 
   private static DataVaultMetadataModel CreateMetadataModel() {
