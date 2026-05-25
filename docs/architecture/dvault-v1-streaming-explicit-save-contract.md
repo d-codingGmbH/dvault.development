@@ -2,6 +2,7 @@
 
 Status: v1 contract
 Ticket: 06F5Q8X261DQHG7N1445NGXB5W
+Current public baseline: [DVault v0.19.0 Release Notes](../releases/v0.19.0.md)
 
 ## Decision
 
@@ -18,7 +19,7 @@ Task<DataVaultSaveResult> SaveAsync(
 
 `DataVaultChunkedSaveRequest` carries an ordered sequence of bounded `DataVaultSaveChunk` values. Each chunk carries an ordered, finite collection of ordinary `DataVaultSaveRequest` values. Those contained requests keep the same validation, metadata, resolver, hash-key, hash-diff, hub, link, and satellite rules as existing explicit save requests.
 
-This contract defines the public API and behavior expectations for the additive v1 boundary. Provider-neutral chunk execution, bounded retained-state diagnostics, and provider-specific chunk optimizations remain owned by the follow-on implementation stories.
+This contract defines the public API and behavior expectations for the additive v1 boundary. Provider-neutral chunk execution, bounded retained-state diagnostics, and provider-specific chunk optimizations remain owned by the follow-on implementation stories. The v0.19.0 public baseline documents the landed provider-neutral chunk execution and bounded retained-state diagnostics; provider-specific chunk optimizations remain future work outside the current claim set.
 
 ## Input Shape
 
@@ -91,7 +92,7 @@ The existing API behavior that chunked saves must preserve is already covered by
 - `ProviderSqlExecutionContract.ParticipatesInCurrentTransactionAsync`
 - `ProviderSqlExecutionContract.PropagatesCancellationTokenAsync`
 
-The retained-state implementation and diagnostics story extends this baseline with public chunked-save execution, bounded retained-state metrics, and deterministic release coverage. Provider-specific chunk optimization remains a later extension point and must not weaken the public caller contract.
+The retained-state implementation and diagnostics baseline extends this coverage with public chunked-save execution, bounded retained-state metrics, and deterministic release evidence. Provider-specific chunk optimization remains a later extension point and must not weaken the public caller contract.
 
 ## Non-Goals
 

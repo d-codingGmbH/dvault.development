@@ -5,7 +5,7 @@ Ticket: 06EXB7H6KV753KM125XN3VDRTM
 
 ## Decision
 
-DVault v1 uses an explicit DI-resolved save service as its default write entry point. Callers invoke `IDataVaultSaveService` with a focused request that carries the load timestamp, record source, and hub or link row intent.
+DVault v1 uses an explicit DI-resolved save service as its default write entry point. Callers invoke `IDataVaultSaveService` with a focused single, ordered bulk, or bounded chunked request that carries the load timestamp, record source, and hub or link row intent.
 
 The default `AddDVault()` path registers the save service without requiring an options object. Callers that need a different implementation can register their own `IDataVaultSaveService` through normal dependency injection override behavior.
 
@@ -26,11 +26,26 @@ The current SQLite provider baseline is `DataVaultProviderCapabilityProfiles.Sql
 
 SaveChanges interceptors remain outside the default v1 persistence path. v0.9.0 adds an optional `UseDataVaultSaveChangesMetadataInterceptor(...)` convenience lane for callers that already track generated DVault rows through EF and want missing `LoadTimestamp` and `RecordSource` values filled at `SaveChanges` time. That interceptor does not replace `IDataVaultSaveService`, does not compute hash keys or hash diffs, and does not make Data Vault persistence implicit by default.
 
+## Chunked Save Boundary
+
+The v0.19.0 public baseline adds `IDataVaultSaveService.SaveAsync(DbContext, DataVaultChunkedSaveRequest, ...)` beside the existing single-request and ordered-bulk overloads. `DataVaultChunkedSaveRequest` contains caller-ordered `DataVaultSaveChunk` values, and each chunk contains ordinary `DataVaultSaveRequest` values. The detailed behavior contract is [DVault V1 Streaming Explicit Save Contract](dvault-v1-streaming-explicit-save-contract.md); the public release summary is [DVault v0.19.0 Release Notes](../releases/v0.19.0.md).
+
+The migration rule is intentionally narrow:
+
+- Keep `DataVaultBulkSaveRequest` when the loader already has the complete ordered request set materialized.
+- Use `DataVaultChunkedSaveRequest` when the loader needs bounded chunks without changing explicit load timestamps, record sources, request ordering, or caller-owned transaction behavior.
+
+Chunked execution preserves caller-supplied chunk order, request order inside each chunk, and hub, link, then satellite operation ordering inside each request. Empty chunk sequences and empty chunks are no-ops. The service observes cancellation before continuing to later chunks, participates in the caller's current transaction, and does not create, commit, roll back, or suppress transactions on the caller's behalf. Callers that need all-or-nothing behavior across chunks should open the transaction before invoking the chunked save.
+
+The provider-neutral retained-state implementation keeps satellite continuity state for one explicit chunked-save attempt, with the current default limit of `10000` satellite series. If that limit is reached, DVault records the finite retained-state fallback cause and unsupported-shape classification, clears retained state, and falls back to bounded per-chunk persisted latest-state lookup. `DataVaultSaveTelemetrySummary` reports chunk count, processed chunk count, retained-state current and high-water counts, finite retained-state fallback causes, unsupported-shape classifications, and chunked transaction guidance without raw hash keys, payload values, or per-parent retained-state entries.
+
+Provider-native chunk execution, staged provider bulk ingestion, background ingestion, file ingestion, CDC ingestion, scheduler orchestration, and implicit `SaveChanges` streaming remain outside the v0.19.0 public claim set. Provider packages can still optimize eligible ordinary ordered batches behind the same public save contract, and unsupported shapes continue to fall back without changing caller-visible semantics.
+
 ## Provider-Specific Save Strategy Dispatch
 
 The shared provider optimization boundary is `IDataVaultProviderSaveStrategy`, `DataVaultProviderSaveStrategyContext`, and explicit provider capability profiles. `src/DCoding.Data.DVault` owns those contracts and the provider-neutral fallback dispatcher. Provider packages own provider-specific strategy implementations and any provider-specific SQL they require.
 
-The core save service does not branch on provider names. It captures the registered `IDataVaultProviderSaveStrategy` implementations from dependency injection, sorts them by descending `Priority`, and preserves dependency-injection registration order when multiple strategies have the same priority. For every explicit save or ordered bulk save, the dispatcher calls `CanSave` with the current `DbContext` and the ordered request batch. The first compatible strategy receives a `DataVaultProviderSaveStrategyContext` carrying the context, ordered requests, stable hash service, and normalizer.
+The core save service does not branch on provider names. It captures the registered `IDataVaultProviderSaveStrategy` implementations from dependency injection, sorts them by descending `Priority`, and preserves dependency-injection registration order when multiple strategies have the same priority. For every single-request save, ordered bulk save, or non-empty chunk in a chunked save, the dispatcher calls `CanSave` with the current `DbContext` and the ordered request batch. The first compatible strategy receives a `DataVaultProviderSaveStrategyContext` carrying the context, ordered requests, stable hash service, and normalizer.
 
 When no provider-specific strategy is registered, or when every registered strategy rejects the current context and request batch, the dispatcher uses the built-in provider-neutral `IDataVaultSaveService` writer. Unsupported or unknown provider packages, and provider packages without a compatible strategy for the current batch, therefore keep the same public caller contract and fall back without requiring provider-name checks in the core package.
 
@@ -40,7 +55,7 @@ The current diagnostics gate for native provider bulk execution is deliberately 
 
 ## Current Provider Optimization Capability Matrix
 
-The current compatibility baseline is the core provider-neutral `AddDVault()`/`IDataVaultSaveService` path. Provider packages add optimized save strategies around that same explicit contract; unsupported shapes and declined native gates fall back to the provider-neutral writer.
+The current compatibility baseline is the core provider-neutral `AddDVault()`/`IDataVaultSaveService` path, including the chunked save overload. Provider packages add optimized save strategies around that same explicit contract; unsupported shapes and declined native gates fall back to the provider-neutral writer.
 
 Validation vocabulary:
 

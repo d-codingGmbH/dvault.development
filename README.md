@@ -7,18 +7,18 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.18.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.18.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.18.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.18.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.18.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.18.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.18.0
+dotnet add package DCoding.Data.DVault --version 0.19.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.19.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.19.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.19.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.19.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.19.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.19.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
 
-`DCoding.Data.DVault.Analyzers` is optional developer tooling. Prefer `PrivateAssets="all"` for that package so analyzer and source-generator assets stay local to the project that declares DVault Code-First metadata or compile-time mapping declarations. The v0.18.0 analyzer surface includes `DMV1910` and `DMV1911` for high-confidence EF Core misuse patterns around generated shared-type tables. See `src/DCoding.Data.DVault.Analyzers/README.md` for the package-local diagnostic, code-fix, source-generator, suppression, and configuration guidance.
+`DCoding.Data.DVault.Analyzers` is optional developer tooling. Prefer `PrivateAssets="all"` for that package so analyzer and source-generator assets stay local to the project that declares DVault Code-First metadata or compile-time mapping declarations. The v0.19.0 analyzer surface includes `DMV1910` and `DMV1911` for high-confidence EF Core misuse patterns around generated shared-type tables. See `src/DCoding.Data.DVault.Analyzers/README.md` for the package-local diagnostic, code-fix, source-generator, suppression, and configuration guidance.
 
 Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
 
@@ -218,6 +218,22 @@ public static class SalesVaultWriter {
 
 For loaders that already have multiple source batches prepared, `DataVaultBulkSaveRequest` processes ordered save requests through the same explicit service. Each contained request keeps its caller-supplied load timestamp, record source, hub operations, link operations, and satellite operations. The provider-neutral writer keeps satellite HashDiff state in memory across the ordered batch, and provider packages can select native bulk strategies when diagnostics gates accept the current clean context. Registry-backed callers can use `DataVaultRegistryBulkSaveRequest` to resolve logical metadata names once and delegate to the same bulk pipeline.
 
+For bounded loaders that should not materialize the complete ordered request set before saving, `DataVaultChunkedSaveRequest` and `DataVaultSaveChunk` are additive explicit-save inputs. Each chunk contains ordinary `DataVaultSaveRequest` values and preserves each request's load timestamp, record source, hub operations, link operations, satellite operations, and caller order. The service processes chunks in caller order, observes cancellation before continuing to later chunks, and participates in the caller's current transaction. Empty chunk sequences and empty chunks are no-ops.
+
+```csharp
+IEnumerable<DataVaultSaveRequest> orderedSourceRequests =
+    BuildOrderedRequests(loadTimestamp, "crm-import");
+
+var chunkedRequest = new DataVaultChunkedSaveRequest(
+    orderedSourceRequests
+        .Chunk(10)
+        .Select(requests => new DataVaultSaveChunk(requests)));
+
+await saveService.SaveAsync(context, chunkedRequest, cancellationToken);
+```
+
+Keep `DataVaultBulkSaveRequest` when the loader already has the full ordered request set materialized. Switch to `DataVaultChunkedSaveRequest` only when the caller needs bounded chunking without changing explicit timestamps, record sources, request ordering, or caller-owned transaction behavior. Provider-specific save strategies remain optimizations around the same public save contract; v0.19.0 does not claim provider-native chunk execution, staged provider bulk ingestion, background ingestion, or scheduler behavior.
+
 ### Observe explicit save and read attempts
 
 Save/read telemetry is opt-in. The default `AddDVault()` registration does not add counters or listeners. Applications can enable the built-in `System.Diagnostics.Metrics` observer with `AddDVaultTelemetry()` and can register additional `IDataVaultTelemetryObserver` implementations for bounded per-attempt summaries.
@@ -227,9 +243,9 @@ services.AddDVault();
 services.AddDVaultTelemetry();
 ```
 
-The built-in meter name is `DCoding.Data.DVault`. It records save attempt, row, saved-record, request-count, operation-count, duration, and fallback-cause instruments, plus read attempt, returned-row, requested-key, duration, and fallback-cause instruments. Metric tags stay low-cardinality: operation kind, read family, success/failure outcome, provider name, selected strategy type name, strategy status, and finite fallback-cause enum names.
+The built-in meter name is `DCoding.Data.DVault`. It records save attempt, row, saved-record, request-count, operation-count, chunk-count, processed-chunk-count, retained-state high-water, duration, and fallback-cause instruments, plus read attempt, returned-row, requested-key, duration, and fallback-cause instruments. Metric tags stay low-cardinality: operation kind, read family, success/failure outcome, provider name, selected strategy type name, strategy status, and finite fallback-cause enum names.
 
-`IDataVaultTelemetryObserver` receives one `DataVaultSaveTelemetrySummary` for each explicit single or bulk save attempt and one `DataVaultReadTelemetrySummary` for each latest/current/as-of satellite, PIT, or bridge read attempt handled by the DVault read path. Failure summaries include duration and strategy classification without raw exception messages, hash keys, record sources, metadata names, table names, or full diagnostic text.
+`IDataVaultTelemetryObserver` receives one `DataVaultSaveTelemetrySummary` for each explicit single, bulk, or chunked save attempt and one `DataVaultReadTelemetrySummary` for each latest/current/as-of satellite, PIT, or bridge read attempt handled by the DVault read path. Chunked summaries include bounded chunk counts, processed chunk counts, retained-state high-water counts, finite fallback causes, unsupported-shape classifications, and transaction guidance without raw hash keys, payload values, or per-parent state entries. Failure summaries include duration and strategy classification without raw exception messages, hash keys, record sources, metadata names, table names, or full diagnostic text.
 
 ### Read typed latest and as-of satellite projections
 
@@ -683,12 +699,16 @@ Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadS
 
 SQLite remains the default local live-schema proof because it does not require external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks require consumer-managed reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation. Keep those external provider checks opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
 
-## v0.18.0 Release Notes
+## v0.19.0 Release Notes
 
-The v0.18.0 release records performance-evidence and documentation rollout guidance as the current coordinated seven-package baseline while preserving the EF safety, aggregate preflight, explicit service, opt-in telemetry, redacted support-bundle, and consumer-owned design-time boundaries from earlier releases. See `docs/releases/v0.18.0.md` for the release-note record, package scope, compatibility notes, validation evidence, benchmark artifact links, and package verification posture.
+The v0.19.0 release records the streaming explicit-save documentation rollout as the current coordinated seven-package baseline while preserving the EF safety, aggregate preflight, explicit service, opt-in telemetry, redacted support-bundle, consumer-owned design-time boundaries, and performance-evidence posture from earlier releases. See `docs/releases/v0.19.0.md` for the release-note record, package scope, streaming save contract links, compatibility notes, validation evidence, benchmark artifact links, and package verification posture.
 
 Notable user-facing changes:
 
+- `DataVaultChunkedSaveRequest` and `DataVaultSaveChunk` are documented as additive explicit save inputs for bounded ordered chunks. `DataVaultBulkSaveRequest` remains the compatibility baseline when callers already have a fully materialized ordered batch.
+- Chunked saves use the same explicit load timestamp, record source, metadata resolution, hash-key, hash-diff, caller ordering, cancellation, and caller-owned transaction rules as the existing single-request and bulk save paths.
+- Bounded chunked telemetry reports chunk count, processed chunk count, retained-state current and high-water counts, finite retained-state fallback causes, unsupported-shape classifications, and transaction guidance without high-cardinality raw values.
+- Benchmark evidence now includes `customer-profile-streaming-save` rows in the root benchmark summary triplet comparing the materialized explicit bulk baseline with chunked-save bounded-10 and bounded-5 runs.
 - EF compiled-model usage is documented as consumer-owned `UseModel(runtimeModel)` usage after DVault metadata has been projected into the design model; DVault does not ship a compiled-model generator or provider-specific compiled guarantee.
 - EF compiled queries are documented for stable direct EF shared-type-table expressions with generated names, scalar parameters, `EF.Property<T>(...)`, and deterministic projection. Dynamic `IDataVaultReadService` requests remain the default path for runtime-built read shapes.
 - `AddDbContextPool<TContext>` guidance is bounded to options-only contexts with one fixed metadata/model shape; tenant, schema, naming, provider, or profile discriminators that affect the model remain caller-owned EF model-cache-key responsibilities.
@@ -702,9 +722,9 @@ Notable user-facing changes:
 - Provider explainability covers capability profiles, provider-behavior profiles, save strategy diagnostics, read strategy diagnostics, and request-bound read-shape facts as deterministic redacted explain output rather than raw SQL or provider-magic claims.
 - `AddDVaultTelemetry()`, `IDataVaultTelemetryObserver`, `support-bundle`, explicit bridge maintenance, explicit PIT maintenance, current/as-of satellite reads, provider-native bulk ingestion, Code-First same-hub roles, link-parent satellites, and model-first artifact governance from earlier releases remain part of the current public baseline.
 
-## Current v0.18.0 Limitations
+## Current v0.19.0 Limitations
 
-Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.18.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
+Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.19.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
 
 Compiled-model, compiled-query, and `DbContext` pooling evidence is SQLite timing and allocation evidence for bounded EF shapes. It does not assert provider-specific SQL shape, index usage, generated compiled-model code ownership, dynamic request-built read compilation, or pooling for caller-owned variable model shapes.
 
@@ -715,6 +735,8 @@ Aggregate preflight is an explicit facade over caller-owned inputs. DVault does 
 Telemetry remains explicit opt-in application wiring. DVault does not configure metric listeners, exporters, dashboards, alert rules, or backend-specific observability pipelines, and it does not emit high-cardinality raw values such as exception messages, hash keys, record sources, metadata names, table names, generated SQL, or full diagnostics text as metric tags.
 
 Support bundles are consumer-invoked diagnostic artifacts. DVault does not upload, attach, archive, retain, or route support-bundle JSON, and it does not open a live database connection unless the consumer explicitly invokes the live-schema option in an environment they manage.
+
+Chunked explicit saves are provider-neutral public behavior in v0.19.0. Provider-native chunk execution, staged provider bulk ingestion, file ingestion, background workers, schedulers, CDC ingestion, and implicit `SaveChanges` streaming remain outside the public claim set.
 
 Provider-native bulk dispatch is an optimization, not a separate persistence contract. Dirty tracked contexts, multi-active satellite batches, provider-name mismatches, below-threshold SQL Server, MySQL, or Oracle batches, SQL Server batches with more than `500` satellite operations, and Oracle batches with more than `10000` satellite operations fall back to the provider-neutral writer. DVault does not provision Docker containers, databases, users, schemas, credentials, or checked-in benchmark result snapshots for optional external-provider proof.
 
