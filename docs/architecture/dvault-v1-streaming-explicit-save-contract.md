@@ -65,7 +65,11 @@ Chunked execution must carry enough hash-key and hash-diff continuity across chu
 
 The contract does not require materializing the complete logical source load before writing. Implementations must keep retained state bounded and deterministic. A shape that would require unbounded retained state can be rejected deterministically or routed through a documented bounded fallback, but DVault must not silently consume unbounded memory to preserve streaming semantics.
 
-Bounded state-retention algorithms, memory diagnostics, diagnostic event shapes, and provider-specific chunk optimizations are out of scope for this contract and belong to the dedicated implementation and diagnostics stories.
+The v1 retained-state implementation keeps satellite continuity state for one explicit chunked-save attempt. The state key is the translated satellite table shape, parent hash key, and canonical driving-key values for multi-active satellites. The implementation clears that state in a deterministic completion path for successful, failed, and canceled attempts, so retained continuity does not leak into a later service call or the caller-owned `DbContext` lifetime.
+
+The default retained-state limit is `10000` satellite series per chunked-save attempt. When an attempt would exceed that in-memory retained series count, DVault records the finite fallback cause `RetainedSatelliteSeriesLimitReached`, clears retained state, and falls back to the bounded per-chunk persisted latest-state lookup used by the ordinary ordered request pipeline. The unsupported or memory-sensitive shape classification is `RetainedSatelliteSeriesLimitExceeded`. This fallback preserves public save semantics without retaining raw hash keys, payload values, or unbounded per-parent listings in diagnostics.
+
+`DataVaultSaveTelemetrySummary` is the bounded diagnostics surface for this v1 slice. Chunked attempts report `ChunkCount`, `ProcessedChunkCount`, retained-state current and high-water counts, finite retained-state fallback cause kinds, and finite unsupported-shape kinds. The meter-backed observer projects those values as low-cardinality counters and histograms; it does not emit raw hash keys, payload values, or per-parent state entries.
 
 ## Compatibility Test Baseline
 
@@ -85,10 +89,10 @@ The existing API behavior that chunked saves must preserve is already covered by
 - `ProviderSqlExecutionContract.ParticipatesInCurrentTransactionAsync`
 - `ProviderSqlExecutionContract.PropagatesCancellationTokenAsync`
 
-The provider-neutral implementation and diagnostics stories should extend this baseline for optimized chunk execution paths, bounded retained-state metrics, diagnostic events, and provider-specific chunk gates without weakening the public caller contract.
+The retained-state implementation and diagnostics story extends this baseline with public chunked-save execution, bounded retained-state metrics, and deterministic release coverage. Provider-specific chunk optimization remains a later extension point and must not weaken the public caller contract.
 
 ## Non-Goals
 
-This contract does not implement provider-neutral optimized chunk execution, bounded retained-state storage, memory diagnostics, provider-specific chunk execution, background ingestion, schedulers, queues, file ingestion, CDC ingestion, automatic runtime orchestration, or implicit `SaveChanges` interception.
+This contract does not require provider-specific chunk execution, background ingestion, schedulers, queues, file ingestion, CDC ingestion, automatic runtime orchestration, or implicit `SaveChanges` interception.
 
 `IDataVaultSaveService` remains the default explicit write boundary. SaveChanges interceptors remain outside the default v1 persistence path and do not become the streaming write path.

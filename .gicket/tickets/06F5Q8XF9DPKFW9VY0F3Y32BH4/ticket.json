@@ -1,23 +1,22 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q8XF9DPKFW9VY0F3Y32BH4",
   "ticket-type": "story",
   "title": "Story: Bound streaming hash state and memory diagnostics",
-  "revision": "06F5Q97M8HMWDF3D8ZRJ86BWQM",
-  "status": "todo",
+  "revision": "06F5X7K734A69YYQQGNEND2TJ0",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
     "area/diagnostics",
     "area/ef-core",
     "area/performance",
-    "area/persistence"
+    "area/persistence",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WEQSF8CCXJ7DPCXJF00M",
   "releaseId": "06F5Q8W98RVXB5Z5NQWRCQ3VC8",
   "created-at": "2026-05-24T20:18:34.6156405Z",
-  "updated-at": "2026-05-24T20:19:57.6367521Z"
+  "updated-at": "2026-05-25T10:11:39.9298095Z"
 }

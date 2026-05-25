@@ -288,6 +288,22 @@ internal readonly record struct DataVaultSaveTelemetryCounts(
     int LinkOperationCount,
     int SatelliteOperationCount);
 
+internal sealed record DataVaultChunkedSaveTelemetryState(
+    int ChunkCount,
+    int ProcessedChunkCount,
+    int RetainedStateCurrentCount,
+    int RetainedStateHighWaterCount,
+    IReadOnlyList<DataVaultChunkedSaveStateFallbackCauseKind> StateFallbackCauseKinds,
+    IReadOnlyList<DataVaultChunkedSaveUnsupportedShapeKind> UnsupportedShapeKinds) {
+  public static DataVaultChunkedSaveTelemetryState Empty { get; } = new(
+      ChunkCount: 0,
+      ProcessedChunkCount: 0,
+      RetainedStateCurrentCount: 0,
+      RetainedStateHighWaterCount: 0,
+      StateFallbackCauseKinds: Array.Empty<DataVaultChunkedSaveStateFallbackCauseKind>(),
+      UnsupportedShapeKinds: Array.Empty<DataVaultChunkedSaveUnsupportedShapeKind>());
+}
+
 internal static class DataVaultTelemetrySummaryFactory {
   public static DataVaultSaveTelemetrySummary CreateSaveSummary(
       DataVaultSaveTelemetryOperationKind operationKind,
@@ -296,7 +312,25 @@ internal static class DataVaultTelemetrySummaryFactory {
       DataVaultSaveResult? result,
       TimeSpan duration,
       DataVaultSaveTelemetryStrategySelection strategySelection) {
-    var counts = CountSaveRequests(requests);
+    return CreateSaveSummary(
+        operationKind,
+        outcome,
+        CountSaveRequests(requests),
+        result,
+        duration,
+        strategySelection,
+        DataVaultChunkedSaveTelemetryState.Empty);
+  }
+
+  public static DataVaultSaveTelemetrySummary CreateSaveSummary(
+      DataVaultSaveTelemetryOperationKind operationKind,
+      DataVaultTelemetryOutcome outcome,
+      DataVaultSaveTelemetryCounts counts,
+      DataVaultSaveResult? result,
+      TimeSpan duration,
+      DataVaultSaveTelemetryStrategySelection strategySelection,
+      DataVaultChunkedSaveTelemetryState chunkedState) {
+    ArgumentNullException.ThrowIfNull(chunkedState);
 
     return new DataVaultSaveTelemetrySummary(
         operationKind,
@@ -311,7 +345,13 @@ internal static class DataVaultTelemetrySummaryFactory {
         strategySelection.Status,
         strategySelection.ProviderName,
         strategySelection.SelectedStrategyName,
-        strategySelection.FallbackCauseKinds);
+        strategySelection.FallbackCauseKinds,
+        chunkedState.ChunkCount,
+        chunkedState.ProcessedChunkCount,
+        chunkedState.RetainedStateCurrentCount,
+        chunkedState.RetainedStateHighWaterCount,
+        chunkedState.StateFallbackCauseKinds,
+        chunkedState.UnsupportedShapeKinds);
   }
 
   public static DataVaultReadTelemetrySummary CreateReadSummary(
@@ -333,7 +373,7 @@ internal static class DataVaultTelemetrySummaryFactory {
         strategySelection.FallbackCauseKinds);
   }
 
-  private static DataVaultSaveTelemetryCounts CountSaveRequests(IReadOnlyList<DataVaultSaveRequest> requests) {
+  public static DataVaultSaveTelemetryCounts CountSaveRequests(IReadOnlyList<DataVaultSaveRequest> requests) {
     var hubOperationCount = 0;
     var linkOperationCount = 0;
     var satelliteOperationCount = 0;

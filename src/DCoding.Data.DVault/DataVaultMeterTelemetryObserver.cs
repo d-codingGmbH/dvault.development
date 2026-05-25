@@ -19,12 +19,18 @@ public sealed class DataVaultMeterTelemetryObserver : IDataVaultTelemetryObserve
   private readonly Histogram<long> _readRequestedKeys;
   private readonly Counter<long> _readReturnedRows;
   private readonly Counter<long> _saveAttempts;
+  private readonly Histogram<long> _saveChunkCount;
+  private readonly Counter<long> _saveChunkedStateFallbackCauses;
   private readonly Histogram<double> _saveDuration;
   private readonly Counter<long> _saveFallbackCauses;
   private readonly Histogram<long> _saveOperationCount;
+  private readonly Histogram<long> _saveProcessedChunkCount;
   private readonly Histogram<long> _saveRequestCount;
+  private readonly Histogram<long> _saveRetainedStateCurrent;
+  private readonly Histogram<long> _saveRetainedStateHighWater;
   private readonly Counter<long> _saveRowsWritten;
   private readonly Counter<long> _saveSavedRecords;
+  private readonly Counter<long> _saveUnsupportedShapes;
   private readonly Meter _meter;
 
   /// <summary>
@@ -60,6 +66,30 @@ public sealed class DataVaultMeterTelemetryObserver : IDataVaultTelemetryObserve
         "dvault.save.operation_count",
         unit: "{operation}",
         description: "Records hub, link, and satellite operation counts per DVault save attempt.");
+    _saveChunkCount = _meter.CreateHistogram<long>(
+        "dvault.save.chunk_count",
+        unit: "{chunk}",
+        description: "Records observed chunk counts per DVault chunked save attempt.");
+    _saveProcessedChunkCount = _meter.CreateHistogram<long>(
+        "dvault.save.processed_chunk_count",
+        unit: "{chunk}",
+        description: "Records processed non-empty chunk counts per DVault chunked save attempt.");
+    _saveRetainedStateCurrent = _meter.CreateHistogram<long>(
+        "dvault.save.retained_state.current",
+        unit: "{series}",
+        description: "Records retained satellite continuity-state count when DVault save telemetry is emitted.");
+    _saveRetainedStateHighWater = _meter.CreateHistogram<long>(
+        "dvault.save.retained_state.high_water",
+        unit: "{series}",
+        description: "Records retained satellite continuity-state high-water counts per DVault save attempt.");
+    _saveChunkedStateFallbackCauses = _meter.CreateCounter<long>(
+        "dvault.save.chunked_state_fallback_causes",
+        unit: "{cause}",
+        description: "Counts distinct chunked-save retained-state fallback-cause kinds.");
+    _saveUnsupportedShapes = _meter.CreateCounter<long>(
+        "dvault.save.unsupported_shapes",
+        unit: "{shape}",
+        description: "Counts distinct chunked-save unsupported or memory-sensitive shape kinds.");
 
     _readAttempts = _meter.CreateCounter<long>(
         "dvault.read.attempts",
@@ -92,6 +122,10 @@ public sealed class DataVaultMeterTelemetryObserver : IDataVaultTelemetryObserve
     _saveDuration.Record(summary.Duration.TotalMilliseconds, tags);
     _saveRequestCount.Record(summary.RequestCount, tags);
     _saveOperationCount.Record(summary.OperationCount, tags);
+    _saveChunkCount.Record(summary.ChunkCount, tags);
+    _saveProcessedChunkCount.Record(summary.ProcessedChunkCount, tags);
+    _saveRetainedStateCurrent.Record(summary.RetainedStateCurrentCount, tags);
+    _saveRetainedStateHighWater.Record(summary.RetainedStateHighWaterCount, tags);
 
     if (summary.Outcome == DataVaultTelemetryOutcome.Succeeded) {
       _saveRowsWritten.Add(summary.RowsWritten, tags);
@@ -100,6 +134,16 @@ public sealed class DataVaultMeterTelemetryObserver : IDataVaultTelemetryObserve
 
     foreach (var fallbackCauseKind in summary.FallbackCauseKinds) {
       _saveFallbackCauses.Add(1, AddTag(tags, "dvault.fallback_cause", fallbackCauseKind.ToString()));
+    }
+
+    foreach (var stateFallbackCauseKind in summary.ChunkedStateFallbackCauseKinds) {
+      _saveChunkedStateFallbackCauses.Add(
+          1,
+          AddTag(tags, "dvault.chunked_state_fallback_cause", stateFallbackCauseKind.ToString()));
+    }
+
+    foreach (var unsupportedShapeKind in summary.UnsupportedShapeKinds) {
+      _saveUnsupportedShapes.Add(1, AddTag(tags, "dvault.unsupported_shape", unsupportedShapeKind.ToString()));
     }
   }
 

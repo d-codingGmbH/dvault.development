@@ -1,7 +1,7 @@
 namespace DCoding.Data.DVault;
 
 /// <summary>
-/// Identifies whether save telemetry describes a single explicit request or an ordered bulk request.
+/// Identifies whether save telemetry describes a single explicit request, ordered bulk request, or chunked request.
 /// </summary>
 public enum DataVaultSaveTelemetryOperationKind {
   /// <summary>
@@ -13,4 +13,9 @@ public enum DataVaultSaveTelemetryOperationKind {
   /// Telemetry describes one <see cref="DataVaultBulkSaveRequest" /> invocation.
   /// </summary>
   BulkRequest,
+
+  /// <summary>
+  /// Telemetry describes one <see cref="DataVaultChunkedSaveRequest" /> invocation.
+  /// </summary>
+  ChunkedRequest,
 }

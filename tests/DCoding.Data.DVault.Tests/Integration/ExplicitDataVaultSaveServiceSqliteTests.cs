@@ -1218,6 +1218,231 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
   }
 
   [Fact]
+  public async Task PublicChunkedSaveReportsRetainedStateTelemetryAndReleasesOnSuccess() {
+    var observer = new CapturingTelemetryObserver();
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"]);
+    var parentHashKey = "customer-hash";
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateExplicitSaveServiceOptions(database);
+    var services = new ServiceCollection();
+    services.AddDVault();
+    services.AddSingleton<IDataVaultTelemetryObserver>(observer);
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+
+    DataVaultSaveResult result;
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+
+      result = await saveService.SaveAsync(
+          context,
+          new DataVaultChunkedSaveRequest(
+              [
+                  new DataVaultSaveChunk([
+                      new DataVaultSaveRequest(
+                          new DateTimeOffset(2026, 5, 24, 14, 0, 0, TimeSpan.Zero),
+                          "crm-import",
+                          [],
+                          [],
+                          [new(contact, parentHashKey, [new("Email Address", "first@example.test")], "contact-hash-1")]),
+                  ]),
+                  new DataVaultSaveChunk([]),
+                  new DataVaultSaveChunk([
+                      new DataVaultSaveRequest(
+                          new DateTimeOffset(2026, 5, 24, 14, 5, 0, TimeSpan.Zero),
+                          "crm-replay",
+                          [],
+                          [],
+                          [new(contact, parentHashKey, [new("Email Address", "ignored@example.test")], "contact-hash-1")]),
+                  ]),
+              ]));
+    }
+
+    Assert.Equal(1, result.RowsWritten);
+    Assert.Equal(2, result.SavedRecords.Count);
+    var summary = Assert.Single(observer.SaveSummaries);
+    Assert.Equal(DataVaultSaveTelemetryOperationKind.ChunkedRequest, summary.OperationKind);
+    Assert.Equal(DataVaultTelemetryOutcome.Succeeded, summary.Outcome);
+    Assert.Equal(3, summary.ChunkCount);
+    Assert.Equal(2, summary.ProcessedChunkCount);
+    Assert.Equal(2, summary.RequestCount);
+    Assert.Equal(2, summary.SatelliteOperationCount);
+    Assert.Equal(0, summary.RetainedStateCurrentCount);
+    Assert.Equal(1, summary.RetainedStateHighWaterCount);
+    Assert.Empty(summary.ChunkedStateFallbackCauseKinds);
+    Assert.Empty(summary.UnsupportedShapeKinds);
+    Assert.Contains(DataVaultSaveStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered, summary.FallbackCauseKinds);
+  }
+
+  [Fact]
+  public async Task PublicChunkedSaveReleasesRetainedStateTelemetryOnFailure() {
+    var observer = new CapturingTelemetryObserver();
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"]);
+    var parentHashKey = "customer-hash";
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateExplicitSaveServiceOptions(database);
+    var services = new ServiceCollection();
+    services.AddDVault();
+    services.AddSingleton<IDataVaultTelemetryObserver>(observer);
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+
+    await using var context = new ExplicitSaveServiceContext(options);
+    await context.Database.EnsureCreatedAsync();
+
+    await Assert.ThrowsAsync<ArgumentException>(() =>
+        saveService.SaveAsync(
+            context,
+            new DataVaultChunkedSaveRequest(
+                [
+                    new DataVaultSaveChunk([
+                        new DataVaultSaveRequest(
+                            new DateTimeOffset(2026, 5, 24, 14, 30, 0, TimeSpan.Zero),
+                            "crm-import",
+                            [],
+                            [],
+                            [new(contact, parentHashKey, [new("Email Address", "first@example.test")], "contact-hash-1")]),
+                    ]),
+                    new DataVaultSaveChunk([
+                        new DataVaultSaveRequest(
+                            new DateTimeOffset(2026, 5, 24, 14, 35, 0, TimeSpan.Zero),
+                            "crm-bad",
+                            [],
+                            [],
+                            [new(contact, parentHashKey, [new("Unexpected Payload", "bad")], "contact-hash-2")]),
+                    ]),
+                ])));
+
+    var summary = Assert.Single(observer.SaveSummaries);
+    Assert.Equal(DataVaultSaveTelemetryOperationKind.ChunkedRequest, summary.OperationKind);
+    Assert.Equal(DataVaultTelemetryOutcome.Failed, summary.Outcome);
+    Assert.Equal(2, summary.ChunkCount);
+    Assert.Equal(2, summary.ProcessedChunkCount);
+    Assert.Equal(0, summary.RowsWritten);
+    Assert.Equal(0, summary.RetainedStateCurrentCount);
+    Assert.Equal(1, summary.RetainedStateHighWaterCount);
+  }
+
+  [Fact]
+  public async Task PublicChunkedSaveReleasesRetainedStateTelemetryOnCancellationBeforeLaterChunks() {
+    var observer = new CapturingTelemetryObserver();
+    using var cancellationSource = new CancellationTokenSource();
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"]);
+    var parentHashKey = "customer-hash";
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<ExplicitSaveServiceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .ReplaceService<IModelCacheKeyFactory, ExplicitSaveServiceModelCacheKeyFactory>()
+        .AddInterceptors(new CancelAfterFirstSaveChangesInterceptor(cancellationSource))
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVault();
+    services.AddSingleton<IDataVaultTelemetryObserver>(observer);
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+
+    await using var context = new ExplicitSaveServiceContext(options);
+    await context.Database.EnsureCreatedAsync();
+
+    await Assert.ThrowsAsync<OperationCanceledException>(() =>
+        saveService.SaveAsync(
+            context,
+            new DataVaultChunkedSaveRequest(
+                [
+                    new DataVaultSaveChunk([
+                        new DataVaultSaveRequest(
+                            new DateTimeOffset(2026, 5, 24, 15, 0, 0, TimeSpan.Zero),
+                            "crm-import",
+                            [],
+                            [],
+                            [new(contact, parentHashKey, [new("Email Address", "first@example.test")], "contact-hash-1")]),
+                    ]),
+                    new DataVaultSaveChunk([
+                        new DataVaultSaveRequest(
+                            new DateTimeOffset(2026, 5, 24, 15, 5, 0, TimeSpan.Zero),
+                            "crm-change",
+                            [],
+                            [],
+                            [new(contact, parentHashKey, [new("Email Address", "changed@example.test")], "contact-hash-2")]),
+                    ]),
+                ]),
+            cancellationSource.Token));
+
+    var summary = Assert.Single(observer.SaveSummaries);
+    Assert.Equal(DataVaultTelemetryOutcome.Failed, summary.Outcome);
+    Assert.Equal(2, summary.ChunkCount);
+    Assert.Equal(1, summary.ProcessedChunkCount);
+    Assert.Equal(0, summary.RetainedStateCurrentCount);
+    Assert.Equal(1, summary.RetainedStateHighWaterCount);
+  }
+
+  [Fact]
+  public async Task PublicChunkedSaveClassifiesRetainedStateLimitFallbackWithoutRawValues() {
+    var observer = new CapturingTelemetryObserver();
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"]);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateExplicitSaveServiceOptions(database);
+    var saveService = new DefaultDataVaultSaveService(
+        DefaultStableHashService.Instance,
+        DefaultStableHashNormalizer.Instance,
+        [DefaultDataVaultLoadTimestampResolver.Instance],
+        [DefaultDataVaultRecordSourceResolver.Instance],
+        [],
+        [observer],
+        chunkedRetainedSatelliteSeriesLimit: 1);
+
+    await using var context = new ExplicitSaveServiceContext(options);
+    await context.Database.EnsureCreatedAsync();
+
+    var result = await saveService.SaveAsync(
+        context,
+        new DataVaultChunkedSaveRequest(
+            [
+                new DataVaultSaveChunk([
+                    new DataVaultSaveRequest(
+                        new DateTimeOffset(2026, 5, 24, 15, 30, 0, TimeSpan.Zero),
+                        "crm-import",
+                        [],
+                        [],
+                        [
+                            new(contact, "customer-hash-1", [new("Email Address", "first@example.test")], "contact-hash-1"),
+                            new(contact, "customer-hash-2", [new("Email Address", "second@example.test")], "contact-hash-2"),
+                        ]),
+                ]),
+            ]));
+
+    Assert.Equal(2, result.RowsWritten);
+    var summary = Assert.Single(observer.SaveSummaries);
+    Assert.Equal(0, summary.RetainedStateCurrentCount);
+    Assert.Equal(1, summary.RetainedStateHighWaterCount);
+    Assert.Equal(
+        [DataVaultChunkedSaveStateFallbackCauseKind.RetainedSatelliteSeriesLimitReached],
+        summary.ChunkedStateFallbackCauseKinds);
+    Assert.Equal(
+        [DataVaultChunkedSaveUnsupportedShapeKind.RetainedSatelliteSeriesLimitExceeded],
+        summary.UnsupportedShapeKinds);
+  }
+
+  [Fact]
   public async Task DefaultSaveServicePersistsCustomerProfileSatelliteHistoryThroughSqlite() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var profile = new DataVaultSatelliteMetadata(
@@ -2147,6 +2372,33 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
           command.CommandText.Contains(tableName, StringComparison.Ordinal)) {
         SelectCount++;
       }
+    }
+  }
+
+  private sealed class CancelAfterFirstSaveChangesInterceptor(CancellationTokenSource cancellationSource) : SaveChangesInterceptor {
+    private int _savedChangesCount;
+
+    public override ValueTask<int> SavedChangesAsync(
+        SaveChangesCompletedEventData eventData,
+        int result,
+        CancellationToken cancellationToken = default) {
+      _savedChangesCount++;
+      if (_savedChangesCount == 1) {
+        cancellationSource.Cancel();
+      }
+
+      return base.SavedChangesAsync(eventData, result, cancellationToken);
+    }
+  }
+
+  private sealed class CapturingTelemetryObserver : IDataVaultTelemetryObserver {
+    public List<DataVaultSaveTelemetrySummary> SaveSummaries { get; } = [];
+
+    public void RecordSave(DataVaultSaveTelemetrySummary summary) {
+      SaveSummaries.Add(summary);
+    }
+
+    public void RecordRead(DataVaultReadTelemetrySummary summary) {
     }
   }
 

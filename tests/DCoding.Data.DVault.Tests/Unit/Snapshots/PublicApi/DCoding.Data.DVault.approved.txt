@@ -119,6 +119,12 @@ type public sealed class DCoding.Data.DVault.DataVaultChunkedSaveRequest
   ctor public DataVaultChunkedSaveRequest(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveChunk> chunks)
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveChunk> Chunks { get; }
 
+type public enum DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackCauseKind
+  value RetainedSatelliteSeriesLimitReached = 0
+
+type public enum DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeKind
+  value RetainedSatelliteSeriesLimitExceeded = 0
+
 type public sealed class DCoding.Data.DVault.DataVaultCodeFirstHubBuilder where TEntity : class
   method public DCoding.Data.DVault.DataVaultCodeFirstHubBuilder<TEntity> BusinessKey<TProperty>(System.Linq.Expressions.Expression<System.Func<TEntity, TProperty?>> propertySelector)
   method public DCoding.Data.DVault.DataVaultCodeFirstHubBuilder<TEntity> Satellite(string satelliteName, System.Action<DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TEntity>>? configure = null)
@@ -1344,18 +1350,26 @@ type public sealed class DCoding.Data.DVault.DataVaultSaveStrategyGateRequiremen
 type public enum DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind
   value SingleRequest = 0
   value BulkRequest = 1
+  value ChunkedRequest = 2
 
 type public sealed class DCoding.Data.DVault.DataVaultSaveTelemetrySummary
   ctor public DataVaultSaveTelemetrySummary(DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind operationKind, DCoding.Data.DVault.DataVaultTelemetryOutcome outcome, int requestCount, int hubOperationCount, int linkOperationCount, int satelliteOperationCount, int rowsWritten, int savedRecordCount, System.TimeSpan duration, DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus strategyStatus, string? providerName, string? selectedStrategyName, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind> fallbackCauseKinds)
+  ctor public DataVaultSaveTelemetrySummary(DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind operationKind, DCoding.Data.DVault.DataVaultTelemetryOutcome outcome, int requestCount, int hubOperationCount, int linkOperationCount, int satelliteOperationCount, int rowsWritten, int savedRecordCount, System.TimeSpan duration, DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus strategyStatus, string? providerName, string? selectedStrategyName, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind> fallbackCauseKinds, int chunkCount, int processedChunkCount, int retainedStateCurrentCount, int retainedStateHighWaterCount, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackCauseKind> chunkedStateFallbackCauseKinds, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeKind> unsupportedShapeKinds)
   property public DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus StrategyStatus { get; }
   property public DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind OperationKind { get; }
   property public DCoding.Data.DVault.DataVaultTelemetryOutcome Outcome { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackCauseKind> ChunkedStateFallbackCauseKinds { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeKind> UnsupportedShapeKinds { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind> FallbackCauseKinds { get; }
   property public System.TimeSpan Duration { get; }
+  property public int ChunkCount { get; }
   property public int HubOperationCount { get; }
   property public int LinkOperationCount { get; }
   property public int OperationCount { get; }
+  property public int ProcessedChunkCount { get; }
   property public int RequestCount { get; }
+  property public int RetainedStateCurrentCount { get; }
+  property public int RetainedStateHighWaterCount { get; }
   property public int RowsWritten { get; }
   property public int SatelliteOperationCount { get; }
   property public int SavedRecordCount { get; }

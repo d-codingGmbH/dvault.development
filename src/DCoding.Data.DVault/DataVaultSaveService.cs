@@ -36,12 +36,12 @@ public interface IDataVaultSaveService {
       CancellationToken cancellationToken = default);
 
   /// <summary>
-  /// Persists ordered chunks of explicit Data Vault save requests through the supplied Entity Framework context.
+  /// Persists ordered bounded chunks of explicit Data Vault save requests through the supplied Entity Framework context.
   /// </summary>
   /// <param name="dbContext">The context whose model has been configured with Data Vault metadata.</param>
-  /// <param name="request">The explicit chunked save request containing ordered bounded chunks.</param>
+  /// <param name="request">The chunked save request containing caller-ordered bounded chunks.</param>
   /// <param name="cancellationToken">A token used to observe cancellation before continuing to later chunks.</param>
-  /// <returns>The persisted row summary, including saved hash-key values.</returns>
+  /// <returns>The persisted row summary, including saved hash-key values in chunk order.</returns>
   Task<DataVaultSaveResult> SaveAsync(
       DbContext dbContext,
       DataVaultChunkedSaveRequest request,
@@ -556,23 +556,36 @@ public sealed class DataVaultChunkedSaveRequest {
 }
 
 /// <summary>
-/// Groups one bounded ordered chunk of explicit DVault save requests.
+/// Describes one bounded chunk of explicit DVault save requests.
 /// </summary>
 public sealed class DataVaultSaveChunk {
   /// <summary>
   /// Initializes a new explicit save chunk.
   /// </summary>
-  /// <param name="requests">The save requests to process in caller-supplied order within this chunk.</param>
+  /// <param name="requests">The save requests to process in caller-supplied order inside this chunk.</param>
   public DataVaultSaveChunk(IEnumerable<DataVaultSaveRequest> requests) {
     ArgumentNullException.ThrowIfNull(requests);
 
-    Requests = new DataVaultBulkSaveRequest(requests).Requests;
+    Requests = RequireRequests(requests, nameof(requests));
   }
 
   /// <summary>
-  /// Gets the save requests processed in caller-supplied order within this chunk.
+  /// Gets the bounded save requests processed in caller-supplied order inside this chunk.
   /// </summary>
   public IReadOnlyList<DataVaultSaveRequest> Requests { get; }
+
+  private static IReadOnlyList<DataVaultSaveRequest> RequireRequests(
+      IEnumerable<DataVaultSaveRequest> requests,
+      string parameterName) {
+    var values = requests.ToArray();
+    foreach (var value in values) {
+      if (value is null) {
+        throw new ArgumentException("Data Vault save chunks must not contain null requests.", parameterName);
+      }
+    }
+
+    return values;
+  }
 }
 
 /// <summary>
@@ -844,8 +857,11 @@ public sealed class DataVaultSavedRecord {
 }
 
 internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
+  internal const int DefaultChunkedRetainedSatelliteSeriesLimit = 10000;
+
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
 
+  private readonly int _chunkedRetainedSatelliteSeriesLimit;
   private readonly IDataVaultLoadTimestampResolver _loadTimestampResolver;
   private readonly IReadOnlyList<IDataVaultProviderSaveStrategy> _providerSaveStrategies;
   private readonly IDataVaultRecordSourceResolver _recordSourceResolver;
@@ -897,16 +913,36 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       IEnumerable<IDataVaultLoadTimestampResolver> loadTimestampResolvers,
       IEnumerable<IDataVaultRecordSourceResolver> recordSourceResolvers,
       IEnumerable<IDataVaultProviderSaveStrategy> providerSaveStrategies,
-      IEnumerable<IDataVaultTelemetryObserver> telemetryObservers) {
+      IEnumerable<IDataVaultTelemetryObserver> telemetryObservers)
+      : this(
+          stableHashService,
+          stableHashNormalizer,
+          loadTimestampResolvers,
+          recordSourceResolvers,
+          providerSaveStrategies,
+          telemetryObservers,
+          DefaultChunkedRetainedSatelliteSeriesLimit) {
+  }
+
+  internal DefaultDataVaultSaveService(
+      IStableHashService stableHashService,
+      IStableHashNormalizer stableHashNormalizer,
+      IEnumerable<IDataVaultLoadTimestampResolver> loadTimestampResolvers,
+      IEnumerable<IDataVaultRecordSourceResolver> recordSourceResolvers,
+      IEnumerable<IDataVaultProviderSaveStrategy> providerSaveStrategies,
+      IEnumerable<IDataVaultTelemetryObserver> telemetryObservers,
+      int chunkedRetainedSatelliteSeriesLimit) {
     ArgumentNullException.ThrowIfNull(stableHashService);
     ArgumentNullException.ThrowIfNull(stableHashNormalizer);
     ArgumentNullException.ThrowIfNull(loadTimestampResolvers);
     ArgumentNullException.ThrowIfNull(recordSourceResolvers);
     ArgumentNullException.ThrowIfNull(providerSaveStrategies);
     ArgumentNullException.ThrowIfNull(telemetryObservers);
+    ArgumentOutOfRangeException.ThrowIfNegativeOrZero(chunkedRetainedSatelliteSeriesLimit);
 
     _stableHashService = stableHashService;
     _stableHashNormalizer = stableHashNormalizer;
+    _chunkedRetainedSatelliteSeriesLimit = chunkedRetainedSatelliteSeriesLimit;
     _loadTimestampResolver = RequireSingleResolver(
         loadTimestampResolvers,
         DefaultDataVaultLoadTimestampResolver.Instance,
@@ -956,44 +992,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(request);
 
-    return await SaveChunksAsync(
-        dbContext,
-        request.Chunks,
-        cancellationToken).ConfigureAwait(false);
-  }
-
-  private async Task<DataVaultSaveResult> SaveChunksAsync(
-      DbContext dbContext,
-      IReadOnlyList<DataVaultSaveChunk> chunks,
-      CancellationToken cancellationToken) {
-    var rowsWritten = 0;
-    var uniqueSavedRecords = new List<DataVaultSavedRecord>();
-    var satelliteSavedRecords = new List<DataVaultSavedRecord>();
-
-    foreach (var chunk in chunks) {
-      cancellationToken.ThrowIfCancellationRequested();
-      if (chunk.Requests.Count == 0) {
-        continue;
-      }
-
-      var result = await SaveRequestsAsync(
-          dbContext,
-          chunk.Requests,
-          DataVaultSaveTelemetryOperationKind.BulkRequest,
-          cancellationToken).ConfigureAwait(false);
-
-      rowsWritten += result.RowsWritten;
-      foreach (var savedRecord in result.SavedRecords) {
-        if (savedRecord.Kind == DataVaultTableKind.Satellite) {
-          satelliteSavedRecords.Add(savedRecord);
-        }
-        else {
-          uniqueSavedRecords.Add(savedRecord);
-        }
-      }
-    }
-
-    return new DataVaultSaveResult(rowsWritten, uniqueSavedRecords.Concat(satelliteSavedRecords));
+    return await SaveChunkedRequestsAsync(dbContext, request, cancellationToken).ConfigureAwait(false);
   }
 
   private async Task<DataVaultSaveResult> SaveRequestsAsync(
@@ -1006,22 +1005,12 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         DataVaultTelemetryStrategySelector.GetProviderName(dbContext));
 
     try {
-      var resolvedRequests = ResolveRequests(requests);
-      strategySelection = DataVaultTelemetryStrategySelector.SelectSaveStrategy(dbContext, _providerSaveStrategies, requests);
-
-      DataVaultSaveResult result;
-      if (strategySelection.Strategy is not null) {
-        var context = new DataVaultProviderSaveStrategyContext(
-            dbContext,
-            requests,
-            resolvedRequests,
-            _stableHashService,
-            _stableHashNormalizer);
-        result = await strategySelection.Strategy.SaveAsync(context, cancellationToken).ConfigureAwait(false);
-      }
-      else {
-        result = await SaveProviderNeutralAsync(dbContext, resolvedRequests, cancellationToken).ConfigureAwait(false);
-      }
+      var result = await SaveRequestsCoreAsync(
+          dbContext,
+          requests,
+          continuityState: null,
+          selection => strategySelection = selection,
+          cancellationToken).ConfigureAwait(false);
 
       DataVaultTelemetryDispatcher.RecordSave(
           _telemetryObservers,
@@ -1049,9 +1038,103 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     }
   }
 
+  private async Task<DataVaultSaveResult> SaveChunkedRequestsAsync(
+      DbContext dbContext,
+      DataVaultChunkedSaveRequest request,
+      CancellationToken cancellationToken) {
+    var stopwatch = Stopwatch.StartNew();
+    var uniqueSavedRecords = new List<DataVaultSavedRecord>();
+    var satelliteSavedRecords = new List<DataVaultSavedRecord>();
+    var rowsWritten = 0;
+    var counts = new SaveAttemptCounts();
+    var strategySelection = new ChunkedSaveStrategySelection(DataVaultTelemetryStrategySelector.GetProviderName(dbContext));
+    var continuityState = new ChunkedSaveContinuityState(_chunkedRetainedSatelliteSeriesLimit);
+    DataVaultSaveResult? result = null;
+
+    try {
+      foreach (var chunk in request.Chunks) {
+        counts.ChunkCount++;
+        if (chunk is null) {
+          throw new ArgumentException("Data Vault chunked save requests must not contain null chunks.", nameof(request));
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        if (chunk.Requests.Count == 0) {
+          continue;
+        }
+
+        counts.ProcessedChunkCount++;
+        counts.Add(DataVaultTelemetrySummaryFactory.CountSaveRequests(chunk.Requests));
+
+        var chunkResult = await SaveRequestsCoreAsync(
+            dbContext,
+            chunk.Requests,
+            continuityState,
+            strategySelection.Observe,
+            cancellationToken).ConfigureAwait(false);
+
+        rowsWritten += chunkResult.RowsWritten;
+        foreach (var savedRecord in chunkResult.SavedRecords) {
+          if (savedRecord.Kind == DataVaultTableKind.Satellite) {
+            satelliteSavedRecords.Add(savedRecord);
+          }
+          else {
+            uniqueSavedRecords.Add(savedRecord);
+          }
+        }
+      }
+
+      result = new DataVaultSaveResult(rowsWritten, uniqueSavedRecords.Concat(satelliteSavedRecords));
+      return result;
+    }
+    finally {
+      continuityState.Release();
+      DataVaultTelemetryDispatcher.RecordSave(
+          _telemetryObservers,
+          DataVaultTelemetrySummaryFactory.CreateSaveSummary(
+              DataVaultSaveTelemetryOperationKind.ChunkedRequest,
+              result is null ? DataVaultTelemetryOutcome.Failed : DataVaultTelemetryOutcome.Succeeded,
+              counts.ToTelemetryCounts(),
+              result,
+              DataVaultTelemetrySummaryFactory.GetElapsed(stopwatch),
+              strategySelection.ToTelemetrySelection(),
+              new DataVaultChunkedSaveTelemetryState(
+                  counts.ChunkCount,
+                  counts.ProcessedChunkCount,
+                  continuityState.CurrentCount,
+                  continuityState.HighWaterCount,
+                  continuityState.FallbackCauseKinds,
+                  continuityState.UnsupportedShapeKinds)));
+    }
+  }
+
+  private async Task<DataVaultSaveResult> SaveRequestsCoreAsync(
+      DbContext dbContext,
+      IReadOnlyList<DataVaultSaveRequest> requests,
+      ChunkedSaveContinuityState? continuityState,
+      Action<DataVaultSaveTelemetryStrategySelection> observeStrategySelection,
+      CancellationToken cancellationToken) {
+    var resolvedRequests = ResolveRequests(requests);
+    var strategySelection = DataVaultTelemetryStrategySelector.SelectSaveStrategy(dbContext, _providerSaveStrategies, requests);
+    observeStrategySelection(strategySelection);
+
+    if (strategySelection.Strategy is not null) {
+      var context = new DataVaultProviderSaveStrategyContext(
+          dbContext,
+          requests,
+          resolvedRequests,
+          _stableHashService,
+          _stableHashNormalizer);
+      return await strategySelection.Strategy.SaveAsync(context, cancellationToken).ConfigureAwait(false);
+    }
+
+    return await SaveProviderNeutralAsync(dbContext, resolvedRequests, continuityState, cancellationToken).ConfigureAwait(false);
+  }
+
   private async Task<DataVaultSaveResult> SaveProviderNeutralAsync(
       DbContext dbContext,
       IReadOnlyList<DataVaultResolvedSaveRequest> resolvedRequests,
+      ChunkedSaveContinuityState? continuityState,
       CancellationToken cancellationToken) {
     var savedRecords = new List<DataVaultSavedRecord>();
     var rowsWritten = 0;
@@ -1067,7 +1150,11 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       }
     }
 
-    var satelliteResults = await AddSatellitesAsync(dbContext, resolvedRequests, cancellationToken).ConfigureAwait(false);
+    var satelliteResults = await AddSatellitesAsync(
+        dbContext,
+        resolvedRequests,
+        continuityState,
+        cancellationToken).ConfigureAwait(false);
     foreach (var result in satelliteResults) {
       savedRecords.Add(result.SavedRecord);
       if (result.RowWritten) {
@@ -1292,9 +1379,14 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
   private async Task<IReadOnlyList<SaveOperationResult>> AddSatellitesAsync(
       DbContext dbContext,
       IReadOnlyList<DataVaultResolvedSaveRequest> requests,
+      ChunkedSaveContinuityState? continuityState,
       CancellationToken cancellationToken) {
     var plans = CreateSatelliteSavePlans(requests);
-    var filteredPlans = await FilterSatellitePlansAsync(dbContext, plans, cancellationToken).ConfigureAwait(false);
+    var filteredPlans = await FilterSatellitePlansAsync(
+        dbContext,
+        plans,
+        continuityState,
+        cancellationToken).ConfigureAwait(false);
 
     foreach (var group in filteredPlans.RowsToWrite.GroupBy(plan => plan.Table)) {
       var rows = dbContext.Set<Dictionary<string, object>>(group.Key.TableName);
@@ -1318,6 +1410,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
   private static async Task<FilteredSatelliteSavePlans> FilterSatellitePlansAsync(
       DbContext dbContext,
       IReadOnlyList<SatelliteSavePlan> plans,
+      ChunkedSaveContinuityState? continuityState,
       CancellationToken cancellationToken) {
     var results = new SaveOperationResult[plans.Count];
     var rowsToWrite = new List<SatelliteSavePlan>();
@@ -1328,12 +1421,14 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
           group.Key,
           group.Select(plan => plan.ParentHashKey),
           cancellationToken).ConfigureAwait(false);
+      continuityState?.ApplyRetainedState(group.Key, latestHashDiffs);
 
       foreach (var plan in group) {
         var rowWritten = ShouldWriteSatelliteRow(latestHashDiffs, plan);
         if (rowWritten) {
           rowsToWrite.Add(plan);
           TrackLatestSatelliteHashDiff(latestHashDiffs, plan);
+          continuityState?.TrackLatestSatelliteHashDiff(group.Key, plan);
         }
 
         results[plan.Ordinal] = new SaveOperationResult(plan.SavedRecord, rowWritten);
@@ -1643,6 +1738,148 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       1 => resolverArray[0],
       _ => throw new InvalidOperationException(ambiguityMessage),
     };
+  }
+
+  private sealed class SaveAttemptCounts {
+    private int _hubOperationCount;
+    private int _linkOperationCount;
+    private int _requestCount;
+    private int _satelliteOperationCount;
+
+    public int ChunkCount { get; set; }
+
+    public int ProcessedChunkCount { get; set; }
+
+    public void Add(DataVaultSaveTelemetryCounts counts) {
+      _requestCount += counts.RequestCount;
+      _hubOperationCount += counts.HubOperationCount;
+      _linkOperationCount += counts.LinkOperationCount;
+      _satelliteOperationCount += counts.SatelliteOperationCount;
+    }
+
+    public DataVaultSaveTelemetryCounts ToTelemetryCounts() {
+      return new DataVaultSaveTelemetryCounts(
+          _requestCount,
+          _hubOperationCount,
+          _linkOperationCount,
+          _satelliteOperationCount);
+    }
+  }
+
+  private sealed class ChunkedSaveStrategySelection(string? providerName) {
+    private readonly List<DataVaultSaveStrategyFallbackCauseKind> _fallbackCauseKinds = [];
+    private bool _mixedSelectedStrategies;
+    private string? _selectedStrategyName;
+    private DataVaultSaveStrategyDiagnosticsStatus _status = DataVaultSaveStrategyDiagnosticsStatus.NotEvaluated;
+
+    public void Observe(DataVaultSaveTelemetryStrategySelection selection) {
+      if (selection.Status == DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback) {
+        _status = DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback;
+        _fallbackCauseKinds.AddRange(selection.FallbackCauseKinds);
+        return;
+      }
+
+      if (selection.Status != DataVaultSaveStrategyDiagnosticsStatus.ProviderStrategySelected ||
+          _status == DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback) {
+        return;
+      }
+
+      _status = DataVaultSaveStrategyDiagnosticsStatus.ProviderStrategySelected;
+      if (_selectedStrategyName is null) {
+        _selectedStrategyName = selection.SelectedStrategyName;
+      }
+      else if (!string.Equals(_selectedStrategyName, selection.SelectedStrategyName, StringComparison.Ordinal)) {
+        _mixedSelectedStrategies = true;
+      }
+    }
+
+    public DataVaultSaveTelemetryStrategySelection ToTelemetrySelection() {
+      return new DataVaultSaveTelemetryStrategySelection(
+          Strategy: null,
+          _status,
+          providerName,
+          _status == DataVaultSaveStrategyDiagnosticsStatus.ProviderStrategySelected && !_mixedSelectedStrategies
+              ? _selectedStrategyName
+              : null,
+          _fallbackCauseKinds.Distinct().ToArray());
+    }
+  }
+
+  private sealed class ChunkedSaveContinuityState {
+    private readonly List<DataVaultChunkedSaveStateFallbackCauseKind> _fallbackCauseKinds = [];
+    private readonly int _maximumRetainedSeriesCount;
+    private readonly Dictionary<SatelliteTableProjection, Dictionary<SatelliteSeriesKey, LatestSatelliteHashDiff>> _tables = [];
+    private readonly List<DataVaultChunkedSaveUnsupportedShapeKind> _unsupportedShapeKinds = [];
+
+    public ChunkedSaveContinuityState(int maximumRetainedSeriesCount) {
+      ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumRetainedSeriesCount);
+
+      _maximumRetainedSeriesCount = maximumRetainedSeriesCount;
+    }
+
+    public int CurrentCount { get; private set; }
+
+    public int HighWaterCount { get; private set; }
+
+    public IReadOnlyList<DataVaultChunkedSaveStateFallbackCauseKind> FallbackCauseKinds =>
+        _fallbackCauseKinds.Distinct().ToArray();
+
+    public IReadOnlyList<DataVaultChunkedSaveUnsupportedShapeKind> UnsupportedShapeKinds =>
+        _unsupportedShapeKinds.Distinct().ToArray();
+
+    public void ApplyRetainedState(
+        SatelliteTableProjection table,
+        Dictionary<SatelliteSeriesKey, LatestSatelliteHashDiff> latestHashDiffs) {
+      if (!_tables.TryGetValue(table, out var retainedRows) || retainedRows.Count == 0) {
+        return;
+      }
+
+      foreach (var retainedRow in retainedRows.Values) {
+        if (!latestHashDiffs.TryGetValue(retainedRow.SeriesKey, out var current) ||
+            retainedRow.LoadTimestamp > current.LoadTimestamp) {
+          latestHashDiffs[retainedRow.SeriesKey] = retainedRow;
+        }
+      }
+    }
+
+    public void TrackLatestSatelliteHashDiff(SatelliteTableProjection table, SatelliteSavePlan plan) {
+      if (!_tables.TryGetValue(table, out var retainedRows)) {
+        retainedRows = [];
+        _tables.Add(table, retainedRows);
+      }
+
+      var isNewSeries = !retainedRows.ContainsKey(plan.SeriesKey);
+      if (isNewSeries && CurrentCount >= _maximumRetainedSeriesCount) {
+        RecordLimitFallback();
+        Release();
+        retainedRows = [];
+        _tables.Add(table, retainedRows);
+        isNewSeries = true;
+      }
+
+      if (!retainedRows.TryGetValue(plan.SeriesKey, out var latestHashDiff) ||
+          plan.LoadTimestamp >= latestHashDiff.LoadTimestamp) {
+        retainedRows[plan.SeriesKey] = new LatestSatelliteHashDiff(
+            plan.SeriesKey,
+            plan.HashDiff,
+            plan.LoadTimestamp);
+      }
+
+      if (isNewSeries) {
+        CurrentCount++;
+        HighWaterCount = Math.Max(HighWaterCount, CurrentCount);
+      }
+    }
+
+    public void Release() {
+      _tables.Clear();
+      CurrentCount = 0;
+    }
+
+    private void RecordLimitFallback() {
+      _fallbackCauseKinds.Add(DataVaultChunkedSaveStateFallbackCauseKind.RetainedSatelliteSeriesLimitReached);
+      _unsupportedShapeKinds.Add(DataVaultChunkedSaveUnsupportedShapeKind.RetainedSatelliteSeriesLimitExceeded);
+    }
   }
 
   private sealed record SaveOperationResult(DataVaultSavedRecord SavedRecord, bool RowWritten);
