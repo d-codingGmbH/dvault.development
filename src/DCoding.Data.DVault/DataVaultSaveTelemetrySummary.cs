@@ -134,6 +134,13 @@ public sealed class DataVaultSaveTelemetrySummary {
     RetainedStateHighWaterCount = retainedStateHighWaterCount;
     ChunkedStateFallbackCauseKinds = chunkedStateFallbackCauseKinds.Distinct().ToArray();
     UnsupportedShapeKinds = unsupportedShapeKinds.Distinct().ToArray();
+    FallbackExplanations = DataVaultSaveTelemetryExplanationCatalog.ExplainSaveStrategyFallbacks(FallbackCauseKinds);
+    ChunkedStateFallbackExplanations =
+        DataVaultSaveTelemetryExplanationCatalog.ExplainChunkedStateFallbacks(ChunkedStateFallbackCauseKinds);
+    UnsupportedShapeExplanations =
+        DataVaultSaveTelemetryExplanationCatalog.ExplainUnsupportedShapes(UnsupportedShapeKinds);
+    ChunkedTransactionExplanation =
+        DataVaultSaveTelemetryExplanationCatalog.ExplainChunkedTransaction(OperationKind);
   }
 
   /// <summary>
@@ -207,6 +214,11 @@ public sealed class DataVaultSaveTelemetrySummary {
   public IReadOnlyList<DataVaultSaveStrategyFallbackCauseKind> FallbackCauseKinds { get; }
 
   /// <summary>
+  /// Gets bounded explanation and remediation text for each provider-specific save-strategy fallback cause.
+  /// </summary>
+  public IReadOnlyList<DataVaultSaveStrategyFallbackExplanation> FallbackExplanations { get; }
+
+  /// <summary>
   /// Gets the number of chunks observed during a chunked save attempt.
   /// </summary>
   public int ChunkCount { get; }
@@ -232,7 +244,22 @@ public sealed class DataVaultSaveTelemetrySummary {
   public IReadOnlyList<DataVaultChunkedSaveStateFallbackCauseKind> ChunkedStateFallbackCauseKinds { get; }
 
   /// <summary>
+  /// Gets bounded explanation and remediation text for each chunked retained-state fallback cause.
+  /// </summary>
+  public IReadOnlyList<DataVaultChunkedSaveStateFallbackExplanation> ChunkedStateFallbackExplanations { get; }
+
+  /// <summary>
   /// Gets distinct finite unsupported or memory-sensitive shape classifications observed during chunked execution.
   /// </summary>
   public IReadOnlyList<DataVaultChunkedSaveUnsupportedShapeKind> UnsupportedShapeKinds { get; }
+
+  /// <summary>
+  /// Gets bounded explanation and remediation text for each chunked unsupported or memory-sensitive shape classification.
+  /// </summary>
+  public IReadOnlyList<DataVaultChunkedSaveUnsupportedShapeExplanation> UnsupportedShapeExplanations { get; }
+
+  /// <summary>
+  /// Gets bounded transaction guidance for chunked save attempts.
+  /// </summary>
+  public DataVaultChunkedSaveTransactionExplanation? ChunkedTransactionExplanation { get; }
 }

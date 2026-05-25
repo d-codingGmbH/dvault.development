@@ -24,6 +24,90 @@ public sealed class DataVaultTelemetryTests {
   }
 
   [Fact]
+  public void SaveTelemetryExplainsEverySaveStrategyFallbackCause() {
+    var fallbackKinds = Enum.GetValues<DataVaultSaveStrategyFallbackCauseKind>();
+    var summary = new DataVaultSaveTelemetrySummary(
+        DataVaultSaveTelemetryOperationKind.BulkRequest,
+        DataVaultTelemetryOutcome.Failed,
+        requestCount: 1,
+        hubOperationCount: 1,
+        linkOperationCount: 1,
+        satelliteOperationCount: 1,
+        rowsWritten: 0,
+        savedRecordCount: 0,
+        TimeSpan.FromMilliseconds(5),
+        DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback,
+        providerName: "Microsoft.EntityFrameworkCore.SqlServer",
+        selectedStrategyName: null,
+        fallbackKinds);
+
+    Assert.Equal(fallbackKinds, summary.FallbackExplanations.Select(explanation => explanation.Kind));
+    Assert.All(
+        summary.FallbackExplanations,
+        explanation => {
+          Assert.False(string.IsNullOrWhiteSpace(explanation.Explanation));
+          Assert.False(string.IsNullOrWhiteSpace(explanation.Remediation));
+        });
+    Assert.Contains(
+        summary.FallbackExplanations,
+        explanation =>
+            explanation.Kind == DataVaultSaveStrategyFallbackCauseKind.DirtyDbContext &&
+            explanation.Remediation.Contains("clean DbContext", StringComparison.Ordinal));
+    Assert.Contains(
+        summary.FallbackExplanations,
+        explanation =>
+            explanation.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold &&
+            explanation.Remediation.Contains("50-operation", StringComparison.Ordinal));
+    Assert.Null(summary.ChunkedTransactionExplanation);
+  }
+
+  [Fact]
+  public void ChunkedSaveTelemetryExplainsStateFallbackUnsupportedShapesAndTransactions() {
+    var stateFallbackKinds = Enum.GetValues<DataVaultChunkedSaveStateFallbackCauseKind>();
+    var unsupportedShapeKinds = Enum.GetValues<DataVaultChunkedSaveUnsupportedShapeKind>();
+    var summary = new DataVaultSaveTelemetrySummary(
+        DataVaultSaveTelemetryOperationKind.ChunkedRequest,
+        DataVaultTelemetryOutcome.Succeeded,
+        requestCount: 1,
+        hubOperationCount: 0,
+        linkOperationCount: 0,
+        satelliteOperationCount: 2,
+        rowsWritten: 2,
+        savedRecordCount: 2,
+        TimeSpan.FromMilliseconds(5),
+        DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback,
+        providerName: "Microsoft.EntityFrameworkCore.Sqlite",
+        selectedStrategyName: null,
+        fallbackCauseKinds: [],
+        chunkCount: 1,
+        processedChunkCount: 1,
+        retainedStateCurrentCount: 0,
+        retainedStateHighWaterCount: 10000,
+        chunkedStateFallbackCauseKinds: stateFallbackKinds,
+        unsupportedShapeKinds: unsupportedShapeKinds);
+
+    Assert.Equal(stateFallbackKinds, summary.ChunkedStateFallbackExplanations.Select(explanation => explanation.Kind));
+    Assert.Equal(unsupportedShapeKinds, summary.UnsupportedShapeExplanations.Select(explanation => explanation.Kind));
+    Assert.All(
+        summary.ChunkedStateFallbackExplanations,
+        explanation => {
+          Assert.False(string.IsNullOrWhiteSpace(explanation.Explanation));
+          Assert.False(string.IsNullOrWhiteSpace(explanation.Remediation));
+          Assert.DoesNotContain("hash", explanation.Explanation, StringComparison.OrdinalIgnoreCase);
+          Assert.DoesNotContain("payload", explanation.Explanation, StringComparison.OrdinalIgnoreCase);
+        });
+    Assert.Contains(
+        summary.ChunkedStateFallbackExplanations,
+        explanation =>
+            explanation.Kind == DataVaultChunkedSaveStateFallbackCauseKind.RetainedSatelliteSeriesLimitReached &&
+            explanation.Remediation.Contains("10000", StringComparison.Ordinal));
+    var transactionExplanation = summary.ChunkedTransactionExplanation;
+    Assert.NotNull(transactionExplanation);
+    Assert.Contains("current transaction", transactionExplanation!.Explanation, StringComparison.Ordinal);
+    Assert.Contains("all-or-nothing", transactionExplanation.Remediation, StringComparison.Ordinal);
+  }
+
+  [Fact]
   public async Task SaveTelemetryEmitsSingleSelectedStrategySummary() {
     var observer = new CapturingTelemetryObserver();
     var strategy = new ReturningSaveStrategy(canSave: true);

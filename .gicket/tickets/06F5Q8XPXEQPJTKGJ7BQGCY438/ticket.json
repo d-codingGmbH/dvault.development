@@ -1,23 +1,22 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q8XPXEQPJTKGJ7BQGCY438",
   "ticket-type": "story",
   "title": "Story: Explain streaming fallback and remediation paths",
-  "revision": "06F5Q97NXJXVW5VP8YT2JATHF0",
-  "status": "todo",
+  "revision": "06F5Y5X64JAAKAAZF2PNT63P5R",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
-    "area/diagnostics",
     "area/developer-experience",
+    "area/diagnostics",
     "area/ef-core",
-    "area/performance"
+    "area/performance",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WEQSF8CCXJ7DPCXJF00M",
   "releaseId": "06F5Q8W98RVXB5Z5NQWRCQ3VC8",
   "created-at": "2026-05-24T20:18:36.5636012Z",
-  "updated-at": "2026-05-24T20:19:58.0602395Z"
+  "updated-at": "2026-05-25T12:24:05.9242085Z"
 }

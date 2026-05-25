@@ -126,6 +126,8 @@ public sealed class StreamingExplicitSaveContractSnapshotTests {
     Assert.Contains("IDataVaultLoadTimestampResolver", document, StringComparison.Ordinal);
     Assert.Contains("IDataVaultRecordSourceResolver", document, StringComparison.Ordinal);
     Assert.Contains("caller's current transaction", document, StringComparison.Ordinal);
+    Assert.Contains("explanation/remediation records", document, StringComparison.Ordinal);
+    Assert.Contains("all-or-nothing behavior across chunks", document, StringComparison.Ordinal);
     Assert.Contains("cancellation", document, StringComparison.OrdinalIgnoreCase);
     Assert.Contains("hub and link saves preserve idempotent reuse", document, StringComparison.Ordinal);
     Assert.Contains("satellite saves preserve parent-scoped", document, StringComparison.Ordinal);

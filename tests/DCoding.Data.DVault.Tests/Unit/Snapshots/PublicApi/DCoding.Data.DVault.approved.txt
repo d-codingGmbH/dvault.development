@@ -122,6 +122,44 @@ type public sealed class DCoding.Data.DVault.DataVaultChunkedSaveRequest
 type public enum DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackCauseKind
   value RetainedSatelliteSeriesLimitReached = 0
 
+type public sealed class DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackExplanation : System.IEquatable<DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackExplanation>
+  ctor public DataVaultChunkedSaveStateFallbackExplanation(DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackCauseKind Kind, string Explanation, string Remediation)
+  property public DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackCauseKind Kind { get; init; }
+  property public string Explanation { get; init; }
+  property public string Remediation { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackExplanation? left, DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackExplanation? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackExplanation? left, DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackExplanation? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackExplanation? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackCauseKind Kind, out string Explanation, out string Remediation)
+
+type public sealed class DCoding.Data.DVault.DataVaultChunkedSaveTransactionExplanation : System.IEquatable<DCoding.Data.DVault.DataVaultChunkedSaveTransactionExplanation>
+  ctor public DataVaultChunkedSaveTransactionExplanation(string Explanation, string Remediation)
+  property public string Explanation { get; init; }
+  property public string Remediation { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultChunkedSaveTransactionExplanation? left, DCoding.Data.DVault.DataVaultChunkedSaveTransactionExplanation? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultChunkedSaveTransactionExplanation? left, DCoding.Data.DVault.DataVaultChunkedSaveTransactionExplanation? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultChunkedSaveTransactionExplanation? other)
+  method public void Deconstruct(out string Explanation, out string Remediation)
+
+type public sealed class DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeExplanation : System.IEquatable<DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeExplanation>
+  ctor public DataVaultChunkedSaveUnsupportedShapeExplanation(DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeKind Kind, string Explanation, string Remediation)
+  property public DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeKind Kind { get; init; }
+  property public string Explanation { get; init; }
+  property public string Remediation { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeExplanation? left, DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeExplanation? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeExplanation? left, DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeExplanation? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeExplanation? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeKind Kind, out string Explanation, out string Remediation)
+
 type public enum DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeKind
   value RetainedSatelliteSeriesLimitExceeded = 0
 
@@ -1334,6 +1372,19 @@ type public enum DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind
   value StrategyDeclined = 9
   value OracleMaximumSatelliteOperationThreshold = 10
 
+type public sealed class DCoding.Data.DVault.DataVaultSaveStrategyFallbackExplanation : System.IEquatable<DCoding.Data.DVault.DataVaultSaveStrategyFallbackExplanation>
+  ctor public DataVaultSaveStrategyFallbackExplanation(DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind Kind, string Explanation, string Remediation)
+  property public DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind Kind { get; init; }
+  property public string Explanation { get; init; }
+  property public string Remediation { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultSaveStrategyFallbackExplanation? left, DCoding.Data.DVault.DataVaultSaveStrategyFallbackExplanation? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultSaveStrategyFallbackExplanation? left, DCoding.Data.DVault.DataVaultSaveStrategyFallbackExplanation? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultSaveStrategyFallbackExplanation? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind Kind, out string Explanation, out string Remediation)
+
 type public sealed class DCoding.Data.DVault.DataVaultSaveStrategyGateRequirement : System.IEquatable<DCoding.Data.DVault.DataVaultSaveStrategyGateRequirement>
   ctor public DataVaultSaveStrategyGateRequirement(DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind Kind, int? MinimumTotalOperationCount = null, int? MaximumSatelliteOperationCount = null)
   property public DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind Kind { get; init; }
@@ -1355,12 +1406,16 @@ type public enum DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind
 type public sealed class DCoding.Data.DVault.DataVaultSaveTelemetrySummary
   ctor public DataVaultSaveTelemetrySummary(DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind operationKind, DCoding.Data.DVault.DataVaultTelemetryOutcome outcome, int requestCount, int hubOperationCount, int linkOperationCount, int satelliteOperationCount, int rowsWritten, int savedRecordCount, System.TimeSpan duration, DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus strategyStatus, string? providerName, string? selectedStrategyName, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind> fallbackCauseKinds)
   ctor public DataVaultSaveTelemetrySummary(DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind operationKind, DCoding.Data.DVault.DataVaultTelemetryOutcome outcome, int requestCount, int hubOperationCount, int linkOperationCount, int satelliteOperationCount, int rowsWritten, int savedRecordCount, System.TimeSpan duration, DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus strategyStatus, string? providerName, string? selectedStrategyName, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind> fallbackCauseKinds, int chunkCount, int processedChunkCount, int retainedStateCurrentCount, int retainedStateHighWaterCount, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackCauseKind> chunkedStateFallbackCauseKinds, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeKind> unsupportedShapeKinds)
+  property public DCoding.Data.DVault.DataVaultChunkedSaveTransactionExplanation? ChunkedTransactionExplanation { get; }
   property public DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus StrategyStatus { get; }
   property public DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind OperationKind { get; }
   property public DCoding.Data.DVault.DataVaultTelemetryOutcome Outcome { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackCauseKind> ChunkedStateFallbackCauseKinds { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackExplanation> ChunkedStateFallbackExplanations { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeExplanation> UnsupportedShapeExplanations { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeKind> UnsupportedShapeKinds { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind> FallbackCauseKinds { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackExplanation> FallbackExplanations { get; }
   property public System.TimeSpan Duration { get; }
   property public int ChunkCount { get; }
   property public int HubOperationCount { get; }

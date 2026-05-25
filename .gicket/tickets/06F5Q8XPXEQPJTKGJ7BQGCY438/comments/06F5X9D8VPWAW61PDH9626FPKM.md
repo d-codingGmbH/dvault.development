@@ -1,79 +1,58 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Verified the ticket, comments, relations, branch state, and streaming/diagnostics source. The refinement fixes this story to an additive bounded chunked-save fallback/remediation surface over existing telemetry vocabularies; no child tickets, relation changes, attachments, or planning documents were materialized.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Verified persisted context: the ticket has no human comments or closure amendments, remains a child of 06F5Q8WVYMV8KQPAENPEEE3YM4, blocks 06F5Q8Y3WW9FFV7HA289VHCEAM, and is itself blocked by 06F5Q8X8Q72TQ5B7F2JSAJWPR8 and 06F5Q8XF9DPKFW9VY0F3Y32BH4; no relation changes were applied in this refinement pass.
 - Verified branch state: ticket/06F5Q8XPXEQPJTKGJ7BQGCY438-story-explain-streaming-fallback-and-remediation is still at scratch source 0b1caa35633951259af2b6b13dac2283ba55e298 apart from the PO claim commit, so this is refining an unimplemented slice rather than ratifying landed code.
 - The authoritative streaming contract already names DataVaultSaveTelemetrySummary as the bounded diagnostics surface for chunked saves and fixes the retained-state limit vocabulary to RetainedSatelliteSeriesLimitReached and RetainedSatelliteSeriesLimitExceeded.
 - Current save diagnostics already expose finite provider-fallback enums such as ProviderNameMismatch, UnknownOrUnregisteredProviderName, NoProviderSpecificStrategyRegistered, DirtyDbContext, MultiActiveSatelliteOperations, and provider threshold causes; the missing slice is actionable explanation and remediation over that bounded vocabulary.
 - Transaction guidance is already decided by the streaming contract: chunked execution participates in the caller's current transaction and callers who need all-or-nothing across chunks must open the transaction before invoking the save service.
 
-### Scope In
+Scope In
 - Add an additive bounded explanation/remediation surface for chunked-save and provider-fallback outcomes rooted in the existing explicit save telemetry contract.
 - Cover provider-neutral fallback causes already evidenced in source: dirty tracked DbContext, provider mismatch or unknown provider registration, missing provider strategy wiring, multi-active satellite batches, and current SQL Server/MySQL/Oracle threshold gates.
 - Cover chunked retained-state fallback and unsupported-shape reporting for the finite RetainedSatelliteSeriesLimitReached and RetainedSatelliteSeriesLimitExceeded vocabulary.
 - Keep explanations/redaction compatible with the current telemetry contract by avoiding raw hash keys, payload values, record sources, table-level dumps, or per-parent retained-state listings.
 - Update focused tests and public API snapshots for any new public helper types or summary members added to support the explanation/remediation surface.
 
-### Scope Out
+Scope Out
 - Do not add provider-native chunk execution, new save-strategy gates, or new provider capability-profile registration behavior.
 - Do not add unbounded debug dumps, raw SQL, per-chunk trace logs, or high-cardinality diagnostic payloads.
 - Do not repurpose EF SaveChanges interception, background ingestion, scheduler behavior, or support-bundle automation into the streaming save path.
 - Do not broaden this story into general preflight or migration diagnostics work unrelated to explicit save fallback explanation.
 - Do not require relation cleanup, child-ticket creation, or planning-document materialization unless new evidence appears; none was justified in this pass.
 
-## Acceptance Criteria
-- A public bounded save-diagnostics surface for DataVaultChunkedSaveRequest explains why provider-neutral fallback was used or why a provider-native path was rejected, using the existing finite save-fallback vocabulary instead of raw runtime data.
-- That surface provides bounded remediation guidance for the evidenced gate families in the current repository: chunk sizing thresholds, dirty tracked context, provider mismatch or unregistered provider wiring, missing provider-specific strategy registration, multi-active or other unsupported shapes, and the retained-state limit fallback.
-- Transaction remediation is explicit and contract-consistent: diagnostics state that chunked execution uses the caller's current transaction and that callers needing all-or-nothing across chunks must open the transaction before invoking the save.
-- Chunked retained-state diagnostics preserve the current finite classifications RetainedSatelliteSeriesLimitReached and RetainedSatelliteSeriesLimitExceeded and do not expose raw hash keys, payload values, or per-parent retained-state details.
-- Focused tests cover success, failure, cancellation, and retained-state-limit scenarios, assert the new explanation/remediation output, and keep public API snapshots aligned when the surface changes.
-
-## Definition of Done
-- Implementation compiles and automated tests covering save telemetry/diagnostics pass, including the existing chunked-save integration suite and any new unit coverage for explanation mapping.
-- Public API snapshots are updated only for intentional additive surface changes.
-- Repository docs that already describe the chunked-save telemetry contract are updated if the public explanation/remediation API changes consumer expectations.
-- The final implementation keeps the default AddDVault() path compatible and telemetry-free unless callers explicitly opt into the existing telemetry or observer lane.
-
-## Implementation Notes
-- Use the existing DataVaultSaveTelemetrySummary lane as the v1 anchor for this story. IDataVaultDiagnosticsService.Analyze(...) currently stops at single-request and bulk-save overloads, while the streaming contract explicitly points chunked diagnostics at telemetry.
-- Preserve the current aggregate chunked-save behavior: telemetry is emitted once per explicit chunked attempt, aggregates cause kinds across processed chunks, and may suppress a single SelectedStrategyName when multiple provider strategies were used across chunks.
-- Prefer additive helper records or summary members that map finite cause kinds to bounded explanation/remediation text over inventing a second free-form diagnostic channel.
-- Source evidence already fixes the current provider fallback vocabulary to ProviderNameMismatch, UnknownOrUnregisteredProviderName, NoProviderSpecificStrategyRegistered, DirtyDbContext, MultiActiveSatelliteOperations, SqlServerMinimumOperationThreshold, SqlServerMaximumSatelliteOperationThreshold, MySqlMinimumOperationThreshold, OracleMinimumOperationThreshold, OracleMaximumSatelliteOperationThreshold, and StrategyDeclined.
-- Keep the new guidance redacted and operationally bounded, consistent with existing telemetry docs that avoid raw exception text, hash keys, record sources, metadata names, and full SQL detail.
-- Use the current retained-state limit of 10000 satellite series per chunked-save attempt as the v1 baseline; this story should explain that limit and its fallback, not reopen the limit itself.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should a later story project the same fallback/remediation vocabulary into DataVaultPreflight or design-time command output, or keep that broader explain surface separate from runtime save telemetry?
 - After this bounded v1 slice lands, do we want provider-specific documentation examples that show how applications consume the remediation output from custom IDataVaultTelemetryObserver implementations?
 
-## Risks
+Risks
 - Because the default AddDVault() path stays telemetry-free, consumers that do not register AddDVaultTelemetry() or a custom IDataVaultTelemetryObserver may miss the new streaming remediation guidance unless docs clearly show how to opt in.
 - Cause-to-remediation mappings can drift when provider strategy gates change; tests should assert that every currently exposed fallback enum and retained-state classification has a stable bounded explanation.
 - Chunked attempts aggregate causes across chunks, so remediation text must stay aggregate and deterministic rather than implying a raw per-chunk execution trace.
 
-## Split Recommendations
+Split recommendations
 - none
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Goal: Make streaming/chunked save strategy decisions actionable.
-
-Acceptance criteria:
-- Extends diagnostics with reasons a streaming save used fallback or rejected a provider-native path.
-- Provides bounded remediation hints for chunk sizing, dirty context, provider mismatch, unsupported shapes, or transaction constraints.
-- Updates tests and public API snapshots where applicable.
+Run mode
+- apply: planned updates are applied after this comment

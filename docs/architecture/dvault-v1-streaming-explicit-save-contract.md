@@ -71,6 +71,8 @@ The default retained-state limit is `10000` satellite series per chunked-save at
 
 `DataVaultSaveTelemetrySummary` is the bounded diagnostics surface for this v1 slice. Chunked attempts report `ChunkCount`, `ProcessedChunkCount`, retained-state current and high-water counts, finite retained-state fallback cause kinds, and finite unsupported-shape kinds. The meter-backed observer projects those values as low-cardinality counters and histograms; it does not emit raw hash keys, payload values, or per-parent state entries.
 
+The summary also exposes bounded explanation/remediation records for the finite provider save-fallback causes, retained-state fallback causes, and unsupported-shape classifications. These records preserve the existing enum vocabulary while giving callers actionable guidance for provider wiring, dirty tracked `DbContext` state, provider threshold chunk sizing, unsupported multi-active or memory-sensitive shapes, and retained-state fallback. Chunked summaries include explicit transaction guidance: execution participates in the caller's current transaction, and callers that need all-or-nothing behavior across chunks should open that transaction before invoking the save service.
+
 ## Compatibility Test Baseline
 
 This story adds focused executable contract coverage for the additive chunked boundary using a test-local harness over the existing ordered bulk-save API. These tests prove the current explicit-save semantics that the implementation story must preserve without adding production chunk-execution mechanics in this contract story:

@@ -1277,6 +1277,16 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     Assert.Empty(summary.ChunkedStateFallbackCauseKinds);
     Assert.Empty(summary.UnsupportedShapeKinds);
     Assert.Contains(DataVaultSaveStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered, summary.FallbackCauseKinds);
+    Assert.Contains(
+        summary.FallbackExplanations,
+        explanation =>
+            explanation.Kind == DataVaultSaveStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered &&
+            explanation.Remediation.Contains("Register", StringComparison.Ordinal));
+    Assert.NotNull(summary.ChunkedTransactionExplanation);
+    Assert.Contains(
+        "all-or-nothing",
+        summary.ChunkedTransactionExplanation!.Remediation,
+        StringComparison.Ordinal);
   }
 
   [Fact]
@@ -1331,6 +1341,11 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     Assert.Equal(0, summary.RowsWritten);
     Assert.Equal(0, summary.RetainedStateCurrentCount);
     Assert.Equal(1, summary.RetainedStateHighWaterCount);
+    Assert.NotNull(summary.ChunkedTransactionExplanation);
+    Assert.Contains(
+        "current transaction",
+        summary.ChunkedTransactionExplanation!.Explanation,
+        StringComparison.Ordinal);
   }
 
   [Fact]
@@ -1389,6 +1404,11 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     Assert.Equal(1, summary.ProcessedChunkCount);
     Assert.Equal(0, summary.RetainedStateCurrentCount);
     Assert.Equal(1, summary.RetainedStateHighWaterCount);
+    Assert.NotNull(summary.ChunkedTransactionExplanation);
+    Assert.Contains(
+        "all-or-nothing",
+        summary.ChunkedTransactionExplanation!.Remediation,
+        StringComparison.Ordinal);
   }
 
   [Fact]
@@ -1440,6 +1460,18 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     Assert.Equal(
         [DataVaultChunkedSaveUnsupportedShapeKind.RetainedSatelliteSeriesLimitExceeded],
         summary.UnsupportedShapeKinds);
+    var stateFallbackExplanation = Assert.Single(summary.ChunkedStateFallbackExplanations);
+    Assert.Equal(
+        DataVaultChunkedSaveStateFallbackCauseKind.RetainedSatelliteSeriesLimitReached,
+        stateFallbackExplanation.Kind);
+    Assert.Contains("10000", stateFallbackExplanation.Remediation, StringComparison.Ordinal);
+    Assert.DoesNotContain("customer-hash", stateFallbackExplanation.Explanation, StringComparison.Ordinal);
+    Assert.DoesNotContain("customer-hash", stateFallbackExplanation.Remediation, StringComparison.Ordinal);
+    var unsupportedShapeExplanation = Assert.Single(summary.UnsupportedShapeExplanations);
+    Assert.Equal(
+        DataVaultChunkedSaveUnsupportedShapeKind.RetainedSatelliteSeriesLimitExceeded,
+        unsupportedShapeExplanation.Kind);
+    Assert.Contains("retained-state budget", unsupportedShapeExplanation.Remediation, StringComparison.Ordinal);
   }
 
   [Fact]
