@@ -73,6 +73,24 @@ public sealed class BenchmarkScenarioExecutionTests {
           "100 customers, 10 profile states each",
           "90% repeat-change history"),
       CompletedSqlite(
+          "customer-profile-streaming-save",
+          "dvault-adddvault-fallback/materialized-explicit-bulk",
+          "provider-neutral-dvault-fallback",
+          "20 customers, 60 ordered explicit requests",
+          "3 profile events per customer with one unchanged replay"),
+      CompletedSqlite(
+          "customer-profile-streaming-save",
+          "dvault-adddvault-fallback/chunked-save-bounded-10",
+          "provider-neutral-dvault-fallback",
+          "20 customers, 60 ordered explicit requests",
+          "3 profile events per customer with one unchanged replay"),
+      CompletedSqlite(
+          "customer-profile-streaming-save",
+          "dvault-adddvault-fallback/chunked-save-bounded-5",
+          "provider-neutral-dvault-fallback",
+          "20 customers, 60 ordered explicit requests",
+          "3 profile events per customer with one unchanged replay"),
+      CompletedSqlite(
           "order-product-fulfillment-history",
           "conventional-ef",
           "classic-ef",
@@ -245,6 +263,9 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Contains("100 customer hubs and 100 profile satellite rows", text);
     Assert.Contains("1000 customer profile history rows for 100 customers", text);
     Assert.Contains("100 customer hubs and 1000 profile satellite rows", text);
+    Assert.Contains("20 customer hubs and 40 profile satellite rows from 60 materialized explicit requests", text);
+    Assert.Contains("20 customer hubs and 40 profile satellite rows from 60 explicit requests across 6 chunks of 10", text);
+    Assert.Contains("20 customer hubs and 40 profile satellite rows from 60 explicit requests across 12 chunks of 5", text);
     Assert.Contains(
         "1 order, 1 product, 1 relationship, and 2 fulfillment history rows for O-1000/SKU-COFFEE",
         text);
@@ -260,8 +281,8 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Contains("1 generated order hub row read through EF.CompileQuery stable projection", text);
     Assert.Contains("1 generated order hub row saved and read through AddDbContext fixed-model configuration", text);
     Assert.Contains("1 generated order hub row saved and read through AddDbContextPool fixed-model configuration", text);
-    Assert.Contains("Recorded 32 benchmark report rows.", text);
-    Assert.Contains("Executed 24 benchmark report rows.", text);
+    Assert.Contains("Recorded 35 benchmark report rows.", text);
+    Assert.Contains("Executed 27 benchmark report rows.", text);
     Assert.Contains("Skipped 8 benchmark report rows.", text);
   }
 
@@ -308,7 +329,7 @@ public sealed class BenchmarkScenarioExecutionTests {
 
       var csv = await File.ReadAllTextAsync(csvPath).ConfigureAwait(false);
       var csvLines = csv.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
-      Assert.Equal(33, csvLines.Length);
+      Assert.Equal(36, csvLines.Length);
       Assert.Equal(
           "scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,meanAllocatedBytes,minAllocatedBytes,maxAllocatedBytes,executionDetail,persistedOutcome",
           csvLines[0]);
@@ -359,7 +380,7 @@ public sealed class BenchmarkScenarioExecutionTests {
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable));
 
       var results = json.RootElement.GetProperty("results").EnumerateArray().ToArray();
-      Assert.Equal(32, results.Length);
+      Assert.Equal(35, results.Length);
 
       foreach (var expectedRow in ExpectedRows) {
         var matchingResults = results.Where(result =>
@@ -396,6 +417,21 @@ public sealed class BenchmarkScenarioExecutionTests {
           Assert.True(result.GetProperty("minAllocatedBytes").GetInt64() >= 0);
           Assert.True(result.GetProperty("maxAllocatedBytes").GetInt64() >= 0);
         }
+      }
+
+      var chunkedStreamingResults = results
+          .Where(result =>
+              result.GetProperty("scenarioName").GetString() == "customer-profile-streaming-save" &&
+              result.GetProperty("baselineName").GetString()?.Contains("/chunked-save-bounded-", StringComparison.Ordinal) == true)
+          .ToArray();
+      Assert.Equal(2, chunkedStreamingResults.Length);
+      foreach (var result in chunkedStreamingResults) {
+        var executionDetail = result.GetProperty("executionDetail").GetString();
+        Assert.Contains("savePath=IDataVaultSaveService.SaveAsync(ChunkedRequest)", executionDetail);
+        Assert.Contains("chunkBoundary=bounded request chunks", executionDetail);
+        Assert.Contains("chunkSize=", executionDetail);
+        Assert.Contains("processedChunkCount=", executionDetail);
+        Assert.Contains("retainedStateHighWater=", executionDetail);
       }
     }
     finally {

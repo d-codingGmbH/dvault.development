@@ -17,6 +17,8 @@ When a provider is configured, the default report includes DVault fallback plus 
 
 The required SQLite matrix includes read baselines for latest satellite, PIT as-of, and bridge traversal scenarios. Fixture creation, seeding, and strategy-diagnostic checks run before the timed operation so the measured read rows focus on the `IDataVaultReadService` latest satellite path, the `DataVaultPitAsOfReadRequest`/`DataVaultPitReadRecord` path, and the `DataVaultBridgeReadRequest`/`DataVaultBridgeReadRecord` path. SQLite latest-satellite, PIT, and bridge read rows compare the provider-neutral `AddDVault()` fallback with the `AddDVaultSqlite()` optimized provider read strategy. Non-SQLite provider rows are not emitted as provider-specific PIT or bridge read evidence in the default matrix.
 
+The default SQLite matrix also includes a streaming-save comparison for the existing chunked save boundary. The `customer-profile-streaming-save` rows use the same 60 ordered explicit profile-save requests for a materialized `DataVaultBulkSaveRequest` baseline and bounded `DataVaultChunkedSaveRequest` rows with chunk sizes 10 and 5. The chunked rows run through `IDataVaultSaveService.SaveAsync(DbContext, DataVaultChunkedSaveRequest, CancellationToken)` and include chunk size, chunk count, processed chunk count, retained-state high-water count, and save-path metadata in `executionDetail`. These rows measure the current provider-neutral chunked path; they do not claim a provider-specific chunk optimization or add artifact columns.
+
 The required SQLite matrix also includes bounded EF Core compiled and pooled-context evidence:
 
 - compiled-model startup compares ordinary DVault model building with a DVault-projected design model initialized into an EF runtime model and supplied through `UseModel(runtimeModel)`
@@ -78,6 +80,7 @@ The benchmark command executes the required comparisons:
 - customer profile history: one `C-100` customer with two profile states
 - customer profile bulk insert-only: 100 customers with one initial profile state each and no repeat-change history
 - customer profile bulk history: 100 customers with 10 profile states each
+- customer profile streaming save: 20 customers with 60 ordered explicit save requests, measured once as a materialized bulk request and twice as bounded chunked saves
 - order-product fulfillment history: one `O-1000`/`SKU-COFFEE` order-product relationship with two fulfillment states and an unchanged replay proof outside the timing window
 - latest satellite read: 100 seeded customers with 10 profile states each, measured through `ReadLatestSatelliteRowsAsync(...)`
 - PIT as-of read: 100 seeded customers with profile and status snapshots plus one PIT row per customer, measured through `ReadPitRowsAsync(...)`
@@ -87,11 +90,13 @@ The benchmark command executes the required comparisons:
 - DbContext pooling DVault operation: one generated order hub save/read operation, measured once through `AddDbContext<TContext>` and once through `AddDbContextPool<TContext>`
 - optional provider-native bulk ingestion: 20 order-product pairs, 20 order-product links, and three ordered fulfillment satellite operations including one unchanged replay in a single provider-eligible bulk request
 
-For write-history scenarios, SQLite emits one row for each strategy family:
+For conventional write-history scenarios other than `customer-profile-streaming-save`, SQLite emits one row for each strategy family:
 
 - `classic-ef`
 - `provider-neutral-dvault-fallback`
 - `sqlite-optimized-dvault`
+
+The streaming-save comparison emits provider-neutral DVault rows for the materialized explicit baseline and bounded chunked-save paths because the evidence is scoped to the public chunked save boundary rather than provider-specific chunk optimization.
 
 Read baselines emit the current provider-neutral read-service path through the DVault fallback registration and the selected provider package registration for SQLite only. For SQLite reads, the provider package row uses the SQLite optimized read strategy for supported hub-parent, non-multi-active latest/as-of satellite reads, supported maintained PIT reads, and supported many-to-many or hierarchy bridge reads.
 

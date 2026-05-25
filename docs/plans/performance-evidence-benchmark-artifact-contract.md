@@ -81,10 +81,13 @@ The required local baseline is SQLite temporary files. A standard local evidence
 - customer profile history
 - customer profile bulk insert-only
 - customer profile bulk history
+- customer profile streaming save, comparing a materialized explicit bulk request with bounded chunked saves
 - order-product fulfillment history
 - latest satellite read
 - PIT as-of read
 - bridge traversal read
+
+Streaming-save evidence must reuse the artifact fields above. The materialized and chunked rows must use the same logical explicit save requests and comparable run inputs. Chunked rows must make the exercised `DataVaultChunkedSaveRequest` path, chunk size, chunk count, processed chunk count, and retained-state high-water count visible through `executionDetail` or existing metadata fields without adding a new artifact schema.
 
 When the claim depends on scale behavior, include the scale matrix mode. When the claim depends on latest-satellite lookup/index behavior, include the latest-index matrix mode.
 
