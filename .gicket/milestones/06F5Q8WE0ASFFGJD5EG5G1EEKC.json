@@ -3,6 +3,6 @@
   "milestoneId": "06F5Q8WE0ASFFGJD5EG5G1EEKC",
   "name": "v0.19.0 - Streaming save contract",
   "description": "Public contract, compatibility, non-goals, and memory-boundary design for streaming explicit save inputs.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-24T20:18:25.9222439Z"
 }

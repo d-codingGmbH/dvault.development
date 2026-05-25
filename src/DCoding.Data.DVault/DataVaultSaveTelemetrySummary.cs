@@ -7,7 +7,7 @@ public sealed class DataVaultSaveTelemetrySummary {
   /// <summary>
   /// Initializes a new save telemetry summary.
   /// </summary>
-  /// <param name="operationKind">Whether the attempt used the single-request or bulk save API.</param>
+  /// <param name="operationKind">Whether the attempt used the single-request, bulk save, or chunked save API.</param>
   /// <param name="outcome">Whether the attempt returned successfully or failed.</param>
   /// <param name="requestCount">The number of explicit save requests in the attempt.</param>
   /// <param name="hubOperationCount">The number of hub operations in the attempt.</param>
@@ -144,7 +144,7 @@ public sealed class DataVaultSaveTelemetrySummary {
   }
 
   /// <summary>
-  /// Gets whether the attempt used the single-request or bulk save API.
+  /// Gets whether the attempt used the single-request, bulk save, or chunked save API.
   /// </summary>
   public DataVaultSaveTelemetryOperationKind OperationKind { get; }
 
