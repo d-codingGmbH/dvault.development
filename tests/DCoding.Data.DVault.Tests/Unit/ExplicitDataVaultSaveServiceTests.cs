@@ -319,6 +319,63 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   [Fact]
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqlServerProvider)]
+  public void SqlServerStagingTableSqlCreatesAndDropsTemporaryBulkStage() {
+    var createCommandText = InvokeSqlServerCommandTextFactory(
+        "CreateSqlServerCreateStagingTableCommandText",
+        "#dvault_stage_test",
+        new Dictionary<string, string>(StringComparer.Ordinal) {
+          ["__dvault_ordinal"] = "int",
+          ["CustomerHashKey"] = "nvarchar(64)",
+          ["LoadTimestamp"] = "datetimeoffset",
+        });
+    var dropCommandText = InvokeSqlServerCommandTextFactory(
+        "CreateSqlServerDropStagingTableCommandText",
+        "#dvault_stage_test");
+
+    Assert.Contains("CREATE TABLE [#dvault_stage_test]", createCommandText, StringComparison.Ordinal);
+    Assert.Contains("[__dvault_ordinal] int NOT NULL", createCommandText, StringComparison.Ordinal);
+    Assert.Contains("[CustomerHashKey] nvarchar(64) NULL", createCommandText, StringComparison.Ordinal);
+    Assert.Equal("DROP TABLE IF EXISTS [#dvault_stage_test]", dropCommandText);
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqlServerProvider)]
+  public void SqlServerStagedUniqueInsertSqlDeduplicatesFromBulkStageInCallerOrder() {
+    var commandText = InvokeSqlServerCommandTextFactory(
+        "CreateSqlServerStagedUniqueInsertCommandText",
+        "HubCustomer",
+        "#dvault_stage_test",
+        new[] { "CustomerHashKey", "LoadTimestamp", "RecordSource", "CustomerId" },
+        "CustomerHashKey");
+
+    Assert.Contains("FROM [#dvault_stage_test] AS [stage]", commandText, StringComparison.Ordinal);
+    Assert.Contains("ROW_NUMBER() OVER (PARTITION BY [stage].[CustomerHashKey] ORDER BY [stage].[__dvault_ordinal])", commandText, StringComparison.Ordinal);
+    Assert.Contains("INSERT INTO [HubCustomer]", commandText, StringComparison.Ordinal);
+    Assert.Contains("NOT EXISTS (SELECT 1 FROM [HubCustomer]", commandText, StringComparison.Ordinal);
+    Assert.Equal(1, CountOccurrences(commandText, "WITH (UPDLOCK, HOLDLOCK)"));
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqlServerProvider)]
+  public void SqlServerStagedInsertSqlReadsOrdinaryRowsFromBulkStageInCallerOrder() {
+    var commandText = InvokeSqlServerCommandTextFactory(
+        "CreateSqlServerStagedInsertCommandText",
+        "SatCustomerContact",
+        "#dvault_stage_test",
+        new[] { "CustomerHashKey", "HashDiff", "LoadTimestamp", "RecordSource", "EmailAddress" });
+
+    Assert.Contains("INSERT INTO [SatCustomerContact]", commandText, StringComparison.Ordinal);
+    Assert.Contains("SELECT [stage].[CustomerHashKey], [stage].[HashDiff]", commandText, StringComparison.Ordinal);
+    Assert.Contains("FROM [#dvault_stage_test] AS [stage]", commandText, StringComparison.Ordinal);
+    Assert.Contains("ORDER BY [stage].[__dvault_ordinal]", commandText, StringComparison.Ordinal);
+    Assert.DoesNotContain("OPENJSON", commandText, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqlServerProvider)]
   public void SqlServerSatelliteLookupSqlRanksLatestHashDiffsByParentBatch() {
     var commandText = InvokeSqlServerCommandTextFactory(
         "CreateSqlServerLatestSatelliteHashDiffCommandText",

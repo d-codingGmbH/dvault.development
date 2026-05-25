@@ -1,7 +1,9 @@
+using System.Globalization;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -10,6 +12,9 @@ namespace DCoding.Data.DVault.Tests.Integration;
 [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.ExternalProviderIntegration)]
 [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqlServerProvider)]
 public sealed class SqlServerDataVaultSmokeTests {
+  private const int StagedBulkHubOnlyCount = 50;
+  private const int StagedBulkPairCount = 25;
+
   [Fact]
   public async Task AddDVaultSqlServerPersistsRepresentativeHubSaveWhenConfigured() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
@@ -166,6 +171,146 @@ public sealed class SqlServerDataVaultSmokeTests {
         ExternalProviderLiveSchemaFixture.CreateSqlServerAsync,
         services => services.AddDVaultSqlServer(),
         "SqlServerDataVaultSaveStrategy");
+  }
+
+  [Fact]
+  public async Task AddDVaultSqlServerStagedBulkReuseKeepsHubAndLinkIdempotencyWhenConfigured() {
+    await using var fixture = await ExternalProviderLiveSchemaFixture.CreateSqlServerAsync();
+    using var provider = CreateServiceProvider();
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var request = CreateStagedHubLinkBulkRequest(provider, "REUSE", StagedBulkPairCount);
+
+    await using var context = fixture.CreateContext();
+    var firstResult = await saveService.SaveAsync(context, request);
+    var replayResult = await saveService.SaveAsync(context, request);
+
+    Assert.Equal(StagedBulkPairCount * 3, firstResult.RowsWritten);
+    Assert.Equal(0, replayResult.RowsWritten);
+    Assert.Equal(StagedBulkPairCount * 3, replayResult.SavedRecords.Count);
+    Assert.Empty(context.ChangeTracker.Entries());
+    Assert.Equal(StagedBulkPairCount, await context.Set<Dictionary<string, object>>("HubCustomer").AsNoTracking().CountAsync());
+    Assert.Equal(StagedBulkPairCount, await context.Set<Dictionary<string, object>>("HubOrder").AsNoTracking().CountAsync());
+    Assert.Equal(StagedBulkPairCount, await context.Set<Dictionary<string, object>>("LinkCustomerOrder").AsNoTracking().CountAsync());
+  }
+
+  [Fact]
+  public async Task AddDVaultSqlServerStagedBulkSaveParticipatesInCallerTransactionWhenConfigured() {
+    await using var fixture = await ExternalProviderLiveSchemaFixture.CreateSqlServerAsync();
+    using var provider = CreateServiceProvider();
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var request = CreateStagedCustomerHubBulkRequest("TX", StagedBulkHubOnlyCount);
+
+    await using (var context = fixture.CreateContext()) {
+      await using var transaction = await context.Database.BeginTransactionAsync();
+      var result = await saveService.SaveAsync(context, request);
+
+      Assert.Equal(StagedBulkHubOnlyCount, result.RowsWritten);
+      Assert.Equal(0, await CountSqlServerStagingTablesAsync(context));
+
+      await transaction.RollbackAsync();
+    }
+
+    await using (var context = fixture.CreateContext()) {
+      Assert.Equal(0, await context.Set<Dictionary<string, object>>("HubCustomer").AsNoTracking().CountAsync());
+    }
+  }
+
+  [Fact]
+  public async Task AddDVaultSqlServerStagedBulkSaveObservesCancellationBeforeWritingWhenConfigured() {
+    await using var fixture = await ExternalProviderLiveSchemaFixture.CreateSqlServerAsync();
+    using var provider = CreateServiceProvider();
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var request = CreateStagedCustomerHubBulkRequest("CANCEL", StagedBulkHubOnlyCount);
+    using var cancellation = new CancellationTokenSource();
+    await cancellation.CancelAsync();
+
+    await using var context = fixture.CreateContext();
+    await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+        saveService.SaveAsync(context, request, cancellation.Token));
+
+    Assert.Equal(0, await context.Set<Dictionary<string, object>>("HubCustomer").AsNoTracking().CountAsync());
+  }
+
+  private static DataVaultBulkSaveRequest CreateStagedCustomerHubBulkRequest(
+      string idPrefix,
+      int count) {
+    var metadataModel = LiveSchemaReaderContractFixture.CreateCanonicalMetadataModel();
+    var customer = metadataModel.Hubs.Single(hub => hub.Name == LiveSchemaReaderContractFixture.CustomerHubName);
+
+    return new DataVaultBulkSaveRequest([
+        new DataVaultSaveRequest(
+            new DateTimeOffset(2026, 5, 19, 10, 0, 0, TimeSpan.Zero),
+            "sqlserver-staged-" + idPrefix.ToLowerInvariant(),
+            Enumerable.Range(0, count)
+                .Select(index => new DataVaultHubSaveOperation(
+                    customer,
+                    [new("Customer Id", idPrefix + "-C-" + index.ToString("000", CultureInfo.InvariantCulture))]))
+                .ToArray(),
+            []),
+    ]);
+  }
+
+  private static DataVaultBulkSaveRequest CreateStagedHubLinkBulkRequest(
+      IServiceProvider provider,
+      string idPrefix,
+      int pairCount) {
+    var metadataModel = LiveSchemaReaderContractFixture.CreateCanonicalMetadataModel();
+    var customer = metadataModel.Hubs.Single(hub => hub.Name == LiveSchemaReaderContractFixture.CustomerHubName);
+    var order = metadataModel.Hubs.Single(hub => hub.Name == LiveSchemaReaderContractFixture.OrderHubName);
+    var customerOrder = metadataModel.Links.Single(link => link.Name == LiveSchemaReaderContractFixture.CustomerOrderLinkName);
+    var customerIds = Enumerable.Range(0, pairCount)
+        .Select(index => idPrefix + "-C-" + index.ToString("000", CultureInfo.InvariantCulture))
+        .ToArray();
+    var orderIds = Enumerable.Range(0, pairCount)
+        .Select(index => idPrefix + "-O-" + index.ToString("000", CultureInfo.InvariantCulture))
+        .ToArray();
+    var customerHashKeys = customerIds
+        .Select(customerId => ComputeHash(provider, [new("Customer Id", customerId)]))
+        .ToArray();
+    var orderHashKeys = orderIds
+        .Select(orderId => ComputeHash(provider, [new("Order Id", orderId)]))
+        .ToArray();
+
+    return new DataVaultBulkSaveRequest([
+        new DataVaultSaveRequest(
+            new DateTimeOffset(2026, 5, 19, 10, 0, 0, TimeSpan.Zero),
+            "sqlserver-staged-hubs",
+            customerIds
+                .Select(customerId => new DataVaultHubSaveOperation(customer, [new("Customer Id", customerId)]))
+                .Concat(orderIds.Select(orderId => new DataVaultHubSaveOperation(order, [new("Order Id", orderId)])))
+                .ToArray(),
+            []),
+        new DataVaultSaveRequest(
+            new DateTimeOffset(2026, 5, 19, 10, 5, 0, TimeSpan.Zero),
+            "sqlserver-staged-links",
+            [],
+            Enumerable.Range(0, pairCount)
+                .Select(index => new DataVaultLinkSaveOperation(
+                    customerOrder,
+                    [
+                        new("Customer", customerHashKeys[index]),
+                        new("Order", orderHashKeys[index]),
+                    ]))
+                .ToArray()),
+    ]);
+  }
+
+  private static string ComputeHash(
+      IServiceProvider provider,
+      IEnumerable<KeyValuePair<string, string>> fields) {
+    var normalizer = provider.GetRequiredService<IStableHashNormalizer>();
+    var hashService = provider.GetRequiredService<IStableHashService>();
+    var normalized = normalizer.NormalizeFields(fields.Select(field => new KeyValuePair<string, object?>(field.Key, field.Value)));
+
+    return hashService.ComputeHash(normalized).Value;
+  }
+
+  private static async Task<int> CountSqlServerStagingTablesAsync(DbContext context) {
+    await using var command = context.Database.GetDbConnection().CreateCommand();
+    command.Transaction = context.Database.CurrentTransaction?.GetDbTransaction();
+    command.CommandText = "SELECT COUNT(1) FROM tempdb.sys.tables WHERE [name] LIKE '#dvault[_]stage[_]%'";
+
+    return Convert.ToInt32(await command.ExecuteScalarAsync(), CultureInfo.InvariantCulture);
   }
 
   private static ServiceProvider CreateServiceProvider() {

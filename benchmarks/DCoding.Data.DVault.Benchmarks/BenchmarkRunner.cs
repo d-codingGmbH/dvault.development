@@ -564,7 +564,7 @@ internal static class BenchmarkExecutionDetails {
       DataVaultBenchmarkHelpers.PostgresOptimizedStrategyFamily =>
           "DVault PostgreSQL optimized save path; selectedStrategy=PostgresDataVaultSaveStrategy",
       DataVaultBenchmarkHelpers.SqlServerOptimizedStrategyFamily =>
-          "DVault SQL Server optimized save path; selectedStrategy=SqlServerDataVaultSaveStrategy",
+          "DVault SQL Server staged native bulk save path; transfer=SqlBulkCopy; selectedStrategy=SqlServerDataVaultSaveStrategy",
       DataVaultBenchmarkHelpers.MySqlOptimizedStrategyFamily =>
           "DVault MySQL optimized save path; selectedStrategy=MySqlDataVaultSaveStrategy",
       DataVaultBenchmarkHelpers.OracleOptimizedStrategyFamily =>

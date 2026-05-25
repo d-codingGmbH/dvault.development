@@ -1,24 +1,23 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q8Z72K8AV0755BE571CG04",
   "ticket-type": "story",
   "title": "Story: Implement SQL Server staged bulk save strategy",
-  "revision": "06F5Q980ZM6SYVWMWPNNTCQNAR",
-  "status": "todo",
+  "revision": "06F62QJVYS13Y8QSBRMQ7Y0XX8",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
     "area/ef-core",
     "area/performance",
     "area/persistence",
     "area/provider-support",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WH0CG92WHM5BMSHXQ89R",
   "releaseId": "06F5Q8WAWQMZ22WMK10XYDEFQG",
   "created-at": "2026-05-24T20:18:48.8833195Z",
-  "updated-at": "2026-05-24T20:20:00.8933929Z"
+  "updated-at": "2026-05-25T23:00:34.4223551Z"
 }

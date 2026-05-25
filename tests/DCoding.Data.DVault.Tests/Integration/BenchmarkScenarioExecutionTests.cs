@@ -433,6 +433,16 @@ public sealed class BenchmarkScenarioExecutionTests {
         Assert.Contains("processedChunkCount=", executionDetail);
         Assert.Contains("retainedStateHighWater=", executionDetail);
       }
+
+      var sqlServerStagedBulkResult = Assert.Single(results.Where(result =>
+          result.GetProperty("provider").GetString() == SqlServerProviderName &&
+          result.GetProperty("baselineName").GetString() == "dvault-adddvaultsqlserver-optimized"));
+      var sqlServerExecutionDetail = sqlServerStagedBulkResult.GetProperty("executionDetail").GetString();
+      Assert.Contains("DVault SQL Server staged native bulk save path", sqlServerExecutionDetail);
+      Assert.Contains("transfer=SqlBulkCopy", sqlServerExecutionDetail);
+      Assert.Equal(
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable),
+          sqlServerStagedBulkResult.GetProperty("skipReason").GetString());
     }
     finally {
       if (Directory.Exists(artifactDirectory)) {

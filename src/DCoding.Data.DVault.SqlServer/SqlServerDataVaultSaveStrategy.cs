@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 using System.Globalization;
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using DCoding.Data.DVault.Modeling;
@@ -77,7 +78,10 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
           context.DbContext,
           connection,
           transaction,
-          filteredSatellitePlans.RowsToWrite.Select(plan => new SqlServerInsertRow(plan.Table.TableName, plan.Row)),
+          filteredSatellitePlans.RowsToWrite.Select(plan => new SqlServerInsertRow(
+              plan.Ordinal,
+              plan.Table.TableName,
+              plan.Row)),
           cancellationToken).ConfigureAwait(false);
 
       if (localTransaction is not null) {
@@ -193,6 +197,58 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
         new SqlServerTableIdentifier(tableName, null),
         columns,
         columnTypes);
+  }
+
+  internal static string CreateSqlServerCreateStagingTableCommandText(
+      string stageTableName,
+      IReadOnlyDictionary<string, string> columnTypes) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(stageTableName);
+    ArgumentNullException.ThrowIfNull(columnTypes);
+
+    return CreateSqlServerCreateStagingTableCommandText(
+        stageTableName,
+        columnTypes.Select(column => new SqlServerStagingColumn(
+            column.Key,
+            column.Value,
+            typeof(string),
+            AllowNull: !string.Equals(column.Key, OrdinalColumnName, StringComparison.Ordinal))).ToArray());
+  }
+
+  internal static string CreateSqlServerDropStagingTableCommandText(string stageTableName) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(stageTableName);
+
+    return CreateSqlServerDropStagingTableCommandTextCore(stageTableName);
+  }
+
+  internal static string CreateSqlServerStagedUniqueInsertCommandText(
+      string tableName,
+      string stageTableName,
+      IReadOnlyList<string> columns,
+      string hashKeyColumnName) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
+    ArgumentException.ThrowIfNullOrWhiteSpace(stageTableName);
+    ArgumentNullException.ThrowIfNull(columns);
+    ArgumentException.ThrowIfNullOrWhiteSpace(hashKeyColumnName);
+
+    return CreateSqlServerStagedUniqueInsertCommandText(
+        new SqlServerTableIdentifier(tableName, null),
+        stageTableName,
+        columns,
+        hashKeyColumnName);
+  }
+
+  internal static string CreateSqlServerStagedInsertCommandText(
+      string tableName,
+      string stageTableName,
+      IReadOnlyList<string> columns) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(tableName);
+    ArgumentException.ThrowIfNullOrWhiteSpace(stageTableName);
+    ArgumentNullException.ThrowIfNull(columns);
+
+    return CreateSqlServerStagedInsertCommandText(
+        new SqlServerTableIdentifier(tableName, null),
+        stageTableName,
+        columns);
   }
 
   internal static bool CanSaveProvider(string? providerName, bool hasPendingTrackedChanges) {
@@ -468,6 +524,112 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
     AppendOpenJsonColumnList(builder, columns, columnTypes);
     builder.Append(") AS ")
         .Append(QuoteSqlServerIdentifier("payload"));
+
+    return builder.ToString();
+  }
+
+  private static string CreateSqlServerCreateStagingTableCommandText(
+      string stageTableName,
+      IReadOnlyList<SqlServerStagingColumn> columns) {
+    var builder = new StringBuilder();
+    builder.Append("CREATE TABLE ")
+        .Append(QuoteSqlServerIdentifier(stageTableName))
+        .Append(" (");
+
+    for (var index = 0; index < columns.Count; index++) {
+      if (index > 0) {
+        builder.Append(", ");
+      }
+
+      var column = columns[index];
+      builder.Append(QuoteSqlServerIdentifier(column.Name))
+          .Append(' ')
+          .Append(column.SqlType)
+          .Append(column.AllowNull ? " NULL" : " NOT NULL");
+    }
+
+    builder.Append(')');
+
+    return builder.ToString();
+  }
+
+  private static string CreateSqlServerDropStagingTableCommandTextCore(string stageTableName) {
+    return "DROP TABLE IF EXISTS " + QuoteSqlServerIdentifier(stageTableName);
+  }
+
+  private static string CreateSqlServerStagedUniqueInsertCommandText(
+      SqlServerTableIdentifier table,
+      string stageTableName,
+      IReadOnlyList<string> columns,
+      string hashKeyColumnName) {
+    var builder = new StringBuilder();
+
+    builder.Append("WITH ")
+        .Append(QuoteSqlServerIdentifier("deduplicated"))
+        .Append(" AS (SELECT ");
+    AppendQualifiedIdentifierList(builder, "stage", columns);
+    builder.Append(", ROW_NUMBER() OVER (PARTITION BY ")
+        .Append(QuoteSqlServerIdentifier("stage"))
+        .Append('.')
+        .Append(QuoteSqlServerIdentifier(hashKeyColumnName))
+        .Append(" ORDER BY ")
+        .Append(QuoteSqlServerIdentifier("stage"))
+        .Append('.')
+        .Append(QuoteSqlServerIdentifier(OrdinalColumnName))
+        .Append(") AS ")
+        .Append(QuoteSqlServerIdentifier(RowNumberColumnName))
+        .Append(" FROM ")
+        .Append(QuoteSqlServerIdentifier(stageTableName))
+        .Append(" AS ")
+        .Append(QuoteSqlServerIdentifier("stage"))
+        .Append(") INSERT INTO ")
+        .Append(QuoteSqlServerTable(table))
+        .Append(" (");
+    AppendIdentifierList(builder, columns);
+    builder.Append(") SELECT ");
+    AppendQualifiedIdentifierList(builder, "deduplicated", columns);
+    builder.Append(" FROM ")
+        .Append(QuoteSqlServerIdentifier("deduplicated"))
+        .Append(" WHERE ")
+        .Append(QuoteSqlServerIdentifier("deduplicated"))
+        .Append('.')
+        .Append(QuoteSqlServerIdentifier(RowNumberColumnName))
+        .Append(" = 1 AND NOT EXISTS (SELECT 1 FROM ")
+        .Append(QuoteSqlServerTable(table))
+        .Append(" AS ")
+        .Append(QuoteSqlServerIdentifier("target"))
+        .Append(" WITH (UPDLOCK, HOLDLOCK) WHERE ")
+        .Append(QuoteSqlServerIdentifier("target"))
+        .Append('.')
+        .Append(QuoteSqlServerIdentifier(hashKeyColumnName))
+        .Append(" = ")
+        .Append(QuoteSqlServerIdentifier("deduplicated"))
+        .Append('.')
+        .Append(QuoteSqlServerIdentifier(hashKeyColumnName))
+        .Append(')');
+
+    return builder.ToString();
+  }
+
+  private static string CreateSqlServerStagedInsertCommandText(
+      SqlServerTableIdentifier table,
+      string stageTableName,
+      IReadOnlyList<string> columns) {
+    var builder = new StringBuilder();
+    builder.Append("INSERT INTO ")
+        .Append(QuoteSqlServerTable(table))
+        .Append(" (");
+    AppendIdentifierList(builder, columns);
+    builder.Append(") SELECT ");
+    AppendQualifiedIdentifierList(builder, "stage", columns);
+    builder.Append(" FROM ")
+        .Append(QuoteSqlServerIdentifier(stageTableName))
+        .Append(" AS ")
+        .Append(QuoteSqlServerIdentifier("stage"))
+        .Append(" ORDER BY ")
+        .Append(QuoteSqlServerIdentifier("stage"))
+        .Append('.')
+        .Append(QuoteSqlServerIdentifier(OrdinalColumnName));
 
     return builder.ToString();
   }
@@ -777,24 +939,63 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
         row.Table.HashKeyColumnName,
         CreateColumnSignature(row.Row.Keys)))) {
       var columns = group.First().Row.Keys.ToArray();
-      var chunkSize = Math.Max(1, SqlServerMaxCommandParameterCount / (columns.Length + 1));
       var resolvedTable = ResolveTable(dbContext, group.Key.TableName);
 
-      foreach (var chunk in group.Chunk(chunkSize)) {
-        rowsWritten += await ExecuteSqlServerUniqueInsertChunkAsync(
-            dbContext,
-            connection,
-            transaction,
-            resolvedTable,
-            group.Key.TableName,
-            columns,
-            group.Key.HashKeyColumnName,
-            chunk,
-            cancellationToken).ConfigureAwait(false);
-      }
+      rowsWritten += await ExecuteSqlServerStagedUniqueInsertAsync(
+          dbContext,
+          connection,
+          transaction,
+          resolvedTable,
+          group.Key.TableName,
+          columns,
+          group.Key.HashKeyColumnName,
+          group.ToArray(),
+          cancellationToken).ConfigureAwait(false);
     }
 
     return rowsWritten;
+  }
+
+  private static async Task<int> ExecuteSqlServerStagedUniqueInsertAsync(
+      DbContext dbContext,
+      DbConnection connection,
+      DbTransaction transaction,
+      SqlServerTableIdentifier table,
+      string producedTableName,
+      IReadOnlyList<string> columns,
+      string hashKeyColumnName,
+      IReadOnlyList<UniqueRowSavePlan> rows,
+      CancellationToken cancellationToken) {
+    var stageTableName = CreateSqlServerStagingTableName();
+    var stagingRows = CreateUniqueStagingRows(rows, columns);
+    var stagingColumns = CreateSqlServerStagingColumns(
+        dbContext,
+        producedTableName,
+        new[] { OrdinalColumnName }.Concat(columns),
+        stagingRows,
+        extraColumnTypes: new Dictionary<string, string>(StringComparer.Ordinal) {
+          [OrdinalColumnName] = "int",
+        });
+
+    try {
+      await CreateStagingTableAsync(connection, transaction, stageTableName, stagingColumns, cancellationToken).ConfigureAwait(false);
+      await WriteStagingRowsWithSqlBulkCopyAsync(
+          connection,
+          transaction,
+          stageTableName,
+          stagingColumns,
+          stagingRows,
+          cancellationToken).ConfigureAwait(false);
+
+      await using var command = connection.CreateCommand();
+      command.Transaction = transaction;
+      command.CommandText = CreateSqlServerStagedUniqueInsertCommandText(table, stageTableName, columns, hashKeyColumnName);
+
+      return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+    finally {
+      await DropStagingTableAsync(connection, transaction, stageTableName).ConfigureAwait(false);
+    }
   }
 
   private static async Task<int> ExecuteSqlServerUniqueInsertChunkAsync(
@@ -877,23 +1078,61 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
         row.TableName,
         CreateColumnSignature(row.Values.Keys)))) {
       var columns = group.First().Values.Keys.ToArray();
-      var chunkSize = Math.Max(1, SqlServerMaxCommandParameterCount / columns.Length);
       var resolvedTable = ResolveTable(dbContext, group.Key.TableName);
 
-      foreach (var chunk in group.Chunk(chunkSize)) {
-        rowsWritten += await ExecuteSqlServerInsertChunkAsync(
-            dbContext,
-            connection,
-            transaction,
-            resolvedTable,
-            group.Key.TableName,
-            columns,
-            chunk.Select(row => row.Values).ToArray(),
-            cancellationToken).ConfigureAwait(false);
-      }
+      rowsWritten += await ExecuteSqlServerStagedInsertAsync(
+          dbContext,
+          connection,
+          transaction,
+          resolvedTable,
+          group.Key.TableName,
+          columns,
+          group.ToArray(),
+          cancellationToken).ConfigureAwait(false);
     }
 
     return rowsWritten;
+  }
+
+  private static async Task<int> ExecuteSqlServerStagedInsertAsync(
+      DbContext dbContext,
+      DbConnection connection,
+      DbTransaction transaction,
+      SqlServerTableIdentifier table,
+      string producedTableName,
+      IReadOnlyList<string> columns,
+      IReadOnlyList<SqlServerInsertRow> rows,
+      CancellationToken cancellationToken) {
+    var stageTableName = CreateSqlServerStagingTableName();
+    var stagingRows = CreateInsertStagingRows(rows, columns);
+    var stagingColumns = CreateSqlServerStagingColumns(
+        dbContext,
+        producedTableName,
+        new[] { OrdinalColumnName }.Concat(columns),
+        stagingRows,
+        extraColumnTypes: new Dictionary<string, string>(StringComparer.Ordinal) {
+          [OrdinalColumnName] = "int",
+        });
+
+    try {
+      await CreateStagingTableAsync(connection, transaction, stageTableName, stagingColumns, cancellationToken).ConfigureAwait(false);
+      await WriteStagingRowsWithSqlBulkCopyAsync(
+          connection,
+          transaction,
+          stageTableName,
+          stagingColumns,
+          stagingRows,
+          cancellationToken).ConfigureAwait(false);
+
+      await using var command = connection.CreateCommand();
+      command.Transaction = transaction;
+      command.CommandText = CreateSqlServerStagedInsertCommandText(table, stageTableName, columns);
+
+      return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+    }
+    finally {
+      await DropStagingTableAsync(connection, transaction, stageTableName).ConfigureAwait(false);
+    }
   }
 
   private static async Task<int> ExecuteSqlServerInsertChunkAsync(
@@ -1291,6 +1530,280 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
     return JsonSerializer.Serialize(payload);
   }
 
+  private static async Task CreateStagingTableAsync(
+      DbConnection connection,
+      DbTransaction transaction,
+      string stageTableName,
+      IReadOnlyList<SqlServerStagingColumn> columns,
+      CancellationToken cancellationToken) {
+    await using var command = connection.CreateCommand();
+    command.Transaction = transaction;
+    command.CommandText = CreateSqlServerCreateStagingTableCommandText(stageTableName, columns);
+
+    await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+  }
+
+  private static async Task DropStagingTableAsync(
+      DbConnection connection,
+      DbTransaction transaction,
+      string stageTableName) {
+    if (connection.State != ConnectionState.Open) {
+      return;
+    }
+
+    try {
+      await using var command = connection.CreateCommand();
+      command.Transaction = transaction;
+      command.CommandText = CreateSqlServerDropStagingTableCommandTextCore(stageTableName);
+
+      await command.ExecuteNonQueryAsync(CancellationToken.None).ConfigureAwait(false);
+    }
+    catch (DbException) {
+    }
+    catch (InvalidOperationException) {
+    }
+  }
+
+  private static async Task WriteStagingRowsWithSqlBulkCopyAsync(
+      DbConnection connection,
+      DbTransaction transaction,
+      string stageTableName,
+      IReadOnlyList<SqlServerStagingColumn> columns,
+      IReadOnlyList<Dictionary<string, object>> rows,
+      CancellationToken cancellationToken) {
+    cancellationToken.ThrowIfCancellationRequested();
+
+    // Keep the provider package independent from a hard SqlClient reference while still using SqlBulkCopy when EF SQL Server is loaded.
+    var bulkCopyType = ResolveSqlClientType(connection, "SqlBulkCopy");
+    var bulkCopyOptionsType = ResolveSqlClientType(connection, "SqlBulkCopyOptions");
+    var bulkCopyOptions = Enum.ToObject(bulkCopyOptionsType, 0);
+    var constructor = FindSqlBulkCopyConstructor(bulkCopyType, bulkCopyOptionsType, connection, transaction);
+    var bulkCopy = constructor.Invoke([connection, bulkCopyOptions, transaction]);
+
+    try {
+      SetRequiredProperty(bulkCopy, "DestinationTableName", stageTableName);
+      SetRequiredProperty(bulkCopy, "BatchSize", rows.Count);
+      SetOptionalProperty(bulkCopy, "EnableStreaming", true);
+      AddSqlBulkCopyColumnMappings(bulkCopy, columns.Select(column => column.Name));
+
+      using var table = CreateStagingDataTable(columns, rows);
+      var asyncMethod = bulkCopyType.GetMethod(
+          "WriteToServerAsync",
+          BindingFlags.Instance | BindingFlags.Public,
+          binder: null,
+          types: [typeof(DataTable), typeof(CancellationToken)],
+          modifiers: null);
+      if (asyncMethod is not null) {
+        var task = asyncMethod.Invoke(bulkCopy, [table, cancellationToken]) as Task ??
+            throw new InvalidOperationException("SQL Server bulk copy did not return an asynchronous write task.");
+        await task.ConfigureAwait(false);
+        return;
+      }
+
+      var syncMethod = bulkCopyType.GetMethod(
+          "WriteToServer",
+          BindingFlags.Instance | BindingFlags.Public,
+          binder: null,
+          types: [typeof(DataTable)],
+          modifiers: null) ??
+          throw new InvalidOperationException("SQL Server bulk copy does not expose a DataTable write method.");
+      syncMethod.Invoke(bulkCopy, [table]);
+      cancellationToken.ThrowIfCancellationRequested();
+    }
+    finally {
+      if (bulkCopy is IAsyncDisposable asyncDisposable) {
+        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+      }
+      else if (bulkCopy is IDisposable disposable) {
+        disposable.Dispose();
+      }
+    }
+  }
+
+  private static Type ResolveSqlClientType(DbConnection connection, string typeName) {
+    var connectionType = connection.GetType();
+    var namespaceName = connectionType.Namespace;
+    if (!string.IsNullOrWhiteSpace(namespaceName)) {
+      var providerType = connectionType.Assembly.GetType(namespaceName + "." + typeName, throwOnError: false);
+      if (providerType is not null) {
+        return providerType;
+      }
+    }
+
+    foreach (var assemblyName in new[] { "Microsoft.Data.SqlClient", "System.Data.SqlClient" }) {
+      var providerType = Type.GetType(assemblyName + "." + typeName + ", " + assemblyName, throwOnError: false);
+      if (providerType is not null) {
+        return providerType;
+      }
+    }
+
+    throw new InvalidOperationException(
+        "SQL Server staged Data Vault save requires a SqlClient provider that exposes " + typeName + ".");
+  }
+
+  private static ConstructorInfo FindSqlBulkCopyConstructor(
+      Type bulkCopyType,
+      Type bulkCopyOptionsType,
+      DbConnection connection,
+      DbTransaction transaction) {
+    var constructor = bulkCopyType.GetConstructors()
+        .SingleOrDefault(current => {
+          var parameters = current.GetParameters();
+          return parameters.Length == 3 &&
+              parameters[0].ParameterType.IsInstanceOfType(connection) &&
+              parameters[1].ParameterType == bulkCopyOptionsType &&
+              parameters[2].ParameterType.IsInstanceOfType(transaction);
+        });
+
+    if (constructor is not null) {
+      return constructor;
+    }
+
+    throw new InvalidOperationException(
+        "SQL Server staged Data Vault save could not bind SqlBulkCopy to connection type '" +
+        connection.GetType().FullName +
+        "' and transaction type '" +
+        transaction.GetType().FullName +
+        "'.");
+  }
+
+  private static void SetRequiredProperty(object instance, string propertyName, object value) {
+    var property = instance.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public) ??
+        throw new InvalidOperationException("SQL Server bulk copy does not expose property '" + propertyName + "'.");
+
+    property.SetValue(instance, value);
+  }
+
+  private static void SetOptionalProperty(object instance, string propertyName, object value) {
+    instance.GetType()
+        .GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)?
+        .SetValue(instance, value);
+  }
+
+  private static void AddSqlBulkCopyColumnMappings(
+      object bulkCopy,
+      IEnumerable<string> columns) {
+    var mappings = bulkCopy.GetType()
+        .GetProperty("ColumnMappings", BindingFlags.Instance | BindingFlags.Public)?
+        .GetValue(bulkCopy) ??
+        throw new InvalidOperationException("SQL Server bulk copy does not expose column mappings.");
+    var addMethod = mappings.GetType()
+        .GetMethod(
+            "Add",
+            BindingFlags.Instance | BindingFlags.Public,
+            binder: null,
+            types: [typeof(string), typeof(string)],
+            modifiers: null) ??
+        throw new InvalidOperationException("SQL Server bulk copy column mappings do not expose string Add overload.");
+
+    foreach (var column in columns) {
+      addMethod.Invoke(mappings, [column, column]);
+    }
+  }
+
+  private static DataTable CreateStagingDataTable(
+      IReadOnlyList<SqlServerStagingColumn> columns,
+      IReadOnlyList<Dictionary<string, object>> rows) {
+    var table = new DataTable {
+      Locale = CultureInfo.InvariantCulture,
+    };
+
+    foreach (var column in columns) {
+      table.Columns.Add(column.Name, column.ClrType);
+    }
+
+    foreach (var values in rows) {
+      var row = table.NewRow();
+      foreach (var column in columns) {
+        row[column.Name] = values.TryGetValue(column.Name, out var value) && value is not null
+            ? value
+            : DBNull.Value;
+      }
+
+      table.Rows.Add(row);
+    }
+
+    return table;
+  }
+
+  private static IReadOnlyList<SqlServerStagingColumn> CreateSqlServerStagingColumns(
+      DbContext dbContext,
+      string producedTableName,
+      IEnumerable<string> columns,
+      IReadOnlyList<Dictionary<string, object>> rows,
+      IReadOnlyDictionary<string, string>? extraColumnTypes) {
+    return columns
+        .Select(column => new SqlServerStagingColumn(
+            column,
+            extraColumnTypes is not null && extraColumnTypes.TryGetValue(column, out var extraColumnType)
+                ? extraColumnType
+                : GetSqlServerOpenJsonColumnType(dbContext, producedTableName, column, rows),
+            GetSqlServerStagingColumnClrType(column, rows),
+            AllowNull: !string.Equals(column, OrdinalColumnName, StringComparison.Ordinal)))
+        .ToArray();
+  }
+
+  private static Type GetSqlServerStagingColumnClrType(
+      string columnName,
+      IReadOnlyList<Dictionary<string, object>> rows) {
+    var sampleValue = rows
+        .Select(row => row.TryGetValue(columnName, out var value) ? value : null)
+        .FirstOrDefault(value => value is not null and not DBNull);
+
+    return sampleValue switch {
+      int => typeof(int),
+      long => typeof(long),
+      DateTimeOffset => typeof(DateTimeOffset),
+      DateTime => typeof(DateTime),
+      bool => typeof(bool),
+      decimal => typeof(decimal),
+      double => typeof(double),
+      float => typeof(float),
+      Guid => typeof(Guid),
+      _ => typeof(string),
+    };
+  }
+
+  private static IReadOnlyList<Dictionary<string, object>> CreateUniqueStagingRows(
+      IReadOnlyList<UniqueRowSavePlan> rows,
+      IReadOnlyList<string> columns) {
+    return rows
+        .Select(row => {
+          var values = new Dictionary<string, object>(StringComparer.Ordinal) {
+            [OrdinalColumnName] = row.Ordinal,
+          };
+
+          foreach (var column in columns) {
+            values[column] = row.Row[column];
+          }
+
+          return values;
+        })
+        .ToArray();
+  }
+
+  private static IReadOnlyList<Dictionary<string, object>> CreateInsertStagingRows(
+      IReadOnlyList<SqlServerInsertRow> rows,
+      IReadOnlyList<string> columns) {
+    return rows
+        .Select(row => {
+          var values = new Dictionary<string, object>(StringComparer.Ordinal) {
+            [OrdinalColumnName] = row.Ordinal,
+          };
+
+          foreach (var column in columns) {
+            values[column] = row.Values[column];
+          }
+
+          return values;
+        })
+        .ToArray();
+  }
+
+  private static string CreateSqlServerStagingTableName() {
+    return "#dvault_stage_" + Guid.NewGuid().ToString("N");
+  }
+
   private static string CreateColumnSignature(IEnumerable<string> columns) {
     return string.Join('\u001f', columns);
   }
@@ -1349,7 +1862,7 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
 
   private sealed record LatestSatelliteHashDiff(string ParentHashKey, string HashDiff, DateTimeOffset LoadTimestamp);
 
-  private sealed record SqlServerInsertRow(string TableName, Dictionary<string, object> Values);
+  private sealed record SqlServerInsertRow(int Ordinal, string TableName, Dictionary<string, object> Values);
 
   private sealed record SqlServerInsertRowShape(string TableName, string ColumnSignature);
 
@@ -1359,4 +1872,6 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
       string ColumnSignature);
 
   private sealed record SqlServerTableIdentifier(string TableName, string? SchemaName);
+
+  private sealed record SqlServerStagingColumn(string Name, string SqlType, Type ClrType, bool AllowNull);
 }
