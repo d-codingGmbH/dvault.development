@@ -3,6 +3,6 @@
   "milestoneId": "06F5Q8WH0CG92WHM5BMSHXQ89R",
   "name": "v0.20.0 - Provider staged bulk strategies",
   "description": "SQL Server, PostgreSQL, Oracle, and MySQL staged bulk implementations with provider-specific evidence.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-24T20:18:26.6919573Z"
 }
