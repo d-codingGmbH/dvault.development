@@ -1,80 +1,60 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the epic as a six-child roll-up for the v0.19.0 streaming explicit-save baseline; repository code, tests, docs, and release notes already verify the additive IDataVaultSaveService chunked-save contract, bounded fallback diagnostics, benchmark evidence, and release/documentation work, so no further split or PO blocker remains.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The existing persisted split is sufficient: child tickets 06F5Q8X261DQHG7N1445NGXB5W, 06F5Q8X8Q72TQ5B7F2JSAJWPR8, 06F5Q8XF9DPKFW9VY0F3Y32BH4, 06F5Q8XPXEQPJTKGJ7BQGCY438, 06F5Q8XXSBGW1B8RDRMGVF557W, and 06F5Q8Y3WW9FFV7HA289VHCEAM are already linked by parentOf and each is done.
 - Repository evidence already lands the public baseline: src/DCoding.Data.DVault/DataVaultSaveService.cs exposes IDataVaultSaveService.SaveAsync(DbContext, DataVaultChunkedSaveRequest, ...), DataVaultSaveChunk, and the bounded fallback shape/fallback enums, while src/DCoding.Data.DVault/DVaultServiceCollectionExtensions.cs keeps AddDVault() as the explicit registration path.
 - docs/architecture/dvault-v1-streaming-explicit-save-contract.md, docs/architecture/dvault-v1-explicit-save-service.md, tests/DCoding.Data.DVault.Tests/Unit/StreamingExplicitSaveContractSnapshotTests.cs, and docs/releases/v0.19.0.md dated 2026-05-25 together establish the epic's current contract and evidence baseline.
 - No new child tickets, relation changes, description updates, attachments, or planning documents were materialized in this run because the existing graph and repository baseline already bound the epic cleanly.
 
-### Scope In
+Scope In
 - Epic coordination of the additive chunked explicit-save boundary on IDataVaultSaveService.
 - Provider-neutral chunk execution that preserves caller-supplied chunk order, request order, and existing hub/link/satellite operation ordering.
 - Explicit DbContext, transaction, cancellation, load-timestamp, and record-source semantics across chunked saves.
 - Bounded retained-state fallback and diagnostics for satellite continuity across chunk boundaries.
 - Public documentation, remediation guidance, benchmark evidence, and v0.19.0 release-note baseline for the streaming save pipeline.
 
-### Scope Out
+Scope Out
 - Background workers, schedulers, file ingestion, CDC ingestion, and platform orchestration.
 - Replacing IDataVaultSaveService with implicit SaveChanges interception as the default write path.
 - Provider-specific chunk optimization or staged provider-native ingestion beyond the provider-neutral fallback baseline.
 - NuGet publication approval or package push work beyond the documented release-note baseline.
 - Additional split or relation cleanup inside this epic; the current child graph already captures the bounded v0.19.0 scope.
 
-## Acceptance Criteria
-- The epic baseline defines chunked saves as additive IDataVaultSaveService behavior through DataVaultChunkedSaveRequest and DataVaultSaveChunk without regressing existing single-request or ordered-bulk save paths.
-- Chunked execution preserves caller-owned DbContext, transaction, cancellation, load timestamp, record source, and caller-supplied ordering semantics across chunks.
-- The provider-neutral path carries satellite continuity across chunk boundaries with bounded retained-state behavior and visible fallback/remediation semantics instead of silently unbounded memory growth.
-- Repository docs and tests make the contract, compatibility evidence, diagnostics behavior, and benchmark evidence visible in the v0.19.0 baseline.
-- The committed claim set explicitly excludes background ingestion/orchestration concerns and provider-specific chunk optimizations.
-
-## Definition of Done
-- All six existing child tickets remain the authoritative bounded split for the epic and no additional planning split is needed for the current scope.
-- Repository code, tests, architecture docs, and release notes align on the same explicit chunked-save baseline.
-- The epic leaves no unresolved PO-level question about the public contract, explicit metadata ownership, bounded fallback semantics, or documentation scope before PO-critic review.
-- Any future provider-specific staging or orchestration work is intentionally tracked outside this epic rather than widening the current baseline.
-
-## Implementation Notes
-- Treat this ticket as a roll-up over existing child tickets rather than a fresh API-design ticket; the repository already ratifies IDataVaultSaveService as the preserved write boundary.
-- Use docs/architecture/dvault-v1-streaming-explicit-save-contract.md as the semantic contract, tests/DCoding.Data.DVault.Tests/Unit/StreamingExplicitSaveContractSnapshotTests.cs as the contract lock, and docs/releases/v0.19.0.md as the coordinated public-baseline summary.
-- src/DCoding.Data.DVault/DataVaultSaveService.cs and src/DCoding.Data.DVault/DVaultServiceCollectionExtensions.cs fix the v1 default to additive chunked saves through AddDVault() without shifting to implicit SaveChanges persistence.
-- The child-ticket split already covers contract, execution, bounded memory diagnostics, fallback/remediation guidance, benchmark evidence, and release/documentation updates.
-- No bounded planning write was necessary in this run because the existing child tickets and repository artifacts already form the authoritative refinement baseline.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - When provider-specific chunk optimization becomes active scope, should it open as a separate epic or story set instead of reopening this v0.19.0 baseline?
 - If loaders later need file, CDC, queue, or scheduler-driven ingestion, which separate planning lane should own that orchestration above the explicit save boundary?
 - Do future release-management tickets need a dedicated publication-verification artifact beyond the v0.19.0 release-note baseline?
 
-## Risks
+Risks
 - If later work reopens this epic for provider staging or ingestion orchestration, the bounded v0.19.0 baseline will blur into a broader roadmap umbrella.
 - Future optimizations must preserve the documented retained-state limit and fallback semantics; otherwise the public memory-bounded claim will regress.
 - The release notes are evidence of scope and documentation baseline, not by themselves proof of final package publication approval or push.
 
-## Split Recommendations
+Split recommendations
 - No additional split recommended; the current parentOf graph already separates contract, execution, memory diagnostics, fallback/remediation, benchmark evidence, and release documentation.
 - Create a separate follow-up epic or story set for provider-specific chunk optimization or staged provider ingestion rather than widening this ticket.
 - Create separate ingestion/orchestration planning tickets if file, CDC, queue, or scheduler-driven loaders are later required.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Goal: Add memory-bounded streaming and chunked explicit save inputs for large DVault loads while preserving IDataVaultSaveService as the write boundary.
-
-Acceptance criteria:
-- Defines the public streaming/chunking contract.
-- Keeps DbContext ownership, transactions, cancellation, load timestamp, record source, and fallback semantics explicit.
-- Excludes background workers, schedulers, file ingestion, CDC, and platform orchestration.
+Run mode
+- apply: planned updates are applied after this comment

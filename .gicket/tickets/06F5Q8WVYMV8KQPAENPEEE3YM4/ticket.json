@@ -1,22 +1,21 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q8WVYMV8KQPAENPEEE3YM4",
   "ticket-type": "epic",
   "title": "Epic: Streaming save pipeline",
-  "revision": "06F5Q95AGJ2JP1B888CN5HWH30",
-  "status": "todo",
+  "revision": "06F611HEJV6QXCV1GW169N14B8",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/epic",
     "area/ef-core",
     "area/performance",
-    "area/persistence"
+    "area/persistence",
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WE0ASFFGJD5EG5G1EEKC",
   "releaseId": "06F5Q8W98RVXB5Z5NQWRCQ3VC8",
   "created-at": "2026-05-24T20:18:29.6501972Z",
-  "updated-at": "2026-05-24T20:19:38.7568865Z"
+  "updated-at": "2026-05-25T19:04:27.0300000Z"
 }
