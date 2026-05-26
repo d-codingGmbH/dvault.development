@@ -90,6 +90,26 @@ internal static class DataVaultSaveTelemetryExplanationCatalog {
           kind,
           "Oracle provider-native save dispatch accepts at most 10000 satellite operations in one request batch.",
           "Reduce satellite operations per request or chunk to 10000 or fewer when Oracle provider-native dispatch is desired."),
+      DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkDirtyDbContext => new(
+          kind,
+          "Staged-provider bulk execution declined because pending tracked DbContext changes would prevent the staged batch from being isolated.",
+          "Use a clean DbContext for staged-provider bulk execution, or save, detach, or discard tracked application changes before invoking the DVault save service."),
+      DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape => new(
+          kind,
+          "Staged-provider bulk execution declined because the request batch contains a shape outside the provider's staged bulk contract.",
+          "Route unsupported shapes through provider-neutral fallback, or split the batch so staged-provider eligible hub, link, and ordinary satellite operations are evaluated separately."),
+      DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkTransactionParticipationUnsupported => new(
+          kind,
+          "Staged-provider bulk execution declined because the staged provider path could not participate in the caller-owned transaction contract.",
+          "Open and manage the transaction on the DbContext before calling DVault, or use provider-neutral fallback when the staged provider cannot join that transaction boundary."),
+      DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkCleanupFailed => new(
+          kind,
+          "Staged-provider bulk execution fell back because transient staging cleanup did not complete safely.",
+          "Inspect provider operational logs for cleanup failures, ensure the caller has permission to create and drop transient staging objects, then retry or use provider-neutral fallback."),
+      DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkProviderLimitation => new(
+          kind,
+          "Staged-provider bulk execution declined because a bounded provider limitation prevented the staged path.",
+          "Review the provider's staged bulk limits and adjust batch size, schema shape, or provider configuration; otherwise rely on provider-neutral fallback."),
       _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown save strategy fallback cause kind."),
     };
   }

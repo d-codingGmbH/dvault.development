@@ -8,14 +8,16 @@ internal sealed record DataVaultSaveTelemetryStrategySelection(
     DataVaultSaveStrategyDiagnosticsStatus Status,
     string? ProviderName,
     string? SelectedStrategyName,
-    IReadOnlyList<DataVaultSaveStrategyFallbackCauseKind> FallbackCauseKinds) {
+    IReadOnlyList<DataVaultSaveStrategyFallbackCauseKind> FallbackCauseKinds,
+    DataVaultStagedProviderBulkDiagnostics? StagedProviderBulk = null) {
   public static DataVaultSaveTelemetryStrategySelection NotEvaluated(string? providerName) {
     return new DataVaultSaveTelemetryStrategySelection(
         Strategy: null,
         DataVaultSaveStrategyDiagnosticsStatus.NotEvaluated,
         providerName,
         SelectedStrategyName: null,
-        FallbackCauseKinds: Array.Empty<DataVaultSaveStrategyFallbackCauseKind>());
+        FallbackCauseKinds: Array.Empty<DataVaultSaveStrategyFallbackCauseKind>(),
+        StagedProviderBulk: null);
   }
 }
 
@@ -86,27 +88,42 @@ internal static class DataVaultTelemetryStrategySelector {
       IReadOnlyList<DataVaultSaveRequest> requests) {
     var providerName = GetProviderName(dbContext);
     var fallbackCauses = new List<DataVaultSaveStrategyFallbackCause>();
+    var stagedProviderBulkDiagnostics = new List<DataVaultStagedProviderBulkDiagnostics>();
 
     foreach (var strategy in providerSaveStrategies) {
+      var stagedProviderBulk = DataVaultStagedProviderBulkDiagnosticsSupport.TryEvaluate(strategy, dbContext, requests);
+      if (stagedProviderBulk is not null) {
+        stagedProviderBulkDiagnostics.Add(stagedProviderBulk);
+      }
+
       if (strategy.CanSave(dbContext, requests)) {
         return new DataVaultSaveTelemetryStrategySelection(
             strategy,
             DataVaultSaveStrategyDiagnosticsStatus.ProviderStrategySelected,
             providerName,
             strategy.GetType().Name,
-            Array.Empty<DataVaultSaveStrategyFallbackCauseKind>());
+            Array.Empty<DataVaultSaveStrategyFallbackCauseKind>(),
+            stagedProviderBulkDiagnostics.FirstOrDefault());
       }
 
-      fallbackCauses.AddRange(
-          DataVaultProviderSaveStrategyGateEvaluator.TryEvaluateKnownStrategy(
+      if (DataVaultProviderSaveStrategyGateEvaluator.TryEvaluateKnownStrategy(
               strategy,
               dbContext,
               requests,
-              out var evaluation)
-              ? evaluation.FallbackCauses
-              : [new DataVaultSaveStrategyFallbackCause(
-                  DataVaultSaveStrategyFallbackCauseKind.StrategyDeclined,
-                  "Provider save strategy '" + strategy.GetType().Name + "' declined the request batch.")]);
+              out var evaluation)) {
+        fallbackCauses.AddRange(evaluation.FallbackCauses);
+      }
+      else {
+        var stagedFallbackCauses = DataVaultStagedProviderBulkDiagnosticsSupport.CreateFallbackCauses(stagedProviderBulk);
+        if (stagedFallbackCauses.Count > 0) {
+          fallbackCauses.AddRange(stagedFallbackCauses);
+        }
+        else {
+          fallbackCauses.Add(new DataVaultSaveStrategyFallbackCause(
+              DataVaultSaveStrategyFallbackCauseKind.StrategyDeclined,
+              "Provider save strategy '" + strategy.GetType().Name + "' declined the request batch."));
+        }
+      }
     }
 
     if (providerSaveStrategies.Count == 0) {
@@ -133,7 +150,8 @@ internal static class DataVaultTelemetryStrategySelector {
         DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback,
         providerName,
         SelectedStrategyName: null,
-        FallbackCauseKinds: fallbackCauses.Select(cause => cause.Kind).Distinct().ToArray());
+        FallbackCauseKinds: fallbackCauses.Select(cause => cause.Kind).Distinct().ToArray(),
+        StagedProviderBulk: stagedProviderBulkDiagnostics.FirstOrDefault());
   }
 
   public static DataVaultReadTelemetryStrategySelection SelectLatestSatelliteReadStrategy(
@@ -351,7 +369,8 @@ internal static class DataVaultTelemetrySummaryFactory {
         chunkedState.RetainedStateCurrentCount,
         chunkedState.RetainedStateHighWaterCount,
         chunkedState.StateFallbackCauseKinds,
-        chunkedState.UnsupportedShapeKinds);
+        chunkedState.UnsupportedShapeKinds,
+        strategySelection.StagedProviderBulk);
   }
 
   public static DataVaultReadTelemetrySummary CreateReadSummary(

@@ -58,7 +58,60 @@ public sealed class DataVaultTelemetryTests {
         explanation =>
             explanation.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold &&
             explanation.Remediation.Contains("50-operation", StringComparison.Ordinal));
+    Assert.Contains(
+        summary.FallbackExplanations,
+        explanation =>
+            explanation.Kind == DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkTransactionParticipationUnsupported &&
+            explanation.Remediation.Contains("transaction", StringComparison.OrdinalIgnoreCase));
     Assert.Null(summary.ChunkedTransactionExplanation);
+  }
+
+  [Fact]
+  public async Task SaveTelemetryCarriesStagedProviderBulkFallbackDiagnostics() {
+    var observer = new CapturingTelemetryObserver();
+    var stagedStrategy = new StagedBulkDecliningSaveStrategy(priority: 200);
+    var saveService = new DefaultDataVaultSaveService(
+        new TestStableHashService(),
+        new TestStableHashNormalizer(),
+        [DefaultDataVaultLoadTimestampResolver.Instance],
+        [DefaultDataVaultRecordSourceResolver.Instance],
+        [stagedStrategy],
+        [observer]);
+
+    await using var context = new DbContext(new DbContextOptionsBuilder().Options);
+
+    await Assert.ThrowsAnyAsync<Exception>(() =>
+        saveService.SaveAsync(
+            context,
+            new DataVaultBulkSaveRequest([
+                CreateMixedSaveRequest("crm-import"),
+                CreateHubOnlySaveRequest("crm-replay"),
+            ])));
+
+    var summary = Assert.Single(observer.SaveSummaries);
+    Assert.Equal(DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback, summary.StrategyStatus);
+    Assert.Null(summary.SelectedStrategyName);
+    Assert.Contains(
+        DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape,
+        summary.FallbackCauseKinds);
+    Assert.Contains(
+        DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkTransactionParticipationUnsupported,
+        summary.FallbackCauseKinds);
+    Assert.Contains(
+        summary.FallbackExplanations,
+        explanation =>
+            explanation.Kind == DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape &&
+            explanation.Remediation.Contains("provider-neutral fallback", StringComparison.Ordinal));
+
+    var staged = summary.StagedProviderBulk;
+    Assert.NotNull(staged);
+    Assert.Equal(DataVaultStagedProviderBulkLifecyclePhase.Declined, staged!.LifecyclePhase);
+    Assert.Equal(DataVaultStagedProviderBulkProviderCaveatKind.UnsupportedShape, staged.ProviderCaveatKind);
+    Assert.Equal(2, staged.RequestCount);
+    Assert.Equal(2, staged.HubOperationCount);
+    Assert.Equal(1, staged.LinkOperationCount);
+    Assert.Equal(1, staged.SatelliteOperationCount);
+    Assert.Equal(4, staged.OperationCount);
   }
 
   [Fact]
@@ -265,6 +318,18 @@ public sealed class DataVaultTelemetryTests {
         []);
   }
 
+  private static (
+      int RequestCount,
+      int HubOperationCount,
+      int LinkOperationCount,
+      int SatelliteOperationCount) CountRequests(IReadOnlyList<DataVaultSaveRequest> requests) {
+    return (
+        requests.Count,
+        requests.Sum(request => request.HubOperations.Count),
+        requests.Sum(request => request.LinkOperations.Count),
+        requests.Sum(request => request.SatelliteOperations.Count));
+  }
+
   private static DataVaultLatestSatelliteReadRequest CreateLatestSatelliteRequest(IEnumerable<string> parentHashKeys) {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var profile = new DataVaultSatelliteMetadata("Profile", customer.ToReference(), ["Name"]);
@@ -329,6 +394,45 @@ public sealed class DataVaultTelemetryTests {
       return Task.FromResult(new DataVaultSaveResult(
           7,
           [new DataVaultSavedRecord(DataVaultTableKind.Hub, "Customer", "HubCustomer", "customer-hk")]));
+    }
+  }
+
+  private sealed class StagedBulkDecliningSaveStrategy(int priority) :
+      IDataVaultProviderSaveStrategy,
+      IDataVaultProviderStagedBulkSaveDiagnostics {
+    public int Priority { get; } = priority;
+
+    public bool CanSave(DbContext dbContext, IReadOnlyList<DataVaultSaveRequest> requests) {
+      ArgumentNullException.ThrowIfNull(dbContext);
+      ArgumentNullException.ThrowIfNull(requests);
+
+      return false;
+    }
+
+    public DataVaultStagedProviderBulkDiagnostics EvaluateStagedProviderBulkSave(
+        DbContext dbContext,
+        IReadOnlyList<DataVaultSaveRequest> requests) {
+      ArgumentNullException.ThrowIfNull(dbContext);
+      ArgumentNullException.ThrowIfNull(requests);
+
+      var counts = CountRequests(requests);
+      return new DataVaultStagedProviderBulkDiagnostics(
+          DataVaultStagedProviderBulkLifecyclePhase.Declined,
+          DataVaultStagedProviderBulkProviderCaveatKind.UnsupportedShape,
+          counts.RequestCount,
+          counts.HubOperationCount,
+          counts.LinkOperationCount,
+          counts.SatelliteOperationCount,
+          [
+              DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape,
+              DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkTransactionParticipationUnsupported,
+          ]);
+    }
+
+    public Task<DataVaultSaveResult> SaveAsync(
+        DataVaultProviderSaveStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      throw new NotSupportedException("Staged diagnostics probe never persists rows.");
     }
   }
 

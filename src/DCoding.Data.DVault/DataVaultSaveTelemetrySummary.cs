@@ -48,12 +48,62 @@ public sealed class DataVaultSaveTelemetrySummary {
           providerName,
           selectedStrategyName,
           fallbackCauseKinds,
+          stagedProviderBulk: null) {
+  }
+
+  /// <summary>
+  /// Initializes a new save telemetry summary with staged-provider bulk diagnostics.
+  /// </summary>
+  /// <param name="operationKind">Whether the attempt used the single-request, bulk save, or chunked save API.</param>
+  /// <param name="outcome">Whether the attempt returned successfully or failed.</param>
+  /// <param name="requestCount">The number of explicit save requests in the attempt.</param>
+  /// <param name="hubOperationCount">The number of hub operations in the attempt.</param>
+  /// <param name="linkOperationCount">The number of link operations in the attempt.</param>
+  /// <param name="satelliteOperationCount">The number of satellite operations in the attempt.</param>
+  /// <param name="rowsWritten">The number of rows reported by the completed save result, or zero for failed attempts.</param>
+  /// <param name="savedRecordCount">The number of saved-record summaries reported by the completed save result, or zero for failed attempts.</param>
+  /// <param name="duration">The elapsed duration of the attempt.</param>
+  /// <param name="strategyStatus">The request-bound provider-strategy selection status.</param>
+  /// <param name="providerName">The Entity Framework provider name, when available.</param>
+  /// <param name="selectedStrategyName">The selected provider strategy type name, when a provider strategy was selected.</param>
+  /// <param name="fallbackCauseKinds">The distinct finite fallback-cause kinds observed when provider-neutral fallback was selected.</param>
+  /// <param name="stagedProviderBulk">Bounded staged-provider bulk diagnostics, when staged evaluation participated in dispatch.</param>
+  public DataVaultSaveTelemetrySummary(
+      DataVaultSaveTelemetryOperationKind operationKind,
+      DataVaultTelemetryOutcome outcome,
+      int requestCount,
+      int hubOperationCount,
+      int linkOperationCount,
+      int satelliteOperationCount,
+      int rowsWritten,
+      int savedRecordCount,
+      TimeSpan duration,
+      DataVaultSaveStrategyDiagnosticsStatus strategyStatus,
+      string? providerName,
+      string? selectedStrategyName,
+      IEnumerable<DataVaultSaveStrategyFallbackCauseKind> fallbackCauseKinds,
+      DataVaultStagedProviderBulkDiagnostics? stagedProviderBulk)
+      : this(
+          operationKind,
+          outcome,
+          requestCount,
+          hubOperationCount,
+          linkOperationCount,
+          satelliteOperationCount,
+          rowsWritten,
+          savedRecordCount,
+          duration,
+          strategyStatus,
+          providerName,
+          selectedStrategyName,
+          fallbackCauseKinds,
           chunkCount: 0,
           processedChunkCount: 0,
           retainedStateCurrentCount: 0,
           retainedStateHighWaterCount: 0,
           [],
-          []) {
+          [],
+          stagedProviderBulk) {
   }
 
   /// <summary>
@@ -97,7 +147,74 @@ public sealed class DataVaultSaveTelemetrySummary {
       int retainedStateCurrentCount,
       int retainedStateHighWaterCount,
       IEnumerable<DataVaultChunkedSaveStateFallbackCauseKind> chunkedStateFallbackCauseKinds,
-      IEnumerable<DataVaultChunkedSaveUnsupportedShapeKind> unsupportedShapeKinds) {
+      IEnumerable<DataVaultChunkedSaveUnsupportedShapeKind> unsupportedShapeKinds)
+      : this(
+        operationKind,
+        outcome,
+        requestCount,
+        hubOperationCount,
+        linkOperationCount,
+        satelliteOperationCount,
+        rowsWritten,
+        savedRecordCount,
+        duration,
+        strategyStatus,
+        providerName,
+        selectedStrategyName,
+        fallbackCauseKinds,
+        chunkCount,
+        processedChunkCount,
+        retainedStateCurrentCount,
+        retainedStateHighWaterCount,
+        chunkedStateFallbackCauseKinds,
+        unsupportedShapeKinds,
+        stagedProviderBulk: null) {
+  }
+
+  /// <summary>
+  /// Initializes a new save telemetry summary with chunked-save and staged-provider bulk diagnostics.
+  /// </summary>
+  /// <param name="operationKind">Whether the attempt used the single-request, bulk save, or chunked save API.</param>
+  /// <param name="outcome">Whether the attempt returned successfully or failed.</param>
+  /// <param name="requestCount">The number of explicit save requests in the attempt.</param>
+  /// <param name="hubOperationCount">The number of hub operations in the attempt.</param>
+  /// <param name="linkOperationCount">The number of link operations in the attempt.</param>
+  /// <param name="satelliteOperationCount">The number of satellite operations in the attempt.</param>
+  /// <param name="rowsWritten">The number of rows reported by the completed save result, or zero for failed attempts.</param>
+  /// <param name="savedRecordCount">The number of saved-record summaries reported by the completed save result, or zero for failed attempts.</param>
+  /// <param name="duration">The elapsed duration of the attempt.</param>
+  /// <param name="strategyStatus">The request-bound provider-strategy selection status.</param>
+  /// <param name="providerName">The Entity Framework provider name, when available.</param>
+  /// <param name="selectedStrategyName">The selected provider strategy type name, when a provider strategy was selected.</param>
+  /// <param name="fallbackCauseKinds">The distinct finite fallback-cause kinds observed when provider-neutral fallback was selected.</param>
+  /// <param name="chunkCount">The number of chunks observed during the attempt.</param>
+  /// <param name="processedChunkCount">The number of non-empty chunks processed during the attempt.</param>
+  /// <param name="retainedStateCurrentCount">The retained satellite continuity-state count when telemetry was emitted.</param>
+  /// <param name="retainedStateHighWaterCount">The highest retained satellite continuity-state count observed during the attempt.</param>
+  /// <param name="chunkedStateFallbackCauseKinds">The distinct finite retained-state fallback causes observed during chunked execution.</param>
+  /// <param name="unsupportedShapeKinds">The distinct finite unsupported or memory-sensitive shape classifications observed.</param>
+  /// <param name="stagedProviderBulk">Bounded staged-provider bulk diagnostics, when staged evaluation participated in dispatch.</param>
+  public DataVaultSaveTelemetrySummary(
+      DataVaultSaveTelemetryOperationKind operationKind,
+      DataVaultTelemetryOutcome outcome,
+      int requestCount,
+      int hubOperationCount,
+      int linkOperationCount,
+      int satelliteOperationCount,
+      int rowsWritten,
+      int savedRecordCount,
+      TimeSpan duration,
+      DataVaultSaveStrategyDiagnosticsStatus strategyStatus,
+      string? providerName,
+      string? selectedStrategyName,
+      IEnumerable<DataVaultSaveStrategyFallbackCauseKind> fallbackCauseKinds,
+      int chunkCount,
+      int processedChunkCount,
+      int retainedStateCurrentCount,
+      int retainedStateHighWaterCount,
+      IEnumerable<DataVaultChunkedSaveStateFallbackCauseKind> chunkedStateFallbackCauseKinds,
+      IEnumerable<DataVaultChunkedSaveUnsupportedShapeKind> unsupportedShapeKinds,
+      DataVaultStagedProviderBulkDiagnostics? stagedProviderBulk) {
     ArgumentOutOfRangeException.ThrowIfNegative(requestCount);
     ArgumentOutOfRangeException.ThrowIfNegative(hubOperationCount);
     ArgumentOutOfRangeException.ThrowIfNegative(linkOperationCount);
@@ -127,7 +244,11 @@ public sealed class DataVaultSaveTelemetrySummary {
     StrategyStatus = strategyStatus;
     ProviderName = providerName;
     SelectedStrategyName = selectedStrategyName;
-    FallbackCauseKinds = fallbackCauseKinds.Distinct().ToArray();
+    StagedProviderBulk = stagedProviderBulk;
+    FallbackCauseKinds = fallbackCauseKinds
+        .Concat(stagedProviderBulk?.FallbackCauseKinds ?? Array.Empty<DataVaultSaveStrategyFallbackCauseKind>())
+        .Distinct()
+        .ToArray();
     ChunkCount = chunkCount;
     ProcessedChunkCount = processedChunkCount;
     RetainedStateCurrentCount = retainedStateCurrentCount;
@@ -207,6 +328,11 @@ public sealed class DataVaultSaveTelemetrySummary {
   /// Gets the selected provider strategy type name, when a provider strategy was selected.
   /// </summary>
   public string? SelectedStrategyName { get; }
+
+  /// <summary>
+  /// Gets bounded staged-provider bulk diagnostics, when staged evaluation participated in dispatch.
+  /// </summary>
+  public DataVaultStagedProviderBulkDiagnostics? StagedProviderBulk { get; }
 
   /// <summary>
   /// Gets distinct finite fallback-cause kinds observed when provider-neutral fallback was selected.

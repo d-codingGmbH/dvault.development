@@ -179,6 +179,8 @@ public sealed class DataVaultMeterTelemetryObserver : IDataVaultTelemetryObserve
         new("dvault.strategy_status", summary.StrategyStatus.ToString()),
         new("dvault.provider", summary.ProviderName ?? None),
         new("dvault.selected_strategy", summary.SelectedStrategyName ?? None),
+        new("dvault.staged_bulk_lifecycle", summary.StagedProviderBulk?.LifecyclePhase.ToString() ?? None),
+        new("dvault.staged_bulk_caveat", summary.StagedProviderBulk?.ProviderCaveatKind.ToString() ?? None),
     ];
   }
 

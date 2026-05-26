@@ -106,6 +106,31 @@ public enum DataVaultSaveStrategyFallbackCauseKind {
   /// Oracle optimized dispatch accepts at most 10000 satellite operations.
   /// </summary>
   OracleMaximumSatelliteOperationThreshold,
+
+  /// <summary>
+  /// Staged-provider bulk execution declined because the context contains pending tracked changes.
+  /// </summary>
+  StagedProviderBulkDirtyDbContext,
+
+  /// <summary>
+  /// Staged-provider bulk execution declined because the request batch shape is unsupported.
+  /// </summary>
+  StagedProviderBulkUnsupportedShape,
+
+  /// <summary>
+  /// Staged-provider bulk execution declined because the provider path cannot participate in the caller-owned transaction.
+  /// </summary>
+  StagedProviderBulkTransactionParticipationUnsupported,
+
+  /// <summary>
+  /// Staged-provider bulk execution fell back because transient staging cleanup did not complete safely.
+  /// </summary>
+  StagedProviderBulkCleanupFailed,
+
+  /// <summary>
+  /// Staged-provider bulk execution declined because of a bounded provider limitation.
+  /// </summary>
+  StagedProviderBulkProviderLimitation,
 }
 
 /// <summary>
@@ -351,6 +376,11 @@ public sealed record DataVaultSaveStrategyCandidateDiagnostics(
   /// </summary>
   public IReadOnlyList<DataVaultSaveStrategyGateRequirement> GateRequirements { get; init; } =
       Array.Empty<DataVaultSaveStrategyGateRequirement>();
+
+  /// <summary>
+  /// Gets bounded staged-provider bulk diagnostics reported by this candidate, when applicable.
+  /// </summary>
+  public DataVaultStagedProviderBulkDiagnostics? StagedProviderBulk { get; init; }
 }
 
 /// <summary>
@@ -362,7 +392,12 @@ public sealed record DataVaultSaveStrategyDiagnostics(
     string? SelectedStrategyName,
     int? SelectedStrategyPriority,
     IReadOnlyList<DataVaultSaveStrategyCandidateDiagnostics> Candidates,
-    IReadOnlyList<DataVaultSaveStrategyFallbackCause> FallbackCauses);
+    IReadOnlyList<DataVaultSaveStrategyFallbackCause> FallbackCauses) {
+  /// <summary>
+  /// Gets representative bounded staged-provider bulk diagnostics, when staged evaluation participated in strategy dispatch.
+  /// </summary>
+  public DataVaultStagedProviderBulkDiagnostics? StagedProviderBulk { get; init; }
+}
 
 /// <summary>
 /// Machine-readable cause explaining provider-specific read-strategy fallback.
@@ -691,6 +726,15 @@ public sealed record DataVaultDiagnosticsResult(
     if (strategy.FallbackCauses.Count > 0) {
       builder.Append(", save fallback causes ");
       builder.Append(string.Join(", ", strategy.FallbackCauses.Select(cause => cause.Kind.ToString())));
+    }
+
+    if (strategy.StagedProviderBulk is not null) {
+      builder.Append(", staged provider bulk ");
+      builder.Append(strategy.StagedProviderBulk.LifecyclePhase);
+      builder.Append(", staged provider caveat ");
+      builder.Append(strategy.StagedProviderBulk.ProviderCaveatKind);
+      builder.Append(", staged operations ");
+      builder.Append(strategy.StagedProviderBulk.OperationCount.ToString(CultureInfo.InvariantCulture));
     }
   }
 
@@ -1231,27 +1275,44 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
 
     for (var ordinal = 0; ordinal < orderedStrategies.Length; ordinal++) {
       var strategy = orderedStrategies[ordinal].Strategy;
+      var stagedProviderBulk = DataVaultStagedProviderBulkDiagnosticsSupport.TryEvaluate(strategy, dbContext, requests);
       bool canSave;
       IReadOnlyList<DataVaultSaveStrategyFallbackCause> fallbackCauses;
       try {
         canSave = strategy.CanSave(dbContext, requests);
-        fallbackCauses = canSave
-            ? Array.Empty<DataVaultSaveStrategyFallbackCause>()
-            : DataVaultProviderSaveStrategyGateEvaluator.TryEvaluateKnownStrategy(
+        if (canSave) {
+          fallbackCauses = Array.Empty<DataVaultSaveStrategyFallbackCause>();
+        }
+        else if (DataVaultProviderSaveStrategyGateEvaluator.TryEvaluateKnownStrategy(
                 strategy,
                 dbContext,
                 requests,
-                out var evaluation)
-                ? evaluation.FallbackCauses
-                : [new DataVaultSaveStrategyFallbackCause(
-                    DataVaultSaveStrategyFallbackCauseKind.StrategyDeclined,
-                    "Provider save strategy '" + strategy.GetType().Name + "' declined the request batch.")];
+                out var evaluation)) {
+          fallbackCauses = evaluation.FallbackCauses;
+        }
+        else {
+          var stagedFallbackCauses = DataVaultStagedProviderBulkDiagnosticsSupport.CreateFallbackCauses(stagedProviderBulk);
+          fallbackCauses = stagedFallbackCauses.Count > 0
+              ? stagedFallbackCauses
+              : new[]
+              {
+                  new DataVaultSaveStrategyFallbackCause(
+                      DataVaultSaveStrategyFallbackCauseKind.StrategyDeclined,
+                      "Provider save strategy '" + strategy.GetType().Name + "' declined the request batch."),
+              };
+        }
       }
       catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or NotSupportedException) {
         canSave = false;
-        fallbackCauses = [new DataVaultSaveStrategyFallbackCause(
-            DataVaultSaveStrategyFallbackCauseKind.StrategyDeclined,
-            "Provider save strategy '" + strategy.GetType().Name + "' failed compatibility evaluation.")];
+        var stagedFallbackCauses = DataVaultStagedProviderBulkDiagnosticsSupport.CreateFallbackCauses(stagedProviderBulk);
+        fallbackCauses = stagedFallbackCauses.Count > 0
+            ? stagedFallbackCauses
+            : new[]
+            {
+                new DataVaultSaveStrategyFallbackCause(
+                    DataVaultSaveStrategyFallbackCauseKind.StrategyDeclined,
+                    "Provider save strategy '" + strategy.GetType().Name + "' failed compatibility evaluation."),
+            };
       }
 
       var candidate = new DataVaultSaveStrategyCandidateDiagnostics(
@@ -1262,17 +1323,22 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
           fallbackCauses) {
         SupportedProviderNames = DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(strategy),
         GateRequirements = DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(strategy),
+        StagedProviderBulk = stagedProviderBulk,
       };
       candidates.Add(candidate);
 
       if (canSave) {
+        var representativeStagedProviderBulk = candidate.StagedProviderBulk ??
+            DataVaultStagedProviderBulkDiagnosticsSupport.SelectRepresentative(candidates);
         return new DataVaultSaveStrategyDiagnostics(
             DataVaultSaveStrategyDiagnosticsStatus.ProviderStrategySelected,
             providerName,
             candidate.StrategyName,
             candidate.Priority,
             candidates,
-            Array.Empty<DataVaultSaveStrategyFallbackCause>());
+            Array.Empty<DataVaultSaveStrategyFallbackCause>()) {
+          StagedProviderBulk = representativeStagedProviderBulk,
+        };
       }
     }
 
@@ -1305,7 +1371,9 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         SelectedStrategyName: null,
         SelectedStrategyPriority: null,
         candidates,
-        DistinctFallbackCauses(fallbackCauseList));
+        DistinctFallbackCauses(fallbackCauseList)) {
+      StagedProviderBulk = DataVaultStagedProviderBulkDiagnosticsSupport.SelectRepresentative(candidates),
+    };
   }
 
   private DataVaultReadStrategyDiagnostics EvaluateReadStrategy(

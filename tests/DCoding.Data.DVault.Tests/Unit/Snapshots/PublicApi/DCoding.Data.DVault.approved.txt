@@ -1311,6 +1311,7 @@ type public static class DCoding.Data.DVault.DataVaultSaveServiceTypedExtensions
 
 type public sealed class DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics>
   ctor public DataVaultSaveStrategyCandidateDiagnostics(int Ordinal, string StrategyName, int Priority, bool CanSave, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause> FallbackCauses)
+  property public DCoding.Data.DVault.DataVaultStagedProviderBulkDiagnostics? StagedProviderBulk { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause> FallbackCauses { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyGateRequirement> GateRequirements { get; init; }
   property public System.Collections.Generic.IReadOnlyList<string> SupportedProviderNames { get; init; }
@@ -1329,6 +1330,7 @@ type public sealed class DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagn
 type public sealed class DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics>
   ctor public DataVaultSaveStrategyDiagnostics(DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus Status, string? ProviderName, string? SelectedStrategyName, int? SelectedStrategyPriority, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics> Candidates, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause> FallbackCauses)
   property public DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus Status { get; init; }
+  property public DCoding.Data.DVault.DataVaultStagedProviderBulkDiagnostics? StagedProviderBulk { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyCandidateDiagnostics> Candidates { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCause> FallbackCauses { get; init; }
   property public int? SelectedStrategyPriority { get; init; }
@@ -1371,6 +1373,11 @@ type public enum DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind
   value OracleMinimumOperationThreshold = 8
   value StrategyDeclined = 9
   value OracleMaximumSatelliteOperationThreshold = 10
+  value StagedProviderBulkDirtyDbContext = 11
+  value StagedProviderBulkUnsupportedShape = 12
+  value StagedProviderBulkTransactionParticipationUnsupported = 13
+  value StagedProviderBulkCleanupFailed = 14
+  value StagedProviderBulkProviderLimitation = 15
 
 type public sealed class DCoding.Data.DVault.DataVaultSaveStrategyFallbackExplanation : System.IEquatable<DCoding.Data.DVault.DataVaultSaveStrategyFallbackExplanation>
   ctor public DataVaultSaveStrategyFallbackExplanation(DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind Kind, string Explanation, string Remediation)
@@ -1405,10 +1412,13 @@ type public enum DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind
 
 type public sealed class DCoding.Data.DVault.DataVaultSaveTelemetrySummary
   ctor public DataVaultSaveTelemetrySummary(DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind operationKind, DCoding.Data.DVault.DataVaultTelemetryOutcome outcome, int requestCount, int hubOperationCount, int linkOperationCount, int satelliteOperationCount, int rowsWritten, int savedRecordCount, System.TimeSpan duration, DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus strategyStatus, string? providerName, string? selectedStrategyName, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind> fallbackCauseKinds)
+  ctor public DataVaultSaveTelemetrySummary(DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind operationKind, DCoding.Data.DVault.DataVaultTelemetryOutcome outcome, int requestCount, int hubOperationCount, int linkOperationCount, int satelliteOperationCount, int rowsWritten, int savedRecordCount, System.TimeSpan duration, DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus strategyStatus, string? providerName, string? selectedStrategyName, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind> fallbackCauseKinds, DCoding.Data.DVault.DataVaultStagedProviderBulkDiagnostics? stagedProviderBulk)
   ctor public DataVaultSaveTelemetrySummary(DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind operationKind, DCoding.Data.DVault.DataVaultTelemetryOutcome outcome, int requestCount, int hubOperationCount, int linkOperationCount, int satelliteOperationCount, int rowsWritten, int savedRecordCount, System.TimeSpan duration, DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus strategyStatus, string? providerName, string? selectedStrategyName, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind> fallbackCauseKinds, int chunkCount, int processedChunkCount, int retainedStateCurrentCount, int retainedStateHighWaterCount, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackCauseKind> chunkedStateFallbackCauseKinds, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeKind> unsupportedShapeKinds)
+  ctor public DataVaultSaveTelemetrySummary(DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind operationKind, DCoding.Data.DVault.DataVaultTelemetryOutcome outcome, int requestCount, int hubOperationCount, int linkOperationCount, int satelliteOperationCount, int rowsWritten, int savedRecordCount, System.TimeSpan duration, DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus strategyStatus, string? providerName, string? selectedStrategyName, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind> fallbackCauseKinds, int chunkCount, int processedChunkCount, int retainedStateCurrentCount, int retainedStateHighWaterCount, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackCauseKind> chunkedStateFallbackCauseKinds, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultChunkedSaveUnsupportedShapeKind> unsupportedShapeKinds, DCoding.Data.DVault.DataVaultStagedProviderBulkDiagnostics? stagedProviderBulk)
   property public DCoding.Data.DVault.DataVaultChunkedSaveTransactionExplanation? ChunkedTransactionExplanation { get; }
   property public DCoding.Data.DVault.DataVaultSaveStrategyDiagnosticsStatus StrategyStatus { get; }
   property public DCoding.Data.DVault.DataVaultSaveTelemetryOperationKind OperationKind { get; }
+  property public DCoding.Data.DVault.DataVaultStagedProviderBulkDiagnostics? StagedProviderBulk { get; }
   property public DCoding.Data.DVault.DataVaultTelemetryOutcome Outcome { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackCauseKind> ChunkedStateFallbackCauseKinds { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultChunkedSaveStateFallbackExplanation> ChunkedStateFallbackExplanations { get; }
@@ -1439,6 +1449,36 @@ type public sealed class DCoding.Data.DVault.DataVaultSavedRecord
   property public string HashKey { get; }
   property public string MetadataName { get; }
   property public string TableName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultStagedProviderBulkDiagnostics
+  ctor public DataVaultStagedProviderBulkDiagnostics(DCoding.Data.DVault.DataVaultStagedProviderBulkLifecyclePhase lifecyclePhase, DCoding.Data.DVault.DataVaultStagedProviderBulkProviderCaveatKind providerCaveatKind, int requestCount, int hubOperationCount, int linkOperationCount, int satelliteOperationCount, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind> fallbackCauseKinds)
+  property public DCoding.Data.DVault.DataVaultStagedProviderBulkLifecyclePhase LifecyclePhase { get; }
+  property public DCoding.Data.DVault.DataVaultStagedProviderBulkProviderCaveatKind ProviderCaveatKind { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind> FallbackCauseKinds { get; }
+  property public int HubOperationCount { get; }
+  property public int LinkOperationCount { get; }
+  property public int OperationCount { get; }
+  property public int RequestCount { get; }
+  property public int SatelliteOperationCount { get; }
+
+type public enum DCoding.Data.DVault.DataVaultStagedProviderBulkLifecyclePhase
+  value NotEvaluated = 0
+  value EligibilityEvaluation = 1
+  value StageSetup = 2
+  value StagePopulation = 3
+  value NativeBulkApplication = 4
+  value Cleanup = 5
+  value Declined = 6
+  value Fallback = 7
+  value Completed = 8
+
+type public enum DCoding.Data.DVault.DataVaultStagedProviderBulkProviderCaveatKind
+  value None = 0
+  value DirtyContext = 1
+  value UnsupportedShape = 2
+  value TransactionParticipation = 3
+  value Cleanup = 4
+  value ProviderLimitation = 5
 
 type public sealed class DCoding.Data.DVault.DataVaultSupportBundle
   ctor public DataVaultSupportBundle(DCoding.Data.DVault.DataVaultDiagnosticsResult diagnostics, DCoding.Data.DVault.DataVaultLiveSchemaReadResult? liveSchema = null, DCoding.Data.DVault.DataVaultModelDriftReport? drift = null)
@@ -1527,6 +1567,9 @@ type public interface DCoding.Data.DVault.IDataVaultProviderSaveStrategy
   property public int Priority { get; }
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(DCoding.Data.DVault.DataVaultProviderSaveStrategyContext context, System.Threading.CancellationToken cancellationToken = default)
   method public abstract bool CanSave(Microsoft.EntityFrameworkCore.DbContext dbContext, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> requests)
+
+type public interface DCoding.Data.DVault.IDataVaultProviderStagedBulkSaveDiagnostics
+  method public abstract DCoding.Data.DVault.DataVaultStagedProviderBulkDiagnostics? EvaluateStagedProviderBulkSave(Microsoft.EntityFrameworkCore.DbContext dbContext, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> requests)
 
 type public interface DCoding.Data.DVault.IDataVaultReadDiagnosticsService
   method public abstract DCoding.Data.DVault.DataVaultDiagnosticsResult Analyze(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultBridgeReadRequest request)

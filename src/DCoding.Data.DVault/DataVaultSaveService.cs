@@ -1770,9 +1770,11 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     private readonly List<DataVaultSaveStrategyFallbackCauseKind> _fallbackCauseKinds = [];
     private bool _mixedSelectedStrategies;
     private string? _selectedStrategyName;
+    private DataVaultStagedProviderBulkDiagnostics? _stagedProviderBulk;
     private DataVaultSaveStrategyDiagnosticsStatus _status = DataVaultSaveStrategyDiagnosticsStatus.NotEvaluated;
 
     public void Observe(DataVaultSaveTelemetryStrategySelection selection) {
+      _stagedProviderBulk ??= selection.StagedProviderBulk;
       if (selection.Status == DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback) {
         _status = DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback;
         _fallbackCauseKinds.AddRange(selection.FallbackCauseKinds);
@@ -1801,7 +1803,8 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
           _status == DataVaultSaveStrategyDiagnosticsStatus.ProviderStrategySelected && !_mixedSelectedStrategies
               ? _selectedStrategyName
               : null,
-          _fallbackCauseKinds.Distinct().ToArray());
+          _fallbackCauseKinds.Distinct().ToArray(),
+          _stagedProviderBulk);
     }
   }
 

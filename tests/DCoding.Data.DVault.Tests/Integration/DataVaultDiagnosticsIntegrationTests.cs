@@ -425,6 +425,66 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
   }
 
   [Fact]
+  public void AnalyzeBulkSaveRequestSurfacesStagedProviderBulkDiagnosticsInSupportBundle() {
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var stagedStrategy = new StagedBulkDecliningSaveStrategy(priority: 200);
+    var services = new ServiceCollection();
+    services.AddSingleton<IDataVaultProviderSaveStrategy>(stagedStrategy);
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    using var context = new DiagnosticsContext(CreateOptions(database));
+    var request = new DataVaultBulkSaveRequest([
+        CreateCustomerSaveRequest("staged-bulk-first", "C-500"),
+        CreateCustomerProfileSaveRequest("staged-bulk-second", "customer-secret-hash", "Alice Secret"),
+    ]);
+
+    var result = diagnostics.Analyze(context, request);
+
+    Assert.Equal(DataVaultSaveStrategyDiagnosticsStatus.ProviderStrategySelected, result.SaveStrategy.Status);
+    Assert.Equal("SqliteDataVaultSaveStrategy", result.SaveStrategy.SelectedStrategyName);
+    Assert.Contains("staged provider bulk Declined", result.ToDisplayString(), StringComparison.Ordinal);
+    Assert.Contains("staged operations 2", result.ToDisplayString(), StringComparison.Ordinal);
+
+    Assert.Collection(
+        result.SaveStrategy.Candidates,
+        candidate => {
+          Assert.Equal(0, candidate.Ordinal);
+          Assert.Equal(nameof(StagedBulkDecliningSaveStrategy), candidate.StrategyName);
+          Assert.False(candidate.CanSave);
+          Assert.Contains(
+              candidate.FallbackCauses,
+              cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape);
+          Assert.Contains(
+              candidate.FallbackCauses,
+              cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkTransactionParticipationUnsupported);
+          AssertStagedProviderBulkDiagnostics(candidate.StagedProviderBulk);
+        },
+        candidate => {
+          Assert.Equal(1, candidate.Ordinal);
+          Assert.Equal("SqliteDataVaultSaveStrategy", candidate.StrategyName);
+          Assert.True(candidate.CanSave);
+        });
+
+    AssertStagedProviderBulkDiagnostics(result.SaveStrategy.StagedProviderBulk);
+    Assert.Empty(result.SaveStrategy.FallbackCauses);
+
+    var json = DataVaultSupportBundleExporter.ExportJson(result);
+
+    Assert.Contains("\"stagedProviderBulk\"", json, StringComparison.Ordinal);
+    Assert.Contains("\"lifecyclePhase\": \"Declined\"", json, StringComparison.Ordinal);
+    Assert.Contains("\"providerCaveatKind\": \"UnsupportedShape\"", json, StringComparison.Ordinal);
+    Assert.Contains("\"requestCount\": 2", json, StringComparison.Ordinal);
+    Assert.Contains("\"operationCount\": 2", json, StringComparison.Ordinal);
+    Assert.Contains("\"StagedProviderBulkUnsupportedShape\"", json, StringComparison.Ordinal);
+    Assert.Contains("\"StagedProviderBulkTransactionParticipationUnsupported\"", json, StringComparison.Ordinal);
+    Assert.DoesNotContain("C-500", json, StringComparison.Ordinal);
+    Assert.DoesNotContain("customer-secret-hash", json, StringComparison.Ordinal);
+    Assert.DoesNotContain("Alice Secret", json, StringComparison.Ordinal);
+  }
+
+  [Fact]
   public void AnalyzeReadRequestKeepsCandidateOrderingWhenHigherPriorityStrategyDeclines() {
     using var database = SqliteTestDatabase.CreateTemporaryFile();
     var rejectingStrategy = new RecordingProviderReadStrategy(priority: 200, _ => false);
@@ -526,6 +586,45 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
         []);
   }
 
+  private static DataVaultSaveRequest CreateCustomerProfileSaveRequest(
+      string recordSource,
+      string parentHashKey,
+      string name) {
+    var customerHub = new DataVaultHubMetadata("Customer", ["CustomerNumber"]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customerHub.ToReference(),
+        ["Name"]);
+
+    return new DataVaultSaveRequest(
+        LoadTimestamp,
+        recordSource,
+        [],
+        [],
+        [new DataVaultSatelliteSaveOperation(
+            profile,
+            parentHashKey,
+            [new("Name", name)],
+            "profile-secret-hash-diff")]);
+  }
+
+  private static void AssertStagedProviderBulkDiagnostics(DataVaultStagedProviderBulkDiagnostics? diagnostics) {
+    Assert.NotNull(diagnostics);
+    Assert.Equal(DataVaultStagedProviderBulkLifecyclePhase.Declined, diagnostics!.LifecyclePhase);
+    Assert.Equal(DataVaultStagedProviderBulkProviderCaveatKind.UnsupportedShape, diagnostics.ProviderCaveatKind);
+    Assert.Equal(2, diagnostics.RequestCount);
+    Assert.Equal(1, diagnostics.HubOperationCount);
+    Assert.Equal(0, diagnostics.LinkOperationCount);
+    Assert.Equal(1, diagnostics.SatelliteOperationCount);
+    Assert.Equal(2, diagnostics.OperationCount);
+    Assert.Equal(
+        [
+            DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape,
+            DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkTransactionParticipationUnsupported,
+        ],
+        diagnostics.FallbackCauseKinds);
+  }
+
   private sealed class DiagnosticsContext(DbContextOptions<DiagnosticsContext> options) : DbContext(options) {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
       modelBuilder.Entity<TrackedCustomer>();
@@ -559,6 +658,44 @@ public sealed class DataVaultDiagnosticsIntegrationTests {
         DataVaultProviderSaveStrategyContext context,
         CancellationToken cancellationToken = default) {
       throw new NotSupportedException("Recording diagnostics strategy is never used for persistence.");
+    }
+  }
+
+  private sealed class StagedBulkDecliningSaveStrategy(int priority) :
+      IDataVaultProviderSaveStrategy,
+      IDataVaultProviderStagedBulkSaveDiagnostics {
+    public int Priority { get; } = priority;
+
+    public bool CanSave(DbContext dbContext, IReadOnlyList<DataVaultSaveRequest> requests) {
+      ArgumentNullException.ThrowIfNull(dbContext);
+      ArgumentNullException.ThrowIfNull(requests);
+
+      return false;
+    }
+
+    public DataVaultStagedProviderBulkDiagnostics EvaluateStagedProviderBulkSave(
+        DbContext dbContext,
+        IReadOnlyList<DataVaultSaveRequest> requests) {
+      ArgumentNullException.ThrowIfNull(dbContext);
+      ArgumentNullException.ThrowIfNull(requests);
+
+      return new DataVaultStagedProviderBulkDiagnostics(
+          DataVaultStagedProviderBulkLifecyclePhase.Declined,
+          DataVaultStagedProviderBulkProviderCaveatKind.UnsupportedShape,
+          requests.Count,
+          requests.Sum(request => request.HubOperations.Count),
+          requests.Sum(request => request.LinkOperations.Count),
+          requests.Sum(request => request.SatelliteOperations.Count),
+          [
+              DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape,
+              DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkTransactionParticipationUnsupported,
+          ]);
+    }
+
+    public Task<DataVaultSaveResult> SaveAsync(
+        DataVaultProviderSaveStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      throw new NotSupportedException("Staged diagnostics strategy is never used for persistence.");
     }
   }
 

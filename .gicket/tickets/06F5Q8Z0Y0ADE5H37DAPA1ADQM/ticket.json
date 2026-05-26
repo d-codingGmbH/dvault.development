@@ -1,23 +1,22 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q8Z0Y0ADE5H37DAPA1ADQM",
   "ticket-type": "story",
   "title": "Story: Add actionable staged-bulk fallback diagnostics",
-  "revision": "06F5Q98EC46PTC9FPFWX1BRB94",
-  "status": "todo",
+  "revision": "06F67SEX0RW1MSA3S7SSMZ8AC0",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
-    "area/diagnostics",
     "area/developer-experience",
+    "area/diagnostics",
     "area/ef-core",
-    "area/provider-support"
+    "area/provider-support",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WG7MRHG7XS0H6DMEW33M",
   "releaseId": "06F5Q8WAWQMZ22WMK10XYDEFQG",
   "created-at": "2026-05-24T20:18:47.3007579Z",
-  "updated-at": "2026-05-24T20:20:04.3214432Z"
+  "updated-at": "2026-05-26T10:47:49.2543817Z"
 }
