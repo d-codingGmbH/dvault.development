@@ -666,7 +666,7 @@
       "meanAllocatedBytes": null,
       "minAllocatedBytes": null,
       "maxAllocatedBytes": null,
-      "executionDetail": "scenario=provider-native-bulk-ingestion; provider=MySQL external provider; baseline=dvault-adddvaultmysql-optimized; strategyFamily=mysql-optimized-dvault; executionPath=DVault MySQL optimized save path; selectedStrategy=MySqlDataVaultSaveStrategy",
+      "executionDetail": "scenario=provider-native-bulk-ingestion; provider=MySQL external provider; baseline=dvault-adddvaultmysql-optimized; strategyFamily=mysql-optimized-dvault; executionPath=DVault MySQL staged bulk save path; selectedStrategy=MySqlStagedDataVaultSaveStrategy",
       "persistedOutcome": "not executed"
     },
     {

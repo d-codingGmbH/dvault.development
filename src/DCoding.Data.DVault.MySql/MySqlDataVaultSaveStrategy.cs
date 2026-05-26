@@ -17,8 +17,10 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   private const int MySqlMaxRowsPerCommand = 1000;
   private const int MySqlLatestHashDiffBatchSize = 1000;
   private const int MinimumOptimizedBatchOperationCount = 50;
+  internal const int MinimumStagedBulkOperationCount = 60;
   private const string LatestRowsTableAlias = "__dvault_latest";
   private const string RowNumberColumnName = "__dvault_row_number";
+  private const string StagingTablePrefix = "__dvault_stage_";
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
 
   public int Priority => 100;
@@ -34,9 +36,14 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
       DataVaultProviderSaveStrategyContext context,
       CancellationToken cancellationToken = default) {
     ArgumentNullException.ThrowIfNull(context);
+    cancellationToken.ThrowIfCancellationRequested();
 
     var uniquePlans = CreateUniqueRowSavePlans(context);
     var satellitePlans = CreateSatelliteSavePlans(context);
+    if (uniquePlans.Count == 0 && satellitePlans.Count == 0) {
+      return new DataVaultSaveResult(0, []);
+    }
+
     var connection = context.DbContext.Database.GetDbConnection();
     var shouldCloseConnection = connection.State != ConnectionState.Open;
     if (shouldCloseConnection) {
@@ -117,6 +124,93 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     return operationCount >= MinimumOptimizedBatchOperationCount;
   }
 
+  internal static bool IsStagedBatchShape(IReadOnlyList<DataVaultSaveRequest> requests) {
+    ArgumentNullException.ThrowIfNull(requests);
+
+    var operationCount = 0;
+    foreach (var request in requests) {
+      operationCount += request.HubOperations.Count + request.LinkOperations.Count + request.SatelliteOperations.Count;
+    }
+
+    return operationCount >= MinimumStagedBulkOperationCount;
+  }
+
+  internal static async Task<DataVaultSaveResult> ExecuteStagedSaveAsync(
+      DataVaultProviderSaveStrategyContext context,
+      CancellationToken cancellationToken = default) {
+    ArgumentNullException.ThrowIfNull(context);
+    cancellationToken.ThrowIfCancellationRequested();
+
+    var uniquePlans = CreateUniqueRowSavePlans(context);
+    var satellitePlans = CreateSatelliteSavePlans(context);
+    if (uniquePlans.Count == 0 && satellitePlans.Count == 0) {
+      return new DataVaultSaveResult(0, []);
+    }
+
+    var connection = context.DbContext.Database.GetDbConnection();
+    var shouldCloseConnection = connection.State != ConnectionState.Open;
+    if (shouldCloseConnection) {
+      await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    DbTransaction? localTransaction = null;
+    var transaction = context.DbContext.Database.CurrentTransaction?.GetDbTransaction();
+    if (transaction is null) {
+      localTransaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+      transaction = localTransaction;
+    }
+
+    try {
+      var filteredSatellitePlans = await FilterSatellitePlansAsync(
+          context.DbContext,
+          connection,
+          transaction,
+          satellitePlans,
+          cancellationToken).ConfigureAwait(false);
+      var savedRecords = uniquePlans
+          .Select(plan => plan.SavedRecord)
+          .Concat(filteredSatellitePlans.Results.Select(result => result.SavedRecord))
+          .ToArray();
+      var rowsWritten = await ExecuteMySqlStagedInsertRowsAsync(
+          context.DbContext,
+          connection,
+          transaction,
+          uniquePlans.Select(plan => new MySqlInsertRow(plan.Table.TableName, plan.Row)),
+          MySqlInsertConflictBehavior.Ignore,
+          cancellationToken).ConfigureAwait(false);
+
+      rowsWritten += await ExecuteMySqlStagedInsertRowsAsync(
+          context.DbContext,
+          connection,
+          transaction,
+          filteredSatellitePlans.RowsToWrite.Select(plan => new MySqlInsertRow(plan.Table.TableName, plan.Row)),
+          MySqlInsertConflictBehavior.Fail,
+          cancellationToken).ConfigureAwait(false);
+
+      if (localTransaction is not null) {
+        await localTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+      }
+
+      return new DataVaultSaveResult(rowsWritten, savedRecords);
+    }
+    catch {
+      if (localTransaction is not null) {
+        await localTransaction.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
+      }
+
+      throw;
+    }
+    finally {
+      if (localTransaction is not null) {
+        await localTransaction.DisposeAsync().ConfigureAwait(false);
+      }
+
+      if (shouldCloseConnection) {
+        await connection.CloseAsync().ConfigureAwait(false);
+      }
+    }
+  }
+
   private static bool ContainsMultiActiveSatelliteOperations(IReadOnlyList<DataVaultSaveRequest> requests) {
     return requests.Any(request => request.SatelliteOperations.Any(operation => operation.Metadata.DrivingKeyNames.Count > 0));
   }
@@ -166,6 +260,66 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     }
 
     return builder.ToString();
+  }
+
+  internal static string CreateMySqlCreateStagingTableCommandText(
+      string stagingTableName,
+      string targetTableName,
+      IReadOnlyList<string> columns) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(stagingTableName);
+    ArgumentException.ThrowIfNullOrWhiteSpace(targetTableName);
+    ArgumentNullException.ThrowIfNull(columns);
+    if (columns.Count == 0) {
+      throw new ArgumentException("A MySQL staging table must project at least one target column.", nameof(columns));
+    }
+
+    var builder = new StringBuilder();
+    builder.Append("CREATE TEMPORARY TABLE ")
+        .Append(QuoteMySqlIdentifier(stagingTableName))
+        .Append(" AS SELECT ");
+
+    AppendIdentifierList(builder, columns);
+    builder.Append(" FROM ")
+        .Append(QuoteMySqlIdentifier(targetTableName))
+        .Append(" WHERE 1 = 0");
+
+    return builder.ToString();
+  }
+
+  internal static string CreateMySqlInsertFromStagingCommandText(
+      string targetTableName,
+      string stagingTableName,
+      IReadOnlyList<string> columns,
+      MySqlInsertConflictBehavior conflictBehavior) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(targetTableName);
+    ArgumentException.ThrowIfNullOrWhiteSpace(stagingTableName);
+    ArgumentNullException.ThrowIfNull(columns);
+    if (columns.Count == 0) {
+      throw new ArgumentException("A MySQL staged insert must project at least one target column.", nameof(columns));
+    }
+
+    var builder = new StringBuilder();
+    builder.Append("INSERT ");
+    if (conflictBehavior == MySqlInsertConflictBehavior.Ignore) {
+      builder.Append("IGNORE ");
+    }
+
+    builder.Append("INTO ")
+        .Append(QuoteMySqlIdentifier(targetTableName))
+        .Append(" (");
+    AppendIdentifierList(builder, columns);
+    builder.Append(") SELECT ");
+    AppendIdentifierList(builder, columns);
+    builder.Append(" FROM ")
+        .Append(QuoteMySqlIdentifier(stagingTableName));
+
+    return builder.ToString();
+  }
+
+  internal static string CreateMySqlDropTemporaryTableCommandText(string stagingTableName) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(stagingTableName);
+
+    return "DROP TEMPORARY TABLE IF EXISTS " + QuoteMySqlIdentifier(stagingTableName);
   }
 
   private static IReadOnlyList<UniqueRowSavePlan> CreateUniqueRowSavePlans(DataVaultProviderSaveStrategyContext context) {
@@ -537,6 +691,86 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     return rowsWritten;
   }
 
+  private static async Task<int> ExecuteMySqlStagedInsertRowsAsync(
+      DbContext dbContext,
+      DbConnection connection,
+      DbTransaction transaction,
+      IEnumerable<MySqlInsertRow> rows,
+      MySqlInsertConflictBehavior conflictBehavior,
+      CancellationToken cancellationToken) {
+    var rowArray = rows.ToArray();
+    if (rowArray.Length == 0) {
+      return 0;
+    }
+
+    var rowsWritten = 0;
+
+    foreach (var group in rowArray.GroupBy(row => new MySqlInsertRowShape(
+        row.TableName,
+        CreateColumnSignature(row.Values.Keys)))) {
+      var targetTableName = ResolvePhysicalTableName(dbContext, group.Key.TableName);
+      var columns = group.First().Values.Keys.ToArray();
+      rowsWritten += await ExecuteMySqlStagedInsertGroupAsync(
+          connection,
+          transaction,
+          targetTableName,
+          columns,
+          group.Select(row => row.Values).ToArray(),
+          conflictBehavior,
+          cancellationToken).ConfigureAwait(false);
+    }
+
+    return rowsWritten;
+  }
+
+  private static async Task<int> ExecuteMySqlStagedInsertGroupAsync(
+      DbConnection connection,
+      DbTransaction transaction,
+      string targetTableName,
+      IReadOnlyList<string> columns,
+      IReadOnlyList<Dictionary<string, object>> rows,
+      MySqlInsertConflictBehavior conflictBehavior,
+      CancellationToken cancellationToken) {
+    var stagingTableName = CreateStagingTableName();
+    var stagingTableCreated = false;
+
+    try {
+      await ExecuteMySqlNonQueryAsync(
+          connection,
+          transaction,
+          CreateMySqlCreateStagingTableCommandText(stagingTableName, targetTableName, columns),
+          cancellationToken).ConfigureAwait(false);
+      stagingTableCreated = true;
+
+      var chunkSize = Math.Min(MySqlMaxRowsPerCommand, Math.Max(1, MySqlMaxCommandParameterCount / columns.Count));
+      foreach (var chunk in rows.Chunk(chunkSize)) {
+        await ExecuteMySqlInsertChunkAsync(
+            connection,
+            transaction,
+            stagingTableName,
+            columns,
+            chunk,
+            MySqlInsertConflictBehavior.Fail,
+            cancellationToken).ConfigureAwait(false);
+      }
+
+      return await ExecuteMySqlNonQueryAsync(
+          connection,
+          transaction,
+          CreateMySqlInsertFromStagingCommandText(targetTableName, stagingTableName, columns, conflictBehavior),
+          cancellationToken).ConfigureAwait(false);
+    }
+    finally {
+      if (stagingTableCreated) {
+        await ExecuteMySqlNonQueryAsync(
+            connection,
+            transaction,
+            CreateMySqlDropTemporaryTableCommandText(stagingTableName),
+            CancellationToken.None).ConfigureAwait(false);
+      }
+    }
+  }
+
   private static async Task<int> ExecuteMySqlInsertChunkAsync(
       DbConnection connection,
       DbTransaction transaction,
@@ -563,8 +797,24 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
   }
 
+  private static async Task<int> ExecuteMySqlNonQueryAsync(
+      DbConnection connection,
+      DbTransaction transaction,
+      string commandText,
+      CancellationToken cancellationToken) {
+    await using var command = connection.CreateCommand();
+    command.Transaction = transaction;
+    command.CommandText = commandText;
+
+    return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+  }
+
   private static string CreateMySqlParameterName(int index) {
     return "@p" + index.ToString(CultureInfo.InvariantCulture);
+  }
+
+  private static string CreateStagingTableName() {
+    return StagingTablePrefix + Guid.NewGuid().ToString("N");
   }
 
   private static string CreateLatestSatelliteHashDiffsCommandText(
@@ -682,6 +932,16 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     return "`" + identifier.Replace("`", "``", StringComparison.Ordinal) + "`";
   }
 
+  private static void AppendIdentifierList(StringBuilder builder, IReadOnlyList<string> identifiers) {
+    for (var index = 0; index < identifiers.Count; index++) {
+      if (index > 0) {
+        builder.Append(", ");
+      }
+
+      builder.Append(QuoteMySqlIdentifier(identifiers[index]));
+    }
+  }
+
   private static string CreateColumnSignature(IEnumerable<string> columns) {
     return string.Join('\u001f', columns);
   }
@@ -767,4 +1027,21 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
 internal enum MySqlInsertConflictBehavior {
   Fail,
   Ignore,
+}
+
+internal sealed class MySqlStagedDataVaultSaveStrategy : IDataVaultProviderSaveStrategy {
+  public int Priority => 110;
+
+  public bool CanSave(DbContext dbContext, IReadOnlyList<DataVaultSaveRequest> requests) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(requests);
+
+    return DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySqlStaged(dbContext, requests).CanSave;
+  }
+
+  public async Task<DataVaultSaveResult> SaveAsync(
+      DataVaultProviderSaveStrategyContext context,
+      CancellationToken cancellationToken = default) {
+    return await MySqlDataVaultSaveStrategy.ExecuteStagedSaveAsync(context, cancellationToken).ConfigureAwait(false);
+  }
 }

@@ -26,7 +26,7 @@ public sealed class MySqlExplicitDataVaultSaveServiceTests {
     await ExternalProviderBulkSaveAssertions.AssertProviderBulkSaveAsync(
         ExternalProviderLiveSchemaFixture.CreateMySqlAsync,
         services => services.AddDVaultMySql(),
-        "MySqlDataVaultSaveStrategy");
+        "MySqlStagedDataVaultSaveStrategy");
   }
 
   private static readonly DateTimeOffset LoadTimestamp =
@@ -45,6 +45,7 @@ public sealed class MySqlExplicitDataVaultSaveServiceTests {
 
     using var provider = services.BuildServiceProvider(validateScopes: true);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
 
     await using var context = new MySqlExplicitSaveServiceContext(options);
     await DropSmokeTableIfExistsAsync(context);
@@ -53,13 +54,29 @@ public sealed class MySqlExplicitDataVaultSaveServiceTests {
       await context.Database.ExecuteSqlRawAsync(context.Database.GenerateCreateScript());
 
       var hub = new DataVaultHubMetadata(HubName, [BusinessKeyName]);
+      var request = new DataVaultSaveRequest(
+          LoadTimestamp,
+          RecordSource,
+          [new DataVaultHubSaveOperation(hub, [new(BusinessKeyName, "MYSQL-C-100")])],
+          []);
+      var diagnosticResult = diagnostics.Analyze(context, request);
+
+      Assert.Equal(DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback, diagnosticResult.SaveStrategy.Status);
+      Assert.Null(diagnosticResult.SaveStrategy.SelectedStrategyName);
+      Assert.Contains(
+          diagnosticResult.SaveStrategy.Candidates,
+          candidate => string.Equals(candidate.StrategyName, "MySqlStagedDataVaultSaveStrategy", StringComparison.Ordinal) &&
+              !candidate.CanSave &&
+              candidate.FallbackCauses.Any(cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold));
+      Assert.Contains(
+          diagnosticResult.SaveStrategy.Candidates,
+          candidate => string.Equals(candidate.StrategyName, "MySqlDataVaultSaveStrategy", StringComparison.Ordinal) &&
+              !candidate.CanSave &&
+              candidate.FallbackCauses.Any(cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold));
+
       var result = await saveService.SaveAsync(
           context,
-          new DataVaultSaveRequest(
-              LoadTimestamp,
-              RecordSource,
-              [new DataVaultHubSaveOperation(hub, [new(BusinessKeyName, "MYSQL-C-100")])],
-              []));
+          request);
 
       Assert.Equal(1, result.RowsWritten);
       var savedRecord = Assert.Single(result.SavedRecords);

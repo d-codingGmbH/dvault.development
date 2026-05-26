@@ -3,22 +3,24 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.Extensions.DependencyInjection;
+using System.Globalization;
 using Xunit;
 
 namespace DCoding.Data.DVault.Tests.Unit;
 
 public sealed class MySqlProviderCapabilityTests {
   [Fact]
-  public void AddDVaultMySqlRegistersPomeloGatedOptimizedStrategyAndProviderProfileSelection() {
+  public void AddDVaultMySqlRegistersDualProviderStagedAndMultiRowStrategiesAndProviderProfileSelection() {
     try {
       var services = new ServiceCollection();
 
       services.AddDVaultMySql();
 
       using var provider = services.BuildServiceProvider(validateScopes: true);
-      var strategy = Assert.Single(provider.GetServices<IDataVaultProviderSaveStrategy>());
+      var strategies = provider.GetServices<IDataVaultProviderSaveStrategy>().ToArray();
 
-      Assert.IsType<MySqlDataVaultSaveStrategy>(strategy);
+      Assert.Contains(strategies, strategy => strategy is MySqlStagedDataVaultSaveStrategy);
+      Assert.Contains(strategies, strategy => strategy is MySqlDataVaultSaveStrategy);
       Assert.Same(
           DataVaultProviderCapabilityProfiles.MySql,
           DataVaultProviderCapabilityProfileSelection.Select(MySqlDataVaultSaveStrategy.PomeloProviderName));
@@ -40,6 +42,33 @@ public sealed class MySqlProviderCapabilityTests {
     Assert.True(MySqlDataVaultSaveStrategy.IsSupportedProviderName("MySql.EntityFrameworkCore"));
     Assert.False(MySqlDataVaultSaveStrategy.IsSupportedProviderName("Microsoft.EntityFrameworkCore.Sqlite"));
     Assert.False(MySqlDataVaultSaveStrategy.IsSupportedProviderName(null));
+  }
+
+  [Fact]
+  public void MySqlGateKeepsMultiRowBoundaryBelowStagedBulkBoundary() {
+    var midSizedBatch = CreateHubRequest(totalOperationCount: 50);
+    var stagedBatch = CreateHubRequest(totalOperationCount: MySqlDataVaultSaveStrategy.MinimumStagedBulkOperationCount);
+
+    var stagedDecline = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySqlStaged(
+        KnownProviderNames.MySqlOracle,
+        hasPendingTrackedChanges: false,
+        midSizedBatch);
+    var multiRowAccept = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySql(
+        KnownProviderNames.MySqlOracle,
+        hasPendingTrackedChanges: false,
+        midSizedBatch);
+    var stagedAccept = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySqlStaged(
+        KnownProviderNames.MySqlOracle,
+        hasPendingTrackedChanges: false,
+        stagedBatch);
+
+    Assert.False(stagedDecline.CanSave);
+    Assert.Contains(
+        stagedDecline.FallbackCauses,
+        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold &&
+            cause.Message.Contains("MySQL staged bulk", StringComparison.Ordinal));
+    Assert.True(multiRowAccept.CanSave);
+    Assert.True(stagedAccept.CanSave);
   }
 
   [Fact]
@@ -70,6 +99,32 @@ public sealed class MySqlProviderCapabilityTests {
     Assert.Equal(
         "INSERT INTO `SatCustomerProfile` (`CustomerHashKey`, `HashDiff`) VALUES (@p0, @p1)",
         failCommandText);
+  }
+
+  [Fact]
+  public void MySqlStrategyBuildsStagedInsertSqlInsideProviderPackage() {
+    var createCommandText = MySqlDataVaultSaveStrategy.CreateMySqlCreateStagingTableCommandText(
+        "__dvault_stage`1",
+        "Hub`Customer",
+        ["CustomerHashKey", "LoadTimestamp"]);
+    var insertCommandText = MySqlDataVaultSaveStrategy.CreateMySqlInsertFromStagingCommandText(
+        "Hub`Customer",
+        "__dvault_stage`1",
+        ["CustomerHashKey", "LoadTimestamp"],
+        MySqlInsertConflictBehavior.Ignore);
+    var dropCommandText = MySqlDataVaultSaveStrategy.CreateMySqlDropTemporaryTableCommandText("__dvault_stage`1");
+
+    Assert.Equal(
+        "CREATE TEMPORARY TABLE `__dvault_stage``1` AS SELECT `CustomerHashKey`, `LoadTimestamp` " +
+        "FROM `Hub``Customer` WHERE 1 = 0",
+        createCommandText);
+    Assert.Equal(
+        "INSERT IGNORE INTO `Hub``Customer` (`CustomerHashKey`, `LoadTimestamp`) " +
+        "SELECT `CustomerHashKey`, `LoadTimestamp` FROM `__dvault_stage``1`",
+        insertCommandText);
+    Assert.Equal(
+        "DROP TEMPORARY TABLE IF EXISTS `__dvault_stage``1`",
+        dropCommandText);
   }
 
   [Fact]
@@ -156,6 +211,23 @@ public sealed class MySqlProviderCapabilityTests {
                 customer.ToReference(),
                 ["Email Address"]),
         ]);
+  }
+
+  private static IReadOnlyList<DataVaultSaveRequest> CreateHubRequest(int totalOperationCount) {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+
+    return
+    [
+        new DataVaultSaveRequest(
+            new DateTimeOffset(2026, 5, 26, 0, 0, 0, TimeSpan.Zero),
+            "mysql-gate-test",
+            Enumerable.Range(0, totalOperationCount)
+                .Select(index => new DataVaultHubSaveOperation(
+                    customer,
+                    [new("Customer Id", "C-" + index.ToString("000", CultureInfo.InvariantCulture))]))
+                .ToArray(),
+            []),
+    ];
   }
 
   private static IMutableProperty FindProperty(IMutableModel model, string entityName, string propertyName) {

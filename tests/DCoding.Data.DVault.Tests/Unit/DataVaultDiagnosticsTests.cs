@@ -514,6 +514,10 @@ public sealed class DataVaultDiagnosticsTests {
         KnownProviderNames.MySqlPomelo,
         hasPendingTrackedChanges: false,
         smallBatch);
+    var mySqlStagedTooSmall = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySqlStaged(
+        KnownProviderNames.MySqlPomelo,
+        hasPendingTrackedChanges: false,
+        CreateRequests(totalOperationCount: 50, satelliteOperationCount: 0));
     var oracleTooSmall = DataVaultProviderSaveStrategyGateEvaluator.EvaluateOracle(
         KnownProviderNames.Oracle,
         hasPendingTrackedChanges: false,
@@ -546,6 +550,10 @@ public sealed class DataVaultDiagnosticsTests {
         mySqlTooSmall.FallbackCauses,
         cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold);
     Assert.Contains(
+        mySqlStagedTooSmall.FallbackCauses,
+        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold &&
+            cause.Message.Contains("MySQL staged bulk", StringComparison.Ordinal));
+    Assert.Contains(
         oracleTooSmall.FallbackCauses,
         cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.OracleMinimumOperationThreshold);
     Assert.Contains(
@@ -574,6 +582,15 @@ public sealed class DataVaultDiagnosticsTests {
         DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(saveStrategy),
         requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold &&
             requirement.MaximumSatelliteOperationCount == 500);
+
+    var mySqlStagedSaveStrategy = new MySqlStagedDataVaultSaveStrategy();
+    Assert.Equal(
+        [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
+        DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(mySqlStagedSaveStrategy));
+    Assert.Contains(
+        DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(mySqlStagedSaveStrategy),
+        requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold &&
+            requirement.MinimumTotalOperationCount == 60);
 
     using var oracleProvider = CreateOracleServiceProvider();
     var oracleSaveStrategy = oracleProvider

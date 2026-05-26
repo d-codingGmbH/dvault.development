@@ -35,10 +35,10 @@ public sealed class DataVaultSaveStrategySelectionTests {
       "Missing SQLite capability registration should fall back through IDataVaultSaveService instead of implicitly selecting " +
           "an optimized provider path.";
   private const string MySqlUnsupportedProviderDiagnostic =
-      "MySQL optimized dispatch must reject registered AddDVaultMySql strategy selection when the active EF Core provider is " +
-          "non-Pomelo; supported provider baseline is Pomelo.EntityFrameworkCore.MySql.";
+      "MySQL optimized dispatch must reject every registered AddDVaultMySql strategy when the active EF Core provider is " +
+          "not a supported MySQL provider; supported provider names are Pomelo.EntityFrameworkCore.MySql and MySql.EntityFrameworkCore.";
   private const string MySqlUnsupportedProviderFallbackDiagnostic =
-      "MySQL optimized dispatch fallback expected AddDVaultMySql on a non-Pomelo context to use the built-in EF writer.";
+      "MySQL optimized dispatch fallback expected AddDVaultMySql on a non-MySQL context to use the built-in EF writer.";
   private const string PomeloProviderProfileSelectionDiagnostic =
       "Pomelo provider profile selection expected AddDVaultMySql plus a configured Pomelo.EntityFrameworkCore.MySql " +
           "EF Core provider name to make the existing ApplyDataVaultMetadata call path emit MySQL capability annotations.";
@@ -166,7 +166,7 @@ public sealed class DataVaultSaveStrategySelectionTests {
   }
 
   [Fact]
-  public async Task AddDVaultMySqlFallsBackWhenActiveProviderIsNotPomelo() {
+  public async Task AddDVaultMySqlFallsBackWhenActiveProviderIsNotMySql() {
     using var database = SqliteTestDatabase.CreateTemporaryFile();
     var options = CreateOptions(database);
     var services = new ServiceCollection();
@@ -174,22 +174,26 @@ public sealed class DataVaultSaveStrategySelectionTests {
 
     using var provider = services.BuildServiceProvider(validateScopes: true);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
-    var request = CreateCustomerSaveRequest("mysql-non-pomelo-fallback");
+    var request = CreateCustomerSaveRequest("mysql-non-mysql-fallback");
 
     await using var context = new StrategySelectionContext(options);
     await context.Database.EnsureCreatedAsync();
 
-    var mySqlStrategy = Assert.Single(provider
+    var mySqlStrategies = provider
         .GetServices<IDataVaultProviderSaveStrategy>()
-        .Where(strategy => string.Equals(strategy.GetType().Name, "MySqlDataVaultSaveStrategy", StringComparison.Ordinal)));
-    Assert.False(
-        mySqlStrategy.CanSave(context, [request]),
-        MySqlUnsupportedProviderDiagnostic);
+        .Where(strategy => strategy.GetType().Name.StartsWith("MySql", StringComparison.Ordinal))
+        .ToArray();
+    Assert.NotEmpty(mySqlStrategies);
+    Assert.All(
+        mySqlStrategies,
+        strategy => Assert.False(
+            strategy.CanSave(context, [request]),
+            MySqlUnsupportedProviderDiagnostic));
 
     var result = await saveService.SaveAsync(context, request);
 
     AssertSavedCustomer(result);
-    await AssertCustomerRowAsync(context, "C-100", "mysql-non-pomelo-fallback");
+    await AssertCustomerRowAsync(context, "C-100", "mysql-non-mysql-fallback");
     AssertFallbackPathObserved(
         context,
         MySqlUnsupportedProviderFallbackDiagnostic);
@@ -202,9 +206,13 @@ public sealed class DataVaultSaveStrategySelectionTests {
       services.AddDVaultMySql();
 
       using var provider = services.BuildServiceProvider(validateScopes: true);
-      Assert.Single(provider
-          .GetServices<IDataVaultProviderSaveStrategy>()
-          .Where(strategy => string.Equals(strategy.GetType().Name, "MySqlDataVaultSaveStrategy", StringComparison.Ordinal)));
+      var strategies = provider.GetServices<IDataVaultProviderSaveStrategy>().ToArray();
+      Assert.Contains(
+          strategies,
+          strategy => string.Equals(strategy.GetType().Name, "MySqlStagedDataVaultSaveStrategy", StringComparison.Ordinal));
+      Assert.Contains(
+          strategies,
+          strategy => string.Equals(strategy.GetType().Name, "MySqlDataVaultSaveStrategy", StringComparison.Ordinal));
 
       var conventionSet = new ConventionSet();
       conventionSet.ModelFinalizedConventions.Add(CreatePomeloProviderModelFinalizedConvention());
@@ -403,16 +411,17 @@ public sealed class DataVaultSaveStrategySelectionTests {
         "fall back through IDataVaultSaveService",
         "optimized provider path");
     AssertDiagnosticContains(
-        nameof(AddDVaultMySqlFallsBackWhenActiveProviderIsNotPomelo),
+        nameof(AddDVaultMySqlFallsBackWhenActiveProviderIsNotMySql),
         MySqlUnsupportedProviderDiagnostic,
         "MySQL optimized dispatch",
-        "non-Pomelo",
-        "Pomelo.EntityFrameworkCore.MySql");
+        "not a supported MySQL provider",
+        "Pomelo.EntityFrameworkCore.MySql",
+        "MySql.EntityFrameworkCore");
     AssertDiagnosticContains(
-        nameof(AddDVaultMySqlFallsBackWhenActiveProviderIsNotPomelo),
+        nameof(AddDVaultMySqlFallsBackWhenActiveProviderIsNotMySql),
         MySqlUnsupportedProviderFallbackDiagnostic + " Actual tracked entries: <none>",
         "AddDVaultMySql",
-        "non-Pomelo context",
+        "non-MySQL context",
         "built-in EF writer");
     AssertDiagnosticContains(
         nameof(AddDVaultMySqlUsesMySqlProfileForConfiguredPomeloEfCoreProvider),

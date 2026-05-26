@@ -88,7 +88,7 @@ public enum DataVaultSaveStrategyFallbackCauseKind {
   SqlServerMaximumSatelliteOperationThreshold,
 
   /// <summary>
-  /// MySQL optimized dispatch requires at least 50 total operations.
+  /// MySQL optimized dispatch requires the candidate's minimum total operation count.
   /// </summary>
   MySqlMinimumOperationThreshold,
 
@@ -2416,6 +2416,7 @@ internal enum DataVaultKnownProviderSaveStrategy {
   Postgres,
   SqlServer,
   MySql,
+  MySqlStaged,
   Oracle,
 }
 
@@ -2427,6 +2428,7 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
   private const int MinimumSqlServerOptimizedBatchOperationCount = 50;
   private const int MaximumSqlServerOptimizedSatelliteOperationCount = 500;
   private const int MinimumMySqlOptimizedBatchOperationCount = 50;
+  private const int MinimumMySqlStagedBatchOperationCount = 60;
   private const int MinimumOracleOptimizedBatchOperationCount = 50;
   private const int MaximumOracleOptimizedSatelliteOperationCount = 10000;
 
@@ -2518,6 +2520,28 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
         maximumSatelliteOperationCount: null);
   }
 
+  public static DataVaultProviderSaveStrategyGateEvaluation EvaluateMySqlStaged(
+      DbContext dbContext,
+      IReadOnlyList<DataVaultSaveRequest> requests) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    return EvaluateMySqlStaged(dbContext.Database.ProviderName, HasPendingTrackedChanges(dbContext), requests);
+  }
+
+  public static DataVaultProviderSaveStrategyGateEvaluation EvaluateMySqlStaged(
+      string? providerName,
+      bool hasPendingTrackedChanges,
+      IReadOnlyList<DataVaultSaveRequest> requests) {
+    return Evaluate(
+        DataVaultKnownProviderSaveStrategy.MySqlStaged,
+        providerName,
+        hasPendingTrackedChanges,
+        requests,
+        supportedProviderNames: [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
+        minimumOperationCount: MinimumMySqlStagedBatchOperationCount,
+        maximumSatelliteOperationCount: null);
+  }
+
   public static DataVaultProviderSaveStrategyGateEvaluation EvaluateOracle(
       DbContext dbContext,
       IReadOnlyList<DataVaultSaveRequest> requests) {
@@ -2549,6 +2573,7 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
       "SqliteDataVaultSaveStrategy" => EvaluateSqlite(dbContext, requests),
       "PostgresDataVaultSaveStrategy" => EvaluatePostgres(dbContext, requests),
       "SqlServerDataVaultSaveStrategy" => EvaluateSqlServer(dbContext, requests),
+      "MySqlStagedDataVaultSaveStrategy" => EvaluateMySqlStaged(dbContext, requests),
       "MySqlDataVaultSaveStrategy" => EvaluateMySql(dbContext, requests),
       "OracleDataVaultSaveStrategy" => EvaluateOracle(dbContext, requests),
       _ => new DataVaultProviderSaveStrategyGateEvaluation(false, Array.Empty<DataVaultSaveStrategyFallbackCause>()),
@@ -2564,6 +2589,7 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
       "SqliteDataVaultSaveStrategy" => [KnownProviderNames.Sqlite],
       "PostgresDataVaultSaveStrategy" => [KnownProviderNames.Postgres],
       "SqlServerDataVaultSaveStrategy" => [KnownProviderNames.SqlServer],
+      "MySqlStagedDataVaultSaveStrategy" => [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
       "MySqlDataVaultSaveStrategy" => [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
       "OracleDataVaultSaveStrategy" => [KnownProviderNames.Oracle],
       _ => Array.Empty<string>(),
@@ -2598,6 +2624,11 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
           .Append(new DataVaultSaveStrategyGateRequirement(
               DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold,
               MinimumTotalOperationCount: MinimumMySqlOptimizedBatchOperationCount))
+          .ToArray(),
+      "MySqlStagedDataVaultSaveStrategy" => commonRequirements
+          .Append(new DataVaultSaveStrategyGateRequirement(
+              DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold,
+              MinimumTotalOperationCount: MinimumMySqlStagedBatchOperationCount))
           .ToArray(),
       "OracleDataVaultSaveStrategy" => commonRequirements
           .Concat([
@@ -2714,6 +2745,7 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
     return strategy switch {
       DataVaultKnownProviderSaveStrategy.SqlServer => DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
       DataVaultKnownProviderSaveStrategy.MySql => DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold,
+      DataVaultKnownProviderSaveStrategy.MySqlStaged => DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold,
       DataVaultKnownProviderSaveStrategy.Oracle => DataVaultSaveStrategyFallbackCauseKind.OracleMinimumOperationThreshold,
       _ => DataVaultSaveStrategyFallbackCauseKind.StrategyDeclined,
     };
@@ -2734,6 +2766,7 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
       DataVaultKnownProviderSaveStrategy.Postgres => "PostgreSQL",
       DataVaultKnownProviderSaveStrategy.SqlServer => "SQL Server",
       DataVaultKnownProviderSaveStrategy.MySql => "MySQL",
+      DataVaultKnownProviderSaveStrategy.MySqlStaged => "MySQL staged bulk",
       DataVaultKnownProviderSaveStrategy.Oracle => "Oracle",
       _ => strategy.ToString(),
     };

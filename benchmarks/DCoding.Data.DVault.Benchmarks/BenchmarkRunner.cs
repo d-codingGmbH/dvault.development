@@ -566,7 +566,7 @@ internal static class BenchmarkExecutionDetails {
       DataVaultBenchmarkHelpers.SqlServerOptimizedStrategyFamily =>
           "DVault SQL Server staged native bulk save path; transfer=SqlBulkCopy; selectedStrategy=SqlServerDataVaultSaveStrategy",
       DataVaultBenchmarkHelpers.MySqlOptimizedStrategyFamily =>
-          "DVault MySQL optimized save path; selectedStrategy=MySqlDataVaultSaveStrategy",
+          "DVault MySQL staged bulk save path; selectedStrategy=MySqlStagedDataVaultSaveStrategy",
       DataVaultBenchmarkHelpers.OracleOptimizedStrategyFamily =>
           "DVault Oracle optimized save path; selectedStrategy=OracleDataVaultSaveStrategy",
       "ef-model-build" => "ordinary EF model-building startup path",

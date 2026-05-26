@@ -23,6 +23,7 @@ public static class DVaultMySqlServiceCollectionExtensions {
         DataVaultProviderCapabilityProfiles.MySql);
     services.AddDVault();
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBehavior, MySqlDataVaultProviderBehavior>());
+    services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, MySqlStagedDataVaultSaveStrategy>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, MySqlDataVaultSaveStrategy>());
 
     return services;

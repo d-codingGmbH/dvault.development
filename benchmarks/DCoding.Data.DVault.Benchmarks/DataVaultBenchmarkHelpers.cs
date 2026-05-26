@@ -69,7 +69,7 @@ internal static class DataVaultBenchmarkHelpers {
       DataVaultBenchmarkStrategy.SqliteOptimized => "SqliteDataVaultSaveStrategy",
       DataVaultBenchmarkStrategy.PostgresOptimized => "PostgresDataVaultSaveStrategy",
       DataVaultBenchmarkStrategy.SqlServerOptimized => "SqlServerDataVaultSaveStrategy",
-      DataVaultBenchmarkStrategy.MySqlOptimized => "MySqlDataVaultSaveStrategy",
+      DataVaultBenchmarkStrategy.MySqlOptimized => "MySqlStagedDataVaultSaveStrategy",
       DataVaultBenchmarkStrategy.OracleOptimized => "OracleDataVaultSaveStrategy",
       _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Unsupported benchmark strategy."),
     };
