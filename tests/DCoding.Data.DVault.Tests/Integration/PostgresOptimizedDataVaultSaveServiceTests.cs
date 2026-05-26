@@ -1,3 +1,4 @@
+using System.Data;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ namespace DCoding.Data.DVault.Tests.Integration;
 [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.ExternalProviderIntegration)]
 [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.PostgresProvider)]
 public sealed class PostgresOptimizedDataVaultSaveServiceTests {
+  private const int MinimumPostgresStagedBulkOperationCount = 60;
   private const string PostgresProviderName = "Npgsql.EntityFrameworkCore.PostgreSQL";
   private const string PostgresStrategyRegistrationDiagnostic =
       "PostgreSQL optimized dispatch expected AddDVaultPostgres to register a compatible IDataVaultProviderSaveStrategy " +
@@ -208,7 +210,18 @@ public sealed class PostgresOptimizedDataVaultSaveServiceTests {
     await ExternalProviderBulkSaveAssertions.AssertProviderBulkSaveAsync(
         ExternalProviderLiveSchemaFixture.CreatePostgresAsync,
         services => services.AddDVaultPostgres(),
-        "PostgresDataVaultSaveStrategy");
+        "PostgresDataVaultSaveStrategy",
+        AssertPostgresStagedBulkBoundary);
+  }
+
+  [Fact]
+  public async Task AddDVaultPostgresStagedBulkStrategyRollsBackFailureAndCleansUpWhenConfigured() {
+    await ExternalProviderBulkSaveAssertions.AssertProviderBulkSaveFailureRollsBackAsync(
+        ExternalProviderLiveSchemaFixture.CreatePostgresAsync,
+        services => services.AddDVaultPostgres(),
+        "PostgresDataVaultSaveStrategy",
+        AssertPostgresStagedBulkBoundary,
+        AssertNoPostgresStagingTablesAsync);
   }
 
   private static DbContextOptions<OptimizedPostgresSaveContext> CreatePostgresOptions(string connectionString) {
@@ -236,6 +249,46 @@ public sealed class PostgresOptimizedDataVaultSaveServiceTests {
     Assert.True(
         trackedEntries.Length == 0,
         PostgresOptimizedPathDiagnostic + " Actual tracked entries: " + FormatTrackedEntries(trackedEntries));
+  }
+
+  private static void AssertPostgresStagedBulkBoundary(
+      DataVaultBulkSaveRequest request,
+      DataVaultDiagnosticsResult diagnostics) {
+    var staged = diagnostics.SaveStrategy.StagedProviderBulk;
+
+    Assert.NotNull(staged);
+    Assert.Equal(DataVaultStagedProviderBulkLifecyclePhase.NativeBulkApplication, staged!.LifecyclePhase);
+    Assert.Equal(DataVaultStagedProviderBulkProviderCaveatKind.None, staged.ProviderCaveatKind);
+    Assert.Equal(request.Requests.Count, staged.RequestCount);
+    Assert.Equal(request.Requests.Sum(current => current.HubOperations.Count), staged.HubOperationCount);
+    Assert.Equal(request.Requests.Sum(current => current.LinkOperations.Count), staged.LinkOperationCount);
+    Assert.Equal(request.Requests.Sum(current => current.SatelliteOperations.Count), staged.SatelliteOperationCount);
+    Assert.True(staged.OperationCount >= MinimumPostgresStagedBulkOperationCount);
+    Assert.Empty(staged.FallbackCauseKinds);
+  }
+
+  private static async Task AssertNoPostgresStagingTablesAsync(DbContext context) {
+    var connection = context.Database.GetDbConnection();
+    var shouldCloseConnection = connection.State != ConnectionState.Open;
+    if (shouldCloseConnection) {
+      await connection.OpenAsync().ConfigureAwait(false);
+    }
+
+    try {
+      await using var command = connection.CreateCommand();
+      command.CommandText =
+          "SELECT COUNT(*) FROM pg_catalog.pg_class c " +
+          "JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace " +
+          "WHERE n.nspname LIKE 'pg_temp_%' AND c.relname LIKE '__dvault_stage_%'";
+      var count = Convert.ToInt32(await command.ExecuteScalarAsync().ConfigureAwait(false));
+
+      Assert.Equal(0, count);
+    }
+    finally {
+      if (shouldCloseConnection) {
+        await connection.CloseAsync().ConfigureAwait(false);
+      }
+    }
   }
 
   private static string FormatTrackedEntries(IReadOnlyList<EntityEntry> trackedEntries) {

@@ -55,7 +55,9 @@ internal static class ExternalProviderBulkSaveAssertions {
   public static async Task AssertProviderBulkSaveFailureRollsBackAsync(
       Func<Task<ExternalProviderLiveSchemaFixture>> createFixtureAsync,
       Action<IServiceCollection> configureProviderServices,
-      string expectedStrategyName) {
+      string expectedStrategyName,
+      Action<DataVaultBulkSaveRequest, DataVaultDiagnosticsResult>? assertProviderBoundary = null,
+      Func<DbContext, Task>? assertAfterFailureAsync = null) {
     ArgumentNullException.ThrowIfNull(createFixtureAsync);
     ArgumentNullException.ThrowIfNull(configureProviderServices);
     ArgumentException.ThrowIfNullOrWhiteSpace(expectedStrategyName);
@@ -73,9 +75,13 @@ internal static class ExternalProviderBulkSaveAssertions {
     var diagnosticResult = diagnostics.Analyze(context, request);
 
     AssertProviderStrategySelected(diagnosticResult, expectedStrategyName);
+    assertProviderBoundary?.Invoke(request, diagnosticResult);
 
     await Assert.ThrowsAnyAsync<Exception>(() => saveService.SaveAsync(context, request)).ConfigureAwait(false);
     Assert.Empty(context.ChangeTracker.Entries());
+    if (assertAfterFailureAsync is not null) {
+      await assertAfterFailureAsync(context).ConfigureAwait(false);
+    }
 
     await using var verificationContext = fixture.CreateContext();
     Assert.Equal(
@@ -201,7 +207,7 @@ internal static class ExternalProviderBulkSaveAssertions {
     var metadataModel = LiveSchemaReaderContractFixture.CreateCanonicalMetadataModel();
     var customer = metadataModel.Hubs.Single(hub => hub.Name == LiveSchemaReaderContractFixture.CustomerHubName);
     var contact = metadataModel.Satellites.Single(satellite => satellite.Name == LiveSchemaReaderContractFixture.ContactSatelliteName);
-    var customerIds = Enumerable.Range(0, 50)
+    var customerIds = Enumerable.Range(0, 60)
         .Select(index => "C-ROLLBACK-" + index.ToString("000", CultureInfo.InvariantCulture))
         .ToArray();
     var customerHashKeys = customerIds

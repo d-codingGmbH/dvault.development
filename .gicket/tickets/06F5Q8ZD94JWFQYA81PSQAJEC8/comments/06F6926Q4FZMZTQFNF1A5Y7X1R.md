@@ -1,0 +1,6 @@
+﻿[gicket-bot] runtime-orchestration template
+
+- template: `handover-dev`
+- transaction-point: `TP2`
+- ticket-id: `06F5Q8ZD94JWFQYA81PSQAJEC8`
+- target-role: `dev`

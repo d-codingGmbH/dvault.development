@@ -1,6 +1,8 @@
 using System.Data;
 using System.Data.Common;
 using System.Globalization;
+using System.IO;
+using System.Reflection;
 using System.Text;
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
@@ -9,9 +11,13 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace DCoding.Data.DVault;
 
-internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStrategy {
+internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStrategy, IDataVaultProviderStagedBulkSaveDiagnostics {
   private const int PostgresMaxCommandParameterCount = 30000;
   private const int PostgresUnnestInsertMinimumRowCount = 32;
+  internal const int MinimumStagedBulkOperationCount = 60;
+  private const string OrdinalColumnName = "__dvault_ordinal";
+  private const string RowNumberColumnName = "__dvault_row_number";
+  private const string StagingTablePrefix = "__dvault_stage_";
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
 
   internal const string NpgsqlProviderName = "Npgsql.EntityFrameworkCore.PostgreSQL";
@@ -29,6 +35,7 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
       DataVaultProviderSaveStrategyContext context,
       CancellationToken cancellationToken = default) {
     ArgumentNullException.ThrowIfNull(context);
+    cancellationToken.ThrowIfCancellationRequested();
 
     var uniquePlans = CreateUniqueRowSavePlans(context);
     var satellitePlans = CreateSatelliteSavePlans(context);
@@ -41,13 +48,80 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
         context.DbContext,
         uniquePlans,
         satellitePlans,
+        IsStagedBatchShape(context.Requests),
         cancellationToken).ConfigureAwait(false);
+  }
+
+  public DataVaultStagedProviderBulkDiagnostics? EvaluateStagedProviderBulkSave(
+      DbContext dbContext,
+      IReadOnlyList<DataVaultSaveRequest> requests) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(requests);
+
+    if (!IsSupportedProviderName(dbContext.Database.ProviderName)) {
+      return null;
+    }
+
+    var counts = CountSaveOperations(requests);
+    if (counts.OperationCount == 0) {
+      return new DataVaultStagedProviderBulkDiagnostics(
+          DataVaultStagedProviderBulkLifecyclePhase.NotEvaluated,
+          DataVaultStagedProviderBulkProviderCaveatKind.None,
+          counts.RequestCount,
+          counts.HubOperationCount,
+          counts.LinkOperationCount,
+          counts.SatelliteOperationCount,
+          []);
+    }
+
+    if (DataVaultProviderSaveStrategyGateEvaluator.HasPendingTrackedChanges(dbContext)) {
+      return new DataVaultStagedProviderBulkDiagnostics(
+          DataVaultStagedProviderBulkLifecyclePhase.Declined,
+          DataVaultStagedProviderBulkProviderCaveatKind.DirtyContext,
+          counts.RequestCount,
+          counts.HubOperationCount,
+          counts.LinkOperationCount,
+          counts.SatelliteOperationCount,
+          [DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkDirtyDbContext]);
+    }
+
+    if (ContainsMultiActiveSatelliteOperations(requests)) {
+      return new DataVaultStagedProviderBulkDiagnostics(
+          DataVaultStagedProviderBulkLifecyclePhase.Declined,
+          DataVaultStagedProviderBulkProviderCaveatKind.UnsupportedShape,
+          counts.RequestCount,
+          counts.HubOperationCount,
+          counts.LinkOperationCount,
+          counts.SatelliteOperationCount,
+          [DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape]);
+    }
+
+    if (!IsStagedBatchShape(requests)) {
+      return new DataVaultStagedProviderBulkDiagnostics(
+          DataVaultStagedProviderBulkLifecyclePhase.Declined,
+          DataVaultStagedProviderBulkProviderCaveatKind.UnsupportedShape,
+          counts.RequestCount,
+          counts.HubOperationCount,
+          counts.LinkOperationCount,
+          counts.SatelliteOperationCount,
+          [DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape]);
+    }
+
+    return new DataVaultStagedProviderBulkDiagnostics(
+        DataVaultStagedProviderBulkLifecyclePhase.NativeBulkApplication,
+        DataVaultStagedProviderBulkProviderCaveatKind.None,
+        counts.RequestCount,
+        counts.HubOperationCount,
+        counts.LinkOperationCount,
+        counts.SatelliteOperationCount,
+        []);
   }
 
   private static async Task<DataVaultSaveResult> ExecutePostgresSaveAsync(
       DbContext dbContext,
       IReadOnlyList<UniqueRowSavePlan> uniquePlans,
       IReadOnlyList<SatelliteSavePlan> satellitePlans,
+      bool useStagedBulk,
       CancellationToken cancellationToken) {
     var connection = dbContext.Database.GetDbConnection();
     var shouldCloseConnection = connection.State != ConnectionState.Open;
@@ -73,19 +147,45 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
           .Select(plan => plan.SavedRecord)
           .Concat(filteredSatellitePlans.Results.Select(result => result.SavedRecord))
           .ToArray();
-      var rowsWritten = await ExecutePostgresInsertRowsAsync(
-          connection,
-          transaction,
-          dbContext,
-          uniquePlans.Select(plan => new PostgresInsertRow(plan.Table.TableName, plan.Row, plan.Table.HashKeyColumnName)),
-          cancellationToken).ConfigureAwait(false);
+      int rowsWritten;
+      if (useStagedBulk && SupportsPostgresTextCopy(connection)) {
+        rowsWritten = await ExecutePostgresStagedInsertRowsAsync(
+            connection,
+            transaction,
+            dbContext,
+            uniquePlans.Select(plan => new PostgresStagedInsertRow(
+                plan.Ordinal,
+                plan.Table.TableName,
+                plan.Row,
+                plan.Table.HashKeyColumnName)),
+            cancellationToken).ConfigureAwait(false);
 
-      rowsWritten += await ExecutePostgresInsertRowsAsync(
-          connection,
-          transaction,
-          dbContext,
-          filteredSatellitePlans.RowsToWrite.Select(plan => new PostgresInsertRow(plan.Table.TableName, plan.Row, ConflictTargetColumnName: null)),
-          cancellationToken).ConfigureAwait(false);
+        rowsWritten += await ExecutePostgresStagedInsertRowsAsync(
+            connection,
+            transaction,
+            dbContext,
+            filteredSatellitePlans.RowsToWrite.Select(plan => new PostgresStagedInsertRow(
+                plan.Ordinal,
+                plan.Table.TableName,
+                plan.Row,
+                ConflictTargetColumnName: null)),
+            cancellationToken).ConfigureAwait(false);
+      }
+      else {
+        rowsWritten = await ExecutePostgresInsertRowsAsync(
+            connection,
+            transaction,
+            dbContext,
+            uniquePlans.Select(plan => new PostgresInsertRow(plan.Table.TableName, plan.Row, plan.Table.HashKeyColumnName)),
+            cancellationToken).ConfigureAwait(false);
+
+        rowsWritten += await ExecutePostgresInsertRowsAsync(
+            connection,
+            transaction,
+            dbContext,
+            filteredSatellitePlans.RowsToWrite.Select(plan => new PostgresInsertRow(plan.Table.TableName, plan.Row, ConflictTargetColumnName: null)),
+            cancellationToken).ConfigureAwait(false);
+      }
 
       if (localTransaction is not null) {
         await localTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
@@ -95,7 +195,7 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     }
     catch {
       if (localTransaction is not null) {
-        await localTransaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+        await localTransaction.RollbackAsync(CancellationToken.None).ConfigureAwait(false);
       }
 
       throw;
@@ -129,7 +229,19 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
           GetLinkProjection(linkProjections, operation.Metadata))));
     }
 
-    return plans.ToArray();
+    return plans
+        .Select((plan, index) => plan with { Ordinal = index })
+        .ToArray();
+  }
+
+  internal static bool IsSupportedProviderName(string? providerName) {
+    return string.Equals(providerName, NpgsqlProviderName, StringComparison.Ordinal);
+  }
+
+  internal static bool IsStagedBatchShape(IReadOnlyList<DataVaultSaveRequest> requests) {
+    ArgumentNullException.ThrowIfNull(requests);
+
+    return CountSaveOperations(requests).OperationCount >= MinimumStagedBulkOperationCount;
   }
 
   private static bool ContainsMultiActiveSatelliteOperations(IReadOnlyList<DataVaultSaveRequest> requests) {
@@ -166,7 +278,8 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
         new UniqueTableProjection(projection.TableName, projection.HashKeyColumnName),
         hashKey,
         row,
-        new DataVaultSavedRecord(DataVaultTableKind.Hub, hub.Name, projection.TableName, hashKey));
+        new DataVaultSavedRecord(DataVaultTableKind.Hub, hub.Name, projection.TableName, hashKey),
+        Ordinal: -1);
   }
 
   private static UniqueRowSavePlan CreateLinkSavePlan(
@@ -202,7 +315,8 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
         new UniqueTableProjection(projection.TableName, projection.LinkHashKeyColumnName),
         linkHashKey,
         row,
-        new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, projection.TableName, linkHashKey));
+        new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, projection.TableName, linkHashKey),
+        Ordinal: -1);
   }
 
   private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(DataVaultProviderSaveStrategyContext context) {
@@ -482,6 +596,79 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     return rowsWritten;
   }
 
+  private static async Task<int> ExecutePostgresStagedInsertRowsAsync(
+      DbConnection connection,
+      DbTransaction transaction,
+      DbContext dbContext,
+      IEnumerable<PostgresStagedInsertRow> rows,
+      CancellationToken cancellationToken) {
+    var rowArray = rows.ToArray();
+    if (rowArray.Length == 0) {
+      return 0;
+    }
+
+    var rowsWritten = 0;
+
+    foreach (var group in rowArray.GroupBy(row => new PostgresInsertRowShape(
+        row.TableName,
+        CreateColumnSignature(row.Values.Keys),
+        row.ConflictTargetColumnName))) {
+      var columns = group.First().Values.Keys.ToArray();
+      rowsWritten += await ExecutePostgresStagedInsertGroupAsync(
+          connection,
+          transaction,
+          dbContext,
+          group.Key.TableName,
+          columns,
+          group.Select(row => row).ToArray(),
+          group.Key.ConflictTargetColumnName,
+          cancellationToken).ConfigureAwait(false);
+    }
+
+    return rowsWritten;
+  }
+
+  private static async Task<int> ExecutePostgresStagedInsertGroupAsync(
+      DbConnection connection,
+      DbTransaction transaction,
+      DbContext dbContext,
+      string tableName,
+      IReadOnlyList<string> columns,
+      IReadOnlyList<PostgresStagedInsertRow> rows,
+      string? conflictTargetColumnName,
+      CancellationToken cancellationToken) {
+    var stagingTableName = CreatePostgresStagingTableName();
+    var targetTableSql = QuotePostgresTableIdentifier(dbContext, tableName);
+
+    try {
+      await ExecutePostgresNonQueryAsync(
+          connection,
+          transaction,
+          CreatePostgresCreateStagingTableCommandText(stagingTableName, targetTableSql),
+          cancellationToken).ConfigureAwait(false);
+
+      await WriteStagingRowsWithPostgresCopyAsync(
+          connection,
+          stagingTableName,
+          new[] { OrdinalColumnName }.Concat(columns).ToArray(),
+          CreatePostgresStagingRows(rows, columns),
+          cancellationToken).ConfigureAwait(false);
+
+      var commandText = conflictTargetColumnName is null
+          ? CreatePostgresStagedInsertCommandText(targetTableSql, stagingTableName, columns)
+          : CreatePostgresStagedUniqueInsertCommandText(targetTableSql, stagingTableName, columns, conflictTargetColumnName);
+
+      return await ExecutePostgresNonQueryAsync(
+          connection,
+          transaction,
+          commandText,
+          cancellationToken).ConfigureAwait(false);
+    }
+    finally {
+      await DropPostgresStagingTableAsync(connection, transaction, stagingTableName).ConfigureAwait(false);
+    }
+  }
+
   private static async Task<int> ExecutePostgresInsertChunkAsync(
       DbConnection connection,
       DbTransaction transaction,
@@ -641,6 +828,127 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     return builder.ToString();
   }
 
+  internal static string CreatePostgresCreateStagingTableCommandText(
+      string stagingTableName,
+      string targetTableSql) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(stagingTableName);
+    ArgumentException.ThrowIfNullOrWhiteSpace(targetTableSql);
+
+    return "CREATE TEMPORARY TABLE " +
+        QuotePostgresIdentifier(stagingTableName) +
+        " (" +
+        QuotePostgresIdentifier(OrdinalColumnName) +
+        " integer NOT NULL, LIKE " +
+        targetTableSql +
+        " INCLUDING DEFAULTS) ON COMMIT DROP";
+  }
+
+  internal static string CreatePostgresCopyCommandText(
+      string stagingTableName,
+      IReadOnlyList<string> columns) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(stagingTableName);
+    ArgumentNullException.ThrowIfNull(columns);
+    if (columns.Count == 0) {
+      throw new ArgumentException("A PostgreSQL COPY command must project at least one staging column.", nameof(columns));
+    }
+
+    var builder = new StringBuilder();
+    builder.Append("COPY ")
+        .Append(QuotePostgresIdentifier(stagingTableName))
+        .Append(" (");
+    AppendQuotedColumnList(builder, columns);
+    builder.Append(") FROM STDIN (FORMAT CSV, NULL '\\N')");
+
+    return builder.ToString();
+  }
+
+  internal static string CreatePostgresStagedUniqueInsertCommandText(
+      string targetTableSql,
+      string stagingTableName,
+      IReadOnlyList<string> columns,
+      string conflictTargetColumnName) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(targetTableSql);
+    ArgumentException.ThrowIfNullOrWhiteSpace(stagingTableName);
+    ArgumentNullException.ThrowIfNull(columns);
+    ArgumentException.ThrowIfNullOrWhiteSpace(conflictTargetColumnName);
+    if (columns.Count == 0) {
+      throw new ArgumentException("A PostgreSQL staged unique insert must project at least one target column.", nameof(columns));
+    }
+
+    var builder = new StringBuilder();
+    builder.Append("WITH ")
+        .Append(QuotePostgresIdentifier("deduplicated"))
+        .Append(" AS (SELECT ");
+    AppendQualifiedQuotedColumnList(builder, "stage", columns);
+    builder.Append(", ROW_NUMBER() OVER (PARTITION BY ")
+        .Append(QuotePostgresIdentifier("stage"))
+        .Append('.')
+        .Append(QuotePostgresIdentifier(conflictTargetColumnName))
+        .Append(" ORDER BY ")
+        .Append(QuotePostgresIdentifier("stage"))
+        .Append('.')
+        .Append(QuotePostgresIdentifier(OrdinalColumnName))
+        .Append(") AS ")
+        .Append(QuotePostgresIdentifier(RowNumberColumnName))
+        .Append(" FROM ")
+        .Append(QuotePostgresIdentifier(stagingTableName))
+        .Append(" AS ")
+        .Append(QuotePostgresIdentifier("stage"))
+        .Append(") INSERT INTO ")
+        .Append(targetTableSql)
+        .Append(" (");
+    AppendQuotedColumnList(builder, columns);
+    builder.Append(") SELECT ");
+    AppendQualifiedQuotedColumnList(builder, "deduplicated", columns);
+    builder.Append(" FROM ")
+        .Append(QuotePostgresIdentifier("deduplicated"))
+        .Append(" WHERE ")
+        .Append(QuotePostgresIdentifier("deduplicated"))
+        .Append('.')
+        .Append(QuotePostgresIdentifier(RowNumberColumnName))
+        .Append(" = 1 ON CONFLICT (")
+        .Append(QuotePostgresIdentifier(conflictTargetColumnName))
+        .Append(") DO NOTHING");
+
+    return builder.ToString();
+  }
+
+  internal static string CreatePostgresStagedInsertCommandText(
+      string targetTableSql,
+      string stagingTableName,
+      IReadOnlyList<string> columns) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(targetTableSql);
+    ArgumentException.ThrowIfNullOrWhiteSpace(stagingTableName);
+    ArgumentNullException.ThrowIfNull(columns);
+    if (columns.Count == 0) {
+      throw new ArgumentException("A PostgreSQL staged insert must project at least one target column.", nameof(columns));
+    }
+
+    var builder = new StringBuilder();
+    builder.Append("INSERT INTO ")
+        .Append(targetTableSql)
+        .Append(" (");
+    AppendQuotedColumnList(builder, columns);
+    builder.Append(") SELECT ");
+    AppendQualifiedQuotedColumnList(builder, "stage", columns);
+    builder.Append(" FROM ")
+        .Append(QuotePostgresIdentifier(stagingTableName))
+        .Append(" AS ")
+        .Append(QuotePostgresIdentifier("stage"))
+        .Append(" ORDER BY ")
+        .Append(QuotePostgresIdentifier("stage"))
+        .Append('.')
+        .Append(QuotePostgresIdentifier(OrdinalColumnName));
+
+    return builder.ToString();
+  }
+
+  internal static string CreatePostgresDropStagingTableCommandText(string stagingTableName) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(stagingTableName);
+
+    return "DROP TABLE IF EXISTS " + QuotePostgresIdentifier(stagingTableName);
+  }
+
   private static void AppendQuotedColumnList(StringBuilder builder, IReadOnlyList<string> columns) {
     for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++) {
       if (columnIndex > 0) {
@@ -648,6 +956,21 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
       }
 
       builder.Append(QuotePostgresIdentifier(columns[columnIndex]));
+    }
+  }
+
+  private static void AppendQualifiedQuotedColumnList(
+      StringBuilder builder,
+      string tableAlias,
+      IReadOnlyList<string> columns) {
+    for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++) {
+      if (columnIndex > 0) {
+        builder.Append(", ");
+      }
+
+      builder.Append(QuotePostgresIdentifier(tableAlias))
+          .Append('.')
+          .Append(QuotePostgresIdentifier(columns[columnIndex]));
     }
   }
 
@@ -702,6 +1025,143 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     }
 
     return parameterNames;
+  }
+
+  private static async Task<int> ExecutePostgresNonQueryAsync(
+      DbConnection connection,
+      DbTransaction transaction,
+      string commandText,
+      CancellationToken cancellationToken) {
+    await using var command = connection.CreateCommand();
+    command.Transaction = transaction;
+    command.CommandText = commandText;
+
+    return await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+  }
+
+  private static async Task DropPostgresStagingTableAsync(
+      DbConnection connection,
+      DbTransaction transaction,
+      string stagingTableName) {
+    if (connection.State != ConnectionState.Open) {
+      return;
+    }
+
+    try {
+      await using var command = connection.CreateCommand();
+      command.Transaction = transaction;
+      command.CommandText = CreatePostgresDropStagingTableCommandText(stagingTableName);
+
+      await command.ExecuteNonQueryAsync(CancellationToken.None).ConfigureAwait(false);
+    }
+    catch (DbException) {
+    }
+    catch (InvalidOperationException) {
+    }
+  }
+
+  private static async Task WriteStagingRowsWithPostgresCopyAsync(
+      DbConnection connection,
+      string stagingTableName,
+      IReadOnlyList<string> columns,
+      IReadOnlyList<Dictionary<string, object>> rows,
+      CancellationToken cancellationToken) {
+    cancellationToken.ThrowIfCancellationRequested();
+
+    await using var writer = BeginPostgresTextImport(
+        connection,
+        CreatePostgresCopyCommandText(stagingTableName, columns));
+
+    foreach (var row in rows) {
+      cancellationToken.ThrowIfCancellationRequested();
+      await writer.WriteLineAsync(CreatePostgresCopyCsvRow(columns, row).AsMemory(), cancellationToken).ConfigureAwait(false);
+    }
+  }
+
+  private static TextWriter BeginPostgresTextImport(
+      DbConnection connection,
+      string copyCommandText) {
+    var method = connection.GetType().GetMethod(
+        "BeginTextImport",
+        BindingFlags.Instance | BindingFlags.Public,
+        binder: null,
+        types: [typeof(string)],
+        modifiers: null) ??
+        throw new InvalidOperationException(
+            "PostgreSQL staged Data Vault save requires an Npgsql connection that exposes BeginTextImport.");
+    var writer = method.Invoke(connection, [copyCommandText]) as TextWriter;
+
+    return writer ??
+        throw new InvalidOperationException("PostgreSQL staged Data Vault save could not start text COPY.");
+  }
+
+  private static bool SupportsPostgresTextCopy(DbConnection connection) {
+    return connection.GetType().GetMethod(
+        "BeginTextImport",
+        BindingFlags.Instance | BindingFlags.Public,
+        binder: null,
+        types: [typeof(string)],
+        modifiers: null) is not null;
+  }
+
+  private static IReadOnlyList<Dictionary<string, object>> CreatePostgresStagingRows(
+      IReadOnlyList<PostgresStagedInsertRow> rows,
+      IReadOnlyList<string> columns) {
+    return rows
+        .Select(row => {
+          var values = new Dictionary<string, object>(StringComparer.Ordinal) {
+            [OrdinalColumnName] = row.Ordinal,
+          };
+
+          foreach (var column in columns) {
+            values[column] = row.Values[column];
+          }
+
+          return values;
+        })
+        .ToArray();
+  }
+
+  private static string CreatePostgresCopyCsvRow(
+      IReadOnlyList<string> columns,
+      IReadOnlyDictionary<string, object> row) {
+    var builder = new StringBuilder();
+
+    for (var columnIndex = 0; columnIndex < columns.Count; columnIndex++) {
+      if (columnIndex > 0) {
+        builder.Append(',');
+      }
+
+      AppendPostgresCopyCsvValue(builder, row[columns[columnIndex]]);
+    }
+
+    return builder.ToString();
+  }
+
+  private static void AppendPostgresCopyCsvValue(StringBuilder builder, object? value) {
+    if (value is null or DBNull) {
+      builder.Append(@"\N");
+      return;
+    }
+
+    var formattedValue = value switch {
+      DateTimeOffset dateTimeOffset => dateTimeOffset.ToString("O", CultureInfo.InvariantCulture),
+      DateTime dateTime => dateTime.ToString("O", CultureInfo.InvariantCulture),
+      IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
+      _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty,
+    };
+
+    builder.Append('"');
+    foreach (var character in formattedValue) {
+      if (character == '"') {
+        builder.Append("\"\"");
+      }
+      else {
+        builder.Append(character);
+      }
+    }
+
+    builder.Append('"');
   }
 
   private static string QuotePostgresTableIdentifier(DbContext dbContext, string producedTableName) {
@@ -785,12 +1245,35 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     return "@p" + index.ToString(CultureInfo.InvariantCulture);
   }
 
+  private static string CreatePostgresStagingTableName() {
+    return StagingTablePrefix + Guid.NewGuid().ToString("N");
+  }
+
   private static string QuotePostgresIdentifier(string identifier) {
     return "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
   }
 
   private static string CreateColumnSignature(IEnumerable<string> columns) {
     return string.Join('\u001f', columns);
+  }
+
+  private static PostgresSaveOperationCounts CountSaveOperations(IReadOnlyList<DataVaultSaveRequest> requests) {
+    ArgumentNullException.ThrowIfNull(requests);
+
+    var hubOperationCount = 0;
+    var linkOperationCount = 0;
+    var satelliteOperationCount = 0;
+    foreach (var request in requests) {
+      hubOperationCount += request.HubOperations.Count;
+      linkOperationCount += request.LinkOperations.Count;
+      satelliteOperationCount += request.SatelliteOperations.Count;
+    }
+
+    return new PostgresSaveOperationCounts(
+        requests.Count,
+        hubOperationCount,
+        linkOperationCount,
+        satelliteOperationCount);
   }
 
   private static string ComputeHash(
@@ -843,7 +1326,8 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
       UniqueTableProjection Table,
       string HashKey,
       Dictionary<string, object> Row,
-      DataVaultSavedRecord SavedRecord);
+      DataVaultSavedRecord SavedRecord,
+      int Ordinal);
 
   private sealed record SatelliteTableProjection(
       string TableName,
@@ -871,8 +1355,22 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
       Dictionary<string, object> Values,
       string? ConflictTargetColumnName);
 
+  private sealed record PostgresStagedInsertRow(
+      int Ordinal,
+      string TableName,
+      Dictionary<string, object> Values,
+      string? ConflictTargetColumnName);
+
   private sealed record PostgresInsertRowShape(
       string TableName,
       string ColumnSignature,
       string? ConflictTargetColumnName);
+
+  private readonly record struct PostgresSaveOperationCounts(
+      int RequestCount,
+      int HubOperationCount,
+      int LinkOperationCount,
+      int SatelliteOperationCount) {
+    public int OperationCount => HubOperationCount + LinkOperationCount + SatelliteOperationCount;
+  }
 }

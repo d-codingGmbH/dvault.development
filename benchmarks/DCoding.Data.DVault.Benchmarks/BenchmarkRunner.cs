@@ -551,7 +551,8 @@ internal static class BenchmarkExecutionDetails {
         "; hubOperations=" + hubOperationCount.ToString(CultureInfo.InvariantCulture) +
         "; linkOperations=" + linkOperationCount.ToString(CultureInfo.InvariantCulture) +
         "; satelliteOperations=" + satelliteOperationCount.ToString(CultureInfo.InvariantCulture) +
-        "; nativeBulkGate=clean-context,no-multi-active-satellites,provider-eligible-bulk-request";
+        "; nativeBulkGate=clean-context,no-multi-active-satellites,provider-eligible-bulk-request" +
+        FormatStagedProviderBulk(diagnostics.SaveStrategy.StagedProviderBulk);
   }
 
   private static string GetExecutionPath(IScenarioBenchmark benchmark) {
@@ -562,7 +563,8 @@ internal static class BenchmarkExecutionDetails {
       DataVaultBenchmarkHelpers.SqliteOptimizedStrategyFamily =>
           "DVault SQLite optimized path; selectedStrategy=" + GetSqliteStrategyName(benchmark.ScenarioName),
       DataVaultBenchmarkHelpers.PostgresOptimizedStrategyFamily =>
-          "DVault PostgreSQL optimized save path; selectedStrategy=PostgresDataVaultSaveStrategy",
+          "DVault PostgreSQL staged bulk save path; transfer=COPY; selectedStrategy=PostgresDataVaultSaveStrategy; " +
+          "smallBatchBoundary=direct-or-unnest",
       DataVaultBenchmarkHelpers.SqlServerOptimizedStrategyFamily =>
           "DVault SQL Server staged native bulk save path; transfer=SqlBulkCopy; selectedStrategy=SqlServerDataVaultSaveStrategy",
       DataVaultBenchmarkHelpers.MySqlOptimizedStrategyFamily =>
@@ -592,6 +594,16 @@ internal static class BenchmarkExecutionDetails {
     }
 
     return string.Join("|", fallbackCauses.Select(cause => cause.Kind.ToString()));
+  }
+
+  private static string FormatStagedProviderBulk(DataVaultStagedProviderBulkDiagnostics? stagedProviderBulk) {
+    if (stagedProviderBulk is null) {
+      return string.Empty;
+    }
+
+    return "; stagedProviderBulkPhase=" + stagedProviderBulk.LifecyclePhase +
+        "; stagedProviderBulkCaveat=" + stagedProviderBulk.ProviderCaveatKind +
+        "; stagedProviderBulkOperations=" + stagedProviderBulk.OperationCount.ToString(CultureInfo.InvariantCulture);
   }
 }
 

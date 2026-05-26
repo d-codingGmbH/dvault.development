@@ -1,24 +1,23 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q8ZD94JWFQYA81PSQAJEC8",
   "ticket-type": "story",
   "title": "Story: Implement PostgreSQL staged bulk save strategy",
-  "revision": "06F5Q98565Q0ZXYXZQMZQ6SS1M",
-  "status": "todo",
+  "revision": "06F6A1S8SB90ZKNM7FDSNH9RY4",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
     "area/ef-core",
     "area/performance",
     "area/persistence",
     "area/provider-support",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WH0CG92WHM5BMSHXQ89R",
   "releaseId": "06F5Q8WAWQMZ22WMK10XYDEFQG",
   "created-at": "2026-05-24T20:18:50.4596469Z",
-  "updated-at": "2026-05-24T20:20:01.9695411Z"
+  "updated-at": "2026-05-26T16:03:48.5546994Z"
 }

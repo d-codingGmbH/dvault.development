@@ -232,7 +232,7 @@ var chunkedRequest = new DataVaultChunkedSaveRequest(
 await saveService.SaveAsync(context, chunkedRequest, cancellationToken);
 ```
 
-Keep `DataVaultBulkSaveRequest` when the loader already has the full ordered request set materialized. Switch to `DataVaultChunkedSaveRequest` only when the caller needs bounded chunking without changing explicit timestamps, record sources, request ordering, or caller-owned transaction behavior. Provider-specific save strategies remain optimizations around the same public save contract; v0.19.0 does not claim provider-native chunk execution, staged provider bulk ingestion, background ingestion, or scheduler behavior.
+Keep `DataVaultBulkSaveRequest` when the loader already has the full ordered request set materialized. Switch to `DataVaultChunkedSaveRequest` only when the caller needs bounded chunking without changing explicit timestamps, record sources, request ordering, or caller-owned transaction behavior. Provider-specific save strategies remain optimizations around the same public save contract; PostgreSQL and MySQL can stage larger eligible materialized bulk batches behind that boundary, while v0.19.0 does not claim provider-native chunk execution, background ingestion, or scheduler behavior.
 
 ### Observe explicit save and read attempts
 
@@ -736,9 +736,9 @@ Telemetry remains explicit opt-in application wiring. DVault does not configure 
 
 Support bundles are consumer-invoked diagnostic artifacts. DVault does not upload, attach, archive, retain, or route support-bundle JSON, and it does not open a live database connection unless the consumer explicitly invokes the live-schema option in an environment they manage.
 
-Chunked explicit saves are provider-neutral public behavior in v0.19.0. Provider-native chunk execution, staged provider bulk ingestion, file ingestion, background workers, schedulers, CDC ingestion, and implicit `SaveChanges` streaming remain outside the public claim set.
+Chunked explicit saves are provider-neutral public behavior in v0.19.0. Provider-native chunk execution, file ingestion, background workers, schedulers, CDC ingestion, and implicit `SaveChanges` streaming remain outside the public claim set.
 
-Provider-native bulk dispatch is an optimization, not a separate persistence contract. Dirty tracked contexts, multi-active satellite batches, provider-name mismatches, below-threshold SQL Server, MySQL, or Oracle batches, SQL Server batches with more than `500` satellite operations, and Oracle batches with more than `10000` satellite operations fall back to the provider-neutral writer. DVault does not provision Docker containers, databases, users, schemas, credentials, or checked-in benchmark result snapshots for optional external-provider proof.
+Provider-native bulk dispatch is an optimization, not a separate persistence contract. Dirty tracked contexts, multi-active satellite batches, provider-name mismatches, below-threshold PostgreSQL staged-bulk, SQL Server, MySQL, or Oracle batches, SQL Server batches with more than `500` satellite operations, and Oracle batches with more than `10000` satellite operations fall back to a smaller provider-native path or the provider-neutral writer as appropriate. PostgreSQL uses the existing set-based direct or UNNEST path below the staged threshold and uses transient staging plus PostgreSQL COPY for larger eligible ordered batches. DVault does not provision Docker containers, databases, users, schemas, credentials, or checked-in benchmark result snapshots for optional external-provider proof.
 
 Oracle provider-native bulk dispatch currently retains the direct Oracle path for eligible ordered batches. That path uses Oracle array binding when available and bounded direct insert batching otherwise. The staged Oracle branch is not selected without evidence that it beats the direct Oracle path and preserves deterministic stage cleanup within the caller-owned transaction boundary.
 
@@ -816,7 +816,7 @@ To select only the live Postgres integration category, use the same configured c
 DVAULT_TEST_POSTGRES_CONNECTION_STRING='Host=localhost;Port=5432;Database=dvault_tests;Username=dvault;Password=local-secret' dotnet test DVault.slnx --nologo --filter "Category=ProviderIntegration.ExternalOptIn&Provider=Postgres" -p:DVAULT_TEST_POSTGRES_CONNECTION_STRING=Configured
 ```
 
-DVault does not provision Docker containers or databases for these tests. The configured database must already exist, and the configured user must be allowed to create and drop temporary schemas. The live Postgres lane includes schema drift checks and an ordered bulk hub, link, and satellite save through the provider strategy. Keep credentials in local environment variables or another untracked secret store, not in repository files.
+DVault does not provision Docker containers or databases for these tests. The configured database must already exist, and the configured user must be allowed to create and drop temporary schemas and temporary staging tables. The live Postgres lane includes schema drift checks, representative single saves, and an eligible ordered bulk hub, link, and satellite save through the staged COPY-backed provider strategy. Keep credentials in local environment variables or another untracked secret store, not in repository files.
 
 ## Optional Local SQL Server Integration Tests
 

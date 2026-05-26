@@ -590,7 +590,7 @@
       "meanAllocatedBytes": null,
       "minAllocatedBytes": null,
       "maxAllocatedBytes": null,
-      "executionDetail": "scenario=provider-native-bulk-ingestion; provider=PostgreSQL external provider; baseline=dvault-adddvaultpostgres-optimized; strategyFamily=postgres-optimized-dvault; executionPath=DVault PostgreSQL optimized save path; selectedStrategy=PostgresDataVaultSaveStrategy",
+      "executionDetail": "scenario=provider-native-bulk-ingestion; provider=PostgreSQL external provider; baseline=dvault-adddvaultpostgres-optimized; strategyFamily=postgres-optimized-dvault; executionPath=DVault PostgreSQL staged bulk save path; transfer=COPY; selectedStrategy=PostgresDataVaultSaveStrategy; smallBatchBoundary=direct-or-unnest",
       "persistedOutcome": "not executed"
     },
     {

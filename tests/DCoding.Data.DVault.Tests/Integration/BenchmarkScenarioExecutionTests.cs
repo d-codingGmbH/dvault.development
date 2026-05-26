@@ -443,6 +443,16 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.Equal(
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable),
           sqlServerStagedBulkResult.GetProperty("skipReason").GetString());
+
+      var postgresStagedBulkResult = Assert.Single(results.Where(result =>
+          result.GetProperty("provider").GetString() == PostgresProviderName &&
+          result.GetProperty("baselineName").GetString() == "dvault-adddvaultpostgres-optimized"));
+      var postgresExecutionDetail = postgresStagedBulkResult.GetProperty("executionDetail").GetString();
+      Assert.Contains("DVault PostgreSQL staged bulk save path", postgresExecutionDetail);
+      Assert.Contains("transfer=COPY", postgresExecutionDetail);
+      Assert.Equal(
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Postgres.ConnectionStringEnvironmentVariable),
+          postgresStagedBulkResult.GetProperty("skipReason").GetString());
     }
     finally {
       if (Directory.Exists(artifactDirectory)) {
