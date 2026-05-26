@@ -51,6 +51,12 @@ When no provider-specific strategy is registered, or when every registered strat
 
 Provider-specific save-strategy registration is separate from provider-name capability-profile selection. The core package contains built-in capability profiles for the known SQLite, PostgreSQL, SQL Server, Oracle, Pomelo MySQL, and official MySQL EF provider names. Provider packages register optimized save strategies and can still register or override provider-name mappings when a future provider needs a custom profile.
 
+### Oracle Ordered Bulk Boundary
+
+`AddDVaultOracle()` keeps Oracle bulk optimization behind the existing provider save-strategy dispatch. The Oracle strategy accepts only clean `Oracle.EntityFrameworkCore` contexts whose ordered batch has no multi-active satellite operations, at least `50` total hub/link/satellite operations, and no more than `10000` satellite operations. Batches outside that gate continue through the provider-neutral writer.
+
+The retained Oracle implementation is direct Oracle batching: array binding when the provider command supports `ArrayBindCount`, and bounded direct insert batching otherwise. The staged Oracle path remains a reserved internal decision branch, not a selected execution path, until benchmark evidence shows a net win over direct Oracle batching and deterministic cleanup under the caller-owned transaction boundary.
+
 The current diagnostics gate for native provider bulk execution is deliberately explicit. A provider strategy declines when the DbContext has pending tracked changes, the batch contains multi-active satellite operations, or the EF Core provider name does not match the strategy. SQL Server native dispatch also requires at least `50` total operations and at most `500` satellite operations. MySQL native dispatch requires at least `50` total operations and accepts both `Pomelo.EntityFrameworkCore.MySql` and `MySql.EntityFrameworkCore`. Oracle native dispatch requires at least `50` total operations and accepts at most `10000` satellite operations. Declined batches continue through the provider-neutral writer.
 
 ## Current Provider Optimization Capability Matrix

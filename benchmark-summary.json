@@ -704,7 +704,7 @@
       "meanAllocatedBytes": null,
       "minAllocatedBytes": null,
       "maxAllocatedBytes": null,
-      "executionDetail": "scenario=provider-native-bulk-ingestion; provider=Oracle external provider; baseline=dvault-adddvaultoracle-optimized; strategyFamily=oracle-optimized-dvault; executionPath=DVault Oracle optimized save path; selectedStrategy=OracleDataVaultSaveStrategy",
+      "executionDetail": "scenario=provider-native-bulk-ingestion; provider=Oracle external provider; baseline=dvault-adddvaultoracle-optimized; strategyFamily=oracle-optimized-dvault; executionPath=DVault Oracle direct optimized save path; selectedStrategy=OracleDataVaultSaveStrategy; oracleBulkBoundary=direct-oracle-batching; stagedOracleBulk=not-selected-no-measured-win",
       "persistedOutcome": "not executed"
     }
   ]

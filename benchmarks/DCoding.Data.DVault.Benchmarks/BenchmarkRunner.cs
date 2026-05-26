@@ -568,7 +568,8 @@ internal static class BenchmarkExecutionDetails {
       DataVaultBenchmarkHelpers.MySqlOptimizedStrategyFamily =>
           "DVault MySQL staged bulk save path; selectedStrategy=MySqlStagedDataVaultSaveStrategy",
       DataVaultBenchmarkHelpers.OracleOptimizedStrategyFamily =>
-          "DVault Oracle optimized save path; selectedStrategy=OracleDataVaultSaveStrategy",
+          "DVault Oracle direct optimized save path; selectedStrategy=OracleDataVaultSaveStrategy; " +
+          "oracleBulkBoundary=direct-oracle-batching; stagedOracleBulk=not-selected-no-measured-win",
       "ef-model-build" => "ordinary EF model-building startup path",
       "ef-usemodel-runtime-model" => "precomputed EF runtime model path",
       "direct-ef-query" => "ordinary direct EF query path",

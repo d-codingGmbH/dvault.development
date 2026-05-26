@@ -20,6 +20,7 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
 
   internal const string OracleProviderName = "Oracle.EntityFrameworkCore";
+  internal const string StagedOracleBulkNotSelectedReason = "not-selected-no-measured-win";
 
   public int Priority => 100;
 
@@ -27,13 +28,17 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(requests);
 
-    return DataVaultProviderSaveStrategyGateEvaluator.EvaluateOracle(dbContext, requests).CanSave;
+    return SelectOracleBulkSavePath(
+        dbContext.Database.ProviderName,
+        !IsCleanContext(dbContext),
+        requests) != OracleBulkSavePath.ProviderNeutralFallback;
   }
 
   public async Task<DataVaultSaveResult> SaveAsync(
       DataVaultProviderSaveStrategyContext context,
       CancellationToken cancellationToken = default) {
     ArgumentNullException.ThrowIfNull(context);
+    cancellationToken.ThrowIfCancellationRequested();
 
     var uniquePlans = CreateUniqueRowSavePlans(context);
     var satellitePlans = CreateSatelliteSavePlans(context);
@@ -67,6 +72,34 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
     return !dbContext.ChangeTracker
         .Entries()
         .Any(entry => entry.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
+  }
+
+  internal static OracleBulkSavePath SelectOracleBulkSavePath(
+      string? providerName,
+      bool hasPendingTrackedChanges,
+      IReadOnlyList<DataVaultSaveRequest> requests) {
+    return SelectOracleStagedBulkDecision(providerName, hasPendingTrackedChanges, requests).SelectedPath;
+  }
+
+  internal static OracleStagedBulkDecision SelectOracleStagedBulkDecision(
+      string? providerName,
+      bool hasPendingTrackedChanges,
+      IReadOnlyList<DataVaultSaveRequest> requests) {
+    var gate = DataVaultProviderSaveStrategyGateEvaluator.EvaluateOracle(
+        providerName,
+        hasPendingTrackedChanges,
+        requests);
+    if (!gate.CanSave) {
+      return new OracleStagedBulkDecision(
+          OracleBulkSavePath.ProviderNeutralFallback,
+          UsesStagedBulk: false,
+          "native-gate-declined");
+    }
+
+    return new OracleStagedBulkDecision(
+        OracleBulkSavePath.DirectOracleBatching,
+        UsesStagedBulk: false,
+        StagedOracleBulkNotSelectedReason);
   }
 
   internal static bool IsOptimizedBatchShape(IReadOnlyList<DataVaultSaveRequest> requests) {
@@ -1093,6 +1126,17 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
       string? HashKeyColumnName,
       string ColumnSignature,
       OracleInsertConflictBehavior ConflictBehavior);
+
+  internal sealed record OracleStagedBulkDecision(
+      OracleBulkSavePath SelectedPath,
+      bool UsesStagedBulk,
+      string Reason);
+
+  internal enum OracleBulkSavePath {
+    ProviderNeutralFallback,
+    DirectOracleBatching,
+    StagedOracleBulk,
+  }
 
   private enum OracleInsertConflictBehavior {
     Fail,

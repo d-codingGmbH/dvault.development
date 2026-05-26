@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 using Xunit;
 
 namespace DCoding.Data.DVault.Tests.Integration;
@@ -11,6 +12,7 @@ namespace DCoding.Data.DVault.Tests.Integration;
 [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.ExternalProviderIntegration)]
 [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.OracleProvider)]
 public sealed class OracleDataVaultSmokeTests {
+  private const string OracleProviderName = "Oracle.EntityFrameworkCore";
   private const string CustomerHubEntityName = "HubCustomer";
   private const string CustomerHashKeyColumnName = "CustomerHashKey";
   private const string CustomerIdColumnName = "CustomerId";
@@ -19,8 +21,17 @@ public sealed class OracleDataVaultSmokeTests {
   private const string RecordSource = "oracle-smoke";
 
   [Fact]
-  public async Task AddDVaultOracleBulkStrategyPersistsOrderedHubLinkAndSatelliteBatchWhenConfigured() {
+  public async Task AddDVaultOracleBulkStrategyRetainsDirectPathAndPersistsOrderedBatchWhenConfigured() {
     await ExternalProviderBulkSaveAssertions.AssertProviderBulkSaveAsync(
+        ExternalProviderLiveSchemaFixture.CreateOracleAsync,
+        services => services.AddDVaultOracle(),
+        "OracleDataVaultSaveStrategy",
+        AssertOracleDirectBulkBoundary);
+  }
+
+  [Fact]
+  public async Task AddDVaultOracleDirectBulkRollsBackRowsWhenProviderInsertFailsWhenConfigured() {
+    await ExternalProviderBulkSaveAssertions.AssertProviderBulkSaveFailureRollsBackAsync(
         ExternalProviderLiveSchemaFixture.CreateOracleAsync,
         services => services.AddDVaultOracle(),
         "OracleDataVaultSaveStrategy");
@@ -86,6 +97,50 @@ public sealed class OracleDataVaultSmokeTests {
         RecordSource,
         [new DataVaultHubSaveOperation(customer, [new("Customer Id", CustomerId)])],
         []);
+  }
+
+  private static void AssertOracleDirectBulkBoundary(
+      DataVaultBulkSaveRequest request,
+      DataVaultDiagnosticsResult diagnostics) {
+    Assert.Equal("OracleDataVaultSaveStrategy", diagnostics.SaveStrategy.SelectedStrategyName);
+
+    var decision = InvokeOracleStagedBulkDecision(
+        OracleProviderName,
+        hasPendingTrackedChanges: false,
+        request.Requests);
+
+    Assert.Equal("DirectOracleBatching", decision.SelectedPath);
+    Assert.False(decision.UsesStagedBulk);
+    Assert.Equal("not-selected-no-measured-win", decision.Reason);
+  }
+
+  private static (string SelectedPath, bool UsesStagedBulk, string Reason) InvokeOracleStagedBulkDecision(
+      string? providerName,
+      bool hasPendingTrackedChanges,
+      IReadOnlyList<DataVaultSaveRequest> requests) {
+    var strategyType = typeof(DVaultOracleServiceCollectionExtensions).Assembly.GetType(
+        "DCoding.Data.DVault.OracleDataVaultSaveStrategy",
+        throwOnError: true);
+    var method = strategyType!
+        .GetMethods(BindingFlags.Static | BindingFlags.NonPublic)
+        .Single(method => string.Equals(method.Name, "SelectOracleStagedBulkDecision", StringComparison.Ordinal));
+    var result = method.Invoke(null, [providerName, hasPendingTrackedChanges, requests]);
+
+    Assert.NotNull(result);
+
+    return (
+        ReadProperty(result, "SelectedPath").ToString()!,
+        Assert.IsType<bool>(ReadProperty(result, "UsesStagedBulk")),
+        Assert.IsType<string>(ReadProperty(result, "Reason")));
+  }
+
+  private static object ReadProperty(object instance, string propertyName) {
+    var property = instance.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public);
+
+    Assert.NotNull(property);
+
+    return property.GetValue(instance) ??
+        throw new InvalidOperationException("Oracle staged bulk decision property '" + propertyName + "' was null.");
   }
 
   private static async Task DropOracleTableIfExistsAsync(DbContext context, string tableName) {

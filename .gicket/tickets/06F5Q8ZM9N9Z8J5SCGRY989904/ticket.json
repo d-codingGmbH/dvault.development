@@ -1,24 +1,23 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q8ZM9N9Z8J5SCGRY989904",
   "ticket-type": "story",
   "title": "Story: Evaluate and implement Oracle staged bulk save strategy",
-  "revision": "06F5Q988N1XB3ESNFSBZ3J9FZ0",
-  "status": "todo",
+  "revision": "06F658A65NQXWCTQYM2Q69PM2G",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
     "area/ef-core",
     "area/performance",
     "area/persistence",
     "area/provider-support",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WH0CG92WHM5BMSHXQ89R",
   "releaseId": "06F5Q8WAWQMZ22WMK10XYDEFQG",
   "created-at": "2026-05-24T20:18:52.2567420Z",
-  "updated-at": "2026-05-24T20:20:02.8562611Z"
+  "updated-at": "2026-05-26T04:53:16.9738834Z"
 }

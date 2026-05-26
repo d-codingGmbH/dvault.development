@@ -21,7 +21,8 @@ internal static class ExternalProviderBulkSaveAssertions {
   public static async Task AssertProviderBulkSaveAsync(
       Func<Task<ExternalProviderLiveSchemaFixture>> createFixtureAsync,
       Action<IServiceCollection> configureProviderServices,
-      string expectedStrategyName) {
+      string expectedStrategyName,
+      Action<DataVaultBulkSaveRequest, DataVaultDiagnosticsResult>? assertProviderBoundary = null) {
     ArgumentNullException.ThrowIfNull(createFixtureAsync);
     ArgumentNullException.ThrowIfNull(configureProviderServices);
     ArgumentException.ThrowIfNullOrWhiteSpace(expectedStrategyName);
@@ -39,6 +40,7 @@ internal static class ExternalProviderBulkSaveAssertions {
     var diagnosticResult = diagnostics.Analyze(context, scenario.Request);
 
     AssertProviderStrategySelected(diagnosticResult, expectedStrategyName);
+    assertProviderBoundary?.Invoke(scenario.Request, diagnosticResult);
 
     var result = await saveService.SaveAsync(context, scenario.Request).ConfigureAwait(false);
 
@@ -48,6 +50,46 @@ internal static class ExternalProviderBulkSaveAssertions {
     Assert.Empty(context.ChangeTracker.Entries());
 
     await AssertPersistedRowsAsync(context, scenario).ConfigureAwait(false);
+  }
+
+  public static async Task AssertProviderBulkSaveFailureRollsBackAsync(
+      Func<Task<ExternalProviderLiveSchemaFixture>> createFixtureAsync,
+      Action<IServiceCollection> configureProviderServices,
+      string expectedStrategyName) {
+    ArgumentNullException.ThrowIfNull(createFixtureAsync);
+    ArgumentNullException.ThrowIfNull(configureProviderServices);
+    ArgumentException.ThrowIfNullOrWhiteSpace(expectedStrategyName);
+
+    await using var fixture = await createFixtureAsync().ConfigureAwait(false);
+    var services = new ServiceCollection();
+    configureProviderServices(services);
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    var request = CreateRollbackFailureScenario(provider);
+
+    await using var context = fixture.CreateContext();
+    var diagnosticResult = diagnostics.Analyze(context, request);
+
+    AssertProviderStrategySelected(diagnosticResult, expectedStrategyName);
+
+    await Assert.ThrowsAnyAsync<Exception>(() => saveService.SaveAsync(context, request)).ConfigureAwait(false);
+    Assert.Empty(context.ChangeTracker.Entries());
+
+    await using var verificationContext = fixture.CreateContext();
+    Assert.Equal(
+        0,
+        await verificationContext.Set<Dictionary<string, object>>("HubCustomer")
+            .AsNoTracking()
+            .CountAsync()
+            .ConfigureAwait(false));
+    Assert.Equal(
+        0,
+        await verificationContext.Set<Dictionary<string, object>>("SatCustomerContact")
+            .AsNoTracking()
+            .CountAsync()
+            .ConfigureAwait(false));
   }
 
   private static BulkScenario CreateBulkScenario(IServiceProvider provider) {
@@ -153,6 +195,44 @@ internal static class ExternalProviderBulkSaveAssertions {
         customerHashKeys,
         orderHashKeys,
         linkHashKeys);
+  }
+
+  private static DataVaultBulkSaveRequest CreateRollbackFailureScenario(IServiceProvider provider) {
+    var metadataModel = LiveSchemaReaderContractFixture.CreateCanonicalMetadataModel();
+    var customer = metadataModel.Hubs.Single(hub => hub.Name == LiveSchemaReaderContractFixture.CustomerHubName);
+    var contact = metadataModel.Satellites.Single(satellite => satellite.Name == LiveSchemaReaderContractFixture.ContactSatelliteName);
+    var customerIds = Enumerable.Range(0, 50)
+        .Select(index => "C-ROLLBACK-" + index.ToString("000", CultureInfo.InvariantCulture))
+        .ToArray();
+    var customerHashKeys = customerIds
+        .Select(customerId => ComputeHash(provider, [new("Customer Id", customerId)]))
+        .ToArray();
+    var hubRequest = new DataVaultSaveRequest(
+        HubLoadTimestamp,
+        "bulk-rollback-hubs",
+        customerIds
+            .Select(customerId => new DataVaultHubSaveOperation(customer, [new("Customer Id", customerId)]))
+            .ToArray(),
+        []);
+    var duplicateSatelliteRequest = new DataVaultSaveRequest(
+        FirstSatelliteLoadTimestamp,
+        "bulk-rollback-duplicate-satellite",
+        [],
+        [],
+        [
+            new DataVaultSatelliteSaveOperation(
+                contact,
+                customerHashKeys[0],
+                [new("Email Address", "rollback-first@example.test")],
+                "rollback-contact-hash-1"),
+            new DataVaultSatelliteSaveOperation(
+                contact,
+                customerHashKeys[0],
+                [new("Email Address", "rollback-second@example.test")],
+                "rollback-contact-hash-2"),
+        ]);
+
+    return new DataVaultBulkSaveRequest([hubRequest, duplicateSatelliteRequest]);
   }
 
   private static void AssertProviderStrategySelected(

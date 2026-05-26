@@ -93,6 +93,8 @@ When the claim depends on scale behavior, include the scale matrix mode. When th
 
 The optional external-provider matrix is limited to PostgreSQL, SQL Server, MySQL, and Oracle. Those providers emit provider-native bulk-ingestion comparison rows only when the provider is configured and reachable. If an optional provider is not configured, its rows must remain present as `executionStatus=skipped` with the normalized skip reason and an `executionDetail` value that preserves the planned provider-native strategy boundary.
 
+Oracle provider-native evidence must distinguish the retained direct Oracle batching path from any future staged Oracle path. Until an Oracle staged path is selected, Oracle optimized rows should identify `OracleDataVaultSaveStrategy`, direct Oracle batching, and the fact that staged Oracle bulk was not selected because no measured win over the direct path is recorded in the artifact set.
+
 ## Allocation Evidence
 
 Allocation metrics are required for completed rows because many DVault performance claims depend on batching, materialization, and change-tracker behavior rather than wall-clock time alone.
