@@ -191,6 +191,14 @@ public sealed class BenchmarkScenarioExecutionTests {
       SkippedExternal(
           PostgresProviderName,
           "provider-native-bulk-ingestion",
+          "dvault-adddvaultpostgres-direct-or-unnest",
+          "postgres-optimized-dvault",
+          "18 order-product pairs, 3 fulfillment satellite operations",
+          "staged-ineligible provider-native batch below the 60-operation staged boundary",
+          NotConfiguredSkipReason),
+      SkippedExternal(
+          PostgresProviderName,
+          "provider-native-bulk-ingestion",
           "dvault-adddvaultpostgres-optimized",
           "postgres-optimized-dvault",
           "20 order-product pairs, 3 fulfillment satellite operations",
@@ -219,6 +227,14 @@ public sealed class BenchmarkScenarioExecutionTests {
           "provider-neutral-dvault-fallback",
           "20 order-product pairs, 3 fulfillment satellite operations",
           "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          MySqlProviderName,
+          "provider-native-bulk-ingestion",
+          "dvault-adddvaultmysql-multi-row",
+          "mysql-optimized-dvault",
+          "18 order-product pairs, 3 fulfillment satellite operations",
+          "staged-ineligible provider-native batch below the 60-operation staged boundary",
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable)),
       SkippedExternal(
           MySqlProviderName,
@@ -281,9 +297,9 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Contains("1 generated order hub row read through EF.CompileQuery stable projection", text);
     Assert.Contains("1 generated order hub row saved and read through AddDbContext fixed-model configuration", text);
     Assert.Contains("1 generated order hub row saved and read through AddDbContextPool fixed-model configuration", text);
-    Assert.Contains("Recorded 35 benchmark report rows.", text);
+    Assert.Contains("Recorded 37 benchmark report rows.", text);
     Assert.Contains("Executed 27 benchmark report rows.", text);
-    Assert.Contains("Skipped 8 benchmark report rows.", text);
+    Assert.Contains("Skipped 10 benchmark report rows.", text);
   }
 
   [Fact]
@@ -329,7 +345,7 @@ public sealed class BenchmarkScenarioExecutionTests {
 
       var csv = await File.ReadAllTextAsync(csvPath).ConfigureAwait(false);
       var csvLines = csv.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
-      Assert.Equal(36, csvLines.Length);
+      Assert.Equal(38, csvLines.Length);
       Assert.Equal(
           "scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,meanAllocatedBytes,minAllocatedBytes,maxAllocatedBytes,executionDetail,persistedOutcome",
           csvLines[0]);
@@ -380,7 +396,7 @@ public sealed class BenchmarkScenarioExecutionTests {
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable));
 
       var results = json.RootElement.GetProperty("results").EnumerateArray().ToArray();
-      Assert.Equal(35, results.Length);
+      Assert.Equal(37, results.Length);
 
       foreach (var expectedRow in ExpectedRows) {
         var matchingResults = results.Where(result =>
@@ -450,9 +466,42 @@ public sealed class BenchmarkScenarioExecutionTests {
       var postgresExecutionDetail = postgresStagedBulkResult.GetProperty("executionDetail").GetString();
       Assert.Contains("DVault PostgreSQL staged bulk save path", postgresExecutionDetail);
       Assert.Contains("transfer=COPY", postgresExecutionDetail);
+      Assert.Contains("stagedBulkBoundary=60-plus-operations", postgresExecutionDetail);
+      Assert.Contains("smallBatchBoundary=direct-or-UNNEST", postgresExecutionDetail);
       Assert.Equal(
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Postgres.ConnectionStringEnvironmentVariable),
           postgresStagedBulkResult.GetProperty("skipReason").GetString());
+
+      var postgresRetainedPathResult = Assert.Single(results.Where(result =>
+          result.GetProperty("provider").GetString() == PostgresProviderName &&
+          result.GetProperty("baselineName").GetString() == "dvault-adddvaultpostgres-direct-or-unnest"));
+      var postgresRetainedPathExecutionDetail = postgresRetainedPathResult.GetProperty("executionDetail").GetString();
+      Assert.Contains("DVault PostgreSQL retained direct or UNNEST save path", postgresRetainedPathExecutionDetail);
+      Assert.Contains("stagedBulkBoundary=below-60-operations", postgresRetainedPathExecutionDetail);
+      Assert.Contains("cleanupBoundary=no-staging-table", postgresRetainedPathExecutionDetail);
+
+      var mySqlRetainedPathResult = Assert.Single(results.Where(result =>
+          result.GetProperty("provider").GetString() == MySqlProviderName &&
+          result.GetProperty("baselineName").GetString() == "dvault-adddvaultmysql-multi-row"));
+      var mySqlRetainedPathExecutionDetail = mySqlRetainedPathResult.GetProperty("executionDetail").GetString();
+      Assert.Contains("DVault MySQL retained multi-row save path", mySqlRetainedPathExecutionDetail);
+      Assert.Contains("selectedStrategy=MySqlDataVaultSaveStrategy", mySqlRetainedPathExecutionDetail);
+      Assert.Contains("stagedBulkBoundary=below-60-operations", mySqlRetainedPathExecutionDetail);
+
+      var mySqlStagedBulkResult = Assert.Single(results.Where(result =>
+          result.GetProperty("provider").GetString() == MySqlProviderName &&
+          result.GetProperty("baselineName").GetString() == "dvault-adddvaultmysql-optimized"));
+      var mySqlStagedBulkExecutionDetail = mySqlStagedBulkResult.GetProperty("executionDetail").GetString();
+      Assert.Contains("DVault MySQL staged bulk save path", mySqlStagedBulkExecutionDetail);
+      Assert.Contains("selectedStrategy=MySqlStagedDataVaultSaveStrategy", mySqlStagedBulkExecutionDetail);
+      Assert.Contains("stagedBulkBoundary=60-plus-operations", mySqlStagedBulkExecutionDetail);
+
+      var oracleDirectBulkResult = Assert.Single(results.Where(result =>
+          result.GetProperty("provider").GetString() == OracleProviderName &&
+          result.GetProperty("baselineName").GetString() == "dvault-adddvaultoracle-optimized"));
+      var oracleDirectBulkExecutionDetail = oracleDirectBulkResult.GetProperty("executionDetail").GetString();
+      Assert.Contains("DVault Oracle direct optimized save path", oracleDirectBulkExecutionDetail);
+      Assert.Contains("stagedOracleBulk=not-selected-no-measured-win", oracleDirectBulkExecutionDetail);
     }
     finally {
       if (Directory.Exists(artifactDirectory)) {

@@ -34,6 +34,16 @@ artifacts/benchmarks/06F492CTREZEDXVKJ839YGCPWW-provider-optimization-regression
 !artifacts/benchmarks/06F492CTREZEDXVKJ839YGCPWW-provider-optimization-regression-baselines/after/benchmark-summary.md
 !artifacts/benchmarks/06F492CTREZEDXVKJ839YGCPWW-provider-optimization-regression-baselines/after/benchmark-summary.csv
 !artifacts/benchmarks/06F492CTREZEDXVKJ839YGCPWW-provider-optimization-regression-baselines/after/benchmark-summary.json
+!artifacts/benchmarks/06F5Q900FC0P3HBZP81CVK7264-staged-bulk-matrix/
+artifacts/benchmarks/06F5Q900FC0P3HBZP81CVK7264-staged-bulk-matrix/*
+!artifacts/benchmarks/06F5Q900FC0P3HBZP81CVK7264-staged-bulk-matrix/before/
+!artifacts/benchmarks/06F5Q900FC0P3HBZP81CVK7264-staged-bulk-matrix/after/
+!artifacts/benchmarks/06F5Q900FC0P3HBZP81CVK7264-staged-bulk-matrix/before/benchmark-summary.md
+!artifacts/benchmarks/06F5Q900FC0P3HBZP81CVK7264-staged-bulk-matrix/before/benchmark-summary.csv
+!artifacts/benchmarks/06F5Q900FC0P3HBZP81CVK7264-staged-bulk-matrix/before/benchmark-summary.json
+!artifacts/benchmarks/06F5Q900FC0P3HBZP81CVK7264-staged-bulk-matrix/after/benchmark-summary.md
+!artifacts/benchmarks/06F5Q900FC0P3HBZP81CVK7264-staged-bulk-matrix/after/benchmark-summary.csv
+!artifacts/benchmarks/06F5Q900FC0P3HBZP81CVK7264-staged-bulk-matrix/after/benchmark-summary.json
 TestResults/
 **/bin/
 **/obj/

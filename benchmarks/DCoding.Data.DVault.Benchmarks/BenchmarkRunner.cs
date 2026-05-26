@@ -252,14 +252,27 @@ internal static class BenchmarkRunner {
       BenchmarkDatabaseProvider provider,
       DataVaultBenchmarkStrategy optimizedStrategy,
       BenchmarkOptions options) {
-    return
-    [
+    var benchmarks = new List<IScenarioBenchmark> {
         new ProviderNativeBulkIngestionBenchmark(
             provider,
             DataVaultBenchmarkStrategy.ProviderNeutralFallback,
             options.LoadTimestampStorage),
-        new ProviderNativeBulkIngestionBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage),
-    ];
+    };
+
+    if (optimizedStrategy == DataVaultBenchmarkStrategy.PostgresOptimized) {
+      benchmarks.Add(ProviderNativeBulkIngestionBenchmark.CreatePostgresRetainedDirectOrUnnest(
+          provider,
+          options.LoadTimestampStorage));
+    }
+    else if (optimizedStrategy == DataVaultBenchmarkStrategy.MySqlOptimized) {
+      benchmarks.Add(ProviderNativeBulkIngestionBenchmark.CreateMySqlRetainedMultiRow(
+          provider,
+          options.LoadTimestampStorage));
+    }
+
+    benchmarks.Add(new ProviderNativeBulkIngestionBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage));
+
+    return [.. benchmarks];
   }
 
   private static IScenarioBenchmark[] CreateScaleBenchmarks(
@@ -556,6 +569,10 @@ internal static class BenchmarkExecutionDetails {
   }
 
   private static string GetExecutionPath(IScenarioBenchmark benchmark) {
+    if (benchmark is ProviderNativeBulkIngestionBenchmark providerNativeBulkIngestionBenchmark) {
+      return providerNativeBulkIngestionBenchmark.ExecutionPathDetail;
+    }
+
     return benchmark.StrategyFamily switch {
       DataVaultBenchmarkHelpers.ClassicEfStrategyFamily => "classic EF baseline",
       DataVaultBenchmarkHelpers.ProviderNeutralFallbackStrategyFamily =>
