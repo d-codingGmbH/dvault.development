@@ -7,18 +7,18 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.19.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.19.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.19.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.19.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.19.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.19.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.19.0
+dotnet add package DCoding.Data.DVault --version 0.20.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.20.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.20.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.20.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.20.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.20.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.20.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
 
-`DCoding.Data.DVault.Analyzers` is optional developer tooling. Prefer `PrivateAssets="all"` for that package so analyzer and source-generator assets stay local to the project that declares DVault Code-First metadata or compile-time mapping declarations. The v0.19.0 analyzer surface includes `DMV1910` and `DMV1911` for high-confidence EF Core misuse patterns around generated shared-type tables. See `src/DCoding.Data.DVault.Analyzers/README.md` for the package-local diagnostic, code-fix, source-generator, suppression, and configuration guidance.
+`DCoding.Data.DVault.Analyzers` is optional developer tooling. Prefer `PrivateAssets="all"` for that package so analyzer and source-generator assets stay local to the project that declares DVault Code-First metadata or compile-time mapping declarations. The current analyzer surface includes `DMV1910` and `DMV1911` for high-confidence EF Core misuse patterns around generated shared-type tables. See `src/DCoding.Data.DVault.Analyzers/README.md` for the package-local diagnostic, code-fix, source-generator, suppression, and configuration guidance.
 
 Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
 
@@ -232,7 +232,7 @@ var chunkedRequest = new DataVaultChunkedSaveRequest(
 await saveService.SaveAsync(context, chunkedRequest, cancellationToken);
 ```
 
-Keep `DataVaultBulkSaveRequest` when the loader already has the full ordered request set materialized. Switch to `DataVaultChunkedSaveRequest` only when the caller needs bounded chunking without changing explicit timestamps, record sources, request ordering, or caller-owned transaction behavior. Provider-specific save strategies remain optimizations around the same public save contract; PostgreSQL and MySQL can stage larger eligible materialized bulk batches behind that boundary, while v0.19.0 does not claim provider-native chunk execution, background ingestion, or scheduler behavior.
+Keep `DataVaultBulkSaveRequest` when the loader already has the full ordered request set materialized. Switch to `DataVaultChunkedSaveRequest` only when the caller needs bounded chunking without changing explicit timestamps, record sources, request ordering, or caller-owned transaction behavior. Provider-specific save strategies remain optimizations around the same public save contract; PostgreSQL and MySQL can stage larger eligible materialized bulk batches behind that boundary, while DVault does not claim provider-native chunk execution, background ingestion, or scheduler behavior.
 
 The v0.20.0 documentation boundary keeps that same hierarchy: `IDataVaultSaveService` remains the public write entry point, `DataVaultBulkSaveRequest` remains the compatibility baseline for already-materialized ordered saves, and `DataVaultChunkedSaveRequest` remains provider-neutral bounded chunking guidance. Provider-specific optimized paths are evidence-bound behind the same service contract. PostgreSQL staged COPY and MySQL staged bulk are the preferred optimized paths only for their documented staged-provider lanes; PostgreSQL retains direct or UNNEST behavior below 60 operations, and MySQL retains the multi-row path above the 50-operation native gate and below the 60-operation staged threshold. SQL Server keeps its current native-bulk wording, and Oracle keeps the retained direct optimized path until benchmark evidence selects a staged Oracle path. Stored procedures are not a DVault default write path: treat them only as an explicit design-time or provider-specific escape hatch after provider evidence, migration synchronization, deployment ownership, and cleanup rules are documented.
 
@@ -703,9 +703,24 @@ Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadS
 
 SQLite remains the default local live-schema proof because it does not require external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks require consumer-managed reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation. Keep those external provider checks opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
 
-## v0.19.0 Release Notes
+## v0.20.0 Release Notes
 
-The v0.19.0 release records the streaming explicit-save documentation rollout as the current coordinated seven-package baseline while preserving the EF safety, aggregate preflight, explicit service, opt-in telemetry, redacted support-bundle, consumer-owned design-time boundaries, and performance-evidence posture from earlier releases. See `docs/releases/v0.19.0.md` for the release-note record, package scope, streaming save contract links, compatibility notes, validation evidence, benchmark artifact links, and package verification posture.
+The v0.20.0 release records the staged provider bulk ingestion documentation rollout as the current coordinated seven-package baseline while preserving the EF safety, aggregate preflight, explicit service, opt-in telemetry, redacted support-bundle, consumer-owned design-time boundaries, and performance-evidence posture from earlier releases. See `docs/releases/v0.20.0.md` for the release-note record, package scope, provider-specific optimized write-path boundary, staged PostgreSQL/MySQL guidance, SQL Server and Oracle limits, stored-procedure boundary, validation evidence, benchmark artifact links, and package verification posture.
+
+Notable user-facing changes:
+
+- `IDataVaultSaveService` remains the public write boundary for single, ordered bulk, and bounded chunked saves.
+- PostgreSQL staged COPY is the preferred optimized path for larger eligible materialized ordered batches, while the retained direct or UNNEST path remains documented below the staged threshold.
+- MySQL staged bulk is the preferred optimized path for larger eligible materialized ordered batches, while the retained multi-row path remains documented above the native gate and below the staged threshold.
+- SQL Server stays documented as its current native-bulk optimized boundary, and Oracle stays on retained direct optimized batching with `stagedOracleBulk=not-selected-no-measured-win` until measured evidence selects a staged Oracle path.
+- Staged-provider diagnostics report bounded lifecycle, caveat, operation-count, and fallback-cause evidence without exposing raw SQL, hash keys, payload values, credentials, or transient stage-row contents.
+- Stored procedures remain non-default escape-hatch guidance only. DVault does not auto-generate, auto-manage, or select stored procedures as a standard runtime path.
+- The benchmark evidence keeps provider, strategy, execution-detail, skip, and run-context information together through the root benchmark summary triplet and the shared benchmark artifact contract.
+- `DataVaultChunkedSaveRequest`, `DataVaultSaveChunk`, EF compiled-model/query/pooling guidance, `DMV1910`/`DMV1911`, `UseDataVaultSaveChangesGuardInterceptor(...)`, aggregate preflight, provider explainability, telemetry, support-bundle export, model-first governance, PIT/bridge maintenance, and typed current/as-of reads from earlier releases remain part of the current public baseline.
+
+## v0.19.0 Historical Release Notes
+
+The v0.19.0 release recorded the streaming explicit-save documentation rollout as the previous coordinated seven-package baseline while preserving the EF safety, aggregate preflight, explicit service, opt-in telemetry, redacted support-bundle, consumer-owned design-time boundaries, and performance-evidence posture from earlier releases. See `docs/releases/v0.19.0.md` for the historical release-note record, package scope, streaming save contract links, compatibility notes, validation evidence, benchmark artifact links, and package verification posture.
 
 Notable user-facing changes:
 
@@ -726,7 +741,7 @@ Notable user-facing changes:
 - Provider explainability covers capability profiles, provider-behavior profiles, save strategy diagnostics, read strategy diagnostics, and request-bound read-shape facts as deterministic redacted explain output rather than raw SQL or provider-magic claims.
 - `AddDVaultTelemetry()`, `IDataVaultTelemetryObserver`, `support-bundle`, explicit bridge maintenance, explicit PIT maintenance, current/as-of satellite reads, provider-native bulk ingestion, Code-First same-hub roles, link-parent satellites, and model-first artifact governance from earlier releases remain part of the current public baseline.
 
-## v0.20.0 Documentation Boundary
+## v0.20.0 Provider-Optimized Write Boundary
 
 The [v0.20.0 notes](docs/releases/v0.20.0.md) document a provider-specific optimized write-path boundary without changing the public write API. v0.19.0 remains the historical baseline for provider-neutral chunked explicit saves and kept staged provider bulk ingestion outside that release's claim set. v0.20.0 moves the documentation boundary forward only where repository evidence already exposes a supported or measured provider path.
 
@@ -743,9 +758,9 @@ Use this hierarchy when planning v0.20.0 adoption:
 
 The benchmark-facing evidence continues to use the root `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` triplet plus the shared [Performance Evidence And Benchmark Artifact Contract](docs/plans/performance-evidence-benchmark-artifact-contract.md). Provider-specific timing claims must preserve provider, strategy, execution-detail, skip, and run-context information instead of introducing new ad hoc evidence files.
 
-## Current v0.19.0 Limitations
+## Current v0.20.0 Limitations
 
-Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.19.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
+Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.20.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
 
 Compiled-model, compiled-query, and `DbContext` pooling evidence is SQLite timing and allocation evidence for bounded EF shapes. It does not assert provider-specific SQL shape, index usage, generated compiled-model code ownership, dynamic request-built read compilation, or pooling for caller-owned variable model shapes.
 
@@ -757,9 +772,9 @@ Telemetry remains explicit opt-in application wiring. DVault does not configure 
 
 Support bundles are consumer-invoked diagnostic artifacts. DVault does not upload, attach, archive, retain, or route support-bundle JSON, and it does not open a live database connection unless the consumer explicitly invokes the live-schema option in an environment they manage.
 
-Chunked explicit saves are provider-neutral public behavior in v0.19.0. Provider-native chunk execution, file ingestion, background workers, schedulers, CDC ingestion, and implicit `SaveChanges` streaming remain outside the public claim set.
+Chunked explicit saves are provider-neutral public behavior. Provider-native chunk execution, file ingestion, background workers, schedulers, CDC ingestion, and implicit `SaveChanges` streaming remain outside the public claim set.
 
-Provider-native bulk dispatch is an optimization, not a separate persistence contract. Dirty tracked contexts, multi-active satellite batches, provider-name mismatches, below-threshold PostgreSQL staged-bulk, SQL Server, MySQL, or Oracle batches, SQL Server batches with more than `500` satellite operations, and Oracle batches with more than `10000` satellite operations fall back to a smaller provider-native path or the provider-neutral writer as appropriate. PostgreSQL uses the existing set-based direct or UNNEST path below the staged threshold and uses transient staging plus PostgreSQL COPY for larger eligible ordered batches. DVault does not provision Docker containers, databases, users, schemas, credentials, or checked-in benchmark result snapshots for optional external-provider proof.
+Provider-native bulk dispatch is an optimization, not a separate persistence contract. Dirty tracked contexts, multi-active satellite batches, provider-name mismatches, below-threshold PostgreSQL or MySQL staged-bulk batches, SQL Server or Oracle batches outside their native gates, MySQL batches below the 50-operation native gate, SQL Server batches with more than `500` satellite operations, and Oracle batches with more than `10000` satellite operations fall back to a smaller provider-native path or the provider-neutral writer as appropriate. PostgreSQL uses the existing set-based direct or UNNEST path below the staged threshold and uses transient staging plus PostgreSQL COPY for larger eligible ordered batches. MySQL keeps its existing multi-row path below the staged threshold when the native gate is met. DVault does not provision Docker containers, databases, users, schemas, credentials, or checked-in benchmark result snapshots for optional external-provider proof.
 
 Oracle provider-native bulk dispatch currently retains the direct Oracle path for eligible ordered batches. That path uses Oracle array binding when available and bounded direct insert batching otherwise. The staged Oracle branch is not selected without evidence that it beats the direct Oracle path and preserves deterministic stage cleanup within the caller-owned transaction boundary.
 

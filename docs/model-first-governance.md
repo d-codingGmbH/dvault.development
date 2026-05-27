@@ -1,8 +1,8 @@
 # Model-First Governance Workflow
 
-Status: v0.19.0 public guidance
+Status: v0.20.0 public guidance
 
-This guide describes how teams should use governed `dvault.model.v1` JSON artifacts alongside the existing Code-First and metadata-first DVault paths. Earlier release notes remain historical package context; `docs/releases/v0.19.0.md` is the current public baseline for Code-First parity, analyzer/generator ergonomics, EF misuse diagnostics, model-first import, export, projection, design-time drift, explicit snapshot-model preflight, optional live-schema drift guidance, migration guardrail outcomes, aggregate preflight, explicit bulk ingestion, provider benchmark evidence, compiled-model/query/pooling evidence boundaries, bounded query-shape guidance, explicit PIT/bridge maintenance, current/as-of convenience reads, SQLite PIT/bridge read optimization, opt-in save/read telemetry, redacted support-bundle export, and chunked explicit-save guidance.
+This guide describes how teams should use governed `dvault.model.v1` JSON artifacts alongside the existing Code-First and metadata-first DVault paths. Earlier release notes remain historical package context; `docs/releases/v0.20.0.md` is the current public baseline for Code-First parity, analyzer/generator ergonomics, EF misuse diagnostics, model-first import, export, projection, design-time drift, explicit snapshot-model preflight, optional live-schema drift guidance, migration guardrail outcomes, aggregate preflight, explicit bulk ingestion, provider benchmark evidence, compiled-model/query/pooling evidence boundaries, bounded query-shape guidance, explicit PIT/bridge maintenance, current/as-of convenience reads, SQLite PIT/bridge read optimization, opt-in save/read telemetry, redacted support-bundle export, chunked explicit-save guidance, and staged provider bulk ingestion guidance.
 
 ## Choose A Declaration Path
 

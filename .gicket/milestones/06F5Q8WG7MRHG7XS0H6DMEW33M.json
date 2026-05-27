@@ -3,6 +3,6 @@
   "milestoneId": "06F5Q8WG7MRHG7XS0H6DMEW33M",
   "name": "v0.20.0 - Staging SPI and diagnostics",
   "description": "Provider staging contract, gating diagnostics, fallback remediation, and stored-procedure boundary documentation.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-24T20:18:26.4939175Z"
 }

@@ -3,6 +3,6 @@
   "releaseId": "06F5Q8WAWQMZ22WMK10XYDEFQG",
   "name": "v0.20.0 - Staged Provider Bulk Ingestion",
   "description": "Provider-specific staged bulk save paths using EF metadata, temporary staging, native bulk APIs, diagnostics gates, and benchmark evidence instead of automatic stored-procedure generation.",
-  "status": "planned",
+  "status": "done",
   "createdAt": "2026-05-24T20:18:25.1254705Z"
 }

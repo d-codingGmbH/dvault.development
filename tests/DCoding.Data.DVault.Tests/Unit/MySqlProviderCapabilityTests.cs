@@ -19,7 +19,7 @@ public sealed class MySqlProviderCapabilityTests {
       using var provider = services.BuildServiceProvider(validateScopes: true);
       var strategies = provider.GetServices<IDataVaultProviderSaveStrategy>().ToArray();
 
-      Assert.Contains(strategies, strategy => strategy is MySqlStagedDataVaultSaveStrategy);
+      Assert.Contains(strategies, strategy => strategy is MySqlStagedDataVaultSaveStrategy and IDataVaultProviderStagedBulkSaveDiagnostics);
       Assert.Contains(strategies, strategy => strategy is MySqlDataVaultSaveStrategy);
       Assert.Same(
           DataVaultProviderCapabilityProfiles.MySql,
@@ -69,6 +69,31 @@ public sealed class MySqlProviderCapabilityTests {
             cause.Message.Contains("MySQL staged bulk", StringComparison.Ordinal));
     Assert.True(multiRowAccept.CanSave);
     Assert.True(stagedAccept.CanSave);
+  }
+
+  [Fact]
+  public void MySqlStagedDiagnosticsDistinguishStagedSelectionFromRetainedMultiRowBoundary() {
+    var midSizedBatch = CreateHubRequest(totalOperationCount: 50);
+    var stagedBatch = CreateHubRequest(totalOperationCount: MySqlDataVaultSaveStrategy.MinimumStagedBulkOperationCount);
+
+    var midSizedDiagnostics = MySqlStagedDataVaultSaveStrategy.CreateStagedProviderBulkDiagnostics(
+        hasPendingTrackedChanges: false,
+        midSizedBatch);
+    var stagedDiagnostics = MySqlStagedDataVaultSaveStrategy.CreateStagedProviderBulkDiagnostics(
+        hasPendingTrackedChanges: false,
+        stagedBatch);
+
+    Assert.Equal(DataVaultStagedProviderBulkLifecyclePhase.Declined, midSizedDiagnostics.LifecyclePhase);
+    Assert.Equal(DataVaultStagedProviderBulkProviderCaveatKind.UnsupportedShape, midSizedDiagnostics.ProviderCaveatKind);
+    Assert.Equal(50, midSizedDiagnostics.OperationCount);
+    Assert.Contains(
+        midSizedDiagnostics.FallbackCauseKinds,
+        cause => cause == DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape);
+
+    Assert.Equal(DataVaultStagedProviderBulkLifecyclePhase.NativeBulkApplication, stagedDiagnostics.LifecyclePhase);
+    Assert.Equal(DataVaultStagedProviderBulkProviderCaveatKind.None, stagedDiagnostics.ProviderCaveatKind);
+    Assert.Equal(MySqlDataVaultSaveStrategy.MinimumStagedBulkOperationCount, stagedDiagnostics.OperationCount);
+    Assert.Empty(stagedDiagnostics.FallbackCauseKinds);
   }
 
   [Fact]

@@ -3,6 +3,6 @@
   "milestoneId": "06F5Q8WHV80016VN9N48KP6AGG",
   "name": "v0.20.0 - Staged bulk benchmarks and docs",
   "description": "Regression budgets, benchmark matrix, and release documentation for staged provider bulk ingestion.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-24T20:18:26.9068723Z"
 }
