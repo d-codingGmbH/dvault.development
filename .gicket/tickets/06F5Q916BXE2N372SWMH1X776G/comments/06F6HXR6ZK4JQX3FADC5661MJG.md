@@ -1,0 +1,19 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `2` selected relation flow(s) for source ticket `06F5Q916BXE2N372SWMH1X776G`.
+- Role `po` completed with outcome `po-refinement-ready` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `1`; dropped obsolete follow-up(s): `1`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `e09b277b3698471394f31ebf3919f544`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06F5Q91DR1555RSBQT7KDST684` via `blocks` path `06F5Q916BXE2N372SWMH1X776G -> 06F5Q91DR1555RSBQT7KDST684`
+- [dropped] `blocked-by-follow-up-comment` -> `06F5Q90718D21DN1N1Q2AP7YEM` via `blocks` path `06F5Q916BXE2N372SWMH1X776G -> 06F5Q90718D21DN1N1Q2AP7YEM`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06F5Q916BXE2N372SWMH1X776G` owner `ticket/06F5Q916BXE2N372SWMH1X776G-story-add-delete-aware-bridge-maintenance-for-to` base `develop` source-owner `ticket/06F5Q916BXE2N372SWMH1X776G-story-add-delete-aware-bridge-maintenance-for-to`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F5Q91DR1555RSBQT7KDST684` owner `ticket/06F5Q91DR1555RSBQT7KDST684-story-add-pit-and-bridge-diagnostics-and-benchma` base `develop` source-owner `ticket/06F5Q916BXE2N372SWMH1X776G-story-add-delete-aware-bridge-maintenance-for-to`: Mutation targets 'ticket/06F5Q91DR1555RSBQT7KDST684-story-add-pit-and-bridge-diagnostics-and-benchma', not current branch 'ticket/06F5Q916BXE2N372SWMH1X776G-story-add-delete-aware-bridge-maintenance-for-to'; queue for target-branch replay.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F5Q90718D21DN1N1Q2AP7YEM` owner `develop` base `develop` source-owner `ticket/06F5Q916BXE2N372SWMH1X776G-story-add-delete-aware-bridge-maintenance-for-to`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F5Q91DR1555RSBQT7KDST684` on owner branch `ticket/06F5Q91DR1555RSBQT7KDST684-story-add-pit-and-bridge-diagnostics-and-benchma` after that branch is refreshed/rebased.
