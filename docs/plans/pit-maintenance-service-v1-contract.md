@@ -19,11 +19,13 @@ Define the bounded v1 contract for explicit PIT maintenance so PIT-backed read A
 ## Supported v1 shape
 
 - `DataVaultPitMetadata` only.
-- Parent must resolve to one hub.
-- Participating satellites must already be supported by PIT translation: hub-attached, unique in declaration order, and either ordinary satellites or multi-active satellites that all resolve to the same canonical driving-key names in the same order.
-- The generated PIT entity keeps the existing `ParentHashKey`, `LoadTimestamp`, and `<Satellite>LoadTimestamp` column contract for ordinary PITs. Supported multi-active PITs add the canonical driving-key columns between `ParentHashKey` and `LoadTimestamp`, and expand row identity to `(ParentHashKey, <DrivingKey...>, LoadTimestamp)`.
+- Parent must resolve to one hub or one link.
+- Participating satellites must already be supported by PIT translation: attached to the same declared hub or link parent and unique in declaration order.
+- Hub-parent PITs support ordinary satellites and bounded multi-active satellites that all resolve to the same canonical driving-key names in the same order.
+- Link-parent PITs support ordinary non-multi-active satellites only.
+- The generated PIT entity keeps the existing `ParentHashKey`, `LoadTimestamp`, and `<Satellite>LoadTimestamp` column contract for ordinary PITs. Supported multi-active hub-parent PITs add the canonical driving-key columns between `ParentHashKey` and `LoadTimestamp`, and expand row identity to `(ParentHashKey, <DrivingKey...>, LoadTimestamp)`. For link-parent PITs, `ParentHashKey` carries the link hash key.
 
-Legacy `DataVaultPointInTimeMetadata`, `DataVaultModelBuilder.PointInTime(...)`, link-based PITs, incompatible multi-active driving-key families, cross-product tuple semantics, bridge coordination, and provider-specific maintenance optimization are out of scope for this ticket.
+Legacy `DataVaultPointInTimeMetadata`, `DataVaultModelBuilder.PointInTime(...)`, model-first link-parent PIT artifacts, link-parent multi-active PITs, incompatible multi-active driving-key families, cross-product tuple semantics, bridge coordination, and provider-specific maintenance optimization are out of scope for this contract.
 
 ## Authoritative row-generation rule
 
@@ -67,4 +69,4 @@ This v1 rule makes rebuild and bounded maintenance deterministic and gives `IDat
 - Ticket `06F2PGPKXWRFXNPFA1JR0X67XC` can assume maintained PIT tables exist and should not redefine PIT row-population semantics.
 - Ticket `06F2PGPRGN0EVGD6RY5KY9M56W` may optimize reads over maintained PIT tables but does not own PIT maintenance behavior.
 - Ticket `06F2PGPXVAYRBC94RQ7X5V4DVG` owns the user-facing doc and release-note follow-through for this contract.
-- Provider-specific maintenance strategies, hosted orchestration, link-parent PIT maintenance, incompatible multi-active PIT driving-key families, and cross-product tuple semantics remain future work.
+- Provider-specific maintenance strategies, hosted orchestration, model-first link-parent PIT artifacts, link-parent multi-active PIT maintenance, incompatible multi-active PIT driving-key families, and cross-product tuple semantics remain future work.

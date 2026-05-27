@@ -248,6 +248,16 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataCreatesProviderNeutralLinkParentPitMetadata() {
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.ApplyDataVaultMetadata(CreateLinkParentPitMetadataModel());
+
+    Assert.Equal(5, modelBuilder.Model.GetEntityTypes().Count());
+    AssertLinkParentPit(FindEntity(modelBuilder.Model, "PitCustomerOrderState"));
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataMapsPitProducedNamesToRelationalMetadata() {
     var modelBuilder = CreateModelBuilder();
 
@@ -560,30 +570,21 @@ public sealed class DataVaultEfMetadataTranslationTests {
         ],
         [new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["Profile"])]);
 
-    AssertPitTranslationFailure(metadataModel, "attached to hub 'Order' instead of declared hub 'Customer'");
+    AssertPitTranslationFailure(metadataModel, "attached to Hub 'Order' instead of declared Hub 'Customer'");
   }
 
   [Fact]
-  public void ApplyDataVaultMetadataRejectsLinkBasedPitParentWithoutPartialMapping() {
+  public void ApplyDataVaultMetadataRejectsPitWithMissingLinkWithoutPartialMapping() {
     var metadataModel = new DataVaultMetadataModel(
         [
             new DataVaultHubMetadata("Customer", ["Customer Id"]),
             new DataVaultHubMetadata("Order", ["Order Id"]),
         ],
-        [
-            new DataVaultLinkMetadata(
-                "CustomerOrder",
-                [DataVaultMetadataReference.Hub("Customer"), DataVaultMetadataReference.Hub("Order")]),
-        ],
-        [
-            new DataVaultSatelliteMetadata(
-                "State",
-                DataVaultMetadataReference.Link("CustomerOrder"),
-                ["State Code"]),
-        ],
+        [],
+        [],
         [new DataVaultPitMetadata(DataVaultMetadataReference.Link("CustomerOrder"), ["State"])]);
 
-    AssertPitTranslationFailure(metadataModel, "link-based PIT tables");
+    AssertPitTranslationFailure(metadataModel, "link 'CustomerOrder' that is not declared");
   }
 
   [Fact]
@@ -824,6 +825,19 @@ public sealed class DataVaultEfMetadataTranslationTests {
         [new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), pitSatelliteNames)]);
   }
 
+  private static DataVaultMetadataModel CreateLinkParentPitMetadataModel() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+    var customerOrder = new DataVaultLinkMetadata("CustomerOrder", [customer.ToReference(), order.ToReference()]);
+    var state = new DataVaultSatelliteMetadata(
+        "State",
+        customerOrder.ToReference(),
+        ["State Code"]);
+    var pit = new DataVaultPitMetadata(customerOrder.ToReference(), ["State"]);
+
+    return new DataVaultMetadataModel([customer, order], [customerOrder], [state], [pit]);
+  }
+
   private static DataVaultMetadataModel CreateBridgeMetadataModel() {
     return new DataVaultMetadataModel(
         [
@@ -962,6 +976,31 @@ public sealed class DataVaultEfMetadataTranslationTests {
         pit,
         "IxPitCustomerProfileStatusTraversalCustomerHashKeyLoadTimestamp",
         ["CustomerHashKey", "LoadTimestamp"],
+        isUnique: false);
+    AssertNoRelationships(pit);
+  }
+
+  private static void AssertLinkParentPit(IMutableEntityType pit) {
+    Assert.Equal(DataVaultTableKind.Pit, AnnotationValue<DataVaultTableKind>(pit, DataVaultAnnotationNames.EntityKind));
+    Assert.Equal("CustomerOrderState", AnnotationValue<string>(pit, DataVaultAnnotationNames.MetadataName));
+    Assert.Equal(
+        DataVaultMetadataReferenceKind.Link,
+        AnnotationValue<DataVaultMetadataReferenceKind>(pit, DataVaultAnnotationNames.ParentReferenceKind));
+    Assert.Equal("CustomerOrder", AnnotationValue<string>(pit, DataVaultAnnotationNames.ParentReferenceName));
+    Assert.Equal(
+        ["CustomerOrderHashKey", "LoadTimestamp", "StateLoadTimestamp"],
+        PropertyNamesInOrdinalOrder(pit));
+    AssertProperty(pit, "CustomerOrderHashKey", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.HashKey);
+    AssertProperty(pit, "LoadTimestamp", DataVaultPropertyRole.Technical, TechnicalMetadataColumnRole.LoadTimestamp);
+    AssertProperty(pit, "StateLoadTimestamp", DataVaultPropertyRole.SnapshotReference, TechnicalMetadataColumnRole.LoadTimestamp);
+    AssertPrimaryKey(
+        pit,
+        "PkPitCustomerOrderStateCustomerOrderHashKeyLoadTimestamp",
+        ["CustomerOrderHashKey", "LoadTimestamp"]);
+    AssertIndex(
+        pit,
+        "IxPitCustomerOrderStateTraversalCustomerOrderHashKeyLoadTimestamp",
+        ["CustomerOrderHashKey", "LoadTimestamp"],
         isUnique: false);
     AssertNoRelationships(pit);
   }

@@ -28,10 +28,13 @@ The v1 PIT vocabulary is the newer `DataVaultPitMetadata` baseline. The older `D
 
 One read request targets exactly one `DataVaultPitMetadata` declaration. The declaration must describe:
 
-- one hub parent through `DataVaultMetadataReference.Hub(...)`
-- one or more ordered hub-attached satellite references
-- ordinary satellite references, or multi-active satellite references that all resolve to the same canonical driving-key names in the same order
-- no bridge traversal, link parent, link-attached satellite, or provider-specific optimization requirement
+- one hub parent through `DataVaultMetadataReference.Hub(...)` or one link parent through `DataVaultMetadataReference.Link(...)`
+- one or more ordered satellite references attached to that same declared parent
+- ordinary satellite references; hub-parent PITs may also reference multi-active satellites that all resolve to the same canonical driving-key names in the same order
+- link-parent PITs may reference ordinary non-multi-active satellite references only
+- no bridge traversal, mixed-parent satellite set, link-parent multi-active satellite, incompatible driving-key family, cross-product tuple semantics, or provider-specific optimization requirement
+
+For link-parent PITs, the existing `ParentHashKey` field carries the link hash key. This runtime support does not change the public `dvault.model.v1` PIT artifact shape; model-first PIT declarations remain hub-parent-only.
 
 The declaration order of `DataVaultPitMetadata.Satellites` is the contract order for read-record satellite segments and typed projection access. When a PIT contains supported multi-active satellites, the PIT row identity expands from `(ParentHashKey, LoadTimestamp)` to `(ParentHashKey, <DrivingKey...>, LoadTimestamp)`.
 
@@ -219,11 +222,12 @@ Required v1 diagnostic cases:
 
 | Case | Diagnostic expectation |
 | --- | --- |
-| `DataVaultPitMetadata.Parent.Kind != Hub` | reject link-based PIT parents and non-hub parents |
+| `DataVaultPitMetadata.Parent.Kind` is not Hub or Link | reject unsupported parent kinds |
+| link-parent satellite reference marked multi-active | reject link-parent multi-active satellite references |
 | satellite reference contradicts resolved satellite metadata | reject contradictory multi-active reference metadata |
 | multi-active satellites use incompatible driving-key names or order | reject ambiguous tuple identity and cross-product tuple semantics |
-| satellite attached to a link | reject link-attached PIT satellites |
-| satellite attached to a different hub | reject inconsistent parent/satellite shape |
+| satellite attached to a different hub or link | reject inconsistent parent/satellite shape |
+| hub-parent PIT references a link-parent satellite, or link-parent PIT references a hub-parent satellite | reject mixed-parent PIT shapes |
 | bridge-driven read request | reject bridge traversal reads as outside the PIT baseline |
 | `DataVaultPointInTimeMetadata` request | reject legacy point-in-time modeling as outside this contract |
 | request outside one declared `DataVaultPitMetadata` | reject reflection DTO binding or ad hoc table-name reads |

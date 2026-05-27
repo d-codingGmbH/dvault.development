@@ -6,6 +6,7 @@ Baseline:
 - The public service boundary is IDataVaultReadService.
 - The contract extends the existing latest/as-of satellite projector pattern.
 - The metadata declaration is DataVaultPitMetadata.
+- Bounded link-parent PITs use the same ParentHashKey contract with the link hash key.
 - Legacy DataVaultPointInTimeMetadata and DataVaultModelBuilder.PointInTime(...) are out of scope.
 
 Request:
@@ -140,6 +141,20 @@ Scenario: missing satellite snapshot inside matched PIT row
     Status is absent.
     No non-PIT latest/as-of Status row is read as fallback.
 
+Scenario: link-parent PIT row key
+  metadata:
+    link CustomerOrder participants [Customer, Order]
+    satellite State parent CustomerOrder payload [State Code]
+    satellite Fulfillment parent CustomerOrder payload [Fulfillment Location]
+    pit CustomerOrder/State/Fulfillment declared satellites [State, Fulfillment]
+  request:
+    parent hash keys [customer-order-link-hash-001]
+    AsOf 2026-05-11T12:00:00+00:00
+  expected result:
+    ParentHashKey is the CustomerOrder link hash key.
+    Satellite snapshots resolve from link-parent satellite rows attached to CustomerOrder.
+    The public field names remain ParentHashKey, LoadTimestamp, and <Satellite>LoadTimestamp.
+
 Timestamp behavior:
   caller API uses DateTimeOffset for AsOf, PIT row LoadTimestamp, and satellite SnapshotLoadTimestamp.
   provider storage modes such as ISO 8601 UTC text or UTC ticks are internal implementation details.
@@ -151,10 +166,12 @@ Diagnostics:
     fail deterministically before row materialization.
   unsupported bridge-driven read:
     fail deterministically before row materialization.
-  unsupported link-based PIT parent:
+  unsupported parent kind other than hub or link:
     fail deterministically before row materialization.
-  satellite attached to a different parent:
+  satellite attached to a different parent or mixed hub/link parent shape:
     fail deterministically before row materialization.
+  model-first dvault.model.v1 link-parent PIT artifact:
+    remain outside this runtime contract; v1 PIT artifacts are hub-parent-only.
   legacy DataVaultPointInTimeMetadata or PointInTime request:
     fail as out of scope for this PIT contract.
   request outside one declared DataVaultPitMetadata:

@@ -51,18 +51,40 @@ public sealed class DataVaultPitReadServiceTests {
   }
 
   [Fact]
-  public async Task PitReadRejectsUnsupportedShapesBeforeQuery() {
+  public async Task PitReadAcceptsLinkParentPitShapeAndValidatesGeneratedEntityBeforeQuery() {
     var readService = new DefaultDataVaultReadService();
-    await using var context = new EmptyPitModelContext(new DbContextOptionsBuilder<EmptyPitModelContext>().Options);
+    await using var context = new EmptyPitModelContext(
+        new DbContextOptionsBuilder<EmptyPitModelContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options);
     var linkParentPit = new DataVaultPitMetadata(DataVaultMetadataReference.Link("CustomerOrder"), ["State"]);
 
-    var linkParentException = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+    var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
         readService.ReadPitRowsAsync(
             context,
             new DataVaultPitAsOfReadRequest(linkParentPit, ["link-hash"], DateTimeOffset.UtcNow)));
 
-    Assert.Contains("PIT metadata 'CustomerOrderState'", linkParentException.Message, StringComparison.Ordinal);
-    Assert.Contains("link-based PIT tables", linkParentException.Message, StringComparison.Ordinal);
+    Assert.Contains("PIT metadata 'CustomerOrderState'", exception.Message, StringComparison.Ordinal);
+    Assert.Contains("generated PIT table/entity 'PitCustomerOrderState'", exception.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public async Task PitReadRejectsMissingMultiActivePitGeneratedEntityBeforeQuery() {
+    var readService = new DefaultDataVaultReadService();
+    await using var context = new EmptyPitModelContext(
+        new DbContextOptionsBuilder<EmptyPitModelContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options);
+    var multiActivePit = new DataVaultPitMetadata(
+        DataVaultMetadataReference.Hub("Customer"),
+        [new DataVaultPitSatelliteReferenceMetadata("Profile", isMultiActive: true)]);
+    var multiActiveException = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        readService.ReadPitRowsAsync(
+            context,
+            new DataVaultPitAsOfReadRequest(multiActivePit, ["customer-hash"], DateTimeOffset.UtcNow)));
+
+    Assert.Contains("PIT metadata 'CustomerProfile'", multiActiveException.Message, StringComparison.Ordinal);
+    Assert.Contains("generated PIT table/entity 'PitCustomerProfile'", multiActiveException.Message, StringComparison.Ordinal);
   }
 
   [Fact]

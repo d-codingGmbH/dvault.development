@@ -327,6 +327,86 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
   }
 
   [Fact]
+  public async Task LinkParentPitMaintenanceRebuildsAndReadsRowsThroughProviderNeutralFallback() {
+    var metadata = CreateLinkParentMetadata();
+    var importTimestamp = Utc(2026, 5, 11, 8, 0);
+    var stateTimestamp = Utc(2026, 5, 11, 9, 0);
+    var fulfillmentTimestamp = Utc(2026, 5, 11, 10, 0);
+    var secondStateTimestamp = Utc(2026, 5, 11, 11, 0);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateLinkParentOptions(database.DatabasePath);
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var readService = provider.GetRequiredService<IDataVaultReadService>();
+    var readDiagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+    var maintenanceService = provider.GetRequiredService<IDataVaultPitMaintenanceService>();
+    string linkHashKey;
+    DataVaultPitMaintenanceResult maintenanceResult;
+
+    await using (var context = new LinkParentPitMaintenanceContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+      linkHashKey = await SaveCustomerOrderLinkAsync(saveService, context, metadata, importTimestamp);
+      await SaveLinkStateAsync(saveService, context, metadata, linkHashKey, stateTimestamp, "Packed", "state-1");
+      await SaveLinkFulfillmentAsync(saveService, context, metadata, linkHashKey, fulfillmentTimestamp, "Dock 12", "fulfillment-1");
+      await SaveLinkStateAsync(saveService, context, metadata, linkHashKey, secondStateTimestamp, "Shipped", "state-2");
+
+      context.Set<Dictionary<string, object>>("PitCustomerOrderStateFulfillment").Add(CreateLinkParentPitRow(
+          linkHashKey,
+          Utc(2026, 5, 11, 8, 30),
+          stateSnapshotTimestamp: null,
+          fulfillmentSnapshotTimestamp: null));
+      await context.SaveChangesAsync();
+
+      maintenanceResult = await maintenanceService.RebuildAsync(
+          context,
+          new DataVaultPitRebuildRequest(metadata.Pit));
+    }
+
+    await using (var context = new LinkParentPitMaintenanceContext(options)) {
+      var request = new DataVaultPitAsOfReadRequest(metadata.Pit, [linkHashKey], Utc(2026, 5, 11, 10, 30));
+      var diagnostics = readDiagnostics.Analyze(context, request);
+      var pitRows = await ReadLinkParentPitRowsAsync(context);
+      var readRecords = await readService.ReadPitRowsAsync(context, request);
+      var projectedRows = await readService.ReadPitAsync(
+          context,
+          request,
+          row => new LinkParentSnapshotRead(
+              row.RequiredString("ParentHashKey"),
+              row.RequiredDateTimeOffset("LoadTimestamp"),
+              row.RequiredSatellite("State").RequiredString("State Code"),
+              row.RequiredSatellite("Fulfillment").RequiredString("Fulfillment Location")));
+
+      Assert.Equal("PitCustomerOrderStateFulfillment", maintenanceResult.TableName);
+      Assert.Equal(1, maintenanceResult.ParentHashKeyCount);
+      Assert.Equal(1, maintenanceResult.RowsDeleted);
+      Assert.Equal(3, maintenanceResult.RowsWritten);
+      Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback, diagnostics.ReadStrategy.Status);
+      Assert.Contains(
+          diagnostics.ReadStrategy.FallbackCauses,
+          cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape);
+      Assert.Collection(
+          pitRows,
+          row => AssertLinkParentPitRow(row, linkHashKey, stateTimestamp, stateTimestamp, null),
+          row => AssertLinkParentPitRow(row, linkHashKey, fulfillmentTimestamp, stateTimestamp, fulfillmentTimestamp),
+          row => AssertLinkParentPitRow(row, linkHashKey, secondStateTimestamp, secondStateTimestamp, fulfillmentTimestamp));
+
+      var record = Assert.Single(readRecords);
+      Assert.Equal(linkHashKey, record.ParentHashKey);
+      Assert.Equal(fulfillmentTimestamp, record.LoadTimestamp);
+      Assert.Equal(stateTimestamp, RequiredSnapshot(record, "State").SnapshotLoadTimestamp);
+      Assert.Equal(fulfillmentTimestamp, RequiredSnapshot(record, "Fulfillment").SnapshotLoadTimestamp);
+      var projectedRow = Assert.Single(projectedRows);
+      Assert.Equal(linkHashKey, projectedRow.ParentHashKey);
+      Assert.Equal(fulfillmentTimestamp, projectedRow.LoadTimestamp);
+      Assert.Equal("Packed", projectedRow.StateCode);
+      Assert.Equal("Dock 12", projectedRow.FulfillmentLocation);
+    }
+  }
+
+  [Fact]
   public async Task RegistryBackedPitMaintenanceRebuildsByNameThroughSqlite() {
     var metadata = CreateMetadata();
     var importTimestamp = Utc(2026, 5, 11, 8, 0);
@@ -418,6 +498,12 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
     return new DbContextOptionsBuilder<PitMaintenanceContext>()
         .UseSqlite("Data Source=" + Assert.IsType<string>(databasePath) + ";Pooling=False")
         .ReplaceService<IModelCacheKeyFactory, PitMaintenanceModelCacheKeyFactory>()
+        .Options;
+  }
+
+  private static DbContextOptions<LinkParentPitMaintenanceContext> CreateLinkParentOptions(object? databasePath) {
+    return new DbContextOptionsBuilder<LinkParentPitMaintenanceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(databasePath) + ";Pooling=False")
         .Options;
   }
 
@@ -555,6 +641,89 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
             ]));
   }
 
+  private static async Task<string> SaveCustomerOrderLinkAsync(
+      IDataVaultSaveService saveService,
+      DbContext context,
+      LinkParentPitMetadata metadata,
+      DateTimeOffset loadTimestamp) {
+    var hubResult = await saveService.SaveAsync(
+        context,
+        new DataVaultSaveRequest(
+            loadTimestamp,
+            "order-import",
+            [
+                new(metadata.Customer, [new("Customer Id", "C-100")]),
+                new(metadata.Order, [new("Order Id", "O-100")]),
+            ],
+            []));
+    var customerHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Customer");
+    var orderHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Order");
+    var linkResult = await saveService.SaveAsync(
+        context,
+        new DataVaultSaveRequest(
+            loadTimestamp,
+            "order-link",
+            [],
+            [
+                new DataVaultLinkSaveOperation(
+                    metadata.CustomerOrder,
+                    [
+                        new KeyValuePair<string, string>("Customer", customerHashKey),
+                        new KeyValuePair<string, string>("Order", orderHashKey),
+                    ]),
+            ]));
+
+    return GetHashKey(linkResult, DataVaultTableKind.Link, "CustomerOrder");
+  }
+
+  private static Task SaveLinkStateAsync(
+      IDataVaultSaveService saveService,
+      DbContext context,
+      LinkParentPitMetadata metadata,
+      string linkHashKey,
+      DateTimeOffset loadTimestamp,
+      string stateCode,
+      string hashDiff) {
+    return saveService.SaveAsync(
+        context,
+        new DataVaultSaveRequest(
+            loadTimestamp,
+            "order-state",
+            [],
+            [],
+            [
+                new(
+                    metadata.State,
+                    linkHashKey,
+                    [new("State Code", stateCode)],
+                    hashDiff),
+            ]));
+  }
+
+  private static Task SaveLinkFulfillmentAsync(
+      IDataVaultSaveService saveService,
+      DbContext context,
+      LinkParentPitMetadata metadata,
+      string linkHashKey,
+      DateTimeOffset loadTimestamp,
+      string location,
+      string hashDiff) {
+    return saveService.SaveAsync(
+        context,
+        new DataVaultSaveRequest(
+            loadTimestamp,
+            "order-fulfillment",
+            [],
+            [],
+            [
+                new(
+                    metadata.Fulfillment,
+                    linkHashKey,
+                    [new("Fulfillment Location", location)],
+                    hashDiff),
+            ]));
+  }
+
   private static Dictionary<string, object> CreatePitRow(
       DataVaultLoadTimestampStorage loadTimestampStorage,
       string parentHashKey,
@@ -569,6 +738,23 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
           : null!,
       ["StatusLoadTimestamp"] = statusSnapshotTimestamp.HasValue
           ? ToStoredTimestamp(loadTimestampStorage, statusSnapshotTimestamp.Value)
+          : null!,
+    };
+  }
+
+  private static Dictionary<string, object> CreateLinkParentPitRow(
+      string parentHashKey,
+      DateTimeOffset pitLoadTimestamp,
+      DateTimeOffset? stateSnapshotTimestamp,
+      DateTimeOffset? fulfillmentSnapshotTimestamp) {
+    return new Dictionary<string, object>(StringComparer.Ordinal) {
+      ["CustomerOrderHashKey"] = parentHashKey,
+      ["LoadTimestamp"] = pitLoadTimestamp,
+      ["StateLoadTimestamp"] = stateSnapshotTimestamp.HasValue
+          ? stateSnapshotTimestamp.Value
+          : null!,
+      ["FulfillmentLoadTimestamp"] = fulfillmentSnapshotTimestamp.HasValue
+          ? fulfillmentSnapshotTimestamp.Value
           : null!,
     };
   }
@@ -620,6 +806,23 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
         .ToArray();
   }
 
+  private static async Task<IReadOnlyList<LinkParentPitRow>> ReadLinkParentPitRowsAsync(DbContext context) {
+    var rows = await context
+        .Set<Dictionary<string, object>>("PitCustomerOrderStateFulfillment")
+        .AsNoTracking()
+        .ToListAsync();
+
+    return rows
+        .Select(row => new LinkParentPitRow(
+            Assert.IsType<string>(row["CustomerOrderHashKey"]),
+            DataVaultLoadTimestampValueConverter.ReadProviderValue(row["LoadTimestamp"]),
+            ReadOptionalTimestamp(row, "StateLoadTimestamp"),
+            ReadOptionalTimestamp(row, "FulfillmentLoadTimestamp")))
+        .OrderBy(row => row.ParentHashKey, StringComparer.Ordinal)
+        .ThenBy(row => row.LoadTimestamp)
+        .ToArray();
+  }
+
   private static DateTimeOffset? ReadOptionalTimestamp(
       IReadOnlyDictionary<string, object> row,
       string columnName) {
@@ -659,6 +862,18 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
     Assert.Equal(loadTimestamp, row.LoadTimestamp);
     Assert.Equal(contactSnapshotTimestamp, row.ContactSnapshotTimestamp);
     Assert.Equal(profileSnapshotTimestamp, row.ProfileSnapshotTimestamp);
+  }
+
+  private static void AssertLinkParentPitRow(
+      LinkParentPitRow row,
+      string parentHashKey,
+      DateTimeOffset loadTimestamp,
+      DateTimeOffset? stateSnapshotTimestamp,
+      DateTimeOffset? fulfillmentSnapshotTimestamp) {
+    Assert.Equal(parentHashKey, row.ParentHashKey);
+    Assert.Equal(loadTimestamp, row.LoadTimestamp);
+    Assert.Equal(stateSnapshotTimestamp, row.StateSnapshotTimestamp);
+    Assert.Equal(fulfillmentSnapshotTimestamp, row.FulfillmentSnapshotTimestamp);
   }
 
   private static PitMaintenanceMetadata CreateMetadata() {
@@ -719,6 +934,24 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
         ]);
 
     return new DataVaultMetadataModel([customer], [], [contact, preference], [pit]);
+  }
+
+  private static LinkParentPitMetadata CreateLinkParentMetadata() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+    var customerOrder = new DataVaultLinkMetadata("CustomerOrder", [customer.ToReference(), order.ToReference()]);
+    var state = new DataVaultSatelliteMetadata(
+        "State",
+        customerOrder.ToReference(),
+        ["State Code"]);
+    var fulfillment = new DataVaultSatelliteMetadata(
+        "Fulfillment",
+        customerOrder.ToReference(),
+        ["Fulfillment Location"]);
+    var pit = new DataVaultPitMetadata(customerOrder.ToReference(), ["State", "Fulfillment"]);
+    var model = new DataVaultMetadataModel([customer, order], [customerOrder], [state, fulfillment], [pit]);
+
+    return new LinkParentPitMetadata(customer, order, customerOrder, state, fulfillment, pit, model);
   }
 
   private static ServiceProvider CreateRegistryProvider(object? databasePath) {
@@ -790,6 +1023,14 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
     }
   }
 
+  private sealed class LinkParentPitMaintenanceContext(DbContextOptions<LinkParentPitMaintenanceContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(
+          CreateLinkParentMetadata().Model,
+          DataVaultProviderCapabilityProfiles.Sqlite);
+    }
+  }
+
   private sealed class CustomerProfileStatusPitMapping {
   }
 
@@ -804,6 +1045,15 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
       DataVaultHubMetadata Customer,
       DataVaultSatelliteMetadata Profile,
       DataVaultSatelliteMetadata Contact,
+      DataVaultPitMetadata Pit,
+      DataVaultMetadataModel Model);
+
+  private sealed record LinkParentPitMetadata(
+      DataVaultHubMetadata Customer,
+      DataVaultHubMetadata Order,
+      DataVaultLinkMetadata CustomerOrder,
+      DataVaultSatelliteMetadata State,
+      DataVaultSatelliteMetadata Fulfillment,
       DataVaultPitMetadata Pit,
       DataVaultMetadataModel Model);
 
@@ -825,4 +1075,16 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
       string ContactType,
       string EmailAddress,
       string CustomerName);
+
+  private sealed record LinkParentPitRow(
+      string ParentHashKey,
+      DateTimeOffset LoadTimestamp,
+      DateTimeOffset? StateSnapshotTimestamp,
+      DateTimeOffset? FulfillmentSnapshotTimestamp);
+
+  private sealed record LinkParentSnapshotRead(
+      string ParentHashKey,
+      DateTimeOffset LoadTimestamp,
+      string StateCode,
+      string FulfillmentLocation);
 }

@@ -402,11 +402,11 @@ internal static class DataVaultEfMetadataTranslator {
   private static EntityProjection CreatePitEntity(
       DataVaultPitMetadata pit,
       DataVaultMetadataModel metadataModel) {
-    var hub = ResolvePitHub(pit, metadataModel.Hubs);
-    var satellites = ResolvePitSatellites(pit, metadataModel.Satellites, hub);
+    var parent = ResolvePitParent(pit, metadataModel.Hubs, metadataModel.Links);
+    var satellites = ResolvePitSatellites(pit, metadataModel.Satellites, parent);
     var tableName = GetPitTableName(pit.Name);
     var parentHashKeyColumnName = NamingPolicy.GetTechnicalColumnName(
-        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, hub.Name, tableName));
+        new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, parent.Name, tableName));
     var loadTimestampColumnName = NamingPolicy.GetTechnicalColumnName(
         new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, pit.Name, tableName));
     var drivingKeyNames = GetPitDrivingKeyNames(pit, satellites);
@@ -418,7 +418,7 @@ internal static class DataVaultEfMetadataTranslator {
         [parentHashKeyColumnName, .. drivingKeyColumnNames, loadTimestampColumnName]);
     var properties = new List<PropertyProjection>
     {
-        TechnicalProperty(parentHashKeyColumnName, TechnicalMetadataColumnRole.HashKey, hub.Name),
+        TechnicalProperty(parentHashKeyColumnName, TechnicalMetadataColumnRole.HashKey, parent.Name),
     };
 
     for (var index = 0; index < drivingKeyColumnNames.Count; index++) {
@@ -479,32 +479,47 @@ internal static class DataVaultEfMetadataTranslator {
         indexes);
   }
 
-  private static DataVaultHubMetadata ResolvePitHub(
+  private static DataVaultMetadataReference ResolvePitParent(
       DataVaultPitMetadata pit,
-      IEnumerable<DataVaultHubMetadata> hubs) {
-    if (pit.Parent.Kind != DataVaultMetadataReferenceKind.Hub) {
-      throw PitTranslationFailure(
-          "PIT metadata '" + pit.Name + "' declares parent '" + pit.Parent.Name + "' as " + pit.Parent.Kind +
-          "; link-based PIT tables are outside the supported baseline.");
+      IEnumerable<DataVaultHubMetadata> hubs,
+      IEnumerable<DataVaultLinkMetadata> links) {
+    if (pit.Parent.Kind == DataVaultMetadataReferenceKind.Hub) {
+      var matches = hubs
+          .Where(hub => string.Equals(hub.Name, pit.Parent.Name, StringComparison.Ordinal))
+          .ToArray();
+
+      return matches.Length switch {
+        1 => matches[0].ToReference(),
+        0 => throw PitTranslationFailure(
+            "PIT metadata '" + pit.Name + "' references hub '" + pit.Parent.Name + "' that is not declared."),
+        _ => throw PitTranslationFailure(
+            "PIT metadata '" + pit.Name + "' references hub '" + pit.Parent.Name + "' more than once."),
+      };
     }
 
-    var matches = hubs
-        .Where(hub => string.Equals(hub.Name, pit.Parent.Name, StringComparison.Ordinal))
-        .ToArray();
+    if (pit.Parent.Kind == DataVaultMetadataReferenceKind.Link) {
+      var matches = links
+          .Where(link => string.Equals(link.Name, pit.Parent.Name, StringComparison.Ordinal))
+          .ToArray();
 
-    return matches.Length switch {
-      1 => matches[0],
-      0 => throw PitTranslationFailure(
-          "PIT metadata '" + pit.Name + "' references hub '" + pit.Parent.Name + "' that is not declared."),
-      _ => throw PitTranslationFailure(
-          "PIT metadata '" + pit.Name + "' references hub '" + pit.Parent.Name + "' more than once."),
-    };
+      return matches.Length switch {
+        1 => matches[0].ToReference(),
+        0 => throw PitTranslationFailure(
+            "PIT metadata '" + pit.Name + "' references link '" + pit.Parent.Name + "' that is not declared."),
+        _ => throw PitTranslationFailure(
+            "PIT metadata '" + pit.Name + "' references link '" + pit.Parent.Name + "' more than once."),
+      };
+    }
+
+    throw PitTranslationFailure(
+        "PIT metadata '" + pit.Name + "' declares parent '" + pit.Parent.Name + "' as " + pit.Parent.Kind +
+        "; supported PIT tables require a declared hub or link parent.");
   }
 
   private static IReadOnlyList<DataVaultSatelliteMetadata> ResolvePitSatellites(
       DataVaultPitMetadata pit,
       IEnumerable<DataVaultSatelliteMetadata> satellites,
-      DataVaultHubMetadata hub) {
+      DataVaultMetadataReference parent) {
     if (pit.Satellites.Count == 0) {
       throw PitTranslationFailure(
           "PIT metadata '" + pit.Name + "' must declare at least one attached satellite.");
@@ -521,34 +536,39 @@ internal static class DataVaultEfMetadataTranslator {
             satelliteReference.SatelliteName + "'.");
       }
 
-      var matches = availableSatellites
+      var namedSatellites = availableSatellites
           .Where(satellite => string.Equals(satellite.Name, satelliteReference.SatelliteName, StringComparison.Ordinal))
           .ToArray();
-      var satellite = matches.Length switch {
-        1 => matches[0],
-        0 => throw PitTranslationFailure(
+      if (namedSatellites.Length == 0) {
+        throw PitTranslationFailure(
             "PIT metadata '" + pit.Name + "' references satellite '" +
-            satelliteReference.SatelliteName + "' that is not declared."),
+            satelliteReference.SatelliteName + "' that is not declared.");
+      }
+
+      var parentMatches = namedSatellites
+          .Where(satellite => satellite.Parent.Kind == parent.Kind &&
+              string.Equals(satellite.Parent.Name, parent.Name, StringComparison.Ordinal))
+          .ToArray();
+      var satellite = parentMatches.Length switch {
+        1 => parentMatches[0],
+        0 => throw PitTranslationFailure(
+            "PIT metadata '" + pit.Name + "' references satellite '" + namedSatellites[0].Name +
+            "' attached to " + namedSatellites[0].Parent.Kind + " '" + namedSatellites[0].Parent.Name +
+            "' instead of declared " + parent.Kind + " '" + parent.Name + "'."),
         _ => throw PitTranslationFailure(
             "PIT metadata '" + pit.Name + "' references satellite '" +
-            satelliteReference.SatelliteName + "' more than once."),
+            satelliteReference.SatelliteName + "' more than once under declared " + parent.Kind + " '" + parent.Name + "'."),
       };
 
-      if (satellite.Parent.Kind != DataVaultMetadataReferenceKind.Hub) {
-        throw PitTranslationFailure(
-            "PIT metadata '" + pit.Name + "' references satellite '" + satellite.Name +
-            "' attached to " + satellite.Parent.Kind + " '" + satellite.Parent.Name +
-            "'; link-based PIT tables are outside the supported baseline.");
-      }
-
-      if (!string.Equals(satellite.Parent.Name, hub.Name, StringComparison.Ordinal)) {
-        throw PitTranslationFailure(
-            "PIT metadata '" + pit.Name + "' references satellite '" + satellite.Name +
-            "' that is attached to hub '" + satellite.Parent.Name +
-            "' instead of declared hub '" + hub.Name + "'.");
-      }
-
       ValidatePitSatelliteMultiActiveReference(pit, satelliteReference, satellite);
+
+      if (parent.Kind == DataVaultMetadataReferenceKind.Link &&
+          (satelliteReference.IsMultiActive || satellite.DrivingKeyNames.Count > 0)) {
+        throw PitTranslationFailure(
+            "PIT metadata '" + pit.Name + "' references multi-active satellite '" +
+            satelliteReference.SatelliteName + "' for link parent '" + parent.Name +
+            "', which is outside the supported baseline.");
+      }
       resolvedSatellites.Add(satellite);
     }
 
@@ -646,7 +666,7 @@ internal static class DataVaultEfMetadataTranslator {
 
   private static NotSupportedException PitTranslationFailure(string message) {
     return new NotSupportedException(
-        "PIT metadata translation supports only one hub plus attached ordinary satellites or one shared multi-active driving-key family. " + message);
+        "PIT metadata translation supports one declared hub with attached ordinary satellites or one shared multi-active driving-key family, or one declared link with attached non-multi-active satellites. " + message);
   }
 
   private static PropertyProjection TechnicalProperty(

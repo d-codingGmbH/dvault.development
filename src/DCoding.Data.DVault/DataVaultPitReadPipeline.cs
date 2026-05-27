@@ -362,11 +362,12 @@ internal static class DataVaultPitReadPipeline {
   }
 
   private static void ValidatePitShape(DataVaultPitMetadata pit) {
-    if (pit.Parent.Kind != DataVaultMetadataReferenceKind.Hub) {
+    if (pit.Parent.Kind != DataVaultMetadataReferenceKind.Hub &&
+        pit.Parent.Kind != DataVaultMetadataReferenceKind.Link) {
       throw PitReadFailure(
           pit.Name,
           "declares parent '" + pit.Parent.Name + "' as " + pit.Parent.Kind +
-          "; link-based PIT tables and non-hub parents are outside the supported PIT read baseline");
+          "; supported PIT reads require a hub or link parent");
     }
 
     if (pit.Satellites.Count == 0) {

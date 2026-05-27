@@ -127,35 +127,58 @@ public sealed class DataVaultPitMaintenanceServiceTests {
   }
 
   [Fact]
-  public async Task RegistryBackedPitParentMaintenanceRejectsUnsupportedPitShapeBeforeEmptyNoOpDelegation() {
+  public async Task RegistryBackedPitParentMaintenanceDelegatesSupportedLinkParentPitBeforeEmptyNoOp() {
     var linkParentPit = CreateCustomerOrderStatePit();
     var registry = DataVaultMetadataRegistry.Create(linkParentPit.Model);
     var service = new RecordingPitMaintenanceService();
     await using var context = CreateRegistryContext(registry);
 
-    var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-        service.MaintainParentsAsync(
-            context,
-            new DataVaultRegistryPitParentMaintenanceRequest(linkParentPit.Pit.Name, [])));
+    var result = await service.MaintainParentsAsync(
+        context,
+        new DataVaultRegistryPitParentMaintenanceRequest(linkParentPit.Pit.Name, []));
 
-    Assert.Contains("PIT metadata 'CustomerOrderState'", exception.Message, StringComparison.Ordinal);
-    Assert.Contains("link-based PIT tables", exception.Message, StringComparison.Ordinal);
-    Assert.Empty(service.ParentRequests);
+    var request = Assert.Single(service.ParentRequests);
+    Assert.Same(linkParentPit.Pit, request.Pit);
+    Assert.Empty(request.ParentHashKeys);
+    Assert.Equal("CustomerOrderState", result.Pit.Name);
+    Assert.True(result.IsNoOp);
   }
 
   [Fact]
-  public async Task PitMaintenanceRejectsUnsupportedShapesBeforeQuery() {
+  public async Task PitMaintenanceAcceptsLinkParentPitShapeAndValidatesGeneratedEntityBeforeQuery() {
     var service = new DefaultDataVaultPitMaintenanceService();
-    await using var context = new EmptyPitModelContext(new DbContextOptionsBuilder<EmptyPitModelContext>().Options);
+    await using var context = new EmptyPitModelContext(
+        new DbContextOptionsBuilder<EmptyPitModelContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options);
     var linkParentPit = new DataVaultPitMetadata(DataVaultMetadataReference.Link("CustomerOrder"), ["State"]);
 
-    var linkParentException = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+    var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
         service.RebuildAsync(
             context,
             new DataVaultPitRebuildRequest(linkParentPit)));
 
-    Assert.Contains("PIT metadata 'CustomerOrderState'", linkParentException.Message, StringComparison.Ordinal);
-    Assert.Contains("link-based PIT tables", linkParentException.Message, StringComparison.Ordinal);
+    Assert.Contains("PIT metadata 'CustomerOrderState'", exception.Message, StringComparison.Ordinal);
+    Assert.Contains("generated PIT table/entity 'PitCustomerOrderState'", exception.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public async Task PitMaintenanceRejectsMissingMultiActivePitGeneratedEntityBeforeQuery() {
+    var service = new DefaultDataVaultPitMaintenanceService();
+    await using var context = new EmptyPitModelContext(
+        new DbContextOptionsBuilder<EmptyPitModelContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options);
+    var multiActivePit = new DataVaultPitMetadata(
+        DataVaultMetadataReference.Hub("Customer"),
+        [new DataVaultPitSatelliteReferenceMetadata("Profile", isMultiActive: true)]);
+    var multiActiveException = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        service.RebuildAsync(
+            context,
+            new DataVaultPitRebuildRequest(multiActivePit)));
+
+    Assert.Contains("PIT metadata 'CustomerProfile'", multiActiveException.Message, StringComparison.Ordinal);
+    Assert.Contains("generated PIT table/entity 'PitCustomerProfile'", multiActiveException.Message, StringComparison.Ordinal);
   }
 
   [Fact]

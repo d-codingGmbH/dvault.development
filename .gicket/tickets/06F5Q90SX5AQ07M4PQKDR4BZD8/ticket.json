@@ -1,24 +1,23 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q90SX5AQ07M4PQKDR4BZD8",
   "ticket-type": "story",
   "title": "Story: Support link-parent PIT maintenance and reads",
-  "revision": "06F5Q98S6A122CW2N73QQ0R8K4",
-  "status": "todo",
+  "revision": "06F6NQ0YPHZG4F24H54RVZ38DG",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
     "area/ef-core",
     "area/maintenance",
     "area/modeling",
     "area/read-models",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WJKS4Z654A4T682GTDCR",
   "releaseId": "06F5Q8WBS0Q69JVAHATNXHBWAW",
   "created-at": "2026-05-24T20:19:01.8856778Z",
-  "updated-at": "2026-05-24T20:20:07.0904870Z"
+  "updated-at": "2026-05-27T19:14:31.2200778Z"
 }
