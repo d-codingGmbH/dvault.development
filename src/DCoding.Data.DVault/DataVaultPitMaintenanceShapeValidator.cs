@@ -1,0 +1,40 @@
+using DCoding.Data.DVault.Modeling;
+
+namespace DCoding.Data.DVault;
+
+internal static class DataVaultPitMaintenanceShapeValidator {
+  public static void ValidateSupportedShape(DataVaultPitMetadata pit) {
+    ArgumentNullException.ThrowIfNull(pit);
+
+    if (pit.Parent.Kind != DataVaultMetadataReferenceKind.Hub) {
+      throw PitMaintenanceFailure(
+          pit.Name,
+          "declares parent '" + pit.Parent.Name + "' as " + pit.Parent.Kind +
+          "; link-based PIT tables and non-hub parents are outside the supported PIT maintenance baseline");
+    }
+
+    if (pit.Satellites.Count == 0) {
+      throw PitMaintenanceFailure(pit.Name, "must declare at least one attached satellite");
+    }
+
+    var satelliteNames = new HashSet<string>(StringComparer.Ordinal);
+    foreach (var satelliteReference in pit.Satellites) {
+      if (!satelliteNames.Add(satelliteReference.SatelliteName)) {
+        throw PitMaintenanceFailure(
+            pit.Name,
+            "declares duplicate satellite reference '" + satelliteReference.SatelliteName + "'");
+      }
+
+      if (satelliteReference.IsMultiActive) {
+        throw PitMaintenanceFailure(
+            pit.Name,
+            "references multi-active satellite '" + satelliteReference.SatelliteName +
+            "', which is outside the supported PIT maintenance baseline");
+      }
+    }
+  }
+
+  private static InvalidOperationException PitMaintenanceFailure(string pitName, string detail) {
+    return new InvalidOperationException("PIT metadata '" + pitName + "' " + detail + ".");
+  }
+}

@@ -59,6 +59,91 @@ public sealed class DataVaultPitMaintenanceServiceTests {
   }
 
   [Fact]
+  public async Task RegistryBackedPitMaintenanceDelegatesRebuildByNameAndClrMapping() {
+    var metadata = CreateCustomerProfileStatusMetadata();
+    var registry = CreateCustomerProfileStatusRegistry(metadata);
+    var service = new RecordingPitMaintenanceService();
+    await using var context = CreateRegistryContext(registry);
+
+    await service.RebuildAsync(
+        context,
+        new DataVaultRegistryPitRebuildRequest(metadata.Pit.Name));
+    await service.RebuildAsync(
+        context,
+        new DataVaultRegistryPitRebuildRequest(typeof(CustomerProfileStatusPitMapping)));
+
+    Assert.Equal([metadata.Pit, metadata.Pit], service.RebuildRequests);
+  }
+
+  [Fact]
+  public async Task RegistryBackedPitMaintenanceDelegatesParentMaintenanceByNameAndClrMapping() {
+    var metadata = CreateCustomerProfileStatusMetadata();
+    var registry = CreateCustomerProfileStatusRegistry(metadata);
+    var service = new RecordingPitMaintenanceService();
+    await using var context = CreateRegistryContext(registry);
+
+    await service.MaintainParentsAsync(
+        context,
+        new DataVaultRegistryPitParentMaintenanceRequest(metadata.Pit.Name, ["customer-hash", "customer-hash"]));
+    await service.MaintainParentsAsync(
+        context,
+        new DataVaultRegistryPitParentMaintenanceRequest(typeof(CustomerProfileStatusPitMapping), ["other-hash"]));
+
+    Assert.Equal([metadata.Pit, metadata.Pit], service.ParentRequests.Select(request => request.Pit));
+    Assert.Equal(["customer-hash"], service.ParentRequests[0].ParentHashKeys);
+    Assert.Equal(["other-hash"], service.ParentRequests[1].ParentHashKeys);
+  }
+
+  [Fact]
+  public async Task RegistryBackedPitMaintenanceFailsBeforeDelegationWhenRegistryOrLookupIsMissing() {
+    var metadata = CreateCustomerProfileStatusMetadata();
+    var registryWithoutClrMapping = DataVaultMetadataRegistry.Create(metadata.Model);
+    var emptyRegistry = DataVaultMetadataRegistry.Create(new DataVaultMetadataModel([metadata.Customer], [], []));
+    var service = new RecordingPitMaintenanceService();
+    await using var contextWithoutRegistry = new EmptyPitModelContext(
+        new DbContextOptionsBuilder<EmptyPitModelContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options);
+    await using var contextWithoutPit = CreateRegistryContext(emptyRegistry);
+    await using var contextWithoutClrMapping = CreateRegistryContext(registryWithoutClrMapping);
+
+    var noRegistryException = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        service.RebuildAsync(
+            contextWithoutRegistry,
+            new DataVaultRegistryPitRebuildRequest(metadata.Pit.Name)));
+    var missingNameException = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        service.RebuildAsync(
+            contextWithoutPit,
+            new DataVaultRegistryPitRebuildRequest("MissingPit")));
+    var missingClrException = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        service.RebuildAsync(
+            contextWithoutClrMapping,
+            new DataVaultRegistryPitRebuildRequest(typeof(CustomerProfileStatusPitMapping))));
+
+    Assert.Contains("UseDataVaultMetadata()", noRegistryException.Message, StringComparison.Ordinal);
+    Assert.Contains("PIT metadata 'MissingPit'", missingNameException.Message, StringComparison.Ordinal);
+    Assert.Contains("PIT metadata mapped to CLR type", missingClrException.Message, StringComparison.Ordinal);
+    Assert.Empty(service.RebuildRequests);
+  }
+
+  [Fact]
+  public async Task RegistryBackedPitParentMaintenanceRejectsUnsupportedPitShapeBeforeEmptyNoOpDelegation() {
+    var linkParentPit = CreateCustomerOrderStatePit();
+    var registry = DataVaultMetadataRegistry.Create(linkParentPit.Model);
+    var service = new RecordingPitMaintenanceService();
+    await using var context = CreateRegistryContext(registry);
+
+    var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        service.MaintainParentsAsync(
+            context,
+            new DataVaultRegistryPitParentMaintenanceRequest(linkParentPit.Pit.Name, [])));
+
+    Assert.Contains("PIT metadata 'CustomerOrderState'", exception.Message, StringComparison.Ordinal);
+    Assert.Contains("link-based PIT tables", exception.Message, StringComparison.Ordinal);
+    Assert.Empty(service.ParentRequests);
+  }
+
+  [Fact]
   public async Task PitMaintenanceRejectsUnsupportedShapesBeforeQuery() {
     var service = new DefaultDataVaultPitMaintenanceService();
     await using var context = new EmptyPitModelContext(new DbContextOptionsBuilder<EmptyPitModelContext>().Options);
@@ -104,7 +189,94 @@ public sealed class DataVaultPitMaintenanceServiceTests {
     return new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["Profile"]);
   }
 
+  private static PitMaintenanceMetadata CreateCustomerProfileStatusMetadata() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["Customer Name"]);
+    var status = new DataVaultSatelliteMetadata(
+        "Status",
+        customer.ToReference(),
+        ["Status Code"]);
+    var pit = new DataVaultPitMetadata(customer.ToReference(), ["Profile", "Status"]);
+    var model = new DataVaultMetadataModel([customer], [], [profile, status], [pit]);
+
+    return new PitMaintenanceMetadata(customer, pit, model);
+  }
+
+  private static PitMaintenanceMetadata CreateCustomerOrderStatePit() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+    var customerOrder = new DataVaultLinkMetadata("CustomerOrder", [customer.ToReference(), order.ToReference()]);
+    var state = new DataVaultSatelliteMetadata(
+        "State",
+        customerOrder.ToReference(),
+        ["State Code"]);
+    var pit = new DataVaultPitMetadata(customerOrder.ToReference(), ["State"]);
+    var model = new DataVaultMetadataModel([customer, order], [customerOrder], [state], [pit]);
+
+    return new PitMaintenanceMetadata(customer, pit, model);
+  }
+
+  private static DataVaultMetadataRegistry CreateCustomerProfileStatusRegistry(PitMaintenanceMetadata metadata) {
+    return DataVaultMetadataRegistry.Create(
+        metadata.Model,
+        [],
+        [DataVaultMetadataClrMapping.Pit<CustomerProfileStatusPitMapping>(metadata.Pit.Name)]);
+  }
+
+  private static EmptyPitModelContext CreateRegistryContext(DataVaultMetadataRegistry registry) {
+    var optionsBuilder = new DbContextOptionsBuilder<EmptyPitModelContext>();
+    optionsBuilder
+        .UseSqlite("Data Source=:memory:")
+        .UseDataVaultMetadata(registry);
+
+    return new EmptyPitModelContext(optionsBuilder.Options);
+  }
+
   private sealed class EmptyPitModelContext(DbContextOptions<EmptyPitModelContext> options) : DbContext(options) {
+  }
+
+  private sealed class RecordingPitMaintenanceService : IDataVaultPitMaintenanceService {
+    public List<DataVaultPitMetadata> RebuildRequests { get; } = [];
+
+    public List<ParentMaintenanceCall> ParentRequests { get; } = [];
+
+    public Task<DataVaultPitMaintenanceResult> RebuildAsync(
+        DbContext dbContext,
+        DataVaultPitRebuildRequest request,
+        CancellationToken cancellationToken = default) {
+      ArgumentNullException.ThrowIfNull(request);
+
+      RebuildRequests.Add(request.Pit);
+
+      return Task.FromResult(new DataVaultPitMaintenanceResult(
+          request.Pit,
+          "Pit" + request.Pit.Name,
+          parentHashKeyCount: 0,
+          rowsDeleted: 0,
+          rowsWritten: 0));
+    }
+
+    public Task<DataVaultPitMaintenanceResult> MaintainParentsAsync(
+        DbContext dbContext,
+        DataVaultPitParentMaintenanceRequest request,
+        CancellationToken cancellationToken = default) {
+      ArgumentNullException.ThrowIfNull(request);
+
+      ParentRequests.Add(new ParentMaintenanceCall(request.Pit, request.ParentHashKeys));
+
+      return Task.FromResult(new DataVaultPitMaintenanceResult(
+          request.Pit,
+          "Pit" + request.Pit.Name,
+          request.ParentHashKeys.Count,
+          rowsDeleted: 0,
+          rowsWritten: 0));
+    }
+  }
+
+  private sealed class CustomerProfileStatusPitMapping {
   }
 
   private sealed class MissingPitSnapshotPropertyContext(DbContextOptions<MissingPitSnapshotPropertyContext> options) : DbContext(options) {
@@ -130,4 +302,13 @@ public sealed class DataVaultPitMaintenanceServiceTests {
       });
     }
   }
+
+  private sealed record PitMaintenanceMetadata(
+      DataVaultHubMetadata Customer,
+      DataVaultPitMetadata Pit,
+      DataVaultMetadataModel Model);
+
+  private sealed record ParentMaintenanceCall(
+      DataVaultPitMetadata Pit,
+      IReadOnlyList<string> ParentHashKeys);
 }

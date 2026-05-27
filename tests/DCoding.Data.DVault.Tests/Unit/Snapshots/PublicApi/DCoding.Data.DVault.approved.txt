@@ -670,6 +670,10 @@ type public sealed class DCoding.Data.DVault.DataVaultPitMaintenanceResult
   property public int RowsWritten { get; }
   property public string TableName { get; }
 
+type public static class DCoding.Data.DVault.DataVaultPitMaintenanceServiceRegistryExtensions
+  method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultPitMaintenanceResult> MaintainParentsAsync(this DCoding.Data.DVault.IDataVaultPitMaintenanceService maintenanceService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryPitParentMaintenanceRequest request, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultPitMaintenanceResult> RebuildAsync(this DCoding.Data.DVault.IDataVaultPitMaintenanceService maintenanceService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultRegistryPitRebuildRequest request, System.Threading.CancellationToken cancellationToken = default)
+
 type public sealed class DCoding.Data.DVault.DataVaultPitParentMaintenanceRequest
   ctor public DataVaultPitParentMaintenanceRequest(DCoding.Data.DVault.Modeling.DataVaultPitMetadata pit, System.Collections.Generic.IEnumerable<string> parentHashKeys)
   property public DCoding.Data.DVault.Modeling.DataVaultPitMetadata Pit { get; }
@@ -1150,6 +1154,19 @@ type public sealed class DCoding.Data.DVault.DataVaultRegistryLinkSaveOperation
   ctor public DataVaultRegistryLinkSaveOperation(string linkName, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> participantHashKeyValues)
   property public System.Collections.Generic.IReadOnlyDictionary<string, string> ParticipantHashKeyValues { get; }
   property public string LinkName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultRegistryPitParentMaintenanceRequest
+  ctor public DataVaultRegistryPitParentMaintenanceRequest(System.Type pitClrType, System.Collections.Generic.IEnumerable<string> parentHashKeys)
+  ctor public DataVaultRegistryPitParentMaintenanceRequest(string pitName, System.Collections.Generic.IEnumerable<string> parentHashKeys)
+  property public System.Collections.Generic.IReadOnlyList<string> ParentHashKeys { get; }
+  property public System.Type? PitClrType { get; }
+  property public string? PitName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultRegistryPitRebuildRequest
+  ctor public DataVaultRegistryPitRebuildRequest(System.Type pitClrType)
+  ctor public DataVaultRegistryPitRebuildRequest(string pitName)
+  property public System.Type? PitClrType { get; }
+  property public string? PitName { get; }
 
 type public sealed class DCoding.Data.DVault.DataVaultRegistrySatelliteSaveOperation
   ctor public DataVaultRegistrySatelliteSaveOperation(DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, string satelliteName, string parentHashKey, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> drivingKeyValues, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> payloadValues, string hashDiff)
