@@ -1,74 +1,55 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Verified that the epic split already covers the full staged-provider bulk ingestion scope and that current repository evidence now spans the SPI, diagnostics, provider implementations, benchmark matrix, and v0.20.0 documentation boundary, so no new planning writes were needed.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The live relation graph already contains eight parentOf children covering the staging SPI, staged fallback diagnostics, SQL Server, PostgreSQL, Oracle, MySQL, benchmark matrix, and v0.20.0 documentation slices, and each child ticket currently reads done.
 - Repository evidence confirms the implemented provider matrix: SQL Server stages through SqlBulkCopy, PostgreSQL stages through COPY, MySQL registers MySqlStagedDataVaultSaveStrategy, and Oracle currently remains on the retained direct optimized path with stagedOracleBulk=not-selected-no-measured-win.
 - Core diagnostics and telemetry already carry staged-provider decline and fallback vocabulary, and the root benchmark triplet plus docs/releases/v0.20.0.md and benchmark docs preserve the same provider-specific boundaries and stored-procedure non-default guidance.
 - No child tickets, relation mutations, description updates, attachments, or planning documents were applied in this refinement pass; the live graph still carries one incoming blocks edge from done ticket 06F5Q8Y3WW9FFV7HA289VHCEAM, treated here as historical rather than an active blocker because the source ticket is complete.
 
-### Scope In
+Scope In
 - Keep the epic as the parent contract for the provider-staging SPI, staged fallback diagnostics, provider-specific optimized save paths, benchmark evidence, and v0.20.0 documentation and stored-procedure boundary guidance.
 - Preserve IDataVaultSaveService as the public write boundary and EF metadata as the model source while allowing provider strategies to select optimized execution behind diagnostics gates.
 - Ratify the current evidence-bound provider matrix: PostgreSQL staged COPY above the 60-operation boundary with retained direct or UNNEST below it, SQL Server staged native bulk via SqlBulkCopy, MySQL staged bulk at 60 plus operations with retained multi-row above 50 and below 60, and Oracle retained direct optimized batching until staged Oracle shows a measured win.
 - Preserve provider-neutral fallback or smaller provider-native path selection for dirty contexts, unsupported shapes, multi-active satellites, or provider and schema limits.
 
-### Scope Out
+Scope Out
 - New public save-service APIs, public staging types, or provider-native chunk execution claims.
 - Automatic stored-procedure generation or making stored procedures the default architecture.
 - Reopening the settled v0.19.0 chunked-save public contract or redefining caller-owned transaction and cancellation behavior.
 - Treating Oracle staged bulk as selected before repository-visible evidence shows a deterministic win over the retained direct Oracle path.
 
-## Acceptance Criteria
-- IDataVaultSaveService remains the only public write boundary and EF metadata remains the authoritative model source for provider-specific optimized dispatch.
-- Provider-specific optimized execution stays evidence-bound and diagnostics-gated: PostgreSQL, SQL Server, and MySQL may use their current optimized paths, while Oracle stays on its retained direct optimized path until staged Oracle is proven.
-- Unsupported, declined, or ineligible shapes continue through provider-neutral fallback or the retained smaller provider-native path without changing caller-owned transaction, cancellation, ordering, hash-key, or hash-diff semantics.
-- Benchmark artifacts and current docs expose the same provider boundaries, preserve skipped optional-provider rows when providers are unavailable, and keep stored procedures documented only as an explicit non-default escape hatch.
-- The epic remains a tracking parent over the already-split architecture, diagnostics, provider, benchmark, and documentation slices, and current evidence does not justify another epic-level split.
-
-## Definition of Done
-- The epic has one coherent parent contract that matches the repository-visible provider matrix, diagnostics behavior, benchmark evidence, and documentation boundary.
-- Provider-specific optimized-path guidance is internally consistent across source, benchmark artifacts, and current documentation without widening the public save API surface.
-- No PO-blocking architecture, scope, or governance questions remain at the epic level, and any future expansion lands as new follow-up tickets instead of reopening this parent scope.
-- Any remaining housekeeping, such as historical relation cleanup or future release positioning, is non-blocking to PO-critic review.
-
-## Implementation Notes
-- Child tickets 06F5Q8YKR31DXGRXVPJ9031BQW, 06F5Q8Z0Y0ADE5H37DAPA1ADQM, 06F5Q8Z72K8AV0755BE571CG04, 06F5Q8ZD94JWFQYA81PSQAJEC8, 06F5Q8ZM9N9Z8J5SCGRY989904, 06F5Q8ZSSV8P3SPETAFJ087MEC, 06F5Q900FC0P3HBZP81CVK7264, and 06F5Q90718D21DN1N1Q2AP7YEM already materialize the epic split and each currently reads done.
-- Source evidence is explicit: src/DCoding.Data.DVault.SqlServer/SqlServerDataVaultSaveStrategy.cs uses staged transfer via SqlBulkCopy, src/DCoding.Data.DVault.Postgres/PostgresDataVaultSaveStrategy.cs emits staged COPY, src/DCoding.Data.DVault.MySql/MySqlDataVaultSaveStrategy.cs contains MySqlStagedDataVaultSaveStrategy, and src/DCoding.Data.DVault/DataVaultDiagnostics.cs plus DataVaultSaveTelemetryExplanation.cs carry staged-provider diagnostics and fallback explanations.
-- Benchmark and docs evidence aligns on the same boundaries through benchmark-summary.md, benchmark-summary.csv, benchmark-summary.json, benchmarks/DCoding.Data.DVault.Benchmarks/README.md, docs/architecture/dvault-v1-explicit-save-service.md, and docs/releases/v0.20.0.md.
-- No bounded planning writes were necessary in this pass because the epic split, child-ticket contracts, and repository-visible evidence already cover the full parent scope.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should a later roadmap or release document publish one consolidated provider decision matrix covering staged bulk, retained direct or multi-row paths, provider-neutral chunked save, and stored-procedure escape-hatch guidance?
 - If Oracle later shows a measured staged win or provider-native chunk execution gains evidence-backed support, should that land as new follow-up tickets rather than reopening this epic's settled boundary?
 
-## Risks
+Risks
 - The live relation graph still carries an incoming blocks edge from done ticket 06F5Q8Y3WW9FFV7HA289VHCEAM, which can confuse humans or automation even though its source ticket is complete.
 - External-provider benchmark rows are opt-in, so unattended artifacts may continue to preserve skipped evidence rather than live timings unless configured provider lanes rerun.
 - Future documentation could overstate Oracle or provider-native chunk behavior if it generalizes beyond the current evidence-backed boundaries.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended; the architecture, diagnostics, provider, benchmark, and documentation slices were already materialized as child tickets, and current evidence does not justify another epic-level decomposition.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Goal: Add provider-specific staged bulk ingestion paths using temporary/transient staging and native bulk APIs where evidence justifies them.
-
-Acceptance criteria:
-- Keeps IDataVaultSaveService as the public write boundary and EF metadata as the model source.
-- Uses diagnostics gates and provider-neutral fallback for unsupported shapes.
-- Treats generated stored procedures as a documented optional future escape hatch, not the default architecture.
+Run mode
+- apply: planned updates are applied after this comment
