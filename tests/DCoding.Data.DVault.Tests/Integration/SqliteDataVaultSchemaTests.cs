@@ -201,12 +201,15 @@ public sealed class SqliteDataVaultSchemaTests {
 
     using var connection = database.CreateOpenConnection();
 
-    AssertTableWithoutSecondaryIndexes(
+    AssertTable(
         connection,
         "PitCustomerProfileStatus",
         ["CustomerHashKey", "LoadTimestamp", "ProfileLoadTimestamp", "StatusLoadTimestamp"],
         "PkPitCustomerProfileStatusCustomerHashKeyLoadTimestamp",
-        ["CustomerHashKey", "LoadTimestamp"]);
+        ["CustomerHashKey", "LoadTimestamp"],
+        "IxPitCustomerProfileStatusTraversalCustomerHashKeyLoadTimestamp",
+        ["CustomerHashKey", "LoadTimestamp"],
+        expectedIndexUnique: false);
   }
 
   [Fact]

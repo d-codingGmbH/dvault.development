@@ -687,6 +687,7 @@ type public sealed class DCoding.Data.DVault.DataVaultPitProjectionRow
 
 type public sealed class DCoding.Data.DVault.DataVaultPitReadRecord
   property public System.Collections.Generic.IReadOnlyDictionary<string, DCoding.Data.DVault.DataVaultPitSatelliteSnapshot> SatelliteSnapshotsByName { get; }
+  property public System.Collections.Generic.IReadOnlyDictionary<string, string> DrivingKeyValues { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPitSatelliteSnapshot> SatelliteSnapshots { get; }
   property public System.DateTimeOffset LoadTimestamp { get; }
   property public string ParentHashKey { get; }
@@ -698,6 +699,7 @@ type public sealed class DCoding.Data.DVault.DataVaultPitReadShapeDiagnostics : 
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics> ReferencedSatellites { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> FilterColumns { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> ProjectedColumns { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeColumnSet> RowIdentityColumns { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadShapeIndexBaseline> ExpectedIndexBaseline { get; init; }
   property public int ReferencedSatelliteLookupCount { get; init; }
   property public string MaintainedPitPrerequisite { get; init; }
@@ -717,7 +719,8 @@ type public sealed class DCoding.Data.DVault.DataVaultPitRebuildRequest
   property public DCoding.Data.DVault.Modeling.DataVaultPitMetadata Pit { get; }
 
 type public sealed class DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics>
-  ctor public DataVaultPitReferencedSatelliteReadShapeDiagnostics(string MetadataName, string TableName, string SnapshotReferenceColumnName, string ParentHashKeyColumnName, string LoadTimestampColumnName)
+  ctor public DataVaultPitReferencedSatelliteReadShapeDiagnostics(string MetadataName, string TableName, string SnapshotReferenceColumnName, string ParentHashKeyColumnName, string LoadTimestampColumnName, System.Collections.Generic.IReadOnlyList<string> DrivingKeyColumnNames)
+  property public System.Collections.Generic.IReadOnlyList<string> DrivingKeyColumnNames { get; init; }
   property public string LoadTimestampColumnName { get; init; }
   property public string MetadataName { get; init; }
   property public string ParentHashKeyColumnName { get; init; }
@@ -729,7 +732,7 @@ type public sealed class DCoding.Data.DVault.DataVaultPitReferencedSatelliteRead
   method public static bool op_Equality(DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics? left, DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics? right)
   method public static bool op_Inequality(DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics? left, DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics? right)
   method public virtual bool Equals(DCoding.Data.DVault.DataVaultPitReferencedSatelliteReadShapeDiagnostics? other)
-  method public void Deconstruct(out string MetadataName, out string TableName, out string SnapshotReferenceColumnName, out string ParentHashKeyColumnName, out string LoadTimestampColumnName)
+  method public void Deconstruct(out string MetadataName, out string TableName, out string SnapshotReferenceColumnName, out string ParentHashKeyColumnName, out string LoadTimestampColumnName, out System.Collections.Generic.IReadOnlyList<string> DrivingKeyColumnNames)
 
 type public sealed class DCoding.Data.DVault.DataVaultPitSatelliteProjectionRow
   property public string SatelliteName { get; }
@@ -1746,6 +1749,7 @@ type public enum DCoding.Data.DVault.Modeling.DataVaultIndexKind
   value Relationship = 1
   value SatelliteParent = 2
   value BridgeTraversal = 3
+  value PitTraversal = 4
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultIndexNameContext : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultIndexNameContext>
   ctor public DataVaultIndexNameContext(DCoding.Data.DVault.Modeling.DataVaultIndexKind Kind, string TableName, System.Collections.Generic.IReadOnlyList<string> ColumnNames, bool IsUnique)

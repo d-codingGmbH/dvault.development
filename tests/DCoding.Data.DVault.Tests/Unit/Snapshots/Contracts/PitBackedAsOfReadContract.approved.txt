@@ -25,6 +25,7 @@ Request:
     AsOf is normalized to UTC with DateTimeOffset.ToUniversalTime()
   read rule:
     resolve the latest PIT row visible at or before AsOf for each requested parent hash key
+    for supported multi-active PITs, resolve one latest row per requested parent hash key and driving-key tuple
 
 Read service:
   raw method:
@@ -45,6 +46,7 @@ Raw record:
   type: DataVaultPitReadRecord
   properties:
     ParentHashKey: string
+    DrivingKeyValues: IReadOnlyDictionary<string, string>
     LoadTimestamp: DateTimeOffset
     SatelliteSnapshots: IReadOnlyList<DataVaultPitSatelliteSnapshot>
     SatelliteSnapshotsByName: IReadOnlyDictionary<string, DataVaultPitSatelliteSnapshot>
@@ -61,7 +63,9 @@ Raw record:
   ordering:
     SatelliteSnapshots order exactly matches DataVaultPitMetadata.Satellites declaration order.
     SatelliteSnapshotsByName uses declared satellite names and StringComparer.Ordinal.
+    DrivingKeyValues uses canonical PIT driving-key names and StringComparer.Ordinal.
   absence:
+    DrivingKeyValues is empty for ordinary PIT rows.
     IsPresent=false means no snapshot segment exists for that satellite in the matched PIT row.
     Absent satellite segments do not fall back to non-PIT latest/as-of satellite reads.
 
@@ -84,6 +88,24 @@ Scenario: multi-satellite typed projection
     row.RequiredSatellite("Profile").RequiredString("Customer Name") -> Alice Adams
     row.RequiredSatellite("Profile").RequiredString("Customer Tier") -> Gold
     row.OptionalSatellite("Status")?.NullableString("Status Code") -> Active
+
+Scenario: multi-active tuple PIT projection
+  metadata:
+    hub Customer business keys [Customer Id]
+    multi-active satellite Contact parent Customer driving keys [Contact Type] payload [Email Address]
+    satellite Profile parent Customer payload [Customer Tier]
+    pit Customer/Contact/Profile declared satellites [Contact, Profile]
+  request:
+    parent hash keys [customer-hash-001]
+    AsOf 2026-05-11T12:00:00+00:00
+  matched rows:
+    customer-hash-001 Contact Type billing LoadTimestamp 2026-05-11T10:00:00+00:00
+    customer-hash-001 Contact Type shipping LoadTimestamp 2026-05-11T10:05:00+00:00
+  projection:
+    row.RequiredString("ParentHashKey") -> customer-hash-001
+    row.RequiredString("Contact Type") -> billing or shipping
+    row.RequiredSatellite("Contact").RequiredString("Email Address") -> tuple-specific contact value
+    row.OptionalSatellite("Profile") reads the parent-wide profile snapshot
 
 Scenario: missing PIT row
   request:
@@ -123,7 +145,9 @@ Timestamp behavior:
   provider storage modes such as ISO 8601 UTC text or UTC ticks are internal implementation details.
 
 Diagnostics:
-  unsupported multi-active satellite reference:
+  contradictory multi-active satellite reference metadata:
+    fail deterministically before row materialization.
+  incompatible multi-active driving-key family:
     fail deterministically before row materialization.
   unsupported bridge-driven read:
     fail deterministically before row materialization.

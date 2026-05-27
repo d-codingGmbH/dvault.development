@@ -210,6 +210,65 @@ public sealed class DataVaultDiagnosticsTests {
   }
 
   [Fact]
+  public void ReadDiagnosticsPopulateTupleAwarePitReadShapeForMultiActiveRequests() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["Customer Name"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"],
+        ["Contact Type"]);
+    var pit = new DataVaultPitMetadata(
+        customer.ToReference(),
+        [
+            new DataVaultPitSatelliteReferenceMetadata("Contact", isMultiActive: true),
+            new DataVaultPitSatelliteReferenceMetadata("Profile"),
+        ]);
+    var model = new DataVaultMetadataModel([customer], [], [profile, contact], [pit]);
+    var optionsBuilder = new DbContextOptionsBuilder<ReadShapeDiagnosticsContext>()
+        .UseSqlite("Data Source=:memory:");
+    optionsBuilder.UseDataVaultMetadata(DataVaultMetadataRegistry.Create(model));
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+
+    using var context = new ReadShapeDiagnosticsContext(optionsBuilder.Options);
+    var result = diagnostics.Analyze(
+        context,
+        new DataVaultPitAsOfReadRequest(
+            pit,
+            ["customer-hk"],
+            new DateTimeOffset(2026, 5, 11, 12, 0, 0, TimeSpan.Zero)));
+
+    Assert.NotNull(result.ReadShape);
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback, result.ReadStrategy.Status);
+    var pitReadShape = result.ReadShape!.Pit!;
+    Assert.Equal("PitCustomerContactProfile", pitReadShape.Pit.TableName);
+    Assert.Equal(["CustomerHashKey", "ContactType", "LoadTimestamp"], pitReadShape.RowIdentityColumns.Single().ColumnNames);
+    AssertColumnSet(
+        pitReadShape.ProjectedColumns.Single(columns => columns.Role == "pitDrivingKeyProjection"),
+        "pitDrivingKeyProjection",
+        ["ContactType"]);
+    Assert.Equal(["ContactType"], pitReadShape.ReferencedSatellites.Single(satellite => satellite.MetadataName == "Contact").DrivingKeyColumnNames);
+    Assert.Empty(pitReadShape.ReferencedSatellites.Single(satellite => satellite.MetadataName == "Profile").DrivingKeyColumnNames);
+    Assert.Contains("driving-key tuple", pitReadShape.PitRowSelectionRule, StringComparison.Ordinal);
+    Assert.Contains("driving-key tuple", pitReadShape.SnapshotLookupBehavior, StringComparison.Ordinal);
+    Assert.Contains(
+        pitReadShape.ExpectedIndexBaseline,
+        index => index.Kind == "primary-key" &&
+            index.ColumnNames.SequenceEqual(["CustomerHashKey", "ContactType", "LoadTimestamp"]));
+    Assert.Contains(
+        pitReadShape.ExpectedIndexBaseline,
+        index => index.Kind == "secondary-index" &&
+            string.Equals(index.Name, "IxPitCustomerContactProfileTraversalCustomerHashKeyContactTypeLoadTimestamp", StringComparison.Ordinal) &&
+            index.ColumnNames.SequenceEqual(["CustomerHashKey", "ContactType", "LoadTimestamp"]));
+  }
+
+  [Fact]
   public void SupportBundleSerializesReadShapeWithoutRequestValues() {
     var metadata = CreateReadShapeMetadata();
     var optionsBuilder = new DbContextOptionsBuilder<ReadShapeDiagnosticsContext>()

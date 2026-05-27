@@ -11,9 +11,13 @@ public sealed class DataVaultPitReadRecord {
   internal DataVaultPitReadRecord(
       string parentHashKey,
       DateTimeOffset loadTimestamp,
+      IReadOnlyDictionary<string, string> drivingKeyValues,
       IReadOnlyList<DataVaultPitSatelliteSnapshot> satelliteSnapshots) {
     ParentHashKey = parentHashKey;
     LoadTimestamp = loadTimestamp.ToUniversalTime();
+    DrivingKeyValues = new ReadOnlyDictionary<string, string>(
+        drivingKeyValues as IDictionary<string, string> ??
+        drivingKeyValues.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal));
     var snapshotArray = satelliteSnapshots as DataVaultPitSatelliteSnapshot[] ?? satelliteSnapshots.ToArray();
     SatelliteSnapshots = new ReadOnlyCollection<DataVaultPitSatelliteSnapshot>(snapshotArray);
   }
@@ -27,6 +31,11 @@ public sealed class DataVaultPitReadRecord {
   /// Gets the matched PIT row load timestamp normalized to UTC.
   /// </summary>
   public DateTimeOffset LoadTimestamp { get; }
+
+  /// <summary>
+  /// Gets PIT row driving-key values keyed by canonical driving-key name for tuple-aware PIT rows.
+  /// </summary>
+  public IReadOnlyDictionary<string, string> DrivingKeyValues { get; }
 
   /// <summary>
   /// Gets satellite snapshot segments in PIT declaration order.

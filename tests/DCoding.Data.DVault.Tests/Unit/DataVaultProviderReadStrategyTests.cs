@@ -291,6 +291,7 @@ public sealed class DataVaultProviderReadStrategyTests {
           new DataVaultPitReadRecord(
               "customer-hk",
               LoadTimestamp,
+              new Dictionary<string, string>(StringComparer.Ordinal),
               [DataVaultPitSatelliteSnapshot.Missing("Profile", 0)]),
       ]);
     }

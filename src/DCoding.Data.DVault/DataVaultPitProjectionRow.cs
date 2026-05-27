@@ -4,8 +4,9 @@ namespace DCoding.Data.DVault;
 /// Provides exact-name access to one PIT-backed as-of row inside a caller-supplied typed projection delegate.
 /// </summary>
 /// <remarks>
-/// The PIT row exact-name space contains <c>ParentHashKey</c> and <c>LoadTimestamp</c>. Satellite values are scoped
-/// behind declared satellite names and matched with <see cref="StringComparer.Ordinal" />.
+/// The PIT row exact-name space contains <c>ParentHashKey</c>, <c>LoadTimestamp</c>, and any tuple driving-key names
+/// projected by a multi-active PIT row. Satellite values are scoped behind declared satellite names and matched with
+/// <see cref="StringComparer.Ordinal" />.
 /// </remarks>
 public sealed class DataVaultPitProjectionRow {
   internal const string ParentHashKeyName = "ParentHashKey";
@@ -121,6 +122,16 @@ public sealed class DataVaultPitProjectionRow {
       [ParentHashKeyName] = DataVaultPitProjectionValue.Present(record.ParentHashKey),
       [LoadTimestampName] = DataVaultPitProjectionValue.Present(record.LoadTimestamp),
     };
+    foreach (var drivingKeyValue in record.DrivingKeyValues) {
+      if (!values.TryAdd(drivingKeyValue.Key, DataVaultPitProjectionValue.Present(drivingKeyValue.Value))) {
+        throw DataVaultPitProjectionFailures.Create(
+            DataVaultPitProjectionFailures.DuplicateName,
+            metadataName,
+            drivingKeyValue.Key,
+            "collides with a reserved PIT row technical name");
+      }
+    }
+
     var satellites = record.SatelliteSnapshots
         .Where(snapshot => snapshot.IsPresent)
         .ToDictionary(
@@ -170,6 +181,7 @@ internal static class DataVaultPitProjectionFailures {
   public const string NullValue = "null-value";
   public const string InvalidValue = "invalid-value";
   public const string MissingSatellite = "missing-satellite";
+  public const string DuplicateName = "duplicate-name";
 
   public static InvalidOperationException Create(
       string failureKind,

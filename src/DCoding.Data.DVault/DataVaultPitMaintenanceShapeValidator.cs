@@ -25,12 +25,6 @@ internal static class DataVaultPitMaintenanceShapeValidator {
             "declares duplicate satellite reference '" + satelliteReference.SatelliteName + "'");
       }
 
-      if (satelliteReference.IsMultiActive) {
-        throw PitMaintenanceFailure(
-            pit.Name,
-            "references multi-active satellite '" + satelliteReference.SatelliteName +
-            "', which is outside the supported PIT maintenance baseline");
-      }
     }
   }
 

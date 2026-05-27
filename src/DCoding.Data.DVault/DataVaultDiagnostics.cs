@@ -543,7 +543,8 @@ public sealed record DataVaultPitReferencedSatelliteReadShapeDiagnostics(
     string TableName,
     string SnapshotReferenceColumnName,
     string ParentHashKeyColumnName,
-    string LoadTimestampColumnName);
+    string LoadTimestampColumnName,
+    IReadOnlyList<string> DrivingKeyColumnNames);
 
 /// <summary>
 /// Machine-readable diagnostics for PIT-backed as-of read shape.
@@ -562,6 +563,12 @@ public sealed record DataVaultPitReadShapeDiagnostics(
   /// Gets deterministic projected-column groups for the translated PIT read.
   /// </summary>
   public IReadOnlyList<DataVaultReadShapeColumnSet> ProjectedColumns { get; init; } =
+      Array.Empty<DataVaultReadShapeColumnSet>();
+
+  /// <summary>
+  /// Gets the PIT row identity column groups used for row selection and result disambiguation.
+  /// </summary>
+  public IReadOnlyList<DataVaultReadShapeColumnSet> RowIdentityColumns { get; init; } =
       Array.Empty<DataVaultReadShapeColumnSet>();
 
   /// <summary>
@@ -1726,10 +1733,11 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, pit.Parent.Name, tableName));
     var loadTimestampColumnName = DefaultDataVaultNamingPolicy.Instance.GetTechnicalColumnName(
         new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.LoadTimestamp, pit.Name, tableName));
+    var entity = FindEntityExplain(explain, DataVaultTableKind.Pit, pit.Name, tableName);
+    var pitDrivingKeyColumnNames = FindPropertyColumnNames(entity, DataVaultPropertyRole.DrivingKey);
     var snapshotColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
         pit.Satellites.Select(satellite => satellite.SatelliteName + " Load Timestamp"),
-        [parentHashKeyColumnName, loadTimestampColumnName]);
-    var entity = FindEntityExplain(explain, DataVaultTableKind.Pit, pit.Name, tableName);
+        [parentHashKeyColumnName, .. pitDrivingKeyColumnNames, loadTimestampColumnName]);
     var referencedSatellites = pit.Satellites
         .Select((satellite, index) => {
           var satelliteTableName = DefaultDataVaultNamingPolicy.Instance.GetSatelliteTableName(
@@ -1744,14 +1752,27 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
                   DataVaultTechnicalColumnKind.LoadTimestamp,
                   satellite.SatelliteName,
                   satelliteTableName));
+          var satelliteEntity = FindEntityExplain(
+              explain,
+              DataVaultTableKind.Satellite,
+              satellite.SatelliteName,
+              satelliteTableName);
 
           return new DataVaultPitReferencedSatelliteReadShapeDiagnostics(
               satellite.SatelliteName,
               satelliteTableName,
               snapshotColumnNames[index],
               satelliteParentHashKeyColumnName,
-              satelliteLoadTimestampColumnName);
+              satelliteLoadTimestampColumnName,
+              FindPropertyColumnNames(satelliteEntity, DataVaultPropertyRole.DrivingKey));
         })
+        .ToArray();
+    var rowIdentityColumns = new[]
+    {
+        parentHashKeyColumnName,
+    }
+        .Concat(pitDrivingKeyColumnNames)
+        .Append(loadTimestampColumnName)
         .ToArray();
 
     return new DataVaultPitReadShapeDiagnostics(
@@ -1762,8 +1783,12 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
             new DataVaultReadShapeColumnSet("parentHashKeyFilter", [parentHashKeyColumnName]),
             new DataVaultReadShapeColumnSet("asOfCutoff", [loadTimestampColumnName]),
         ],
-        "Select the latest PIT row per parent hash key with " + loadTimestampColumnName + " <= supplied as-of cutoff.",
-        "Resolve each satellite snapshot by parent hash key and the snapshot load-timestamp reference stored on the selected PIT row.",
+        pitDrivingKeyColumnNames.Count == 0
+            ? "Select the latest PIT row per parent hash key with " + loadTimestampColumnName + " <= supplied as-of cutoff."
+            : "Select the latest PIT row per parent hash key and driving-key tuple with " + loadTimestampColumnName + " <= supplied as-of cutoff.",
+        pitDrivingKeyColumnNames.Count == 0
+            ? "Resolve each satellite snapshot by parent hash key and the snapshot load-timestamp reference stored on the selected PIT row."
+            : "Resolve ordinary satellite snapshots by parent hash key and multi-active satellite snapshots by parent hash key, driving-key tuple, and the snapshot load-timestamp reference stored on the selected PIT row.",
         "Missing PIT rows or null satellite snapshot references yield no latest-satellite fallback.",
         "PIT rows must already be maintained; diagnostics and reads do not rebuild or refresh PIT tables.",
         CreateIndexBaseline(entity)) {
@@ -1771,8 +1796,10 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
           explain,
           pit,
           parentHashKeyColumnName,
+          pitDrivingKeyColumnNames,
           loadTimestampColumnName,
           referencedSatellites),
+      RowIdentityColumns = [new DataVaultReadShapeColumnSet("pitRowIdentity", rowIdentityColumns)],
       ReferencedSatelliteLookupCount = referencedSatellites.Length,
     };
   }
@@ -1836,23 +1863,45 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       DataVaultExplainDiagnostics explain,
       DataVaultPitMetadata pit,
       string parentHashKeyColumnName,
+      IReadOnlyList<string> pitDrivingKeyColumnNames,
       string loadTimestampColumnName,
       IReadOnlyList<DataVaultPitReferencedSatelliteReadShapeDiagnostics> referencedSatellites) {
-    return
-    [
+    var columnSets = new List<DataVaultReadShapeColumnSet>
+    {
         new DataVaultReadShapeColumnSet(
             "pitTechnicalProjection",
             [
                 parentHashKeyColumnName,
                 loadTimestampColumnName,
             ]),
+    };
+
+    if (pitDrivingKeyColumnNames.Count > 0) {
+      columnSets.Add(new DataVaultReadShapeColumnSet("pitDrivingKeyProjection", pitDrivingKeyColumnNames));
+    }
+
+    columnSets.AddRange(
+    [
         new DataVaultReadShapeColumnSet(
             "snapshotReferenceProjection",
             referencedSatellites.Select(satellite => satellite.SnapshotReferenceColumnName).ToArray()),
         new DataVaultReadShapeColumnSet(
             "satellitePayloadProjection",
             CreatePitSatellitePayloadProjectionColumns(explain, pit)),
-    ];
+    ]);
+
+    return columnSets;
+  }
+
+  private static IReadOnlyList<string> FindPropertyColumnNames(
+      DataVaultEntityExplain? entity,
+      DataVaultPropertyRole role) {
+    return entity?.Properties
+        .Where(property => property.Role == role)
+        .OrderBy(property => property.Ordinal)
+        .ThenBy(property => property.Name, StringComparer.Ordinal)
+        .Select(property => property.Name)
+        .ToArray() ?? Array.Empty<string>();
   }
 
   private static IReadOnlyList<string> CreatePitSatellitePayloadProjectionColumns(

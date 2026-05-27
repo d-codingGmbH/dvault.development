@@ -1019,11 +1019,18 @@ internal static class DataVaultModelArtifactParser {
     var bridges = artifact.Bridges
         .Select(CreateBridgeMetadata)
         .ToArray();
+    var satellitesByName = satellites
+        .GroupBy(satellite => satellite.Name, StringComparer.Ordinal)
+        .Where(group => group.Count() == 1)
+        .ToDictionary(group => group.Key, group => group.Single(), StringComparer.Ordinal);
     var pits = artifact.Pits
         .Select(pit => new DataVaultPitMetadata(
             pit.Name,
             DataVaultMetadataReference.Hub(pit.Hub),
-            pit.Satellites))
+            pit.Satellites.Select(satelliteName => new DataVaultPitSatelliteReferenceMetadata(
+                satelliteName,
+                satellitesByName.TryGetValue(satelliteName, out var satellite) &&
+                    satellite.DrivingKeyNames.Count > 0))))
         .ToArray();
 
     return new DataVaultMetadataModel(hubs, links, satellites, pointInTimeTables, bridges, pits);

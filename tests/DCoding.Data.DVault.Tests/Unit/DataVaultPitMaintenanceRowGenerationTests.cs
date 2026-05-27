@@ -51,6 +51,47 @@ public sealed class DataVaultPitMaintenanceRowGenerationTests {
     }
   }
 
+  [Fact]
+  public async Task RebuildCreatesTupleAwarePitRowsAfterMultiActiveTupleFirstAppears() {
+    var service = new DefaultDataVaultPitMaintenanceService();
+    var metadata = CreateTuplePitMetadata();
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<TuplePitGenerationModelContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    var profileBeforeTuple = Utc(2026, 5, 11, 8, 0);
+    var billingContact = Utc(2026, 5, 11, 9, 0);
+    var shippingContact = Utc(2026, 5, 11, 10, 0);
+    var profileAfterTuple = Utc(2026, 5, 11, 11, 0);
+
+    await using (var context = new TuplePitGenerationModelContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+      AddTupleProfileRow(context, "customer-a", profileBeforeTuple, "Alice");
+      AddTupleContactRow(context, "customer-a", "billing", billingContact, "billing@example.test");
+      AddTupleContactRow(context, "customer-a", "shipping", shippingContact, "shipping@example.test");
+      AddTupleProfileRow(context, "customer-a", profileAfterTuple, "Alice Updated");
+      await context.SaveChangesAsync();
+
+      var result = await service.RebuildAsync(context, new DataVaultPitRebuildRequest(metadata.Pit));
+
+      Assert.Equal("PitCustomerContactProfile", result.TableName);
+      Assert.Equal(1, result.ParentHashKeyCount);
+      Assert.Equal(0, result.RowsDeleted);
+      Assert.Equal(4, result.RowsWritten);
+    }
+
+    await using (var context = new TuplePitGenerationModelContext(options)) {
+      var pitRows = await ReadTuplePitRowsAsync(context);
+
+      Assert.Collection(
+          pitRows,
+          row => AssertTuplePitRow(row, "customer-a", "billing", billingContact, billingContact, profileBeforeTuple),
+          row => AssertTuplePitRow(row, "customer-a", "billing", profileAfterTuple, billingContact, profileAfterTuple),
+          row => AssertTuplePitRow(row, "customer-a", "shipping", shippingContact, shippingContact, profileBeforeTuple),
+          row => AssertTuplePitRow(row, "customer-a", "shipping", profileAfterTuple, shippingContact, profileAfterTuple));
+    }
+  }
+
   private static void AddSatelliteRow(
       DbContext context,
       string tableName,
@@ -76,6 +117,36 @@ public sealed class DataVaultPitMaintenanceRowGenerationTests {
     });
   }
 
+  private static void AddTupleContactRow(
+      DbContext context,
+      string parentHashKey,
+      string contactType,
+      DateTimeOffset loadTimestamp,
+      string emailAddress) {
+    context.Set<Dictionary<string, object>>("SatCustomerContact").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
+      ["CustomerHashKey"] = parentHashKey,
+      ["ContactType"] = contactType,
+      ["HashDiff"] = "contact-" + contactType + "-" + loadTimestamp.ToUnixTimeSeconds(),
+      ["LoadTimestamp"] = loadTimestamp,
+      ["RecordSource"] = "test",
+      ["EmailAddress"] = emailAddress,
+    });
+  }
+
+  private static void AddTupleProfileRow(
+      DbContext context,
+      string parentHashKey,
+      DateTimeOffset loadTimestamp,
+      string customerName) {
+    context.Set<Dictionary<string, object>>("SatCustomerProfile").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
+      ["CustomerHashKey"] = parentHashKey,
+      ["HashDiff"] = "profile-" + loadTimestamp.ToUnixTimeSeconds(),
+      ["LoadTimestamp"] = loadTimestamp,
+      ["RecordSource"] = "test",
+      ["CustomerName"] = customerName,
+    });
+  }
+
   private static async Task<IReadOnlyList<PitRow>> ReadPitRowsAsync(PitGenerationModelContext context) {
     var rows = await context
         .Set<Dictionary<string, object>>("PitCustomerProfileStatus")
@@ -89,6 +160,25 @@ public sealed class DataVaultPitMaintenanceRowGenerationTests {
             ReadOptionalTimestamp(row, "ProfileLoadTimestamp"),
             ReadOptionalTimestamp(row, "StatusLoadTimestamp")))
         .OrderBy(row => row.ParentHashKey, StringComparer.Ordinal)
+        .ThenBy(row => row.LoadTimestamp)
+        .ToArray();
+  }
+
+  private static async Task<IReadOnlyList<TuplePitRow>> ReadTuplePitRowsAsync(TuplePitGenerationModelContext context) {
+    var rows = await context
+        .Set<Dictionary<string, object>>("PitCustomerContactProfile")
+        .AsNoTracking()
+        .ToListAsync();
+
+    return rows
+        .Select(row => new TuplePitRow(
+            Assert.IsType<string>(row["CustomerHashKey"]),
+            Assert.IsType<string>(row["ContactType"]),
+            DataVaultLoadTimestampValueConverter.ReadProviderValue(row["LoadTimestamp"]),
+            ReadOptionalTimestamp(row, "ContactLoadTimestamp"),
+            ReadOptionalTimestamp(row, "ProfileLoadTimestamp")))
+        .OrderBy(row => row.ParentHashKey, StringComparer.Ordinal)
+        .ThenBy(row => row.ContactType, StringComparer.Ordinal)
         .ThenBy(row => row.LoadTimestamp)
         .ToArray();
   }
@@ -111,6 +201,42 @@ public sealed class DataVaultPitMaintenanceRowGenerationTests {
     Assert.Equal(loadTimestamp, row.LoadTimestamp);
     Assert.Equal(profileSnapshotTimestamp, row.ProfileSnapshotTimestamp);
     Assert.Equal(statusSnapshotTimestamp, row.StatusSnapshotTimestamp);
+  }
+
+  private static void AssertTuplePitRow(
+      TuplePitRow row,
+      string parentHashKey,
+      string contactType,
+      DateTimeOffset loadTimestamp,
+      DateTimeOffset? contactSnapshotTimestamp,
+      DateTimeOffset? profileSnapshotTimestamp) {
+    Assert.Equal(parentHashKey, row.ParentHashKey);
+    Assert.Equal(contactType, row.ContactType);
+    Assert.Equal(loadTimestamp, row.LoadTimestamp);
+    Assert.Equal(contactSnapshotTimestamp, row.ContactSnapshotTimestamp);
+    Assert.Equal(profileSnapshotTimestamp, row.ProfileSnapshotTimestamp);
+  }
+
+  private static TuplePitGenerationMetadata CreateTuplePitMetadata() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"],
+        ["Contact Type"]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["Customer Name"]);
+    var pit = new DataVaultPitMetadata(
+        customer.ToReference(),
+        [
+            new DataVaultPitSatelliteReferenceMetadata("Contact", isMultiActive: true),
+            new DataVaultPitSatelliteReferenceMetadata("Profile"),
+        ]);
+    var model = new DataVaultMetadataModel([customer], [], [contact, profile], [pit]);
+
+    return new TuplePitGenerationMetadata(pit, model);
   }
 
   private static DateTimeOffset Utc(int year, int month, int day, int hour, int minute) {
@@ -179,9 +305,28 @@ public sealed class DataVaultPitMaintenanceRowGenerationTests {
     }
   }
 
+  private sealed class TuplePitGenerationModelContext(DbContextOptions<TuplePitGenerationModelContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(
+          CreateTuplePitMetadata().Model,
+          DataVaultProviderCapabilityProfiles.Sqlite);
+    }
+  }
+
+  private sealed record TuplePitGenerationMetadata(
+      DataVaultPitMetadata Pit,
+      DataVaultMetadataModel Model);
+
   private sealed record PitRow(
       string ParentHashKey,
       DateTimeOffset LoadTimestamp,
       DateTimeOffset? ProfileSnapshotTimestamp,
       DateTimeOffset? StatusSnapshotTimestamp);
+
+  private sealed record TuplePitRow(
+      string ParentHashKey,
+      string ContactType,
+      DateTimeOffset LoadTimestamp,
+      DateTimeOffset? ContactSnapshotTimestamp,
+      DateTimeOffset? ProfileSnapshotTimestamp);
 }

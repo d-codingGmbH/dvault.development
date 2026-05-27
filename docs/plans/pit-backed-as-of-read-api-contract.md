@@ -30,10 +30,10 @@ One read request targets exactly one `DataVaultPitMetadata` declaration. The dec
 
 - one hub parent through `DataVaultMetadataReference.Hub(...)`
 - one or more ordered hub-attached satellite references
-- ordinary non-multi-active satellite references only
+- ordinary satellite references, or multi-active satellite references that all resolve to the same canonical driving-key names in the same order
 - no bridge traversal, link parent, link-attached satellite, or provider-specific optimization requirement
 
-The declaration order of `DataVaultPitMetadata.Satellites` is the contract order for read-record satellite segments and typed projection access.
+The declaration order of `DataVaultPitMetadata.Satellites` is the contract order for read-record satellite segments and typed projection access. When a PIT contains supported multi-active satellites, the PIT row identity expands from `(ParentHashKey, LoadTimestamp)` to `(ParentHashKey, <DrivingKey...>, LoadTimestamp)`.
 
 ## Request Contract
 
@@ -93,6 +93,7 @@ The raw record exposes the matched PIT row and satellite snapshots in declaratio
 ```csharp
 public sealed class DataVaultPitReadRecord {
   public string ParentHashKey { get; }
+  public IReadOnlyDictionary<string, string> DrivingKeyValues { get; }
   public DateTimeOffset LoadTimestamp { get; }
   public IReadOnlyList<DataVaultPitSatelliteSnapshot> SatelliteSnapshots { get; }
   public IReadOnlyDictionary<string, DataVaultPitSatelliteSnapshot> SatelliteSnapshotsByName { get; }
@@ -112,6 +113,7 @@ public sealed class DataVaultPitSatelliteSnapshot {
 Record rules:
 
 - `ParentHashKey` is the requested hub hash key that matched a PIT row.
+- `DrivingKeyValues` exposes canonical PIT driving-key values when the PIT contains supported multi-active satellites, and is empty for ordinary PIT rows.
 - `LoadTimestamp` is the PIT row load timestamp normalized to UTC.
 - `SatelliteSnapshots` preserves `DataVaultPitMetadata.Satellites` order.
 - `SatelliteSnapshotsByName` uses the declared satellite name with `StringComparer.Ordinal`.
@@ -120,7 +122,7 @@ Record rules:
 - Absent satellite segments keep `IsPresent == false`, `SnapshotLoadTimestamp == null`, `HashDiff == null`, `RecordSource == null`, and an empty payload dictionary.
 - Absent satellite segments never trigger a non-PIT latest/as-of fallback read.
 
-The typed projection row uses exact names like the latest satellite projection row. Technical values include `ParentHashKey` and `LoadTimestamp`; satellite payload values are scoped behind the declared satellite name so multi-satellite projectors remain deterministic.
+The typed projection row uses exact names like the latest satellite projection row. Technical values include `ParentHashKey`, supported multi-active PIT driving-key names, and `LoadTimestamp`; satellite payload values are scoped behind the declared satellite name so multi-satellite projectors remain deterministic.
 
 ## Multi-Satellite Typed Projection Example
 
@@ -218,7 +220,8 @@ Required v1 diagnostic cases:
 | Case | Diagnostic expectation |
 | --- | --- |
 | `DataVaultPitMetadata.Parent.Kind != Hub` | reject link-based PIT parents and non-hub parents |
-| satellite reference marked multi-active | reject multi-active satellite references |
+| satellite reference contradicts resolved satellite metadata | reject contradictory multi-active reference metadata |
+| multi-active satellites use incompatible driving-key names or order | reject ambiguous tuple identity and cross-product tuple semantics |
 | satellite attached to a link | reject link-attached PIT satellites |
 | satellite attached to a different hub | reject inconsistent parent/satellite shape |
 | bridge-driven read request | reject bridge traversal reads as outside the PIT baseline |
@@ -238,6 +241,6 @@ The fixture captures:
 - declaration-order preservation for multiple satellites
 - missing PIT row omission
 - missing satellite snapshot absence
-- unsupported multi-active, bridge, link-based, and legacy `PointInTime` diagnostics
+- unsupported incompatible multi-active, bridge, link-based, and legacy `PointInTime` diagnostics
 
-Downstream implementation tickets should update implementation code to satisfy the fixture. This ticket does not add runtime PIT query behavior.
+Runtime implementation code should satisfy the fixture and preserve the parent-hash-key request surface while expanding returned row identity for supported multi-active PIT tuples.

@@ -20,20 +20,22 @@ Define the bounded v1 contract for explicit PIT maintenance so PIT-backed read A
 
 - `DataVaultPitMetadata` only.
 - Parent must resolve to one hub.
-- Participating satellites must already be supported by PIT translation: hub-attached, non-multi-active, and unique in declaration order.
-- The generated PIT entity keeps the existing `ParentHashKey`, `LoadTimestamp`, and `<Satellite>LoadTimestamp` column contract.
+- Participating satellites must already be supported by PIT translation: hub-attached, unique in declaration order, and either ordinary satellites or multi-active satellites that all resolve to the same canonical driving-key names in the same order.
+- The generated PIT entity keeps the existing `ParentHashKey`, `LoadTimestamp`, and `<Satellite>LoadTimestamp` column contract for ordinary PITs. Supported multi-active PITs add the canonical driving-key columns between `ParentHashKey` and `LoadTimestamp`, and expand row identity to `(ParentHashKey, <DrivingKey...>, LoadTimestamp)`.
 
-Legacy `DataVaultPointInTimeMetadata`, `DataVaultModelBuilder.PointInTime(...)`, link-based PITs, multi-active PITs, bridge coordination, and provider-specific maintenance optimization are out of scope for this ticket.
+Legacy `DataVaultPointInTimeMetadata`, `DataVaultModelBuilder.PointInTime(...)`, link-based PITs, incompatible multi-active driving-key families, cross-product tuple semantics, bridge coordination, and provider-specific maintenance optimization are out of scope for this ticket.
 
 ## Authoritative row-generation rule
 
-For one PIT and one parent hash key:
+For one ordinary PIT and one parent hash key:
 
 1. Collect every visible satellite row from the PIT's declared satellites for that parent.
 2. Build the ordered set of distinct satellite `LoadTimestamp` values across those rows.
 3. Materialize one PIT row for each distinct timestamp in ascending order.
 4. Set the PIT row `LoadTimestamp` to that distinct timestamp.
 5. For each declared satellite, set the snapshot column to the latest satellite `LoadTimestamp` at or before the PIT row `LoadTimestamp`, or null when no satellite row is yet visible.
+
+For a supported multi-active PIT, apply the same distinct-timestamp and carry-forward rule per `(parentHashKey, drivingKeyTuple)`. A tuple series starts only when at least one referenced multi-active satellite row first exposes that tuple. Multi-active snapshot references are matched by parent hash key, driving-key tuple, and load timestamp; ordinary satellites in the same PIT remain parent-wide snapshots for the parent.
 
 This v1 rule makes rebuild and bounded maintenance deterministic and gives `IDataVaultReadService.ReadPitRowsAsync(...)` a stable historical baseline.
 
@@ -65,4 +67,4 @@ This v1 rule makes rebuild and bounded maintenance deterministic and gives `IDat
 - Ticket `06F2PGPKXWRFXNPFA1JR0X67XC` can assume maintained PIT tables exist and should not redefine PIT row-population semantics.
 - Ticket `06F2PGPRGN0EVGD6RY5KY9M56W` may optimize reads over maintained PIT tables but does not own PIT maintenance behavior.
 - Ticket `06F2PGPXVAYRBC94RQ7X5V4DVG` owns the user-facing doc and release-note follow-through for this contract.
-- Provider-specific maintenance strategies, hosted orchestration, link-parent PIT maintenance, and multi-active PIT maintenance remain future work.
+- Provider-specific maintenance strategies, hosted orchestration, link-parent PIT maintenance, incompatible multi-active PIT driving-key families, and cross-product tuple semantics remain future work.

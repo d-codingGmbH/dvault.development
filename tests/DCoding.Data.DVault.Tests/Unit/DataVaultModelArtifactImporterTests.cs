@@ -207,23 +207,32 @@ public sealed class DataVaultModelArtifactImporterTests {
             }
           ],
           "satellites": [
-            {
-              "name": "CustomerContactByType",
-              "parent": {
-                "kind": "hub",
-                "name": "Customer"
-              },
-              "drivingKeys": ["ContactType"],
-              "payload": ["ContactValue"]
-            }
-          ],
-          "pits": [
-            {
-              "name": "CustomerPit",
-              "hub": "Customer",
-              "satellites": ["CustomerContactByType"]
-            }
-          ]
+          {
+            "name": "CustomerContactByType",
+            "parent": {
+              "kind": "hub",
+              "name": "Customer"
+            },
+            "drivingKeys": ["ContactType"],
+            "payload": ["ContactValue"]
+          },
+          {
+            "name": "CustomerContactByRegion",
+            "parent": {
+              "kind": "hub",
+              "name": "Customer"
+            },
+            "drivingKeys": ["RegionCode"],
+            "payload": ["ContactValue"]
+          }
+        ],
+        "pits": [
+          {
+            "name": "CustomerPit",
+            "hub": "Customer",
+            "satellites": ["CustomerContactByType", "CustomerContactByRegion"]
+          }
+        ]
         }
         """,
         "models/customer.json");
@@ -240,7 +249,7 @@ public sealed class DataVaultModelArtifactImporterTests {
     Assert.Equal("DMV1801", diagnostic.Code);
     Assert.Equal("models/customer.json", diagnostic.LogicalSourcePath);
     Assert.Equal("/pits/0", diagnostic.JsonPointer);
-    Assert.Contains("multi-active satellite 'CustomerContactByType'", diagnostic.Message, StringComparison.Ordinal);
+    Assert.Contains("do not match multi-active satellite 'CustomerContactByType' driving-key names", diagnostic.Message, StringComparison.Ordinal);
   }
 
   [Fact]
@@ -256,23 +265,32 @@ public sealed class DataVaultModelArtifactImporterTests {
             }
           ],
           "satellites": [
-            {
-              "name": "CustomerContactByType",
-              "parent": {
-                "kind": "hub",
-                "name": "Customer"
-              },
-              "drivingKeys": ["ContactType"],
-              "payload": ["ContactValue"]
-            }
-          ],
-          "pits": [
-            {
-              "name": "CustomerPit",
-              "hub": "Customer",
-              "satellites": ["CustomerContactByType"]
-            }
-          ]
+          {
+            "name": "CustomerContactByType",
+            "parent": {
+              "kind": "hub",
+              "name": "Customer"
+            },
+            "drivingKeys": ["ContactType"],
+            "payload": ["ContactValue"]
+          },
+          {
+            "name": "CustomerContactByRegion",
+            "parent": {
+              "kind": "hub",
+              "name": "Customer"
+            },
+            "drivingKeys": ["RegionCode"],
+            "payload": ["ContactValue"]
+          }
+        ],
+        "pits": [
+          {
+            "name": "CustomerPit",
+            "hub": "Customer",
+            "satellites": ["CustomerContactByType", "CustomerContactByRegion"]
+          }
+        ]
         }
         """,
         "models/sales-vault.json");

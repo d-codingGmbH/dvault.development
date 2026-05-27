@@ -55,23 +55,35 @@ public sealed class DataVaultPitReadServiceTests {
     var readService = new DefaultDataVaultReadService();
     await using var context = new EmptyPitModelContext(new DbContextOptionsBuilder<EmptyPitModelContext>().Options);
     var linkParentPit = new DataVaultPitMetadata(DataVaultMetadataReference.Link("CustomerOrder"), ["State"]);
-    var multiActivePit = new DataVaultPitMetadata(
-        DataVaultMetadataReference.Hub("Customer"),
-        [new DataVaultPitSatelliteReferenceMetadata("Profile", isMultiActive: true)]);
 
     var linkParentException = await Assert.ThrowsAsync<InvalidOperationException>(() =>
         readService.ReadPitRowsAsync(
             context,
             new DataVaultPitAsOfReadRequest(linkParentPit, ["link-hash"], DateTimeOffset.UtcNow)));
+
+    Assert.Contains("PIT metadata 'CustomerOrderState'", linkParentException.Message, StringComparison.Ordinal);
+    Assert.Contains("link-based PIT tables", linkParentException.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public async Task PitReadRejectsContradictingMultiActiveReferenceBeforeRowMaterialization() {
+    var readService = new DefaultDataVaultReadService();
+    await using var context = new ContradictingMultiActiveReferenceContext(
+        new DbContextOptionsBuilder<ContradictingMultiActiveReferenceContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options);
+    var multiActivePit = new DataVaultPitMetadata(
+        DataVaultMetadataReference.Hub("Customer"),
+        [new DataVaultPitSatelliteReferenceMetadata("Profile", isMultiActive: true)]);
+
     var multiActiveException = await Assert.ThrowsAsync<InvalidOperationException>(() =>
         readService.ReadPitRowsAsync(
             context,
             new DataVaultPitAsOfReadRequest(multiActivePit, ["customer-hash"], DateTimeOffset.UtcNow)));
 
-    Assert.Contains("PIT metadata 'CustomerOrderState'", linkParentException.Message, StringComparison.Ordinal);
-    Assert.Contains("link-based PIT tables", linkParentException.Message, StringComparison.Ordinal);
     Assert.Contains("PIT metadata 'CustomerProfile'", multiActiveException.Message, StringComparison.Ordinal);
-    Assert.Contains("multi-active satellite 'Profile'", multiActiveException.Message, StringComparison.Ordinal);
+    Assert.Contains("declares IsMultiActive=True", multiActiveException.Message, StringComparison.Ordinal);
+    Assert.Contains("no driving keys", multiActiveException.Message, StringComparison.Ordinal);
   }
 
   [Fact]
@@ -101,6 +113,12 @@ public sealed class DataVaultPitReadServiceTests {
 
   private sealed class MissingPitSnapshotPropertyContext(DbContextOptions<MissingPitSnapshotPropertyContext> options) : DbContext(options) {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      ConfigurePitEntity(modelBuilder, includeSnapshotReference: false);
+    }
+
+    public static void ConfigurePitEntity(
+        ModelBuilder modelBuilder,
+        bool includeSnapshotReference) {
       modelBuilder.SharedTypeEntity<Dictionary<string, object>>("PitCustomerProfile", entityBuilder => {
         entityBuilder.ToTable("PitCustomerProfile");
         entityBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.EntityKind, DataVaultTableKind.Pit);
@@ -117,6 +135,49 @@ public sealed class DataVaultPitReadServiceTests {
         loadTimestamp.Metadata.SetAnnotation(DataVaultAnnotationNames.PropertyRole, DataVaultPropertyRole.Technical);
         loadTimestamp.Metadata.SetAnnotation(DataVaultAnnotationNames.TechnicalColumnRole, TechnicalMetadataColumnRole.LoadTimestamp);
         loadTimestamp.Metadata.SetAnnotation(DataVaultAnnotationNames.MetadataName, "LoadTimestamp");
+
+        if (includeSnapshotReference) {
+          var profileSnapshot = entityBuilder.IndexerProperty<DateTimeOffset?>("ProfileLoadTimestamp");
+          profileSnapshot.Metadata.SetAnnotation(DataVaultAnnotationNames.PropertyRole, DataVaultPropertyRole.SnapshotReference);
+          profileSnapshot.Metadata.SetAnnotation(DataVaultAnnotationNames.TechnicalColumnRole, TechnicalMetadataColumnRole.LoadTimestamp);
+          profileSnapshot.Metadata.SetAnnotation(DataVaultAnnotationNames.MetadataName, "Profile");
+        }
+
+        entityBuilder.HasKey("CustomerHashKey", "LoadTimestamp");
+      });
+    }
+  }
+
+  private sealed class ContradictingMultiActiveReferenceContext(DbContextOptions<ContradictingMultiActiveReferenceContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      MissingPitSnapshotPropertyContext.ConfigurePitEntity(modelBuilder, includeSnapshotReference: true);
+      ConfigureOrdinaryProfileSatellite(modelBuilder);
+    }
+
+    private static void ConfigureOrdinaryProfileSatellite(ModelBuilder modelBuilder) {
+      modelBuilder.SharedTypeEntity<Dictionary<string, object>>("SatCustomerProfile", entityBuilder => {
+        entityBuilder.ToTable("SatCustomerProfile");
+        entityBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.EntityKind, DataVaultTableKind.Satellite);
+        entityBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.MetadataName, "Profile");
+        entityBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ParentReferenceKind, DataVaultMetadataReferenceKind.Hub);
+        entityBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ParentReferenceName, "Customer");
+
+        var parentHashKey = entityBuilder.IndexerProperty<string>("CustomerHashKey");
+        parentHashKey.Metadata.SetAnnotation(DataVaultAnnotationNames.PropertyRole, DataVaultPropertyRole.Technical);
+        parentHashKey.Metadata.SetAnnotation(DataVaultAnnotationNames.TechnicalColumnRole, TechnicalMetadataColumnRole.HashKey);
+        parentHashKey.Metadata.SetAnnotation(DataVaultAnnotationNames.MetadataName, "Customer");
+
+        var hashDiff = entityBuilder.IndexerProperty<string>("HashDiff");
+        hashDiff.Metadata.SetAnnotation(DataVaultAnnotationNames.PropertyRole, DataVaultPropertyRole.Technical);
+        hashDiff.Metadata.SetAnnotation(DataVaultAnnotationNames.TechnicalColumnRole, TechnicalMetadataColumnRole.HashDiff);
+
+        var loadTimestamp = entityBuilder.IndexerProperty<DateTimeOffset>("LoadTimestamp");
+        loadTimestamp.Metadata.SetAnnotation(DataVaultAnnotationNames.PropertyRole, DataVaultPropertyRole.Technical);
+        loadTimestamp.Metadata.SetAnnotation(DataVaultAnnotationNames.TechnicalColumnRole, TechnicalMetadataColumnRole.LoadTimestamp);
+
+        var recordSource = entityBuilder.IndexerProperty<string>("RecordSource");
+        recordSource.Metadata.SetAnnotation(DataVaultAnnotationNames.PropertyRole, DataVaultPropertyRole.Technical);
+        recordSource.Metadata.SetAnnotation(DataVaultAnnotationNames.TechnicalColumnRole, TechnicalMetadataColumnRole.RecordSource);
 
         entityBuilder.HasKey("CustomerHashKey", "LoadTimestamp");
       });

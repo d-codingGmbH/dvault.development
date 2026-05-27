@@ -1,6 +1,7 @@
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using System.Globalization;
 
 namespace DCoding.Data.DVault;
 
@@ -38,19 +39,22 @@ internal static class DataVaultPitReadPipeline {
     }
 
     var records = new List<DataVaultPitReadRecord>();
-    foreach (var pitRow in matchedPitRows.Values.OrderBy(row => row.ParentHashKey, StringComparer.Ordinal)) {
+    foreach (var pitRow in matchedPitRows.Values
+        .OrderBy(row => row.ParentHashKey, StringComparer.Ordinal)
+        .ThenBy(row => row.DrivingKeyValueSignature, StringComparer.Ordinal)
+        .ThenBy(row => row.LoadTimestamp)) {
       records.Add(CreatePitReadRecord(projection, pitRow, satelliteRowsByOrdinal));
     }
 
     return records;
   }
 
-  internal static async Task<IReadOnlyDictionary<string, MatchedPitRow>> ReadMatchedPitRowsAsync(
+  internal static async Task<IReadOnlyDictionary<PitRowIdentityKey, MatchedPitRow>> ReadMatchedPitRowsAsync(
       DbContext dbContext,
       PitReadProjection projection,
       DataVaultPitAsOfReadRequest request,
       CancellationToken cancellationToken) {
-    var matchedRows = new Dictionary<string, MatchedPitRow>(StringComparer.Ordinal);
+    var matchedRows = new Dictionary<PitRowIdentityKey, MatchedPitRow>();
     var rows = dbContext.Set<Dictionary<string, object>>(projection.TableName);
 
     foreach (var parentHashKeyBatch in request.ParentHashKeys.Chunk(ParentHashKeyBatchSize)) {
@@ -75,9 +79,9 @@ internal static class DataVaultPitReadPipeline {
           continue;
         }
 
-        if (!matchedRows.TryGetValue(matchedRow.ParentHashKey, out var current) ||
+        if (!matchedRows.TryGetValue(matchedRow.IdentityKey, out var current) ||
             matchedRow.LoadTimestamp >= current.LoadTimestamp) {
-          matchedRows[matchedRow.ParentHashKey] = matchedRow;
+          matchedRows[matchedRow.IdentityKey] = matchedRow;
         }
       }
     }
@@ -94,7 +98,10 @@ internal static class DataVaultPitReadPipeline {
       CancellationToken cancellationToken) {
     var requiredKeys = matchedPitRows
         .Where(row => row.SnapshotLoadTimestamps[satelliteOrdinal].HasValue)
-        .Select(row => new SatelliteSnapshotKey(row.ParentHashKey, row.SnapshotLoadTimestamps[satelliteOrdinal]!.Value))
+        .Select(row => new SatelliteSnapshotKey(
+            row.ParentHashKey,
+            GetSatelliteDrivingKeyValueSignature(pitSatellite, row),
+            row.SnapshotLoadTimestamps[satelliteOrdinal]!.Value))
         .ToHashSet();
     if (requiredKeys.Count == 0) {
       return new Dictionary<SatelliteSnapshotKey, Dictionary<string, object>>();
@@ -137,7 +144,13 @@ internal static class DataVaultPitReadPipeline {
             row,
             pitSatellite.Satellite.LoadTimestampColumnName,
             "satellite load timestamp");
-        var key = new SatelliteSnapshotKey(parentHashKey, loadTimestamp);
+        var drivingKeyValues = ReadRequiredStringValues(
+            pitProjection.MetadataName,
+            pitSatellite.Satellite.TableName,
+            row,
+            pitSatellite.Satellite.DrivingKeyColumnNames,
+            "satellite driving key");
+        var key = new SatelliteSnapshotKey(parentHashKey, CreateOrdinalSignature(drivingKeyValues), loadTimestamp);
         if (!requiredKeys.Contains(key)) {
           continue;
         }
@@ -173,6 +186,7 @@ internal static class DataVaultPitReadPipeline {
     return new DataVaultPitReadRecord(
         pitRow.ParentHashKey,
         pitRow.LoadTimestamp,
+        pitRow.DrivingKeyValues,
         snapshots);
   }
 
@@ -191,6 +205,12 @@ internal static class DataVaultPitReadPipeline {
         row,
         projection.LoadTimestampColumnName,
         "PIT load timestamp");
+    var drivingKeyValues = ReadRequiredStringValues(
+        projection.MetadataName,
+        projection.TableName,
+        row,
+        projection.DrivingKeyColumnNames,
+        "PIT driving key");
     var snapshotLoadTimestamps = projection.Satellites
         .Select(satellite => ReadOptionalTimestamp(
             projection.MetadataName,
@@ -200,7 +220,16 @@ internal static class DataVaultPitReadPipeline {
             "PIT satellite snapshot reference"))
         .ToArray();
 
-    return new MatchedPitRow(parentHashKey, loadTimestamp, snapshotLoadTimestamps);
+    var drivingKeyValuesByName = projection.DrivingKeyNames
+        .Select((name, index) => new KeyValuePair<string, string>(name, drivingKeyValues[index]))
+        .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+
+    return new MatchedPitRow(
+        parentHashKey,
+        drivingKeyValuesByName,
+        drivingKeyValues,
+        loadTimestamp,
+        snapshotLoadTimestamps);
   }
 
   internal static DataVaultPitSatelliteSnapshot CreateSatelliteSnapshot(
@@ -215,7 +244,10 @@ internal static class DataVaultPitReadPipeline {
     }
 
     if (!satelliteRows.TryGetValue(
-        new SatelliteSnapshotKey(pitRow.ParentHashKey, snapshotLoadTimestamp.Value),
+        new SatelliteSnapshotKey(
+            pitRow.ParentHashKey,
+            GetSatelliteDrivingKeyValueSignature(pitSatellite, pitRow),
+            snapshotLoadTimestamp.Value),
         out var satelliteRow)) {
       return DataVaultPitSatelliteSnapshot.Missing(pitSatellite.MetadataName, satelliteOrdinal);
     }
@@ -305,13 +337,26 @@ internal static class DataVaultPitReadPipeline {
       satellites[index] = new PitSatelliteProjection(
           satelliteReference.SatelliteName,
           snapshotReferenceProperty.Name,
-          CreateSatelliteProjection(dbContext, pit, satelliteReference.SatelliteName));
+          CreateSatelliteProjection(dbContext, pit, satelliteReference));
     }
+
+    var drivingKeyNames = GetSharedDrivingKeyNames(pit.Name, satellites);
+    var pitDrivingKeyProperties = GetOrderedGeneratedProperties(
+        entityType,
+        DataVaultPropertyRole.DrivingKey,
+        expectedTechnicalRole: null);
+    ValidatePitDrivingKeyProperties(
+        pit.Name,
+        tableName,
+        pitDrivingKeyProperties,
+        drivingKeyNames);
 
     return new PitReadProjection(
         pit.Name,
         tableName,
         parentHashKeyProperty.Name,
+        pitDrivingKeyProperties.Select(property => property.Name).ToArray(),
+        drivingKeyNames,
         loadTimestampProperty.Name,
         satellites);
   }
@@ -336,19 +381,14 @@ internal static class DataVaultPitReadPipeline {
             "declares duplicate satellite reference '" + satelliteReference.SatelliteName + "'");
       }
 
-      if (satelliteReference.IsMultiActive) {
-        throw PitReadFailure(
-            pit.Name,
-            "references multi-active satellite '" + satelliteReference.SatelliteName +
-            "', which is outside the supported PIT read baseline");
-      }
     }
   }
 
   private static SatelliteReadProjection CreateSatelliteProjection(
       DbContext dbContext,
       DataVaultPitMetadata pit,
-      string satelliteName) {
+      DataVaultPitSatelliteReferenceMetadata satelliteReference) {
+    var satelliteName = satelliteReference.SatelliteName;
     var tableName = NamingPolicy.GetSatelliteTableName(
         new DataVaultSatelliteNameContext(pit.Parent.Name, satelliteName));
     var entityType = dbContext.Model.FindEntityType(tableName);
@@ -361,14 +401,16 @@ internal static class DataVaultPitReadPipeline {
 
     ValidateGeneratedEntity(pit.Name, entityType, tableName, DataVaultTableKind.Satellite, satelliteName, pit.Parent);
 
-    var drivingKeyProperties = entityType.GetProperties()
-        .Where(property => Equals(property.FindAnnotation(DataVaultAnnotationNames.PropertyRole)?.Value, DataVaultPropertyRole.DrivingKey))
-        .ToArray();
-    if (drivingKeyProperties.Length > 0) {
-      throw PitReadFailure(
-          pit.Name,
-          "references multi-active satellite '" + satelliteName +
-          "', which is outside the supported PIT read baseline");
+    var drivingKeyProperties = GetOrderedGeneratedProperties(
+        entityType,
+        DataVaultPropertyRole.DrivingKey,
+        expectedTechnicalRole: null);
+    ValidateSatelliteMultiActiveReference(
+        pit.Name,
+        satelliteReference,
+        drivingKeyProperties);
+    foreach (var drivingKeyProperty in drivingKeyProperties) {
+      ValidateStringProperty(pit.Name, tableName, drivingKeyProperty, "satellite driving key");
     }
 
     var parentHashKeyProperty = GetRequiredGeneratedProperty(
@@ -435,6 +477,8 @@ internal static class DataVaultPitReadPipeline {
         hashDiffProperty.Name,
         loadTimestampProperty.Name,
         recordSourceProperty.Name,
+        drivingKeyProperties.Select(property => GetRequiredMetadataName(pit.Name, tableName, property, "satellite driving key")).ToArray(),
+        drivingKeyProperties.Select(property => property.Name).ToArray(),
         payloads);
   }
 
@@ -521,6 +565,138 @@ internal static class DataVaultPitReadPipeline {
     };
   }
 
+  private static IReadOnlyList<IProperty> GetOrderedGeneratedProperties(
+      IEntityType entityType,
+      DataVaultPropertyRole expectedRole,
+      TechnicalMetadataColumnRole? expectedTechnicalRole) {
+    return entityType.GetProperties()
+        .Where(property => Equals(property.FindAnnotation(DataVaultAnnotationNames.PropertyRole)?.Value, expectedRole))
+        .Where(property => expectedTechnicalRole is null ||
+            Equals(property.FindAnnotation(DataVaultAnnotationNames.TechnicalColumnRole)?.Value, expectedTechnicalRole))
+        .OrderBy(property => property.FindAnnotation(DataVaultAnnotationNames.Ordinal)?.Value is int ordinal ? ordinal : int.MaxValue)
+        .ThenBy(property => property.Name, StringComparer.Ordinal)
+        .ToArray();
+  }
+
+  private static string GetRequiredMetadataName(
+      string pitName,
+      string tableName,
+      IProperty property,
+      string description) {
+    if (property.FindAnnotation(DataVaultAnnotationNames.MetadataName)?.Value is string metadataName &&
+        !string.IsNullOrWhiteSpace(metadataName)) {
+      return metadataName;
+    }
+
+    throw PitReadFailure(
+        pitName,
+        "expected generated " + description + " property '" + property.Name +
+        "' on table/entity '" + tableName + "' to carry metadata name");
+  }
+
+  private static void ValidateSatelliteMultiActiveReference(
+      string pitName,
+      DataVaultPitSatelliteReferenceMetadata satelliteReference,
+      IReadOnlyList<IProperty> drivingKeyProperties) {
+    var satelliteIsMultiActive = drivingKeyProperties.Count > 0;
+    if (satelliteReference.IsMultiActive == satelliteIsMultiActive) {
+      return;
+    }
+
+    throw PitReadFailure(
+        pitName,
+        "reference metadata for satellite '" +
+        satelliteReference.SatelliteName +
+        "' declares IsMultiActive=" +
+        satelliteReference.IsMultiActive +
+        ", but generated satellite metadata declares " +
+        (satelliteIsMultiActive ? "multi-active driving keys" : "no driving keys"));
+  }
+
+  private static IReadOnlyList<string> GetSharedDrivingKeyNames(
+      string pitName,
+      IReadOnlyList<PitSatelliteProjection> satellites) {
+    IReadOnlyList<string>? drivingKeyNames = null;
+    string? drivingKeySatelliteName = null;
+
+    foreach (var satellite in satellites.Where(satellite => satellite.Satellite.DrivingKeyNames.Count > 0)) {
+      if (drivingKeyNames is null) {
+        drivingKeyNames = satellite.Satellite.DrivingKeyNames;
+        drivingKeySatelliteName = satellite.MetadataName;
+        continue;
+      }
+
+      if (!drivingKeyNames.SequenceEqual(satellite.Satellite.DrivingKeyNames, StringComparer.Ordinal)) {
+        throw PitReadFailure(
+            pitName,
+            "references multi-active satellite '" +
+            satellite.MetadataName +
+            "' with driving-key names [" +
+            string.Join(", ", satellite.Satellite.DrivingKeyNames) +
+            "] that do not match multi-active satellite '" +
+            drivingKeySatelliteName +
+            "' driving-key names [" +
+            string.Join(", ", drivingKeyNames) +
+            "] in canonical order");
+      }
+    }
+
+    if (drivingKeyNames is null) {
+      return Array.Empty<string>();
+    }
+
+    ValidatePitDrivingKeyNames(pitName, drivingKeyNames);
+    return drivingKeyNames;
+  }
+
+  private static void ValidatePitDrivingKeyProperties(
+      string pitName,
+      string tableName,
+      IReadOnlyList<IProperty> pitDrivingKeyProperties,
+      IReadOnlyList<string> expectedDrivingKeyNames) {
+    if (pitDrivingKeyProperties.Count != expectedDrivingKeyNames.Count) {
+      throw PitReadFailure(
+          pitName,
+          "expected generated PIT table/entity '" + tableName + "' to expose " +
+          expectedDrivingKeyNames.Count +
+          " driving-key column(s) but found " +
+          pitDrivingKeyProperties.Count);
+    }
+
+    for (var index = 0; index < pitDrivingKeyProperties.Count; index++) {
+      ValidateStringProperty(pitName, tableName, pitDrivingKeyProperties[index], "PIT driving key");
+      var metadataName = GetRequiredMetadataName(pitName, tableName, pitDrivingKeyProperties[index], "PIT driving key");
+      if (!string.Equals(metadataName, expectedDrivingKeyNames[index], StringComparison.Ordinal)) {
+        throw PitReadFailure(
+            pitName,
+            "expected generated PIT driving-key property '" +
+            pitDrivingKeyProperties[index].Name +
+            "' on table/entity '" +
+            tableName +
+            "' to carry metadata name '" +
+            expectedDrivingKeyNames[index] +
+            "' but found '" +
+            metadataName +
+            "'");
+      }
+    }
+  }
+
+  private static void ValidatePitDrivingKeyNames(
+      string pitName,
+      IReadOnlyList<string> drivingKeyNames) {
+    foreach (var drivingKeyName in drivingKeyNames) {
+      if (string.Equals(drivingKeyName, DataVaultPitProjectionRow.ParentHashKeyName, StringComparison.Ordinal) ||
+          string.Equals(drivingKeyName, DataVaultPitProjectionRow.LoadTimestampName, StringComparison.Ordinal)) {
+        throw PitReadFailure(
+            pitName,
+            "declares driving-key name '" +
+            drivingKeyName +
+            "' that collides with a reserved PIT row technical name");
+      }
+    }
+  }
+
   private static void ValidateStringProperty(
       string pitName,
       string tableName,
@@ -601,6 +777,29 @@ internal static class DataVaultPitReadPipeline {
         "' on table/entity '" + tableName + "' to contain a string or null value");
   }
 
+  private static IReadOnlyList<string> ReadRequiredStringValues(
+      string pitName,
+      string tableName,
+      Dictionary<string, object> row,
+      IReadOnlyList<string> columnNames,
+      string description) {
+    if (columnNames.Count == 0) {
+      return Array.Empty<string>();
+    }
+
+    var values = new string[columnNames.Count];
+    for (var index = 0; index < columnNames.Count; index++) {
+      values[index] = ReadRequiredString(
+          pitName,
+          tableName,
+          row,
+          columnNames[index],
+          description);
+    }
+
+    return values;
+  }
+
   private static DateTimeOffset ReadRequiredTimestamp(
       string pitName,
       string tableName,
@@ -638,6 +837,18 @@ internal static class DataVaultPitReadPipeline {
         "' on table/entity '" + tableName + "' to contain a readable load timestamp value or null");
   }
 
+  private static string GetSatelliteDrivingKeyValueSignature(
+      PitSatelliteProjection pitSatellite,
+      MatchedPitRow pitRow) {
+    return pitSatellite.Satellite.DrivingKeyNames.Count == 0
+        ? string.Empty
+        : pitRow.DrivingKeyValueSignature;
+  }
+
+  private static string CreateOrdinalSignature(IEnumerable<string> values) {
+    return string.Concat(values.Select(value => value.Length.ToString(CultureInfo.InvariantCulture) + ":" + value));
+  }
+
   private static string GetPitTableName(string pitName) {
     return "Pit" + DefaultNamingPolicy.Instance.NormalizeProducedIdentifier(pitName);
   }
@@ -659,6 +870,8 @@ internal static class DataVaultPitReadPipeline {
       string MetadataName,
       string TableName,
       string ParentHashKeyColumnName,
+      IReadOnlyList<string> DrivingKeyColumnNames,
+      IReadOnlyList<string> DrivingKeyNames,
       string LoadTimestampColumnName,
       IReadOnlyList<PitSatelliteProjection> Satellites);
 
@@ -673,14 +886,27 @@ internal static class DataVaultPitReadPipeline {
       string HashDiffColumnName,
       string LoadTimestampColumnName,
       string RecordSourceColumnName,
+      IReadOnlyList<string> DrivingKeyNames,
+      IReadOnlyList<string> DrivingKeyColumnNames,
       IReadOnlyList<PayloadProjection> Payloads);
 
   internal sealed record PayloadProjection(string MetadataName, string ColumnName);
 
   internal sealed record MatchedPitRow(
       string ParentHashKey,
+      IReadOnlyDictionary<string, string> DrivingKeyValues,
+      IReadOnlyList<string> DrivingKeyValueList,
       DateTimeOffset LoadTimestamp,
-      IReadOnlyList<DateTimeOffset?> SnapshotLoadTimestamps);
+      IReadOnlyList<DateTimeOffset?> SnapshotLoadTimestamps) {
+    public string DrivingKeyValueSignature { get; } = CreateOrdinalSignature(DrivingKeyValueList);
 
-  internal readonly record struct SatelliteSnapshotKey(string ParentHashKey, DateTimeOffset LoadTimestamp);
+    public PitRowIdentityKey IdentityKey { get; } = new(ParentHashKey, CreateOrdinalSignature(DrivingKeyValueList));
+  }
+
+  internal readonly record struct PitRowIdentityKey(string ParentHashKey, string DrivingKeyValueSignature);
+
+  internal readonly record struct SatelliteSnapshotKey(
+      string ParentHashKey,
+      string DrivingKeyValueSignature,
+      DateTimeOffset LoadTimestamp);
 }

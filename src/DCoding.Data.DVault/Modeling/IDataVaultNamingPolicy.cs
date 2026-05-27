@@ -171,6 +171,11 @@ public enum DataVaultIndexKind {
   /// Index over bridge traversal columns.
   /// </summary>
   BridgeTraversal,
+
+  /// <summary>
+  /// Index over PIT row traversal columns.
+  /// </summary>
+  PitTraversal,
 }
 
 /// <summary>

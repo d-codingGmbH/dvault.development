@@ -257,7 +257,48 @@ public sealed class DataVaultEfMetadataTranslationTests {
         FindEntity(modelBuilder.Model, "PitCustomerProfileStatus"),
         "PitCustomerProfileStatus",
         ["CustomerHashKey", "LoadTimestamp", "ProfileLoadTimestamp", "StatusLoadTimestamp"],
-        "PkPitCustomerProfileStatusCustomerHashKeyLoadTimestamp");
+        "PkPitCustomerProfileStatusCustomerHashKeyLoadTimestamp",
+        "IxPitCustomerProfileStatusTraversalCustomerHashKeyLoadTimestamp");
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataProjectsMultiActivePitDrivingKeysInCanonicalOrder() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"],
+        ["Contact Type", "Region Code"]);
+    var status = new DataVaultSatelliteMetadata(
+        "Status",
+        customer.ToReference(),
+        ["Status Code"]);
+    var pit = new DataVaultPitMetadata(
+        customer.ToReference(),
+        [
+            new DataVaultPitSatelliteReferenceMetadata("Contact", isMultiActive: true),
+            new DataVaultPitSatelliteReferenceMetadata("Status"),
+        ]);
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.ApplyDataVaultMetadata(new DataVaultMetadataModel([customer], [], [contact, status], [pit]));
+
+    var pitEntity = FindEntity(modelBuilder.Model, "PitCustomerContactStatus");
+
+    Assert.Equal(
+        ["CustomerHashKey", "ContactType", "RegionCode", "LoadTimestamp", "ContactLoadTimestamp", "StatusLoadTimestamp"],
+        PropertyNamesInOrdinalOrder(pitEntity));
+    AssertProperty(pitEntity, "ContactType", DataVaultPropertyRole.DrivingKey, expectedTechnicalRole: null);
+    AssertProperty(pitEntity, "RegionCode", DataVaultPropertyRole.DrivingKey, expectedTechnicalRole: null);
+    AssertPrimaryKey(
+        pitEntity,
+        "PkPitCustomerContactStatusCustomerHashKeyContactTypeRegionCodeLoadTimestamp",
+        ["CustomerHashKey", "ContactType", "RegionCode", "LoadTimestamp"]);
+    AssertIndex(
+        pitEntity,
+        "IxPitCustomerContactStatusTraversalCustomerHashKeyContactTypeRegionCodeLoadTimestamp",
+        ["CustomerHashKey", "ContactType", "RegionCode", "LoadTimestamp"],
+        isUnique: false);
   }
 
   [Fact]
@@ -585,7 +626,36 @@ public sealed class DataVaultEfMetadataTranslationTests {
                 [new DataVaultPitSatelliteReferenceMetadata("Profile", isMultiActive: true)]),
         ]);
 
-    AssertPitTranslationFailure(metadataModel, "multi-active satellite 'Profile'");
+    AssertPitTranslationFailure(metadataModel, "declares IsMultiActive=True");
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataRejectsMultiActivePitSatellitesWithIncompatibleDrivingKeys() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"],
+        ["Contact Type"]);
+    var preference = new DataVaultSatelliteMetadata(
+        "Preference",
+        customer.ToReference(),
+        ["Preference Value"],
+        ["Preference Type"]);
+    var metadataModel = new DataVaultMetadataModel(
+        [customer],
+        [],
+        [contact, preference],
+        [
+            new DataVaultPitMetadata(
+                customer.ToReference(),
+                [
+                    new DataVaultPitSatelliteReferenceMetadata("Contact", isMultiActive: true),
+                    new DataVaultPitSatelliteReferenceMetadata("Preference", isMultiActive: true),
+                ]),
+        ]);
+
+    AssertPitTranslationFailure(metadataModel, "do not match multi-active satellite 'Contact' driving-key names");
   }
 
   [Fact]
@@ -888,7 +958,11 @@ public sealed class DataVaultEfMetadataTranslationTests {
     AssertProperty(pit, "ProfileLoadTimestamp", DataVaultPropertyRole.SnapshotReference, TechnicalMetadataColumnRole.LoadTimestamp);
     AssertProperty(pit, "StatusLoadTimestamp", DataVaultPropertyRole.SnapshotReference, TechnicalMetadataColumnRole.LoadTimestamp);
     AssertPrimaryKey(pit, "PkPitCustomerProfileStatusCustomerHashKeyLoadTimestamp", ["CustomerHashKey", "LoadTimestamp"]);
-    Assert.Empty(pit.GetIndexes());
+    AssertIndex(
+        pit,
+        "IxPitCustomerProfileStatusTraversalCustomerHashKeyLoadTimestamp",
+        ["CustomerHashKey", "LoadTimestamp"],
+        isUnique: false);
     AssertNoRelationships(pit);
   }
 
@@ -1122,7 +1196,8 @@ public sealed class DataVaultEfMetadataTranslationTests {
       IMutableEntityType entityType,
       string expectedTableName,
       string[] expectedColumnNames,
-      string expectedPrimaryKeyName) {
+      string expectedPrimaryKeyName,
+      string expectedIndexName) {
     var table = StoreObjectIdentifier.Table(expectedTableName, schema: null);
 
     Assert.Equal(expectedTableName, entityType.GetTableName());
@@ -1133,7 +1208,7 @@ public sealed class DataVaultEfMetadataTranslationTests {
             .OrderBy(property => AnnotationValue<int>(property, DataVaultAnnotationNames.Ordinal))
             .Select(property => property.GetColumnName(table)));
     Assert.Equal(expectedPrimaryKeyName, entityType.FindPrimaryKey()!.GetName());
-    Assert.Empty(entityType.GetIndexes());
+    Assert.Equal(expectedIndexName, Assert.Single(entityType.GetIndexes()).GetDatabaseName());
   }
 
   private static void AssertPitTranslationFailure(DataVaultMetadataModel metadataModel, string expectedMessage) {

@@ -79,6 +79,188 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
   }
 
   [Fact]
+  public async Task PitMaintenanceRebuildsAndReadsMultiActiveTupleRowsThroughSqliteFallback() {
+    var metadata = CreateMultiActiveMetadata();
+    var importTimestamp = Utc(2026, 5, 11, 7, 0);
+    var profileBeforeTuple = Utc(2026, 5, 11, 8, 0);
+    var billingContact = Utc(2026, 5, 11, 9, 0);
+    var shippingContact = Utc(2026, 5, 11, 10, 0);
+    var profileAfterTuple = Utc(2026, 5, 11, 11, 0);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<MultiActivePitMaintenanceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var readService = provider.GetRequiredService<IDataVaultReadService>();
+    var readDiagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+    var maintenanceService = provider.GetRequiredService<IDataVaultPitMaintenanceService>();
+    string customerHashKey;
+    DataVaultPitMaintenanceResult maintenanceResult;
+
+    await using (var context = new MultiActivePitMaintenanceContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+      customerHashKey = await SaveCustomerAsync(saveService, context, metadata, "C-600", importTimestamp);
+      await SaveProfileAsync(saveService, context, metadata, customerHashKey, profileBeforeTuple, "Frank First", "Silver", "profile-before");
+      await SaveContactAsync(saveService, context, metadata, customerHashKey, billingContact, "billing", "billing@example.test", "contact-billing");
+      await SaveContactAsync(saveService, context, metadata, customerHashKey, shippingContact, "shipping", "shipping@example.test", "contact-shipping");
+      await SaveProfileAsync(saveService, context, metadata, customerHashKey, profileAfterTuple, "Frank Final", "Gold", "profile-after");
+
+      maintenanceResult = await maintenanceService.RebuildAsync(
+          context,
+          new DataVaultPitRebuildRequest(metadata.Pit));
+    }
+
+    await using (var context = new MultiActivePitMaintenanceContext(options)) {
+      var request = new DataVaultPitAsOfReadRequest(metadata.Pit, [customerHashKey], Utc(2026, 5, 11, 11, 30));
+      var diagnostics = readDiagnostics.Analyze(context, request);
+      var records = await readService.ReadPitRowsAsync(context, request);
+      var projectedRows = await readService.ReadPitAsync(
+          context,
+          request,
+          row => new ContactSnapshotRead(
+              row.RequiredString("ParentHashKey"),
+              row.RequiredString("Contact Type"),
+              row.RequiredSatellite("Contact").RequiredString("Email Address"),
+              row.RequiredSatellite("Profile").RequiredString("Customer Name")));
+
+      Assert.Equal("PitCustomerContactProfile", maintenanceResult.TableName);
+      Assert.Equal(1, maintenanceResult.ParentHashKeyCount);
+      Assert.Equal(0, maintenanceResult.RowsDeleted);
+      Assert.Equal(4, maintenanceResult.RowsWritten);
+      Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback, diagnostics.ReadStrategy.Status);
+      Assert.NotNull(diagnostics.ReadShape);
+      Assert.Equal(["CustomerHashKey", "ContactType", "LoadTimestamp"], diagnostics.ReadShape!.Pit!.RowIdentityColumns.Single().ColumnNames);
+      Assert.Equal(
+          ["billing", "shipping"],
+          records.Select(record => record.DrivingKeyValues["Contact Type"]).ToArray());
+      Assert.All(records, record => {
+        Assert.Equal(profileAfterTuple, record.LoadTimestamp);
+        Assert.Equal(profileAfterTuple, RequiredSnapshot(record, "Profile").SnapshotLoadTimestamp);
+      });
+      Assert.Collection(
+          projectedRows.OrderBy(row => row.ContactType, StringComparer.Ordinal),
+          row => {
+            Assert.Equal(customerHashKey, row.ParentHashKey);
+            Assert.Equal("billing", row.ContactType);
+            Assert.Equal("billing@example.test", row.EmailAddress);
+            Assert.Equal("Frank Final", row.CustomerName);
+          },
+          row => {
+            Assert.Equal(customerHashKey, row.ParentHashKey);
+            Assert.Equal("shipping", row.ContactType);
+            Assert.Equal("shipping@example.test", row.EmailAddress);
+            Assert.Equal("Frank Final", row.CustomerName);
+          });
+    }
+  }
+
+  [Fact]
+  public async Task PitMaintenanceMaintainsRequestedMultiActiveParentTupleHistoryThroughSqliteFallback() {
+    var metadata = CreateMultiActiveMetadata();
+    var importTimestamp = Utc(2026, 5, 11, 7, 0);
+    var profileBeforeTuple = Utc(2026, 5, 11, 8, 0);
+    var billingContact = Utc(2026, 5, 11, 9, 0);
+    var lateBillingContact = Utc(2026, 5, 11, 9, 30);
+    var shippingContact = Utc(2026, 5, 11, 10, 0);
+    var profileAfterTuple = Utc(2026, 5, 11, 11, 0);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<MultiActivePitMaintenanceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var readService = provider.GetRequiredService<IDataVaultReadService>();
+    var maintenanceService = provider.GetRequiredService<IDataVaultPitMaintenanceService>();
+    string firstCustomerHashKey;
+    string secondCustomerHashKey;
+
+    await using (var context = new MultiActivePitMaintenanceContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+      firstCustomerHashKey = await SaveCustomerAsync(saveService, context, metadata, "C-700", importTimestamp);
+      secondCustomerHashKey = await SaveCustomerAsync(saveService, context, metadata, "C-800", importTimestamp);
+      await SaveProfileAsync(saveService, context, metadata, firstCustomerHashKey, profileBeforeTuple, "Gina Green", "Silver", "profile-c700-before");
+      await SaveContactAsync(saveService, context, metadata, firstCustomerHashKey, billingContact, "billing", "billing-c700@example.test", "contact-c700-billing");
+      await SaveContactAsync(saveService, context, metadata, firstCustomerHashKey, shippingContact, "shipping", "shipping-c700@example.test", "contact-c700-shipping");
+      await SaveProfileAsync(saveService, context, metadata, firstCustomerHashKey, profileAfterTuple, "Gina Gold", "Gold", "profile-c700-after");
+      await SaveProfileAsync(saveService, context, metadata, secondCustomerHashKey, profileBeforeTuple, "Hank Hazel", "Silver", "profile-c800-before");
+      await SaveContactAsync(saveService, context, metadata, secondCustomerHashKey, billingContact, "billing", "billing-c800@example.test", "contact-c800-billing");
+      await SaveContactAsync(saveService, context, metadata, secondCustomerHashKey, shippingContact, "shipping", "shipping-c800@example.test", "contact-c800-shipping");
+      await SaveProfileAsync(saveService, context, metadata, secondCustomerHashKey, profileAfterTuple, "Hank Gold", "Gold", "profile-c800-after");
+      await maintenanceService.RebuildAsync(context, new DataVaultPitRebuildRequest(metadata.Pit));
+    }
+
+    DataVaultPitMaintenanceResult maintenanceResult;
+    await using (var context = new MultiActivePitMaintenanceContext(options)) {
+      await SaveContactAsync(
+          saveService,
+          context,
+          metadata,
+          firstCustomerHashKey,
+          lateBillingContact,
+          "billing",
+          "billing-c700-updated@example.test",
+          "contact-c700-billing-late");
+      maintenanceResult = await maintenanceService.MaintainParentsAsync(
+          context,
+          new DataVaultPitParentMaintenanceRequest(metadata.Pit, [firstCustomerHashKey]));
+    }
+
+    await using (var context = new MultiActivePitMaintenanceContext(options)) {
+      var pitRows = await ReadMultiActivePitRowsAsync(context);
+      var firstRows = pitRows.Where(row => row.ParentHashKey == firstCustomerHashKey).ToArray();
+      var secondRows = pitRows.Where(row => row.ParentHashKey == secondCustomerHashKey).ToArray();
+      var readRecords = await readService.ReadPitRowsAsync(
+          context,
+          new DataVaultPitAsOfReadRequest(metadata.Pit, [firstCustomerHashKey], Utc(2026, 5, 11, 9, 45)));
+
+      Assert.Equal(1, maintenanceResult.ParentHashKeyCount);
+      Assert.Equal(4, maintenanceResult.RowsDeleted);
+      Assert.Equal(5, maintenanceResult.RowsWritten);
+      Assert.Collection(
+          firstRows,
+          row => AssertMultiActivePitRow(row, firstCustomerHashKey, "billing", billingContact, billingContact, profileBeforeTuple),
+          row => AssertMultiActivePitRow(row, firstCustomerHashKey, "billing", lateBillingContact, lateBillingContact, profileBeforeTuple),
+          row => AssertMultiActivePitRow(row, firstCustomerHashKey, "billing", profileAfterTuple, lateBillingContact, profileAfterTuple),
+          row => AssertMultiActivePitRow(row, firstCustomerHashKey, "shipping", shippingContact, shippingContact, profileBeforeTuple),
+          row => AssertMultiActivePitRow(row, firstCustomerHashKey, "shipping", profileAfterTuple, shippingContact, profileAfterTuple));
+      Assert.Collection(
+          secondRows,
+          row => AssertMultiActivePitRow(row, secondCustomerHashKey, "billing", billingContact, billingContact, profileBeforeTuple),
+          row => AssertMultiActivePitRow(row, secondCustomerHashKey, "billing", profileAfterTuple, billingContact, profileAfterTuple),
+          row => AssertMultiActivePitRow(row, secondCustomerHashKey, "shipping", shippingContact, shippingContact, profileBeforeTuple),
+          row => AssertMultiActivePitRow(row, secondCustomerHashKey, "shipping", profileAfterTuple, shippingContact, profileAfterTuple));
+
+      var record = Assert.Single(readRecords);
+      Assert.Equal(lateBillingContact, record.LoadTimestamp);
+      Assert.Equal("billing", record.DrivingKeyValues["Contact Type"]);
+      Assert.Equal(lateBillingContact, RequiredSnapshot(record, "Contact").SnapshotLoadTimestamp);
+      Assert.Equal(profileBeforeTuple, RequiredSnapshot(record, "Profile").SnapshotLoadTimestamp);
+      Assert.Equal("billing-c700-updated@example.test", RequiredSnapshot(record, "Contact").PayloadValues["Email Address"]);
+    }
+  }
+
+  [Fact]
+  public async Task PitMaintenanceRejectsIncompatibleMultiActiveDrivingKeyFamiliesThroughSqlite() {
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<IncompatibleMultiActivePitMaintenanceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+
+    await using var context = new IncompatibleMultiActivePitMaintenanceContext(options);
+
+    var exception = await Assert.ThrowsAsync<NotSupportedException>(() => context.Database.EnsureCreatedAsync());
+
+    Assert.Contains("do not match multi-active satellite 'Contact' driving-key names", exception.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
   public async Task PitMaintenanceMaintainsOnlyRequestedParentsAndCorrectsLateArrivingSatelliteHistoryThroughSqlite() {
     var metadata = CreateMetadata();
     var importTimestamp = Utc(2026, 5, 11, 8, 0);
@@ -245,12 +427,30 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
       PitMaintenanceMetadata metadata,
       string customerId,
       DateTimeOffset loadTimestamp) {
+    return await SaveCustomerAsync(saveService, context, metadata.Customer, customerId, loadTimestamp);
+  }
+
+  private static async Task<string> SaveCustomerAsync(
+      IDataVaultSaveService saveService,
+      DbContext context,
+      MultiActivePitMaintenanceMetadata metadata,
+      string customerId,
+      DateTimeOffset loadTimestamp) {
+    return await SaveCustomerAsync(saveService, context, metadata.Customer, customerId, loadTimestamp);
+  }
+
+  private static async Task<string> SaveCustomerAsync(
+      IDataVaultSaveService saveService,
+      DbContext context,
+      DataVaultHubMetadata customer,
+      string customerId,
+      DateTimeOffset loadTimestamp) {
     var result = await saveService.SaveAsync(
         context,
         new DataVaultSaveRequest(
             loadTimestamp,
             "crm-import",
-            [new(metadata.Customer, [new("Customer Id", customerId)])],
+            [new(customer, [new("Customer Id", customerId)])],
             []));
 
     return GetHashKey(result, DataVaultTableKind.Hub, "Customer");
@@ -265,6 +465,30 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
       string customerName,
       string customerTier,
       string hashDiff) {
+    return SaveProfileAsync(saveService, context, metadata.Profile, customerHashKey, loadTimestamp, customerName, customerTier, hashDiff);
+  }
+
+  private static Task SaveProfileAsync(
+      IDataVaultSaveService saveService,
+      DbContext context,
+      MultiActivePitMaintenanceMetadata metadata,
+      string customerHashKey,
+      DateTimeOffset loadTimestamp,
+      string customerName,
+      string customerTier,
+      string hashDiff) {
+    return SaveProfileAsync(saveService, context, metadata.Profile, customerHashKey, loadTimestamp, customerName, customerTier, hashDiff);
+  }
+
+  private static Task SaveProfileAsync(
+      IDataVaultSaveService saveService,
+      DbContext context,
+      DataVaultSatelliteMetadata profile,
+      string customerHashKey,
+      DateTimeOffset loadTimestamp,
+      string customerName,
+      string customerTier,
+      string hashDiff) {
     return saveService.SaveAsync(
         context,
         new DataVaultSaveRequest(
@@ -274,7 +498,7 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
             [],
             [
                 new(
-                    metadata.Profile,
+                    profile,
                     customerHashKey,
                     [new("Customer Name", customerName), new("Customer Tier", customerTier)],
                     hashDiff),
@@ -301,6 +525,32 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
                     metadata.Status,
                     customerHashKey,
                     [new("Status Code", statusCode)],
+                    hashDiff),
+            ]));
+  }
+
+  private static Task SaveContactAsync(
+      IDataVaultSaveService saveService,
+      DbContext context,
+      MultiActivePitMaintenanceMetadata metadata,
+      string customerHashKey,
+      DateTimeOffset loadTimestamp,
+      string contactType,
+      string emailAddress,
+      string hashDiff) {
+    return saveService.SaveAsync(
+        context,
+        new DataVaultSaveRequest(
+            loadTimestamp,
+            "crm-contact",
+            [],
+            [],
+            [
+                new DataVaultSatelliteSaveOperation(
+                    metadata.Contact,
+                    customerHashKey,
+                    [new("Contact Type", contactType)],
+                    [new("Email Address", emailAddress)],
                     hashDiff),
             ]));
   }
@@ -351,6 +601,25 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
         .ToArray();
   }
 
+  private static async Task<IReadOnlyList<MultiActivePitRow>> ReadMultiActivePitRowsAsync(DbContext context) {
+    var rows = await context
+        .Set<Dictionary<string, object>>("PitCustomerContactProfile")
+        .AsNoTracking()
+        .ToListAsync();
+
+    return rows
+        .Select(row => new MultiActivePitRow(
+            Assert.IsType<string>(row["CustomerHashKey"]),
+            Assert.IsType<string>(row["ContactType"]),
+            DataVaultLoadTimestampValueConverter.ReadProviderValue(row["LoadTimestamp"]),
+            ReadOptionalTimestamp(row, "ContactLoadTimestamp"),
+            ReadOptionalTimestamp(row, "ProfileLoadTimestamp")))
+        .OrderBy(row => row.ParentHashKey, StringComparer.Ordinal)
+        .ThenBy(row => row.ContactType, StringComparer.Ordinal)
+        .ThenBy(row => row.LoadTimestamp)
+        .ToArray();
+  }
+
   private static DateTimeOffset? ReadOptionalTimestamp(
       IReadOnlyDictionary<string, object> row,
       string columnName) {
@@ -378,6 +647,20 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
     Assert.Equal(statusSnapshotTimestamp, row.StatusSnapshotTimestamp);
   }
 
+  private static void AssertMultiActivePitRow(
+      MultiActivePitRow row,
+      string parentHashKey,
+      string contactType,
+      DateTimeOffset loadTimestamp,
+      DateTimeOffset? contactSnapshotTimestamp,
+      DateTimeOffset? profileSnapshotTimestamp) {
+    Assert.Equal(parentHashKey, row.ParentHashKey);
+    Assert.Equal(contactType, row.ContactType);
+    Assert.Equal(loadTimestamp, row.LoadTimestamp);
+    Assert.Equal(contactSnapshotTimestamp, row.ContactSnapshotTimestamp);
+    Assert.Equal(profileSnapshotTimestamp, row.ProfileSnapshotTimestamp);
+  }
+
   private static PitMaintenanceMetadata CreateMetadata() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var profile = new DataVaultSatelliteMetadata(
@@ -392,6 +675,50 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
     var model = new DataVaultMetadataModel([customer], [], [profile, status], [pit]);
 
     return new PitMaintenanceMetadata(customer, profile, status, pit, model);
+  }
+
+  private static MultiActivePitMaintenanceMetadata CreateMultiActiveMetadata() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["Customer Name", "Customer Tier"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"],
+        ["Contact Type"]);
+    var pit = new DataVaultPitMetadata(
+        customer.ToReference(),
+        [
+            new DataVaultPitSatelliteReferenceMetadata("Contact", isMultiActive: true),
+            new DataVaultPitSatelliteReferenceMetadata("Profile"),
+        ]);
+    var model = new DataVaultMetadataModel([customer], [], [profile, contact], [pit]);
+
+    return new MultiActivePitMaintenanceMetadata(customer, profile, contact, pit, model);
+  }
+
+  private static DataVaultMetadataModel CreateIncompatibleMultiActiveMetadata() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"],
+        ["Contact Type"]);
+    var preference = new DataVaultSatelliteMetadata(
+        "Preference",
+        customer.ToReference(),
+        ["Preference Value"],
+        ["Preference Channel"]);
+    var pit = new DataVaultPitMetadata(
+        customer.ToReference(),
+        [
+            new DataVaultPitSatelliteReferenceMetadata("Contact", isMultiActive: true),
+            new DataVaultPitSatelliteReferenceMetadata("Preference", isMultiActive: true),
+        ]);
+
+    return new DataVaultMetadataModel([customer], [], [contact, preference], [pit]);
   }
 
   private static ServiceProvider CreateRegistryProvider(object? databasePath) {
@@ -446,6 +773,23 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
   private sealed class RegistryPitMaintenanceContext(DbContextOptions<RegistryPitMaintenanceContext> options) : DbContext(options) {
   }
 
+  private sealed class MultiActivePitMaintenanceContext(DbContextOptions<MultiActivePitMaintenanceContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(
+          CreateMultiActiveMetadata().Model,
+          DataVaultProviderCapabilityProfiles.Sqlite);
+    }
+  }
+
+  private sealed class IncompatibleMultiActivePitMaintenanceContext(
+      DbContextOptions<IncompatibleMultiActivePitMaintenanceContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(
+          CreateIncompatibleMultiActiveMetadata(),
+          DataVaultProviderCapabilityProfiles.Sqlite);
+    }
+  }
+
   private sealed class CustomerProfileStatusPitMapping {
   }
 
@@ -456,9 +800,29 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
       DataVaultPitMetadata Pit,
       DataVaultMetadataModel Model);
 
+  private sealed record MultiActivePitMaintenanceMetadata(
+      DataVaultHubMetadata Customer,
+      DataVaultSatelliteMetadata Profile,
+      DataVaultSatelliteMetadata Contact,
+      DataVaultPitMetadata Pit,
+      DataVaultMetadataModel Model);
+
   private sealed record PitRow(
       string ParentHashKey,
       DateTimeOffset LoadTimestamp,
       DateTimeOffset? ProfileSnapshotTimestamp,
       DateTimeOffset? StatusSnapshotTimestamp);
+
+  private sealed record MultiActivePitRow(
+      string ParentHashKey,
+      string ContactType,
+      DateTimeOffset LoadTimestamp,
+      DateTimeOffset? ContactSnapshotTimestamp,
+      DateTimeOffset? ProfileSnapshotTimestamp);
+
+  private sealed record ContactSnapshotRead(
+      string ParentHashKey,
+      string ContactType,
+      string EmailAddress,
+      string CustomerName);
 }

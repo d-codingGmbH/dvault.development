@@ -183,7 +183,7 @@ internal sealed class SqliteDataVaultReadStrategy :
     }
   }
 
-  private static async Task<IReadOnlyDictionary<string, DataVaultPitReadPipeline.MatchedPitRow>> ReadMatchedPitRowsAsync(
+  private static async Task<IReadOnlyDictionary<DataVaultPitReadPipeline.PitRowIdentityKey, DataVaultPitReadPipeline.MatchedPitRow>> ReadMatchedPitRowsAsync(
       DataVaultProviderPitReadStrategyContext context,
       DataVaultPitReadPipeline.PitReadProjection projection,
       CancellationToken cancellationToken) {
@@ -194,7 +194,7 @@ internal sealed class SqliteDataVaultReadStrategy :
     }
 
     try {
-      var matchedRows = new Dictionary<string, DataVaultPitReadPipeline.MatchedPitRow>(StringComparer.Ordinal);
+      var matchedRows = new Dictionary<DataVaultPitReadPipeline.PitRowIdentityKey, DataVaultPitReadPipeline.MatchedPitRow>();
       var selectedColumns = CreatePitSelectedColumns(projection);
       foreach (var parentHashKeyBatch in context.Request.ParentHashKeys.Chunk(GetPitParentHashKeyBatchSize())) {
         var persistedRows = await ExecutePitRowsBatchAsync(
@@ -211,9 +211,9 @@ internal sealed class SqliteDataVaultReadStrategy :
             continue;
           }
 
-          if (!matchedRows.TryGetValue(matchedRow.ParentHashKey, out var current) ||
+          if (!matchedRows.TryGetValue(matchedRow.IdentityKey, out var current) ||
               matchedRow.LoadTimestamp >= current.LoadTimestamp) {
-            matchedRows[matchedRow.ParentHashKey] = matchedRow;
+            matchedRows[matchedRow.IdentityKey] = matchedRow;
           }
         }
       }
@@ -486,11 +486,23 @@ internal sealed class SqliteDataVaultReadStrategy :
       builder.Append(CreateSqliteParameterName(index));
     }
 
-    builder.Append(") ORDER BY ")
-        .Append(QuoteSqliteIdentifier(projection.ParentHashKeyColumnName))
-        .Append(", ")
-        .Append(QuoteSqliteIdentifier(projection.LoadTimestampColumnName))
-        .Append(", rowid");
+    var orderColumns = new[]
+    {
+        projection.ParentHashKeyColumnName,
+    }
+        .Concat(projection.DrivingKeyColumnNames)
+        .Append(projection.LoadTimestampColumnName)
+        .ToArray();
+    builder.Append(") ORDER BY ");
+    for (var index = 0; index < orderColumns.Length; index++) {
+      if (index > 0) {
+        builder.Append(", ");
+      }
+
+      builder.Append(QuoteSqliteIdentifier(orderColumns[index]));
+    }
+
+    builder.Append(", rowid");
 
     return builder.ToString();
   }
@@ -563,6 +575,7 @@ internal sealed class SqliteDataVaultReadStrategy :
       DataVaultPitReadPipeline.PitReadProjection projection) {
     return [
         projection.ParentHashKeyColumnName,
+        .. projection.DrivingKeyColumnNames,
         projection.LoadTimestampColumnName,
         .. projection.Satellites.Select(satellite => satellite.SnapshotReferenceColumnName),
     ];
