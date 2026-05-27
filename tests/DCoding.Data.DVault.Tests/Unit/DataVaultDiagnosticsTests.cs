@@ -153,6 +153,7 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.NotNull(pit.ReadShape);
     var pitShape = pit.ReadShape!;
     Assert.Equal(DataVaultReadShapeKind.PitAsOf, pitShape.Kind);
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected, pitShape.Provider.ReadStrategyStatus);
     Assert.NotNull(pitShape.Pit);
     var pitReadShape = pitShape.Pit!;
     Assert.Equal("PitCustomerProfileStatus", pitReadShape.Pit.TableName);
@@ -207,6 +208,63 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal(bridgeReadShape.Bridge, registryBridgeShape.Bridge);
     Assert.Equal(bridgeReadShape.FilterEndpoint, registryBridgeShape.FilterEndpoint);
     Assert.Equal(bridgeReadShape.EndpointFilter.ColumnNames, registryBridgeShape.EndpointFilter.ColumnNames);
+  }
+
+  [Fact]
+  public void ReadDiagnosticsExposeLinkParentPitFallbackAndSnapshotColumnOrder() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+    var customerOrder = new DataVaultLinkMetadata("CustomerOrder", [customer.ToReference(), order.ToReference()]);
+    var state = new DataVaultSatelliteMetadata(
+        "State",
+        customerOrder.ToReference(),
+        ["State Code"]);
+    var fulfillment = new DataVaultSatelliteMetadata(
+        "Fulfillment",
+        customerOrder.ToReference(),
+        ["Fulfillment Location"]);
+    var pit = new DataVaultPitMetadata(customerOrder.ToReference(), ["State", "Fulfillment"]);
+    var model = new DataVaultMetadataModel([customer, order], [customerOrder], [state, fulfillment], [pit]);
+    var optionsBuilder = new DbContextOptionsBuilder<ReadShapeDiagnosticsContext>()
+        .UseSqlite("Data Source=:memory:");
+    optionsBuilder.UseDataVaultMetadata(DataVaultMetadataRegistry.Create(model));
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+
+    using var context = new ReadShapeDiagnosticsContext(optionsBuilder.Options);
+    var result = diagnostics.Analyze(
+        context,
+        new DataVaultPitAsOfReadRequest(
+            pit,
+            ["customer-order-hk"],
+            new DateTimeOffset(2026, 5, 11, 12, 0, 0, TimeSpan.Zero)));
+
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback, result.ReadStrategy.Status);
+    Assert.Contains(
+        result.ReadStrategy.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape);
+    Assert.NotNull(result.ReadShape);
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback, result.ReadShape!.Provider.ReadStrategyStatus);
+    Assert.Contains(
+        result.ReadShape.Provider.ReadStrategyFallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape);
+    Assert.NotNull(result.ReadShape.Pit);
+    var pitReadShape = result.ReadShape.Pit!;
+    Assert.Equal(DataVaultMetadataReferenceKind.Link, pitReadShape.ParentReference.Kind);
+    Assert.Equal("CustomerOrder", pitReadShape.ParentReference.Name);
+    Assert.Equal(["CustomerOrderHashKey", "LoadTimestamp"], pitReadShape.RowIdentityColumns.Single().ColumnNames);
+    Assert.Equal(
+        ["StateLoadTimestamp", "FulfillmentLoadTimestamp"],
+        pitReadShape.ProjectedColumns.Single(columns => columns.Role == "snapshotReferenceProjection").ColumnNames);
+    Assert.Equal(
+        ["StateLoadTimestamp", "FulfillmentLoadTimestamp"],
+        pitReadShape.ReferencedSatellites.Select(satellite => satellite.SnapshotReferenceColumnName).ToArray());
+    Assert.Contains(
+        pitReadShape.ExpectedIndexBaseline,
+        index => index.Kind == "primary-key" &&
+            index.ColumnNames.SequenceEqual(["CustomerOrderHashKey", "LoadTimestamp"]));
   }
 
   [Fact]

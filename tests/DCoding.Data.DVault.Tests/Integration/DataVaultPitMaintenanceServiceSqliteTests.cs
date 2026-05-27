@@ -133,7 +133,15 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
       Assert.Equal(4, maintenanceResult.RowsWritten);
       Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback, diagnostics.ReadStrategy.Status);
       Assert.NotNull(diagnostics.ReadShape);
-      Assert.Equal(["CustomerHashKey", "ContactType", "LoadTimestamp"], diagnostics.ReadShape!.Pit!.RowIdentityColumns.Single().ColumnNames);
+      var pitReadShape = diagnostics.ReadShape!.Pit!;
+      Assert.Equal(["CustomerHashKey", "ContactType", "LoadTimestamp"], pitReadShape.RowIdentityColumns.Single().ColumnNames);
+      Assert.Equal(["ContactType"], pitReadShape.ProjectedColumns.Single(columns => columns.Role == "pitDrivingKeyProjection").ColumnNames);
+      Assert.Contains("driving-key tuple", pitReadShape.PitRowSelectionRule, StringComparison.Ordinal);
+      Assert.Contains("driving-key tuple", pitReadShape.SnapshotLookupBehavior, StringComparison.Ordinal);
+      Assert.Contains(
+          pitReadShape.ExpectedIndexBaseline,
+          index => index.Kind == "secondary-index" &&
+              index.ColumnNames.SequenceEqual(["CustomerHashKey", "ContactType", "LoadTimestamp"]));
       Assert.Equal(
           ["billing", "shipping"],
           records.Select(record => record.DrivingKeyValues["Contact Type"]).ToArray());
@@ -387,6 +395,21 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
       Assert.Contains(
           diagnostics.ReadStrategy.FallbackCauses,
           cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape);
+      Assert.NotNull(diagnostics.ReadShape);
+      var pitReadShape = diagnostics.ReadShape!.Pit!;
+      Assert.Equal(DataVaultMetadataReferenceKind.Link, pitReadShape.ParentReference.Kind);
+      Assert.Equal("CustomerOrder", pitReadShape.ParentReference.Name);
+      Assert.Equal(["CustomerOrderHashKey", "LoadTimestamp"], pitReadShape.RowIdentityColumns.Single().ColumnNames);
+      Assert.Equal(
+          ["StateLoadTimestamp", "FulfillmentLoadTimestamp"],
+          pitReadShape.ProjectedColumns.Single(columns => columns.Role == "snapshotReferenceProjection").ColumnNames);
+      Assert.Equal(
+          ["StateLoadTimestamp", "FulfillmentLoadTimestamp"],
+          pitReadShape.ReferencedSatellites.Select(satellite => satellite.SnapshotReferenceColumnName).ToArray());
+      Assert.Contains(
+          pitReadShape.ExpectedIndexBaseline,
+          index => index.Kind == "primary-key" &&
+              index.ColumnNames.SequenceEqual(["CustomerOrderHashKey", "LoadTimestamp"]));
       Assert.Collection(
           pitRows,
           row => AssertLinkParentPitRow(row, linkHashKey, stateTimestamp, stateTimestamp, null),
@@ -418,6 +441,7 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
     var context = scope.ServiceProvider.GetRequiredService<RegistryPitMaintenanceContext>();
     var saveService = scope.ServiceProvider.GetRequiredService<IDataVaultSaveService>();
     var maintenanceService = scope.ServiceProvider.GetRequiredService<IDataVaultPitMaintenanceService>();
+    var readDiagnostics = scope.ServiceProvider.GetRequiredService<IDataVaultReadDiagnosticsService>();
     await context.Database.EnsureCreatedAsync();
 
     var customerHashKey = await SaveCustomerAsync(saveService, context, metadata, "C-300", importTimestamp);
@@ -434,11 +458,18 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
     var result = await maintenanceService.RebuildAsync(
         context,
         new DataVaultRegistryPitRebuildRequest(metadata.Pit.Name));
+    var diagnostics = readDiagnostics.Analyze(
+        context,
+        new DataVaultPitAsOfReadRequest(metadata.Pit, [customerHashKey], Utc(2026, 5, 11, 10, 30)));
     var pitRows = await ReadPitRowsAsync(context);
 
     Assert.Equal("PitCustomerProfileStatus", result.TableName);
     Assert.Equal(1, result.RowsDeleted);
     Assert.Equal(2, result.RowsWritten);
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected, diagnostics.ReadStrategy.Status);
+    Assert.NotNull(diagnostics.ReadShape);
+    Assert.Equal("PitCustomerProfileStatus", diagnostics.ReadShape!.Pit!.Pit.TableName);
+    Assert.Equal(["CustomerHashKey", "LoadTimestamp"], diagnostics.ReadShape.Pit.RowIdentityColumns.Single().ColumnNames);
     Assert.Collection(
         pitRows,
         row => AssertPitRow(row, customerHashKey, statusTimestamp, null, statusTimestamp),

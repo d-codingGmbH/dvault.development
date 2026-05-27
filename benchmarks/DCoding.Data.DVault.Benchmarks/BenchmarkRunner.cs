@@ -568,6 +568,24 @@ internal static class BenchmarkExecutionDetails {
         FormatStagedProviderBulk(diagnostics.SaveStrategy.StagedProviderBulk);
   }
 
+  public static string CreateReadStrategyDetail(
+      IScenarioBenchmark benchmark,
+      DataVaultDiagnosticsResult diagnostics) {
+    ArgumentNullException.ThrowIfNull(benchmark);
+    ArgumentNullException.ThrowIfNull(diagnostics);
+
+    return CreatePlanned(benchmark) +
+        "; readStrategyStatus=" + diagnostics.ReadStrategy.Status +
+        "; provider=" + (diagnostics.ReadStrategy.ProviderName ?? "<none>") +
+        "; selectedStrategy=" + (diagnostics.ReadStrategy.SelectedStrategyName ?? "<none>") +
+        "; candidates=" + diagnostics.ReadStrategy.Candidates.Count.ToString(CultureInfo.InvariantCulture) +
+        "; fallbackCauses=" + FormatFallbackCauses(diagnostics.ReadStrategy.FallbackCauses) +
+        "; readShape=" + (diagnostics.ReadShape?.Kind.ToString() ?? "<none>") +
+        "; readShapeProviderStatus=" + (diagnostics.ReadShape?.Provider.ReadStrategyStatus.ToString() ?? "<none>") +
+        "; readShapeFallbackCauses=" + FormatFallbackCauses(
+            diagnostics.ReadShape?.Provider.ReadStrategyFallbackCauses ?? Array.Empty<DataVaultReadStrategyFallbackCause>());
+  }
+
   private static string GetExecutionPath(IScenarioBenchmark benchmark) {
     if (benchmark is ProviderNativeBulkIngestionBenchmark providerNativeBulkIngestionBenchmark) {
       return providerNativeBulkIngestionBenchmark.ExecutionPathDetail;
@@ -606,6 +624,14 @@ internal static class BenchmarkExecutionDetails {
   }
 
   private static string FormatFallbackCauses(IReadOnlyList<DataVaultSaveStrategyFallbackCause> fallbackCauses) {
+    if (fallbackCauses.Count == 0) {
+      return "none";
+    }
+
+    return string.Join("|", fallbackCauses.Select(cause => cause.Kind.ToString()));
+  }
+
+  private static string FormatFallbackCauses(IReadOnlyList<DataVaultReadStrategyFallbackCause> fallbackCauses) {
     if (fallbackCauses.Count == 0) {
       return "none";
     }

@@ -44,6 +44,11 @@ artifacts/benchmarks/06F5Q900FC0P3HBZP81CVK7264-staged-bulk-matrix/*
 !artifacts/benchmarks/06F5Q900FC0P3HBZP81CVK7264-staged-bulk-matrix/after/benchmark-summary.md
 !artifacts/benchmarks/06F5Q900FC0P3HBZP81CVK7264-staged-bulk-matrix/after/benchmark-summary.csv
 !artifacts/benchmarks/06F5Q900FC0P3HBZP81CVK7264-staged-bulk-matrix/after/benchmark-summary.json
+!artifacts/benchmarks/06F5Q91DR1555RSBQT7KDST684-pit-bridge-diagnostics/
+artifacts/benchmarks/06F5Q91DR1555RSBQT7KDST684-pit-bridge-diagnostics/*
+!artifacts/benchmarks/06F5Q91DR1555RSBQT7KDST684-pit-bridge-diagnostics/benchmark-summary.md
+!artifacts/benchmarks/06F5Q91DR1555RSBQT7KDST684-pit-bridge-diagnostics/benchmark-summary.csv
+!artifacts/benchmarks/06F5Q91DR1555RSBQT7KDST684-pit-bridge-diagnostics/benchmark-summary.json
 TestResults/
 **/bin/
 **/obj/

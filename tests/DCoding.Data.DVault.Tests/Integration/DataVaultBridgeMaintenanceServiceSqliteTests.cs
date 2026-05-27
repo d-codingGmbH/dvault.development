@@ -1,6 +1,7 @@
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -128,6 +129,64 @@ public sealed class DataVaultBridgeMaintenanceServiceSqliteTests {
         incrementalRows);
     Assert.Equal(5, convergenceResult.RowsInserted);
     Assert.Equal(incrementalRows, rebuiltRows);
+  }
+
+  [Fact]
+  public async Task HierarchyBridgeRebuildHandlesTopologyShrinkThatIncreasesTraversalDepthThroughSqlite() {
+    var bridge = HierarchyMetadataModel.Bridges.Single();
+    var link = HierarchyMetadataModel.Links.Single();
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<HierarchyBridgeMaintenanceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    using var provider = CreateProvider();
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var maintenanceService = provider.GetRequiredService<IDataVaultBridgeMaintenanceService>();
+    var readService = provider.GetRequiredService<IDataVaultReadService>();
+
+    await using var context = new HierarchyBridgeMaintenanceContext(options);
+    await context.Database.EnsureCreatedAsync();
+
+    await SaveHierarchyLinkAsync(context, saveService, link, "region-a", "region-c");
+    var initialRebuildResult = await maintenanceService.RebuildBridgeAsync(
+        context,
+        new DataVaultBridgeMaintenanceRequest(bridge));
+    var initialRows = await ReadHierarchyRowsAsync(readService, context, bridge);
+
+    await DeleteHierarchyLinkAsync(context, "region-a", "region-c");
+    await SaveHierarchyLinkAsync(context, saveService, link, "region-a", "region-b");
+    await SaveHierarchyLinkAsync(context, saveService, link, "region-b", "region-c");
+    var appendOnlyResult = await maintenanceService.MaintainBridgeAsync(
+        context,
+        new DataVaultBridgeMaintenanceRequest(bridge));
+    var appendOnlyRows = await ReadHierarchyRowsAsync(readService, context, bridge);
+    var rebuildResult = await maintenanceService.RebuildBridgeAsync(
+        context,
+        new DataVaultBridgeMaintenanceRequest(bridge));
+    var rebuiltRows = await ReadHierarchyRowsAsync(readService, context, bridge);
+
+    Assert.Equal(1, initialRebuildResult.RowsInserted);
+    Assert.Equal(["region-a->region-c:1"], initialRows);
+    Assert.Equal(2, appendOnlyResult.RowsInserted);
+    Assert.Equal(0, appendOnlyResult.RowsUpdated);
+    Assert.Equal(0, appendOnlyResult.RowsDeleted);
+    Assert.Equal(1, appendOnlyResult.RowsUnchanged);
+    Assert.Equal(
+        [
+            "region-a->region-b:1",
+            "region-a->region-c:1",
+            "region-b->region-c:1",
+        ],
+        appendOnlyRows);
+    Assert.Equal(3, rebuildResult.RowsInserted);
+    Assert.Equal(3, rebuildResult.RowsDeleted);
+    Assert.Equal(
+        [
+            "region-a->region-b:1",
+            "region-a->region-c:2",
+            "region-b->region-c:1",
+        ],
+        rebuiltRows);
   }
 
   [Fact]
@@ -276,7 +335,46 @@ public sealed class DataVaultBridgeMaintenanceServiceSqliteTests {
                 [
                     new KeyValuePair<string, string>("ParentRegion", ancestorHashKey),
                     new KeyValuePair<string, string>("ChildRegion", descendantHashKey),
-                ])]));
+            ])]));
+  }
+
+  private static Task DeleteHierarchyLinkAsync(
+      DbContext context,
+      string ancestorHashKey,
+      string descendantHashKey) {
+    var linkEntity = context.Model
+        .GetEntityTypes()
+        .Single(entity =>
+            Equals(entity.FindAnnotation(DataVaultAnnotationNames.EntityKind)?.Value, DataVaultTableKind.Link) &&
+            string.Equals(
+                entity.FindAnnotation(DataVaultAnnotationNames.MetadataName)?.Value as string,
+                "SalesRegionParentChild",
+                StringComparison.Ordinal));
+    var ancestorColumnName = ResolveLinkParticipantPropertyName(linkEntity, "ParentRegion");
+    var descendantColumnName = ResolveLinkParticipantPropertyName(linkEntity, "ChildRegion");
+    var linkRows = context.Set<Dictionary<string, object>>(linkEntity.Name);
+    var linkRow = linkRows
+        .ToList()
+        .Single(row =>
+            string.Equals(row[ancestorColumnName] as string, ancestorHashKey, StringComparison.Ordinal) &&
+            string.Equals(row[descendantColumnName] as string, descendantHashKey, StringComparison.Ordinal));
+
+    linkRows.Remove(linkRow);
+    return context.SaveChangesAsync();
+  }
+
+  private static string ResolveLinkParticipantPropertyName(
+      IEntityType linkEntity,
+      string metadataName) {
+    return linkEntity
+        .GetProperties()
+        .Single(property =>
+            Equals(property.FindAnnotation(DataVaultAnnotationNames.PropertyRole)?.Value, DataVaultPropertyRole.ParticipantReference) &&
+            string.Equals(
+                property.FindAnnotation(DataVaultAnnotationNames.MetadataName)?.Value as string,
+                metadataName,
+                StringComparison.Ordinal))
+        .Name;
   }
 
   private static async Task<IReadOnlyList<string>> ReadManyToManyRowsAsync(

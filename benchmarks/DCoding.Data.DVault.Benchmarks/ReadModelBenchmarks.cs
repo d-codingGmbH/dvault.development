@@ -63,10 +63,12 @@ internal sealed class LatestSatelliteReadBenchmark : IScenarioBenchmark {
       var request = new DataVaultLatestSatelliteReadRequest(
           ScenarioContracts.CustomerProfileSatellite,
           customerHashKeys);
+      DataVaultDiagnosticsResult diagnostics;
       await using (var diagnosticsContext = new CustomerProfileReadContext(options, providerCapabilities)) {
+        diagnostics = readDiagnostics.Analyze(diagnosticsContext, request);
         ReadBenchmarkServices.AssertReadStrategySelection(
             _strategy,
-            readDiagnostics.Analyze(diagnosticsContext, request));
+            diagnostics);
       }
 
       var elapsed = await BenchmarkClock.MeasureAsync(async () => {
@@ -86,7 +88,8 @@ internal sealed class LatestSatelliteReadBenchmark : IScenarioBenchmark {
           _scenario.CustomerCount.ToString(CultureInfo.InvariantCulture) +
           " latest profile satellite rows read from " +
           _scenario.TotalChangeCount.ToString(CultureInfo.InvariantCulture) +
-          " seeded profile states");
+          " seeded profile states",
+          BenchmarkExecutionDetails.CreateReadStrategyDetail(this, diagnostics));
     }
     finally {
       await using var cleanupContext = new CustomerProfileReadContext(options, providerCapabilities);
@@ -185,10 +188,12 @@ internal sealed class PitAsOfReadBenchmark : IScenarioBenchmark {
           PitReadScenario.Metadata.Pit,
           customerHashKeys,
           PitReadScenario.AsOf);
+      DataVaultDiagnosticsResult diagnostics;
       await using (var diagnosticsContext = new PitAsOfReadContext(options, providerCapabilities)) {
+        diagnostics = readDiagnostics.Analyze(diagnosticsContext, request);
         ReadBenchmarkServices.AssertReadStrategySelection(
             _strategy,
-            readDiagnostics.Analyze(diagnosticsContext, request));
+            diagnostics);
       }
 
       var elapsed = await BenchmarkClock.MeasureAsync(async () => {
@@ -206,7 +211,8 @@ internal sealed class PitAsOfReadBenchmark : IScenarioBenchmark {
       return new ScenarioBenchmarkResult(
           elapsed,
           _scenario.CustomerCount.ToString(CultureInfo.InvariantCulture) +
-          " PIT as-of rows read across profile and status satellite snapshots");
+          " PIT as-of rows read across profile and status satellite snapshots",
+          BenchmarkExecutionDetails.CreateReadStrategyDetail(this, diagnostics));
     }
     finally {
       await using var cleanupContext = new PitAsOfReadContext(options, providerCapabilities);
@@ -352,10 +358,12 @@ internal sealed class BridgeTraversalReadBenchmark : IScenarioBenchmark {
           DataVaultBridgeTraversalEndpoint.Ancestor,
           [AncestorHashKey],
           MaximumDepth);
+      DataVaultDiagnosticsResult diagnostics;
       await using (var diagnosticsContext = new BridgeTraversalReadContext(options, providerCapabilities)) {
+        diagnostics = readDiagnostics.Analyze(diagnosticsContext, request);
         ReadBenchmarkServices.AssertReadStrategySelection(
             _strategy,
-            readDiagnostics.Analyze(diagnosticsContext, request));
+            diagnostics);
       }
 
       var elapsed = await BenchmarkClock.MeasureAsync(async () => {
@@ -375,7 +383,8 @@ internal sealed class BridgeTraversalReadBenchmark : IScenarioBenchmark {
           ExpectedDepthBoundedRowCount().ToString(CultureInfo.InvariantCulture) +
           " bridge traversal rows read from " +
           DescendantCount.ToString(CultureInfo.InvariantCulture) +
-          " seeded hierarchy rows");
+          " seeded hierarchy rows",
+          BenchmarkExecutionDetails.CreateReadStrategyDetail(this, diagnostics));
     }
     finally {
       await using var cleanupContext = new BridgeTraversalReadContext(options, providerCapabilities);
