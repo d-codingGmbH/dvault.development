@@ -1,23 +1,22 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q90718D21DN1N1Q2AP7YEM",
   "ticket-type": "task",
   "title": "Task: Document staged bulk guidance and stored-procedure boundary for v0.20.0",
-  "revision": "06F5Q9CG01ER49RG7APCBK8T1C",
-  "status": "todo",
+  "revision": "06F6GQ1E388RTK5HCX2HFR7KWW",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
     "area/documentation",
     "area/ef-core",
     "area/performance",
-    "area/provider-support"
+    "area/provider-support",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WHV80016VN9N48KP6AGG",
   "releaseId": "06F5Q8WAWQMZ22WMK10XYDEFQG",
   "created-at": "2026-05-24T20:18:57.0574182Z",
-  "updated-at": "2026-05-24T20:20:37.5047062Z"
+  "updated-at": "2026-05-27T07:35:32.1223126Z"
 }

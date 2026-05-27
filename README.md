@@ -234,6 +234,8 @@ await saveService.SaveAsync(context, chunkedRequest, cancellationToken);
 
 Keep `DataVaultBulkSaveRequest` when the loader already has the full ordered request set materialized. Switch to `DataVaultChunkedSaveRequest` only when the caller needs bounded chunking without changing explicit timestamps, record sources, request ordering, or caller-owned transaction behavior. Provider-specific save strategies remain optimizations around the same public save contract; PostgreSQL and MySQL can stage larger eligible materialized bulk batches behind that boundary, while v0.19.0 does not claim provider-native chunk execution, background ingestion, or scheduler behavior.
 
+The v0.20.0 documentation boundary keeps that same hierarchy: `IDataVaultSaveService` remains the public write entry point, `DataVaultBulkSaveRequest` remains the compatibility baseline for already-materialized ordered saves, and `DataVaultChunkedSaveRequest` remains provider-neutral bounded chunking guidance. Provider-specific optimized paths are evidence-bound behind the same service contract. PostgreSQL staged COPY and MySQL staged bulk are the preferred optimized paths only for their documented staged-provider lanes; PostgreSQL retains direct or UNNEST behavior below 60 operations, and MySQL retains the multi-row path above the 50-operation native gate and below the 60-operation staged threshold. SQL Server keeps its current native-bulk wording, and Oracle keeps the retained direct optimized path until benchmark evidence selects a staged Oracle path. Stored procedures are not a DVault default write path: treat them only as an explicit design-time or provider-specific escape hatch after provider evidence, migration synchronization, deployment ownership, and cleanup rules are documented.
+
 ### Observe explicit save and read attempts
 
 Save/read telemetry is opt-in. The default `AddDVault()` registration does not add counters or listeners. Applications can enable the built-in `System.Diagnostics.Metrics` observer with `AddDVaultTelemetry()` and can register additional `IDataVaultTelemetryObserver` implementations for bounded per-attempt summaries.
@@ -648,6 +650,8 @@ The provider-neutral projection stores driving-key columns immediately after the
 
 Provider-native bulk dispatch is diagnostics-gated. Dirty tracked contexts, multi-active satellite batches, and provider-name mismatches decline to the provider-neutral writer. SQL Server native dispatch also requires at least `50` total operations and at most `500` satellite operations. MySQL native dispatch requires at least `50` total operations and accepts both Pomelo and official MySQL EF Core provider names. Oracle native dispatch requires at least `50` total operations and accepts at most `10000` satellite operations.
 
+The provider-optimized wording is intentionally provider-specific. PostgreSQL larger eligible ordered batches use staged COPY and smaller batches keep the direct or UNNEST path. MySQL larger eligible ordered batches use staged bulk and smaller eligible native batches keep the multi-row path. SQL Server remains described as the current native-bulk strategy rather than a direct-versus-staged split. Oracle remains described as the retained direct optimized batching strategy with staged Oracle bulk not selected until measured evidence shows a net win over the direct path.
+
 Provider-specific save-strategy registration and provider capability-profile selection are separate surfaces. The core package includes built-in capability profiles for the known SQLite, PostgreSQL, SQL Server, Oracle, Pomelo MySQL, and official MySQL EF provider names. Direct `ApplyDataVaultMetadata(...)` calls can pass an explicit `DataVaultProviderCapabilityProfile` when an application wants deterministic provider-specific schema projection at model-building time. Registry-backed `UseDataVaultMetadata(...)` remains the easiest path when one metadata source should drive schema, save, and read usage.
 
 ### Migration from v0.5
@@ -721,6 +725,23 @@ Notable user-facing changes:
 - `DataVaultPreflight.Run(...)` aggregates validation/provider explain, artifact drift, snapshot drift, migration guardrail, and representative request-diagnostics lanes when the consumer supplies those inputs.
 - Provider explainability covers capability profiles, provider-behavior profiles, save strategy diagnostics, read strategy diagnostics, and request-bound read-shape facts as deterministic redacted explain output rather than raw SQL or provider-magic claims.
 - `AddDVaultTelemetry()`, `IDataVaultTelemetryObserver`, `support-bundle`, explicit bridge maintenance, explicit PIT maintenance, current/as-of satellite reads, provider-native bulk ingestion, Code-First same-hub roles, link-parent satellites, and model-first artifact governance from earlier releases remain part of the current public baseline.
+
+## v0.20.0 Documentation Boundary
+
+The [v0.20.0 notes](docs/releases/v0.20.0.md) document a provider-specific optimized write-path boundary without changing the public write API. v0.19.0 remains the historical baseline for provider-neutral chunked explicit saves and kept staged provider bulk ingestion outside that release's claim set. v0.20.0 moves the documentation boundary forward only where repository evidence already exposes a supported or measured provider path.
+
+Use this hierarchy when planning v0.20.0 adoption:
+
+- `IDataVaultSaveService` remains the public write boundary for single, bulk, and chunked explicit saves.
+- `DataVaultBulkSaveRequest` remains the compatibility baseline when the loader already has a complete ordered request set materialized.
+- `DataVaultChunkedSaveRequest` remains the provider-neutral bounded streaming path. It is not a blanket provider-native chunk execution promise.
+- PostgreSQL staged COPY is the preferred optimized path for larger eligible staged-provider batches, with the retained direct or UNNEST path below the 60-operation staged boundary.
+- MySQL staged bulk is the preferred optimized path for larger eligible staged-provider batches, with the retained multi-row path above the 50-operation native gate and below the 60-operation staged boundary.
+- SQL Server stays on current native-bulk wording for its provider boundary instead of inventing an unsupported staged/direct split.
+- Oracle stays on retained direct optimized batching with `stagedOracleBulk=not-selected-no-measured-win` until benchmark evidence proves a staged Oracle win.
+- Stored procedures remain non-default escape-hatch guidance only. DVault does not auto-generate, auto-manage, or select stored procedures as a standard runtime path.
+
+The benchmark-facing evidence continues to use the root `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` triplet plus the shared [Performance Evidence And Benchmark Artifact Contract](docs/plans/performance-evidence-benchmark-artifact-contract.md). Provider-specific timing claims must preserve provider, strategy, execution-detail, skip, and run-context information instead of introducing new ad hoc evidence files.
 
 ## Current v0.19.0 Limitations
 

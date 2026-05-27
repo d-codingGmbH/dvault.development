@@ -1,0 +1,27 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `2` selected relation flow(s) for source ticket `06F5Q90718D21DN1N1Q2AP7YEM`.
+- Role `po` completed with outcome `po-refinement-ready` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `3`; dropped obsolete follow-up(s): `2`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `7db4c2809c0d4f6ca0117d2625e9e5db`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06F5Q90CSKMGK3NZZ25XTW6W4C` via `blocks` path `06F5Q90718D21DN1N1Q2AP7YEM -> 06F5Q90CSKMGK3NZZ25XTW6W4C`
+- [queued] `blocked-follow-up-comment` -> `06F5Q90KC6JGQPSP285XQYSPK8` via `blocks` path `06F5Q90718D21DN1N1Q2AP7YEM -> 06F5Q90KC6JGQPSP285XQYSPK8`
+- [queued] `blocked-follow-up-comment` -> `06F5Q916BXE2N372SWMH1X776G` via `blocks` path `06F5Q90718D21DN1N1Q2AP7YEM -> 06F5Q916BXE2N372SWMH1X776G`
+- [dropped] `blocked-by-follow-up-comment` -> `06F5Q8Z0Y0ADE5H37DAPA1ADQM` via `blocks` path `06F5Q90718D21DN1N1Q2AP7YEM -> 06F5Q8Z0Y0ADE5H37DAPA1ADQM`
+- [dropped] `blocked-by-follow-up-comment` -> `06F5Q900FC0P3HBZP81CVK7264` via `blocks` path `06F5Q90718D21DN1N1Q2AP7YEM -> 06F5Q900FC0P3HBZP81CVK7264`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06F5Q90718D21DN1N1Q2AP7YEM` owner `ticket/06F5Q90718D21DN1N1Q2AP7YEM-task-document-staged-bulk-guidance-and-stored-pr` base `develop` source-owner `ticket/06F5Q90718D21DN1N1Q2AP7YEM-task-document-staged-bulk-guidance-and-stored-pr`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F5Q90CSKMGK3NZZ25XTW6W4C` owner `ticket/06F5Q90CSKMGK3NZZ25XTW6W4C-epic-pit-and-bridge-completeness` base `develop` source-owner `ticket/06F5Q90718D21DN1N1Q2AP7YEM-task-document-staged-bulk-guidance-and-stored-pr`: Mutation targets 'ticket/06F5Q90CSKMGK3NZZ25XTW6W4C-epic-pit-and-bridge-completeness', not current branch 'ticket/06F5Q90718D21DN1N1Q2AP7YEM-task-document-staged-bulk-guidance-and-stored-pr'; queue for target-branch replay.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F5Q90KC6JGQPSP285XQYSPK8` owner `ticket/06F5Q90KC6JGQPSP285XQYSPK8-story-add-registry-backed-pit-maintenance-reques` base `develop` source-owner `ticket/06F5Q90718D21DN1N1Q2AP7YEM-task-document-staged-bulk-guidance-and-stored-pr`: Mutation targets 'ticket/06F5Q90KC6JGQPSP285XQYSPK8-story-add-registry-backed-pit-maintenance-reques', not current branch 'ticket/06F5Q90718D21DN1N1Q2AP7YEM-task-document-staged-bulk-guidance-and-stored-pr'; queue for target-branch replay.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06F5Q916BXE2N372SWMH1X776G` owner `ticket/06F5Q916BXE2N372SWMH1X776G-story-add-delete-aware-bridge-maintenance-for-to` base `develop` source-owner `ticket/06F5Q90718D21DN1N1Q2AP7YEM-task-document-staged-bulk-guidance-and-stored-pr`: Mutation targets 'ticket/06F5Q916BXE2N372SWMH1X776G-story-add-delete-aware-bridge-maintenance-for-to', not current branch 'ticket/06F5Q90718D21DN1N1Q2AP7YEM-task-document-staged-bulk-guidance-and-stored-pr'; queue for target-branch replay.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F5Q8Z0Y0ADE5H37DAPA1ADQM` owner `develop` base `develop` source-owner `ticket/06F5Q90718D21DN1N1Q2AP7YEM-task-document-staged-bulk-guidance-and-stored-pr`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06F5Q900FC0P3HBZP81CVK7264` owner `develop` base `develop` source-owner `ticket/06F5Q90718D21DN1N1Q2AP7YEM-task-document-staged-bulk-guidance-and-stored-pr`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F5Q90CSKMGK3NZZ25XTW6W4C` on owner branch `ticket/06F5Q90CSKMGK3NZZ25XTW6W4C-epic-pit-and-bridge-completeness` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F5Q90KC6JGQPSP285XQYSPK8` on owner branch `ticket/06F5Q90KC6JGQPSP285XQYSPK8-story-add-registry-backed-pit-maintenance-reques` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06F5Q916BXE2N372SWMH1X776G` on owner branch `ticket/06F5Q916BXE2N372SWMH1X776G-story-add-delete-aware-bridge-maintenance-for-to` after that branch is refreshed/rebased.
