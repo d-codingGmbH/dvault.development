@@ -3,6 +3,6 @@
   "milestoneId": "06F5Q8WM2ZVJH04HEX8H4H066M",
   "name": "v0.21.0 - Bridge completeness",
   "description": "Delete-aware bridge maintenance, topology shrink handling, and bounded hierarchy evidence.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-24T20:18:27.4792073Z"
 }
