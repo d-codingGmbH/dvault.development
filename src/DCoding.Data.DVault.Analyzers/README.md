@@ -7,6 +7,7 @@ Roslyn analyzers and source generators for DVault compile-time metadata declarat
 - `DMV1910` for exposing DVault generated shared-type tables as `DbSet<Dictionary<string, object>>` members on a `DbContext`.
 - `DMV1911` for direct EF write calls against DVault generated shared-type `DbSet<Dictionary<string, object>>` sets.
 - `DMV1950` through `DMV1955` for malformed generated mapping declarations, missing generated row bindings, invalid source members, duplicate binding order or names, and repeated link participant hub names.
+- `DMV1960` through `DMV1969` for typed read-model generator metadata-source, fingerprint, unsupported-shape, deterministic-name, nullability-fallback, and skipped-helper outcomes.
 
 The package also provides bounded code fixes for DMV1901 anonymous-object direct-member expansion and DMV1902 later-duplicate removal. Its source generator emits registry-backed typed row mappers from the public `DCoding.Data.DVault` compile-time mapping attributes; generated helpers still require callers to supply load timestamps and record sources through the existing explicit save flow.
 
@@ -47,6 +48,14 @@ The source generator recognizes mapping declarations from `DCoding.Data.DVault` 
 - `DataVaultHubSatelliteMappingAttribute` plus parent hash-key, hash-diff, ordered payload, and optional ordered driving-key bindings.
 
 Generated code implements the existing `IDataVaultHubMapper<TSource>`, `IDataVaultLinkMapper<TSource>`, or `IDataVaultSatelliteMapper<TSource>` contracts and constructs `DataVaultRegistry*SaveOperation` values. It does not execute EF models, register mappings at runtime, derive hash keys or hash diffs, or hide the caller-supplied `loadTimestamp` and `recordSource` boundary.
+
+## Typed Satellite Read-Model Generator Scope
+
+The typed read-model source generator emits satellite-only latest/current/as-of helpers from one authoritative `dvault.support-bundle.v1` JSON additional file. Enable it explicitly in the owning project with `DVaultGenerateTypedReadModels=true`; this keeps application and test projects that contain multiple sample metadata models from accidentally generating colliding public helpers. The support bundle must be produced from runtime diagnostics after Code-First, metadata-first, or model-first declarations have been projected into EF/DVault metadata. Generated helpers use its `diagnostics.explain` metadata source kind, fingerprint, produced entity/property names, parent references, property roles, provider logical/value metadata, ordinals, CLR type names, and EF nullability. Source-visible Code-First callbacks, literal metadata-first `DataVaultMetadataModel` satellite declarations, and raw `dvault.model.v1` JSON additional files are not parsed directly by this generator because they have not yet passed through the shared EF/DVault projection descriptor.
+
+Generated rows are emitted under `{RootNamespace}.DVault.GeneratedReadModels` when MSBuild supplies `RootNamespace`, otherwise under `DVault.GeneratedReadModels`. For each supported satellite, the generator emits `{SatelliteProducedName}ReadModel` and `{SatelliteProducedName}ReadExtensions` with `Read...CurrentAsync`, `Read...LatestAsync`, and `Read...AsOfAsync` methods over `IDataVaultReadService`. The helpers construct stable `DataVaultSatelliteMetadata` and `DataVaultLatestSatelliteReadRequest` values and project through the existing `DataVaultSatelliteProjectionRow` exact-name accessors.
+
+The v1 generator supports hub-parent, link-parent, and deterministic multi-active satellites whose driving keys and payload values are strings after projection into the support-bundle explain descriptor. Payload nullability follows the projected CLR/EF nullability facts; when a payload descriptor omits nullability, the generated property is nullable and `DMV1966` is reported. Generation stops with `DMV196x` diagnostics for missing or ambiguous support-bundle metadata sources, stale configured fingerprints, unsupported non-string members, deterministic name collisions, and helper requests that would require dynamic query construction or provider-specific SQL.
 
 ## Suppression
 

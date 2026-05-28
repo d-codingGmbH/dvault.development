@@ -817,7 +817,9 @@ type public sealed class DCoding.Data.DVault.DataVaultPropertyExplain : System.I
   property public DCoding.Data.DVault.DataVaultPropertyRole Role { get; init; }
   property public DCoding.Data.DVault.DataVaultProviderValueFormat ValueFormat { get; init; }
   property public DCoding.Data.DVault.TechnicalMetadataColumnRole? TechnicalRole { get; init; }
+  property public bool IsNullable { get; init; }
   property public int Ordinal { get; init; }
+  property public string ClrTypeName { get; init; }
   property public string MetadataName { get; init; }
   property public string Name { get; init; }
   property public string ProviderProfileName { get; init; }

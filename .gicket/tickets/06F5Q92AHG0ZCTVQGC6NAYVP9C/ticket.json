@@ -1,24 +1,23 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q92AHG0ZCTVQGC6NAYVP9C",
   "ticket-type": "story",
   "title": "Story: Generate typed latest and as-of satellite projectors",
-  "revision": "06F5Q99BHAYDT9PY9DK3A35WAR",
-  "status": "todo",
+  "revision": "06F6VK2YZRKZNV7W1D232E6AFW",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
     "area/analyzers",
     "area/developer-experience",
     "area/ef-core",
     "area/read-models",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WNJMF4A1AZRTSARZFRDW",
   "releaseId": "06F5Q8WCGVYM0PMGBHXGM01RZC",
   "created-at": "2026-05-24T20:19:14.7289380Z",
-  "updated-at": "2026-05-24T20:20:11.7863407Z"
+  "updated-at": "2026-05-28T08:56:10.7500689Z"
 }

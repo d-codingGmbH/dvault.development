@@ -233,7 +233,17 @@ public sealed record DataVaultPropertyExplain(
     DataVaultLogicalPropertyKind LogicalPropertyKind,
     string ProviderProfileName,
     string StoreType,
-    DataVaultProviderValueFormat ValueFormat);
+    DataVaultProviderValueFormat ValueFormat) {
+  /// <summary>
+  /// Gets the EF model CLR type name for this translated property.
+  /// </summary>
+  public string ClrTypeName { get; init; } = string.Empty;
+
+  /// <summary>
+  /// Gets a value indicating whether EF marks this translated property nullable.
+  /// </summary>
+  public bool IsNullable { get; init; }
+}
 
 /// <summary>
 /// Machine-readable explanation of one provider capability type mapping.
@@ -2194,7 +2204,10 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         GetAnnotationValue<DataVaultLogicalPropertyKind>(property, DataVaultAnnotationNames.ProviderLogicalPropertyKind),
         GetStringAnnotation(property, DataVaultAnnotationNames.ProviderProfile) ?? string.Empty,
         GetStringAnnotation(property, DataVaultAnnotationNames.ProviderStorageType) ?? property.GetColumnType() ?? string.Empty,
-        GetAnnotationValue<DataVaultProviderValueFormat>(property, DataVaultAnnotationNames.ProviderValueFormat));
+        GetAnnotationValue<DataVaultProviderValueFormat>(property, DataVaultAnnotationNames.ProviderValueFormat)) {
+      ClrTypeName = property.ClrType.FullName ?? property.ClrType.Name,
+      IsNullable = property.IsNullable,
+    };
   }
 
   private static DataVaultIndexExplain CreateIndexExplain(IReadOnlyIndex index) {
