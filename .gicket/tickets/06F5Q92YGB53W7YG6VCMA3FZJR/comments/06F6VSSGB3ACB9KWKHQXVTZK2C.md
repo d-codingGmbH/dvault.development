@@ -1,0 +1,9 @@
+﻿[gicket-bot] claim write-group template
+
+- template: `claim`
+- transaction-point: `TP0-PO`
+- write-group: `wg-claim`
+- ticket-id: `06F5Q92YGB53W7YG6VCMA3FZJR`
+- role: `po`
+
+<!-- gicket-semantic-idempotency-key: bot-lease:06f5q92ygb53w7yg6vcma3fzjr:claim:po:owner:hp-ai-2026-001.1:anchor:e016fbc5555ca255:claim-template:claim -->

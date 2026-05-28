@@ -211,8 +211,18 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     foreach (var entity in entities.EnumerateArray()) {
       context.CancellationToken.ThrowIfCancellationRequested();
       if (entity.ValueKind != JsonValueKind.Object ||
-          !TryGetJsonString(entity, "tableKind", out var tableKind) ||
-          !string.Equals(tableKind, "Satellite", StringComparison.Ordinal)) {
+          !TryGetJsonString(entity, "tableKind", out var tableKind)) {
+        continue;
+      }
+
+      if (!string.Equals(tableKind, "Satellite", StringComparison.Ordinal)) {
+        ReportUnsupportedSupportBundleReadModelShape(
+            entity,
+            additionalText.Path,
+            sourceKind,
+            sourceFingerprint,
+            tableKind,
+            context);
         continue;
       }
 
@@ -228,6 +238,158 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     }
 
     return declarations;
+  }
+
+  private static void ReportUnsupportedSupportBundleReadModelShape(
+      JsonElement entity,
+      string sourcePath,
+      string sourceKind,
+      string sourceFingerprint,
+      string tableKind,
+      SourceProductionContext context) {
+    if (tableKind is "Hub" or "Link") {
+      return;
+    }
+
+    var producedTableName = GetSupportBundleEntityString(entity, "tableName", "<unknown>");
+    var metadataName = GetSupportBundleEntityString(entity, "metadataName", producedTableName);
+    if (IsModelFirstMetadataSource(sourceKind) &&
+        tableKind is "Pit" or "PointInTime" or "Bridge") {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedModelFirstShape,
+          tableKind,
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "projected model-first metadata is outside the public typed read-model generator contract.");
+      return;
+    }
+
+    if (tableKind is "Pit" or "PointInTime") {
+      ReportUnsupportedSupportBundlePit(
+          entity,
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          context);
+      return;
+    }
+
+    if (string.Equals(tableKind, "Bridge", StringComparison.Ordinal)) {
+      ReportUnsupportedSupportBundleBridge(
+          entity,
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          context);
+      return;
+    }
+
+    ReportUnsupportedReadModelShape(
+        context,
+        DataVaultTypedReadModelDiagnosticCatalog.HelperSkipped,
+        tableKind,
+        sourceKind,
+        sourceFingerprint,
+        metadataName,
+        producedTableName,
+        "support-bundle entity kind from '" + sourcePath + "' is not a generated typed read-model helper target.");
+  }
+
+  private static void ReportUnsupportedSupportBundlePit(
+      JsonElement entity,
+      string sourceKind,
+      string sourceFingerprint,
+      string metadataName,
+      string producedTableName,
+      SourceProductionContext context) {
+    if (!TryGetSupportBundleParentReference(entity, out _) ||
+        !HasSupportBundleTechnicalProperty(entity, "HashKey") ||
+        !HasSupportBundleTechnicalProperty(entity, "LoadTimestamp") ||
+        !HasSupportBundlePropertyRole(entity, "SnapshotReference")) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "authoritative explain metadata is missing the PIT parent reference, parent hash key, load timestamp, or satellite snapshot reference binding.");
+      return;
+    }
+
+    if (HasSupportBundlePropertyRole(entity, "DrivingKey")) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.DynamicQueryShapeRequired,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "PIT driving-key tuple projection requires dynamic runtime query behavior outside the residual generator helper contract.");
+      return;
+    }
+
+    ReportUnsupportedReadModelShape(
+        context,
+        DataVaultTypedReadModelDiagnosticCatalog.HelperSkipped,
+        "PIT",
+        sourceKind,
+        sourceFingerprint,
+        metadataName,
+        producedTableName,
+        "the runtime PIT metadata shape is valid for IDataVaultReadService usage but no typed PIT helper is emitted by this diagnostic-only generator path.");
+  }
+
+  private static void ReportUnsupportedSupportBundleBridge(
+      JsonElement entity,
+      string sourceKind,
+      string sourceFingerprint,
+      string metadataName,
+      string producedTableName,
+      SourceProductionContext context) {
+    var participantReferenceCount = CountSupportBundlePropertyRole(entity, "ParticipantReference");
+    if (participantReferenceCount < 2) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedBridgeShape,
+          "Bridge",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "authoritative explain metadata does not expose at least two bridge endpoint participant reference bindings.");
+      return;
+    }
+
+    if (HasSupportBundlePropertyRole(entity, "BridgeDepth")) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.HelperSkipped,
+          "Bridge",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "the runtime hierarchy bridge metadata shape is valid for IDataVaultReadService usage but no typed bridge helper is emitted by this diagnostic-only generator path.");
+      return;
+    }
+
+    ReportUnsupportedReadModelShape(
+        context,
+        DataVaultTypedReadModelDiagnosticCatalog.HelperSkipped,
+        "Bridge",
+        sourceKind,
+        sourceFingerprint,
+        metadataName,
+        producedTableName,
+        "the runtime bridge metadata shape is valid for IDataVaultReadService usage but no typed bridge helper is emitted by this diagnostic-only generator path.");
   }
 
   private static bool TryCreateSupportBundleSatellite(
@@ -374,6 +536,13 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     return true;
   }
 
+  private static string GetSupportBundleEntityString(JsonElement entity, string propertyName, string fallback) {
+    return TryGetOptionalJsonString(entity, propertyName, out var value) &&
+        !string.IsNullOrWhiteSpace(value)
+        ? value
+        : fallback;
+  }
+
   private static bool TryGetSupportBundleParentReference(JsonElement entity, out ParentReference parent) {
     parent = default;
     if (!entity.TryGetProperty("parentReference", out var parentElement) ||
@@ -386,6 +555,51 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
 
     parent = new ParentReference(kind, name);
     return true;
+  }
+
+  private static bool HasSupportBundleTechnicalProperty(JsonElement entity, string technicalRole) {
+    return HasSupportBundleProperty(
+        entity,
+        property => IsSupportBundlePropertyRole(property, "Technical") &&
+            TryGetJsonString(property, "technicalRole", out var value) &&
+            string.Equals(value, technicalRole, StringComparison.Ordinal));
+  }
+
+  private static bool HasSupportBundlePropertyRole(JsonElement entity, string role) {
+    return HasSupportBundleProperty(
+        entity,
+        property => IsSupportBundlePropertyRole(property, role));
+  }
+
+  private static int CountSupportBundlePropertyRole(JsonElement entity, string role) {
+    return CountSupportBundleProperties(
+        entity,
+        property => IsSupportBundlePropertyRole(property, role));
+  }
+
+  private static bool HasSupportBundleProperty(JsonElement entity, Func<JsonElement, bool> predicate) {
+    return CountSupportBundleProperties(entity, predicate) > 0;
+  }
+
+  private static int CountSupportBundleProperties(JsonElement entity, Func<JsonElement, bool> predicate) {
+    if (!entity.TryGetProperty("properties", out var propertiesElement) ||
+        propertiesElement.ValueKind != JsonValueKind.Array) {
+      return 0;
+    }
+
+    var count = 0;
+    foreach (var property in propertiesElement.EnumerateArray()) {
+      if (property.ValueKind == JsonValueKind.Object && predicate(property)) {
+        count++;
+      }
+    }
+
+    return count;
+  }
+
+  private static bool IsSupportBundlePropertyRole(JsonElement property, string role) {
+    return TryGetJsonString(property, "role", out var value) &&
+        string.Equals(value, role, StringComparison.Ordinal);
   }
 
   private static bool TryCreateSupportBundleProperty(
@@ -756,6 +970,28 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     return optionsProvider.GlobalOptions.TryGetValue(LegacyExpectedFingerprintProperty, out value)
         ? value
         : string.Empty;
+  }
+
+  private static bool IsModelFirstMetadataSource(string sourceKind) {
+    return string.Equals(sourceKind, "model-artifact", StringComparison.Ordinal);
+  }
+
+  private static void ReportUnsupportedReadModelShape(
+      SourceProductionContext context,
+      DiagnosticDescriptor descriptor,
+      string shapeKind,
+      string sourceKind,
+      string sourceFingerprint,
+      string metadataName,
+      string producedTableName,
+      string reason) {
+    Report(
+        context,
+        descriptor,
+        Location.None,
+        "Typed " + shapeKind + " read model '" + metadataName + "' produced entity '" +
+        producedTableName + "' from " + sourceKind + " metadata source fingerprint '" +
+        sourceFingerprint + "' is unsupported or skipped: " + reason);
   }
 
   private static void ReportUnsupportedSatellite(

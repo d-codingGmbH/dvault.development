@@ -351,6 +351,149 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
     Assert.Empty(result.GeneratedSources);
   }
 
+  [Fact]
+  public void ReportsUnsupportedPitShapeFromProjectedSupportBundleAndSkipsHelper() {
+    var result = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJson(
+                CreateSupportBundleEntityJson(
+                    "PitCustomerTimeline",
+                    "Pit",
+                    "CustomerTimeline",
+                    "Hub",
+                    "Customer",
+                    [
+                        Technical("CustomerHashKey", "HashKey", "Customer", "HashKey", "Text", "System.String", false),
+                        Technical("LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "Iso8601UtcText", "System.DateTimeOffset", false),
+                    ]))),
+        ]);
+
+    var diagnostic = Assert.Single(result.GeneratorDiagnostics);
+    Assert.Equal("DMV1963", diagnostic.Id);
+    Assert.Contains("CustomerTimeline", diagnostic.GetMessage(), StringComparison.Ordinal);
+    Assert.Empty(result.GeneratedSources);
+  }
+
+  [Fact]
+  public void ReportsUnsupportedBridgeShapeFromProjectedSupportBundleAndSkipsHelper() {
+    var result = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJson(
+                CreateSupportBundleEntityJson(
+                    "BridgeCustomerOrder",
+                    "Bridge",
+                    "CustomerOrder",
+                    fields:
+                    [
+                        ParticipantReference("CustomerHashKey", "Customer"),
+                    ]))),
+        ]);
+
+    var diagnostic = Assert.Single(result.GeneratorDiagnostics);
+    Assert.Equal("DMV1964", diagnostic.Id);
+    Assert.Contains("BridgeCustomerOrder", diagnostic.GetMessage(), StringComparison.Ordinal);
+    Assert.Empty(result.GeneratedSources);
+  }
+
+  [Fact]
+  public void ReportsDynamicQueryShapeFromProjectedSupportBundleAndSkipsHelper() {
+    var result = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJson(
+                CreateSupportBundleEntityJson(
+                    "PitCustomerContactTimeline",
+                    "Pit",
+                    "CustomerContactTimeline",
+                    "Hub",
+                    "Customer",
+                    [
+                        Technical("CustomerHashKey", "HashKey", "Customer", "HashKey", "Text", "System.String", false),
+                        DrivingKey("ContactType", "ContactType"),
+                        Technical("LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "Iso8601UtcText", "System.DateTimeOffset", false),
+                        SnapshotReference("ContactLoadTimestamp", "Contact"),
+                    ]))),
+        ]);
+
+    var diagnostic = Assert.Single(result.GeneratorDiagnostics);
+    Assert.Equal("DMV1967", diagnostic.Id);
+    Assert.Contains("dynamic runtime query behavior", diagnostic.GetMessage(), StringComparison.Ordinal);
+    Assert.Empty(result.GeneratedSources);
+  }
+
+  [Fact]
+  public void ReportsModelFirstUnsupportedShapeFromProjectedSupportBundleAndSkipsHelper() {
+    var result = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJsonForSource(
+                "model-artifact",
+                "model-first-fingerprint",
+                CreateSupportBundleEntityJson(
+                    "PitModelFirstCustomerProfile",
+                    "Pit",
+                    "ModelFirstCustomerProfile",
+                    "Hub",
+                    "Customer",
+                    [
+                        Technical("CustomerHashKey", "HashKey", "Customer", "HashKey", "Text", "System.String", false),
+                        Technical("LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "Iso8601UtcText", "System.DateTimeOffset", false),
+                        SnapshotReference("ProfileLoadTimestamp", "Profile"),
+                    ]))),
+        ]);
+
+    var diagnostic = Assert.Single(result.GeneratorDiagnostics);
+    Assert.Equal("DMV1968", diagnostic.Id);
+    Assert.Contains("model-first", diagnostic.GetMessage(), StringComparison.Ordinal);
+    Assert.Empty(result.GeneratedSources);
+  }
+
+  [Fact]
+  public void ReportsHelperSkippedForRuntimePitShapeAndKeepsSatelliteGeneration() {
+    var result = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJson(
+                CreateSupportBundleEntityJson(
+                    "PitCustomerProfile",
+                    "Pit",
+                    "CustomerProfile",
+                    "Hub",
+                    "Customer",
+                    [
+                        Technical("CustomerHashKey", "HashKey", "Customer", "HashKey", "Text", "System.String", false),
+                        Technical("LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "Iso8601UtcText", "System.DateTimeOffset", false),
+                        SnapshotReference("ProfileLoadTimestamp", "Profile"),
+                    ]),
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerProfile",
+                    "Profile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("EmailAddress", "EmailAddress", false),
+                    ]))),
+        ]);
+
+    var diagnostic = Assert.Single(result.GeneratorDiagnostics);
+    Assert.Equal("DMV1969", diagnostic.Id);
+    Assert.Contains("no typed PIT helper is emitted", diagnostic.GetMessage(), StringComparison.Ordinal);
+    AssertGeneratedSource(result, "DVault.GeneratedReadModels.SatCustomerProfile.g.cs");
+    Assert.DoesNotContain(
+        result.GeneratedSources.Keys,
+        hintName => hintName.Contains("PitCustomerProfile", StringComparison.Ordinal));
+  }
+
   private static string AssertGeneratedSource(GeneratorRunResult result, string hintName) {
     Assert.True(
         result.GeneratedSources.TryGetValue(hintName, out var source),
@@ -420,19 +563,60 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
   }
 
   private static string CreateSupportBundleJson(params string[] entities) {
+    return CreateSupportBundleJsonForSource(
+        "model-metadata",
+        "fingerprint-1",
+        entities);
+  }
+
+  private static string CreateSupportBundleJsonForSource(
+      string sourceKind,
+      string sourceFingerprint,
+      params string[] entities) {
     return $$"""
         {
           "schemaVersion": "dvault.support-bundle.v1",
           "diagnostics": {
             "explain": {
-              "metadataSourceKind": "model-metadata",
-              "metadataSourceFingerprint": "fingerprint-1",
+              "metadataSourceKind": "{{sourceKind}}",
+              "metadataSourceFingerprint": "{{sourceFingerprint}}",
               "entities": [
                 {{string.Join("," + Environment.NewLine, entities)}}
               ]
             }
           }
         }
+        """;
+  }
+
+  private static string CreateSupportBundleEntityJson(
+      string tableName,
+      string tableKind,
+      string metadataName,
+      string? parentKind = null,
+      string? parentName = null,
+      IReadOnlyList<SupportBundleField>? fields = null) {
+    var parentReferenceJson = parentKind is null || parentName is null
+        ? ","
+        : "," + Environment.NewLine + $$"""
+                  "parentReference": {
+                    "kind": "{{parentKind}}",
+                    "name": "{{parentName}}"
+                  },
+          """;
+    var properties = (fields ?? Array.Empty<SupportBundleField>())
+        .Select((field, ordinal) => CreateSupportBundlePropertyJson(field, ordinal))
+        .ToArray();
+
+    return $$"""
+                {
+                  "tableName": "{{tableName}}",
+                  "tableKind": "{{tableKind}}",
+                  "metadataName": "{{metadataName}}"{{parentReferenceJson}}
+                  "properties": [
+                    {{string.Join("," + Environment.NewLine, properties)}}
+                  ]
+                }
         """;
   }
 
@@ -510,6 +694,53 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
         null,
         metadataName,
         "DrivingKey",
+        "Text",
+        "System.String",
+        false);
+  }
+
+  private static SupportBundleField Technical(
+      string producedName,
+      string technicalRole,
+      string metadataName,
+      string logicalPropertyKind,
+      string valueFormat,
+      string clrTypeName,
+      bool? isNullable) {
+    return new SupportBundleField(
+        producedName,
+        "Technical",
+        technicalRole,
+        metadataName,
+        logicalPropertyKind,
+        valueFormat,
+        clrTypeName,
+        isNullable);
+  }
+
+  private static SupportBundleField SnapshotReference(
+      string producedName,
+      string metadataName) {
+    return new SupportBundleField(
+        producedName,
+        "SnapshotReference",
+        "LoadTimestamp",
+        metadataName,
+        "SatelliteSnapshotReference",
+        "Iso8601UtcText",
+        "System.DateTimeOffset",
+        true);
+  }
+
+  private static SupportBundleField ParticipantReference(
+      string producedName,
+      string metadataName) {
+    return new SupportBundleField(
+        producedName,
+        "ParticipantReference",
+        "HashKey",
+        metadataName,
+        "ParticipantReference",
         "Text",
         "System.String",
         false);
