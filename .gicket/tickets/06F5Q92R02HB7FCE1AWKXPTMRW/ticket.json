@@ -1,24 +1,24 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q92R02HB7FCE1AWKXPTMRW",
   "ticket-type": "story",
   "title": "Story: Generate typed PIT and bridge read projectors",
-  "revision": "06F5Q99D62YS5A8N14W6YD4FGC",
-  "status": "todo",
+  "revision": "06F6SA3QAC3D1J4CKC3EGV3NR0",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
     "area/analyzers",
     "area/developer-experience",
     "area/ef-core",
     "area/read-models",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/story",
+    "closure/no-work-required"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WNJMF4A1AZRTSARZFRDW",
   "releaseId": "06F5Q8WCGVYM0PMGBHXGM01RZC",
   "created-at": "2026-05-24T20:19:17.7807279Z",
-  "updated-at": "2026-05-24T20:20:12.2087622Z"
+  "updated-at": "2026-05-28T03:37:20.4670000Z"
 }
