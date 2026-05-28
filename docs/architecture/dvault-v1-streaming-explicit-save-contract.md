@@ -2,7 +2,7 @@
 
 Status: v1 contract
 Ticket: 06F5Q8X261DQHG7N1445NGXB5W
-Current public baseline: [DVault v0.20.0 Release Notes](../releases/v0.20.0.md)
+Current public baseline: [DVault v0.21.0 Release Notes](../releases/v0.21.0.md)
 
 ## Decision
 
@@ -19,7 +19,7 @@ Task<DataVaultSaveResult> SaveAsync(
 
 `DataVaultChunkedSaveRequest` carries an ordered sequence of bounded `DataVaultSaveChunk` values. Each chunk carries an ordered, finite collection of ordinary `DataVaultSaveRequest` values. Those contained requests keep the same validation, metadata, resolver, hash-key, hash-diff, hub, link, and satellite rules as existing explicit save requests.
 
-This contract defines the public API and behavior expectations for the additive v1 boundary. The v0.19.0 public baseline documented the landed provider-neutral chunk execution and bounded retained-state diagnostics. The current v0.20.0 baseline keeps chunked saves provider-neutral while documenting staged PostgreSQL/MySQL optimized paths only for eligible materialized ordered bulk batches.
+This contract defines the public API and behavior expectations for the additive v1 boundary. The v0.19.0 public baseline documented the landed provider-neutral chunk execution and bounded retained-state diagnostics. The current v0.21.0 baseline keeps chunked saves provider-neutral while carrying forward the v0.20.0 staged PostgreSQL/MySQL optimized paths only for eligible materialized ordered bulk batches.
 
 ## Input Shape
 

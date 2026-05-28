@@ -28,7 +28,7 @@ SaveChanges interceptors remain outside the default v1 persistence path. v0.9.0 
 
 ## Chunked Save Boundary
 
-The v0.19.0 public baseline added `IDataVaultSaveService.SaveAsync(DbContext, DataVaultChunkedSaveRequest, ...)` beside the existing single-request and ordered-bulk overloads. `DataVaultChunkedSaveRequest` contains caller-ordered `DataVaultSaveChunk` values, and each chunk contains ordinary `DataVaultSaveRequest` values. The detailed behavior contract is [DVault V1 Streaming Explicit Save Contract](dvault-v1-streaming-explicit-save-contract.md); the current public release summary is [DVault v0.20.0 Release Notes](../releases/v0.20.0.md).
+The v0.19.0 public baseline added `IDataVaultSaveService.SaveAsync(DbContext, DataVaultChunkedSaveRequest, ...)` beside the existing single-request and ordered-bulk overloads. `DataVaultChunkedSaveRequest` contains caller-ordered `DataVaultSaveChunk` values, and each chunk contains ordinary `DataVaultSaveRequest` values. The detailed behavior contract is [DVault V1 Streaming Explicit Save Contract](dvault-v1-streaming-explicit-save-contract.md); the current public release summary is [DVault v0.21.0 Release Notes](../releases/v0.21.0.md).
 
 The migration rule is intentionally narrow:
 
@@ -39,7 +39,7 @@ Chunked execution preserves caller-supplied chunk order, request order inside ea
 
 The provider-neutral retained-state implementation keeps satellite continuity state for one explicit chunked-save attempt, with the current default limit of `10000` satellite series. If that limit is reached, DVault records the finite retained-state fallback cause and unsupported-shape classification, clears retained state, and falls back to bounded per-chunk persisted latest-state lookup. `DataVaultSaveTelemetrySummary` reports chunk count, processed chunk count, retained-state current and high-water counts, finite retained-state fallback causes, unsupported-shape classifications, and chunked transaction guidance without raw hash keys, payload values, or per-parent retained-state entries.
 
-Provider-native chunk execution, background ingestion, file ingestion, CDC ingestion, scheduler orchestration, and implicit `SaveChanges` streaming remain outside the v0.20.0 public claim set. Staged provider bulk ingestion is documented only for eligible materialized ordered PostgreSQL and MySQL batches. Provider packages can still optimize eligible ordinary ordered batches behind the same public save contract, and unsupported shapes continue to fall back without changing caller-visible semantics.
+Provider-native chunk execution, background ingestion, file ingestion, CDC ingestion, scheduler orchestration, and implicit `SaveChanges` streaming remain outside the v0.21.0 public claim set. Staged provider bulk ingestion is documented only for eligible materialized ordered PostgreSQL and MySQL batches. Provider packages can still optimize eligible ordinary ordered batches behind the same public save contract, and unsupported shapes continue to fall back without changing caller-visible semantics.
 
 ## Provider-Specific Save Strategy Dispatch
 

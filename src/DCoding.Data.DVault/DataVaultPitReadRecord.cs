@@ -23,7 +23,7 @@ public sealed class DataVaultPitReadRecord {
   }
 
   /// <summary>
-  /// Gets the requested parent hub hash key that matched a PIT row.
+  /// Gets the requested parent hash key that matched a PIT row.
   /// </summary>
   public string ParentHashKey { get; }
 

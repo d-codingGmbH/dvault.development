@@ -1,7 +1,7 @@
 # Fluent Code-First Hub, Satellite, and Link Contract
 
 Status: v1 planning contract
-Superseding shipped note: v0.13.0 extends the original bounded planning baseline with repeated same-hub participant roles and link-parent satellites. Use the current README and latest release record, currently `docs/releases/v0.20.0.md`, for current shipped public behavior; use `docs/releases/v0.13.0.md` for the Code-First parity introduction.
+Superseding shipped note: v0.13.0 extends the original bounded planning baseline with repeated same-hub participant roles and link-parent satellites. Use the current README and latest release record, currently `docs/releases/v0.21.0.md`, for current shipped public behavior; use `docs/releases/v0.13.0.md` for the Code-First parity introduction.
 Ticket: 06F0ME976PM5455JK04S6GPNNW
 Parent story: 06F0ME8NFJX6CD20MEA10J761R
 Implementation children: 06F0ME9PM8KXH3VP59TQR0ETA8, 06F0MEA1FF743S14XQW02H4A3W, 06F0MEAD1BAA5QEVM3F9QJA38G

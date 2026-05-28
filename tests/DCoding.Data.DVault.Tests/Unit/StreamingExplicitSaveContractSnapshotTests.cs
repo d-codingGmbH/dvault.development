@@ -121,7 +121,7 @@ public sealed class StreamingExplicitSaveContractSnapshotTests {
     Assert.Contains("DataVaultSaveChunk", document, StringComparison.Ordinal);
     Assert.Contains("DataVaultSaveRequest", document, StringComparison.Ordinal);
     Assert.Contains("DataVaultBulkSaveRequest", document, StringComparison.Ordinal);
-    Assert.Contains("The current v0.20.0 baseline keeps chunked saves provider-neutral while documenting staged PostgreSQL/MySQL optimized paths only for eligible materialized ordered bulk batches.", document, StringComparison.Ordinal);
+    Assert.Contains("The current v0.21.0 baseline keeps chunked saves provider-neutral while carrying forward the v0.20.0 staged PostgreSQL/MySQL optimized paths only for eligible materialized ordered bulk batches.", document, StringComparison.Ordinal);
     Assert.Contains("DataVaultProviderSaveStrategyContext", document, StringComparison.Ordinal);
     Assert.Contains("IDataVaultLoadTimestampResolver", document, StringComparison.Ordinal);
     Assert.Contains("IDataVaultRecordSourceResolver", document, StringComparison.Ordinal);
