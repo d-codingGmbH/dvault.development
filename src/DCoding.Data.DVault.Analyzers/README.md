@@ -9,15 +9,15 @@ Roslyn analyzers and source generators for DVault compile-time metadata declarat
 - `DMV1950` through `DMV1955` for malformed generated mapping declarations, missing generated row bindings, invalid source members, duplicate binding order or names, and repeated link participant hub names.
 - `DMV1960` through `DMV1969` for typed read-model generator metadata-source, fingerprint, unsupported-shape, deterministic-name, nullability-fallback, and skipped-helper outcomes.
 
-The package also provides bounded code fixes for DMV1901 anonymous-object direct-member expansion and DMV1902 later-duplicate removal. Its source generator emits registry-backed typed row mappers from the public `DCoding.Data.DVault` compile-time mapping attributes; generated helpers still require callers to supply load timestamps and record sources through the existing explicit save flow.
+The package also provides bounded code fixes for DMV1901 anonymous-object direct-member expansion and DMV1902 later-duplicate removal. Its mapping source generator emits registry-backed typed row mappers from the public `DCoding.Data.DVault` compile-time mapping attributes; generated save helpers still require callers to supply load timestamps and record sources through the existing explicit save flow. Its typed read-model source generator is a separate opt-in support-bundle-driven surface for satellite read helpers.
 
 ## Installation
 
-Install the analyzer package in projects that declare DVault Code-First metadata or compile-time generated row mappings through normal Roslyn analyzer package conventions:
+Install the analyzer package in projects that declare DVault Code-First metadata, compile-time generated row mappings, or support-bundle-driven typed satellite read helpers through normal Roslyn analyzer package conventions. Use the same already-published version as the rest of the coordinated DVault package family; this documentation baseline does not by itself confirm package publication.
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="0.21.0" PrivateAssets="all" />
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="<published-version>" PrivateAssets="all" />
 </ItemGroup>
 ```
 
@@ -55,7 +55,22 @@ The typed read-model source generator emits satellite-only latest/current/as-of 
 
 Generated rows are emitted under `{RootNamespace}.DVault.GeneratedReadModels` when MSBuild supplies `RootNamespace`, otherwise under `DVault.GeneratedReadModels`. For each supported satellite, the generator emits `{SatelliteProducedName}ReadModel` and `{SatelliteProducedName}ReadExtensions` with `Read...CurrentAsync`, `Read...LatestAsync`, and `Read...AsOfAsync` methods over `IDataVaultReadService`. The helpers construct stable `DataVaultSatelliteMetadata` and `DataVaultLatestSatelliteReadRequest` values and project through the existing `DataVaultSatelliteProjectionRow` exact-name accessors.
 
-The v1 generator supports hub-parent, link-parent, and deterministic multi-active satellites whose driving keys and payload values are strings after projection into the support-bundle explain descriptor. Payload nullability follows the projected CLR/EF nullability facts; when a payload descriptor omits nullability, the generated property is nullable and `DMV1966` is reported. Generation stops with `DMV196x` diagnostics for missing or ambiguous support-bundle metadata sources, stale configured fingerprints, unsupported non-string members, deterministic name collisions, and helper requests that would require dynamic query construction or provider-specific SQL.
+The v1 generator supports hub-parent, link-parent, and deterministic multi-active satellites whose driving keys and payload values are strings after projection into the support-bundle explain descriptor. Payload nullability follows the projected CLR/EF nullability facts; when a payload descriptor omits nullability, the generated property is nullable and `DMV1966` is reported. PIT and bridge metadata remain runtime read-service and diagnostics surfaces; they do not emit typed helpers. Generation stops or skips helpers with `DMV196x` diagnostics for missing or ambiguous support-bundle metadata sources, stale configured fingerprints, unsupported non-string members, deterministic name collisions, helper requests that would require dynamic query construction or provider-specific SQL, and shapes outside the v1 generated-helper contract.
+
+### Typed Read-Model Diagnostics
+
+| Code | Outcome |
+| --- | --- |
+| `DMV1960` | Missing, invalid, non-authoritative, or ambiguous `dvault.support-bundle.v1` metadata source. |
+| `DMV1961` | Configured `DVaultTypedReadModelMetadataSourceFingerprint` does not match the resolved support-bundle metadata-source fingerprint. |
+| `DMV1962` | Satellite shape cannot be generated, including non-string driving-key or payload members and reserved generated projection-name collisions. |
+| `DMV1963` | PIT metadata appears in the support bundle; the generator reports it as unsupported for helper emission. |
+| `DMV1964` | Bridge metadata appears in the support bundle; the generator reports it as unsupported for helper emission. |
+| `DMV1965` | Deterministic generated type, method, property, or helper name collision. |
+| `DMV1966` | Payload nullability cannot be proven from the support-bundle descriptor, so the generated payload property falls back to nullable. |
+| `DMV1967` | The shape would require dynamic runtime query construction, provider SQL, runtime projection selection, or unbounded traversal. |
+| `DMV1968` | A model-first source appears in the projected support-bundle evidence but is outside the generator's helper contract. |
+| `DMV1969` | A valid runtime metadata shape is skipped because it is outside the v1 generated-helper boundary. |
 
 ## Suppression
 

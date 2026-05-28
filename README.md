@@ -4,21 +4,21 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 
 ## Installation
 
-Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned:
+Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned; use one version that has already been published for every selected package id. This documentation baseline does not by itself confirm package publication.
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.21.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.21.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.21.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.21.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.21.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.21.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.21.0
+dotnet add package DCoding.Data.DVault --version <published-version>
+dotnet add package DCoding.Data.DVault.Sqlite --version <published-version>
+dotnet add package DCoding.Data.DVault.Postgres --version <published-version>
+dotnet add package DCoding.Data.DVault.MySql --version <published-version>
+dotnet add package DCoding.Data.DVault.Oracle --version <published-version>
+dotnet add package DCoding.Data.DVault.SqlServer --version <published-version>
+dotnet add package DCoding.Data.DVault.Analyzers --version <published-version>
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
 
-`DCoding.Data.DVault.Analyzers` is optional developer tooling. Prefer `PrivateAssets="all"` for that package so analyzer and source-generator assets stay local to the project that declares DVault Code-First metadata or compile-time mapping declarations. The current analyzer surface includes `DMV1910` and `DMV1911` for high-confidence EF Core misuse patterns around generated shared-type tables plus opt-in typed read-model generation (`DVaultGenerateTypedReadModels=true`) with `DMV1960` through `DMV1969` metadata and shape outcomes. See `src/DCoding.Data.DVault.Analyzers/README.md` for the package-local diagnostic, code-fix, source-generator, suppression, and configuration guidance.
+`DCoding.Data.DVault.Analyzers` is optional developer tooling. Prefer `PrivateAssets="all"` for that package so analyzer and source-generator assets stay local to the project that declares DVault Code-First metadata, compile-time mapping declarations, or generated typed satellite read helpers. The current analyzer surface includes `DMV1910` and `DMV1911` for high-confidence EF Core misuse patterns around generated shared-type tables plus opt-in typed satellite read-model generation (`DVaultGenerateTypedReadModels=true`) with `DMV1960` through `DMV1969` metadata and shape outcomes. See `src/DCoding.Data.DVault.Analyzers/README.md` for the package-local diagnostic, code-fix, source-generator, suppression, and configuration guidance.
 
 Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
 
@@ -29,8 +29,8 @@ For a short adopter readiness pass before production use, see the [Production Ad
 Use this flow in a .NET 10 project that references `DCoding.Data.DVault` and has an Entity Framework Core provider configured. DVault supports three additive declaration paths:
 
 - Code-First declarations for app-local EF models that fit the fluent hub, hub-parent satellite, link-parent satellite, multi-active driving-key, explicit or derived hub-link, and explicitly named repeated same-hub link surface.
-- Metadata-first declarations through a shared `DataVaultMetadataModel` or `DataVaultMetadataRegistry` when one public metadata object should drive schema projection, explicit saves, typed latest/as-of reads, diagnostics, examples, or provider setup.
-- Model-first governance for reviewed `dvault.model.v1` JSON artifacts that should be imported, projected into EF metadata, exported canonically, and compared against generated metadata for drift evidence.
+- Metadata-first declarations through a shared `DataVaultMetadataModel` or `DataVaultMetadataRegistry` when one public metadata object should drive schema projection, explicit saves, typed latest/as-of reads, diagnostics, support-bundle export, examples, or provider setup.
+- Model-first governance for reviewed `dvault.model.v1` JSON artifacts that should be imported, projected into EF metadata, exported canonically, compared against generated metadata for drift evidence, and optionally routed through a consumer-owned support-bundle export for generated typed satellite read helpers.
 
 Choose one authoritative path for a model boundary and keep the others as compatible alternatives for different ownership needs. See [Model-First Governance Workflow](docs/model-first-governance.md) for the current `dvault.model.v1` JSON artifact contract and [DVault EF Design-Time Workflow](docs/architecture/dvault-dotnet-ef-design-time-workflow.md) for the current consumer-owned design-time command workflow around reviewed artifacts, EF metadata, migrations, live schema drift, and redacted support-bundle export.
 
@@ -234,7 +234,15 @@ await saveService.SaveAsync(context, chunkedRequest, cancellationToken);
 
 Keep `DataVaultBulkSaveRequest` when the loader already has the full ordered request set materialized. Switch to `DataVaultChunkedSaveRequest` only when the caller needs bounded chunking without changing explicit timestamps, record sources, request ordering, or caller-owned transaction behavior. Provider-specific save strategies remain optimizations around the same public save contract; PostgreSQL and MySQL can stage larger eligible materialized bulk batches behind that boundary, while DVault does not claim provider-native chunk execution, background ingestion, or scheduler behavior.
 
-The v0.21.0 documentation boundary carries that same write hierarchy forward while moving the current public read-model baseline to PIT and bridge completeness. `IDataVaultSaveService` remains the public write entry point, `DataVaultBulkSaveRequest` remains the compatibility baseline for already-materialized ordered saves, and `DataVaultChunkedSaveRequest` remains provider-neutral bounded chunking guidance. Provider-specific optimized write paths stay evidence-bound behind the same service contract: PostgreSQL staged COPY and MySQL staged bulk are the preferred optimized paths only for their documented staged-provider lanes, SQL Server keeps its current native-bulk wording, and Oracle keeps the retained direct optimized path until benchmark evidence selects a staged Oracle path. Stored procedures are not a DVault default write path: treat them only as an explicit design-time or provider-specific escape hatch after provider evidence, migration synchronization, deployment ownership, and cleanup rules are documented.
+The carried-forward v0.21.0 documentation boundary keeps that same write hierarchy and the PIT/bridge read-model baseline. `IDataVaultSaveService` remains the public write entry point, `DataVaultBulkSaveRequest` remains the compatibility baseline for already-materialized ordered saves, and `DataVaultChunkedSaveRequest` remains provider-neutral bounded chunking guidance. Provider-specific optimized write paths stay evidence-bound behind the same service contract: PostgreSQL staged COPY and MySQL staged bulk are the preferred optimized paths only for their documented staged-provider lanes, SQL Server keeps its current native-bulk wording, and Oracle keeps the retained direct optimized path until benchmark evidence selects a staged Oracle path. Stored procedures are not a DVault default write path: treat them only as an explicit design-time or provider-specific escape hatch after provider evidence, migration synchronization, deployment ownership, and cleanup rules are documented.
+
+### Govern stable hashes
+
+`AddDVault()` registers the default `IStableHashService` and `IStableHashNormalizer` unless the application has already registered replacements. The default algorithm identifier is `sha256-v1`; it hashes UTF-8 bytes without a byte order mark and emits lowercase 64-character SHA-256 digest text. The normalizer owns canonical text rules before hashing, including explicit null, string, boolean, integer, decimal, timestamp, and GUID encodings plus ordinal field ordering for structured values.
+
+Hub and link hash-key generation flows through the registered stable hash normalizer and service. Provider packages may optimize batching, staging, existence checks, and insert shapes, but they do not silently replace the shared `sha256-v1` compatibility contract with provider SQL hash functions. Callers that intentionally replace the hash service must expose a stable algorithm id; compatible replacements keep `sha256-v1` and the same digests, while incompatible replacements use a distinct id.
+
+The compatibility contract and published vectors live in `docs/plans/stable-hashing-contract.md`, with repository coverage in `tests/DCoding.Data.DVault.Tests/Unit/StableHashServiceTests.cs`. Treat those as the evidence baseline when reviewing model, provider, or migration changes that depend on persisted hash values.
 
 ### Observe explicit save and read attempts
 
@@ -318,11 +326,32 @@ public sealed record CustomerProfileRead(
 
 The lower-level `ReadCurrentSatelliteRowsAsync(...)`, `ReadAsOfSatelliteRowsAsync(...)`, and `ReadLatestSatelliteRowsAsync(...)` APIs remain available as advanced escape hatches. They return `DataVaultSatelliteReadRecord` values containing the parent hash key, driving-key values, hash diff, load timestamp, record source, and payload values for callers that need row-level dictionaries or custom projections.
 
+### Generate typed satellite read-model helpers
+
+The analyzer package can generate typed satellite read-model records and extension methods over the same `IDataVaultReadService` APIs shown above. Enable the generator explicitly in the consumer project and provide exactly one authoritative `dvault.support-bundle.v1` additional file that was exported after the chosen Code-First, metadata-first, or model-first declarations were projected into EF/DVault metadata:
+
+```xml
+<PropertyGroup>
+  <DVaultGenerateTypedReadModels>true</DVaultGenerateTypedReadModels>
+  <DVaultTypedReadModelMetadataSourceFingerprint>metadata-source-fingerprint-from-reviewed-bundle</DVaultTypedReadModelMetadataSourceFingerprint>
+</PropertyGroup>
+
+<ItemGroup>
+  <AdditionalFiles Include="dvault-support-bundle.json" />
+</ItemGroup>
+```
+
+The fingerprint property is optional, but pinning it turns metadata-source drift into a build failure. The generator reads the support bundle's projected explain metadata, not raw `dvault.model.v1` JSON, Code-First source callbacks, or literal `DataVaultMetadataModel` declarations. Keep the reviewed model artifact, support-bundle export command, artifact storage, and bundle transport in the consuming repository or release workflow; DVault does not route or publish support bundles.
+
+The generated scope is intentionally satellite-only. Supported hub-parent, link-parent, and deterministic multi-active satellites emit `{SatelliteProducedName}ReadModel` plus `Read...CurrentAsync`, `Read...LatestAsync`, and `Read...AsOfAsync` helpers under `{RootNamespace}.DVault.GeneratedReadModels` when `RootNamespace` is available. PIT and bridge shapes stay on the runtime read-service and diagnostics surfaces and do not emit typed helpers in v0.22.0. Unsupported shapes report `DMV1960` through `DMV1969` diagnostics for missing or ambiguous support bundles, stale fingerprints, unsupported satellite, PIT, bridge, or model-first shapes, deterministic name collisions, nullability fallback, dynamic query requirements, and skipped helper cases.
+
+Use generated helpers when the support bundle is the reviewed metadata source for a stable typed satellite boundary. Use dynamic `IDataVaultReadService` requests for runtime-built read shapes, PIT and bridge reads, or caller-selected projectors. Use consumer-owned EF compiled queries for stable direct EF shared-type-table expressions as documented in `docs/architecture/dvault-ef-compiled-compatibility.md`; DVault does not generate provider-specific SQL or compile arbitrary dynamic read requests.
+
 ### Read PIT and bridge projections
 
 PIT-backed as-of reads and bridge reads are read-service helpers over materialized read-model tables with provider-neutral fallback behavior. PIT-backed reads consume explicitly maintained PIT rows populated through the caller-invoked `IDataVaultPitMaintenanceService`; bridge reads consume explicitly maintained bridge rows populated through the caller-invoked `IDataVaultBridgeMaintenanceService`. `AddDVaultSqlite()` selects SQLite optimized read dispatch for supported PIT and bridge shapes; unsupported providers or declined shapes keep the provider-neutral pipelines. The read surface does not add automatic PIT or bridge maintenance, scheduling, implicit read-time maintenance, full graph traversal APIs, or non-SQLite PIT/bridge optimization.
 
-The current coordinated PIT/bridge baseline is documented in [DVault v0.21.0 Release Notes](docs/releases/v0.21.0.md) and centralized in [DVault V1 PIT And Bridge Boundary](docs/architecture/dvault-v1-pit-bridge-boundary.md).
+The coordinated PIT/bridge baseline carried forward from v0.21.0 is documented in [DVault v0.21.0 Release Notes](docs/releases/v0.21.0.md) and centralized in [DVault V1 PIT And Bridge Boundary](docs/architecture/dvault-v1-pit-bridge-boundary.md).
 
 PIT-backed reads target one `DataVaultPitMetadata` declaration, explicit parent hash keys, and an `asOf` timestamp. The runtime metadata path supports hub-parent PITs, including the bounded multi-active hub-parent baseline, and bounded link-parent PITs when every referenced satellite is unique, non-multi-active, and attached to the same declared link parent; for link-parent PITs, `ParentHashKey` carries the link hash key. For ordinary PITs, one selected PIT row is returned per requested parent. For the bounded multi-active hub-parent baseline, all referenced multi-active satellites must share the same canonical driving-key names and order; reads keep the parent-hash-key request surface and return one visible row per parent and driving-key tuple. `ReadPitRowsAsync(...)` returns raw `DataVaultPitReadRecord` rows with the PIT driving-key values when present; `ReadPitAsync(...)` maps selected rows through a caller-owned projection delegate with exact-name access to `ParentHashKey`, the canonical driving-key names when present, `LoadTimestamp`, and declared satellite segments. The public `dvault.model.v1` PIT artifact shape remains hub-parent-only.
 
@@ -561,7 +590,7 @@ dotnet run --project src/SalesVault/SalesVault.csproj -- support-bundle --output
 
 The default support bundle constructs the configured design-time context, runs `IDataVaultDiagnosticsService.Analyze(DbContext)`, and serializes validation, explain, save-strategy, and read-strategy diagnostics without opening a live database connection. When application code supplies representative request-bound read diagnostics, the same deterministic redacted JSON also includes the additive `readShape` section. Use `--artifact <path>` to add reviewed `dvault.model.v1` drift evidence and `--live-schema` only when the consumer application owns the reachable database, credentials, lifecycle cleanup, and CI isolation for that check.
 
-Applications that want representative request-bound save or read strategy evidence should supply that diagnostics result from application code through `DataVaultDesignTimeCommandHost.CreateSupportBundleDiagnostics`. The reusable command host does not invent representative requests, publish support bundles, attach them to tickets, intercept `dotnet ef`, or ship a standalone `dvault` CLI.
+Applications that want representative request-bound save or read strategy evidence should supply that diagnostics result from application code through `DataVaultDesignTimeCommandHost.CreateSupportBundleDiagnostics`. Applications that generate typed satellite helpers should review the same support bundle as the generator input, provide it as the single authoritative additional file, and optionally pin `DVaultTypedReadModelMetadataSourceFingerprint` to the exported metadata-source fingerprint. The reusable command host does not invent representative requests, publish support bundles, attach them to tickets, intercept `dotnet ef`, or ship a standalone `dvault` CLI.
 
 ### Run aggregate preflight checks
 
@@ -710,9 +739,25 @@ Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadS
 
 SQLite remains the default local live-schema proof because it does not require external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks require consumer-managed reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation. Keep those external provider checks opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
 
+## v0.22.0 Release Notes
+
+The v0.22.0 release records the typed satellite read-model and stable-hash governance documentation rollout as the current coordinated seven-package baseline while preserving the explicit save/read service boundaries, PIT/bridge maintenance limits, support-bundle transport ownership, public API snapshot posture, compiled-query guidance, and package publication separation from earlier releases. See `docs/releases/v0.22.0.md` for the release-note record, source-backed typed-helper evidence, public API snapshot evidence, stable `sha256-v1` compatibility vectors, compiled EF query alternative, validation commands, and package verification posture.
+
+Notable user-facing changes:
+
+- Typed satellite read-model generation is documented as opt-in with `DVaultGenerateTypedReadModels=true`, exactly one authoritative `dvault.support-bundle.v1` additional file, and optional `DVaultTypedReadModelMetadataSourceFingerprint` drift enforcement.
+- Generated typed helpers are limited to hub-parent, link-parent, and deterministic multi-active satellites with `Read...CurrentAsync`, `Read...LatestAsync`, and `Read...AsOfAsync` methods over `IDataVaultReadService`.
+- Raw `dvault.model.v1` artifacts are documented as reviewed workflow inputs that must be imported and projected before a consumer-owned `support-bundle` export; the generator does not parse raw model artifacts directly.
+- PIT and bridge shapes remain on runtime read-service and diagnostics surfaces and do not emit typed helpers in this release.
+- Dynamic `IDataVaultReadService` requests and consumer-owned EF compiled queries remain the documented alternatives outside the generated satellite-helper boundary.
+- Stable hash governance is linked to the `sha256-v1` contract and published vector tests; provider packages must preserve those values instead of substituting provider SQL hashing behind the public save contract.
+- Public API references remain limited to the committed core and provider snapshot baselines for `DCoding.Data.DVault`, `Sqlite`, `Postgres`, `SqlServer`, `Oracle`, and `MySql`.
+
+Primary v0.22.0 validation surfaces are [DataVaultTypedReadModelSourceGeneratorTests.cs](tests/DCoding.Data.DVault.Tests/Analyzers/DataVaultTypedReadModelSourceGeneratorTests.cs), [StableHashServiceTests.cs](tests/DCoding.Data.DVault.Tests/Unit/StableHashServiceTests.cs), [ApiSurfaceSnapshotTests.cs](tests/DCoding.Data.DVault.Tests/Unit/ApiSurfaceSnapshotTests.cs), [API Surface Snapshots](docs/quality/api-surface-snapshots.md), [Stable Hashing Contract](docs/plans/stable-hashing-contract.md), and [DVault EF Compiled Compatibility](docs/architecture/dvault-ef-compiled-compatibility.md).
+
 ## v0.21.0 Release Notes
 
-The v0.21.0 release records the PIT and bridge completeness documentation rollout as the current coordinated seven-package baseline while preserving the EF safety, aggregate preflight, explicit service, opt-in telemetry, redacted support-bundle, consumer-owned design-time boundaries, provider-optimized write guidance, and performance-evidence posture from earlier releases. See `docs/releases/v0.21.0.md` for the release-note record, package scope, PIT/bridge maintenance boundary, SQLite-only optimized PIT/bridge read dispatch, diagnostics and read-shape evidence, benchmark artifact links, validation evidence, and package verification posture. See `docs/architecture/dvault-v1-pit-bridge-boundary.md` for the centralized architecture boundary.
+The v0.21.0 release recorded the PIT and bridge completeness documentation rollout as the previous coordinated seven-package baseline while preserving the EF safety, aggregate preflight, explicit service, opt-in telemetry, redacted support-bundle, consumer-owned design-time boundaries, provider-optimized write guidance, and performance-evidence posture from earlier releases. See `docs/releases/v0.21.0.md` for the release-note record, package scope, PIT/bridge maintenance boundary, SQLite-only optimized PIT/bridge read dispatch, diagnostics and read-shape evidence, benchmark artifact links, validation evidence, and package verification posture. See `docs/architecture/dvault-v1-pit-bridge-boundary.md` for the centralized architecture boundary.
 
 Notable user-facing changes:
 
@@ -783,9 +828,9 @@ Use this carried-forward hierarchy when planning provider-optimized write adopti
 
 The benchmark-facing evidence continues to use the root `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` triplet plus the shared [Performance Evidence And Benchmark Artifact Contract](docs/plans/performance-evidence-benchmark-artifact-contract.md). Provider-specific timing claims must preserve provider, strategy, execution-detail, skip, and run-context information instead of introducing new ad hoc evidence files.
 
-## Current v0.21.0 Limitations
+## Current v0.22.0 Limitations
 
-Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.21.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
+Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.22.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
 
 Compiled-model, compiled-query, and `DbContext` pooling evidence is SQLite timing and allocation evidence for bounded EF shapes. It does not assert provider-specific SQL shape, index usage, generated compiled-model code ownership, dynamic request-built read compilation, or pooling for caller-owned variable model shapes.
 
@@ -796,6 +841,8 @@ Aggregate preflight is an explicit facade over caller-owned inputs. DVault does 
 Telemetry remains explicit opt-in application wiring. DVault does not configure metric listeners, exporters, dashboards, alert rules, or backend-specific observability pipelines, and it does not emit high-cardinality raw values such as exception messages, hash keys, record sources, metadata names, table names, generated SQL, or full diagnostics text as metric tags.
 
 Support bundles are consumer-invoked diagnostic artifacts. DVault does not upload, attach, archive, retain, or route support-bundle JSON, and it does not open a live database connection unless the consumer explicitly invokes the live-schema option in an environment they manage.
+
+Typed satellite read-model generation is support-bundle-driven and satellite-only. The generator does not parse raw `dvault.model.v1` additional files, generate PIT or bridge helpers, generate provider-specific SQL, compile dynamic `IDataVaultReadService` requests, discover support bundles automatically, or publish dedicated generator approval snapshots.
 
 Chunked explicit saves are provider-neutral public behavior. Provider-native chunk execution, file ingestion, background workers, schedulers, CDC ingestion, and implicit `SaveChanges` streaming remain outside the public claim set.
 
