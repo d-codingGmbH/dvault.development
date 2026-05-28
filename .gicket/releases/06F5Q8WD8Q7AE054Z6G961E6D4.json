@@ -3,6 +3,6 @@
   "releaseId": "06F5Q8WD8Q7AE054Z6G961E6D4",
   "name": "v0.23.0 - Tracing and Performance Guidance",
   "description": "Opt-in Activity tracing and benchmark-backed performance guidance while keeping dashboards, deployment, and runtime orchestration outside DVault.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-24T20:18:25.7336781Z"
 }

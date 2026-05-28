@@ -3,6 +3,6 @@
   "milestoneId": "06F5Q8WT4ZCH7NWHN7JCEJ5N08",
   "name": "v0.23.0 - Performance profiles",
   "description": "Benchmark-backed profiles, batch-size guidance, and fallback remediation playbooks for adopters.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-24T20:18:29.0313477Z"
 }
