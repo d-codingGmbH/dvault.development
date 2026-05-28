@@ -17,7 +17,7 @@ Install the analyzer package in projects that declare DVault Code-First metadata
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="<published-version>" PrivateAssets="all" />
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="0.22.0" PrivateAssets="all" />
 </ItemGroup>
 ```
 

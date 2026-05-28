@@ -7,13 +7,13 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned; use one version that has already been published for every selected package id. This documentation baseline does not by itself confirm package publication.
 
 ```sh
-dotnet add package DCoding.Data.DVault --version <published-version>
-dotnet add package DCoding.Data.DVault.Sqlite --version <published-version>
-dotnet add package DCoding.Data.DVault.Postgres --version <published-version>
-dotnet add package DCoding.Data.DVault.MySql --version <published-version>
-dotnet add package DCoding.Data.DVault.Oracle --version <published-version>
-dotnet add package DCoding.Data.DVault.SqlServer --version <published-version>
-dotnet add package DCoding.Data.DVault.Analyzers --version <published-version>
+dotnet add package DCoding.Data.DVault --version 0.22.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.22.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.22.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.22.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.22.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.22.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.22.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
