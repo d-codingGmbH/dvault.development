@@ -20,6 +20,9 @@ This folder contains durable design contracts and release planning notes that ar
 - `provider-optimization-closure-alignment-follow-up.md`
 - `shared-implementation-standards.md`
 - `stable-hashing-contract.md`
-- `typed-read-model-generator-contract.md`
+
+## Superseded Planning Context
+
+- `typed-read-model-generator-contract.md` - historical typed-read generator planning context; the current v0.22 boundary is support-bundle-driven satellite-only helper generation with PIT and bridge left to runtime read-service or DMV196x diagnostic surfaces.
 
 Ticket IDs remain inside individual documents where traceability is useful, but file names are intentionally topic-first.

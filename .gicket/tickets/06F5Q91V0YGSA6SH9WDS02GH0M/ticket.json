@@ -1,24 +1,23 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q91V0YGSA6SH9WDS02GH0M",
   "ticket-type": "epic",
   "title": "Epic: Typed read models and hash governance",
-  "revision": "06F5Q96TMME499499TVKBACG2C",
-  "status": "todo",
+  "revision": "06F6XZ073V5BV8JMYJP1E6PRD0",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/epic",
     "area/analyzers",
     "area/developer-experience",
     "area/ef-core",
     "area/modeling",
-    "area/read-models"
+    "area/read-models",
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WNJMF4A1AZRTSARZFRDW",
   "releaseId": "06F5Q8WCGVYM0PMGBHXGM01RZC",
   "created-at": "2026-05-24T20:19:10.5534153Z",
-  "updated-at": "2026-05-24T20:19:51.0772852Z"
+  "updated-at": "2026-05-28T14:27:51.1988445Z"
 }

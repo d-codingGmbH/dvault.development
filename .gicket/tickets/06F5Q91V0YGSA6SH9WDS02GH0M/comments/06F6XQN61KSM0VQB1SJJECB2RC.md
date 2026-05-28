@@ -1,0 +1,10 @@
+﻿[gicket-bot] transactional writeback linkage
+
+- ticket-id: `06F5Q91V0YGSA6SH9WDS02GH0M`
+- transaction-point: `TP1`
+- write-group: `wg-handover-po-critic`
+- source-role: `po`
+- target-role: `po-critic`
+- branch: `ticket/06F5Q91V0YGSA6SH9WDS02GH0M-epic-typed-read-models-and-hash-governance`
+- commit: `6d9fbfbfe568`
+- push-mode: `commit-only-on-write`
