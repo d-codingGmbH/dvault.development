@@ -3,6 +3,6 @@
   "releaseId": "06F5Q8WCGVYM0PMGBHXGM01RZC",
   "name": "v0.22.0 - Typed Read Models and Hash Governance",
   "description": "Source-generated typed read model ergonomics plus stable hash canonicalization governance for EF Core consumers.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-24T20:18:25.5429774Z"
 }
