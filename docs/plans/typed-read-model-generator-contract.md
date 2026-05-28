@@ -32,6 +32,8 @@ Generated helpers are limited to stable satellite shapes:
 
 For each supported satellite, the generated surface includes `{SatelliteProducedName}ReadModel` plus `Read...CurrentAsync`, `Read...LatestAsync`, and `Read...AsOfAsync` extension methods over `IDataVaultReadService`. The helpers are ergonomics over the existing provider-neutral read service and projected support-bundle metadata.
 
+Because that generated surface delegates to the existing read-service metadata request path, the shipped v0.22.0 helper contract targets the v1 default or read-service-compatible produced table and column shape represented by the support bundle. Custom produced-name read binding remains a future additive contract; projects that intentionally override produced names should use dynamic `IDataVaultReadService` requests or consumer-owned compiled EF queries until that contract lands.
+
 ## Explicit Non-Goals
 
 The v0.22.0 generator does not emit:

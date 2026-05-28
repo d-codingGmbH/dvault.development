@@ -3,6 +3,6 @@
   "milestoneId": "06F5Q8WNJMF4A1AZRTSARZFRDW",
   "name": "v0.22.0 - Typed read model generator",
   "description": "Source-generator contracts and generated projectors for stable latest/as-of/PIT/bridge read shapes.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-24T20:18:27.8616157Z"
 }
