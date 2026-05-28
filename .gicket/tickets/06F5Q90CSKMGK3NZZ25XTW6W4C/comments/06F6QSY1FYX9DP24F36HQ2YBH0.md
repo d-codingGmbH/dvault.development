@@ -1,73 +1,55 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the epic as an already-split tracking parent: the existing PIT/bridge boundary docs and live relations bound v1 scope, no new PO blockers were found, and no persistent planning writes were needed.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Repository evidence already fixes the v1 boundary: PIT and bridge tables stay explicit, metadata-driven read models with caller-owned maintenance and no implicit scheduling or SaveChanges orchestration.
 - This epic is already materially split through persisted parentOf relations to 06F5Q90KC6JGQPSP285XQYSPK8, 06F5Q90SX5AQ07M4PQKDR4BZD8, 06F5Q9102970H1VQN16QWRGQX0, 06F5Q916BXE2N372SWMH1X776G, 06F5Q91DR1555RSBQT7KDST684, and 06F5Q91M0PM17RP43ZQRPBDXP0.
 - No description update, relation change, attachment, child-ticket creation, or planning-document write was materialized in this pass because docs/architecture/dvault-v1-pit-bridge-boundary.md and the referenced PIT plan docs already provide the authoritative refinement baseline.
 
-### Scope In
+Scope In
 - Explicit PIT maintenance for one DataVaultPitMetadata declaration at a time, including full rebuild and bounded parent-targeted maintenance within the documented v1 boundary.
 - PIT-backed as-of reads over explicit PIT metadata, including the documented hub-parent baseline plus the bounded multi-active and link-parent support already ratified by the architecture and plan documents.
 - Explicit bridge completeness that belongs inside the library boundary: metadata-driven projection plus caller-invoked bridge maintenance and read-model behavior for supported many-to-many and hierarchy cases.
 - Provider-neutral correctness, registry-backed maintenance resolution, and documentation/test coverage that keep SQLite as the only repository-proven optimized provider path.
 
-### Scope Out
+Scope Out
 - Background jobs, cron abstractions, dashboarding, deployment tooling, or any automatic PIT/bridge refresh triggered by reads, startup, or SaveChanges.
 - Provider-specific PIT or bridge optimization beyond the current SQLite-proven path.
 - Model-first link-parent PIT artifacts, registry-backed PIT as-of read requests, link-parent multi-active PITs, incompatible driving-key families, and cross-product tuple semantics.
 - Broader orchestration or application-layer scheduling concerns that belong to consumers rather than the DVault EF Core library.
 
-## Acceptance Criteria
-- The epic's child work collectively delivers the documented v1 PIT boundary as explicit, service-based, metadata-driven behavior without implicit orchestration.
-- The epic's child work collectively delivers the documented in-library bridge boundary, including explicit maintenance semantics and supported read-model or traversal behavior for the bounded bridge cases.
-- Unsupported providers or unsupported PIT/bridge request shapes remain on the documented provider-neutral paths instead of widening unproven optimization behavior.
-- Repository docs and tests align with the implemented PIT/bridge boundary and continue to exclude background scheduling or deployment concerns.
-
-## Definition of Done
-- The existing child tickets under this epic are completed or explicitly superseded with consistent live relations.
-- The live incoming blocker relation from 06F5Q90718D21DN1N1Q2AP7YEM is cleared or otherwise no longer blocks closing this epic.
-- Implemented behavior matches the authoritative boundary and contract documents for PIT maintenance, PIT-backed reads, and bridge completeness.
-- Test coverage demonstrates the supported PIT/bridge cases and preserves explicit unsupported behavior for out-of-scope cases.
-
-## Implementation Notes
-- docs/architecture/dvault-v1-pit-bridge-boundary.md should remain the authoritative epic boundary: explicit read models, caller-owned maintenance, SQLite as the only proven optimized provider path, and no hidden orchestration.
-- docs/plans/pit-maintenance-service-v1-contract.md and docs/plans/pit-backed-as-of-read-api-contract.md already define the PIT maintenance and read contracts; remaining work should implement against those contracts rather than reopen them.
-- Repository evidence already includes bridge-maintenance surface types such as DataVaultBridgeMaintenanceRequest, DataVaultBridgeMaintenanceResult, and registry-backed bridge maintenance extensions, so refinement should treat bridge maintenance API shape as an existing baseline.
-- DataVaultAnnotationNames and DataVaultPropertyRole already carry PIT/bridge-relevant metadata roles such as SnapshotReference, BridgeDepth, and DrivingKey; remaining work should extend this baseline consistently rather than invent parallel metadata concepts.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - When delivery approaches closure, should any provider-specific PIT/bridge optimization beyond SQLite be queued as separate backlog tickets rather than absorbed into this epic?
 - If consumers later need PIT/bridge refresh orchestration, should that be planned as a separate application-layer integration epic outside the DVault library boundary?
 
-## Risks
+Risks
 - This epic currently has a live incoming blocks relation from 06F5Q90718D21DN1N1Q2AP7YEM.
 - The bounded v1 stance on multi-active and link-parent PIT behavior can be destabilized if delivery tries to absorb cross-product tuple semantics or other deferred variants under this epic.
 - Bridge completion can drift if delete-aware maintenance, advanced hierarchy semantics, or broader traversal features are implicitly added instead of being tracked as separate deferred work.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended now; the epic already has six persisted child tickets linked by parentOf relations.
 - If new asks emerge for provider-specific optimization or orchestration, create separate follow-up tickets instead of broadening this epic's v1 boundary.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 4
+- definition-of-done items: 4
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Goal: Complete focused PIT and bridge behavior that belongs in a Data Vault EF Core library while leaving scheduling and orchestration to consumers.
-
-Acceptance criteria:
-- Adds missing PIT/bridge model support only where it remains explicit, service-based, and metadata-driven.
-- Keeps provider-neutral behavior correct before provider-specific optimization.
-- Does not add background jobs, cron abstractions, dashboarding, or deployment tooling.
+Run mode
+- apply: planned updates are applied after this comment

@@ -1,22 +1,21 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q90CSKMGK3NZZ25XTW6W4C",
   "ticket-type": "epic",
   "title": "Epic: PIT and bridge completeness",
-  "revision": "06F5Q966PBA1943GD0FTVHYRDM",
-  "status": "todo",
+  "revision": "06F6QWZWZG1D54ZFSNJS9068G4",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/epic",
     "area/ef-core",
     "area/maintenance",
-    "area/read-models"
+    "area/read-models",
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WJKS4Z654A4T682GTDCR",
   "releaseId": "06F5Q8WBS0Q69JVAHATNXHBWAW",
   "created-at": "2026-05-24T20:18:58.5327075Z",
-  "updated-at": "2026-05-24T20:19:45.9703630Z"
+  "updated-at": "2026-05-28T00:20:12.6680000Z"
 }
