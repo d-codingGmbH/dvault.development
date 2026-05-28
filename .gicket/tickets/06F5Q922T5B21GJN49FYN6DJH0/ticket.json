@@ -1,24 +1,23 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q922T5B21GJN49FYN6DJH0",
   "ticket-type": "story",
   "title": "Story: Define typed read model generator contract",
-  "revision": "06F5Q9995SVEAC2KXQWD21D6DG",
-  "status": "todo",
+  "revision": "06F6RDERY52GZS69E2CJQ5HDZ0",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
     "area/analyzers",
     "area/developer-experience",
     "area/ef-core",
     "area/modeling",
-    "area/read-models"
+    "area/read-models",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WNJMF4A1AZRTSARZFRDW",
   "releaseId": "06F5Q8WCGVYM0PMGBHXGM01RZC",
   "created-at": "2026-05-24T20:19:12.3613211Z",
-  "updated-at": "2026-05-24T20:20:11.1823528Z"
+  "updated-at": "2026-05-28T01:32:08.8172993Z"
 }
