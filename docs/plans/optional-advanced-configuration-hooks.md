@@ -136,6 +136,18 @@ Future expansion boundary:
 
 - Algorithm migration, multiple simultaneous hash versions, persisted hash backfill, and provider-accelerated hashing require separate versioned contracts.
 
+### Database-Side Hashing Boundary
+
+Database-side hashing is a future provider-gated possibility, not a current v1 default, not part of the source-backed resolver configuration, and not a runtime behavior added by this plan. Current DVault compatibility is defined by .NET-side canonical normalization and digest computation through the shared stable-hash services for hub and link hash-key generation. This remains true for the provider-neutral writer and for today's provider-optimized save strategies.
+
+A future provider-side hashing contract must reuse the existing source-of-truth contracts instead of defining ticket-local compatibility or performance formats:
+
+- `docs/plans/stable-hashing-contract.md` remains authoritative for canonical text normalization, `sha256-v1`, digest encoding, unsupported-value failures, and compatibility vectors.
+- `docs/plans/dvault-v1-default-persistence-convention-policy.md` remains authoritative for the logical persistence content-hash tuple, including the `sha-256` algorithm value and canonicalization identifier.
+- `docs/plans/performance-evidence-benchmark-artifact-contract.md` remains authoritative for benchmark summaries, JSON context, skipped optional-provider rows, and matched-input comparison rules.
+
+Before any provider may offer database-side hashing, that provider must supply deterministic equivalence tests against the published vectors and canonicalization rules, explicit opt-in or provider-gated selection, safe decline or fallback to the .NET-side stable-hash path when parity cannot be proven, and benchmark artifacts collected under matched inputs. Provider-side hashing may preserve existing semantics only; it must not silently replace the shared normalizer, change `sha256-v1` or `sha-256` meanings, alter hash tuple semantics, or become the default path without a separate documented contract and evidence gate.
+
 ## Record Source Hook
 
 Default behavior:

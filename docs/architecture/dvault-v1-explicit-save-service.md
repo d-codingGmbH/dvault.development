@@ -51,6 +51,18 @@ When no provider-specific strategy is registered, or when every registered strat
 
 Provider-specific save-strategy registration is separate from provider-name capability-profile selection. The core package contains built-in capability profiles for the known SQLite, PostgreSQL, SQL Server, Oracle, Pomelo MySQL, and official MySQL EF provider names. Provider packages register optimized save strategies and can still register or override provider-name mappings when a future provider needs a custom profile.
 
+## Hashing Compatibility Boundary
+
+The current save-service compatibility contract keeps canonical normalization and digest computation on the .NET side for hub and link hash-key generation. The provider-neutral writer uses the registered `IStableHashNormalizer` and `IStableHashService`, and provider-specific save strategies receive the same services through `DataVaultProviderSaveStrategyContext`. Provider packages may optimize batching, staging, existence checks, and insert shapes, but today's SQLite, PostgreSQL, SQL Server, Oracle, and MySQL save strategies must preserve the same .NET-side `sha256-v1` normalization and stable hash values instead of substituting provider SQL hash functions.
+
+Database-side hashing is not part of the current runtime behavior and is not a default path. Any future provider-side hashing proposal must be introduced by a separate versioned provider contract that preserves the existing semantics and references the shared source-of-truth documents:
+
+- `docs/plans/stable-hashing-contract.md` for canonical normalization rules, the `sha256-v1` stable-hash algorithm identifier, lowercase hexadecimal digest shape, and published compatibility vectors.
+- `docs/plans/dvault-v1-default-persistence-convention-policy.md` for the logical `content_hash_algorithm`, `content_hash_canonicalization`, and `content_hash` tuple and the `sha-256` persistence content-hash meaning.
+- `docs/plans/performance-evidence-benchmark-artifact-contract.md` for matched-input benchmark artifacts and optional-provider skipped-row visibility.
+
+The minimum admission evidence for a provider-side path is deterministic provider-specific equivalence tests against the published stable-hash vectors and canonicalization rules, explicit opt-in or provider-gated selection, safe decline or fallback to the .NET-side path when parity cannot be proven, and benchmark evidence collected with the same scenario mode, provider filter, iteration counts, load-timestamp storage, and provider configuration as the comparison path. A provider-side path may only preserve DVault hash semantics; it must never silently replace the shared normalizer, change the algorithm identifiers, invent provider-local compatibility formats, or make release claims without the shared benchmark artifact set.
+
 ### Oracle Ordered Bulk Boundary
 
 `AddDVaultOracle()` keeps Oracle bulk optimization behind the existing provider save-strategy dispatch. The Oracle strategy accepts only clean `Oracle.EntityFrameworkCore` contexts whose ordered batch has no multi-active satellite operations, at least `50` total hub/link/satellite operations, and no more than `10000` satellite operations. Batches outside that gate continue through the provider-neutral writer.
