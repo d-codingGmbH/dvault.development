@@ -1,9 +1,9 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q94SQ086B2DZ1AKFDXGV94",
   "ticket-type": "task",
   "title": "Task: Update v0.23.0 tracing and performance guidance documentation",
-  "revision": "06F5Q94YSQG0NYDJW3BXC243ZR",
+  "revision": "06F72ZYG548FHWYJ2WFZTWH6GW",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
@@ -20,5 +20,5 @@
   "milestoneId": "06F5Q8WTW82JBZQC3KWN5E1VAR",
   "releaseId": "06F5Q8WD8Q7AE054Z6G961E6D4",
   "created-at": "2026-05-24T20:19:34.6008326Z",
-  "updated-at": "2026-05-24T20:19:35.7571706Z"
+  "updated-at": "2026-05-29T02:11:02.3136268Z"
 }

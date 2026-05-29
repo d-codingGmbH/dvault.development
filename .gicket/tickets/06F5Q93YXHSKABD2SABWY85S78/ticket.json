@@ -1,9 +1,9 @@
-{
+﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F5Q93YXHSKABD2SABWY85S78",
   "ticket-type": "story",
   "title": "Story: Define opt-in Activity tracing contract and redaction rules",
-  "revision": "06F5Q99Z5T1315CZGQV59Y8KHC",
+  "revision": "06F72ZKXPKXNBEANNN68J0G7VC",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
@@ -18,5 +18,5 @@
   "milestoneId": "06F5Q8WR6NCE3Y4EMP5K71KF8W",
   "releaseId": "06F5Q8WD8Q7AE054Z6G961E6D4",
   "created-at": "2026-05-24T20:19:28.0269068Z",
-  "updated-at": "2026-05-24T20:20:16.8140573Z"
+  "updated-at": "2026-05-29T02:09:35.6684161Z"
 }
