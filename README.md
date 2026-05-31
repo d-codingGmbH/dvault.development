@@ -22,7 +22,7 @@ Applications still need their normal Entity Framework Core database provider pac
 
 Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
 
-For a short adopter readiness pass before production use, see the [Production Adoption Checklist](docs/production-adoption-checklist.md).
+For benchmark-backed performance profile guidance, see [Performance Profiles](docs/performance-profiles.md). For a short adopter readiness pass before production use, see the [Production Adoption Checklist](docs/production-adoption-checklist.md).
 
 ## Quickstart
 

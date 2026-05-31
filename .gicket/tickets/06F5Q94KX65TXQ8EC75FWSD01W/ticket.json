@@ -3,21 +3,20 @@
   "ticket-id": "06F5Q94KX65TXQ8EC75FWSD01W",
   "ticket-type": "story",
   "title": "Story: Add benchmark-backed performance profile guidance",
-  "revision": "06F72ZVXPT9CBZFAVBV6GHC07M",
-  "status": "todo",
+  "revision": "06F7RS6G2RSKP5ZB67D5WCG6ZG",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
     "area/benchmarks",
     "area/documentation",
     "area/ef-core",
-    "area/performance"
+    "area/performance",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WT4ZCH7NWHN7JCEJ5N08",
   "releaseId": "06F5Q8WD8Q7AE054Z6G961E6D4",
   "created-at": "2026-05-24T20:19:33.1164154Z",
-  "updated-at": "2026-05-29T02:10:41.2068521Z"
+  "updated-at": "2026-05-31T04:57:22.1987961Z"
 }
