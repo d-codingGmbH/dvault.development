@@ -3,20 +3,19 @@
   "ticket-id": "06F5Q93YXHSKABD2SABWY85S78",
   "ticket-type": "story",
   "title": "Story: Define opt-in Activity tracing contract and redaction rules",
-  "revision": "06F72ZKXPKXNBEANNN68J0G7VC",
-  "status": "todo",
+  "revision": "06F7QD1S8RAJ6EYD5CGNHNSJ40",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
     "area/diagnostics",
     "area/ef-core",
-    "area/observability"
+    "area/observability",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WR6NCE3Y4EMP5K71KF8W",
   "releaseId": "06F5Q8WD8Q7AE054Z6G961E6D4",
   "created-at": "2026-05-24T20:19:28.0269068Z",
-  "updated-at": "2026-05-29T02:09:35.6684161Z"
+  "updated-at": "2026-05-31T01:44:29.2544479Z"
 }
