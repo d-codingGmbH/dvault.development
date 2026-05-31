@@ -1,21 +1,20 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the story to a bounded extension of the existing EF safety analyzer: add high-confidence DMV1912+ warnings for visible caller-owned DVault model-shape hazards around EF model caching, compiled models, and pooled DbContexts, while preserving the already-safe registry-backed UseDataVaultMetadata baseline.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Completed story 06F492AKGMKPCRJYF4Z1EC9WY4 already fixed the baseline: registry-backed UseDataVaultMetadata participates in the EF model cache key, while tenant/schema/naming/provider/profile state outside that DVault-owned path remains consumer-owned via IModelCacheKeyFactory.
 - Completed story 06F1XPYA9MD0T9C4651ND8KX0W already fixed the compiled-model boundary: UseModel is supported only for one fixed realized model shape and is not a DVault-owned compiled-model toolchain.
 - This ticket should extend the existing EfCore analyzer family after DMV1911 instead of creating a new analyzer package or parallel diagnostic taxonomy.
 - The v1 analyzer boundary is source-visible and high-confidence only: warn on visible caller-owned model-shape discriminators and risky EF registration patterns, but do not attempt whole-application DI inference or proof that a custom IModelCacheKeyFactory carries every discriminator.
 - Safe app-default, explicit-registry, and import-result UseDataVaultMetadata paths are non-diagnostic by default; the warning boundary begins only when extra caller-owned state can change the realized model shape.
 
-### Scope In
+Scope In
 - Add new EfCore analyzer warnings for source-visible contexts whose DVault model shape varies by caller-owned tenant, schema, naming, provider, or similar profile state and is then used through model-cache-sensitive EF paths.
 - Cover risky AddDbContextPool<TContext>(...) registrations when the pooled context is not visibly fixed-model because model-shaping state lives outside options-only configuration.
 - Cover risky compiled-model UseModel(...) configurations when the same context type visibly depends on caller-owned model-shape discriminators.
@@ -24,71 +23,42 @@
 - Add analyzer tests for safe and unsafe patterns using current repo vocabulary and examples around tenant/schema/naming/provider/profile-style discriminators.
 - Add bounded analyzer-owned guidance so the new diagnostics provide actionable remediation and point to the existing model-cache isolation and EF compiled-compatibility docs.
 
-### Scope Out
+Scope Out
 - No runtime guard, preflight lane, cache-stress harness, or live detection of model-cache reuse beyond static analyzer advisories.
 - No attempt to validate that a custom IModelCacheKeyFactory includes every discriminator; v1 only requires a visible application-owned replacement as the escape hatch.
 - No new tenant abstraction, dynamic metadata selector, provider-specific pooling strategy, or compiled-model generator/design-time tooling.
 - No warning on ordinary fixed-shape registry-backed UseDataVaultMetadata usage, existing read-only compiled-query examples, or the current DMV1910/DMV1911 write-boundary behavior except as unchanged guardrails.
 - No broad release-note or adoption-guide rollout beyond the analyzer-owned guidance needed to explain the new warnings.
 
-## Acceptance Criteria
-- The analyzer package exposes additive EfCore warning diagnostics after DMV1911, with titles, messages, and remediation text aligned to the existing guidance that caller-owned model-shape discriminators belong in the EF model cache key.
-- Unsafe pooled-context patterns produce diagnostics when a DbContext used with AddDbContextPool<TContext>(...) visibly depends on caller-owned model-shape discriminators instead of one fixed options-only model shape.
-- Unsafe compiled-model patterns produce diagnostics when UseModel(...) is applied to a DbContext type whose DVault model shape visibly depends on caller-owned discriminators.
-- Configuration lanes that use visible model-shape discriminators without a visible ReplaceService<IModelCacheKeyFactory,...> replacement produce a diagnostic that points consumers to the documented cache-key customization path.
-- Safe patterns remain clean: registry-backed UseDataVaultMetadata alone, fixed-model options-only pooling, visible IModelCacheKeyFactory replacement, and the existing read-only compiled-query shapes are not reported.
-- Analyzer tests cover both safe and unsafe examples for tenant/schema/naming/provider/profile-style discriminators, and the analyzer README or equivalent package guidance names the new diagnostic IDs and points readers to the existing model-cache and compiled-compatibility docs.
-
-## Definition of Done
-- The existing analyzer implementation, diagnostic catalog, and analyzer test project are updated in place; no parallel analyzer package or taxonomy is introduced.
-- Relevant analyzer tests pass for the new safe/unsafe cases and keep DMV1910/DMV1911 behavior intact.
-- Diagnostic wording and package guidance use the settled repository vocabulary around UseDataVaultMetadata, ApplyDataVaultMetadata, metadata-source fingerprints, IModelCacheKeyFactory, UseModel, and AddDbContextPool<TContext>(...).
-- Any analyzer-owned docs changes stay limited to the warning contract and remediation links, leaving the broader v0.24 documentation rollup to ticket 06F7Y0F650KM61BQXMEQPZ86DR.
-- No PO-level ambiguity remains about the safe built-in registry-backed path versus the caller-owned discriminator path.
-
-## Implementation Notes
-- Extend DataVaultEfCoreMisuseAnalyzer, EfCoreMisuseDiagnosticCatalog, and DataVaultEfCoreMisuseAnalyzerTests instead of starting a second analyzer for the same EF safety area.
-- Key the heuristics off source-visible model-shaping evidence already used in the repo and docs: instance state or constructor state that influences OnModelCreating, schema selection, produced-name prefixes, provider/profile choices, or DVault metadata projection.
-- Use the root README Isolate EF model cache entries section and docs/architecture/dvault-ef-compiled-compatibility.md as the authoritative remediation targets; the analyzer package README should summarize the new IDs rather than restating a separate architecture.
-- Treat visible ReplaceService<IModelCacheKeyFactory, TFactory>() configuration as the bounded suppression boundary for v1; do not parse the custom factory body to prove completeness.
-- Keep safe UseDataVaultMetadata variants explicit in tests so the new warnings do not regress the built-in metadata-source-kind/fingerprint isolation contract already proven by DataVaultMetadataRegistrationIntegrationTests.
-- Reuse the current compiled-model and pooling guidance as the safe/unsafe vocabulary baseline, but keep the warning scope on caller-owned variable model shape rather than broad EF performance guidance.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should a later story add runtime or preflight advisories for non-source-visible model-shape variation that the static analyzer cannot see?
 - Once the diagnostic IDs stabilize, should ticket 06F7Y0F650KM61BQXMEQPZ86DR publish provider-specific tenant/schema examples in README and release notes, or keep the broader docs provider-neutral?
 - If users want stronger assurance than visible custom IModelCacheKeyFactory presence, should a future advisory pass inspect common factory implementations for obviously missing discriminators?
 
-## Risks
+Risks
 - A high-confidence static analyzer will intentionally miss indirection, ambient state, or factory-based model-shaping that is not source-visible in the analyzed lane.
 - If the heuristics are too broad, safe fixed-model compiled or pooled patterns will look broken and the warnings will lose credibility.
 - If the messages blur the distinction between built-in registry-backed isolation and caller-owned discriminator handling, consumers may assume DVault validates custom cache-key completeness when it does not.
 - Overlapping too much with the blocked documentation task could create duplicate guidance or conflicting wording for the same diagnostic IDs.
 
-## Split Recommendations
+Split recommendations
 - Keep the static Roslyn analyzer slice on this ticket; if the team later wants runtime or preflight detection of cache-key mismatches, raise that as a separate follow-up instead of widening this story.
 - Keep broad README, production-checklist, and release-note rollout on ticket 06F7Y0F650KM61BQXMEQPZ86DR; this story should own only the analyzer contract and minimal package guidance.
 - If support for indirect DI-registration patterns or deeper custom-cache-key validation becomes necessary, split that into a later advisory expansion rather than weakening the v1 high-confidence boundary.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 5
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-# Goal
-Warn consumers when EF Core model caching, compiled models, or DbContext pooling can hide caller-owned DVault model-shape differences.
-
-# Scope In
-- Add high-confidence analyzer diagnostics for AddDbContextPool, compiled models, IModelCacheKeyFactory, tenant/schema/naming/provider discriminators, and UseDataVaultMetadata inputs.
-- Provide actionable remediation and docs links.
-
-# Scope Out
-No automatic service replacement, runtime tenant discovery, or inference of arbitrary OnModelCreating state.
-
-# Acceptance Criteria
-- Analyzer tests cover safe and unsafe patterns.
-- Diagnostics align with README guidance that caller-owned model-shape discriminators belong in EF model cache keys.
+Run mode
+- apply: planned updates are applied after this comment
