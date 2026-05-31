@@ -229,6 +229,7 @@ internal static class BenchmarkRunner {
             options.LoadTimestampStorage),
         new CustomerProfileStreamingMaterializedBenchmark(),
         new CustomerProfileStreamingChunkedBenchmark(chunkSize: 10),
+        new CustomerProfileStreamingAsyncSourceBenchmark(chunkSize: 10),
         new CustomerProfileStreamingChunkedBenchmark(chunkSize: 5),
         new OrderProductPlainEfBenchmark(),
         new OrderProductDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),

@@ -86,6 +86,12 @@ public sealed class BenchmarkScenarioExecutionTests {
           "3 profile events per customer with one unchanged replay"),
       CompletedSqlite(
           "customer-profile-streaming-save",
+          "dvault-adddvault-fallback/async-source-bounded-10",
+          "provider-neutral-dvault-fallback",
+          "20 customers, 60 ordered explicit requests",
+          "3 profile events per customer with one unchanged replay"),
+      CompletedSqlite(
+          "customer-profile-streaming-save",
           "dvault-adddvault-fallback/chunked-save-bounded-5",
           "provider-neutral-dvault-fallback",
           "20 customers, 60 ordered explicit requests",
@@ -281,6 +287,7 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Contains("100 customer hubs and 1000 profile satellite rows", text);
     Assert.Contains("20 customer hubs and 40 profile satellite rows from 60 materialized explicit requests", text);
     Assert.Contains("20 customer hubs and 40 profile satellite rows from 60 explicit requests across 6 chunks of 10", text);
+    Assert.Contains("20 customer hubs and 40 profile satellite rows from 60 async-streamed explicit requests across 6 chunks of 10", text);
     Assert.Contains("20 customer hubs and 40 profile satellite rows from 60 explicit requests across 12 chunks of 5", text);
     Assert.Contains(
         "1 order, 1 product, 1 relationship, and 2 fulfillment history rows for O-1000/SKU-COFFEE",
@@ -297,9 +304,9 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Contains("1 generated order hub row read through EF.CompileQuery stable projection", text);
     Assert.Contains("1 generated order hub row saved and read through AddDbContext fixed-model configuration", text);
     Assert.Contains("1 generated order hub row saved and read through AddDbContextPool fixed-model configuration", text);
-    Assert.Contains("Recorded 37 benchmark report rows.", text);
-    Assert.Contains("Executed 27 benchmark report rows.", text);
-    Assert.Contains("Skipped 10 benchmark report rows.", text);
+    Assert.Contains("Recorded " + ExpectedRows.Length.ToString(CultureInfo.InvariantCulture) + " benchmark report rows.", text);
+    Assert.Contains("Executed " + ExpectedCompletedRowCount.ToString(CultureInfo.InvariantCulture) + " benchmark report rows.", text);
+    Assert.Contains("Skipped " + ExpectedSkippedRowCount.ToString(CultureInfo.InvariantCulture) + " benchmark report rows.", text);
   }
 
   [Fact]
@@ -345,7 +352,7 @@ public sealed class BenchmarkScenarioExecutionTests {
 
       var csv = await File.ReadAllTextAsync(csvPath).ConfigureAwait(false);
       var csvLines = csv.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
-      Assert.Equal(38, csvLines.Length);
+      Assert.Equal(ExpectedRows.Length + 1, csvLines.Length);
       Assert.Equal(
           "scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,meanAllocatedBytes,minAllocatedBytes,maxAllocatedBytes,executionDetail,persistedOutcome",
           csvLines[0]);
@@ -396,7 +403,7 @@ public sealed class BenchmarkScenarioExecutionTests {
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable));
 
       var results = json.RootElement.GetProperty("results").EnumerateArray().ToArray();
-      Assert.Equal(37, results.Length);
+      Assert.Equal(ExpectedRows.Length, results.Length);
 
       foreach (var expectedRow in ExpectedRows) {
         var matchingResults = results.Where(result =>
@@ -449,6 +456,21 @@ public sealed class BenchmarkScenarioExecutionTests {
         Assert.Contains("processedChunkCount=", executionDetail);
         Assert.Contains("retainedStateHighWater=", executionDetail);
       }
+
+      var asyncStreamingResult = Assert.Single(results.Where(result =>
+          result.GetProperty("scenarioName").GetString() == "customer-profile-streaming-save" &&
+          result.GetProperty("baselineName").GetString() == "dvault-adddvault-fallback/async-source-bounded-10"));
+      var asyncExecutionDetail = asyncStreamingResult.GetProperty("executionDetail").GetString();
+      Assert.Contains(
+          "savePath=IDataVaultSaveService.SaveAsync(IAsyncEnumerable<DataVaultSaveChunk>)",
+          asyncExecutionDetail);
+      Assert.Contains("operationKind=ChunkedRequest", asyncExecutionDetail);
+      Assert.Contains("chunkBoundary=async bounded request chunks", asyncExecutionDetail);
+      Assert.Contains("chunkSize=10", asyncExecutionDetail);
+      Assert.Contains("chunkCount=6", asyncExecutionDetail);
+      Assert.Contains("processedChunkCount=6", asyncExecutionDetail);
+      Assert.Contains("retainedStateHighWater=", asyncExecutionDetail);
+      Assert.Contains("sourceShape=IAsyncEnumerable<DataVaultSaveChunk>", asyncExecutionDetail);
 
       var sqlServerStagedBulkResult = Assert.Single(results.Where(result =>
           result.GetProperty("provider").GetString() == SqlServerProviderName &&
@@ -706,6 +728,10 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   private static string NotConfiguredSkipReason => BenchmarkSkipReason.NotConfigured().DisplayText;
+
+  private static int ExpectedCompletedRowCount => ExpectedRows.Count(row => row.ExecutionStatus == "completed");
+
+  private static int ExpectedSkippedRowCount => ExpectedRows.Count(row => row.ExecutionStatus == "skipped");
 
   private static string NotConfiguredSkipReasonFor(string connectionStringEnvironmentVariable) {
     return BenchmarkSkipReason.NotConfigured(connectionStringEnvironmentVariable).DisplayText;

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -82,10 +83,7 @@ internal sealed class CustomerProfileStreamingChunkedBenchmark(int chunkSize) : 
       var executionDetail = BenchmarkExecutionDetails.CreatePlanned(this);
       var elapsed = await BenchmarkClock.MeasureAsync(async () => {
         await using var context = new CustomerProfileStreamingDataVaultContext(options, providerCapabilities);
-        var request = new DataVaultChunkedSaveRequest(
-            scenario.Requests
-                .Chunk(ChunkSize)
-                .Select(chunk => new DataVaultSaveChunk(chunk)));
+        var request = new DataVaultChunkedSaveRequest(CreateChunks(scenario.Requests, ChunkSize));
         var result = await saveService.SaveAsync(context, request, cancellationToken).ConfigureAwait(false);
 
         BenchmarkAssert.Equal(ExpectedRowsWritten, result.RowsWritten, "The chunked streaming-save row count drifted.");
@@ -115,10 +113,68 @@ internal sealed class CustomerProfileStreamingChunkedBenchmark(int chunkSize) : 
       await CleanupDatabaseAsync(database, options, providerCapabilities).ConfigureAwait(false);
     }
   }
+}
 
-  private static int RequireChunkSize(int chunkSize) {
-    ArgumentOutOfRangeException.ThrowIfNegativeOrZero(chunkSize);
-    return chunkSize;
+internal sealed class CustomerProfileStreamingAsyncSourceBenchmark(int chunkSize) : CustomerProfileStreamingSaveBenchmarkBase {
+  private const string AsyncSourceShape = "IAsyncEnumerable<DataVaultSaveChunk>";
+
+  public override string BaselineName =>
+      DataVaultBenchmarkHelpers.GetDataVaultBaselineName(Strategy) +
+      "/async-source-bounded-" +
+      ChunkSize.ToString(CultureInfo.InvariantCulture);
+
+  private int ChunkSize { get; } = RequireChunkSize(chunkSize);
+
+  public override async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
+    using var database = Provider.CreateDatabase();
+    var options = database.CreateOptions<CustomerProfileStreamingDataVaultContext>();
+    var providerCapabilities = Provider.GetProviderCapabilities(LoadTimestampStorage);
+    var telemetryObserver = new CapturingTelemetryObserver();
+    var services = new ServiceCollection();
+    DataVaultBenchmarkHelpers.AddDataVaultServices(services, Strategy);
+    services.AddSingleton<IDataVaultTelemetryObserver>(telemetryObserver);
+
+    using var serviceProvider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = serviceProvider.GetRequiredService<IDataVaultSaveService>();
+    var scenario = CreateScenario(serviceProvider);
+
+    try {
+      await InitializeDatabaseAsync(database, options, providerCapabilities, cancellationToken).ConfigureAwait(false);
+
+      var executionDetail = BenchmarkExecutionDetails.CreatePlanned(this);
+      var elapsed = await BenchmarkClock.MeasureAsync(async () => {
+        await using var context = new CustomerProfileStreamingDataVaultContext(options, providerCapabilities);
+        var chunks = CreateAsyncChunks(scenario.Requests, ChunkSize, cancellationToken);
+        var result = await saveService.SaveAsync(context, chunks, cancellationToken).ConfigureAwait(false);
+
+        BenchmarkAssert.Equal(ExpectedRowsWritten, result.RowsWritten, "The async streaming-save row count drifted.");
+        executionDetail = CreateTelemetryExecutionDetail(
+            this,
+            AssertSingleSaveSummary(telemetryObserver),
+            chunkBoundary: "async bounded request chunks",
+            ChunkSize,
+            savePath: "IDataVaultSaveService.SaveAsync(" + AsyncSourceShape + ")",
+            sourceShape: AsyncSourceShape);
+      }).ConfigureAwait(false);
+
+      await VerifyOutcomeAsync(options, providerCapabilities, scenario, cancellationToken).ConfigureAwait(false);
+
+      return new ScenarioBenchmarkResult(
+          elapsed,
+          CustomerCount.ToString(CultureInfo.InvariantCulture) +
+          " customer hubs and " +
+          ExpectedProfileSatelliteRows.ToString(CultureInfo.InvariantCulture) +
+          " profile satellite rows from " +
+          RequestCount.ToString(CultureInfo.InvariantCulture) +
+          " async-streamed explicit requests across " +
+          ExpectedChunkCount(ChunkSize).ToString(CultureInfo.InvariantCulture) +
+          " chunks of " +
+          ChunkSize.ToString(CultureInfo.InvariantCulture),
+          executionDetail);
+    }
+    finally {
+      await CleanupDatabaseAsync(database, options, providerCapabilities).ConfigureAwait(false);
+    }
   }
 }
 
@@ -257,13 +313,15 @@ internal abstract class CustomerProfileStreamingSaveBenchmarkBase : IScenarioBen
       IScenarioBenchmark benchmark,
       DataVaultSaveTelemetrySummary summary,
       string chunkBoundary,
-      int? chunkSize) {
+      int? chunkSize,
+      string? savePath = null,
+      string? sourceShape = null) {
     ArgumentNullException.ThrowIfNull(benchmark);
     ArgumentNullException.ThrowIfNull(summary);
     ArgumentException.ThrowIfNullOrWhiteSpace(chunkBoundary);
 
     return BenchmarkExecutionDetails.CreatePlanned(benchmark) +
-        "; savePath=IDataVaultSaveService.SaveAsync(" + summary.OperationKind + ")" +
+        "; savePath=" + (savePath ?? "IDataVaultSaveService.SaveAsync(" + summary.OperationKind + ")") +
         "; operationKind=" + summary.OperationKind +
         "; saveStrategyStatus=" + summary.StrategyStatus +
         "; provider=" + (summary.ProviderName ?? "<none>") +
@@ -280,12 +338,39 @@ internal abstract class CustomerProfileStreamingSaveBenchmarkBase : IScenarioBen
         "; chunkCount=" + summary.ChunkCount.ToString(CultureInfo.InvariantCulture) +
         "; processedChunkCount=" + summary.ProcessedChunkCount.ToString(CultureInfo.InvariantCulture) +
         "; retainedStateHighWater=" + summary.RetainedStateHighWaterCount.ToString(CultureInfo.InvariantCulture) +
+        FormatSourceShape(sourceShape) +
         "; chunkedFallbackCauses=" + FormatNames(summary.ChunkedStateFallbackCauseKinds) +
         "; unsupportedShapes=" + FormatNames(summary.UnsupportedShapeKinds);
   }
 
   protected static int ExpectedChunkCount(int chunkSize) {
     return (RequestCount + chunkSize - 1) / chunkSize;
+  }
+
+  protected static int RequireChunkSize(int chunkSize) {
+    ArgumentOutOfRangeException.ThrowIfNegativeOrZero(chunkSize);
+    return chunkSize;
+  }
+
+  protected static IEnumerable<DataVaultSaveChunk> CreateChunks(
+      IReadOnlyList<DataVaultSaveRequest> requests,
+      int chunkSize) {
+    ArgumentNullException.ThrowIfNull(requests);
+
+    return requests
+        .Chunk(chunkSize)
+        .Select(chunk => new DataVaultSaveChunk(chunk));
+  }
+
+  protected static async IAsyncEnumerable<DataVaultSaveChunk> CreateAsyncChunks(
+      IReadOnlyList<DataVaultSaveRequest> requests,
+      int chunkSize,
+      [EnumeratorCancellation] CancellationToken cancellationToken = default) {
+    foreach (var chunk in CreateChunks(requests, chunkSize)) {
+      cancellationToken.ThrowIfCancellationRequested();
+      await Task.Yield();
+      yield return chunk;
+    }
   }
 
   private static DataVaultSatelliteSaveOperation CreateSatelliteSaveOperation(
@@ -369,6 +454,10 @@ internal abstract class CustomerProfileStreamingSaveBenchmarkBase : IScenarioBen
   private static string FormatNames<TValue>(IEnumerable<TValue> values) {
     var names = values.Select(value => value?.ToString()).Where(value => !string.IsNullOrWhiteSpace(value)).ToArray();
     return names.Length == 0 ? "none" : string.Join("|", names);
+  }
+
+  private static string FormatSourceShape(string? sourceShape) {
+    return string.IsNullOrWhiteSpace(sourceShape) ? string.Empty : "; sourceShape=" + sourceShape;
   }
 
   protected sealed class CapturingTelemetryObserver : IDataVaultTelemetryObserver {
