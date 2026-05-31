@@ -87,9 +87,16 @@ public static class DataVaultReadServiceTypedProjectionExtensions {
       DbContext dbContext,
       DataVaultLatestSatelliteReadRequest request,
       CancellationToken cancellationToken) {
-    return readService is IDataVaultSatelliteProjectionReadService projectionReadService
-        ? projectionReadService.ReadLatestSatelliteProjectionRowsAsync(dbContext, request, cancellationToken)
-        : DataVaultSatelliteReadPipeline.ReadLatestProjectionRowsAsync(dbContext, request, cancellationToken);
+    if (readService is IDataVaultSatelliteProjectionReadService projectionReadService) {
+      return projectionReadService.ReadLatestSatelliteProjectionRowsAsync(dbContext, request, cancellationToken);
+    }
+
+    return DataVaultActivityTracing.TraceReadAsync(
+        dbContext,
+        DataVaultReadTelemetryFamily.LatestSatellite,
+        DataVaultActivityTracing.GetLatestSatelliteReadMode(request),
+        request.ParentHashKeys.Count,
+        () => DataVaultSatelliteReadPipeline.ReadLatestProjectionRowsAsync(dbContext, request, cancellationToken));
   }
 
   private static void ValidateReservedProjectionName(

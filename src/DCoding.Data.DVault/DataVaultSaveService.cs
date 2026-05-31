@@ -1000,6 +1000,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       IReadOnlyList<DataVaultSaveRequest> requests,
       DataVaultSaveTelemetryOperationKind operationKind,
       CancellationToken cancellationToken) {
+    using var activity = DataVaultActivityTracing.StartSaveActivity(operationKind);
     var stopwatch = Stopwatch.StartNew();
     var strategySelection = DataVaultSaveTelemetryStrategySelection.NotEvaluated(
         DataVaultTelemetryStrategySelector.GetProviderName(dbContext));
@@ -1012,28 +1013,46 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
           selection => strategySelection = selection,
           cancellationToken).ConfigureAwait(false);
 
+      var summary = DataVaultTelemetrySummaryFactory.CreateSaveSummary(
+          operationKind,
+          DataVaultTelemetryOutcome.Succeeded,
+          requests,
+          result,
+          DataVaultTelemetrySummaryFactory.GetElapsed(stopwatch),
+          strategySelection);
+      DataVaultActivityTracing.CompleteSaveActivity(activity, summary);
       DataVaultTelemetryDispatcher.RecordSave(
           _telemetryObservers,
-          DataVaultTelemetrySummaryFactory.CreateSaveSummary(
-              operationKind,
-              DataVaultTelemetryOutcome.Succeeded,
-              requests,
-              result,
-              DataVaultTelemetrySummaryFactory.GetElapsed(stopwatch),
-              strategySelection));
+          summary);
 
       return result;
     }
-    catch {
+    catch (OperationCanceledException exception) {
+      var summary = DataVaultTelemetrySummaryFactory.CreateSaveSummary(
+          operationKind,
+          DataVaultTelemetryOutcome.Failed,
+          requests,
+          result: null,
+          DataVaultTelemetrySummaryFactory.GetElapsed(stopwatch),
+          strategySelection);
+      DataVaultActivityTracing.CompleteSaveActivity(activity, summary, exception);
       DataVaultTelemetryDispatcher.RecordSave(
           _telemetryObservers,
-          DataVaultTelemetrySummaryFactory.CreateSaveSummary(
-              operationKind,
-              DataVaultTelemetryOutcome.Failed,
-              requests,
-              result: null,
-              DataVaultTelemetrySummaryFactory.GetElapsed(stopwatch),
-              strategySelection));
+          summary);
+      throw;
+    }
+    catch (Exception exception) {
+      var summary = DataVaultTelemetrySummaryFactory.CreateSaveSummary(
+          operationKind,
+          DataVaultTelemetryOutcome.Failed,
+          requests,
+          result: null,
+          DataVaultTelemetrySummaryFactory.GetElapsed(stopwatch),
+          strategySelection);
+      DataVaultActivityTracing.CompleteSaveActivity(activity, summary, exception);
+      DataVaultTelemetryDispatcher.RecordSave(
+          _telemetryObservers,
+          summary);
       throw;
     }
   }
@@ -1042,6 +1061,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       DbContext dbContext,
       DataVaultChunkedSaveRequest request,
       CancellationToken cancellationToken) {
+    using var activity = DataVaultActivityTracing.StartSaveActivity(DataVaultSaveTelemetryOperationKind.ChunkedRequest);
     var stopwatch = Stopwatch.StartNew();
     var uniqueSavedRecords = new List<DataVaultSavedRecord>();
     var satelliteSavedRecords = new List<DataVaultSavedRecord>();
@@ -1050,6 +1070,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     var strategySelection = new ChunkedSaveStrategySelection(DataVaultTelemetryStrategySelector.GetProviderName(dbContext));
     var continuityState = new ChunkedSaveContinuityState(_chunkedRetainedSatelliteSeriesLimit);
     DataVaultSaveResult? result = null;
+    Exception? failure = null;
 
     try {
       foreach (var chunk in request.Chunks) {
@@ -1087,24 +1108,30 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       result = new DataVaultSaveResult(rowsWritten, uniqueSavedRecords.Concat(satelliteSavedRecords));
       return result;
     }
+    catch (Exception exception) {
+      failure = exception;
+      throw;
+    }
     finally {
       continuityState.Release();
+      var summary = DataVaultTelemetrySummaryFactory.CreateSaveSummary(
+          DataVaultSaveTelemetryOperationKind.ChunkedRequest,
+          result is null ? DataVaultTelemetryOutcome.Failed : DataVaultTelemetryOutcome.Succeeded,
+          counts.ToTelemetryCounts(),
+          result,
+          DataVaultTelemetrySummaryFactory.GetElapsed(stopwatch),
+          strategySelection.ToTelemetrySelection(),
+          new DataVaultChunkedSaveTelemetryState(
+              counts.ChunkCount,
+              counts.ProcessedChunkCount,
+              continuityState.CurrentCount,
+              continuityState.HighWaterCount,
+              continuityState.FallbackCauseKinds,
+              continuityState.UnsupportedShapeKinds));
+      DataVaultActivityTracing.CompleteSaveActivity(activity, summary, failure);
       DataVaultTelemetryDispatcher.RecordSave(
           _telemetryObservers,
-          DataVaultTelemetrySummaryFactory.CreateSaveSummary(
-              DataVaultSaveTelemetryOperationKind.ChunkedRequest,
-              result is null ? DataVaultTelemetryOutcome.Failed : DataVaultTelemetryOutcome.Succeeded,
-              counts.ToTelemetryCounts(),
-              result,
-              DataVaultTelemetrySummaryFactory.GetElapsed(stopwatch),
-              strategySelection.ToTelemetrySelection(),
-              new DataVaultChunkedSaveTelemetryState(
-                  counts.ChunkCount,
-                  counts.ProcessedChunkCount,
-                  continuityState.CurrentCount,
-                  continuityState.HighWaterCount,
-                  continuityState.FallbackCauseKinds,
-                  continuityState.UnsupportedShapeKinds)));
+          summary);
     }
   }
 

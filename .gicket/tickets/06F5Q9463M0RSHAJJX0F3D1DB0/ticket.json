@@ -3,22 +3,21 @@
   "ticket-id": "06F5Q9463M0RSHAJJX0F3D1DB0",
   "ticket-type": "story",
   "title": "Story: Add Activity tracing for save and read operations",
-  "revision": "06F72ZPVTQPHG8YQXHVZPPTXB8",
-  "status": "todo",
+  "revision": "06F7V8Q9RX2FB4HADJ5Z2A3XD0",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
     "area/diagnostics",
     "area/ef-core",
     "area/observability",
     "area/persistence",
-    "area/read-models"
+    "area/read-models",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WR6NCE3Y4EMP5K71KF8W",
   "releaseId": "06F5Q8WD8Q7AE054Z6G961E6D4",
   "created-at": "2026-05-24T20:19:29.5827192Z",
-  "updated-at": "2026-05-29T02:09:59.7651324Z"
+  "updated-at": "2026-05-31T10:44:49.2238643Z"
 }

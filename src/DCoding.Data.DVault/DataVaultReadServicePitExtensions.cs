@@ -27,10 +27,17 @@ public static class DataVaultReadServicePitExtensions {
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(projector);
 
-    var rows = await readService.ReadPitRowsAsync(
-        dbContext,
-        request,
-        cancellationToken).ConfigureAwait(false);
+    var rows = readService is DefaultDataVaultReadService
+        ? await readService.ReadPitRowsAsync(
+            dbContext,
+            request,
+            cancellationToken).ConfigureAwait(false)
+        : await DataVaultActivityTracing.TraceReadAsync(
+            dbContext,
+            DataVaultReadTelemetryFamily.Pit,
+            DataVaultActivityTracing.ReadModeAsOf,
+            request.ParentHashKeys.Count,
+            () => readService.ReadPitRowsAsync(dbContext, request, cancellationToken)).ConfigureAwait(false);
     var projections = new TProjection[rows.Count];
 
     for (var index = 0; index < rows.Count; index++) {

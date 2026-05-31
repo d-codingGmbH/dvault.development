@@ -63,6 +63,7 @@ internal sealed class DefaultDataVaultReadService : IDataVaultReadService, IData
       DbContext dbContext,
       DataVaultLatestSatelliteReadRequest request,
       CancellationToken cancellationToken) {
+    using var activity = DataVaultActivityTracing.StartReadActivity(DataVaultReadTelemetryFamily.LatestSatellite);
     var stopwatch = Stopwatch.StartNew();
     var strategySelection = DataVaultReadTelemetryStrategySelection.NotEvaluated(
         DataVaultTelemetryStrategySelector.GetProviderName(dbContext));
@@ -78,24 +79,33 @@ internal sealed class DefaultDataVaultReadService : IDataVaultReadService, IData
               request,
               cancellationToken).ConfigureAwait(false);
 
-      RecordReadTelemetry(
+      var summary = RecordReadTelemetry(
           DataVaultReadTelemetryFamily.LatestSatellite,
           DataVaultTelemetryOutcome.Succeeded,
           request.ParentHashKeys.Count,
           rows.Count,
           stopwatch,
           strategySelection);
+      DataVaultActivityTracing.CompleteReadActivity(
+          activity,
+          summary,
+          DataVaultActivityTracing.GetLatestSatelliteReadMode(request));
 
       return rows;
     }
-    catch {
-      RecordReadTelemetry(
+    catch (Exception exception) {
+      var summary = RecordReadTelemetry(
           DataVaultReadTelemetryFamily.LatestSatellite,
           DataVaultTelemetryOutcome.Failed,
           request.ParentHashKeys.Count,
           returnedRowCount: 0,
           stopwatch,
           strategySelection);
+      DataVaultActivityTracing.CompleteReadActivity(
+          activity,
+          summary,
+          DataVaultActivityTracing.GetLatestSatelliteReadMode(request),
+          exception);
       throw;
     }
   }
@@ -114,6 +124,7 @@ internal sealed class DefaultDataVaultReadService : IDataVaultReadService, IData
       DbContext dbContext,
       DataVaultPitAsOfReadRequest request,
       CancellationToken cancellationToken) {
+    using var activity = DataVaultActivityTracing.StartReadActivity(DataVaultReadTelemetryFamily.Pit);
     var stopwatch = Stopwatch.StartNew();
     var strategySelection = DataVaultReadTelemetryStrategySelection.NotEvaluated(
         DataVaultTelemetryStrategySelector.GetProviderName(dbContext));
@@ -129,24 +140,33 @@ internal sealed class DefaultDataVaultReadService : IDataVaultReadService, IData
               request,
               cancellationToken).ConfigureAwait(false);
 
-      RecordReadTelemetry(
+      var summary = RecordReadTelemetry(
           DataVaultReadTelemetryFamily.Pit,
           DataVaultTelemetryOutcome.Succeeded,
           request.ParentHashKeys.Count,
           rows.Count,
           stopwatch,
           strategySelection);
+      DataVaultActivityTracing.CompleteReadActivity(
+          activity,
+          summary,
+          DataVaultActivityTracing.ReadModeAsOf);
 
       return rows;
     }
-    catch {
-      RecordReadTelemetry(
+    catch (Exception exception) {
+      var summary = RecordReadTelemetry(
           DataVaultReadTelemetryFamily.Pit,
           DataVaultTelemetryOutcome.Failed,
           request.ParentHashKeys.Count,
           returnedRowCount: 0,
           stopwatch,
           strategySelection);
+      DataVaultActivityTracing.CompleteReadActivity(
+          activity,
+          summary,
+          DataVaultActivityTracing.ReadModeAsOf,
+          exception);
       throw;
     }
   }
@@ -165,6 +185,7 @@ internal sealed class DefaultDataVaultReadService : IDataVaultReadService, IData
       DbContext dbContext,
       DataVaultBridgeReadRequest request,
       CancellationToken cancellationToken) {
+    using var activity = DataVaultActivityTracing.StartReadActivity(DataVaultReadTelemetryFamily.Bridge);
     var stopwatch = Stopwatch.StartNew();
     var strategySelection = DataVaultReadTelemetryStrategySelection.NotEvaluated(
         DataVaultTelemetryStrategySelector.GetProviderName(dbContext));
@@ -180,24 +201,33 @@ internal sealed class DefaultDataVaultReadService : IDataVaultReadService, IData
               request,
               cancellationToken).ConfigureAwait(false);
 
-      RecordReadTelemetry(
+      var summary = RecordReadTelemetry(
           DataVaultReadTelemetryFamily.Bridge,
           DataVaultTelemetryOutcome.Succeeded,
           request.EndpointHashKeys.Count,
           rows.Count,
           stopwatch,
           strategySelection);
+      DataVaultActivityTracing.CompleteReadActivity(
+          activity,
+          summary,
+          DataVaultActivityTracing.ReadModeTraversal);
 
       return rows;
     }
-    catch {
-      RecordReadTelemetry(
+    catch (Exception exception) {
+      var summary = RecordReadTelemetry(
           DataVaultReadTelemetryFamily.Bridge,
           DataVaultTelemetryOutcome.Failed,
           request.EndpointHashKeys.Count,
           returnedRowCount: 0,
           stopwatch,
           strategySelection);
+      DataVaultActivityTracing.CompleteReadActivity(
+          activity,
+          summary,
+          DataVaultActivityTracing.ReadModeTraversal,
+          exception);
       throw;
     }
   }
@@ -216,6 +246,7 @@ internal sealed class DefaultDataVaultReadService : IDataVaultReadService, IData
       DbContext dbContext,
       DataVaultBridgeReadRequest request,
       CancellationToken cancellationToken) {
+    using var activity = DataVaultActivityTracing.StartReadActivity(DataVaultReadTelemetryFamily.Bridge);
     var stopwatch = Stopwatch.StartNew();
     var strategySelection = DataVaultReadTelemetryStrategySelection.NotEvaluated(
         DataVaultTelemetryStrategySelector.GetProviderName(dbContext));
@@ -231,24 +262,33 @@ internal sealed class DefaultDataVaultReadService : IDataVaultReadService, IData
               request,
               cancellationToken).ConfigureAwait(false);
 
-      RecordReadTelemetry(
+      var summary = RecordReadTelemetry(
           DataVaultReadTelemetryFamily.Bridge,
           DataVaultTelemetryOutcome.Succeeded,
           request.EndpointHashKeys.Count,
           rows.Count,
           stopwatch,
           strategySelection);
+      DataVaultActivityTracing.CompleteReadActivity(
+          activity,
+          summary,
+          DataVaultActivityTracing.ReadModeTraversal);
 
       return rows;
     }
-    catch {
-      RecordReadTelemetry(
+    catch (Exception exception) {
+      var summary = RecordReadTelemetry(
           DataVaultReadTelemetryFamily.Bridge,
           DataVaultTelemetryOutcome.Failed,
           request.EndpointHashKeys.Count,
           returnedRowCount: 0,
           stopwatch,
           strategySelection);
+      DataVaultActivityTracing.CompleteReadActivity(
+          activity,
+          summary,
+          DataVaultActivityTracing.ReadModeTraversal,
+          exception);
       throw;
     }
   }
@@ -267,6 +307,7 @@ internal sealed class DefaultDataVaultReadService : IDataVaultReadService, IData
       DbContext dbContext,
       DataVaultLatestSatelliteReadRequest request,
       CancellationToken cancellationToken) {
+    using var activity = DataVaultActivityTracing.StartReadActivity(DataVaultReadTelemetryFamily.LatestSatellite);
     var stopwatch = Stopwatch.StartNew();
     var strategySelection = DataVaultReadTelemetryStrategySelection.NotEvaluated(
         DataVaultTelemetryStrategySelector.GetProviderName(dbContext));
@@ -282,44 +323,56 @@ internal sealed class DefaultDataVaultReadService : IDataVaultReadService, IData
               request,
               cancellationToken).ConfigureAwait(false);
 
-      RecordReadTelemetry(
+      var summary = RecordReadTelemetry(
           DataVaultReadTelemetryFamily.LatestSatellite,
           DataVaultTelemetryOutcome.Succeeded,
           request.ParentHashKeys.Count,
           rows.Count,
           stopwatch,
           strategySelection);
+      DataVaultActivityTracing.CompleteReadActivity(
+          activity,
+          summary,
+          DataVaultActivityTracing.GetLatestSatelliteReadMode(request));
 
       return rows;
     }
-    catch {
-      RecordReadTelemetry(
+    catch (Exception exception) {
+      var summary = RecordReadTelemetry(
           DataVaultReadTelemetryFamily.LatestSatellite,
           DataVaultTelemetryOutcome.Failed,
           request.ParentHashKeys.Count,
           returnedRowCount: 0,
           stopwatch,
           strategySelection);
+      DataVaultActivityTracing.CompleteReadActivity(
+          activity,
+          summary,
+          DataVaultActivityTracing.GetLatestSatelliteReadMode(request),
+          exception);
       throw;
     }
   }
 
-  private void RecordReadTelemetry(
+  private DataVaultReadTelemetrySummary RecordReadTelemetry(
       DataVaultReadTelemetryFamily family,
       DataVaultTelemetryOutcome outcome,
       int requestedKeyCount,
       int returnedRowCount,
       Stopwatch stopwatch,
       DataVaultReadTelemetryStrategySelection strategySelection) {
+    var summary = DataVaultTelemetrySummaryFactory.CreateReadSummary(
+        family,
+        outcome,
+        requestedKeyCount,
+        returnedRowCount,
+        DataVaultTelemetrySummaryFactory.GetElapsed(stopwatch),
+        strategySelection);
     DataVaultTelemetryDispatcher.RecordRead(
         _telemetryObservers,
-        DataVaultTelemetrySummaryFactory.CreateReadSummary(
-            family,
-            outcome,
-            requestedKeyCount,
-            returnedRowCount,
-            DataVaultTelemetrySummaryFactory.GetElapsed(stopwatch),
-            strategySelection));
+        summary);
+
+    return summary;
   }
 
   private static IReadOnlyList<IDataVaultProviderReadStrategy> OrderByPriority(

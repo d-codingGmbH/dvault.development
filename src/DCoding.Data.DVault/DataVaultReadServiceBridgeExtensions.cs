@@ -30,10 +30,12 @@ public static class DataVaultReadServiceBridgeExtensions {
           cancellationToken);
     }
 
-    return DataVaultBridgeReadPipeline.ReadBridgeReadRecordsAsync(
+    return DataVaultActivityTracing.TraceReadAsync(
         dbContext,
-        request,
-        cancellationToken);
+        DataVaultReadTelemetryFamily.Bridge,
+        DataVaultActivityTracing.ReadModeTraversal,
+        request.EndpointHashKeys.Count,
+        () => DataVaultBridgeReadPipeline.ReadBridgeReadRecordsAsync(dbContext, request, cancellationToken));
   }
 
   /// <summary>
@@ -62,10 +64,12 @@ public static class DataVaultReadServiceBridgeExtensions {
             dbContext,
             request,
             cancellationToken).ConfigureAwait(false)
-        : await DataVaultBridgeReadPipeline.ReadBridgeProjectionRowsAsync(
+        : await DataVaultActivityTracing.TraceReadAsync(
             dbContext,
-            request,
-            cancellationToken).ConfigureAwait(false);
+            DataVaultReadTelemetryFamily.Bridge,
+            DataVaultActivityTracing.ReadModeTraversal,
+            request.EndpointHashKeys.Count,
+            () => DataVaultBridgeReadPipeline.ReadBridgeProjectionRowsAsync(dbContext, request, cancellationToken)).ConfigureAwait(false);
     var projections = new TProjection[rows.Count];
 
     for (var index = 0; index < rows.Count; index++) {
