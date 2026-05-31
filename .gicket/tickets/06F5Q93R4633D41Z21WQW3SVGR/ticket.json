@@ -3,22 +3,21 @@
   "ticket-id": "06F5Q93R4633D41Z21WQW3SVGR",
   "ticket-type": "epic",
   "title": "Epic: Tracing and performance guidance",
-  "revision": "06F7300X7E1MMH5RX0R0CEBER8",
-  "status": "todo",
+  "revision": "06F7XFK8E39Q7N7T6VB7RKJJX4",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/epic",
     "area/diagnostics",
     "area/documentation",
     "area/ef-core",
     "area/observability",
-    "area/performance"
+    "area/performance",
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WR6NCE3Y4EMP5K71KF8W",
   "releaseId": "06F5Q8WD8Q7AE054Z6G961E6D4",
   "created-at": "2026-05-24T20:19:26.0056484Z",
-  "updated-at": "2026-05-29T02:11:22.0438788Z"
+  "updated-at": "2026-05-31T15:54:28.3360000Z"
 }

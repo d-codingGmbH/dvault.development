@@ -3,7 +3,7 @@
   "ticket-id": "06F5Q93H60W6X8FJ88PWTR6NG4",
   "ticket-type": "task",
   "title": "Task: Update v0.22.0 typed read and hash governance documentation",
-  "revision": "06F6X9NKZS0HF5R1S9N5P8NG5M",
+  "revision": "06F7WQQM4700H08T2KM0F6CFTC",
   "status": "done",
   "labels": [
     "area/analyzers",
@@ -19,5 +19,5 @@
   "milestoneId": "06F5Q8WQ2RZXNARCD7T4M57H6M",
   "releaseId": "06F5Q8WCGVYM0PMGBHXGM01RZC",
   "created-at": "2026-05-24T20:19:24.2304415Z",
-  "updated-at": "2026-05-28T12:54:39.3584668Z"
+  "updated-at": "2026-05-31T14:10:12.6413713Z"
 }
