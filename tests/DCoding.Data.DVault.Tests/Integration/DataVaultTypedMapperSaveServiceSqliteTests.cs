@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -164,6 +165,97 @@ public sealed class DataVaultTypedMapperSaveServiceSqliteTests {
     Assert.Equal("billing-us@example.test", contactRow.PayloadValues["Email Address"]);
   }
 
+  [Fact]
+  public async Task TypedAsyncSaveHelpersPersistSupportedMapperShapesThroughSqlite() {
+    var loadTimestamp = new DateTimeOffset(2026, 5, 30, 12, 0, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var services = new ServiceCollection();
+    services.AddDVault(options => options.UseMetadataModel(CreateMetadataModel()));
+    services.AddDVaultSqlite();
+    services.AddDbContext<TypedMapperSaveServiceContext>(
+        options => options
+            .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+            .UseDataVaultMetadata());
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var readService = provider.GetRequiredService<IDataVaultReadService>();
+    var customerMapper = GeneratedCustomerSourceDataVaultHubMapping.CreateMapper();
+    var orderMapper = GeneratedOrderSourceDataVaultHubMapping.CreateMapper();
+    var linkMapper = GeneratedCustomerOrderSourceDataVaultLinkMapping.CreateMapper();
+    var profileMapper = GeneratedCustomerProfileSourceDataVaultHubSatelliteMapping.CreateMapper();
+
+    using var scope = provider.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<TypedMapperSaveServiceContext>();
+    await context.Database.EnsureCreatedAsync();
+
+    var customerResult = await saveService.SaveHubsAsync(
+        context,
+        CreateAsyncSources([
+            new GeneratedCustomerSource("C-300", "DE"),
+            new GeneratedCustomerSource("C-400", "FR"),
+        ]),
+        customerMapper,
+        loadTimestamp,
+        "typed-async-import",
+        1);
+    var orderResult = await saveService.SaveHubsAsync(
+        context,
+        CreateAsyncSources([
+            new GeneratedOrderSource("O-300"),
+            new GeneratedOrderSource("O-400"),
+        ]),
+        orderMapper,
+        loadTimestamp,
+        "typed-async-import",
+        2);
+    var customerHashKeys = customerResult.SavedRecords.Select(record => record.HashKey).ToArray();
+    var orderHashKeys = orderResult.SavedRecords.Select(record => record.HashKey).ToArray();
+
+    var linkResult = await saveService.SaveLinksAsync(
+        context,
+        CreateAsyncSources([
+            new GeneratedCustomerOrderSource(customerHashKeys[0], orderHashKeys[0]),
+            new GeneratedCustomerOrderSource(customerHashKeys[1], orderHashKeys[1]),
+        ]),
+        linkMapper,
+        loadTimestamp.AddMinutes(1),
+        "typed-async-import",
+        2);
+    var profileResult = await saveService.SaveOrdinaryHubSatellitesAsync(
+        context,
+        CreateAsyncSources([
+            new GeneratedCustomerProfileSource(
+                customerHashKeys[0],
+                "Carol Clark",
+                "active",
+                "async-profile-hash-1"),
+            new GeneratedCustomerProfileSource(
+                customerHashKeys[1],
+                "Dana Diaz",
+                "prospect",
+                "async-profile-hash-2"),
+        ]),
+        profileMapper,
+        loadTimestamp.AddMinutes(2),
+        "typed-async-import",
+        1);
+    var linkRows = await context.Set<Dictionary<string, object>>("LinkCustomerOrder").AsNoTracking().ToListAsync();
+    var profileRows = await readService.ReadLatestSatelliteRowsAsync(
+        context,
+        new DataVaultRegistryLatestSatelliteReadRequest(
+            DataVaultMetadataReference.Hub("Customer"),
+            "Profile",
+            customerHashKeys));
+
+    Assert.Equal(2, customerResult.RowsWritten);
+    Assert.Equal(2, orderResult.RowsWritten);
+    Assert.Equal(2, linkResult.RowsWritten);
+    Assert.Equal(2, profileResult.RowsWritten);
+    Assert.Equal(2, linkRows.Count);
+    Assert.Equal(["Carol Clark", "Dana Diaz"], profileRows.Select(row => row.PayloadValues["customer_name"]).ToArray());
+  }
+
   private static DataVaultMetadataModel CreateMetadataModel() {
     return new DataVaultMetadataModel(
         [
@@ -186,6 +278,16 @@ public sealed class DataVaultTypedMapperSaveServiceSqliteTests {
                 ["Email Address"],
                 ["Contact Type", "Region Code"]),
         ]);
+  }
+
+  private static async IAsyncEnumerable<T> CreateAsyncSources<T>(
+      IReadOnlyList<T> sources,
+      [EnumeratorCancellation] CancellationToken cancellationToken = default) {
+    foreach (var source in sources) {
+      cancellationToken.ThrowIfCancellationRequested();
+      await Task.Yield();
+      yield return source;
+    }
   }
 
   private sealed class CustomerHubMapper : IDataVaultHubMapper<CustomerSource> {

@@ -3,22 +3,21 @@
   "ticket-id": "06F7Y0DZ3AJSG99YN00CAVX3JR",
   "ticket-type": "story",
   "title": "Story: Add typed async chunk mapper helpers for explicit save",
-  "revision": "06F7Y0X7BZ1GEWJGFKS2WFMJ4C",
-  "status": "todo",
+  "revision": "06F80BTM5M5JHRJR1XP3TMNRSG",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
     "area/api",
     "area/developer-experience",
     "area/ef-core",
     "area/persistence",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F7XZVXNW6DK42TKT7CCHC3K8",
   "releaseId": "06F7XZVSFEX210HTCBC7DC752G",
   "created-at": "2026-05-31T17:08:01.6370736Z",
-  "updated-at": "2026-05-31T17:10:06.4316142Z"
+  "updated-at": "2026-05-31T22:37:25.9336232Z"
 }

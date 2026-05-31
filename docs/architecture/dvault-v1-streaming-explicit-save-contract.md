@@ -45,6 +45,14 @@ The service processes:
 
 DVault must not reorder chunks or requests by load timestamp, record source, table name, provider strategy, or hash key. Timestamp-aware satellite latest-state comparisons can still use load timestamps to decide whether a hash-diff state should replace the retained latest state for a parent series. The async source overload must not pre-buffer the full source before writing; it may retain only the bounded continuity state and diagnostics described below.
 
+## Convenience Async Source Helpers
+
+DVault also exposes helper extension methods for callers whose source rows are already represented as `IAsyncEnumerable<TSource>` rather than `IAsyncEnumerable<DataVaultSaveChunk>`. These helpers are convenience layers over the async chunked save boundary above. They map each source item in sequence, buffer at most the caller-supplied request-count `chunkSize`, yield `DataVaultSaveChunk` values to `IDataVaultSaveService.SaveAsync(DbContext, IAsyncEnumerable<DataVaultSaveChunk>, ...)`, and do not continue in the background after the returned task completes, faults, or is canceled.
+
+The explicit request helper accepts a caller-owned `Func<TSource, DataVaultSaveRequest>` and keeps load timestamps, record sources, metadata, business keys, hash keys, hash diffs, and operation shape fully owned by that mapping. The typed helpers accept the existing `IDataVaultHubMapper<TSource>`, `IDataVaultLinkMapper<TSource>`, and ordinary hub-parent `IDataVaultSatelliteMapper<TSource>` contracts. They reuse the same per-item registry-backed request assembly as the single-item and `IEnumerable<TSource>` typed helpers, then resolve those requests against the authoritative `DbContext` registry before yielding bounded explicit chunks.
+
+All helper methods require an explicit positive `chunkSize`; they do not auto-tune or hide chunk boundaries. Mapper and request-factory failures stop enumeration at the observed item and include the source type plus zero-based batch index in the helper exception context. Cancellation uses the same cancellation token for async source enumeration, mapping, and chunked save execution.
+
 ## Metadata And Resolver Rules
 
 Load timestamp and record source remain explicit caller-visible request metadata. Chunked and async streaming execution use the same `DataVaultSaveRequest.LoadTimestamp`, `DataVaultSaveRequest.RecordSource`, `IDataVaultLoadTimestampResolver`, and `IDataVaultRecordSourceResolver` hooks already used by the existing save pipeline.

@@ -206,6 +206,151 @@ public static class DataVaultSaveServiceTypedExtensions {
     return saveService.SaveAsync(dbContext, request, cancellationToken);
   }
 
+  /// <summary>
+  /// Maps async source values to caller-ordered registry-backed hub save requests and persists them as bounded chunks.
+  /// </summary>
+  /// <typeparam name="TSource">The source DTO or domain type mapped by <paramref name="mapper" />.</typeparam>
+  /// <param name="saveService">The explicit save service that performs the validated write pipeline.</param>
+  /// <param name="dbContext">The context whose options selected the authoritative Data Vault metadata source.</param>
+  /// <param name="sources">The async source values to map in caller-supplied order.</param>
+  /// <param name="mapper">The typed hub row mapper.</param>
+  /// <param name="loadTimestamp">The caller-visible load timestamp to persist as UTC metadata for every mapped request.</param>
+  /// <param name="recordSource">The caller-visible record source to persist as lineage metadata for every mapped request.</param>
+  /// <param name="chunkSize">The maximum number of mapped save requests to include in each generated chunk.</param>
+  /// <param name="cancellationToken">A token used to observe cancellation while enumerating, mapping, and saving chunks.</param>
+  /// <returns>The persisted row summary, including saved hash-key values in source and chunk order.</returns>
+  /// <exception cref="ArgumentOutOfRangeException">
+  /// Thrown when <paramref name="chunkSize" /> is less than one.
+  /// </exception>
+  /// <exception cref="InvalidOperationException">
+  /// Thrown when mapper invocation or helper request assembly fails. The exception message identifies the logical hub target,
+  /// source CLR type, and zero-based batch index while preserving the underlying validation reason in the inner exception.
+  /// </exception>
+  public static Task<DataVaultSaveResult> SaveHubsAsync<TSource>(
+      this IDataVaultSaveService saveService,
+      DbContext dbContext,
+      IAsyncEnumerable<TSource> sources,
+      IDataVaultHubMapper<TSource> mapper,
+      DateTimeOffset loadTimestamp,
+      string recordSource,
+      int chunkSize,
+      CancellationToken cancellationToken = default)
+      where TSource : notnull {
+    ArgumentNullException.ThrowIfNull(saveService);
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(sources);
+    ArgumentNullException.ThrowIfNull(mapper);
+    DataVaultSaveServiceAsyncExtensions.RequireValidChunkSize(chunkSize);
+
+    var registry = DataVaultRegistryMetadataResolver.ResolveRequiredRegistry(dbContext);
+    return DataVaultSaveServiceAsyncExtensions.SaveMappedAsync(
+        saveService,
+        dbContext,
+        sources,
+        (source, batchIndex) => DataVaultSaveServiceRegistryExtensions.ResolveRequest(
+            registry,
+            CreateHubRegistrySaveRequest(source, mapper, loadTimestamp, recordSource, batchIndex)),
+        chunkSize,
+        cancellationToken);
+  }
+
+  /// <summary>
+  /// Maps async source values to caller-ordered registry-backed link save requests and persists them as bounded chunks.
+  /// </summary>
+  /// <typeparam name="TSource">The source DTO or domain type mapped by <paramref name="mapper" />.</typeparam>
+  /// <param name="saveService">The explicit save service that performs the validated write pipeline.</param>
+  /// <param name="dbContext">The context whose options selected the authoritative Data Vault metadata source.</param>
+  /// <param name="sources">The async source values to map in caller-supplied order.</param>
+  /// <param name="mapper">The typed link row mapper.</param>
+  /// <param name="loadTimestamp">The caller-visible load timestamp to persist as UTC metadata for every mapped request.</param>
+  /// <param name="recordSource">The caller-visible record source to persist as lineage metadata for every mapped request.</param>
+  /// <param name="chunkSize">The maximum number of mapped save requests to include in each generated chunk.</param>
+  /// <param name="cancellationToken">A token used to observe cancellation while enumerating, mapping, and saving chunks.</param>
+  /// <returns>The persisted row summary, including saved hash-key values in source and chunk order.</returns>
+  /// <exception cref="ArgumentOutOfRangeException">
+  /// Thrown when <paramref name="chunkSize" /> is less than one.
+  /// </exception>
+  /// <exception cref="InvalidOperationException">
+  /// Thrown when mapper invocation or helper request assembly fails. The exception message identifies the logical link target,
+  /// source CLR type, and zero-based batch index while preserving the underlying validation reason in the inner exception.
+  /// </exception>
+  public static Task<DataVaultSaveResult> SaveLinksAsync<TSource>(
+      this IDataVaultSaveService saveService,
+      DbContext dbContext,
+      IAsyncEnumerable<TSource> sources,
+      IDataVaultLinkMapper<TSource> mapper,
+      DateTimeOffset loadTimestamp,
+      string recordSource,
+      int chunkSize,
+      CancellationToken cancellationToken = default)
+      where TSource : notnull {
+    ArgumentNullException.ThrowIfNull(saveService);
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(sources);
+    ArgumentNullException.ThrowIfNull(mapper);
+    DataVaultSaveServiceAsyncExtensions.RequireValidChunkSize(chunkSize);
+
+    var registry = DataVaultRegistryMetadataResolver.ResolveRequiredRegistry(dbContext);
+    return DataVaultSaveServiceAsyncExtensions.SaveMappedAsync(
+        saveService,
+        dbContext,
+        sources,
+        (source, batchIndex) => DataVaultSaveServiceRegistryExtensions.ResolveRequest(
+            registry,
+            CreateLinkRegistrySaveRequest(source, mapper, loadTimestamp, recordSource, batchIndex)),
+        chunkSize,
+        cancellationToken);
+  }
+
+  /// <summary>
+  /// Maps async source values to caller-ordered registry-backed ordinary hub-parent satellite save requests and persists
+  /// them as bounded chunks.
+  /// </summary>
+  /// <typeparam name="TSource">The source DTO or domain type mapped by <paramref name="mapper" />.</typeparam>
+  /// <param name="saveService">The explicit save service that performs the validated write pipeline.</param>
+  /// <param name="dbContext">The context whose options selected the authoritative Data Vault metadata source.</param>
+  /// <param name="sources">The async source values to map in caller-supplied order.</param>
+  /// <param name="mapper">The typed satellite row mapper. Each mapped operation must target an ordinary hub-parent satellite.</param>
+  /// <param name="loadTimestamp">The caller-visible load timestamp to persist as UTC metadata for every mapped request.</param>
+  /// <param name="recordSource">The caller-visible record source to persist as lineage metadata for every mapped request.</param>
+  /// <param name="chunkSize">The maximum number of mapped save requests to include in each generated chunk.</param>
+  /// <param name="cancellationToken">A token used to observe cancellation while enumerating, mapping, and saving chunks.</param>
+  /// <returns>The persisted row summary, including saved hash-key values in source and chunk order.</returns>
+  /// <exception cref="ArgumentOutOfRangeException">
+  /// Thrown when <paramref name="chunkSize" /> is less than one.
+  /// </exception>
+  /// <exception cref="InvalidOperationException">
+  /// Thrown when mapper invocation or helper request assembly fails. The exception message identifies the logical satellite
+  /// target, source CLR type, and zero-based batch index while preserving the underlying validation reason in the inner exception.
+  /// </exception>
+  public static Task<DataVaultSaveResult> SaveOrdinaryHubSatellitesAsync<TSource>(
+      this IDataVaultSaveService saveService,
+      DbContext dbContext,
+      IAsyncEnumerable<TSource> sources,
+      IDataVaultSatelliteMapper<TSource> mapper,
+      DateTimeOffset loadTimestamp,
+      string recordSource,
+      int chunkSize,
+      CancellationToken cancellationToken = default)
+      where TSource : notnull {
+    ArgumentNullException.ThrowIfNull(saveService);
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(sources);
+    ArgumentNullException.ThrowIfNull(mapper);
+    DataVaultSaveServiceAsyncExtensions.RequireValidChunkSize(chunkSize);
+
+    var registry = DataVaultRegistryMetadataResolver.ResolveRequiredRegistry(dbContext);
+    return DataVaultSaveServiceAsyncExtensions.SaveMappedAsync(
+        saveService,
+        dbContext,
+        sources,
+        (source, batchIndex) => DataVaultSaveServiceRegistryExtensions.ResolveRequest(
+            registry,
+            CreateOrdinaryHubSatelliteRegistrySaveRequest(source, mapper, loadTimestamp, recordSource, batchIndex)),
+        chunkSize,
+        cancellationToken);
+  }
+
   internal static DataVaultRegistrySaveRequest CreateHubRegistrySaveRequest<TSource>(
       TSource source,
       IDataVaultHubMapper<TSource> mapper,
