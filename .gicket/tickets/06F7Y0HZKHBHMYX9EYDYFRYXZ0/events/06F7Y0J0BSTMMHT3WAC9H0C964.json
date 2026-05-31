@@ -1,0 +1,14 @@
+{
+  "event-id": "06F7Y0J0BSTMMHT3WAC9H0C964",
+  "occurred-at": "2026-05-31T17:08:34.5261981Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Update v0.25.0 read-plan and typed-helper documentation",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

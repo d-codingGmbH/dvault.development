@@ -1,0 +1,14 @@
+{
+  "event-id": "06F7Y0NERT7A3FSPA08JGN3NE8",
+  "occurred-at": "2026-05-31T17:09:02.7909436Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Update v0.26.0 provider performance and schema guardrail documentation",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

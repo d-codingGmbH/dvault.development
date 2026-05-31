@@ -1,0 +1,14 @@
+{
+  "event-id": "06F7Y0FRX0R33FXAE7B9YM6FDM",
+  "occurred-at": "2026-05-31T17:08:16.2324345Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Epic: Read plan explainability and typed read helpers",
+    "status": "todo",
+    "ticket-type": "epic"
+  }
+}

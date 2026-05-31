@@ -1,0 +1,14 @@
+{
+  "event-id": "06F7Y0GGRKZWYJRB19RXMHSW78",
+  "occurred-at": "2026-05-31T17:08:22.3401526Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add latest, PIT, and bridge read-plan explanations to diagnostics and support bundles",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

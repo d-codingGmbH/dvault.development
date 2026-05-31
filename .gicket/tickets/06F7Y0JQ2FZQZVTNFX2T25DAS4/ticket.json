@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F7Y0JQ2FZQZVTNFX2T25DAS4",
+  "ticket-type": "story",
+  "title": "Story: Define provider performance tuning diagnostics contract",
+  "revision": "06F7Y0Z97TH2JE609B3KRQ1RJ8",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/architecture",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/performance",
+    "area/provider-support"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F7XZW4N5Q9NS9J5VC381JJT4",
+  "releaseId": "06F7XZVW426YZYKJJG0P0NZJ2W",
+  "created-at": "2026-05-31T17:08:40.5364915Z",
+  "updated-at": "2026-05-31T17:10:23.2944819Z"
+}

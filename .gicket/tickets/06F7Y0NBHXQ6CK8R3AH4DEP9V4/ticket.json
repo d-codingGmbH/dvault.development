@@ -1,0 +1,25 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F7Y0NBHXQ6CK8R3AH4DEP9V4",
+  "ticket-type": "task",
+  "title": "Task: Update v0.26.0 provider performance and schema guardrail documentation",
+  "revision": "06F7Y0ZYZN7M28VKSQ2R18A7EC",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/documentation",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/performance",
+    "area/provider-support",
+    "area/migrations"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F7XZW6YD82QZEAQT3HADFST0",
+  "releaseId": "06F7XZVW426YZYKJJG0P0NZJ2W",
+  "created-at": "2026-05-31T17:09:02.7909436Z",
+  "updated-at": "2026-05-31T17:10:28.8613945Z"
+}

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F7XZW34D71CYK8J805ER1MW8",
+  "name": "v0.25.0 - Typed PIT and bridge helper implementation",
+  "description": "Generated typed PIT and bridge read helpers backed by existing runtime read services and diagnostics.",
+  "status": "planned",
+  "createdAt": "2026-05-31T17:05:35.0116212Z"
+}

@@ -1,0 +1,14 @@
+{
+  "event-id": "06F7Y0H9ESWJAXJD217VC0CYRM",
+  "occurred-at": "2026-05-31T17:08:28.6627005Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Generate typed PIT read helpers from support bundle metadata",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

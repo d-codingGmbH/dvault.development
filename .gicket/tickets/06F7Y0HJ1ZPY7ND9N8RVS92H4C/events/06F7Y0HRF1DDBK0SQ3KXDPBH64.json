@@ -1,0 +1,14 @@
+{
+  "event-id": "06F7Y0HRF1DDBK0SQ3KXDPBH64",
+  "occurred-at": "2026-05-31T17:08:32.5046883Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Generate typed bridge read helpers from support bundle metadata",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

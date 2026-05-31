@@ -1,0 +1,14 @@
+{
+  "event-id": "06F7Y0K1YWM1B3JDRMT77P2CH4",
+  "occurred-at": "2026-05-31T17:08:43.1274173Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add provider strategy eligibility and threshold recommendations",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

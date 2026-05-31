@@ -1,0 +1,14 @@
+{
+  "event-id": "06F7Y0JQV0WBET2W7VCFWW0E50",
+  "occurred-at": "2026-05-31T17:08:40.5364915Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define provider performance tuning diagnostics contract",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

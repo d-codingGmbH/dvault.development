@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F7Y0HZKHBHMYX9EYDYFRYXZ0",
+  "ticket-type": "task",
+  "title": "Task: Update v0.25.0 read-plan and typed-helper documentation",
+  "revision": "06F7Y0Z0YD8896JV3F671CMERR",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/documentation",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/read-models",
+    "area/analyzers"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F7XZW3X78W9DP372GRZH7M34",
+  "releaseId": "06F7XZVV35BSZ2BX7CY36NK3QR",
+  "created-at": "2026-05-31T17:08:34.5261981Z",
+  "updated-at": "2026-05-31T17:10:21.1713176Z"
+}

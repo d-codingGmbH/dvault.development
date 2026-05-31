@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F7Y0HJ1ZPY7ND9N8RVS92H4C",
+  "ticket-type": "story",
+  "title": "Story: Generate typed bridge read helpers from support bundle metadata",
+  "revision": "06F7Y0YEJ9EXYJSMTKJB2CE5K8",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/analyzers",
+    "area/developer-experience",
+    "area/ef-core",
+    "area/read-models",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F7XZW34D71CYK8J805ER1MW8",
+  "releaseId": "06F7XZVV35BSZ2BX7CY36NK3QR",
+  "created-at": "2026-05-31T17:08:32.5046883Z",
+  "updated-at": "2026-05-31T17:10:16.4660910Z"
+}

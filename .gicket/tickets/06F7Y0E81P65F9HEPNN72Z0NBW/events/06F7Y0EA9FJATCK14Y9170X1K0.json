@@ -1,0 +1,14 @@
+{
+  "event-id": "06F7Y0EA9FJATCK14Y9170X1K0",
+  "occurred-at": "2026-05-31T17:08:04.2994919Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add analyzer diagnostics for dynamic DVault model cache and DbContext pooling risks",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

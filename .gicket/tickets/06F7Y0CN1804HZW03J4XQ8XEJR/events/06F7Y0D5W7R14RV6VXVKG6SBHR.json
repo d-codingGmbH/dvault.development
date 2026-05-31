@@ -1,0 +1,14 @@
+{
+  "event-id": "06F7Y0D5W7R14RV6VXVKG6SBHR",
+  "occurred-at": "2026-05-31T17:07:54.9771624Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define async streaming save contract and boundaries",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F7XZW3X78W9DP372GRZH7M34",
+  "name": "v0.25.0 - Read helper docs and evidence",
+  "description": "Docs, examples, compatibility notes, and tests for read-plan explanations and typed read helpers.",
+  "status": "planned",
+  "createdAt": "2026-05-31T17:05:35.2093560Z"
+}

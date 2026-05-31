@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F7XZVWXBWQV2B2Z94K22KMBR",
+  "name": "v0.24.0 - Async streaming save contract",
+  "description": "Public contract and non-goals for async explicit save inputs over existing chunked save behavior.",
+  "status": "active",
+  "createdAt": "2026-05-31T17:05:33.4187895Z"
+}

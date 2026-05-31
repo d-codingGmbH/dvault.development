@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F7XZVZM8Z9YC2NSYPSA7E4T8",
+  "name": "v0.24.0 - Streaming and safety docs",
+  "description": "README, release notes, production checklist, and migration guidance for async streaming and EF safety diagnostics.",
+  "status": "active",
+  "createdAt": "2026-05-31T17:05:34.1143903Z"
+}

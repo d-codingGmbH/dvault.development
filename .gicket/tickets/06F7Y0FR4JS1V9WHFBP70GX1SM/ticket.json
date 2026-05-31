@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F7Y0FR4JS1V9WHFBP70GX1SM",
+  "ticket-type": "epic",
+  "title": "Epic: Read plan explainability and typed read helpers",
+  "revision": "06F7Y0VHQKEF7EA8AN5ZMHAK28",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/epic",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/read-models",
+    "area/analyzers",
+    "area/developer-experience"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F7XZW0CV4JHEW9HV6ZPQJJN4",
+  "releaseId": "06F7XZVV35BSZ2BX7CY36NK3QR",
+  "created-at": "2026-05-31T17:08:16.2324345Z",
+  "updated-at": "2026-05-31T17:09:52.7001648Z"
+}

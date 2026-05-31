@@ -1,0 +1,14 @@
+{
+  "event-id": "06F7Y0GWG7S7A2BT886VFC3HM4",
+  "occurred-at": "2026-05-31T17:08:25.3458425Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define support-bundle driven typed PIT and bridge helper contract",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

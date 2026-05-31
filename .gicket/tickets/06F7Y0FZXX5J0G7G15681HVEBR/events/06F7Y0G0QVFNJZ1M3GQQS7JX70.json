@@ -1,0 +1,14 @@
+{
+  "event-id": "06F7Y0G0QVFNJZ1M3GQQS7JX70",
+  "occurred-at": "2026-05-31T17:08:18.2380320Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define redacted read-plan explain v2 contract",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

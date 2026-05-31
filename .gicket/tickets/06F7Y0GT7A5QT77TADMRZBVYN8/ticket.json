@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F7Y0GT7A5QT77TADMRZBVYN8",
+  "ticket-type": "story",
+  "title": "Story: Define support-bundle driven typed PIT and bridge helper contract",
+  "revision": "06F7Y0Y988EJZTG2DP5J50T2T8",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/architecture",
+    "area/analyzers",
+    "area/ef-core",
+    "area/read-models",
+    "area/developer-experience"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F7XZW14N0KFGD74Y9680TZ60",
+  "releaseId": "06F7XZVV35BSZ2BX7CY36NK3QR",
+  "created-at": "2026-05-31T17:08:25.3458425Z",
+  "updated-at": "2026-05-31T17:10:15.1066931Z"
+}

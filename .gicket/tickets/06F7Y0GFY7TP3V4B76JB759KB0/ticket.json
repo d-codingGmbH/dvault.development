@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F7Y0GFY7TP3V4B76JB759KB0",
+  "ticket-type": "story",
+  "title": "Story: Add latest, PIT, and bridge read-plan explanations to diagnostics and support bundles",
+  "revision": "06F7Y0Y5BN2ASWV58B5BDSEC00",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/read-models",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F7XZW0CV4JHEW9HV6ZPQJJN4",
+  "releaseId": "06F7XZVV35BSZ2BX7CY36NK3QR",
+  "created-at": "2026-05-31T17:08:22.3401526Z",
+  "updated-at": "2026-05-31T17:10:14.1098288Z"
+}

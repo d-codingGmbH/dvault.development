@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "releaseId": "06F7XZVSFEX210HTCBC7DC752G",
+  "name": "v0.24.0 - Async Streaming and EF Core Safety",
+  "description": "Async explicit save inputs and EF Core model-cache/pooling safety diagnostics that deepen DVault as a focused EF Core library without adding ingestion platform responsibilities.",
+  "status": "active",
+  "createdAt": "2026-05-31T17:05:32.5395984Z"
+}
