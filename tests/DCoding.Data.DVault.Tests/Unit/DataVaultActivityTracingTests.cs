@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -28,10 +29,15 @@ public sealed class DataVaultActivityTracingTests {
         new DataVaultSaveChunk([singleRequest]),
         new DataVaultSaveChunk([CreateHubOnlySaveRequest("crm-replay")]),
     ]);
+    var asyncChunks = CreateAsyncChunks([
+        new DataVaultSaveChunk([singleRequest]),
+        new DataVaultSaveChunk([CreateHubOnlySaveRequest("crm-replay")]),
+    ]);
 
     await saveService.SaveAsync(context, singleRequest);
     await saveService.SaveAsync(context, bulkRequest);
     await saveService.SaveAsync(context, chunkedRequest);
+    await saveService.SaveAsync(context, asyncChunks);
 
     Assert.Collection(
         capture.Activities,
@@ -53,6 +59,15 @@ public sealed class DataVaultActivityTracingTests {
             rowCount: 7,
             chunkCount: null,
             processedChunkCount: null),
+        activity => AssertSaveActivity(
+            activity,
+            DataVaultActivityTracing.SaveChunkedRequestOperation,
+            DataVaultSaveTelemetryOperationKind.ChunkedRequest,
+            requestCount: 2,
+            operationCount: 4,
+            rowCount: 14,
+            chunkCount: 2,
+            processedChunkCount: 2),
         activity => AssertSaveActivity(
             activity,
             DataVaultActivityTracing.SaveChunkedRequestOperation,
@@ -244,6 +259,16 @@ public sealed class DataVaultActivityTracingTests {
         recordSource,
         [new DataVaultHubSaveOperation(customer, [new("Customer Id", "C-200")])],
         []);
+  }
+
+  private static async IAsyncEnumerable<DataVaultSaveChunk> CreateAsyncChunks(
+      IReadOnlyList<DataVaultSaveChunk> chunks,
+      [EnumeratorCancellation] CancellationToken cancellationToken = default) {
+    foreach (var chunk in chunks) {
+      cancellationToken.ThrowIfCancellationRequested();
+      await Task.Yield();
+      yield return chunk;
+    }
   }
 
   private static DataVaultLatestSatelliteReadRequest CreateLatestSatelliteRequest(

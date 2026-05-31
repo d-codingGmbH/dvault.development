@@ -18,7 +18,7 @@ Task<DataVaultSaveResult> SaveAsync(
     CancellationToken cancellationToken = default);
 ```
 
-The v0.24 async source contract target is one additional overload:
+The v0.24 async source contract adds one additional overload:
 
 ```csharp
 Task<DataVaultSaveResult> SaveAsync(

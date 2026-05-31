@@ -46,6 +46,18 @@ public interface IDataVaultSaveService {
       DbContext dbContext,
       DataVaultChunkedSaveRequest request,
       CancellationToken cancellationToken = default);
+
+  /// <summary>
+  /// Persists ordered bounded chunks from an async source through the supplied Entity Framework context.
+  /// </summary>
+  /// <param name="dbContext">The context whose model has been configured with Data Vault metadata.</param>
+  /// <param name="chunks">The async chunk source containing caller-ordered bounded chunks.</param>
+  /// <param name="cancellationToken">A token used to observe cancellation while enumerating and processing chunks.</param>
+  /// <returns>The persisted row summary, including saved hash-key values in chunk order.</returns>
+  Task<DataVaultSaveResult> SaveAsync(
+      DbContext dbContext,
+      IAsyncEnumerable<DataVaultSaveChunk> chunks,
+      CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -995,6 +1007,16 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     return await SaveChunkedRequestsAsync(dbContext, request, cancellationToken).ConfigureAwait(false);
   }
 
+  public async Task<DataVaultSaveResult> SaveAsync(
+      DbContext dbContext,
+      IAsyncEnumerable<DataVaultSaveChunk> chunks,
+      CancellationToken cancellationToken = default) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(chunks);
+
+    return await SaveChunkedRequestsAsync(dbContext, chunks, cancellationToken).ConfigureAwait(false);
+  }
+
   private async Task<DataVaultSaveResult> SaveRequestsAsync(
       DbContext dbContext,
       IReadOnlyList<DataVaultSaveRequest> requests,
@@ -1061,51 +1083,46 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       DbContext dbContext,
       DataVaultChunkedSaveRequest request,
       CancellationToken cancellationToken) {
+    return await SaveChunkedRequestsCoreAsync(
+        dbContext,
+        async state => {
+          foreach (var chunk in request.Chunks) {
+            await ProcessSaveChunkAsync(dbContext, state, chunk, nameof(request), cancellationToken).ConfigureAwait(false);
+          }
+        },
+        cancellationToken).ConfigureAwait(false);
+  }
+
+  private async Task<DataVaultSaveResult> SaveChunkedRequestsAsync(
+      DbContext dbContext,
+      IAsyncEnumerable<DataVaultSaveChunk> chunks,
+      CancellationToken cancellationToken) {
+    return await SaveChunkedRequestsCoreAsync(
+        dbContext,
+        async state => {
+          await foreach (var chunk in chunks.WithCancellation(cancellationToken).ConfigureAwait(false)) {
+            await ProcessSaveChunkAsync(dbContext, state, chunk, nameof(chunks), cancellationToken).ConfigureAwait(false);
+          }
+        },
+        cancellationToken).ConfigureAwait(false);
+  }
+
+  private async Task<DataVaultSaveResult> SaveChunkedRequestsCoreAsync(
+      DbContext dbContext,
+      Func<ChunkedSaveExecutionState, Task> processChunksAsync,
+      CancellationToken cancellationToken) {
     using var activity = DataVaultActivityTracing.StartSaveActivity(DataVaultSaveTelemetryOperationKind.ChunkedRequest);
     var stopwatch = Stopwatch.StartNew();
-    var uniqueSavedRecords = new List<DataVaultSavedRecord>();
-    var satelliteSavedRecords = new List<DataVaultSavedRecord>();
-    var rowsWritten = 0;
-    var counts = new SaveAttemptCounts();
-    var strategySelection = new ChunkedSaveStrategySelection(DataVaultTelemetryStrategySelector.GetProviderName(dbContext));
-    var continuityState = new ChunkedSaveContinuityState(_chunkedRetainedSatelliteSeriesLimit);
+    var state = new ChunkedSaveExecutionState(
+        new ChunkedSaveStrategySelection(DataVaultTelemetryStrategySelector.GetProviderName(dbContext)),
+        new ChunkedSaveContinuityState(_chunkedRetainedSatelliteSeriesLimit));
     DataVaultSaveResult? result = null;
     Exception? failure = null;
 
     try {
-      foreach (var chunk in request.Chunks) {
-        counts.ChunkCount++;
-        if (chunk is null) {
-          throw new ArgumentException("Data Vault chunked save requests must not contain null chunks.", nameof(request));
-        }
+      await processChunksAsync(state).ConfigureAwait(false);
 
-        cancellationToken.ThrowIfCancellationRequested();
-        if (chunk.Requests.Count == 0) {
-          continue;
-        }
-
-        counts.ProcessedChunkCount++;
-        counts.Add(DataVaultTelemetrySummaryFactory.CountSaveRequests(chunk.Requests));
-
-        var chunkResult = await SaveRequestsCoreAsync(
-            dbContext,
-            chunk.Requests,
-            continuityState,
-            strategySelection.Observe,
-            cancellationToken).ConfigureAwait(false);
-
-        rowsWritten += chunkResult.RowsWritten;
-        foreach (var savedRecord in chunkResult.SavedRecords) {
-          if (savedRecord.Kind == DataVaultTableKind.Satellite) {
-            satelliteSavedRecords.Add(savedRecord);
-          }
-          else {
-            uniqueSavedRecords.Add(savedRecord);
-          }
-        }
-      }
-
-      result = new DataVaultSaveResult(rowsWritten, uniqueSavedRecords.Concat(satelliteSavedRecords));
+      result = state.ToResult();
       return result;
     }
     catch (Exception exception) {
@@ -1113,25 +1130,62 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       throw;
     }
     finally {
-      continuityState.Release();
+      state.ContinuityState.Release();
       var summary = DataVaultTelemetrySummaryFactory.CreateSaveSummary(
           DataVaultSaveTelemetryOperationKind.ChunkedRequest,
           result is null ? DataVaultTelemetryOutcome.Failed : DataVaultTelemetryOutcome.Succeeded,
-          counts.ToTelemetryCounts(),
+          state.Counts.ToTelemetryCounts(),
           result,
           DataVaultTelemetrySummaryFactory.GetElapsed(stopwatch),
-          strategySelection.ToTelemetrySelection(),
+          state.StrategySelection.ToTelemetrySelection(),
           new DataVaultChunkedSaveTelemetryState(
-              counts.ChunkCount,
-              counts.ProcessedChunkCount,
-              continuityState.CurrentCount,
-              continuityState.HighWaterCount,
-              continuityState.FallbackCauseKinds,
-              continuityState.UnsupportedShapeKinds));
+              state.Counts.ChunkCount,
+              state.Counts.ProcessedChunkCount,
+              state.ContinuityState.CurrentCount,
+              state.ContinuityState.HighWaterCount,
+              state.ContinuityState.FallbackCauseKinds,
+              state.ContinuityState.UnsupportedShapeKinds));
       DataVaultActivityTracing.CompleteSaveActivity(activity, summary, failure);
       DataVaultTelemetryDispatcher.RecordSave(
           _telemetryObservers,
           summary);
+    }
+  }
+
+  private async Task ProcessSaveChunkAsync(
+      DbContext dbContext,
+      ChunkedSaveExecutionState state,
+      DataVaultSaveChunk? chunk,
+      string parameterName,
+      CancellationToken cancellationToken) {
+    state.Counts.ChunkCount++;
+    if (chunk is null) {
+      throw new ArgumentException("Data Vault chunked save requests must not contain null chunks.", parameterName);
+    }
+
+    cancellationToken.ThrowIfCancellationRequested();
+    if (chunk.Requests.Count == 0) {
+      return;
+    }
+
+    state.Counts.ProcessedChunkCount++;
+    state.Counts.Add(DataVaultTelemetrySummaryFactory.CountSaveRequests(chunk.Requests));
+
+    var chunkResult = await SaveRequestsCoreAsync(
+        dbContext,
+        chunk.Requests,
+        state.ContinuityState,
+        state.StrategySelection.Observe,
+        cancellationToken).ConfigureAwait(false);
+
+    state.RowsWritten += chunkResult.RowsWritten;
+    foreach (var savedRecord in chunkResult.SavedRecords) {
+      if (savedRecord.Kind == DataVaultTableKind.Satellite) {
+        state.SatelliteSavedRecords.Add(savedRecord);
+      }
+      else {
+        state.UniqueSavedRecords.Add(savedRecord);
+      }
     }
   }
 
@@ -1765,6 +1819,26 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       1 => resolverArray[0],
       _ => throw new InvalidOperationException(ambiguityMessage),
     };
+  }
+
+  private sealed class ChunkedSaveExecutionState(
+      ChunkedSaveStrategySelection strategySelection,
+      ChunkedSaveContinuityState continuityState) {
+    public List<DataVaultSavedRecord> UniqueSavedRecords { get; } = [];
+
+    public List<DataVaultSavedRecord> SatelliteSavedRecords { get; } = [];
+
+    public int RowsWritten { get; set; }
+
+    public SaveAttemptCounts Counts { get; } = new();
+
+    public ChunkedSaveStrategySelection StrategySelection { get; } = strategySelection;
+
+    public ChunkedSaveContinuityState ContinuityState { get; } = continuityState;
+
+    public DataVaultSaveResult ToResult() {
+      return new DataVaultSaveResult(RowsWritten, UniqueSavedRecords.Concat(SatelliteSavedRecords));
+    }
   }
 
   private sealed class SaveAttemptCounts {

@@ -1,5 +1,6 @@
 using System.Data.Common;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -873,6 +874,32 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
   }
 
   [Fact]
+  public async Task AsyncChunkedSaveTreatsEmptySourceAndEmptyChunksAsNoOps() {
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateExplicitSaveServiceOptions(database);
+    var services = new ServiceCollection();
+    services.AddDVault();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+
+    await using var context = new ExplicitSaveServiceContext(options);
+    await context.Database.EnsureCreatedAsync();
+
+    var emptySourceResult = await saveService.SaveAsync(
+        context,
+        CreateAsyncChunks([]));
+    var emptyChunkResult = await saveService.SaveAsync(
+        context,
+        CreateAsyncChunks([new DataVaultSaveChunk([])]));
+
+    Assert.Equal(0, emptySourceResult.RowsWritten);
+    Assert.Empty(emptySourceResult.SavedRecords);
+    Assert.Equal(0, emptyChunkResult.RowsWritten);
+    Assert.Empty(emptyChunkResult.SavedRecords);
+  }
+
+  [Fact]
   public async Task ChunkedSaveMatchesEquivalentBulkSavedRecordOrderingAcrossOperationKinds() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var contact = new DataVaultSatelliteMetadata(
@@ -988,6 +1015,63 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
   }
 
   [Fact]
+  public async Task AsyncChunkedSaveMatchesEquivalentBulkOrderingForHubAndLinkRequests() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+    var customerOrder = new DataVaultLinkMetadata(
+        "CustomerOrder",
+        [customer.ToReference(), order.ToReference()]);
+    var loadTimestamp = new DateTimeOffset(2026, 5, 24, 10, 0, 0, TimeSpan.Zero);
+    var requests = new[]
+    {
+        new DataVaultSaveRequest(
+            loadTimestamp,
+            "crm-import",
+            [new(customer, [new("Customer Id", "C-100")])],
+            [new(customerOrder, [new("Customer", "customer-hash-1"), new("Order", "order-hash-1")])]),
+        new DataVaultSaveRequest(
+            loadTimestamp.AddMinutes(1),
+            "order-import",
+            [new(order, [new("Order Id", "O-200")])],
+            [new(customerOrder, [new("Customer", "customer-hash-2"), new("Order", "order-hash-2")])]),
+    };
+    var services = new ServiceCollection();
+    services.AddDVault();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    using var bulkDatabase = SqliteTestDatabase.CreateTemporaryFile();
+    using var chunkedDatabase = SqliteTestDatabase.CreateTemporaryFile();
+    var bulkOptions = CreateExplicitSaveServiceOptions(bulkDatabase);
+    var chunkedOptions = CreateExplicitSaveServiceOptions(chunkedDatabase);
+
+    DataVaultSaveResult bulkResult;
+    await using (var context = new ExplicitSaveServiceContext(bulkOptions)) {
+      await context.Database.EnsureCreatedAsync();
+
+      bulkResult = await saveService.SaveAsync(
+          context,
+          new DataVaultBulkSaveRequest(requests));
+    }
+
+    DataVaultSaveResult chunkedResult;
+    await using (var context = new ExplicitSaveServiceContext(chunkedOptions)) {
+      await context.Database.EnsureCreatedAsync();
+
+      chunkedResult = await saveService.SaveAsync(
+          context,
+          CreateAsyncChunks(
+              [
+                  new DataVaultSaveChunk([requests[0]]),
+                  new DataVaultSaveChunk([requests[1]]),
+              ]));
+    }
+
+    Assert.Equal(bulkResult.RowsWritten, chunkedResult.RowsWritten);
+    AssertSavedRecordsEqual(bulkResult.SavedRecords, chunkedResult.SavedRecords);
+  }
+
+  [Fact]
   public async Task ChunkedSaveObservesCancellationBeforeLaterChunks() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var firstRequest = new DataVaultSaveRequest(
@@ -1027,6 +1111,45 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
   }
 
   [Fact]
+  public async Task AsyncChunkedSaveObservesCancellationDuringEnumerationBeforeLaterChunks() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var firstRequest = new DataVaultSaveRequest(
+        new DateTimeOffset(2026, 5, 24, 10, 0, 0, TimeSpan.Zero),
+        "crm-import",
+        [new(customer, [new("Customer Id", "C-100")])],
+        []);
+    var secondRequest = new DataVaultSaveRequest(
+        new DateTimeOffset(2026, 5, 24, 10, 5, 0, TimeSpan.Zero),
+        "crm-import",
+        [new(customer, [new("Customer Id", "C-200")])],
+        []);
+    using var cancellationSource = new CancellationTokenSource();
+    var strategy = new CancelAfterFirstChunkSaveStrategy(cancellationSource);
+    var services = new ServiceCollection();
+    services.AddDVault();
+    services.AddSingleton<IDataVaultProviderSaveStrategy>(strategy);
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateExplicitSaveServiceOptions(database);
+    await using var context = new ExplicitSaveServiceContext(options);
+
+    await Assert.ThrowsAsync<OperationCanceledException>(() =>
+        saveService.SaveAsync(
+            context,
+            CreateAsyncChunks(
+                [
+                    new DataVaultSaveChunk([firstRequest]),
+                    new DataVaultSaveChunk([secondRequest]),
+                ]),
+            cancellationSource.Token));
+
+    Assert.Equal(1, strategy.SaveCallCount);
+    Assert.Equal([1], strategy.RequestCounts);
+  }
+
+  [Fact]
   public async Task ChunkedSaveParticipatesInCallerTransactionAcrossChunks() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var order = new DataVaultHubMetadata("Order", ["Order Id"]);
@@ -1049,6 +1172,63 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
       var result = await saveService.SaveAsync(
           context,
           new DataVaultChunkedSaveRequest(
+              [
+                  new DataVaultSaveChunk([
+                      new DataVaultSaveRequest(
+                          loadTimestamp,
+                          "crm-import",
+                          [
+                              new(customer, [new("Customer Id", "C-100")]),
+                              new(order, [new("Order Id", "O-200")]),
+                          ],
+                          []),
+                  ]),
+                  new DataVaultSaveChunk([
+                      new DataVaultSaveRequest(
+                          loadTimestamp.AddMinutes(1),
+                          "crm-import",
+                          [],
+                          [
+                              new(customerOrder, [new("Customer", "customer-hash"), new("Order", "order-hash")]),
+                          ]),
+                  ]),
+              ]));
+
+      Assert.Equal(3, result.RowsWritten);
+
+      await transaction.RollbackAsync();
+    }
+
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      Assert.Empty(await context.Set<Dictionary<string, object>>("HubCustomer").AsNoTracking().ToListAsync());
+      Assert.Empty(await context.Set<Dictionary<string, object>>("HubOrder").AsNoTracking().ToListAsync());
+      Assert.Empty(await context.Set<Dictionary<string, object>>("LinkCustomerOrder").AsNoTracking().ToListAsync());
+    }
+  }
+
+  [Fact]
+  public async Task AsyncChunkedSaveParticipatesInCallerTransactionAcrossChunks() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+    var customerOrder = new DataVaultLinkMetadata(
+        "CustomerOrder",
+        [customer.ToReference(), order.ToReference()]);
+    var loadTimestamp = new DateTimeOffset(2026, 5, 24, 11, 0, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateExplicitSaveServiceOptions(database);
+    var services = new ServiceCollection();
+    services.AddDVault();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+      await using var transaction = await context.Database.BeginTransactionAsync();
+
+      var result = await saveService.SaveAsync(
+          context,
+          CreateAsyncChunks(
               [
                   new DataVaultSaveChunk([
                       new DataVaultSaveRequest(
@@ -1290,6 +1470,68 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
   }
 
   [Fact]
+  public async Task PublicAsyncChunkedSaveReportsRetainedStateTelemetryAndReleasesOnSuccess() {
+    var observer = new CapturingTelemetryObserver();
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"]);
+    var parentHashKey = "customer-hash";
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateExplicitSaveServiceOptions(database);
+    var services = new ServiceCollection();
+    services.AddDVault();
+    services.AddSingleton<IDataVaultTelemetryObserver>(observer);
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+
+    DataVaultSaveResult result;
+    await using (var context = new ExplicitSaveServiceContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+
+      result = await saveService.SaveAsync(
+          context,
+          CreateAsyncChunks(
+              [
+                  new DataVaultSaveChunk([
+                      new DataVaultSaveRequest(
+                          new DateTimeOffset(2026, 5, 24, 14, 0, 0, TimeSpan.Zero),
+                          "crm-import",
+                          [],
+                          [],
+                          [new(contact, parentHashKey, [new("Email Address", "first@example.test")], "contact-hash-1")]),
+                  ]),
+                  new DataVaultSaveChunk([]),
+                  new DataVaultSaveChunk([
+                      new DataVaultSaveRequest(
+                          new DateTimeOffset(2026, 5, 24, 14, 5, 0, TimeSpan.Zero),
+                          "crm-replay",
+                          [],
+                          [],
+                          [new(contact, parentHashKey, [new("Email Address", "ignored@example.test")], "contact-hash-1")]),
+                  ]),
+              ]));
+    }
+
+    Assert.Equal(1, result.RowsWritten);
+    Assert.Equal(2, result.SavedRecords.Count);
+    var summary = Assert.Single(observer.SaveSummaries);
+    Assert.Equal(DataVaultSaveTelemetryOperationKind.ChunkedRequest, summary.OperationKind);
+    Assert.Equal(DataVaultTelemetryOutcome.Succeeded, summary.Outcome);
+    Assert.Equal(3, summary.ChunkCount);
+    Assert.Equal(2, summary.ProcessedChunkCount);
+    Assert.Equal(2, summary.RequestCount);
+    Assert.Equal(2, summary.SatelliteOperationCount);
+    Assert.Equal(0, summary.RetainedStateCurrentCount);
+    Assert.Equal(1, summary.RetainedStateHighWaterCount);
+    Assert.Empty(summary.ChunkedStateFallbackCauseKinds);
+    Assert.Empty(summary.UnsupportedShapeKinds);
+    Assert.NotNull(summary.ChunkedTransactionExplanation);
+  }
+
+  [Fact]
   public async Task PublicChunkedSaveReleasesRetainedStateTelemetryOnFailure() {
     var observer = new CapturingTelemetryObserver();
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
@@ -1346,6 +1588,72 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
         "current transaction",
         summary.ChunkedTransactionExplanation!.Explanation,
         StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public async Task PublicAsyncChunkedSaveReleasesRetainedStateTelemetryOnFailureAndStopsEnumeration() {
+    var observer = new CapturingTelemetryObserver();
+    var requestedChunkOrdinals = new List<int>();
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"]);
+    var parentHashKey = "customer-hash";
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateExplicitSaveServiceOptions(database);
+    var services = new ServiceCollection();
+    services.AddDVault();
+    services.AddSingleton<IDataVaultTelemetryObserver>(observer);
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+
+    await using var context = new ExplicitSaveServiceContext(options);
+    await context.Database.EnsureCreatedAsync();
+
+    await Assert.ThrowsAsync<ArgumentException>(() =>
+        saveService.SaveAsync(
+            context,
+            CreateCountingAsyncChunks(
+                [
+                    new DataVaultSaveChunk([
+                        new DataVaultSaveRequest(
+                            new DateTimeOffset(2026, 5, 24, 14, 30, 0, TimeSpan.Zero),
+                            "crm-import",
+                            [],
+                            [],
+                            [new(contact, parentHashKey, [new("Email Address", "first@example.test")], "contact-hash-1")]),
+                    ]),
+                    new DataVaultSaveChunk([
+                        new DataVaultSaveRequest(
+                            new DateTimeOffset(2026, 5, 24, 14, 35, 0, TimeSpan.Zero),
+                            "crm-bad",
+                            [],
+                            [],
+                            [new(contact, parentHashKey, [new("Unexpected Payload", "bad")], "contact-hash-2")]),
+                    ]),
+                    new DataVaultSaveChunk([
+                        new DataVaultSaveRequest(
+                            new DateTimeOffset(2026, 5, 24, 14, 40, 0, TimeSpan.Zero),
+                            "crm-later",
+                            [],
+                            [],
+                            [new(contact, parentHashKey, [new("Email Address", "later@example.test")], "contact-hash-3")]),
+                    ]),
+                ],
+                requestedChunkOrdinals.Add)));
+
+    Assert.Equal([0, 1], requestedChunkOrdinals);
+    var summary = Assert.Single(observer.SaveSummaries);
+    Assert.Equal(DataVaultSaveTelemetryOperationKind.ChunkedRequest, summary.OperationKind);
+    Assert.Equal(DataVaultTelemetryOutcome.Failed, summary.Outcome);
+    Assert.Equal(2, summary.ChunkCount);
+    Assert.Equal(2, summary.ProcessedChunkCount);
+    Assert.Equal(0, summary.RowsWritten);
+    Assert.Equal(0, summary.RetainedStateCurrentCount);
+    Assert.Equal(1, summary.RetainedStateHighWaterCount);
+    Assert.NotNull(summary.ChunkedTransactionExplanation);
   }
 
   [Fact]
@@ -2420,6 +2728,26 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
       }
 
       return base.SavedChangesAsync(eventData, result, cancellationToken);
+    }
+  }
+
+  private static async IAsyncEnumerable<DataVaultSaveChunk> CreateAsyncChunks(
+      IReadOnlyList<DataVaultSaveChunk> chunks,
+      [EnumeratorCancellation] CancellationToken cancellationToken = default) {
+    await foreach (var chunk in CreateCountingAsyncChunks(chunks, _ => { }, cancellationToken).ConfigureAwait(false)) {
+      yield return chunk;
+    }
+  }
+
+  private static async IAsyncEnumerable<DataVaultSaveChunk> CreateCountingAsyncChunks(
+      IReadOnlyList<DataVaultSaveChunk> chunks,
+      Action<int> onChunkRequested,
+      [EnumeratorCancellation] CancellationToken cancellationToken = default) {
+    for (var index = 0; index < chunks.Count; index++) {
+      cancellationToken.ThrowIfCancellationRequested();
+      onChunkRequested(index);
+      await Task.Yield();
+      yield return chunks[index];
     }
   }
 

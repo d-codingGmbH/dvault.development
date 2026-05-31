@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -538,6 +539,34 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   }
 
   [Fact]
+  public async Task AsyncChunkedSaveRequestsNextChunkOnlyAfterPreviousChunkCompletes() {
+    var first = CreateCustomerSaveRequest("first-source");
+    var second = CreateCustomerSaveRequest("second-source");
+    var requestedChunkOrdinals = new List<int>();
+    var providerStrategy = new ObservingChunkRequestSaveStrategy(() => requestedChunkOrdinals.Count);
+    var saveService = new DefaultDataVaultSaveService(
+        new TestStableHashService(),
+        new TestStableHashNormalizer(),
+        [providerStrategy]);
+    using var dbContext = new DbContext(new DbContextOptionsBuilder().Options);
+
+    var result = await saveService.SaveAsync(
+        dbContext,
+        CreateCountingAsyncChunks(
+            [
+                new DataVaultSaveChunk([first]),
+                new DataVaultSaveChunk([second]),
+            ],
+            requestedChunkOrdinals.Add));
+
+    Assert.Equal(0, result.RowsWritten);
+    Assert.Empty(result.SavedRecords);
+    Assert.Equal([0, 1], requestedChunkOrdinals);
+    Assert.Equal([1, 2], providerStrategy.RequestedChunkCountsAtSave);
+    Assert.Equal([1, 1], providerStrategy.RequestCounts);
+  }
+
+  [Fact]
   public void SaveOperationsRequireNamedValuesWithoutDuplicates() {
     var hub = new DataVaultHubMetadata("Customer", ["Customer Id"]);
 
@@ -617,6 +646,13 @@ public sealed class ExplicitDataVaultSaveServiceTests {
         CancellationToken cancellationToken = default) {
       throw new NotSupportedException();
     }
+
+    public Task<DataVaultSaveResult> SaveAsync(
+        DbContext dbContext,
+        IAsyncEnumerable<DataVaultSaveChunk> chunks,
+        CancellationToken cancellationToken = default) {
+      throw new NotSupportedException();
+    }
   }
 
   private sealed class ReplacementDataVaultBridgeMaintenanceService : IDataVaultBridgeMaintenanceService {
@@ -643,6 +679,18 @@ public sealed class ExplicitDataVaultSaveServiceTests {
         recordSource,
         [new DataVaultHubSaveOperation(customer, [new("Customer Id", "C-100")])],
         []);
+  }
+
+  private static async IAsyncEnumerable<DataVaultSaveChunk> CreateCountingAsyncChunks(
+      IReadOnlyList<DataVaultSaveChunk> chunks,
+      Action<int> onChunkRequested,
+      [EnumeratorCancellation] CancellationToken cancellationToken = default) {
+    for (var index = 0; index < chunks.Count; index++) {
+      cancellationToken.ThrowIfCancellationRequested();
+      onChunkRequested(index);
+      await Task.Yield();
+      yield return chunks[index];
+    }
   }
 
   private static DefaultDataVaultSaveService CreateHookedSaveService(
@@ -844,6 +892,32 @@ public sealed class ExplicitDataVaultSaveServiceTests {
       ArgumentNullException.ThrowIfNull(context);
 
       CapturedContext = context;
+      return Task.FromResult(new DataVaultSaveResult(0, []));
+    }
+  }
+
+  private sealed class ObservingChunkRequestSaveStrategy(Func<int> getRequestedChunkCount) : IDataVaultProviderSaveStrategy {
+    public int Priority => 1000;
+
+    public List<int> RequestedChunkCountsAtSave { get; } = [];
+
+    public List<int> RequestCounts { get; } = [];
+
+    public bool CanSave(DbContext dbContext, IReadOnlyList<DataVaultSaveRequest> requests) {
+      ArgumentNullException.ThrowIfNull(dbContext);
+      ArgumentNullException.ThrowIfNull(requests);
+
+      return true;
+    }
+
+    public Task<DataVaultSaveResult> SaveAsync(
+        DataVaultProviderSaveStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      ArgumentNullException.ThrowIfNull(context);
+
+      RequestedChunkCountsAtSave.Add(getRequestedChunkCount());
+      RequestCounts.Add(context.Requests.Count);
+
       return Task.FromResult(new DataVaultSaveResult(0, []));
     }
   }

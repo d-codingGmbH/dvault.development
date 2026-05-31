@@ -3,22 +3,21 @@
   "ticket-id": "06F7Y0DCHTWCN3H25XQF18QE2G",
   "ticket-type": "story",
   "title": "Story: Add IAsyncEnumerable chunked save entry point",
-  "revision": "06F7Y0X442SS3ZK1C5427ABWRW",
-  "status": "todo",
+  "revision": "06F7ZJDXX289T73BS3CE019HKR",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
     "area/api",
     "area/ef-core",
-    "area/persistence",
     "area/performance",
-    "area/testing"
+    "area/persistence",
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F7XZVXNW6DK42TKT7CCHC3K8",
   "releaseId": "06F7XZVSFEX210HTCBC7DC752G",
   "created-at": "2026-05-31T17:07:57.3519186Z",
-  "updated-at": "2026-05-31T17:10:05.6006083Z"
+  "updated-at": "2026-05-31T20:46:28.3283449Z"
 }

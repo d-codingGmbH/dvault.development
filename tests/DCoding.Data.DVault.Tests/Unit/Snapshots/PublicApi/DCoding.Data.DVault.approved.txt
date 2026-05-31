@@ -1614,6 +1614,7 @@ type public interface DCoding.Data.DVault.IDataVaultSaveService
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultBulkSaveRequest request, System.Threading.CancellationToken cancellationToken = default)
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultChunkedSaveRequest request, System.Threading.CancellationToken cancellationToken = default)
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultSaveRequest request, System.Threading.CancellationToken cancellationToken = default)
+  method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultSaveResult> SaveAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, System.Collections.Generic.IAsyncEnumerable<DCoding.Data.DVault.DataVaultSaveChunk> chunks, System.Threading.CancellationToken cancellationToken = default)
 
 type public interface DCoding.Data.DVault.IDataVaultTelemetryObserver
   method public abstract void RecordRead(DCoding.Data.DVault.DataVaultReadTelemetrySummary summary)
