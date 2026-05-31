@@ -3,22 +3,21 @@
   "ticket-id": "06F5Q94D0JDMMWDXSRGWX1E4F0",
   "ticket-type": "story",
   "title": "Story: Add Activity tracing for PIT and bridge maintenance",
-  "revision": "06F72ZSHJB0F7CAG6Y4QZ100GG",
-  "status": "todo",
+  "revision": "06F7RATFAPP135D1ZT3Y763P4G",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
     "area/diagnostics",
     "area/ef-core",
     "area/maintenance",
     "area/observability",
-    "area/read-models"
+    "area/read-models",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F5Q8WR6NCE3Y4EMP5K71KF8W",
   "releaseId": "06F5Q8WD8Q7AE054Z6G961E6D4",
   "created-at": "2026-05-24T20:19:31.4428523Z",
-  "updated-at": "2026-05-29T02:10:21.7142315Z"
+  "updated-at": "2026-05-31T03:54:33.6854896Z"
 }

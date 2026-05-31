@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Diagnostics;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -76,6 +77,176 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
       Assert.Equal(profileTimestamp, RequiredSnapshot(record, "Profile").SnapshotLoadTimestamp);
       Assert.Equal(statusTimestamp, RequiredSnapshot(record, "Status").SnapshotLoadTimestamp);
     }
+  }
+
+  [Fact]
+  public async Task PitMaintenanceActivityTracingEmitsSuccessAndNoOpSpansThroughSqlite() {
+    var metadata = CreateMetadata();
+    var importTimestamp = Utc(2026, 5, 11, 8, 0);
+    var statusTimestamp = Utc(2026, 5, 11, 9, 0);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateOptions(database.DatabasePath, DataVaultLoadTimestampStorage.ProviderDefault);
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var maintenanceService = provider.GetRequiredService<IDataVaultPitMaintenanceService>();
+
+    await using var context = new PitMaintenanceContext(options, DataVaultLoadTimestampStorage.ProviderDefault);
+    await context.Database.EnsureCreatedAsync();
+    var customerHashKey = await SaveCustomerAsync(saveService, context, metadata, "C-TRACE-100", importTimestamp);
+    await SaveStatusAsync(saveService, context, metadata, customerHashKey, statusTimestamp, "Active", "status-trace");
+
+    using var listener = new DataVaultActivityTestListener();
+    var rebuildResult = await maintenanceService.RebuildAsync(
+        context,
+        new DataVaultPitRebuildRequest(metadata.Pit));
+    var noOpResult = await maintenanceService.MaintainParentsAsync(
+        context,
+        new DataVaultPitParentMaintenanceRequest(metadata.Pit, []));
+
+    Assert.Equal(1, rebuildResult.RowsWritten);
+    Assert.True(noOpResult.IsNoOp);
+    Assert.Equal(2, listener.StoppedActivities.Count);
+
+    var rebuildActivity = Assert.Single(
+        listener.StoppedActivities,
+        activity => string.Equals(activity.OperationName, "dvault.maintenance.pit.rebuild", StringComparison.Ordinal));
+    var rebuildTags = GetTags(rebuildActivity);
+    Assert.Equal(ActivityKind.Internal, rebuildActivity.Kind);
+    Assert.Equal(ActivityStatusCode.Ok, rebuildActivity.Status);
+    Assert.Null(rebuildActivity.StatusDescription);
+    Assert.Equal("dvault.maintenance.pit.rebuild", rebuildTags["dvault.operation"]);
+    Assert.Equal("PitRebuild", rebuildTags["dvault.maintenance.kind"]);
+    Assert.Equal("Pit", rebuildTags["dvault.read_model.kind"]);
+    Assert.Equal("Full", rebuildTags["dvault.rebuild.scope"]);
+    Assert.Equal("success", rebuildTags["dvault.outcome"]);
+    Assert.Equal("Microsoft.EntityFrameworkCore.Sqlite", rebuildTags["dvault.provider"]);
+    Assert.Equal(rebuildResult.RowsDeleted + rebuildResult.RowsWritten, rebuildTags["dvault.affected_row.count"]);
+    AssertDurationBucket(rebuildTags["dvault.duration.bucket"]);
+    Assert.False(rebuildTags.ContainsKey("dvault.parent_key.count"));
+    Assert.DoesNotContain(
+        rebuildActivity.Events,
+        current => string.Equals(current.Name, "dvault.maintenance.noop", StringComparison.Ordinal));
+
+    var noOpActivity = Assert.Single(
+        listener.StoppedActivities,
+        activity => string.Equals(activity.OperationName, "dvault.maintenance.pit.maintain_parents", StringComparison.Ordinal));
+    var noOpTags = GetTags(noOpActivity);
+    Assert.Equal(ActivityKind.Internal, noOpActivity.Kind);
+    Assert.Equal(ActivityStatusCode.Ok, noOpActivity.Status);
+    Assert.Null(noOpActivity.StatusDescription);
+    Assert.Equal("PitMaintainParents", noOpTags["dvault.maintenance.kind"]);
+    Assert.Equal("Pit", noOpTags["dvault.read_model.kind"]);
+    Assert.Equal("Parents", noOpTags["dvault.rebuild.scope"]);
+    Assert.Equal("success", noOpTags["dvault.outcome"]);
+    Assert.Equal(0, noOpTags["dvault.parent_key.count"]);
+    Assert.Equal(0, noOpTags["dvault.affected_row.count"]);
+    AssertDurationBucket(noOpTags["dvault.duration.bucket"]);
+    Assert.Contains(
+        noOpActivity.Events,
+        current => string.Equals(current.Name, "dvault.maintenance.noop", StringComparison.Ordinal));
+  }
+
+  [Fact]
+  public async Task PitMaintenanceActivityTracingKeepsNoListenerPathBehaviorThroughSqlite() {
+    var metadata = CreateMetadata();
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateOptions(database.DatabasePath, DataVaultLoadTimestampStorage.ProviderDefault);
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var maintenanceService = provider.GetRequiredService<IDataVaultPitMaintenanceService>();
+
+    await using var context = new PitMaintenanceContext(options, DataVaultLoadTimestampStorage.ProviderDefault);
+    await context.Database.EnsureCreatedAsync();
+
+    var result = await maintenanceService.MaintainParentsAsync(
+        context,
+        new DataVaultPitParentMaintenanceRequest(metadata.Pit, []));
+
+    Assert.Equal("PitCustomerProfileStatus", result.TableName);
+    Assert.Equal(0, result.ParentHashKeyCount);
+    Assert.True(result.IsNoOp);
+  }
+
+  [Fact]
+  public async Task PitMaintenanceActivityTracingRecordsFaultWithoutRawDiagnostics() {
+    var metadata = CreateMetadata();
+    var options = new DbContextOptionsBuilder<DbContext>()
+        .UseSqlite("Data Source=:memory:")
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var maintenanceService = provider.GetRequiredService<IDataVaultPitMaintenanceService>();
+
+    await using var context = new DbContext(options);
+    using var listener = new DataVaultActivityTestListener();
+
+    await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        maintenanceService.RebuildAsync(
+            context,
+            new DataVaultPitRebuildRequest(metadata.Pit)));
+
+    var activity = Assert.Single(listener.StoppedActivities);
+    var tags = GetTags(activity);
+    Assert.Equal("dvault.maintenance.pit.rebuild", activity.OperationName);
+    Assert.Equal(ActivityStatusCode.Error, activity.Status);
+    Assert.Null(activity.StatusDescription);
+    Assert.Equal("fault", tags["dvault.outcome"]);
+    Assert.Equal("fault", tags["dvault.failure.kind"]);
+    Assert.Equal("validation", tags["dvault.failure.class"]);
+    Assert.Equal("InvalidOperationException", tags["dvault.exception.type"]);
+    AssertDurationBucket(tags["dvault.duration.bucket"]);
+    Assert.Contains(
+        activity.Events,
+        current => string.Equals(current.Name, "dvault.failure.recorded", StringComparison.Ordinal));
+    AssertActivityDoesNotContain(activity, "CustomerProfileStatus");
+    AssertActivityDoesNotContain(activity, "PitCustomerProfileStatus");
+  }
+
+  [Fact]
+  public async Task PitMaintenanceActivityTracingRecordsCancellationThroughSqlite() {
+    var metadata = CreateMetadata();
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateOptions(database.DatabasePath, DataVaultLoadTimestampStorage.ProviderDefault);
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var maintenanceService = provider.GetRequiredService<IDataVaultPitMaintenanceService>();
+
+    await using var context = new PitMaintenanceContext(options, DataVaultLoadTimestampStorage.ProviderDefault);
+    await context.Database.EnsureCreatedAsync();
+    using var cancellationSource = new CancellationTokenSource();
+    await cancellationSource.CancelAsync();
+    using var listener = new DataVaultActivityTestListener();
+
+    await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+        maintenanceService.RebuildAsync(
+            context,
+            new DataVaultPitRebuildRequest(metadata.Pit),
+            cancellationSource.Token));
+
+    var activity = Assert.Single(listener.StoppedActivities);
+    var tags = GetTags(activity);
+    Assert.Equal("dvault.maintenance.pit.rebuild", activity.OperationName);
+    Assert.Equal(ActivityStatusCode.Error, activity.Status);
+    Assert.Null(activity.StatusDescription);
+    Assert.Equal("canceled", tags["dvault.outcome"]);
+    Assert.Equal("cancellation", tags["dvault.failure.kind"]);
+    Assert.Equal("cancellation", tags["dvault.failure.class"]);
+    Assert.Contains(
+        Assert.IsType<string>(tags["dvault.exception.type"]),
+        new[] { "OperationCanceledException", "TaskCanceledException" });
+    AssertDurationBucket(tags["dvault.duration.bucket"]);
+    Assert.Contains(
+        activity.Events,
+        current => string.Equals(current.Name, "dvault.failure.recorded", StringComparison.Ordinal));
   }
 
   [Fact]
@@ -998,6 +1169,41 @@ public sealed class DataVaultPitMaintenanceServiceSqliteTests {
         .UseDataVaultMetadata());
 
     return services.BuildServiceProvider(validateScopes: true);
+  }
+
+  private static IReadOnlyDictionary<string, object?> GetTags(Activity activity) {
+    return activity.TagObjects.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.Ordinal);
+  }
+
+  private static void AssertDurationBucket(object? value) {
+    Assert.Contains(
+        Assert.IsType<string>(value),
+        new[] {
+            "lt_10ms",
+            "10_99ms",
+            "100_999ms",
+            "1_9s",
+            "ge_10s",
+        });
+  }
+
+  private static void AssertActivityDoesNotContain(Activity activity, string rawText) {
+    Assert.DoesNotContain(rawText, activity.OperationName, StringComparison.Ordinal);
+    Assert.DoesNotContain(rawText, activity.DisplayName, StringComparison.Ordinal);
+    Assert.DoesNotContain(rawText, activity.StatusDescription ?? string.Empty, StringComparison.Ordinal);
+
+    foreach (var tag in activity.TagObjects) {
+      Assert.DoesNotContain(rawText, tag.Key, StringComparison.Ordinal);
+      Assert.DoesNotContain(rawText, tag.Value?.ToString() ?? string.Empty, StringComparison.Ordinal);
+    }
+
+    foreach (var currentEvent in activity.Events) {
+      Assert.DoesNotContain(rawText, currentEvent.Name, StringComparison.Ordinal);
+      foreach (var tag in currentEvent.Tags) {
+        Assert.DoesNotContain(rawText, tag.Key, StringComparison.Ordinal);
+        Assert.DoesNotContain(rawText, tag.Value?.ToString() ?? string.Empty, StringComparison.Ordinal);
+      }
+    }
   }
 
   private static string GetHashKey(

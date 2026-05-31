@@ -18,29 +18,47 @@ internal sealed class DefaultDataVaultPitMaintenanceService : IDataVaultPitMaint
       CancellationToken cancellationToken = default) {
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(request);
-
-    var projection = CreatePitProjection(dbContext, request.Pit);
-    var satelliteRows = await ReadSatelliteRowsAsync(
+    using var activity = DataVaultActivityTracing.StartMaintenanceActivity(
         dbContext,
-        projection,
-        parentHashKeys: null,
-        cancellationToken).ConfigureAwait(false);
-    var parentHashKeys = satelliteRows
-        .SelectMany(rows => rows.Select(row => row.ParentHashKey))
-        .Distinct(StringComparer.Ordinal)
-        .Order(StringComparer.Ordinal)
-        .ToArray();
-    var rowsToWrite = CreatePitRows(projection, parentHashKeys, satelliteRows);
-    var rowsDeleted = await DeleteAllPitRowsAsync(dbContext, projection, cancellationToken).ConfigureAwait(false);
-    DetachTrackedPitRows(dbContext, projection, parentHashKeys: null);
-    var rowsWritten = await AddPitRowsAsync(dbContext, projection, rowsToWrite, cancellationToken).ConfigureAwait(false);
+        DataVaultActivityTracing.PitRebuildOperation,
+        DataVaultActivityTracing.PitRebuildMaintenanceKind,
+        DataVaultActivityTracing.PitReadModelKind,
+        DataVaultActivityTracing.FullRebuildScope);
 
-    return new DataVaultPitMaintenanceResult(
-        request.Pit,
-        projection.TableName,
-        parentHashKeys.Length,
-        rowsDeleted,
-        rowsWritten);
+    try {
+      var projection = CreatePitProjection(dbContext, request.Pit);
+      var satelliteRows = await ReadSatelliteRowsAsync(
+          dbContext,
+          projection,
+          parentHashKeys: null,
+          cancellationToken).ConfigureAwait(false);
+      var parentHashKeys = satelliteRows
+          .SelectMany(rows => rows.Select(row => row.ParentHashKey))
+          .Distinct(StringComparer.Ordinal)
+          .Order(StringComparer.Ordinal)
+          .ToArray();
+      var rowsToWrite = CreatePitRows(projection, parentHashKeys, satelliteRows);
+      var rowsDeleted = await DeleteAllPitRowsAsync(dbContext, projection, cancellationToken).ConfigureAwait(false);
+      DetachTrackedPitRows(dbContext, projection, parentHashKeys: null);
+      var rowsWritten = await AddPitRowsAsync(dbContext, projection, rowsToWrite, cancellationToken).ConfigureAwait(false);
+      var result = new DataVaultPitMaintenanceResult(
+          request.Pit,
+          projection.TableName,
+          parentHashKeys.Length,
+          rowsDeleted,
+          rowsWritten);
+
+      activity.RecordSuccess(
+          result.RowsDeleted + result.RowsWritten,
+          parentKeyCount: null,
+          isNoOp: false);
+
+      return result;
+    }
+    catch (Exception exception) {
+      activity.RecordFailure(exception);
+      throw;
+    }
   }
 
   public async Task<DataVaultPitMaintenanceResult> MaintainParentsAsync(
@@ -49,38 +67,62 @@ internal sealed class DefaultDataVaultPitMaintenanceService : IDataVaultPitMaint
       CancellationToken cancellationToken = default) {
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(request);
+    using var activity = DataVaultActivityTracing.StartMaintenanceActivity(
+        dbContext,
+        DataVaultActivityTracing.PitMaintainParentsOperation,
+        DataVaultActivityTracing.PitMaintainParentsMaintenanceKind,
+        DataVaultActivityTracing.PitReadModelKind,
+        DataVaultActivityTracing.ParentsRebuildScope);
 
-    var tableName = GetPitTableName(request.Pit.Name);
-    if (request.ParentHashKeys.Count == 0) {
-      return new DataVaultPitMaintenanceResult(
+    try {
+      var tableName = GetPitTableName(request.Pit.Name);
+      if (request.ParentHashKeys.Count == 0) {
+        var emptyResult = new DataVaultPitMaintenanceResult(
+            request.Pit,
+            tableName,
+            parentHashKeyCount: 0,
+            rowsDeleted: 0,
+            rowsWritten: 0);
+        activity.RecordSuccess(
+            affectedRowCount: 0,
+            parentKeyCount: 0,
+            isNoOp: true);
+
+        return emptyResult;
+      }
+
+      var projection = CreatePitProjection(dbContext, request.Pit);
+      var satelliteRows = await ReadSatelliteRowsAsync(
+          dbContext,
+          projection,
+          request.ParentHashKeys,
+          cancellationToken).ConfigureAwait(false);
+      var rowsToWrite = CreatePitRows(projection, request.ParentHashKeys, satelliteRows);
+      var rowsDeleted = await DeletePitRowsForParentsAsync(
+          dbContext,
+          projection,
+          request.ParentHashKeys,
+          cancellationToken).ConfigureAwait(false);
+      DetachTrackedPitRows(dbContext, projection, request.ParentHashKeys.ToHashSet(StringComparer.Ordinal));
+      var rowsWritten = await AddPitRowsAsync(dbContext, projection, rowsToWrite, cancellationToken).ConfigureAwait(false);
+      var result = new DataVaultPitMaintenanceResult(
           request.Pit,
-          tableName,
-          parentHashKeyCount: 0,
-          rowsDeleted: 0,
-          rowsWritten: 0);
+          projection.TableName,
+          request.ParentHashKeys.Count,
+          rowsDeleted,
+          rowsWritten);
+
+      activity.RecordSuccess(
+          result.RowsDeleted + result.RowsWritten,
+          result.ParentHashKeyCount,
+          result.IsNoOp);
+
+      return result;
     }
-
-    var projection = CreatePitProjection(dbContext, request.Pit);
-    var satelliteRows = await ReadSatelliteRowsAsync(
-        dbContext,
-        projection,
-        request.ParentHashKeys,
-        cancellationToken).ConfigureAwait(false);
-    var rowsToWrite = CreatePitRows(projection, request.ParentHashKeys, satelliteRows);
-    var rowsDeleted = await DeletePitRowsForParentsAsync(
-        dbContext,
-        projection,
-        request.ParentHashKeys,
-        cancellationToken).ConfigureAwait(false);
-    DetachTrackedPitRows(dbContext, projection, request.ParentHashKeys.ToHashSet(StringComparer.Ordinal));
-    var rowsWritten = await AddPitRowsAsync(dbContext, projection, rowsToWrite, cancellationToken).ConfigureAwait(false);
-
-    return new DataVaultPitMaintenanceResult(
-        request.Pit,
-        projection.TableName,
-        request.ParentHashKeys.Count,
-        rowsDeleted,
-        rowsWritten);
+    catch (Exception exception) {
+      activity.RecordFailure(exception);
+      throw;
+    }
   }
 
   private static IReadOnlyList<Dictionary<string, object>> CreatePitRows(

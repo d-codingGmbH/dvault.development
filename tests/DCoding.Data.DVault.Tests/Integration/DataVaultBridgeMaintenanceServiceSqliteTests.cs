@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -63,6 +64,118 @@ public sealed class DataVaultBridgeMaintenanceServiceSqliteTests {
             "customer-2->order-3",
         ],
         rows);
+  }
+
+  [Fact]
+  public async Task BridgeMaintenanceActivityTracingEmitsSuccessAndNoOpSpansThroughSqlite() {
+    var bridge = ManyToManyMetadataModel.Bridges.Single();
+    var link = ManyToManyMetadataModel.Links.Single();
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<ManyToManyBridgeMaintenanceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    using var provider = CreateProvider();
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var maintenanceService = provider.GetRequiredService<IDataVaultBridgeMaintenanceService>();
+
+    await using var context = new ManyToManyBridgeMaintenanceContext(options);
+    await context.Database.EnsureCreatedAsync();
+
+    await SaveCustomerOrderLinkAsync(context, saveService, link, "customer-1", "order-2");
+    await SaveCustomerOrderLinkAsync(context, saveService, link, "customer-1", "order-1");
+    await SaveCustomerOrderLinkAsync(context, saveService, link, "customer-2", "order-3");
+
+    using var listener = new DataVaultActivityTestListener();
+    var rebuildResult = await maintenanceService.RebuildBridgeAsync(
+        context,
+        new DataVaultBridgeMaintenanceRequest(bridge));
+    var unchangedResult = await maintenanceService.MaintainBridgeAsync(
+        context,
+        new DataVaultBridgeMaintenanceRequest(bridge));
+
+    Assert.Equal(3, rebuildResult.RowsInserted);
+    Assert.Equal(3, unchangedResult.RowsUnchanged);
+    Assert.Equal(2, listener.StoppedActivities.Count);
+
+    var rebuildActivity = Assert.Single(
+        listener.StoppedActivities,
+        activity => string.Equals(activity.OperationName, "dvault.maintenance.bridge.rebuild", StringComparison.Ordinal));
+    var rebuildTags = GetTags(rebuildActivity);
+    Assert.Equal(ActivityKind.Internal, rebuildActivity.Kind);
+    Assert.Equal(ActivityStatusCode.Ok, rebuildActivity.Status);
+    Assert.Null(rebuildActivity.StatusDescription);
+    Assert.Equal("dvault.maintenance.bridge.rebuild", rebuildTags["dvault.operation"]);
+    Assert.Equal("BridgeRebuild", rebuildTags["dvault.maintenance.kind"]);
+    Assert.Equal("Bridge", rebuildTags["dvault.read_model.kind"]);
+    Assert.Equal("Full", rebuildTags["dvault.rebuild.scope"]);
+    Assert.Equal("success", rebuildTags["dvault.outcome"]);
+    Assert.Equal("Microsoft.EntityFrameworkCore.Sqlite", rebuildTags["dvault.provider"]);
+    Assert.Equal(
+        rebuildResult.RowsInserted + rebuildResult.RowsUpdated + rebuildResult.RowsDeleted,
+        rebuildTags["dvault.affected_row.count"]);
+    AssertDurationBucket(rebuildTags["dvault.duration.bucket"]);
+    Assert.False(rebuildTags.ContainsKey("dvault.parent_key.count"));
+    Assert.DoesNotContain(
+        rebuildActivity.Events,
+        current => string.Equals(current.Name, "dvault.maintenance.noop", StringComparison.Ordinal));
+
+    var noOpActivity = Assert.Single(
+        listener.StoppedActivities,
+        activity => string.Equals(activity.OperationName, "dvault.maintenance.bridge.maintain_incremental", StringComparison.Ordinal));
+    var noOpTags = GetTags(noOpActivity);
+    Assert.Equal(ActivityKind.Internal, noOpActivity.Kind);
+    Assert.Equal(ActivityStatusCode.Ok, noOpActivity.Status);
+    Assert.Null(noOpActivity.StatusDescription);
+    Assert.Equal("BridgeMaintainIncremental", noOpTags["dvault.maintenance.kind"]);
+    Assert.Equal("Bridge", noOpTags["dvault.read_model.kind"]);
+    Assert.Equal("Incremental", noOpTags["dvault.rebuild.scope"]);
+    Assert.Equal("success", noOpTags["dvault.outcome"]);
+    Assert.Equal(0, noOpTags["dvault.affected_row.count"]);
+    AssertDurationBucket(noOpTags["dvault.duration.bucket"]);
+    Assert.False(noOpTags.ContainsKey("dvault.parent_key.count"));
+    Assert.Contains(
+        noOpActivity.Events,
+        current => string.Equals(current.Name, "dvault.maintenance.noop", StringComparison.Ordinal));
+  }
+
+  [Fact]
+  public async Task BridgeMaintenanceActivityTracingRecordsCancellationThroughSqlite() {
+    var bridge = ManyToManyMetadataModel.Bridges.Single();
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<ManyToManyBridgeMaintenanceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    using var provider = CreateProvider();
+    var maintenanceService = provider.GetRequiredService<IDataVaultBridgeMaintenanceService>();
+
+    await using var context = new ManyToManyBridgeMaintenanceContext(options);
+    await context.Database.EnsureCreatedAsync();
+    using var cancellationSource = new CancellationTokenSource();
+    await cancellationSource.CancelAsync();
+    using var listener = new DataVaultActivityTestListener();
+
+    await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+        maintenanceService.MaintainBridgeAsync(
+            context,
+            new DataVaultBridgeMaintenanceRequest(bridge),
+            cancellationSource.Token));
+
+    var activity = Assert.Single(listener.StoppedActivities);
+    var tags = GetTags(activity);
+    Assert.Equal("dvault.maintenance.bridge.maintain_incremental", activity.OperationName);
+    Assert.Equal(ActivityKind.Internal, activity.Kind);
+    Assert.Equal(ActivityStatusCode.Error, activity.Status);
+    Assert.Null(activity.StatusDescription);
+    Assert.Equal("canceled", tags["dvault.outcome"]);
+    Assert.Equal("cancellation", tags["dvault.failure.kind"]);
+    Assert.Equal("cancellation", tags["dvault.failure.class"]);
+    Assert.Contains(
+        Assert.IsType<string>(tags["dvault.exception.type"]),
+        new[] { "OperationCanceledException", "TaskCanceledException" });
+    AssertDurationBucket(tags["dvault.duration.bucket"]);
+    Assert.Contains(
+        activity.Events,
+        current => string.Equals(current.Name, "dvault.failure.recorded", StringComparison.Ordinal));
   }
 
   [Fact]
@@ -292,6 +405,22 @@ public sealed class DataVaultBridgeMaintenanceServiceSqliteTests {
     services.AddDVaultSqlite();
 
     return services.BuildServiceProvider(validateScopes: true);
+  }
+
+  private static IReadOnlyDictionary<string, object?> GetTags(Activity activity) {
+    return activity.TagObjects.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.Ordinal);
+  }
+
+  private static void AssertDurationBucket(object? value) {
+    Assert.Contains(
+        Assert.IsType<string>(value),
+        new[] {
+            "lt_10ms",
+            "10_99ms",
+            "100_999ms",
+            "1_9s",
+            "ge_10s",
+        });
   }
 
   private static DataVaultMetadataModel ManyToManyMetadataModel { get; } = CreateManyToManyMetadataModel();

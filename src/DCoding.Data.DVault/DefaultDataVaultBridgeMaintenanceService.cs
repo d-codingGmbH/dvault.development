@@ -11,34 +11,52 @@ internal sealed class DefaultDataVaultBridgeMaintenanceService : IDataVaultBridg
       CancellationToken cancellationToken = default) {
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(request);
+    using var activity = DataVaultActivityTracing.StartMaintenanceActivity(
+        dbContext,
+        DataVaultActivityTracing.BridgeRebuildOperation,
+        DataVaultActivityTracing.BridgeRebuildMaintenanceKind,
+        DataVaultActivityTracing.BridgeReadModelKind,
+        DataVaultActivityTracing.FullRebuildScope);
 
-    var projection = CreateBridgeMaintenanceProjection(dbContext, request.Bridge);
-    var desiredRows = await CreateDesiredRowsAsync(dbContext, projection, cancellationToken).ConfigureAwait(false);
-    var bridgeRows = dbContext.Set<Dictionary<string, object>>(projection.BridgeTableName);
-    var existingRows = await bridgeRows
-        .ToListAsync(cancellationToken)
-        .ConfigureAwait(false);
+    try {
+      var projection = CreateBridgeMaintenanceProjection(dbContext, request.Bridge);
+      var desiredRows = await CreateDesiredRowsAsync(dbContext, projection, cancellationToken).ConfigureAwait(false);
+      var bridgeRows = dbContext.Set<Dictionary<string, object>>(projection.BridgeTableName);
+      var existingRows = await bridgeRows
+          .ToListAsync(cancellationToken)
+          .ConfigureAwait(false);
 
-    if (existingRows.Count > 0) {
-      bridgeRows.RemoveRange(existingRows);
-      await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+      if (existingRows.Count > 0) {
+        bridgeRows.RemoveRange(existingRows);
+        await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+      }
+
+      foreach (var desiredRow in desiredRows) {
+        bridgeRows.Add(CreateBridgeRow(projection, desiredRow));
+      }
+
+      if (desiredRows.Count > 0) {
+        await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+      }
+
+      var result = new DataVaultBridgeMaintenanceResult(
+          projection.MetadataName,
+          projection.BridgeTableName,
+          desiredRows.Count,
+          rowsUpdated: 0,
+          existingRows.Count,
+          rowsUnchanged: 0);
+      activity.RecordSuccess(
+          result.RowsInserted + result.RowsUpdated + result.RowsDeleted,
+          parentKeyCount: null,
+          isNoOp: false);
+
+      return result;
     }
-
-    foreach (var desiredRow in desiredRows) {
-      bridgeRows.Add(CreateBridgeRow(projection, desiredRow));
+    catch (Exception exception) {
+      activity.RecordFailure(exception);
+      throw;
     }
-
-    if (desiredRows.Count > 0) {
-      await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-    }
-
-    return new DataVaultBridgeMaintenanceResult(
-        projection.MetadataName,
-        projection.BridgeTableName,
-        desiredRows.Count,
-        rowsUpdated: 0,
-        existingRows.Count,
-        rowsUnchanged: 0);
   }
 
   public async Task<DataVaultBridgeMaintenanceResult> MaintainBridgeAsync(
@@ -47,49 +65,67 @@ internal sealed class DefaultDataVaultBridgeMaintenanceService : IDataVaultBridg
       CancellationToken cancellationToken = default) {
     ArgumentNullException.ThrowIfNull(dbContext);
     ArgumentNullException.ThrowIfNull(request);
+    using var activity = DataVaultActivityTracing.StartMaintenanceActivity(
+        dbContext,
+        DataVaultActivityTracing.BridgeMaintainIncrementalOperation,
+        DataVaultActivityTracing.BridgeMaintainIncrementalMaintenanceKind,
+        DataVaultActivityTracing.BridgeReadModelKind,
+        DataVaultActivityTracing.IncrementalRebuildScope);
 
-    var projection = CreateBridgeMaintenanceProjection(dbContext, request.Bridge);
-    var desiredRows = await CreateDesiredRowsAsync(dbContext, projection, cancellationToken).ConfigureAwait(false);
-    var bridgeRows = dbContext.Set<Dictionary<string, object>>(projection.BridgeTableName);
-    var existingRows = await bridgeRows
-        .ToListAsync(cancellationToken)
-        .ConfigureAwait(false);
-    var existingRowsByKey = existingRows.ToDictionary(
-        row => CreateBridgeRowKey(projection, row),
-        StringComparer.Ordinal);
-    var rowsInserted = 0;
-    var rowsUpdated = 0;
-    var rowsUnchanged = 0;
+    try {
+      var projection = CreateBridgeMaintenanceProjection(dbContext, request.Bridge);
+      var desiredRows = await CreateDesiredRowsAsync(dbContext, projection, cancellationToken).ConfigureAwait(false);
+      var bridgeRows = dbContext.Set<Dictionary<string, object>>(projection.BridgeTableName);
+      var existingRows = await bridgeRows
+          .ToListAsync(cancellationToken)
+          .ConfigureAwait(false);
+      var existingRowsByKey = existingRows.ToDictionary(
+          row => CreateBridgeRowKey(projection, row),
+          StringComparer.Ordinal);
+      var rowsInserted = 0;
+      var rowsUpdated = 0;
+      var rowsUnchanged = 0;
 
-    foreach (var desiredRow in desiredRows) {
-      if (!existingRowsByKey.TryGetValue(desiredRow.Key, out var existingRow)) {
-        bridgeRows.Add(CreateBridgeRow(projection, desiredRow));
-        rowsInserted++;
-        continue;
+      foreach (var desiredRow in desiredRows) {
+        if (!existingRowsByKey.TryGetValue(desiredRow.Key, out var existingRow)) {
+          bridgeRows.Add(CreateBridgeRow(projection, desiredRow));
+          rowsInserted++;
+          continue;
+        }
+
+        if (projection.TraversalDepthColumnName is not null &&
+            desiredRow.TraversalDepth.HasValue &&
+            ReadInt32(projection, existingRow, projection.TraversalDepthColumnName) > desiredRow.TraversalDepth.Value) {
+          existingRow[projection.TraversalDepthColumnName] = desiredRow.TraversalDepth.Value;
+          rowsUpdated++;
+          continue;
+        }
+
+        rowsUnchanged++;
       }
 
-      if (projection.TraversalDepthColumnName is not null &&
-          desiredRow.TraversalDepth.HasValue &&
-          ReadInt32(projection, existingRow, projection.TraversalDepthColumnName) > desiredRow.TraversalDepth.Value) {
-        existingRow[projection.TraversalDepthColumnName] = desiredRow.TraversalDepth.Value;
-        rowsUpdated++;
-        continue;
+      if (rowsInserted > 0 || rowsUpdated > 0) {
+        await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
       }
 
-      rowsUnchanged++;
-    }
+      var result = new DataVaultBridgeMaintenanceResult(
+          projection.MetadataName,
+          projection.BridgeTableName,
+          rowsInserted,
+          rowsUpdated,
+          rowsDeleted: 0,
+          rowsUnchanged);
+      activity.RecordSuccess(
+          result.RowsInserted + result.RowsUpdated + result.RowsDeleted,
+          parentKeyCount: null,
+          isNoOp: result.RowsInserted == 0 && result.RowsUpdated == 0 && result.RowsDeleted == 0);
 
-    if (rowsInserted > 0 || rowsUpdated > 0) {
-      await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+      return result;
     }
-
-    return new DataVaultBridgeMaintenanceResult(
-        projection.MetadataName,
-        projection.BridgeTableName,
-        rowsInserted,
-        rowsUpdated,
-        rowsDeleted: 0,
-        rowsUnchanged);
+    catch (Exception exception) {
+      activity.RecordFailure(exception);
+      throw;
+    }
   }
 
   private static BridgeMaintenanceProjection CreateBridgeMaintenanceProjection(
