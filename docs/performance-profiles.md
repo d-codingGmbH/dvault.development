@@ -2,7 +2,7 @@
 
 Status: v0.23.0 adopter guidance
 
-This guide is the detailed performance-profile reference for DVault adopters. It translates the checked-in benchmark evidence into starting profiles, stop conditions, and rerun triggers. It does not create absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, or credential-management guidance.
+This guide is the detailed performance-profile reference for the current v0.23.0 DVault documentation baseline. It translates the checked-in benchmark evidence into starting profiles, stop conditions, and rerun triggers. It does not create absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, or credential-management guidance. The coordinated release record is [DVault v0.23.0 Release Notes](releases/v0.23.0.md).
 
 ## Evidence Baseline
 

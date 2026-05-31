@@ -7,13 +7,13 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned; use one version that has already been published for every selected package id. This documentation baseline does not by itself confirm package publication.
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.22.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.22.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.22.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.22.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.22.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.22.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.22.0
+dotnet add package DCoding.Data.DVault --version 0.23.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.23.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.23.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.23.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.23.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.23.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.23.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
@@ -22,7 +22,7 @@ Applications still need their normal Entity Framework Core database provider pac
 
 Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
 
-For benchmark-backed performance profile guidance, see [Performance Profiles](docs/performance-profiles.md). For a short adopter readiness pass before production use, see the [Production Adoption Checklist](docs/production-adoption-checklist.md).
+The current coordinated documentation baseline is [DVault v0.23.0 Release Notes](docs/releases/v0.23.0.md), which consolidates listener-driven Activity tracing and benchmark-backed performance profile guidance without recording package publication. For detailed performance guidance, see [Performance Profiles](docs/performance-profiles.md). For a short adopter readiness pass before production use, see the [Production Adoption Checklist](docs/production-adoption-checklist.md).
 
 ## Quickstart
 
@@ -256,6 +256,30 @@ services.AddDVaultTelemetry();
 The built-in meter name is `DCoding.Data.DVault`. It records save attempt, row, saved-record, request-count, operation-count, chunk-count, processed-chunk-count, retained-state high-water, duration, and fallback-cause instruments, plus read attempt, returned-row, requested-key, duration, and fallback-cause instruments. Metric tags stay low-cardinality: operation kind, read family, success/failure outcome, provider name, selected strategy type name, strategy status, and finite fallback-cause enum names.
 
 `IDataVaultTelemetryObserver` receives one `DataVaultSaveTelemetrySummary` for each explicit single, bulk, or chunked save attempt and one `DataVaultReadTelemetrySummary` for each latest/current/as-of satellite, PIT, or bridge read attempt handled by the DVault read path. Chunked summaries include bounded chunk counts, processed chunk counts, retained-state high-water counts, finite fallback causes, unsupported-shape classifications, and transaction guidance without raw hash keys, payload values, or per-parent state entries. Failure summaries include duration and strategy classification without raw exception messages, hash keys, record sources, metadata names, table names, or full diagnostic text.
+
+### Trace explicit save, read, and maintenance operations
+
+Activity tracing is a sibling observability surface, not a prerequisite for metrics or telemetry summaries. `AddDVault()` remains telemetry-free by default and does not require `AddDVaultTelemetry()`. Applications opt into traces by registering an `ActivityListener`, OpenTelemetry tracing provider, or equivalent listener for the `DCoding.Data.DVault` ActivitySource. Exporters, collectors, dashboards, alerts, hosting, and sampling policy stay application-owned.
+
+```csharp
+using DCoding.Data.DVault;
+using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics;
+
+using var listener = new ActivityListener {
+  ShouldListenTo = source => source.Name == "DCoding.Data.DVault",
+  Sample = (ref ActivityCreationOptions<ActivityContext> options) =>
+      ActivitySamplingResult.AllDataAndRecorded,
+  ActivityStopped = activity => Console.WriteLine(activity.DisplayName),
+};
+
+ActivitySource.AddActivityListener(listener);
+
+var services = new ServiceCollection();
+services.AddDVault();
+```
+
+The tracing contract is closed and versioned in [DVault V1 Activity Tracing Contract](docs/architecture/dvault-v1-activity-tracing-contract.md). DVault Activity names, tags, events, status descriptions, and exception metadata must not include raw business keys or hash keys, payload values, record sources, SQL text, credentials, connection strings, provider messages, exception messages, stack traces, or other high-cardinality diagnostic text.
 
 ### Read typed latest and as-of satellite projections
 
@@ -741,9 +765,24 @@ Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadS
 
 SQLite remains the default local live-schema proof because it does not require external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks require consumer-managed reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation. Keep those external provider checks opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
 
-## v0.22.0 Release Notes
+## v0.23.0 Release Notes
 
-The v0.22.0 release records the typed satellite read-model and stable-hash governance documentation rollout as the current coordinated seven-package baseline while preserving the explicit save/read service boundaries, PIT/bridge maintenance limits, support-bundle transport ownership, public API snapshot posture, compiled-query guidance, and package publication separation from earlier releases. See `docs/releases/v0.22.0.md` for the release-note record, source-backed typed-helper evidence, public API snapshot evidence, stable `sha256-v1` compatibility vectors, compiled EF query alternative, validation commands, and package verification posture.
+The v0.23.0 release record is the current coordinated seven-package documentation baseline for listener-driven Activity tracing and benchmark-backed performance profiles. It preserves the v0.22.0 typed satellite helper and stable hash governance boundary, the v0.21.0 PIT/bridge maintenance and read boundary, the v0.20.0 provider-specific optimized write guidance, and the manual package publication separation from earlier releases. See `docs/releases/v0.23.0.md` for package scope, compatibility posture, validation evidence, benchmark evidence references, and non-goals.
+
+Notable user-facing changes:
+
+- Activity tracing is documented as listener-driven through the `DCoding.Data.DVault` ActivitySource.
+- `AddDVault()` remains telemetry-free by default; `AddDVaultTelemetry()`, built-in `System.Diagnostics.Metrics`, and `IDataVaultTelemetryObserver` remain sibling opt-in observability surfaces rather than prerequisites for tracing.
+- The Activity tracing redaction boundary is explicit: no raw business keys or hash keys, payload values, record sources, SQL text, credentials, connection strings, provider messages, exception messages, stack traces, or other high-cardinality diagnostic text in Activity names, tags, events, status descriptions, or exception metadata.
+- Performance guidance is consolidated in [Performance Profiles](docs/performance-profiles.md) with four adopter starting profiles: small app-local vault, medium chunked ingestion, staged provider ingestion, and read-model heavy.
+- Timing claims remain tied to the root [benchmark-summary.md](benchmark-summary.md), [benchmark-summary.csv](benchmark-summary.csv), and [benchmark-summary.json](benchmark-summary.json) triplet and its run context.
+- Optional PostgreSQL, SQL Server, MySQL, and Oracle benchmark rows remain visible as skipped rows when their connection-string environment variables are unset; the current checked-in evidence does not claim measured external-provider wins.
+
+Primary v0.23.0 validation surfaces are [DataVaultActivityTracingTests.cs](tests/DCoding.Data.DVault.Tests/Unit/DataVaultActivityTracingTests.cs), [DataVaultPitMaintenanceServiceSqliteTests.cs](tests/DCoding.Data.DVault.Tests/Integration/DataVaultPitMaintenanceServiceSqliteTests.cs), [DataVaultBridgeMaintenanceServiceSqliteTests.cs](tests/DCoding.Data.DVault.Tests/Integration/DataVaultBridgeMaintenanceServiceSqliteTests.cs), [BenchmarkScenarioExecutionTests.cs](tests/DCoding.Data.DVault.Tests/Integration/BenchmarkScenarioExecutionTests.cs), [Performance Profiles](docs/performance-profiles.md), and [Performance Evidence And Benchmark Artifact Contract](docs/plans/performance-evidence-benchmark-artifact-contract.md).
+
+## v0.22.0 Historical Release Notes
+
+The v0.22.0 release recorded the typed satellite read-model and stable-hash governance documentation rollout as the prior coordinated seven-package baseline while preserving the explicit save/read service boundaries, PIT/bridge maintenance limits, support-bundle transport ownership, public API snapshot posture, compiled-query guidance, and package publication separation from earlier releases. See `docs/releases/v0.22.0.md` for the release-note record, source-backed typed-helper evidence, public API snapshot evidence, stable `sha256-v1` compatibility vectors, compiled EF query alternative, validation commands, and package verification posture.
 
 Notable user-facing changes:
 
@@ -815,7 +854,7 @@ Notable user-facing changes:
 
 ## v0.20.0 Historical Provider-Optimized Write Boundary
 
-The [v0.20.0 notes](docs/releases/v0.20.0.md) document a provider-specific optimized write-path boundary without changing the public write API. v0.19.0 remains the historical baseline for provider-neutral chunked explicit saves and kept staged provider bulk ingestion outside that release's claim set. v0.20.0 moved the write documentation boundary forward only where repository evidence already exposed a supported or measured provider path; v0.21.0 carries that write guidance forward while making PIT/bridge completeness the current read-model documentation boundary.
+The [v0.20.0 notes](docs/releases/v0.20.0.md) document a provider-specific optimized write-path boundary without changing the public write API. v0.19.0 remains the historical baseline for provider-neutral chunked explicit saves and kept staged provider bulk ingestion outside that release's claim set. v0.20.0 moved the write documentation boundary forward only where repository evidence already exposed a supported or measured provider path; v0.21.0 carries that write guidance forward as the PIT/bridge read-model documentation boundary preserved by the current v0.23.0 baseline.
 
 Use this carried-forward hierarchy when planning provider-optimized write adoption:
 
@@ -830,9 +869,9 @@ Use this carried-forward hierarchy when planning provider-optimized write adopti
 
 The benchmark-facing evidence continues to use the root `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` triplet plus the shared [Performance Evidence And Benchmark Artifact Contract](docs/plans/performance-evidence-benchmark-artifact-contract.md). Provider-specific timing claims must preserve provider, strategy, execution-detail, skip, and run-context information instead of introducing new ad hoc evidence files.
 
-## Current v0.22.0 Limitations
+## Current v0.23.0 Limitations
 
-Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.22.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
+Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.23.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
 
 Compiled-model, compiled-query, and `DbContext` pooling evidence is SQLite timing and allocation evidence for bounded EF shapes. It does not assert provider-specific SQL shape, index usage, generated compiled-model code ownership, dynamic request-built read compilation, or pooling for caller-owned variable model shapes.
 
@@ -841,6 +880,8 @@ The SaveChanges guard is opt-in and generated-row focused. `AddDVault()` does no
 Aggregate preflight is an explicit facade over caller-owned inputs. DVault does not discover EF snapshots, scan repositories for migrations or reviewed artifacts, generate representative save or read requests, open live databases by default, publish dashboards, or route support-bundle artifacts. Consumers must supply snapshot models, reviewed imports, migration operations, and representative diagnostics when they want those lanes evaluated.
 
 Telemetry remains explicit opt-in application wiring. DVault does not configure metric listeners, exporters, dashboards, alert rules, or backend-specific observability pipelines, and it does not emit high-cardinality raw values such as exception messages, hash keys, record sources, metadata names, table names, generated SQL, or full diagnostics text as metric tags.
+
+Activity tracing remains listener-driven application wiring. DVault does not configure OpenTelemetry packages, exporters, collectors, dashboards, alert rules, hosting, sampling policy, baggage, custom trace identifiers, or custom correlation storage. Activity data is bounded operational shape and outcome evidence only; it is not a transport for raw keys, payload values, record sources, SQL text, credentials, connection strings, provider messages, exception messages, stack traces, support bundles, or diagnostic text.
 
 Support bundles are consumer-invoked diagnostic artifacts. DVault does not upload, attach, archive, retain, or route support-bundle JSON, and it does not open a live database connection unless the consumer explicitly invokes the live-schema option in an environment they manage.
 
