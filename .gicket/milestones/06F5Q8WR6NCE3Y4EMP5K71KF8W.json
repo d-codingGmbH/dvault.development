@@ -3,6 +3,6 @@
   "milestoneId": "06F5Q8WR6NCE3Y4EMP5K71KF8W",
   "name": "v0.23.0 - Activity tracing",
   "description": "Opt-in System.Diagnostics.Activity tracing for DVault save/read/maintenance paths with redaction and correlation guardrails.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-24T20:18:28.5331215Z"
 }

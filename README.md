@@ -22,7 +22,7 @@ Applications still need their normal Entity Framework Core database provider pac
 
 Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
 
-The current coordinated documentation baseline is [DVault v0.23.0 Release Notes](docs/releases/v0.23.0.md), which consolidates listener-driven Activity tracing and benchmark-backed performance profile guidance without recording package publication. For detailed performance guidance, see [Performance Profiles](docs/performance-profiles.md). For a short adopter readiness pass before production use, see the [Production Adoption Checklist](docs/production-adoption-checklist.md).
+The current coordinated release baseline is [DVault v0.23.0 Release Notes](docs/releases/v0.23.0.md), which adds listener-driven Activity tracing behind existing service boundaries and consolidates benchmark-backed performance profile guidance without recording package publication. For detailed performance guidance, see [Performance Profiles](docs/performance-profiles.md). For a short adopter readiness pass before production use, see the [Production Adoption Checklist](docs/production-adoption-checklist.md).
 
 ## Quickstart
 
@@ -767,11 +767,11 @@ SQLite remains the default local live-schema proof because it does not require e
 
 ## v0.23.0 Release Notes
 
-The v0.23.0 release record is the current coordinated seven-package documentation baseline for listener-driven Activity tracing and benchmark-backed performance profiles. It preserves the v0.22.0 typed satellite helper and stable hash governance boundary, the v0.21.0 PIT/bridge maintenance and read boundary, the v0.20.0 provider-specific optimized write guidance, and the manual package publication separation from earlier releases. See `docs/releases/v0.23.0.md` for package scope, compatibility posture, validation evidence, benchmark evidence references, and non-goals.
+The v0.23.0 release record is the current coordinated seven-package baseline for listener-driven Activity tracing and benchmark-backed performance profiles. It preserves the v0.22.0 typed satellite helper and stable hash governance boundary, the v0.21.0 PIT/bridge maintenance and read boundary, the v0.20.0 provider-specific optimized write guidance, and the manual package publication separation from earlier releases. See `docs/releases/v0.23.0.md` for package scope, compatibility posture, validation evidence, benchmark evidence references, and non-goals.
 
 Notable user-facing changes:
 
-- Activity tracing is documented as listener-driven through the `DCoding.Data.DVault` ActivitySource.
+- Activity tracing is available and documented as listener-driven through the `DCoding.Data.DVault` ActivitySource.
 - `AddDVault()` remains telemetry-free by default; `AddDVaultTelemetry()`, built-in `System.Diagnostics.Metrics`, and `IDataVaultTelemetryObserver` remain sibling opt-in observability surfaces rather than prerequisites for tracing.
 - The Activity tracing redaction boundary is explicit: no raw business keys or hash keys, payload values, record sources, SQL text, credentials, connection strings, provider messages, exception messages, stack traces, or other high-cardinality diagnostic text in Activity names, tags, events, status descriptions, or exception metadata.
 - Performance guidance is consolidated in [Performance Profiles](docs/performance-profiles.md) with four adopter starting profiles: small app-local vault, medium chunked ingestion, staged provider ingestion, and read-model heavy.
