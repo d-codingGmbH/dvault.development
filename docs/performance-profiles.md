@@ -57,7 +57,7 @@ Keep the first production proof on the explicit `IDataVaultSaveService` boundary
 
 ### Diagnostics And Telemetry
 
-Inspect request-bound save-strategy diagnostics through `IDataVaultDiagnosticsService` before changing registration. The useful fields are strategy status, selected strategy name, candidate count, and finite fallback causes. For read-heavy app-local paths, inspect `IDataVaultReadDiagnosticsService` read strategy and read-shape diagnostics. Register `AddDVaultTelemetry()` only when the application wants built-in `System.Diagnostics.Metrics` for explicit save/read attempts; metric listeners, exporters, dashboards, and alerting stay application-owned.
+Inspect request-bound save-strategy diagnostics through `IDataVaultDiagnosticsService` before changing registration. The useful fields are strategy status, selected strategy name, candidate count, and finite fallback causes. For read-heavy app-local paths, inspect `IDataVaultReadDiagnosticsService` read strategy and read-shape diagnostics under the [DVault V2 Redacted Read-Plan Explain Contract](architecture/dvault-v2-redacted-read-plan-explain-contract.md). Register `AddDVaultTelemetry()` only when the application wants built-in `System.Diagnostics.Metrics` for explicit save/read attempts; metric listeners, exporters, dashboards, and alerting stay application-owned.
 
 ### Supporting Rows
 
@@ -184,7 +184,7 @@ Use the runtime read service for dynamic and request-built shapes. For SQLite, a
 
 ### Diagnostics And Telemetry
 
-Use `IDataVaultReadDiagnosticsService` for request-bound read strategy and read-shape diagnostics. The useful fields are strategy status, selected strategy name, fallback causes, read-shape kind, provider status, translated table identity, filter columns, and deterministic row-selection rules. Register `AddDVaultTelemetry()` when read attempt, returned-row, requested-key, duration, and finite fallback-cause metrics are needed. Do not expect raw SQL, provider query plans, automatic index creation, or provider-specific physical-design promises from these surfaces.
+Use `IDataVaultReadDiagnosticsService` for request-bound read strategy and read-shape diagnostics. The useful fields are strategy status, selected strategy name, fallback causes, read-shape kind, provider status, translated table identity, filter columns, and deterministic row-selection rules. The bounded payload and redaction rules are defined by [DVault V2 Redacted Read-Plan Explain Contract](architecture/dvault-v2-redacted-read-plan-explain-contract.md). Register `AddDVaultTelemetry()` when read attempt, returned-row, requested-key, duration, and finite fallback-cause metrics are needed. Do not expect raw SQL, provider query plans, automatic index creation, or provider-specific physical-design promises from these surfaces.
 
 ### Supporting Rows
 

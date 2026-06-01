@@ -327,29 +327,130 @@ public sealed class DataVaultDiagnosticsTests {
   }
 
   [Fact]
-  public void SupportBundleSerializesReadShapeWithoutRequestValues() {
+  public void ReadPlanExplainContractDocumentNamesAuthoritativeSurfaceAndRedactionBoundary() {
+    var document = ReadRepositoryFile("docs/architecture/dvault-v2-redacted-read-plan-explain-contract.md");
+    var readme = ReadRepositoryFile("README.md");
+    var performanceProfiles = ReadRepositoryFile("docs/performance-profiles.md");
+    var productionChecklist = ReadRepositoryFile("docs/production-adoption-checklist.md");
+
+    Assert.Contains("IDataVaultReadDiagnosticsService.Analyze(...)", document, StringComparison.Ordinal);
+    Assert.Contains("DataVaultDiagnosticsResult", document, StringComparison.Ordinal);
+    Assert.Contains("ReadStrategy", document, StringComparison.Ordinal);
+    Assert.Contains("ReadShape", document, StringComparison.Ordinal);
+    Assert.Contains("readShape", document, StringComparison.Ordinal);
+    Assert.Contains("LatestSatellite", document, StringComparison.Ordinal);
+    Assert.Contains("PitAsOf", document, StringComparison.Ordinal);
+    Assert.Contains("Bridge", document, StringComparison.Ordinal);
+    Assert.Contains("Current", document, StringComparison.Ordinal);
+    Assert.Contains("AsOf", document, StringComparison.Ordinal);
+    Assert.Contains("Traversal", document, StringComparison.Ordinal);
+    Assert.Contains("ProviderStrategySelected", document, StringComparison.Ordinal);
+    Assert.Contains("ProviderNeutralFallback", document, StringComparison.Ordinal);
+    Assert.Contains("UnsupportedSatelliteParent", document, StringComparison.Ordinal);
+    Assert.Contains("MultiActiveSatelliteUnsupported", document, StringComparison.Ordinal);
+    Assert.Contains("UnsupportedPitShape", document, StringComparison.Ordinal);
+    Assert.Contains("UnsupportedBridgeShape", document, StringComparison.Ordinal);
+    Assert.Contains("selectedStrategyName", document, StringComparison.Ordinal);
+    Assert.Contains("raw request keys", document, StringComparison.Ordinal);
+    Assert.Contains("raw hash-key values", document, StringComparison.Ordinal);
+    Assert.Contains("SQL text", document, StringComparison.Ordinal);
+    Assert.Contains("provider query plans", document, StringComparison.Ordinal);
+    Assert.Contains("automatic-index advisor", document, StringComparison.Ordinal);
+
+    Assert.Contains("DVault V2 Redacted Read-Plan Explain Contract", readme, StringComparison.Ordinal);
+    Assert.Contains("DVault V2 Redacted Read-Plan Explain Contract", performanceProfiles, StringComparison.Ordinal);
+    Assert.Contains("DVault V2 Redacted Read-Plan Explain Contract", productionChecklist, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void SupportBundleSerializesReadPlanExplainShapesWithoutRequestValues() {
     var metadata = CreateReadShapeMetadata();
+    var asOf = new DateTimeOffset(2026, 5, 11, 12, 0, 0, TimeSpan.Zero);
     var optionsBuilder = new DbContextOptionsBuilder<ReadShapeDiagnosticsContext>()
         .UseSqlite("Data Source=:memory:");
     optionsBuilder.UseDataVaultMetadata(DataVaultMetadataRegistry.Create(metadata.Model));
     var options = optionsBuilder.Options;
-    var services = new ServiceCollection();
-    services.AddDVault();
-    using var provider = services.BuildServiceProvider(validateScopes: true);
-    var diagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+    using var selectedProvider = CreateSqliteServiceProvider();
+    using var fallbackProvider = CreateServiceProvider();
+    var selectedDiagnostics = selectedProvider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+    var fallbackDiagnostics = fallbackProvider.GetRequiredService<IDataVaultReadDiagnosticsService>();
 
     using var context = new ReadShapeDiagnosticsContext(options);
-    var result = diagnostics.Analyze(
-        context,
-        new DataVaultLatestSatelliteReadRequest(metadata.Profile, ["secret-customer-hash-key"]));
 
-    var json = DataVaultSupportBundleExporter.ExportJson(result);
-
-    Assert.Contains("\"readShape\"", json, StringComparison.Ordinal);
-    Assert.Contains("\"kind\": \"LatestSatellite\"", json, StringComparison.Ordinal);
-    Assert.Contains("\"readStrategyStatus\": \"ProviderNeutralFallback\"", json, StringComparison.Ordinal);
-    Assert.Contains("\"parentHashKeyFilter\"", json, StringComparison.Ordinal);
-    Assert.DoesNotContain("secret-customer-hash-key", json, StringComparison.Ordinal);
+    AssertReadPlanExplainExport(
+        selectedDiagnostics.Analyze(
+            context,
+            new DataVaultLatestSatelliteReadRequest(
+                metadata.Profile,
+                ["secret-satellite-parent-hash-key"],
+                asOf)),
+        DataVaultReadShapeKind.LatestSatellite,
+        DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected,
+        expectedSelectedStrategyName: "SqliteDataVaultReadStrategy",
+        expectedFallbackCause: null,
+        forbiddenValues: ["secret-satellite-parent-hash-key", "2026-05-11"]);
+    AssertReadPlanExplainExport(
+        fallbackDiagnostics.Analyze(
+            context,
+            new DataVaultLatestSatelliteReadRequest(
+                metadata.Profile,
+                ["secret-satellite-fallback-hash-key"],
+                asOf)),
+        DataVaultReadShapeKind.LatestSatellite,
+        DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback,
+        expectedSelectedStrategyName: null,
+        expectedFallbackCause: DataVaultReadStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered,
+        forbiddenValues: ["secret-satellite-fallback-hash-key", "2026-05-11"]);
+    AssertReadPlanExplainExport(
+        selectedDiagnostics.Analyze(
+            context,
+            new DataVaultPitAsOfReadRequest(
+                metadata.Pit,
+                ["secret-pit-parent-hash-key"],
+                asOf)),
+        DataVaultReadShapeKind.PitAsOf,
+        DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected,
+        expectedSelectedStrategyName: "SqliteDataVaultReadStrategy",
+        expectedFallbackCause: null,
+        forbiddenValues: ["secret-pit-parent-hash-key", "2026-05-11"]);
+    AssertReadPlanExplainExport(
+        fallbackDiagnostics.Analyze(
+            context,
+            new DataVaultPitAsOfReadRequest(
+                metadata.Pit,
+                ["secret-pit-fallback-hash-key"],
+                asOf)),
+        DataVaultReadShapeKind.PitAsOf,
+        DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback,
+        expectedSelectedStrategyName: null,
+        expectedFallbackCause: DataVaultReadStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered,
+        forbiddenValues: ["secret-pit-fallback-hash-key", "2026-05-11"]);
+    AssertReadPlanExplainExport(
+        selectedDiagnostics.Analyze(
+            context,
+            new DataVaultBridgeReadRequest(
+                metadata.HierarchyBridge,
+                DataVaultBridgeTraversalEndpoint.Ancestor,
+                ["secret-bridge-endpoint-hash-key"],
+                maximumDepth: 2)),
+        DataVaultReadShapeKind.Bridge,
+        DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected,
+        expectedSelectedStrategyName: "SqliteDataVaultReadStrategy",
+        expectedFallbackCause: null,
+        forbiddenValues: ["secret-bridge-endpoint-hash-key"]);
+    AssertReadPlanExplainExport(
+        fallbackDiagnostics.Analyze(
+            context,
+            new DataVaultBridgeReadRequest(
+                metadata.HierarchyBridge,
+                DataVaultBridgeTraversalEndpoint.Ancestor,
+                ["secret-bridge-fallback-hash-key"],
+                maximumDepth: 2)),
+        DataVaultReadShapeKind.Bridge,
+        DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback,
+        expectedSelectedStrategyName: null,
+        expectedFallbackCause: DataVaultReadStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered,
+        forbiddenValues: ["secret-bridge-fallback-hash-key"]);
   }
 
   [Fact]
@@ -731,6 +832,13 @@ public sealed class DataVaultDiagnosticsTests {
     return services.BuildServiceProvider(validateScopes: true);
   }
 
+  private static ServiceProvider CreateSqliteServiceProvider() {
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    return services.BuildServiceProvider(validateScopes: true);
+  }
+
   private static ServiceProvider CreateOracleServiceProvider() {
     var services = new ServiceCollection();
     services.AddDVaultOracle();
@@ -836,6 +944,63 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal(path, issue.Path);
     Assert.Contains(invariant, issue.Message, StringComparison.Ordinal);
     Assert.NotEmpty(DataVaultDiagnosticCatalog.GetMigrationOperationDefinition(code).Remediation);
+  }
+
+  private static void AssertReadPlanExplainExport(
+      DataVaultDiagnosticsResult result,
+      DataVaultReadShapeKind expectedKind,
+      DataVaultReadStrategyDiagnosticsStatus expectedStatus,
+      string? expectedSelectedStrategyName,
+      DataVaultReadStrategyFallbackCauseKind? expectedFallbackCause,
+      IReadOnlyList<string> forbiddenValues) {
+    var json = DataVaultSupportBundleExporter.ExportJson(result);
+
+    Assert.Contains("\"readShape\"", json, StringComparison.Ordinal);
+    foreach (var forbiddenValue in forbiddenValues) {
+      Assert.DoesNotContain(forbiddenValue, json, StringComparison.Ordinal);
+    }
+
+    using var document = JsonDocument.Parse(json);
+    var diagnostics = document.RootElement.GetProperty("diagnostics");
+    var readStrategy = diagnostics.GetProperty("readStrategy");
+    var readShape = diagnostics.GetProperty("readShape");
+    var provider = readShape.GetProperty("provider");
+
+    Assert.Equal(expectedKind.ToString(), readShape.GetProperty("kind").GetString());
+    Assert.Equal(expectedStatus.ToString(), readStrategy.GetProperty("status").GetString());
+    Assert.Equal(expectedStatus.ToString(), provider.GetProperty("readStrategyStatus").GetString());
+
+    if (expectedSelectedStrategyName is null) {
+      Assert.False(readStrategy.TryGetProperty("selectedStrategyName", out _));
+      Assert.False(provider.TryGetProperty("selectedStrategyName", out _));
+    }
+    else {
+      Assert.Equal(expectedSelectedStrategyName, readStrategy.GetProperty("selectedStrategyName").GetString());
+      Assert.Equal(expectedSelectedStrategyName, provider.GetProperty("selectedStrategyName").GetString());
+    }
+
+    if (expectedFallbackCause.HasValue) {
+      Assert.Contains(
+          provider
+              .GetProperty("readStrategyFallbackCauses")
+              .EnumerateArray()
+              .Select(cause => cause.GetProperty("kind").GetString()),
+          cause => string.Equals(cause, expectedFallbackCause.Value.ToString(), StringComparison.Ordinal));
+    }
+  }
+
+  private static string ReadRepositoryFile(string relativePath) {
+    var directory = new DirectoryInfo(AppContext.BaseDirectory);
+
+    while (directory is not null) {
+      if (File.Exists(Path.Combine(directory.FullName, "DVault.slnx"))) {
+        return File.ReadAllText(Path.Combine(directory.FullName, relativePath));
+      }
+
+      directory = directory.Parent;
+    }
+
+    throw new InvalidOperationException("Unable to locate the DVault repository root from the test output directory.");
   }
 
   private static IReadOnlyList<DataVaultSaveRequest> CreateRequests(

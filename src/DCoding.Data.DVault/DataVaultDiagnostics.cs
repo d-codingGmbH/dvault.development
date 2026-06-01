@@ -524,7 +524,12 @@ public sealed record DataVaultReadShapeProviderDiagnostics(
     string ProviderBehaviorProfileName,
     bool ProviderBehaviorDefaulted,
     DataVaultReadStrategyDiagnosticsStatus ReadStrategyStatus,
-    IReadOnlyList<DataVaultReadStrategyFallbackCause> ReadStrategyFallbackCauses);
+    IReadOnlyList<DataVaultReadStrategyFallbackCause> ReadStrategyFallbackCauses) {
+  /// <summary>
+  /// Gets the selected provider-specific read strategy name when a provider strategy accepted the request.
+  /// </summary>
+  public string? SelectedStrategyName { get; init; }
+}
 
 /// <summary>
 /// Machine-readable diagnostics for latest/current/as-of satellite read shape.
@@ -1690,7 +1695,9 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         explain.ProviderBehaviorProfileName,
         explain.ProviderBehaviorDefaulted,
         readStrategy.Status,
-        readStrategy.FallbackCauses);
+        readStrategy.FallbackCauses) {
+      SelectedStrategyName = readStrategy.SelectedStrategyName,
+    };
   }
 
   private static DataVaultSatelliteReadShapeDiagnostics CreateSatelliteReadShapeDiagnostics(

@@ -1025,6 +1025,7 @@ type public sealed class DCoding.Data.DVault.DataVaultReadShapeProviderDiagnosti
   property public string CapabilityProfileName { get; init; }
   property public string ProviderBehaviorProfileName { get; init; }
   property public string? ProviderName { get; init; }
+  property public string? SelectedStrategyName { get; init; }
   method public override bool Equals(object? obj)
   method public override int GetHashCode()
   method public override string ToString()
