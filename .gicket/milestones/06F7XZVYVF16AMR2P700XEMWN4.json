@@ -1,8 +1,8 @@
 {
   "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
   "milestoneId": "06F7XZVYVF16AMR2P700XEMWN4",
-  "name": "v0.24.0 - EF model-cache safety analyzers",
-  "description": "Analyzer diagnostics for dynamic DVault model shape, DbContext pooling, compiled models, and IModelCacheKeyFactory risks.",
-  "status": "active",
+  "name": "v0.24.0 - EF model-cache safety guidance",
+  "description": "Guidance-only closure for model-cache, compiled-model, DbContext pooling, and IModelCacheKeyFactory risks; no new analyzer diagnostics in v0.24.0.",
+  "status": "done",
   "createdAt": "2026-05-31T17:05:33.9155823Z"
 }

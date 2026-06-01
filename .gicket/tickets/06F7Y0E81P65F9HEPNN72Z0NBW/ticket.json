@@ -2,8 +2,8 @@
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
   "ticket-id": "06F7Y0E81P65F9HEPNN72Z0NBW",
   "ticket-type": "story",
-  "title": "Story: Add analyzer diagnostics for dynamic DVault model cache and DbContext pooling risks",
-  "revision": "06F7YC9QGGGMXTWMSAF5H16RDW",
+  "title": "Story: Close EF model-cache and pooling analyzer diagnostics as guidance-only",
+  "revision": "06F855DR0D7M86HNKZTXKXBBBW",
   "status": "done",
   "labels": [
     "area/analyzers",
@@ -20,5 +20,5 @@
   "milestoneId": "06F7XZVYVF16AMR2P700XEMWN4",
   "releaseId": "06F7XZVSFEX210HTCBC7DC752G",
   "created-at": "2026-05-31T17:08:04.2994919Z",
-  "updated-at": "2026-05-31T17:59:52.4520000Z"
+  "updated-at": "2026-06-01T09:48:30.5956376Z"
 }
