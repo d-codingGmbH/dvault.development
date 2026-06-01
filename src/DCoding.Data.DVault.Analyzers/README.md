@@ -63,6 +63,8 @@ That delegation keeps the v0.22.0 generated surface small: helpers target the v1
 
 The v1 generator supports hub-parent, link-parent, and deterministic multi-active satellites whose driving keys and payload values are strings after projection into the support-bundle explain descriptor. Payload nullability follows the projected CLR/EF nullability facts; when a payload descriptor omits nullability, the generated property is nullable and `DMV1966` is reported. PIT and bridge metadata remain runtime read-service and diagnostics surfaces; they do not emit typed helpers. Generation stops or skips helpers with `DMV196x` diagnostics for missing or ambiguous support-bundle metadata sources, stale configured fingerprints, unsupported non-string members, deterministic name collisions, helper requests that would require dynamic query construction or provider-specific SQL, and shapes outside the v1 generated-helper contract.
 
+The additive contract for future support-bundle-driven typed PIT and bridge helper generation is documented in [DVault V1 Typed PIT And Bridge Helper Contract](../../docs/architecture/dvault-v1-typed-pit-bridge-helper-contract.md). That contract fixes the intended PIT and bridge helper names, supported shapes, projection rules, diagnostics, and fingerprint behavior without changing the current implemented satellite-only generator boundary.
+
 ### Typed Read-Model Diagnostics
 
 | Code | Outcome |
