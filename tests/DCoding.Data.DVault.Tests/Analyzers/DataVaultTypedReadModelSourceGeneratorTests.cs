@@ -405,11 +405,23 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
         RuntimeStubs,
         additionalTexts:
         [
-            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJson(
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJsonWithReadShape(
+                CreatePitReadShapeJson(
+                    "PitCustomerContactPreference",
+                    "CustomerContactPreference",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "LoadTimestamp",
+                    ["ContactType"],
+                    [
+                        new PitReadShapeSatellite("Contact", "ContactLoadTimestamp", ["ContactType"]),
+                        new PitReadShapeSatellite("Preference", "PreferenceLoadTimestamp", ["PreferenceType"]),
+                    ]),
                 CreateSupportBundleEntityJson(
-                    "PitCustomerContactTimeline",
+                    "PitCustomerContactPreference",
                     "Pit",
-                    "CustomerContactTimeline",
+                    "CustomerContactPreference",
                     "Hub",
                     "Customer",
                     [
@@ -417,6 +429,7 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
                         DrivingKey("ContactType", "ContactType"),
                         Technical("LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "Iso8601UtcText", "System.DateTimeOffset", false),
                         SnapshotReference("ContactLoadTimestamp", "Contact"),
+                        SnapshotReference("PreferenceLoadTimestamp", "Preference"),
                     ]))),
         ]);
 
@@ -455,12 +468,23 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
   }
 
   [Fact]
-  public void ReportsHelperSkippedForRuntimePitShapeAndKeepsSatelliteGeneration() {
+  public void GeneratesPitReadModelFromRequestBoundSupportBundleReadShapeAndKeepsSatelliteGeneration() {
     var result = RunGenerator(
         RuntimeStubs,
         additionalTexts:
         [
-            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJson(
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJsonWithReadShape(
+                CreatePitReadShapeJson(
+                    "PitCustomerProfile",
+                    "CustomerProfile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "LoadTimestamp",
+                    [],
+                    [
+                        new PitReadShapeSatellite("Profile", "ProfileLoadTimestamp", []),
+                    ]),
                 CreateSupportBundleEntityJson(
                     "PitCustomerProfile",
                     "Pit",
@@ -485,13 +509,110 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
                     ]))),
         ]);
 
-    var diagnostic = Assert.Single(result.GeneratorDiagnostics);
-    Assert.Equal("DMV1969", diagnostic.Id);
-    Assert.Contains("no typed PIT helper is emitted", diagnostic.GetMessage(), StringComparison.Ordinal);
+    Assert.Empty(result.CompilationErrors);
+    Assert.Empty(result.GeneratorDiagnostics);
+
+    var pitSource = AssertGeneratedSource(result, "DVault.GeneratedReadModels.PitCustomerProfile.g.cs");
+    Assert.Contains("public sealed record PitCustomerProfileReadModel(", pitSource, StringComparison.Ordinal);
+    Assert.Contains("string ParentHashKey", pitSource, StringComparison.Ordinal);
+    Assert.Contains("global::System.DateTimeOffset LoadTimestamp", pitSource, StringComparison.Ordinal);
+    Assert.Contains("global::System.DateTimeOffset? ProfileLoadTimestamp", pitSource, StringComparison.Ordinal);
+    Assert.Contains("public const string ParentHashKeyProducedColumnName = \"CustomerHashKey\";", pitSource, StringComparison.Ordinal);
+    Assert.Contains("public const string ProfileLoadTimestampProducedColumnName = \"ProfileLoadTimestamp\";", pitSource, StringComparison.Ordinal);
+    Assert.Contains("public const string ProfileLoadTimestampMappedName = \"SnapshotLoadTimestamp\";", pitSource, StringComparison.Ordinal);
+    Assert.Contains("DataVaultMetadataReference.Hub(\"Customer\")", pitSource, StringComparison.Ordinal);
+    Assert.Contains("new global::DCoding.Data.DVault.DataVaultPitAsOfReadRequest(PitMetadata, parentHashKeys, asOf)", pitSource, StringComparison.Ordinal);
+    Assert.Contains("readService.ReadPitRowsAsync", pitSource, StringComparison.Ordinal);
+    Assert.Contains("GetSnapshotLoadTimestamp(row, \"Profile\")", pitSource, StringComparison.Ordinal);
     AssertGeneratedSource(result, "DVault.GeneratedReadModels.SatCustomerProfile.g.cs");
-    Assert.DoesNotContain(
-        result.GeneratedSources.Keys,
-        hintName => hintName.Contains("PitCustomerProfile", StringComparison.Ordinal));
+  }
+
+  [Fact]
+  public void GeneratesMultiActivePitReadModelWhenReadShapeProvesSharedDrivingKeys() {
+    var result = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJsonWithReadShape(
+                CreatePitReadShapeJson(
+                    "PitCustomerContactProfile",
+                    "CustomerContactProfile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "LoadTimestamp",
+                    ["ContactType"],
+                    [
+                        new PitReadShapeSatellite("Contact", "ContactLoadTimestamp", ["ContactType"]),
+                        new PitReadShapeSatellite("Profile", "ProfileLoadTimestamp", []),
+                    ]),
+                CreateSupportBundleEntityJson(
+                    "PitCustomerContactProfile",
+                    "Pit",
+                    "CustomerContactProfile",
+                    "Hub",
+                    "Customer",
+                    [
+                        Technical("CustomerHashKey", "HashKey", "Customer", "HashKey", "Text", "System.String", false),
+                        DrivingKey("ContactType", "ContactType"),
+                        Technical("LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "Iso8601UtcText", "System.DateTimeOffset", false),
+                        SnapshotReference("ContactLoadTimestamp", "Contact"),
+                        SnapshotReference("ProfileLoadTimestamp", "Profile"),
+                    ]))),
+        ]);
+
+    Assert.Empty(result.CompilationErrors);
+    Assert.Empty(result.GeneratorDiagnostics);
+
+    var source = AssertGeneratedSource(result, "DVault.GeneratedReadModels.PitCustomerContactProfile.g.cs");
+    Assert.Contains("string ContactType", source, StringComparison.Ordinal);
+    Assert.Contains("RequiredDrivingKeyValue(row, \"ContactType\")", source, StringComparison.Ordinal);
+    Assert.Contains("new global::DCoding.Data.DVault.Modeling.DataVaultPitSatelliteReferenceMetadata(\"Contact\", isMultiActive: true)", source, StringComparison.Ordinal);
+    Assert.Contains("new global::DCoding.Data.DVault.Modeling.DataVaultPitSatelliteReferenceMetadata(\"Profile\")", source, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void GeneratesLinkParentPitReadModelForUniqueNonMultiActiveSatellites() {
+    var result = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJsonWithReadShape(
+                CreatePitReadShapeJson(
+                    "PitCustomerOrderStateFulfillment",
+                    "CustomerOrderStateFulfillment",
+                    "Link",
+                    "CustomerOrder",
+                    "CustomerOrderHashKey",
+                    "LoadTimestamp",
+                    [],
+                    [
+                        new PitReadShapeSatellite("State", "StateLoadTimestamp", []),
+                        new PitReadShapeSatellite("Fulfillment", "FulfillmentLoadTimestamp", []),
+                    ]),
+                CreateSupportBundleEntityJson(
+                    "PitCustomerOrderStateFulfillment",
+                    "Pit",
+                    "CustomerOrderStateFulfillment",
+                    "Link",
+                    "CustomerOrder",
+                    [
+                        Technical("CustomerOrderHashKey", "HashKey", "CustomerOrder", "HashKey", "Text", "System.String", false),
+                        Technical("LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "Iso8601UtcText", "System.DateTimeOffset", false),
+                        SnapshotReference("StateLoadTimestamp", "State"),
+                        SnapshotReference("FulfillmentLoadTimestamp", "Fulfillment"),
+                    ]))),
+        ]);
+
+    Assert.Empty(result.CompilationErrors);
+    Assert.Empty(result.GeneratorDiagnostics);
+
+    var source = AssertGeneratedSource(result, "DVault.GeneratedReadModels.PitCustomerOrderStateFulfillment.g.cs");
+    Assert.Contains("DataVaultMetadataReference.Link(\"CustomerOrder\")", source, StringComparison.Ordinal);
+    Assert.Contains("string ParentHashKey", source, StringComparison.Ordinal);
+    Assert.Contains("public const string ParentHashKeyProducedColumnName = \"CustomerOrderHashKey\";", source, StringComparison.Ordinal);
+    Assert.Contains("global::System.DateTimeOffset? StateLoadTimestamp", source, StringComparison.Ordinal);
+    Assert.Contains("global::System.DateTimeOffset? FulfillmentLoadTimestamp", source, StringComparison.Ordinal);
   }
 
   private static string AssertGeneratedSource(GeneratorRunResult result, string hintName) {
@@ -569,6 +690,26 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
         entities);
   }
 
+  private static string CreateSupportBundleJsonWithReadShape(
+      string readShapeJson,
+      params string[] entities) {
+    return $$"""
+        {
+          "schemaVersion": "dvault.support-bundle.v1",
+          "diagnostics": {
+            "explain": {
+              "metadataSourceKind": "model-metadata",
+              "metadataSourceFingerprint": "fingerprint-1",
+              "entities": [
+                {{string.Join("," + Environment.NewLine, entities)}}
+              ]
+            },
+            "readShape": {{readShapeJson}}
+          }
+        }
+        """;
+  }
+
   private static string CreateSupportBundleJsonForSource(
       string sourceKind,
       string sourceFingerprint,
@@ -587,6 +728,96 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
           }
         }
         """;
+  }
+
+  private static string CreatePitReadShapeJson(
+      string pitTableName,
+      string pitMetadataName,
+      string parentKind,
+      string parentName,
+      string parentHashKeyColumnName,
+      string loadTimestampColumnName,
+      IReadOnlyList<string> pitDrivingKeyColumnNames,
+      IReadOnlyList<PitReadShapeSatellite> satellites) {
+    var referencedSatellites = satellites
+        .Select(satellite => $$"""
+                    {
+                      "metadataName": "{{satellite.MetadataName}}",
+                      "tableName": "Sat{{parentName}}{{satellite.MetadataName}}",
+                      "snapshotReferenceColumnName": "{{satellite.SnapshotReferenceColumnName}}",
+                      "parentHashKeyColumnName": "{{parentHashKeyColumnName}}",
+                      "loadTimestampColumnName": "LoadTimestamp",
+                      "drivingKeyColumnNames": {{CreateJsonStringArray(satellite.DrivingKeyColumnNames)}}
+                    }
+          """)
+        .ToArray();
+    var projectedColumns = new List<string>
+    {
+        $$"""
+                    {
+                      "role": "pitTechnicalProjection",
+                      "columnNames": {{CreateJsonStringArray([parentHashKeyColumnName, loadTimestampColumnName])}}
+                    }
+          """,
+    };
+    if (pitDrivingKeyColumnNames.Count > 0) {
+      projectedColumns.Add($$"""
+                    {
+                      "role": "pitDrivingKeyProjection",
+                      "columnNames": {{CreateJsonStringArray(pitDrivingKeyColumnNames)}}
+                    }
+          """);
+    }
+
+    projectedColumns.Add($$"""
+                    {
+                      "role": "snapshotReferenceProjection",
+                      "columnNames": {{CreateJsonStringArray(satellites.Select(satellite => satellite.SnapshotReferenceColumnName).ToArray())}}
+                    }
+        """);
+
+    return $$"""
+        {
+          "kind": "PitAsOf",
+          "pit": {
+            "pit": {
+              "metadataName": "{{pitMetadataName}}",
+              "tableKind": "Pit",
+              "tableName": "{{pitTableName}}"
+            },
+            "parentReference": {
+              "kind": "{{parentKind}}",
+              "name": "{{parentName}}"
+            },
+            "referencedSatellites": [
+              {{string.Join("," + Environment.NewLine, referencedSatellites)}}
+            ],
+            "filterColumns": [
+              {
+                "role": "parentHashKeyFilter",
+                "columnNames": {{CreateJsonStringArray([parentHashKeyColumnName])}}
+              },
+              {
+                "role": "asOfCutoff",
+                "columnNames": {{CreateJsonStringArray([loadTimestampColumnName])}}
+              }
+            ],
+            "rowIdentityColumns": [
+              {
+                "role": "pitRowIdentity",
+                "columnNames": {{CreateJsonStringArray([parentHashKeyColumnName, .. pitDrivingKeyColumnNames, loadTimestampColumnName])}}
+              }
+            ],
+            "projectedColumns": [
+              {{string.Join("," + Environment.NewLine, projectedColumns)}}
+            ]
+          }
+        }
+        """;
+  }
+
+  private static string CreateJsonStringArray(IReadOnlyList<string> values) {
+    return "[" + string.Join(", ", values.Select(value => "\"" + value + "\"")) + "]";
   }
 
   private static string CreateSupportBundleEntityJson(
@@ -772,6 +1003,11 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
       string ClrTypeName,
       bool? IsNullable);
 
+  private sealed record PitReadShapeSatellite(
+      string MetadataName,
+      string SnapshotReferenceColumnName,
+      IReadOnlyList<string> DrivingKeyColumnNames);
+
   private sealed record GeneratorRunResult(
       IReadOnlyList<Diagnostic> GeneratorDiagnostics,
       IReadOnlyList<Diagnostic> CompilationErrors,
@@ -818,6 +1054,7 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
   private const string RuntimeStubs = """
       using System;
       using System.Collections.Generic;
+      using System.Linq;
       using System.Threading;
       using System.Threading.Tasks;
 
@@ -828,13 +1065,72 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
       namespace DCoding.Data.DVault {
         using Microsoft.EntityFrameworkCore;
 
-        public interface IDataVaultReadService { }
+        public interface IDataVaultReadService {
+          Task<IReadOnlyList<DataVaultPitReadRecord>> ReadPitRowsAsync(
+              DbContext dbContext,
+              DataVaultPitAsOfReadRequest request,
+              CancellationToken cancellationToken = default);
+        }
 
         public sealed class DataVaultLatestSatelliteReadRequest {
           public DataVaultLatestSatelliteReadRequest(
               Modeling.DataVaultSatelliteMetadata satellite,
               IEnumerable<string> parentHashKeys) {
           }
+        }
+
+        public sealed class DataVaultPitAsOfReadRequest {
+          public DataVaultPitAsOfReadRequest(
+              Modeling.DataVaultPitMetadata pit,
+              IEnumerable<string> parentHashKeys,
+              DateTimeOffset asOf) {
+            Pit = pit;
+            ParentHashKeys = new List<string>(parentHashKeys);
+            AsOf = asOf;
+          }
+
+          public Modeling.DataVaultPitMetadata Pit { get; }
+
+          public IReadOnlyList<string> ParentHashKeys { get; }
+
+          public DateTimeOffset AsOf { get; }
+        }
+
+        public sealed class DataVaultPitReadRecord {
+          public DataVaultPitReadRecord(
+              string parentHashKey,
+              DateTimeOffset loadTimestamp,
+              IReadOnlyDictionary<string, string> drivingKeyValues,
+              IReadOnlyList<DataVaultPitSatelliteSnapshot> satelliteSnapshots) {
+            ParentHashKey = parentHashKey;
+            LoadTimestamp = loadTimestamp;
+            DrivingKeyValues = drivingKeyValues;
+            SatelliteSnapshots = satelliteSnapshots;
+            SatelliteSnapshotsByName = satelliteSnapshots.ToDictionary(snapshot => snapshot.SatelliteName, StringComparer.Ordinal);
+          }
+
+          public string ParentHashKey { get; }
+
+          public DateTimeOffset LoadTimestamp { get; }
+
+          public IReadOnlyDictionary<string, string> DrivingKeyValues { get; }
+
+          public IReadOnlyList<DataVaultPitSatelliteSnapshot> SatelliteSnapshots { get; }
+
+          public IReadOnlyDictionary<string, DataVaultPitSatelliteSnapshot> SatelliteSnapshotsByName { get; }
+        }
+
+        public sealed class DataVaultPitSatelliteSnapshot {
+          public DataVaultPitSatelliteSnapshot(
+              string satelliteName,
+              DateTimeOffset? snapshotLoadTimestamp) {
+            SatelliteName = satelliteName;
+            SnapshotLoadTimestamp = snapshotLoadTimestamp;
+          }
+
+          public string SatelliteName { get; }
+
+          public DateTimeOffset? SnapshotLoadTimestamp { get; }
         }
 
         public sealed class DataVaultSatelliteProjectionRow {
@@ -907,6 +1203,18 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
               DataVaultMetadataReference parent,
               IEnumerable<string> payloadNames,
               IEnumerable<string> drivingKeyNames) {
+          }
+        }
+
+        public sealed class DataVaultPitSatelliteReferenceMetadata {
+          public DataVaultPitSatelliteReferenceMetadata(string satelliteName, bool isMultiActive = false) {
+          }
+        }
+
+        public sealed class DataVaultPitMetadata {
+          public DataVaultPitMetadata(
+              DataVaultMetadataReference parent,
+              IEnumerable<DataVaultPitSatelliteReferenceMetadata> satellites) {
           }
         }
       }

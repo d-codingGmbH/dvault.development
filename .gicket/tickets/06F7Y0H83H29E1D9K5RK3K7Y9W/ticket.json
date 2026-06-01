@@ -3,22 +3,21 @@
   "ticket-id": "06F7Y0H83H29E1D9K5RK3K7Y9W",
   "ticket-type": "story",
   "title": "Story: Generate typed PIT read helpers from support bundle metadata",
-  "revision": "06F7Y0YCP30J1R9V1BWBFMFYEW",
-  "status": "todo",
+  "revision": "06F88QD1B6KV2T64FE5RNKQDT4",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
     "area/analyzers",
     "area/developer-experience",
     "area/ef-core",
     "area/read-models",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F7XZW34D71CYK8J805ER1MW8",
   "releaseId": "06F7XZVV35BSZ2BX7CY36NK3QR",
   "created-at": "2026-05-31T17:08:28.6627005Z",
-  "updated-at": "2026-05-31T17:10:15.9840067Z"
+  "updated-at": "2026-06-01T18:06:29.2090330Z"
 }

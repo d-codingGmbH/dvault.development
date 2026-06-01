@@ -36,7 +36,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       return;
     }
 
-    var declarations = new List<SatelliteReadModelDeclaration>();
+    var declarations = new List<ReadModelDeclaration>();
     var authoritativeMetadataSourceCount = 0;
     var authoritativeSourceKeys = new HashSet<string>(StringComparer.Ordinal);
 
@@ -85,7 +85,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
 
     var rootNamespace = ResolveGeneratedNamespace(optionsProvider);
     var expectedFingerprint = ResolveExpectedFingerprint(optionsProvider);
-    var validDeclarations = new List<SatelliteReadModelDeclaration>();
+    var validDeclarations = new List<ReadModelDeclaration>();
 
     foreach (var declaration in declarations) {
       if (!string.IsNullOrWhiteSpace(expectedFingerprint) &&
@@ -94,7 +94,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
             context,
             DataVaultTypedReadModelDiagnosticCatalog.MetadataSourceFingerprintDrift,
             declaration.Location,
-            "Typed satellite read model '" + declaration.MetadataName + "' from " + declaration.SourceKind +
+            "Typed read model '" + declaration.MetadataName + "' from " + declaration.SourceKind +
             " metadata source fingerprint '" + declaration.SourceFingerprint +
             "' does not match configured expected fingerprint '" + expectedFingerprint + "'.");
         continue;
@@ -111,10 +111,10 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
             context,
             DataVaultTypedReadModelDiagnosticCatalog.NameCollision,
             declaration.Location,
-            "Typed satellite read model '" + declaration.MetadataName + "' from " + declaration.SourceKind +
+            "Typed read model '" + declaration.MetadataName + "' from " + declaration.SourceKind +
             " metadata source fingerprint '" + declaration.SourceFingerprint +
             "' produced generated type prefix '" + declaration.TypeNamePrefix +
-            "', which collides with another satellite read model in the same compilation.");
+            "', which collides with another typed read model in the same compilation.");
       }
     }
 
@@ -130,14 +130,18 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
         continue;
       }
 
-      var source = GenerateSource(rootNamespace, declaration);
+      var source = declaration switch {
+        SatelliteReadModelDeclaration satellite => GenerateSatelliteSource(rootNamespace, satellite),
+        PitReadModelDeclaration pit => GeneratePitSource(rootNamespace, pit),
+        _ => throw new InvalidOperationException("Unsupported typed read-model declaration."),
+      };
       context.AddSource(
           "DVault.GeneratedReadModels." + declaration.TypeNamePrefix + ".g.cs",
           SourceText.From(source, Encoding.UTF8));
     }
   }
 
-  private static IReadOnlyList<SatelliteReadModelDeclaration> CreateSupportBundleDeclarations(
+  private static IReadOnlyList<ReadModelDeclaration> CreateSupportBundleDeclarations(
       AdditionalText additionalText,
       SourceProductionContext context,
       out bool wasSupportBundle,
@@ -207,7 +211,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       return [];
     }
 
-    var declarations = new List<SatelliteReadModelDeclaration>();
+    var declarations = new List<ReadModelDeclaration>();
     foreach (var entity in entities.EnumerateArray()) {
       context.CancellationToken.ThrowIfCancellationRequested();
       if (entity.ValueKind != JsonValueKind.Object ||
@@ -216,13 +220,28 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       }
 
       if (!string.Equals(tableKind, "Satellite", StringComparison.Ordinal)) {
-        ReportUnsupportedSupportBundleReadModelShape(
-            entity,
-            additionalText.Path,
-            sourceKind,
-            sourceFingerprint,
-            tableKind,
-            context);
+        if (tableKind is "Pit" or "PointInTime" && !IsModelFirstMetadataSource(sourceKind)) {
+          if (TryCreateSupportBundlePit(
+              entity,
+              diagnostics,
+              additionalText.Path,
+              sourceKind,
+              sourceFingerprint,
+              context,
+              out var pitDeclaration)) {
+            declarations.Add(pitDeclaration);
+          }
+        }
+        else {
+          ReportUnsupportedSupportBundleReadModelShape(
+              entity,
+              additionalText.Path,
+              sourceKind,
+              sourceFingerprint,
+              tableKind,
+              context);
+        }
+
         continue;
       }
 
@@ -392,6 +411,551 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
         "the runtime bridge metadata shape is valid for IDataVaultReadService usage but no typed bridge helper is emitted by this diagnostic-only generator path.");
   }
 
+  private static bool TryCreateSupportBundlePit(
+      JsonElement entity,
+      JsonElement diagnostics,
+      string sourcePath,
+      string sourceKind,
+      string sourceFingerprint,
+      SourceProductionContext context,
+      out PitReadModelDeclaration declaration) {
+    declaration = null!;
+    if (!TryGetJsonString(entity, "tableName", out var producedTableName) ||
+        !TryGetJsonString(entity, "metadataName", out var metadataName) ||
+        !TryGetSupportBundleParentReference(entity, out var parent) ||
+        !entity.TryGetProperty("properties", out var propertiesElement) ||
+        propertiesElement.ValueKind != JsonValueKind.Array) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          GetSupportBundleEntityString(entity, "metadataName", "<unknown>"),
+          GetSupportBundleEntityString(entity, "tableName", "<unknown>"),
+          "authoritative explain metadata is missing the produced PIT table, metadata name, parent reference, or property descriptors.");
+      return false;
+    }
+
+    if (!TryCreateSupportBundlePitReadShape(
+        diagnostics,
+        metadataName,
+        producedTableName,
+        out var readShape,
+        out var readShapeFailure)) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          readShapeFailure);
+      return false;
+    }
+
+    if (!string.Equals(readShape.Parent.Kind, parent.Kind, StringComparison.Ordinal) ||
+        !string.Equals(readShape.Parent.Name, parent.Name, StringComparison.Ordinal)) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "request-bound readShape.pit parent facts do not match the PIT entity parent reference.");
+      return false;
+    }
+
+    var properties = new List<SupportBundleProperty>();
+    foreach (var property in propertiesElement.EnumerateArray()) {
+      if (!TryCreateSupportBundleProperty(
+          property,
+          sourcePath,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          context,
+          out var descriptor)) {
+        return false;
+      }
+
+      properties.Add(descriptor);
+    }
+
+    var parentHashKey = SingleOrDefault(properties, IsSupportBundleParentHashKey);
+    var loadTimestamp = SingleOrDefault(properties, property => IsSupportBundleTechnical(property, "LoadTimestamp"));
+    var drivingKeys = properties
+        .Where(property => string.Equals(property.Role, "DrivingKey", StringComparison.Ordinal))
+        .OrderBy(property => property.Ordinal)
+        .ThenBy(property => property.ProducedName, StringComparer.Ordinal)
+        .ToArray();
+    var snapshotReferences = properties
+        .Where(property => string.Equals(property.Role, "SnapshotReference", StringComparison.Ordinal))
+        .OrderBy(property => property.Ordinal)
+        .ThenBy(property => property.ProducedName, StringComparer.Ordinal)
+        .ToArray();
+
+    if (parentHashKey is null ||
+        loadTimestamp is null ||
+        snapshotReferences.Length == 0) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "authoritative explain metadata is missing the PIT parent hash key, load timestamp, or satellite snapshot reference binding.");
+      return false;
+    }
+
+    if (!IsSupportBundleStringValue(parentHashKey, "HashKey") ||
+        !IsSupportBundleTimestampValue(loadTimestamp, "LoadTimestamp")) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "PIT parent hash-key or load timestamp bindings are not provider-neutral string and timestamp values.");
+      return false;
+    }
+
+    foreach (var drivingKey in drivingKeys) {
+      if (IsTechnicalProjectionName(drivingKey.MetadataName) ||
+          !IsSupportBundleStringValue(drivingKey, "DrivingKey")) {
+        ReportUnsupportedReadModelShape(
+            context,
+            DataVaultTypedReadModelDiagnosticCatalog.DynamicQueryShapeRequired,
+            "PIT",
+            sourceKind,
+            sourceFingerprint,
+            metadataName,
+            producedTableName,
+            "PIT driving-key column '" + drivingKey.ProducedName +
+            "' is not a provider-neutral string driving-key binding or collides with a technical projection name.");
+        return false;
+      }
+    }
+
+    foreach (var snapshotReference in snapshotReferences) {
+      if (!IsSupportBundleTimestampValue(snapshotReference, "SatelliteSnapshotReference")) {
+        ReportUnsupportedReadModelShape(
+            context,
+            DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+            "PIT",
+            sourceKind,
+            sourceFingerprint,
+            metadataName,
+            producedTableName,
+            "PIT snapshot-reference column '" + snapshotReference.ProducedName +
+            "' is not a provider-neutral timestamp snapshot binding.");
+        return false;
+      }
+    }
+
+    var pitDrivingKeyColumnNames = drivingKeys.Select(key => key.ProducedName).ToArray();
+    if (!TryValidateSupportBundlePitReadShape(
+        readShape,
+        parent,
+        parentHashKey.ProducedName,
+        loadTimestamp.ProducedName,
+        pitDrivingKeyColumnNames,
+        snapshotReferences,
+        context,
+        sourceKind,
+        sourceFingerprint,
+        metadataName,
+        producedTableName,
+        out var orderedSnapshots)) {
+      return false;
+    }
+
+    var rowProperties = new List<RowProperty>
+    {
+        new("ParentHashKey", parentHashKey.ProducedName, "ParentHashKey", "string", IsNullable: false)
+        {
+          ProjectionKind = RowProjectionKind.PitParentHashKey,
+          SourceName = "ParentHashKey",
+        },
+    };
+
+    foreach (var drivingKey in drivingKeys) {
+      rowProperties.Add(new RowProperty(
+          ResolvePropertyName(drivingKey.ProducedName),
+          drivingKey.ProducedName,
+          drivingKey.MetadataName,
+          "string",
+          IsNullable: false) {
+        ProjectionKind = RowProjectionKind.PitDrivingKey,
+        SourceName = drivingKey.MetadataName,
+      });
+    }
+
+    rowProperties.Add(new RowProperty(
+        "LoadTimestamp",
+        loadTimestamp.ProducedName,
+        "LoadTimestamp",
+        "global::System.DateTimeOffset",
+        IsNullable: false) {
+      ProjectionKind = RowProjectionKind.PitLoadTimestamp,
+      SourceName = "LoadTimestamp",
+    });
+
+    foreach (var snapshotReference in orderedSnapshots) {
+      rowProperties.Add(new RowProperty(
+          ResolvePropertyName(snapshotReference.Property.ProducedName),
+          snapshotReference.Property.ProducedName,
+          "SnapshotLoadTimestamp",
+          "global::System.DateTimeOffset",
+          IsNullable: true) {
+        ProjectionKind = RowProjectionKind.PitSnapshotReference,
+        SourceName = snapshotReference.Satellite.MetadataName,
+      });
+    }
+
+    rowProperties = ResolveRowPropertyNames(rowProperties);
+    declaration = new PitReadModelDeclaration(
+        sourceKind,
+        sourceFingerprint,
+        Location.None,
+        parent,
+        metadataName,
+        producedTableName,
+        NormalizePublicIdentifier(producedTableName),
+        readShape.ReferencedSatellites
+            .Select(satellite => new PitSatelliteReference(
+                satellite.MetadataName,
+                satellite.DrivingKeyColumnNames.Count > 0))
+            .ToArray(),
+        rowProperties);
+    return true;
+  }
+
+  private static bool TryCreateSupportBundlePitReadShape(
+      JsonElement diagnostics,
+      string metadataName,
+      string producedTableName,
+      out SupportBundlePitReadShape readShape,
+      out string failure) {
+    readShape = null!;
+    failure = string.Empty;
+
+    if (!diagnostics.TryGetProperty("readShape", out var readShapeElement) ||
+        readShapeElement.ValueKind != JsonValueKind.Object ||
+        !TryGetJsonString(readShapeElement, "kind", out var readShapeKind) ||
+        !string.Equals(readShapeKind, "PitAsOf", StringComparison.Ordinal) ||
+        !readShapeElement.TryGetProperty("pit", out var pitElement) ||
+        pitElement.ValueKind != JsonValueKind.Object) {
+      failure = "authoritative support-bundle diagnostics do not carry request-bound readShape.pit facts for this PIT helper.";
+      return false;
+    }
+
+    if (!pitElement.TryGetProperty("pit", out var pitIdentity) ||
+        pitIdentity.ValueKind != JsonValueKind.Object ||
+        !TryGetJsonString(pitIdentity, "metadataName", out var readShapeMetadataName) ||
+        !TryGetJsonString(pitIdentity, "tableName", out var readShapeTableName) ||
+        !pitElement.TryGetProperty("parentReference", out var parentReferenceElement) ||
+        parentReferenceElement.ValueKind != JsonValueKind.Object ||
+        !TryGetJsonString(parentReferenceElement, "kind", out var parentKind) ||
+        !TryGetJsonString(parentReferenceElement, "name", out var parentName) ||
+        parentKind is not ("Hub" or "Link") ||
+        !pitElement.TryGetProperty("referencedSatellites", out var referencedSatellitesElement) ||
+        referencedSatellitesElement.ValueKind != JsonValueKind.Array) {
+      failure = "request-bound readShape.pit facts are missing PIT identity, parent reference, or referenced satellite bindings.";
+      return false;
+    }
+
+    if (!string.Equals(readShapeMetadataName, metadataName, StringComparison.Ordinal) ||
+        !string.Equals(readShapeTableName, producedTableName, StringComparison.Ordinal)) {
+      failure = "request-bound readShape.pit identity does not match the PIT entity identity.";
+      return false;
+    }
+
+    var referencedSatellites = new List<SupportBundlePitReadShapeSatellite>();
+    foreach (var satelliteElement in referencedSatellitesElement.EnumerateArray()) {
+      if (satelliteElement.ValueKind != JsonValueKind.Object ||
+          !TryGetJsonString(satelliteElement, "metadataName", out var satelliteName) ||
+          !TryGetJsonString(satelliteElement, "snapshotReferenceColumnName", out var snapshotReferenceColumnName) ||
+          !TryGetOptionalStringArray(satelliteElement, "drivingKeyColumnNames", out var drivingKeyColumnNames)) {
+        failure = "request-bound readShape.pit referenced satellite facts are missing metadata name, snapshot-reference column, or driving-key columns.";
+        return false;
+      }
+
+      referencedSatellites.Add(new SupportBundlePitReadShapeSatellite(
+          satelliteName,
+          snapshotReferenceColumnName,
+          drivingKeyColumnNames));
+    }
+
+    if (!TryGetReadShapeColumnSets(pitElement, "filterColumns", out var filterColumns) ||
+        !TryGetReadShapeColumnSets(pitElement, "projectedColumns", out var projectedColumns) ||
+        !TryGetReadShapeColumnSets(pitElement, "rowIdentityColumns", out var rowIdentityColumns)) {
+      failure = "request-bound readShape.pit facts are missing filter, projected-column, or row-identity column groups.";
+      return false;
+    }
+
+    readShape = new SupportBundlePitReadShape(
+        new ParentReference(parentKind, parentName),
+        referencedSatellites,
+        filterColumns,
+        projectedColumns,
+        rowIdentityColumns);
+    return true;
+  }
+
+  private static bool TryValidateSupportBundlePitReadShape(
+      SupportBundlePitReadShape readShape,
+      ParentReference parent,
+      string parentHashKeyColumnName,
+      string loadTimestampColumnName,
+      IReadOnlyList<string> pitDrivingKeyColumnNames,
+      IReadOnlyList<SupportBundleProperty> snapshotReferences,
+      SourceProductionContext context,
+      string sourceKind,
+      string sourceFingerprint,
+      string metadataName,
+      string producedTableName,
+      out IReadOnlyList<SupportBundlePitSnapshotReference> orderedSnapshots) {
+    orderedSnapshots = Array.Empty<SupportBundlePitSnapshotReference>();
+
+    if (readShape.ReferencedSatellites.Count == 0) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "request-bound readShape.pit facts do not include any referenced satellite bindings.");
+      return false;
+    }
+
+    if (!ColumnSetEquals(readShape.FilterColumns, "parentHashKeyFilter", [parentHashKeyColumnName]) ||
+        !ColumnSetEquals(readShape.FilterColumns, "asOfCutoff", [loadTimestampColumnName]) ||
+        !ColumnSetEquals(readShape.ProjectedColumns, "pitTechnicalProjection", [parentHashKeyColumnName, loadTimestampColumnName])) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "request-bound readShape.pit filter or technical projection facts do not expose the required parent hash-key and as-of cutoff columns.");
+      return false;
+    }
+
+    var duplicateSatellite = readShape.ReferencedSatellites
+        .GroupBy(satellite => satellite.MetadataName, StringComparer.Ordinal)
+        .Where(group => group.Count() > 1)
+        .Select(group => group.Key)
+        .FirstOrDefault();
+    if (duplicateSatellite is not null) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "request-bound readShape.pit references satellite '" + duplicateSatellite + "' more than once.");
+      return false;
+    }
+
+    if (snapshotReferences.Count != readShape.ReferencedSatellites.Count) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "request-bound readShape.pit referenced satellite count does not match the PIT entity snapshot-reference count.");
+      return false;
+    }
+
+    var duplicateSnapshotReference = snapshotReferences
+        .GroupBy(snapshot => snapshot.ProducedName, StringComparer.Ordinal)
+        .Where(group => group.Count() > 1)
+        .Select(group => group.Key)
+        .FirstOrDefault();
+    if (duplicateSnapshotReference is not null) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "PIT entity snapshot-reference column '" + duplicateSnapshotReference + "' is not unique.");
+      return false;
+    }
+
+    var snapshotsByProducedName = snapshotReferences.ToDictionary(
+        snapshot => snapshot.ProducedName,
+        snapshot => snapshot,
+        StringComparer.Ordinal);
+    var snapshotReferenceColumnNames = readShape.ReferencedSatellites
+        .Select(satellite => satellite.SnapshotReferenceColumnName)
+        .ToArray();
+    if (!ColumnSetEquals(readShape.ProjectedColumns, "snapshotReferenceProjection", snapshotReferenceColumnNames)) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "request-bound readShape.pit projected columns do not match the referenced satellite snapshot-reference columns.");
+      return false;
+    }
+
+    var orderedSnapshotList = new List<SupportBundlePitSnapshotReference>();
+    foreach (var satellite in readShape.ReferencedSatellites) {
+      if (!snapshotsByProducedName.TryGetValue(satellite.SnapshotReferenceColumnName, out var snapshotReference) ||
+          !string.Equals(snapshotReference.MetadataName, satellite.MetadataName, StringComparison.Ordinal)) {
+        ReportUnsupportedReadModelShape(
+            context,
+            DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+            "PIT",
+            sourceKind,
+            sourceFingerprint,
+            metadataName,
+            producedTableName,
+            "request-bound readShape.pit snapshot-reference facts do not match the PIT entity snapshot properties.");
+        return false;
+      }
+
+      orderedSnapshotList.Add(new SupportBundlePitSnapshotReference(satellite, snapshotReference));
+    }
+
+    var multiActiveSatellites = readShape.ReferencedSatellites
+        .Where(satellite => satellite.DrivingKeyColumnNames.Count > 0)
+        .ToArray();
+    var rowIdentityColumns = new[]
+    {
+        parentHashKeyColumnName,
+    }
+        .Concat(pitDrivingKeyColumnNames)
+        .Append(loadTimestampColumnName)
+        .ToArray();
+    if (!ColumnSetEquals(readShape.RowIdentityColumns, "pitRowIdentity", rowIdentityColumns)) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "request-bound readShape.pit row identity columns do not match the PIT helper row identity boundary.");
+      return false;
+    }
+
+    if (multiActiveSatellites.Length == 0) {
+      if (pitDrivingKeyColumnNames.Count != 0) {
+        ReportUnsupportedReadModelShape(
+            context,
+            DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+            "PIT",
+            sourceKind,
+            sourceFingerprint,
+            metadataName,
+            producedTableName,
+            "PIT driving-key columns were present even though readShape.pit did not prove a multi-active satellite driving-key family.");
+        return false;
+      }
+
+      if (readShape.ProjectedColumns.TryGetValue("pitDrivingKeyProjection", out var projectedDrivingKeyColumns) &&
+          projectedDrivingKeyColumns.Count > 0) {
+        ReportUnsupportedReadModelShape(
+            context,
+            DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+            "PIT",
+            sourceKind,
+            sourceFingerprint,
+            metadataName,
+            producedTableName,
+            "request-bound readShape.pit projected driving-key columns were present for an ordinary PIT shape.");
+        return false;
+      }
+
+      orderedSnapshots = orderedSnapshotList;
+      return true;
+    }
+
+    if (parent.Kind == "Link") {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "link-parent PIT helpers are limited to unique non-multi-active satellites on one declared link parent.");
+      return false;
+    }
+
+    if (pitDrivingKeyColumnNames.Count == 0) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "request-bound readShape.pit facts prove multi-active satellite driving keys but the PIT table driving-key projection is missing.");
+      return false;
+    }
+
+    var canonicalDrivingKeyColumns = multiActiveSatellites[0].DrivingKeyColumnNames;
+    if (!ColumnSetsEqual(canonicalDrivingKeyColumns, pitDrivingKeyColumnNames) ||
+        !ColumnSetEquals(readShape.ProjectedColumns, "pitDrivingKeyProjection", pitDrivingKeyColumnNames)) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.DynamicQueryShapeRequired,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "PIT driving-key tuple projection does not match the canonical multi-active satellite driving-key family.");
+      return false;
+    }
+
+    foreach (var satellite in multiActiveSatellites.Skip(1)) {
+      if (ColumnSetsEqual(canonicalDrivingKeyColumns, satellite.DrivingKeyColumnNames)) {
+        continue;
+      }
+
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.DynamicQueryShapeRequired,
+          "PIT",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "PIT driving-key tuple projection requires dynamic runtime query behavior because referenced multi-active satellites do not share one canonical driving-key family.");
+      return false;
+    }
+
+    orderedSnapshots = orderedSnapshotList;
+    return true;
+  }
+
   private static bool TryCreateSupportBundleSatellite(
       JsonElement entity,
       string sourcePath,
@@ -416,7 +980,12 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
 
     var properties = new List<SupportBundleProperty>();
     foreach (var property in propertiesElement.EnumerateArray()) {
-      if (!TryCreateSupportBundleProperty(property, sourcePath, context, out var descriptor)) {
+      if (!TryCreateSupportBundleProperty(
+          property,
+          sourcePath,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedSatelliteShape,
+          context,
+          out var descriptor)) {
         return false;
       }
 
@@ -605,6 +1174,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
   private static bool TryCreateSupportBundleProperty(
       JsonElement property,
       string sourcePath,
+      DiagnosticDescriptor invalidDescriptor,
       SourceProductionContext context,
       out SupportBundleProperty descriptor) {
     descriptor = null!;
@@ -617,10 +1187,10 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
         !TryGetJsonString(property, "valueFormat", out var valueFormat)) {
       Report(
           context,
-          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedSatelliteShape,
+          invalidDescriptor,
           Location.None,
           "Data Vault support-bundle source '" + sourcePath +
-          "' contains a satellite property descriptor without produced name, role, metadata name, ordinal, logical property kind, or provider value format.");
+          "' contains a property descriptor without produced name, role, metadata name, ordinal, logical property kind, or provider value format.");
       return false;
     }
 
@@ -676,10 +1246,24 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
         IsStringClrType(property.ClrTypeName);
   }
 
+  private static bool IsSupportBundleTimestampValue(
+      SupportBundleProperty property,
+      string logicalPropertyKind) {
+    return string.Equals(property.LogicalPropertyKind, logicalPropertyKind, StringComparison.Ordinal) &&
+        string.Equals(property.ValueFormat, "Iso8601UtcText", StringComparison.Ordinal) &&
+        IsDateTimeOffsetClrType(property.ClrTypeName);
+  }
+
   private static bool IsStringClrType(string value) {
     return string.IsNullOrWhiteSpace(value) ||
         string.Equals(value, "System.String", StringComparison.Ordinal) ||
         string.Equals(value, "string", StringComparison.Ordinal);
+  }
+
+  private static bool IsDateTimeOffsetClrType(string value) {
+    return string.IsNullOrWhiteSpace(value) ||
+        string.Equals(value, "System.DateTimeOffset", StringComparison.Ordinal) ||
+        string.Equals(value, "DateTimeOffset", StringComparison.Ordinal);
   }
 
   private static bool IsTechnicalProjectionName(string value) {
@@ -704,7 +1288,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     return resolved;
   }
 
-  private static string GenerateSource(string generatedNamespace, SatelliteReadModelDeclaration declaration) {
+  private static string GenerateSatelliteSource(string generatedNamespace, SatelliteReadModelDeclaration declaration) {
     var builder = new StringBuilder();
     builder.AppendLine("// <auto-generated />");
     builder.AppendLine("#nullable enable");
@@ -722,7 +1306,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       var property = declaration.RowProperties[index];
       builder.Append("    ");
       builder.Append(property.TypeName);
-      if (property.IsNullable && string.Equals(property.TypeName, "string", StringComparison.Ordinal)) {
+      if (property.IsNullable) {
         builder.Append('?');
       }
 
@@ -855,6 +1439,154 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     builder.AppendLine("  }");
   }
 
+  private static string GeneratePitSource(string generatedNamespace, PitReadModelDeclaration declaration) {
+    var builder = new StringBuilder();
+    builder.AppendLine("// <auto-generated />");
+    builder.AppendLine("#nullable enable");
+    builder.AppendLine();
+    builder.Append("namespace ");
+    builder.Append(generatedNamespace);
+    builder.AppendLine(";");
+    builder.AppendLine();
+
+    AppendGeneratedCodeAttribute(builder);
+    builder.Append("public sealed record ");
+    builder.Append(declaration.RowTypeName);
+    builder.AppendLine("(");
+    for (var index = 0; index < declaration.RowProperties.Count; index++) {
+      var property = declaration.RowProperties[index];
+      builder.Append("    ");
+      builder.Append(property.TypeName);
+      if (property.IsNullable) {
+        builder.Append('?');
+      }
+
+      builder.Append(' ');
+      builder.Append(property.PropertyName);
+      if (index + 1 < declaration.RowProperties.Count) {
+        builder.Append(',');
+      }
+
+      builder.AppendLine();
+    }
+
+    builder.AppendLine(") {");
+    AppendConstant(builder, "ProducedTableName", declaration.ProducedTableName);
+    AppendConstant(builder, "MetadataSourceKind", declaration.SourceKind);
+    AppendConstant(builder, "MetadataSourceFingerprint", declaration.SourceFingerprint);
+    foreach (var property in declaration.RowProperties) {
+      AppendConstant(builder, property.PropertyName + "ProducedColumnName", property.ProducedColumnName);
+      AppendConstant(builder, property.PropertyName + "MappedName", property.MappedName);
+    }
+
+    builder.AppendLine("}");
+    builder.AppendLine();
+
+    AppendGeneratedCodeAttribute(builder);
+    builder.Append("public static class ");
+    builder.Append(declaration.ExtensionTypeName);
+    builder.AppendLine(" {");
+    builder.Append("  private static readonly global::DCoding.Data.DVault.Modeling.DataVaultPitMetadata PitMetadata = new(");
+    AppendParentReference(builder, declaration.Parent);
+    builder.AppendLine(",");
+    AppendPitSatelliteReferences(builder, declaration.Satellites, indentation: "      ");
+    builder.AppendLine(");");
+    builder.AppendLine();
+    AppendPitReadMethod(builder, declaration);
+    builder.AppendLine();
+    AppendPitProjectMethod(builder, declaration);
+    builder.AppendLine();
+    AppendPitProjectionHelpers(builder);
+    builder.AppendLine("}");
+
+    return builder.ToString();
+  }
+
+  private static void AppendPitReadMethod(StringBuilder builder, PitReadModelDeclaration declaration) {
+    builder.Append("  public static async global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<");
+    builder.Append(declaration.RowTypeName);
+    builder.Append(">> Read");
+    builder.Append(declaration.TypeNamePrefix);
+    builder.AppendLine("AsOfAsync(");
+    builder.AppendLine("      this global::DCoding.Data.DVault.IDataVaultReadService readService,");
+    builder.AppendLine("      global::Microsoft.EntityFrameworkCore.DbContext dbContext,");
+    builder.AppendLine("      global::System.Collections.Generic.IEnumerable<string> parentHashKeys,");
+    builder.AppendLine("      global::System.DateTimeOffset asOf,");
+    builder.AppendLine("      global::System.Threading.CancellationToken cancellationToken = default) {");
+    builder.AppendLine("    var rows = await readService.ReadPitRowsAsync(");
+    builder.AppendLine("        dbContext,");
+    builder.AppendLine("        new global::DCoding.Data.DVault.DataVaultPitAsOfReadRequest(PitMetadata, parentHashKeys, asOf),");
+    builder.AppendLine("        cancellationToken).ConfigureAwait(false);");
+    builder.Append("    var projections = new ");
+    builder.Append(declaration.RowTypeName);
+    builder.AppendLine("[rows.Count];");
+    builder.AppendLine("    for (var index = 0; index < rows.Count; index++) {");
+    builder.AppendLine("      projections[index] = Project(rows[index]);");
+    builder.AppendLine("    }");
+    builder.AppendLine();
+    builder.AppendLine("    return projections;");
+    builder.AppendLine("  }");
+  }
+
+  private static void AppendPitProjectMethod(StringBuilder builder, PitReadModelDeclaration declaration) {
+    builder.Append("  private static ");
+    builder.Append(declaration.RowTypeName);
+    builder.AppendLine(" Project(global::DCoding.Data.DVault.DataVaultPitReadRecord row) {");
+    builder.Append("    return new ");
+    builder.Append(declaration.RowTypeName);
+    builder.AppendLine("(");
+    for (var index = 0; index < declaration.RowProperties.Count; index++) {
+      var property = declaration.RowProperties[index];
+      builder.Append("        ");
+      switch (property.ProjectionKind) {
+        case RowProjectionKind.PitParentHashKey:
+          builder.Append("row.ParentHashKey");
+          break;
+        case RowProjectionKind.PitLoadTimestamp:
+          builder.Append("row.LoadTimestamp");
+          break;
+        case RowProjectionKind.PitDrivingKey:
+          builder.Append("RequiredDrivingKeyValue(row, ");
+          builder.Append(ToLiteral(property.SourceName));
+          builder.Append(')');
+          break;
+        case RowProjectionKind.PitSnapshotReference:
+          builder.Append("GetSnapshotLoadTimestamp(row, ");
+          builder.Append(ToLiteral(property.SourceName));
+          builder.Append(')');
+          break;
+        default:
+          throw new InvalidOperationException("Unsupported PIT projection kind.");
+      }
+
+      builder.Append(index + 1 == declaration.RowProperties.Count ? ");" : ",");
+      builder.AppendLine();
+    }
+
+    builder.AppendLine("  }");
+  }
+
+  private static void AppendPitProjectionHelpers(StringBuilder builder) {
+    builder.AppendLine("  private static string RequiredDrivingKeyValue(");
+    builder.AppendLine("      global::DCoding.Data.DVault.DataVaultPitReadRecord row,");
+    builder.AppendLine("      string name) {");
+    builder.AppendLine("    if (row.DrivingKeyValues.TryGetValue(name, out var value)) {");
+    builder.AppendLine("      return value;");
+    builder.AppendLine("    }");
+    builder.AppendLine();
+    builder.AppendLine("    throw new global::System.InvalidOperationException(");
+    builder.AppendLine("        \"DVault typed PIT projection failed: driving-key value '\" + name + \"' is not present in the PIT read record.\");");
+    builder.AppendLine("  }");
+    builder.AppendLine();
+    builder.AppendLine("  private static global::System.DateTimeOffset? GetSnapshotLoadTimestamp(");
+    builder.AppendLine("      global::DCoding.Data.DVault.DataVaultPitReadRecord row,");
+    builder.AppendLine("      string satelliteName) {");
+    builder.AppendLine("    return row.SatelliteSnapshotsByName.TryGetValue(satelliteName, out var snapshot)");
+    builder.AppendLine("        ? snapshot.SnapshotLoadTimestamp");
+    builder.AppendLine("        : null;");
+    builder.AppendLine("  }");
+  }
+
   private static void AppendGeneratedCodeAttribute(StringBuilder builder) {
     builder.AppendLine("[global::System.CodeDom.Compiler.GeneratedCode(\"DCoding.Data.DVault.Analyzers\", \"1.0.0\")]");
   }
@@ -886,6 +1618,33 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       builder.Append(ToLiteral(values[index]));
     }
 
+    builder.Append('}');
+  }
+
+  private static void AppendPitSatelliteReferences(
+      StringBuilder builder,
+      IReadOnlyList<PitSatelliteReference> satellites,
+      string indentation) {
+    builder.Append(indentation);
+    builder.AppendLine("new global::DCoding.Data.DVault.Modeling.DataVaultPitSatelliteReferenceMetadata[] {");
+    for (var index = 0; index < satellites.Count; index++) {
+      var satellite = satellites[index];
+      builder.Append(indentation);
+      builder.Append("    new global::DCoding.Data.DVault.Modeling.DataVaultPitSatelliteReferenceMetadata(");
+      builder.Append(ToLiteral(satellite.MetadataName));
+      if (satellite.IsMultiActive) {
+        builder.Append(", isMultiActive: true");
+      }
+
+      builder.Append(')');
+      if (index + 1 < satellites.Count) {
+        builder.Append(',');
+      }
+
+      builder.AppendLine();
+    }
+
+    builder.Append(indentation);
     builder.Append('}');
   }
 
@@ -945,6 +1704,73 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     }
 
     return false;
+  }
+
+  private static bool TryGetOptionalStringArray(
+      JsonElement element,
+      string propertyName,
+      out IReadOnlyList<string> values) {
+    values = Array.Empty<string>();
+    if (!element.TryGetProperty(propertyName, out var property) ||
+        property.ValueKind == JsonValueKind.Null) {
+      return true;
+    }
+
+    if (property.ValueKind != JsonValueKind.Array) {
+      return false;
+    }
+
+    var result = new List<string>();
+    foreach (var item in property.EnumerateArray()) {
+      if (item.ValueKind != JsonValueKind.String ||
+          string.IsNullOrWhiteSpace(item.GetString())) {
+        return false;
+      }
+
+      result.Add(item.GetString()!);
+    }
+
+    values = result;
+    return true;
+  }
+
+  private static bool TryGetReadShapeColumnSets(
+      JsonElement element,
+      string propertyName,
+      out IReadOnlyDictionary<string, IReadOnlyList<string>> columnSets) {
+    columnSets = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+    if (!element.TryGetProperty(propertyName, out var property) ||
+        property.ValueKind != JsonValueKind.Array) {
+      return false;
+    }
+
+    var result = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+    foreach (var item in property.EnumerateArray()) {
+      if (item.ValueKind != JsonValueKind.Object ||
+          !TryGetJsonString(item, "role", out var role) ||
+          !TryGetOptionalStringArray(item, "columnNames", out var columnNames) ||
+          !result.TryAdd(role, columnNames)) {
+        return false;
+      }
+    }
+
+    columnSets = result;
+    return true;
+  }
+
+  private static bool ColumnSetEquals(
+      IReadOnlyDictionary<string, IReadOnlyList<string>> columnSets,
+      string role,
+      IReadOnlyList<string> expected) {
+    return columnSets.TryGetValue(role, out var actual) &&
+        ColumnSetsEqual(actual, expected);
+  }
+
+  private static bool ColumnSetsEqual(
+      IReadOnlyList<string> first,
+      IReadOnlyList<string> second) {
+    return first.Count == second.Count &&
+        first.SequenceEqual(second, StringComparer.Ordinal);
   }
 
   private static string ResolveGeneratedNamespace(AnalyzerConfigOptionsProvider optionsProvider) {
@@ -1169,6 +1995,14 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
 
   private readonly record struct ParentReference(string Kind, string Name);
 
+  private enum RowProjectionKind {
+    SatelliteMappedValue,
+    PitParentHashKey,
+    PitDrivingKey,
+    PitLoadTimestamp,
+    PitSnapshotReference,
+  }
+
   private sealed record SupportBundleProperty(
       string ProducedName,
       string Role,
@@ -1185,7 +2019,25 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       string ProducedColumnName,
       string MappedName,
       string TypeName,
-      bool IsNullable);
+      bool IsNullable) {
+    public RowProjectionKind ProjectionKind { get; init; } = RowProjectionKind.SatelliteMappedValue;
+
+    public string SourceName { get; init; } = MappedName;
+  }
+
+  private abstract record ReadModelDeclaration(
+      string SourceKind,
+      string SourceFingerprint,
+      Location Location,
+      ParentReference Parent,
+      string MetadataName,
+      string ProducedTableName,
+      string TypeNamePrefix,
+      IReadOnlyList<RowProperty> RowProperties) {
+    public string RowTypeName { get; } = TypeNamePrefix + "ReadModel";
+
+    public string ExtensionTypeName { get; } = TypeNamePrefix + "ReadExtensions";
+  }
 
   private sealed record SatelliteReadModelDeclaration(
       string SourceKind,
@@ -1197,9 +2049,52 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       string TypeNamePrefix,
       IReadOnlyList<string> DrivingKeyNames,
       IReadOnlyList<string> PayloadNames,
-      IReadOnlyList<RowProperty> RowProperties) {
-    public string RowTypeName { get; } = TypeNamePrefix + "ReadModel";
+      IReadOnlyList<RowProperty> RowProperties)
+      : ReadModelDeclaration(
+          SourceKind,
+          SourceFingerprint,
+          Location,
+          Parent,
+          MetadataName,
+          ProducedTableName,
+          TypeNamePrefix,
+          RowProperties);
 
-    public string ExtensionTypeName { get; } = TypeNamePrefix + "ReadExtensions";
-  }
+  private sealed record PitReadModelDeclaration(
+      string SourceKind,
+      string SourceFingerprint,
+      Location Location,
+      ParentReference Parent,
+      string MetadataName,
+      string ProducedTableName,
+      string TypeNamePrefix,
+      IReadOnlyList<PitSatelliteReference> Satellites,
+      IReadOnlyList<RowProperty> RowProperties)
+      : ReadModelDeclaration(
+          SourceKind,
+          SourceFingerprint,
+          Location,
+          Parent,
+          MetadataName,
+          ProducedTableName,
+          TypeNamePrefix,
+          RowProperties);
+
+  private sealed record PitSatelliteReference(string MetadataName, bool IsMultiActive);
+
+  private sealed record SupportBundlePitReadShape(
+      ParentReference Parent,
+      IReadOnlyList<SupportBundlePitReadShapeSatellite> ReferencedSatellites,
+      IReadOnlyDictionary<string, IReadOnlyList<string>> FilterColumns,
+      IReadOnlyDictionary<string, IReadOnlyList<string>> ProjectedColumns,
+      IReadOnlyDictionary<string, IReadOnlyList<string>> RowIdentityColumns);
+
+  private sealed record SupportBundlePitReadShapeSatellite(
+      string MetadataName,
+      string SnapshotReferenceColumnName,
+      IReadOnlyList<string> DrivingKeyColumnNames);
+
+  private sealed record SupportBundlePitSnapshotReference(
+      SupportBundlePitReadShapeSatellite Satellite,
+      SupportBundleProperty Property);
 }
