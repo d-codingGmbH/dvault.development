@@ -3,6 +3,6 @@
   "milestoneId": "06F7XZW14N0KFGD74Y9680TZ60",
   "name": "v0.25.0 - Typed PIT and bridge helper contract",
   "description": "Source-generator contract for support-bundle driven typed PIT and bridge helpers.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-31T17:05:34.5018550Z"
 }
