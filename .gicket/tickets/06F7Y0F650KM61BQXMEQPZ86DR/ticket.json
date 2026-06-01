@@ -3,22 +3,21 @@
   "ticket-id": "06F7Y0F650KM61BQXMEQPZ86DR",
   "ticket-type": "task",
   "title": "Task: Update v0.24.0 async streaming and EF safety documentation",
-  "revision": "06F7Y0XXR2SJ3BQ949JV2RQR7G",
-  "status": "todo",
+  "revision": "06F81R02MNP9PA24JMD3XERG3C",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
+    "area/analyzers",
     "area/documentation",
     "area/ef-core",
+    "area/performance",
     "area/persistence",
-    "area/analyzers",
-    "area/performance"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F7XZVZM8Z9YC2NSYPSA7E4T8",
   "releaseId": "06F7XZVSFEX210HTCBC7DC752G",
   "created-at": "2026-05-31T17:08:11.7811429Z",
-  "updated-at": "2026-05-31T17:10:12.1606499Z"
+  "updated-at": "2026-06-01T01:50:24.9335253Z"
 }

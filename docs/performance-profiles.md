@@ -1,8 +1,8 @@
 # Performance Profiles
 
-Status: v0.23.0 adopter guidance
+Status: v0.24.0 adopter guidance
 
-This guide is the detailed performance-profile reference for the current v0.23.0 DVault documentation baseline. It translates the checked-in benchmark evidence into starting profiles, stop conditions, and rerun triggers. It does not create absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, or credential-management guidance. The coordinated release record is [DVault v0.23.0 Release Notes](releases/v0.23.0.md).
+This guide is the detailed performance-profile reference for the current v0.24.0 DVault documentation baseline. It translates the checked-in benchmark evidence into starting profiles, stop conditions, and rerun triggers. It does not create absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, or credential-management guidance. The coordinated release record is [DVault v0.24.0 Release Notes](releases/v0.24.0.md).
 
 ## Evidence Baseline
 
@@ -31,7 +31,7 @@ Treat all millisecond values below as observations from that run only. Rerun the
 | Profile | Start here when | Main starting point | Primary stop condition |
 | --- | --- | --- | --- |
 | Small app-local vault | The application writes ordinary hub, link, and satellite rows and needs a local SQLite or app-local proof first. | Register `AddDVault()` first, then add `AddDVaultSqlite()` only for SQLite deployments that want the provider package path. | Save/read diagnostics show provider fallback, a non-SQLite provider is selected, or the workload grows beyond the root customer-profile rows. |
-| Medium chunked ingestion | The loader has an ordered source stream and must bound memory without changing load timestamps, record sources, or request order. | Keep `DataVaultBulkSaveRequest` for materialized batches; use `DataVaultChunkedSaveRequest` for already-bounded ordered loaders, starting around chunk size 10. Use the `IAsyncEnumerable<DataVaultSaveChunk>` overload only when the producer naturally yields `DataVaultSaveChunk` values asynchronously. | Materializing the batch is acceptable, chunk overhead dominates, or chunk count/retained-state telemetry no longer matches the local workload. |
+| Medium chunked ingestion | The loader has an ordered source stream and must bound memory without changing load timestamps, record sources, or request order. | Keep `DataVaultBulkSaveRequest` for materialized batches; use `DataVaultChunkedSaveRequest` for already-bounded ordered loaders, starting around chunk size 10. Use the `IAsyncEnumerable<DataVaultSaveChunk>` overload or async helper methods only when the producer is already asynchronous. | Materializing the batch is acceptable, chunk overhead dominates, or chunk count/retained-state telemetry no longer matches the local workload. |
 | Staged provider ingestion | The application has clean provider-specific contexts and larger eligible ordered bulk batches for PostgreSQL, SQL Server, MySQL, or Oracle. | Register `AddDVault()` plus the matching provider extension and verify save-strategy diagnostics before claiming provider-native behavior. | Optional-provider benchmark rows are skipped, the context is dirty, native gates decline, or the provider-local run has not been collected. |
 | Read-model heavy | The application repeatedly reads latest satellites, maintained PIT rows, or maintained bridge rows. | Use `IDataVaultReadService`; add `AddDVaultSqlite()` for the repository-proven optimized SQLite read path. | PIT or bridge maintenance is stale, the provider is not SQLite, or read-shape diagnostics report fallback or unsupported shape. |
 
@@ -65,12 +65,12 @@ All values in this section are from the evidence baseline above:
 
 | Scenario | Baseline | Mean ms | Evidence posture |
 | --- | --- | ---: | --- |
-| `customer-profile-history` | `dvault-adddvault-fallback` | 3.548 | Provider-neutral explicit save through `AddDVault()`. |
-| `customer-profile-history` | `dvault-adddvaultsqlite-optimized` | 2.947 | SQLite optimized write path selected `SqliteDataVaultSaveStrategy`. |
-| `customer-profile-bulk-insert-only` | `dvault-adddvault-fallback` | 14.387 | Provider-neutral fallback for 100 satellite operations. |
-| `customer-profile-bulk-insert-only` | `dvault-adddvaultsqlite-optimized` | 5.129 | SQLite optimized write path selected for the same logical profile rows. |
-| `customer-profile-bulk-history` | `dvault-adddvault-fallback` | 86.279 | Provider-neutral fallback for 1000 satellite operations across 10 requests. |
-| `customer-profile-bulk-history` | `dvault-adddvaultsqlite-optimized` | 35.639 | SQLite optimized write path selected for the same logical profile history shape. |
+| `customer-profile-history` | `dvault-adddvault-fallback` | 3.379 | Provider-neutral explicit save through `AddDVault()`. |
+| `customer-profile-history` | `dvault-adddvaultsqlite-optimized` | 2.229 | SQLite optimized write path selected `SqliteDataVaultSaveStrategy`. |
+| `customer-profile-bulk-insert-only` | `dvault-adddvault-fallback` | 12.886 | Provider-neutral fallback for 100 satellite operations. |
+| `customer-profile-bulk-insert-only` | `dvault-adddvaultsqlite-optimized` | 4.658 | SQLite optimized write path selected for the same logical profile rows. |
+| `customer-profile-bulk-history` | `dvault-adddvault-fallback` | 65.148 | Provider-neutral fallback for 1000 satellite operations across 10 requests. |
+| `customer-profile-bulk-history` | `dvault-adddvaultsqlite-optimized` | 33.372 | SQLite optimized write path selected for the same logical profile history shape. |
 
 ### Stop Conditions And Rerun Triggers
 
@@ -80,9 +80,9 @@ Stop treating the root SQLite rows as enough evidence when the application uses 
 
 ### Workload Shape
 
-Use this profile when a loader receives an ordered source sequence and cannot or should not materialize the complete request set before saving. The checked-in `customer-profile-streaming-save` rows use 20 customers, 60 ordered explicit profile-save requests, 3 profile events per customer, and one unchanged replay. The rows compare a materialized `DataVaultBulkSaveRequest` with bounded `DataVaultChunkedSaveRequest` runs.
+Use this profile when a loader receives an ordered source sequence and cannot or should not materialize the complete request set before saving. The checked-in `customer-profile-streaming-save` rows use 20 customers, 60 ordered explicit profile-save requests, 3 profile events per customer, and one unchanged replay. The rows compare a materialized `DataVaultBulkSaveRequest`, bounded `DataVaultChunkedSaveRequest` runs, and the v0.24 async source path over `IAsyncEnumerable<DataVaultSaveChunk>`.
 
-The v0.24 async streaming contract uses the same `DataVaultSaveChunk` payload model through an additive `IAsyncEnumerable<DataVaultSaveChunk>` save overload. That overload is for callers whose chunk producer is already asynchronous and should be enumerated once in source order. It is not separate benchmark evidence, a provider-native ingestion strategy, or a different ordering contract.
+The v0.24 async streaming contract uses the same `DataVaultSaveChunk` payload model through an additive `IAsyncEnumerable<DataVaultSaveChunk>` save overload. That overload is for callers whose chunk producer is already asynchronous and should be enumerated once in source order. The async source benchmark row is provider-neutral bounded streaming evidence for that source shape; it is not a provider-native ingestion strategy, a provider-native async write claim, or a different ordering contract.
 
 ### Registration Guidance
 
@@ -90,7 +90,7 @@ Use the same explicit `IDataVaultSaveService` boundary as ordinary saves. `DataV
 
 ### Starting Point
 
-Keep `DataVaultBulkSaveRequest` when the loader already has the complete ordered request set materialized. Choose `DataVaultChunkedSaveRequest` when the loader has already formed bounded chunks while preserving explicit load timestamps, record sources, request order, chunk order, and caller-owned transactions. Choose the async overload when those same bounded chunks are produced by an async source and should be consumed sequentially once without pre-buffering the complete source.
+Keep `DataVaultBulkSaveRequest` when the loader already has the complete ordered request set materialized. Choose `DataVaultChunkedSaveRequest` when the loader has already formed bounded chunks while preserving explicit load timestamps, record sources, request order, chunk order, and caller-owned transactions. Choose `IDataVaultSaveService.SaveAsync(DbContext, IAsyncEnumerable<DataVaultSaveChunk>, ...)` when those same bounded chunks are produced by an async source and should be consumed sequentially once without pre-buffering the complete source. Choose `SaveAsync<TSource>(...)`, `SaveHubsAsync(...)`, `SaveLinksAsync(...)`, or `SaveOrdinaryHubSatellitesAsync(...)` when source rows are already asynchronous and should be mapped into bounded chunks through the existing explicit save boundary.
 
 The checked-in run supports chunk size 10 as the first bounded chunk-size candidate for this shape. Chunk size 5 is useful as a lower-memory comparison, but it increased elapsed time in the checked-in run. Retune with local data when the source event count, payload size, transaction policy, or provider changes.
 
@@ -104,9 +104,10 @@ All values in this section are from the evidence baseline above:
 
 | Scenario | Baseline | Mean ms | Chunk detail |
 | --- | --- | ---: | --- |
-| `customer-profile-streaming-save` | `dvault-adddvault-fallback/materialized-explicit-bulk` | 6.828 | 60 ordered requests in one materialized bulk request. |
-| `customer-profile-streaming-save` | `dvault-adddvault-fallback/chunked-save-bounded-10` | 13.330 | 6 chunks of 10, retained-state high-water 20. |
-| `customer-profile-streaming-save` | `dvault-adddvault-fallback/chunked-save-bounded-5` | 19.313 | 12 chunks of 5, retained-state high-water 20. |
+| `customer-profile-streaming-save` | `dvault-adddvault-fallback/materialized-explicit-bulk` | 5.774 | 60 ordered requests in one materialized bulk request. |
+| `customer-profile-streaming-save` | `dvault-adddvault-fallback/chunked-save-bounded-10` | 11.636 | 6 chunks of 10, retained-state high-water 20. |
+| `customer-profile-streaming-save` | `dvault-adddvault-fallback/async-source-bounded-10` | 11.775 | 6 async-yielded chunks of 10, retained-state high-water 20, source shape `IAsyncEnumerable<DataVaultSaveChunk>`. |
+| `customer-profile-streaming-save` | `dvault-adddvault-fallback/chunked-save-bounded-5` | 21.088 | 12 chunks of 5, retained-state high-water 20. |
 
 ### Stop Conditions And Rerun Triggers
 
@@ -191,12 +192,12 @@ All values in this section are from the evidence baseline above:
 
 | Scenario | Baseline | Mean ms | Evidence posture |
 | --- | --- | ---: | --- |
-| `latest-satellite-read` | `dvault-adddvault-fallback` | 12.377 | Provider-neutral latest read over 100 customers and 1000 seeded profile states. |
-| `latest-satellite-read` | `dvault-adddvaultsqlite-optimized` | 4.913 | SQLite optimized read path selected `SqliteDataVaultReadStrategy`. |
-| `pit-as-of-read` | `dvault-adddvault-fallback` | 21.573 | Provider-neutral PIT as-of read over 100 PIT rows and 2 satellite segments. |
-| `pit-as-of-read` | `dvault-adddvaultsqlite-optimized` | 20.947 | SQLite optimized PIT read path selected `SqliteDataVaultReadStrategy`. |
-| `bridge-traversal-read` | `dvault-adddvault-fallback` | 2.091 | Provider-neutral bridge traversal over 1 ancestor and 100 descendant bridge rows. |
-| `bridge-traversal-read` | `dvault-adddvaultsqlite-optimized` | 1.618 | SQLite optimized bridge read path selected `SqliteDataVaultReadStrategy`. |
+| `latest-satellite-read` | `dvault-adddvault-fallback` | 7.289 | Provider-neutral latest read over 100 customers and 1000 seeded profile states. |
+| `latest-satellite-read` | `dvault-adddvaultsqlite-optimized` | 3.271 | SQLite optimized read path selected `SqliteDataVaultReadStrategy`. |
+| `pit-as-of-read` | `dvault-adddvault-fallback` | 10.240 | Provider-neutral PIT as-of read over 100 PIT rows and 2 satellite segments. |
+| `pit-as-of-read` | `dvault-adddvaultsqlite-optimized` | 10.552 | SQLite optimized PIT read path selected `SqliteDataVaultReadStrategy`. |
+| `bridge-traversal-read` | `dvault-adddvault-fallback` | 1.421 | Provider-neutral bridge traversal over 1 ancestor and 100 descendant bridge rows. |
+| `bridge-traversal-read` | `dvault-adddvaultsqlite-optimized` | 0.720 | SQLite optimized bridge read path selected `SqliteDataVaultReadStrategy`. |
 
 ### Stop Conditions And Rerun Triggers
 

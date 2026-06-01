@@ -1,0 +1,10 @@
+﻿[gicket-bot] transactional writeback linkage
+
+- ticket-id: `06F7Y0F650KM61BQXMEQPZ86DR`
+- transaction-point: `TP1`
+- write-group: `wg-handover-po-critic`
+- source-role: `po`
+- target-role: `po-critic`
+- branch: `ticket/06F7Y0F650KM61BQXMEQPZ86DR-task-update-v0-24-0-async-streaming-and-ef-safet`
+- commit: `c5e85a6a8046`
+- push-mode: `commit-only-on-write`

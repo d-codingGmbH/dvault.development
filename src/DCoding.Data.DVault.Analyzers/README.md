@@ -11,13 +11,15 @@ Roslyn analyzers and source generators for DVault compile-time metadata declarat
 
 The package also provides bounded code fixes for DMV1901 anonymous-object direct-member expansion and DMV1902 later-duplicate removal. Its mapping source generator emits registry-backed typed row mappers from the public `DCoding.Data.DVault` compile-time mapping attributes; generated save helpers still require callers to supply load timestamps and record sources through the existing explicit save flow. Its typed read-model source generator is a separate opt-in support-bundle-driven surface for satellite read helpers.
 
+The v0.24.0 documentation baseline does not add model-cache, compiled-model, or `DbContext` pooling diagnostics. `DMV1910` and `DMV1911` are generated shared-type-table misuse diagnostics only. For EF model-cache isolation guidance, use the README section "Isolate EF model cache entries"; for `UseModel(...)` and `AddDbContextPool<TContext>(...)` guardrails, use `docs/architecture/dvault-ef-compiled-compatibility.md`.
+
 ## Installation
 
 Install the analyzer package in projects that declare DVault Code-First metadata, compile-time generated row mappings, or support-bundle-driven typed satellite read helpers through normal Roslyn analyzer package conventions. Use the same already-published version as the rest of the coordinated DVault package family; this documentation baseline does not by itself confirm package publication.
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="0.23.0" PrivateAssets="all" />
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="0.24.0" PrivateAssets="all" />
 </ItemGroup>
 ```
 
@@ -38,6 +40,8 @@ The EF Core misuse analyzer keeps the generated DVault table boundary explicit. 
 `DMV1910` reports exposed `DbContext` properties or fields whose type is `DbSet<Dictionary<string, object>>` when the member source visibly resolves a DVault generated table name through `Set<Dictionary<string, object>>(producedName)`. `DMV1911` reports direct mutating calls such as `Add(...)`, `AddRange(...)`, `Update(...)`, `Remove(...)`, or `Attach(...)` on source-visible generated shared-type sets. The rule intentionally does not report arbitrary non-DVault dictionary shared-type tables, documented read-only query shapes over `context.Set<Dictionary<string, object>>(producedName)`, including `AsNoTracking()` and compiled-query projections, or a local source scope that visibly opts into `UseDataVaultSaveChangesMetadataInterceptor(...)`.
 
 The analyzer does not attempt whole-application DI inference and does not treat `UseDataVaultSaveChangesMetadataInterceptor(...)` as a replacement for the explicit save boundary. That interceptor remains an opt-in metadata filler for tracked generated rows; ordinary hub, link, and satellite writes should flow through `IDataVaultSaveService`. The runtime `UseDataVaultSaveChangesGuardInterceptor(...)` is a separate opt-in blocking or warning guard for applications that want SaveChanges-time enforcement; it is not enabled by `AddDVault()` and does not broaden the analyzer into arbitrary dataflow or provider-specific SQL analysis.
+
+This analyzer surface also does not prove that an application-owned `IModelCacheKeyFactory` includes every tenant, schema, naming, provider, or profile discriminator, and it does not diagnose whether a compiled model or pooled context is safe for a variable model shape. Those boundaries are guidance-only in v0.24.0 and remain documented in the root README and the EF compiled compatibility note.
 
 ## Generated Mapper Scope
 
