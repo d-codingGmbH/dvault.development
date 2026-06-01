@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.Text;
 namespace DCoding.Data.DVault.Analyzers;
 
 /// <summary>
-/// Generates typed latest/current/as-of satellite read models from deterministic DVault metadata declarations.
+/// Generates typed read-model helpers from deterministic DVault support-bundle metadata declarations.
 /// </summary>
 [Generator(LanguageNames.CSharp)]
 public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerator {
@@ -36,7 +36,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       return;
     }
 
-    var declarations = new List<ReadModelDeclaration>();
+    var declarations = new List<IReadModelDeclaration>();
     var authoritativeMetadataSourceCount = 0;
     var authoritativeSourceKeys = new HashSet<string>(StringComparer.Ordinal);
 
@@ -85,7 +85,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
 
     var rootNamespace = ResolveGeneratedNamespace(optionsProvider);
     var expectedFingerprint = ResolveExpectedFingerprint(optionsProvider);
-    var validDeclarations = new List<ReadModelDeclaration>();
+    var validDeclarations = new List<IReadModelDeclaration>();
 
     foreach (var declaration in declarations) {
       if (!string.IsNullOrWhiteSpace(expectedFingerprint) &&
@@ -94,7 +94,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
             context,
             DataVaultTypedReadModelDiagnosticCatalog.MetadataSourceFingerprintDrift,
             declaration.Location,
-            "Typed read model '" + declaration.MetadataName + "' from " + declaration.SourceKind +
+            "Typed " + declaration.ShapeKind + " read model '" + declaration.MetadataName + "' from " + declaration.SourceKind +
             " metadata source fingerprint '" + declaration.SourceFingerprint +
             "' does not match configured expected fingerprint '" + expectedFingerprint + "'.");
         continue;
@@ -111,7 +111,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
             context,
             DataVaultTypedReadModelDiagnosticCatalog.NameCollision,
             declaration.Location,
-            "Typed read model '" + declaration.MetadataName + "' from " + declaration.SourceKind +
+            "Typed " + declaration.ShapeKind + " read model '" + declaration.MetadataName + "' from " + declaration.SourceKind +
             " metadata source fingerprint '" + declaration.SourceFingerprint +
             "' produced generated type prefix '" + declaration.TypeNamePrefix +
             "', which collides with another typed read model in the same compilation.");
@@ -130,18 +130,14 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
         continue;
       }
 
-      var source = declaration switch {
-        SatelliteReadModelDeclaration satellite => GenerateSatelliteSource(rootNamespace, satellite),
-        PitReadModelDeclaration pit => GeneratePitSource(rootNamespace, pit),
-        _ => throw new InvalidOperationException("Unsupported typed read-model declaration."),
-      };
+      var source = GenerateSource(rootNamespace, declaration);
       context.AddSource(
           "DVault.GeneratedReadModels." + declaration.TypeNamePrefix + ".g.cs",
           SourceText.From(source, Encoding.UTF8));
     }
   }
 
-  private static IReadOnlyList<ReadModelDeclaration> CreateSupportBundleDeclarations(
+  private static IReadOnlyList<IReadModelDeclaration> CreateSupportBundleDeclarations(
       AdditionalText additionalText,
       SourceProductionContext context,
       out bool wasSupportBundle,
@@ -211,11 +207,44 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       return [];
     }
 
-    var declarations = new List<ReadModelDeclaration>();
+    var bridgeReadShape = TryGetSupportBundleBridgeReadShape(diagnostics, out var parsedBridgeReadShape)
+        ? parsedBridgeReadShape
+        : (JsonElement?)null;
+    var declarations = new List<IReadModelDeclaration>();
     foreach (var entity in entities.EnumerateArray()) {
       context.CancellationToken.ThrowIfCancellationRequested();
       if (entity.ValueKind != JsonValueKind.Object ||
           !TryGetJsonString(entity, "tableKind", out var tableKind)) {
+        continue;
+      }
+
+      if (string.Equals(tableKind, "Bridge", StringComparison.Ordinal)) {
+        if (IsModelFirstMetadataSource(sourceKind)) {
+          var producedTableName = GetSupportBundleEntityString(entity, "tableName", "<unknown>");
+          var metadataName = GetSupportBundleEntityString(entity, "metadataName", producedTableName);
+          ReportUnsupportedReadModelShape(
+              context,
+              DataVaultTypedReadModelDiagnosticCatalog.UnsupportedModelFirstShape,
+              tableKind,
+              sourceKind,
+              sourceFingerprint,
+              metadataName,
+              producedTableName,
+              "projected model-first metadata is outside the public typed read-model generator contract.");
+          continue;
+        }
+
+        if (TryCreateSupportBundleBridge(
+            entity,
+            bridgeReadShape,
+            additionalText.Path,
+            sourceKind,
+            sourceFingerprint,
+            context,
+            out var bridgeDeclaration)) {
+          declarations.Add(bridgeDeclaration);
+        }
+
         continue;
       }
 
@@ -251,8 +280,8 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
           sourceKind,
           sourceFingerprint,
           context,
-          out var declaration)) {
-        declarations.Add(declaration);
+          out var satelliteDeclaration)) {
+        declarations.Add(satelliteDeclaration);
       }
     }
 
@@ -288,17 +317,6 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
 
     if (tableKind is "Pit" or "PointInTime") {
       ReportUnsupportedSupportBundlePit(
-          entity,
-          sourceKind,
-          sourceFingerprint,
-          metadataName,
-          producedTableName,
-          context);
-      return;
-    }
-
-    if (string.Equals(tableKind, "Bridge", StringComparison.Ordinal)) {
-      ReportUnsupportedSupportBundleBridge(
           entity,
           sourceKind,
           sourceFingerprint,
@@ -366,15 +384,50 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
         "the runtime PIT metadata shape is valid for IDataVaultReadService usage but no typed PIT helper is emitted by this diagnostic-only generator path.");
   }
 
-  private static void ReportUnsupportedSupportBundleBridge(
+  private static bool TryGetSupportBundleBridgeReadShape(JsonElement diagnostics, out JsonElement bridgeReadShape) {
+    bridgeReadShape = default;
+    if (!diagnostics.TryGetProperty("readShape", out var readShape) ||
+        readShape.ValueKind != JsonValueKind.Object ||
+        !TryGetJsonString(readShape, "kind", out var readShapeKind) ||
+        !string.Equals(readShapeKind, "Bridge", StringComparison.Ordinal) ||
+        !readShape.TryGetProperty("bridge", out bridgeReadShape) ||
+        bridgeReadShape.ValueKind != JsonValueKind.Object) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private static bool TryCreateSupportBundleBridge(
       JsonElement entity,
+      JsonElement? bridgeReadShape,
+      string sourcePath,
       string sourceKind,
       string sourceFingerprint,
-      string metadataName,
-      string producedTableName,
-      SourceProductionContext context) {
-    var participantReferenceCount = CountSupportBundlePropertyRole(entity, "ParticipantReference");
-    if (participantReferenceCount < 2) {
+      SourceProductionContext context,
+      out BridgeReadModelDeclaration declaration) {
+    declaration = null!;
+    if (!TryGetJsonString(entity, "tableName", out var producedTableName) ||
+        !TryGetJsonString(entity, "metadataName", out var metadataName) ||
+        !entity.TryGetProperty("properties", out var propertiesElement) ||
+        propertiesElement.ValueKind != JsonValueKind.Array) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedBridgeShape,
+          "Bridge",
+          sourceKind,
+          sourceFingerprint,
+          GetSupportBundleEntityString(entity, "metadataName", "<unknown>"),
+          GetSupportBundleEntityString(entity, "tableName", "<unknown>"),
+          "authoritative explain metadata is missing the bridge produced name, metadata name, or property descriptors.");
+      return false;
+    }
+
+    if (!TryGetMatchingBridgeReadShape(
+        bridgeReadShape,
+        metadataName,
+        producedTableName,
+        out var matchedBridgeReadShape)) {
       ReportUnsupportedReadModelShape(
           context,
           DataVaultTypedReadModelDiagnosticCatalog.UnsupportedBridgeShape,
@@ -383,11 +436,63 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
           sourceFingerprint,
           metadataName,
           producedTableName,
-          "authoritative explain metadata does not expose at least two bridge endpoint participant reference bindings.");
-      return;
+          "authoritative support-bundle evidence does not include bounded readShape.bridge facts for this bridge entity.");
+      return false;
     }
 
-    if (HasSupportBundlePropertyRole(entity, "BridgeDepth")) {
+    var properties = new List<SupportBundleProperty>();
+    foreach (var property in propertiesElement.EnumerateArray()) {
+      if (!TryCreateSupportBundleProperty(
+          property,
+          sourcePath,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedBridgeShape,
+          "bridge",
+          context,
+          out var descriptor)) {
+        return false;
+      }
+
+      properties.Add(descriptor);
+    }
+
+    if (!TryGetJsonString(matchedBridgeReadShape, "bridgeKind", out var bridgeKind) ||
+        bridgeKind is not ("ManyToMany" or "Hierarchy")) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedBridgeShape,
+          "Bridge",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "readShape.bridge does not expose a supported bridgeKind value.");
+      return false;
+    }
+
+    if (!TryCreateBridgeReadShapeEndpoints(
+        matchedBridgeReadShape,
+        bridgeKind,
+        out var endpoints,
+        out var endpointFailureReason)) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedBridgeShape,
+          "Bridge",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          endpointFailureReason);
+      return false;
+    }
+
+    var residualBridgeProperties = properties
+        .Where(property => !IsSupportedBridgeReadModelProperty(property))
+        .OrderBy(property => property.Ordinal)
+        .ThenBy(property => property.ProducedName, StringComparer.Ordinal)
+        .ToArray();
+    if (residualBridgeProperties.Length > 0) {
+      var residualProperty = residualBridgeProperties[0];
       ReportUnsupportedReadModelShape(
           context,
           DataVaultTypedReadModelDiagnosticCatalog.HelperSkipped,
@@ -396,19 +501,263 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
           sourceFingerprint,
           metadataName,
           producedTableName,
-          "the runtime hierarchy bridge metadata shape is valid for IDataVaultReadService usage but no typed bridge helper is emitted by this diagnostic-only generator path.");
-      return;
+          "valid runtime bridge metadata includes residual projected property '" +
+          residualProperty.ProducedName +
+          "' with role '" +
+          residualProperty.Role +
+          "', which is outside the generated bridge helper boundary.");
+      return false;
     }
 
-    ReportUnsupportedReadModelShape(
-        context,
-        DataVaultTypedReadModelDiagnosticCatalog.HelperSkipped,
-        "Bridge",
+    var participantReferences = properties
+        .Where(IsBridgeParticipantReference)
+        .OrderBy(property => property.Ordinal)
+        .ThenBy(property => property.ProducedName, StringComparer.Ordinal)
+        .ToArray();
+    if (participantReferences.Length != 2 ||
+        participantReferences.Any(property => !IsSupportBundleStringValue(property, "ParticipantReference"))) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedBridgeShape,
+          "Bridge",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "authoritative explain metadata does not expose exactly two string bridge endpoint participant reference bindings.");
+      return false;
+    }
+
+    var participantColumnNames = participantReferences
+        .Select(property => property.ProducedName)
+        .ToHashSet(StringComparer.Ordinal);
+    if (participantColumnNames.Count != 2 ||
+        endpoints.Any(endpoint => !participantColumnNames.Contains(endpoint.ColumnName))) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedBridgeShape,
+          "Bridge",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "readShape.bridge endpoint hash-key columns do not match the bridge participant reference columns.");
+      return false;
+    }
+
+    var endpointColumnNames = endpoints.Select(endpoint => endpoint.ColumnName).ToArray();
+    var expectedOrderingColumns = string.Equals(bridgeKind, "Hierarchy", StringComparison.Ordinal)
+        ? endpointColumnNames.Append("TraversalDepth").ToArray()
+        : endpointColumnNames;
+    if (!HasReadShapeColumnSet(
+            matchedBridgeReadShape,
+            "projectedColumns",
+            "endpointProjection",
+            endpointColumnNames) ||
+        !HasReadShapeColumnSet(
+            matchedBridgeReadShape,
+            "deterministicOrdering",
+            "resultOrdering",
+            expectedOrderingColumns)) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedBridgeShape,
+          "Bridge",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "readShape.bridge does not prove deterministic endpoint projection and result ordering columns.");
+      return false;
+    }
+
+    var traversalDepth = SingleOrDefault(properties, IsBridgeDepth);
+    var hasDepthPredicate = HasReadShapeSingleColumnSet(
+        matchedBridgeReadShape,
+        "depthPredicate",
+        "maximumDepthPredicate",
+        "TraversalDepth");
+    var hasDepthProjection = HasReadShapeColumnSet(
+        matchedBridgeReadShape,
+        "projectedColumns",
+        "depthProjection",
+        ["TraversalDepth"]);
+
+    if (string.Equals(bridgeKind, "ManyToMany", StringComparison.Ordinal)) {
+      if (traversalDepth is not null || hasDepthPredicate || hasDepthProjection) {
+        ReportUnsupportedReadModelShape(
+            context,
+            DataVaultTypedReadModelDiagnosticCatalog.UnsupportedBridgeShape,
+            "Bridge",
+            sourceKind,
+            sourceFingerprint,
+            metadataName,
+            producedTableName,
+            "many-to-many bridge evidence includes hierarchy TraversalDepth facts.");
+        return false;
+      }
+    }
+    else if (traversalDepth is null ||
+        !string.Equals(traversalDepth.ProducedName, "TraversalDepth", StringComparison.Ordinal) ||
+        !IsSupportBundleInt32Value(traversalDepth, "BridgeDepth")) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedBridgeShape,
+          "Bridge",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "hierarchy bridge evidence does not expose the required integer TraversalDepth projection column.");
+      return false;
+    }
+    else if (!hasDepthPredicate || !hasDepthProjection) {
+      ReportUnsupportedReadModelShape(
+          context,
+          DataVaultTypedReadModelDiagnosticCatalog.DynamicQueryShapeRequired,
+          "Bridge",
+          sourceKind,
+          sourceFingerprint,
+          metadataName,
+          producedTableName,
+          "hierarchy bridge read-shape evidence does not prove a bounded maximumDepth predicate and TraversalDepth projection.");
+      return false;
+    }
+
+    var rowProperties = endpoints
+        .Select(endpoint => new RowProperty(
+            ResolvePropertyName(endpoint.ColumnName),
+            endpoint.ColumnName,
+            endpoint.ColumnName,
+            "string",
+            IsNullable: false))
+        .ToList();
+    if (traversalDepth is not null) {
+      rowProperties.Add(new RowProperty(
+          "TraversalDepth",
+          traversalDepth.ProducedName,
+          "TraversalDepth",
+          "int",
+          IsNullable: false));
+    }
+
+    rowProperties = ResolveRowPropertyNames(rowProperties);
+    declaration = new BridgeReadModelDeclaration(
         sourceKind,
         sourceFingerprint,
+        Location.None,
         metadataName,
         producedTableName,
-        "the runtime bridge metadata shape is valid for IDataVaultReadService usage but no typed bridge helper is emitted by this diagnostic-only generator path.");
+        NormalizePublicIdentifier(producedTableName),
+        bridgeKind,
+        endpoints,
+        rowProperties);
+    return true;
+  }
+
+  private static bool TryGetMatchingBridgeReadShape(
+      JsonElement? bridgeReadShape,
+      string metadataName,
+      string producedTableName,
+      out JsonElement matchedBridgeReadShape) {
+    matchedBridgeReadShape = default;
+    if (!bridgeReadShape.HasValue) {
+      return false;
+    }
+
+    matchedBridgeReadShape = bridgeReadShape.Value;
+    if (!matchedBridgeReadShape.TryGetProperty("bridge", out var bridgeEntity) ||
+        bridgeEntity.ValueKind != JsonValueKind.Object ||
+        !TryGetJsonString(bridgeEntity, "metadataName", out var shapeMetadataName) ||
+        !TryGetJsonString(bridgeEntity, "tableName", out var shapeTableName) ||
+        !TryGetJsonString(bridgeEntity, "tableKind", out var shapeTableKind) ||
+        !string.Equals(shapeTableKind, "Bridge", StringComparison.Ordinal)) {
+      return false;
+    }
+
+    return string.Equals(shapeMetadataName, metadataName, StringComparison.Ordinal) &&
+        string.Equals(shapeTableName, producedTableName, StringComparison.Ordinal);
+  }
+
+  private static bool TryCreateBridgeReadShapeEndpoints(
+      JsonElement bridgeReadShape,
+      string bridgeKind,
+      out IReadOnlyList<BridgeEndpointDeclaration> endpoints,
+      out string failureReason) {
+    endpoints = Array.Empty<BridgeEndpointDeclaration>();
+    failureReason = string.Empty;
+    if (!bridgeReadShape.TryGetProperty("endpoints", out var endpointsElement) ||
+        endpointsElement.ValueKind != JsonValueKind.Array) {
+      failureReason = "readShape.bridge does not expose endpoint roles, endpoint names, and endpoint hash-key columns.";
+      return false;
+    }
+
+    var endpointDeclarations = new List<BridgeEndpointDeclaration>();
+    foreach (var endpointElement in endpointsElement.EnumerateArray()) {
+      if (endpointElement.ValueKind != JsonValueKind.Object ||
+          !TryGetJsonString(endpointElement, "endpoint", out var endpoint) ||
+          !TryGetJsonString(endpointElement, "endpointName", out var endpointName) ||
+          !TryGetJsonString(endpointElement, "columnName", out var columnName) ||
+          !IsSupportedBridgeEndpoint(bridgeKind, endpoint) ||
+          !TryDeriveBridgeHubName(endpoint, columnName, out var hubName)) {
+        failureReason = "readShape.bridge contains an endpoint outside the supported closed endpoint vocabulary or without a generated hash-key column.";
+        return false;
+      }
+
+      endpointDeclarations.Add(new BridgeEndpointDeclaration(endpoint, endpointName, columnName, hubName));
+    }
+
+    string[] requiredEndpoints = string.Equals(bridgeKind, "ManyToMany", StringComparison.Ordinal)
+        ? ["From", "To"]
+        : ["Ancestor", "Descendant"];
+    if (endpointDeclarations.Count != 2 ||
+        requiredEndpoints.Any(endpoint =>
+            endpointDeclarations.Count(declaration =>
+                string.Equals(declaration.Endpoint, endpoint, StringComparison.Ordinal)) != 1)) {
+      failureReason = "readShape.bridge does not expose exactly the endpoint roles required by bridgeKind '" + bridgeKind + "'.";
+      return false;
+    }
+
+    endpoints = endpointDeclarations;
+    return true;
+  }
+
+  private static bool IsSupportedBridgeEndpoint(string bridgeKind, string endpoint) {
+    return bridgeKind switch {
+      "ManyToMany" => endpoint is "From" or "To",
+      "Hierarchy" => endpoint is "Ancestor" or "Descendant",
+      _ => false,
+    };
+  }
+
+  private static bool TryDeriveBridgeHubName(string endpoint, string columnName, out string hubName) {
+    hubName = string.Empty;
+    if (!columnName.EndsWith("HashKey", StringComparison.Ordinal)) {
+      return false;
+    }
+
+    var baseName = columnName[..^"HashKey".Length];
+    if (string.Equals(endpoint, "Ancestor", StringComparison.Ordinal)) {
+      if (!baseName.StartsWith("Ancestor", StringComparison.Ordinal)) {
+        return false;
+      }
+
+      baseName = baseName["Ancestor".Length..];
+    }
+    else if (string.Equals(endpoint, "Descendant", StringComparison.Ordinal)) {
+      if (!baseName.StartsWith("Descendant", StringComparison.Ordinal)) {
+        return false;
+      }
+
+      baseName = baseName["Descendant".Length..];
+    }
+
+    if (string.IsNullOrWhiteSpace(baseName)) {
+      return false;
+    }
+
+    hubName = baseName;
+    return true;
   }
 
   private static bool TryCreateSupportBundlePit(
@@ -475,6 +824,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
           property,
           sourcePath,
           DataVaultTypedReadModelDiagnosticCatalog.UnsupportedPitShape,
+          "pit",
           context,
           out var descriptor)) {
         return false;
@@ -984,6 +1334,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
           property,
           sourcePath,
           DataVaultTypedReadModelDiagnosticCatalog.UnsupportedSatelliteShape,
+          "satellite",
           context,
           out var descriptor)) {
         return false;
@@ -1140,12 +1491,6 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
         property => IsSupportBundlePropertyRole(property, role));
   }
 
-  private static int CountSupportBundlePropertyRole(JsonElement entity, string role) {
-    return CountSupportBundleProperties(
-        entity,
-        property => IsSupportBundlePropertyRole(property, role));
-  }
-
   private static bool HasSupportBundleProperty(JsonElement entity, Func<JsonElement, bool> predicate) {
     return CountSupportBundleProperties(entity, predicate) > 0;
   }
@@ -1174,10 +1519,11 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
   private static bool TryCreateSupportBundleProperty(
       JsonElement property,
       string sourcePath,
-      DiagnosticDescriptor invalidDescriptor,
+      DiagnosticDescriptor diagnosticDescriptor,
+      string shapeKind,
       SourceProductionContext context,
-      out SupportBundleProperty descriptor) {
-    descriptor = null!;
+      out SupportBundleProperty propertyDescriptor) {
+    propertyDescriptor = null!;
     if (property.ValueKind != JsonValueKind.Object ||
         !TryGetJsonString(property, "name", out var producedName) ||
         !TryGetJsonString(property, "role", out var role) ||
@@ -1187,17 +1533,17 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
         !TryGetJsonString(property, "valueFormat", out var valueFormat)) {
       Report(
           context,
-          invalidDescriptor,
+          diagnosticDescriptor,
           Location.None,
           "Data Vault support-bundle source '" + sourcePath +
-          "' contains a property descriptor without produced name, role, metadata name, ordinal, logical property kind, or provider value format.");
+          "' contains a " + shapeKind + " property descriptor without produced name, role, metadata name, ordinal, logical property kind, or provider value format.");
       return false;
     }
 
     TryGetOptionalJsonString(property, "technicalRole", out var technicalRole);
     TryGetOptionalJsonString(property, "clrTypeName", out var clrTypeName);
     TryGetOptionalJsonBoolean(property, "isNullable", out var isNullable);
-    descriptor = new SupportBundleProperty(
+    propertyDescriptor = new SupportBundleProperty(
         producedName,
         role,
         string.IsNullOrWhiteSpace(technicalRole) ? null : technicalRole,
@@ -1254,6 +1600,14 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
         IsDateTimeOffsetClrType(property.ClrTypeName);
   }
 
+  private static bool IsSupportBundleInt32Value(
+      SupportBundleProperty property,
+      string logicalPropertyKind) {
+    return string.Equals(property.LogicalPropertyKind, logicalPropertyKind, StringComparison.Ordinal) &&
+        string.Equals(property.ValueFormat, "NativeInteger", StringComparison.Ordinal) &&
+        IsInt32ClrType(property.ClrTypeName);
+  }
+
   private static bool IsStringClrType(string value) {
     return string.IsNullOrWhiteSpace(value) ||
         string.Equals(value, "System.String", StringComparison.Ordinal) ||
@@ -1264,6 +1618,75 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     return string.IsNullOrWhiteSpace(value) ||
         string.Equals(value, "System.DateTimeOffset", StringComparison.Ordinal) ||
         string.Equals(value, "DateTimeOffset", StringComparison.Ordinal);
+  }
+
+  private static bool IsInt32ClrType(string value) {
+    return string.IsNullOrWhiteSpace(value) ||
+        string.Equals(value, "System.Int32", StringComparison.Ordinal) ||
+        string.Equals(value, "int", StringComparison.Ordinal);
+  }
+
+  private static bool IsBridgeParticipantReference(SupportBundleProperty property) {
+    return string.Equals(property.Role, "ParticipantReference", StringComparison.Ordinal) &&
+        string.Equals(property.TechnicalRole, "HashKey", StringComparison.Ordinal);
+  }
+
+  private static bool IsBridgeDepth(SupportBundleProperty property) {
+    return string.Equals(property.Role, "BridgeDepth", StringComparison.Ordinal);
+  }
+
+  private static bool IsSupportedBridgeReadModelProperty(SupportBundleProperty property) {
+    return IsBridgeParticipantReference(property) || IsBridgeDepth(property);
+  }
+
+  private static bool HasReadShapeSingleColumnSet(
+      JsonElement element,
+      string propertyName,
+      string role,
+      string columnName) {
+    if (!element.TryGetProperty(propertyName, out var columnSet) ||
+        columnSet.ValueKind != JsonValueKind.Object) {
+      return false;
+    }
+
+    return ReadShapeColumnSetMatches(columnSet, role, [columnName]);
+  }
+
+  private static bool HasReadShapeColumnSet(
+      JsonElement element,
+      string propertyName,
+      string role,
+      IReadOnlyList<string> columnNames) {
+    if (!element.TryGetProperty(propertyName, out var columnSets) ||
+        columnSets.ValueKind != JsonValueKind.Array) {
+      return false;
+    }
+
+    return columnSets
+        .EnumerateArray()
+        .Any(columnSet => columnSet.ValueKind == JsonValueKind.Object &&
+            ReadShapeColumnSetMatches(columnSet, role, columnNames));
+  }
+
+  private static bool ReadShapeColumnSetMatches(
+      JsonElement columnSet,
+      string role,
+      IReadOnlyList<string> columnNames) {
+    if (!TryGetJsonString(columnSet, "role", out var actualRole) ||
+        !string.Equals(actualRole, role, StringComparison.Ordinal) ||
+        !columnSet.TryGetProperty("columnNames", out var actualColumns) ||
+        actualColumns.ValueKind != JsonValueKind.Array) {
+      return false;
+    }
+
+    var values = actualColumns
+        .EnumerateArray()
+        .Select(column => column.ValueKind == JsonValueKind.String ? column.GetString() : null)
+        .ToArray();
+    return values.Length == columnNames.Count &&
+        values
+            .Zip(columnNames, (actual, expected) => string.Equals(actual, expected, StringComparison.Ordinal))
+            .All(matches => matches);
   }
 
   private static bool IsTechnicalProjectionName(string value) {
@@ -1288,6 +1711,14 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     return resolved;
   }
 
+  private static string GenerateSource(string generatedNamespace, IReadModelDeclaration declaration) {
+    return declaration switch {
+      SatelliteReadModelDeclaration satellite => GenerateSatelliteSource(generatedNamespace, satellite),
+      PitReadModelDeclaration pit => GeneratePitSource(generatedNamespace, pit),
+      BridgeReadModelDeclaration bridge => GenerateBridgeSource(generatedNamespace, bridge),
+      _ => throw new ArgumentOutOfRangeException(nameof(declaration), declaration, "Unsupported read-model declaration."),
+    };
+  }
   private static string GenerateSatelliteSource(string generatedNamespace, SatelliteReadModelDeclaration declaration) {
     var builder = new StringBuilder();
     builder.AppendLine("// <auto-generated />");
@@ -1355,6 +1786,66 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     AppendReadMethod(builder, declaration, "AsOf", includeAsOf: true);
     builder.AppendLine();
     AppendProjectMethod(builder, declaration);
+    builder.AppendLine("}");
+
+    return builder.ToString();
+  }
+
+  private static string GenerateBridgeSource(string generatedNamespace, BridgeReadModelDeclaration declaration) {
+    var builder = new StringBuilder();
+    builder.AppendLine("// <auto-generated />");
+    builder.AppendLine("#nullable enable");
+    builder.AppendLine();
+    builder.Append("namespace ");
+    builder.Append(generatedNamespace);
+    builder.AppendLine(";");
+    builder.AppendLine();
+
+    AppendGeneratedCodeAttribute(builder);
+    builder.Append("public sealed record ");
+    builder.Append(declaration.RowTypeName);
+    builder.AppendLine("(");
+    for (var index = 0; index < declaration.RowProperties.Count; index++) {
+      var property = declaration.RowProperties[index];
+      builder.Append("    ");
+      builder.Append(property.TypeName);
+      builder.Append(' ');
+      builder.Append(property.PropertyName);
+      if (index + 1 < declaration.RowProperties.Count) {
+        builder.Append(',');
+      }
+
+      builder.AppendLine();
+    }
+
+    builder.AppendLine(") {");
+    AppendConstant(builder, "ProducedTableName", declaration.ProducedTableName);
+    AppendConstant(builder, "MetadataSourceKind", declaration.SourceKind);
+    AppendConstant(builder, "MetadataSourceFingerprint", declaration.SourceFingerprint);
+    foreach (var property in declaration.RowProperties) {
+      AppendConstant(builder, property.PropertyName + "ProducedColumnName", property.ProducedColumnName);
+      AppendConstant(builder, property.PropertyName + "MappedName", property.MappedName);
+    }
+
+    builder.AppendLine("}");
+    builder.AppendLine();
+
+    AppendGeneratedCodeAttribute(builder);
+    builder.Append("public static class ");
+    builder.Append(declaration.ExtensionTypeName);
+    builder.AppendLine(" {");
+    AppendBridgeMetadata(builder, declaration);
+    builder.AppendLine();
+    foreach (var endpoint in declaration.Endpoints) {
+      AppendBridgeReadMethod(
+          builder,
+          declaration,
+          endpoint,
+          includeMaximumDepth: string.Equals(declaration.BridgeKind, "Hierarchy", StringComparison.Ordinal));
+      builder.AppendLine();
+    }
+
+    AppendBridgeProjectMethod(builder, declaration);
     builder.AppendLine("}");
 
     return builder.ToString();
@@ -1532,6 +2023,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     builder.Append("  private static ");
     builder.Append(declaration.RowTypeName);
     builder.AppendLine(" Project(global::DCoding.Data.DVault.DataVaultPitReadRecord row) {");
+
     builder.Append("    return new ");
     builder.Append(declaration.RowTypeName);
     builder.AppendLine("(");
@@ -1587,6 +2079,116 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     builder.AppendLine("  }");
   }
 
+  private static void AppendBridgeMetadata(StringBuilder builder, BridgeReadModelDeclaration declaration) {
+    builder.Append("  private static readonly global::DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata BridgeMetadata = ");
+    if (string.Equals(declaration.BridgeKind, "ManyToMany", StringComparison.Ordinal)) {
+      var fromEndpoint = declaration.Endpoints.Single(endpoint => endpoint.Endpoint == "From");
+      var toEndpoint = declaration.Endpoints.Single(endpoint => endpoint.Endpoint == "To");
+      builder.AppendLine("global::DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata.ManyToMany(");
+      builder.Append("      ");
+      builder.Append(ToLiteral(declaration.MetadataName));
+      builder.AppendLine(",");
+      AppendHubReferenceArgument(builder, fromEndpoint.HubName);
+      builder.AppendLine(",");
+      AppendLinkReferenceArgument(builder, declaration.MetadataName);
+      builder.AppendLine(",");
+      AppendHubReferenceArgument(builder, toEndpoint.HubName);
+      builder.AppendLine(");");
+      return;
+    }
+
+    var ancestorEndpoint = declaration.Endpoints.Single(endpoint => endpoint.Endpoint == "Ancestor");
+    var descendantEndpoint = declaration.Endpoints.Single(endpoint => endpoint.Endpoint == "Descendant");
+    var endpointOrder = declaration.Endpoints.ToArray();
+    builder.AppendLine("global::DCoding.Data.DVault.Modeling.DataVaultBridgeMetadata.Hierarchy(");
+    builder.Append("      ");
+    builder.Append(ToLiteral(declaration.MetadataName));
+    builder.AppendLine(",");
+    AppendHubReferenceArgument(builder, ancestorEndpoint.HubName);
+    builder.AppendLine(",");
+    AppendLinkReferenceArgument(builder, declaration.MetadataName);
+    builder.AppendLine(",");
+    AppendHubReferenceArgument(builder, descendantEndpoint.HubName);
+    builder.AppendLine(",");
+    builder.Append("      ");
+    builder.Append(Array.IndexOf(endpointOrder, ancestorEndpoint).ToString(System.Globalization.CultureInfo.InvariantCulture));
+    builder.AppendLine(",");
+    builder.Append("      ");
+    builder.Append(Array.IndexOf(endpointOrder, descendantEndpoint).ToString(System.Globalization.CultureInfo.InvariantCulture));
+    builder.AppendLine(");");
+  }
+
+  private static void AppendHubReferenceArgument(StringBuilder builder, string hubName) {
+    builder.Append("      global::DCoding.Data.DVault.Modeling.DataVaultMetadataReference.Hub(");
+    builder.Append(ToLiteral(hubName));
+    builder.Append(')');
+  }
+
+  private static void AppendLinkReferenceArgument(StringBuilder builder, string linkName) {
+    builder.Append("      global::DCoding.Data.DVault.Modeling.DataVaultMetadataReference.Link(");
+    builder.Append(ToLiteral(linkName));
+    builder.Append(')');
+  }
+
+  private static void AppendBridgeReadMethod(
+      StringBuilder builder,
+      BridgeReadModelDeclaration declaration,
+      BridgeEndpointDeclaration endpoint,
+      bool includeMaximumDepth) {
+    builder.Append("  public static global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<");
+    builder.Append(declaration.RowTypeName);
+    builder.Append(">> Read");
+    builder.Append(declaration.TypeNamePrefix);
+    builder.Append(endpoint.Endpoint);
+    builder.AppendLine("Async(");
+    builder.AppendLine("      this global::DCoding.Data.DVault.IDataVaultReadService readService,");
+    builder.AppendLine("      global::Microsoft.EntityFrameworkCore.DbContext dbContext,");
+    builder.AppendLine("      global::System.Collections.Generic.IEnumerable<string> endpointHashKeys,");
+    if (includeMaximumDepth) {
+      builder.AppendLine("      int maximumDepth,");
+    }
+
+    builder.AppendLine("      global::System.Threading.CancellationToken cancellationToken = default) {");
+    builder.AppendLine("    return global::DCoding.Data.DVault.DataVaultReadServiceBridgeExtensions.ReadBridgeAsync(");
+    builder.AppendLine("        readService,");
+    builder.AppendLine("        dbContext,");
+    builder.Append("        new global::DCoding.Data.DVault.DataVaultBridgeReadRequest(BridgeMetadata, global::DCoding.Data.DVault.DataVaultBridgeTraversalEndpoint.");
+    builder.Append(endpoint.Endpoint);
+    builder.Append(", endpointHashKeys");
+    if (includeMaximumDepth) {
+      builder.Append(", maximumDepth");
+    }
+
+    builder.AppendLine("),");
+    builder.AppendLine("        Project,");
+    builder.AppendLine("        cancellationToken);");
+    builder.AppendLine("  }");
+  }
+
+  private static void AppendBridgeProjectMethod(StringBuilder builder, BridgeReadModelDeclaration declaration) {
+    builder.Append("  private static ");
+    builder.Append(declaration.RowTypeName);
+    builder.AppendLine(" Project(global::DCoding.Data.DVault.DataVaultBridgeProjectionRow row) {");
+    builder.Append("    return new ");
+    builder.Append(declaration.RowTypeName);
+    builder.AppendLine("(");
+    for (var index = 0; index < declaration.RowProperties.Count; index++) {
+      var property = declaration.RowProperties[index];
+      builder.Append("        ");
+      if (string.Equals(property.TypeName, "int", StringComparison.Ordinal)) {
+        builder.Append("row.RequiredInt32(");
+      }
+      else {
+        builder.Append("row.RequiredString(");
+      }
+
+      builder.Append(ToLiteral(property.MappedName));
+      builder.Append(index + 1 == declaration.RowProperties.Count ? "));" : "),");
+      builder.AppendLine();
+    }
+
+    builder.AppendLine("  }");
+  }
   private static void AppendGeneratedCodeAttribute(StringBuilder builder) {
     builder.AppendLine("[global::System.CodeDom.Compiler.GeneratedCode(\"DCoding.Data.DVault.Analyzers\", \"1.0.0\")]");
   }
@@ -2025,19 +2627,33 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     public string SourceName { get; init; } = MappedName;
   }
 
-  private abstract record ReadModelDeclaration(
-      string SourceKind,
-      string SourceFingerprint,
-      Location Location,
-      ParentReference Parent,
-      string MetadataName,
-      string ProducedTableName,
-      string TypeNamePrefix,
-      IReadOnlyList<RowProperty> RowProperties) {
-    public string RowTypeName { get; } = TypeNamePrefix + "ReadModel";
+  private interface IReadModelDeclaration {
+    string SourceKind { get; }
 
-    public string ExtensionTypeName { get; } = TypeNamePrefix + "ReadExtensions";
+    string SourceFingerprint { get; }
+
+    Location Location { get; }
+
+    string ShapeKind { get; }
+
+    string MetadataName { get; }
+
+    string ProducedTableName { get; }
+
+    string TypeNamePrefix { get; }
+
+    IReadOnlyList<RowProperty> RowProperties { get; }
+
+    string RowTypeName { get; }
+
+    string ExtensionTypeName { get; }
   }
+
+  private sealed record BridgeEndpointDeclaration(
+      string Endpoint,
+      string EndpointName,
+      string ColumnName,
+      string HubName);
 
   private sealed record SatelliteReadModelDeclaration(
       string SourceKind,
@@ -2049,16 +2665,30 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       string TypeNamePrefix,
       IReadOnlyList<string> DrivingKeyNames,
       IReadOnlyList<string> PayloadNames,
-      IReadOnlyList<RowProperty> RowProperties)
-      : ReadModelDeclaration(
-          SourceKind,
-          SourceFingerprint,
-          Location,
-          Parent,
-          MetadataName,
-          ProducedTableName,
-          TypeNamePrefix,
-          RowProperties);
+      IReadOnlyList<RowProperty> RowProperties) : IReadModelDeclaration {
+    public string ShapeKind { get; } = "satellite";
+
+    public string RowTypeName { get; } = TypeNamePrefix + "ReadModel";
+
+    public string ExtensionTypeName { get; } = TypeNamePrefix + "ReadExtensions";
+  }
+
+  private sealed record BridgeReadModelDeclaration(
+      string SourceKind,
+      string SourceFingerprint,
+      Location Location,
+      string MetadataName,
+      string ProducedTableName,
+      string TypeNamePrefix,
+      string BridgeKind,
+      IReadOnlyList<BridgeEndpointDeclaration> Endpoints,
+      IReadOnlyList<RowProperty> RowProperties) : IReadModelDeclaration {
+    public string ShapeKind { get; } = "bridge";
+
+    public string RowTypeName { get; } = TypeNamePrefix + "ReadModel";
+
+    public string ExtensionTypeName { get; } = TypeNamePrefix + "ReadExtensions";
+  }
 
   private sealed record PitReadModelDeclaration(
       string SourceKind,
@@ -2069,16 +2699,13 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       string ProducedTableName,
       string TypeNamePrefix,
       IReadOnlyList<PitSatelliteReference> Satellites,
-      IReadOnlyList<RowProperty> RowProperties)
-      : ReadModelDeclaration(
-          SourceKind,
-          SourceFingerprint,
-          Location,
-          Parent,
-          MetadataName,
-          ProducedTableName,
-          TypeNamePrefix,
-          RowProperties);
+      IReadOnlyList<RowProperty> RowProperties) : IReadModelDeclaration {
+    public string ShapeKind { get; } = "pit";
+
+    public string RowTypeName { get; } = TypeNamePrefix + "ReadModel";
+
+    public string ExtensionTypeName { get; } = TypeNamePrefix + "ReadExtensions";
+  }
 
   private sealed record PitSatelliteReference(string MetadataName, bool IsMultiActive);
 

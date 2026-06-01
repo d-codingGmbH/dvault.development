@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Reflection;
 using DCoding.Data.DVault.Analyzers;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -121,6 +122,179 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
     Assert.Contains("new string[] {\"EmailAddress\"}", source, StringComparison.Ordinal);
     Assert.Contains("new string[] {\"ContactType\"}", source, StringComparison.Ordinal);
     Assert.Contains("row.NullableString(\"EmailAddress\")", source, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void GeneratesBridgeReadModelsForSupportedManyToManyAndHierarchyShapes() {
+    var manyToManyResult = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJsonWithReadShape(
+                CreateBridgeReadShapeJson(
+                    "ManyToMany",
+                    "BridgeCustomerOrder",
+                    "CustomerOrder",
+                    [
+                        new("From", "Customer", "CustomerHashKey"),
+                        new("To", "Order", "OrderHashKey"),
+                    ]),
+                CreateSupportBundleEntityJson(
+                    "BridgeCustomerOrder",
+                    "Bridge",
+                    "CustomerOrder",
+                    fields:
+                    [
+                        ParticipantReference("CustomerHashKey", "Customer"),
+                        ParticipantReference("OrderHashKey", "Order"),
+                    ]))),
+        ]);
+
+    Assert.Empty(manyToManyResult.CompilationErrors);
+    Assert.Empty(manyToManyResult.GeneratorDiagnostics);
+
+    var manyToManySource = AssertGeneratedSource(manyToManyResult, "DVault.GeneratedReadModels.BridgeCustomerOrder.g.cs");
+    Assert.Contains("public sealed record BridgeCustomerOrderReadModel(", manyToManySource, StringComparison.Ordinal);
+    Assert.Contains("string CustomerHashKey", manyToManySource, StringComparison.Ordinal);
+    Assert.Contains("string OrderHashKey", manyToManySource, StringComparison.Ordinal);
+    Assert.Contains("public const string CustomerHashKeyMappedName = \"CustomerHashKey\";", manyToManySource, StringComparison.Ordinal);
+    Assert.Contains("ReadBridgeCustomerOrderFromAsync", manyToManySource, StringComparison.Ordinal);
+    Assert.Contains("ReadBridgeCustomerOrderToAsync", manyToManySource, StringComparison.Ordinal);
+    Assert.Contains("DataVaultBridgeTraversalEndpoint.From", manyToManySource, StringComparison.Ordinal);
+    Assert.Contains("DataVaultBridgeTraversalEndpoint.To", manyToManySource, StringComparison.Ordinal);
+    Assert.Contains("row.RequiredString(\"OrderHashKey\")", manyToManySource, StringComparison.Ordinal);
+    Assert.DoesNotContain("TraversalDepth", manyToManySource, StringComparison.Ordinal);
+
+    var hierarchyResult = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJsonWithReadShape(
+                CreateBridgeReadShapeJson(
+                    "Hierarchy",
+                    "BridgeSalesRegionHierarchy",
+                    "SalesRegionHierarchy",
+                    [
+                        new("Ancestor", "SalesRegion", "AncestorSalesRegionHashKey"),
+                        new("Descendant", "SalesRegion", "DescendantSalesRegionHashKey"),
+                    ]),
+                CreateSupportBundleEntityJson(
+                    "BridgeSalesRegionHierarchy",
+                    "Bridge",
+                    "SalesRegionHierarchy",
+                    fields:
+                    [
+                        ParticipantReference("AncestorSalesRegionHashKey", "AncestorSalesRegion"),
+                        ParticipantReference("DescendantSalesRegionHashKey", "DescendantSalesRegion"),
+                        BridgeDepth("TraversalDepth"),
+                    ]))),
+        ]);
+
+    Assert.Empty(hierarchyResult.CompilationErrors);
+    Assert.Empty(hierarchyResult.GeneratorDiagnostics);
+
+    var hierarchySource = AssertGeneratedSource(hierarchyResult, "DVault.GeneratedReadModels.BridgeSalesRegionHierarchy.g.cs");
+    Assert.Contains("public sealed record BridgeSalesRegionHierarchyReadModel(", hierarchySource, StringComparison.Ordinal);
+    Assert.Contains("string AncestorSalesRegionHashKey", hierarchySource, StringComparison.Ordinal);
+    Assert.Contains("string DescendantSalesRegionHashKey", hierarchySource, StringComparison.Ordinal);
+    Assert.Contains("int TraversalDepth", hierarchySource, StringComparison.Ordinal);
+    Assert.Contains("ReadBridgeSalesRegionHierarchyAncestorAsync", hierarchySource, StringComparison.Ordinal);
+    Assert.Contains("ReadBridgeSalesRegionHierarchyDescendantAsync", hierarchySource, StringComparison.Ordinal);
+    Assert.Contains("int maximumDepth", hierarchySource, StringComparison.Ordinal);
+    Assert.Contains("DataVaultBridgeTraversalEndpoint.Ancestor", hierarchySource, StringComparison.Ordinal);
+    Assert.Contains("DataVaultBridgeTraversalEndpoint.Descendant", hierarchySource, StringComparison.Ordinal);
+    Assert.Contains("endpointHashKeys, maximumDepth", hierarchySource, StringComparison.Ordinal);
+    Assert.Contains("row.RequiredInt32(\"TraversalDepth\")", hierarchySource, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public async Task GeneratedBridgeHelpersDelegateThroughRuntimeReadBoundaryWithEquivalentRequestsAndProjection() {
+    var manyToManyResult = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJsonWithReadShape(
+                CreateBridgeReadShapeJson(
+                    "ManyToMany",
+                    "BridgeCustomerOrder",
+                    "CustomerOrder",
+                    [
+                        new("From", "Customer", "CustomerHashKey"),
+                        new("To", "Order", "OrderHashKey"),
+                    ]),
+                CreateSupportBundleEntityJson(
+                    "BridgeCustomerOrder",
+                    "Bridge",
+                    "CustomerOrder",
+                    fields:
+                    [
+                        ParticipantReference("CustomerHashKey", "Customer"),
+                        ParticipantReference("OrderHashKey", "Order"),
+                    ]))),
+        ]);
+
+    Assert.Empty(manyToManyResult.CompilationErrors);
+    Assert.Empty(manyToManyResult.GeneratorDiagnostics);
+
+    var manyToManyAssembly = EmitAssembly(manyToManyResult.Compilation);
+    var manyToManyRows = await InvokeGeneratedReadAsync(
+        manyToManyAssembly,
+        "ConsumerApp.DVault.GeneratedReadModels.BridgeCustomerOrderReadExtensions",
+        "ReadBridgeCustomerOrderFromAsync",
+        (object)new[] { "customer-input-hk" });
+    var manyToManyRequest = GetLastBridgeRequest(manyToManyAssembly);
+    var manyToManyRow = Assert.Single(manyToManyRows);
+
+    Assert.Equal("From", GetPropertyValue(manyToManyRequest, "Endpoint")?.ToString());
+    Assert.Null(GetPropertyValue(manyToManyRequest, "MaximumDepth"));
+    Assert.Equal(["customer-input-hk"], Assert.IsAssignableFrom<IEnumerable<string>>(GetPropertyValue(manyToManyRequest, "EndpointHashKeys")));
+    Assert.Equal("customer-row-hk", GetPropertyValue(manyToManyRow, "CustomerHashKey"));
+    Assert.Equal("order-row-hk", GetPropertyValue(manyToManyRow, "OrderHashKey"));
+
+    var hierarchyResult = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJsonWithReadShape(
+                CreateBridgeReadShapeJson(
+                    "Hierarchy",
+                    "BridgeSalesRegionHierarchy",
+                    "SalesRegionHierarchy",
+                    [
+                        new("Ancestor", "SalesRegion", "AncestorSalesRegionHashKey"),
+                        new("Descendant", "SalesRegion", "DescendantSalesRegionHashKey"),
+                    ]),
+                CreateSupportBundleEntityJson(
+                    "BridgeSalesRegionHierarchy",
+                    "Bridge",
+                    "SalesRegionHierarchy",
+                    fields:
+                    [
+                        ParticipantReference("AncestorSalesRegionHashKey", "AncestorSalesRegion"),
+                        ParticipantReference("DescendantSalesRegionHashKey", "DescendantSalesRegion"),
+                        BridgeDepth("TraversalDepth"),
+                    ]))),
+        ]);
+
+    Assert.Empty(hierarchyResult.CompilationErrors);
+    Assert.Empty(hierarchyResult.GeneratorDiagnostics);
+
+    var hierarchyAssembly = EmitAssembly(hierarchyResult.Compilation);
+    var hierarchyRows = await InvokeGeneratedReadAsync(
+        hierarchyAssembly,
+        "ConsumerApp.DVault.GeneratedReadModels.BridgeSalesRegionHierarchyReadExtensions",
+        "ReadBridgeSalesRegionHierarchyAncestorAsync",
+        (object)new[] { "ancestor-input-hk" },
+        2);
+    var hierarchyRequest = GetLastBridgeRequest(hierarchyAssembly);
+    var hierarchyRow = Assert.Single(hierarchyRows);
+
+    Assert.Equal("Ancestor", GetPropertyValue(hierarchyRequest, "Endpoint")?.ToString());
+    Assert.Equal(2, GetPropertyValue(hierarchyRequest, "MaximumDepth"));
+    Assert.Equal(["ancestor-input-hk"], Assert.IsAssignableFrom<IEnumerable<string>>(GetPropertyValue(hierarchyRequest, "EndpointHashKeys")));
+    Assert.Equal("ancestor-row-hk", GetPropertyValue(hierarchyRow, "AncestorSalesRegionHashKey"));
+    Assert.Equal("descendant-row-hk", GetPropertyValue(hierarchyRow, "DescendantSalesRegionHashKey"));
+    Assert.Equal(2, GetPropertyValue(hierarchyRow, "TraversalDepth"));
   }
 
   [Fact]
@@ -440,6 +614,88 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
   }
 
   [Fact]
+  public void ReportsDynamicBridgeShapeWhenHierarchyDepthIsUnbounded() {
+    var result = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJsonWithReadShape(
+                CreateBridgeReadShapeJson(
+                    "Hierarchy",
+                    "BridgeSalesRegionHierarchy",
+                    "SalesRegionHierarchy",
+                    [
+                        new("Ancestor", "SalesRegion", "AncestorSalesRegionHashKey"),
+                        new("Descendant", "SalesRegion", "DescendantSalesRegionHashKey"),
+                    ],
+                    includeDepthPredicate: false,
+                    includeDepthProjection: false),
+                CreateSupportBundleEntityJson(
+                    "BridgeSalesRegionHierarchy",
+                    "Bridge",
+                    "SalesRegionHierarchy",
+                    fields:
+                    [
+                        ParticipantReference("AncestorSalesRegionHashKey", "AncestorSalesRegion"),
+                        ParticipantReference("DescendantSalesRegionHashKey", "DescendantSalesRegion"),
+                        BridgeDepth("TraversalDepth"),
+                    ]))),
+        ]);
+
+    var diagnostic = Assert.Single(result.GeneratorDiagnostics);
+    Assert.Equal("DMV1967", diagnostic.Id);
+    Assert.Contains("maximumDepth", diagnostic.GetMessage(), StringComparison.Ordinal);
+    Assert.Empty(result.GeneratedSources);
+  }
+
+  [Fact]
+  public void ReportsHelperSkippedForResidualRuntimeBridgeShapeAndKeepsSatelliteGeneration() {
+    var result = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJsonWithReadShape(
+                CreateBridgeReadShapeJson(
+                    "ManyToMany",
+                    "BridgeCustomerOrder",
+                    "CustomerOrder",
+                    [
+                        new("From", "Customer", "CustomerHashKey"),
+                        new("To", "Order", "OrderHashKey"),
+                    ]),
+                CreateSupportBundleEntityJson(
+                    "BridgeCustomerOrder",
+                    "Bridge",
+                    "CustomerOrder",
+                    fields:
+                    [
+                        ParticipantReference("CustomerHashKey", "Customer"),
+                        ParticipantReference("OrderHashKey", "Order"),
+                        Payload("PathSegment", "PathSegment", false),
+                    ]),
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerProfile",
+                    "Profile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("EmailAddress", "EmailAddress", false),
+                    ]))),
+        ]);
+
+    var diagnostic = Assert.Single(result.GeneratorDiagnostics);
+    Assert.Equal("DMV1969", diagnostic.Id);
+    Assert.Contains("residual projected property", diagnostic.GetMessage(), StringComparison.Ordinal);
+    AssertGeneratedSource(result, "DVault.GeneratedReadModels.SatCustomerProfile.g.cs");
+    Assert.DoesNotContain(
+        result.GeneratedSources.Keys,
+        hintName => hintName.Contains("BridgeCustomerOrder", StringComparison.Ordinal));
+  }
+
+  [Fact]
   public void ReportsModelFirstUnsupportedShapeFromProjectedSupportBundleAndSkipsHelper() {
     var result = RunGenerator(
         RuntimeStubs,
@@ -668,7 +924,70 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
     return new GeneratorRunResult(
         generatorDiagnostics.ToArray(),
         compilationErrors,
-        generatedSources);
+        generatedSources,
+        outputCompilation);
+  }
+
+  private static Assembly EmitAssembly(Compilation compilation) {
+    using var stream = new MemoryStream();
+    var result = compilation.Emit(stream, cancellationToken: TestContext.Current.CancellationToken);
+    var errors = result.Diagnostics
+        .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+        .ToArray();
+
+    Assert.True(
+        result.Success,
+        "Expected generated compilation to emit successfully. Errors: " + string.Join(Environment.NewLine, errors));
+
+    stream.Position = 0;
+    return Assembly.Load(stream.ToArray());
+  }
+
+  private static async Task<IReadOnlyList<object>> InvokeGeneratedReadAsync(
+      Assembly assembly,
+      string extensionTypeName,
+      string methodName,
+      params object[] requestArguments) {
+    var readService = Activator.CreateInstance(RequireType(assembly, "DCoding.Data.DVault.RecordingReadService"))!;
+    var dbContext = Activator.CreateInstance(RequireType(assembly, "Microsoft.EntityFrameworkCore.DbContext"))!;
+    var method = RequireType(assembly, extensionTypeName).GetMethod(
+        methodName,
+        BindingFlags.Public | BindingFlags.Static);
+    Assert.NotNull(method);
+
+    var arguments = new List<object?>
+    {
+        readService,
+        dbContext,
+    };
+    arguments.AddRange(requestArguments);
+    arguments.Add(CancellationToken.None);
+
+    var task = Assert.IsAssignableFrom<Task>(method.Invoke(null, arguments.ToArray()));
+    await task.ConfigureAwait(false);
+
+    var result = task.GetType().GetProperty("Result")?.GetValue(task);
+    Assert.NotNull(result);
+    return ((System.Collections.IEnumerable)result).Cast<object>().ToArray();
+  }
+
+  private static object GetLastBridgeRequest(Assembly assembly) {
+    var request = RequireType(assembly, "DCoding.Data.DVault.DataVaultReadServiceBridgeExtensions")
+        .GetProperty("LastRequest", BindingFlags.Public | BindingFlags.Static)
+        ?.GetValue(null);
+
+    Assert.NotNull(request);
+    return request;
+  }
+
+  private static Type RequireType(Assembly assembly, string typeName) {
+    var type = assembly.GetType(typeName);
+    Assert.NotNull(type);
+    return type;
+  }
+
+  private static object? GetPropertyValue(object instance, string propertyName) {
+    return instance.GetType().GetProperty(propertyName)?.GetValue(instance);
   }
 
   private static IReadOnlyList<MetadataReference> CreateReferences() {
@@ -693,27 +1012,33 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
   private static string CreateSupportBundleJsonWithReadShape(
       string readShapeJson,
       params string[] entities) {
-    return $$"""
-        {
-          "schemaVersion": "dvault.support-bundle.v1",
-          "diagnostics": {
-            "explain": {
-              "metadataSourceKind": "model-metadata",
-              "metadataSourceFingerprint": "fingerprint-1",
-              "entities": [
-                {{string.Join("," + Environment.NewLine, entities)}}
-              ]
-            },
-            "readShape": {{readShapeJson}}
-          }
-        }
-        """;
+    return CreateSupportBundleJsonForSourceWithReadShape(
+        "model-metadata",
+        "fingerprint-1",
+        readShapeJson,
+        entities);
   }
 
   private static string CreateSupportBundleJsonForSource(
       string sourceKind,
       string sourceFingerprint,
       params string[] entities) {
+    return CreateSupportBundleJsonForSourceWithReadShape(
+        sourceKind,
+        sourceFingerprint,
+        readShapeJson: null,
+        entities);
+  }
+
+  private static string CreateSupportBundleJsonForSourceWithReadShape(
+      string sourceKind,
+      string sourceFingerprint,
+      string? readShapeJson,
+      params string[] entities) {
+    var readShapeSection = readShapeJson is null
+        ? string.Empty
+        : "," + Environment.NewLine + "            \"readShape\": " + readShapeJson;
+
     return $$"""
         {
           "schemaVersion": "dvault.support-bundle.v1",
@@ -724,7 +1049,7 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
               "entities": [
                 {{string.Join("," + Environment.NewLine, entities)}}
               ]
-            }
+            }{{readShapeSection}}
           }
         }
         """;
@@ -820,6 +1145,79 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
     return "[" + string.Join(", ", values.Select(value => "\"" + value + "\"")) + "]";
   }
 
+  private static string CreateBridgeReadShapeJson(
+      string bridgeKind,
+      string tableName,
+      string metadataName,
+      IReadOnlyList<BridgeReadShapeEndpoint> endpoints,
+      bool includeDepthPredicate = true,
+      bool includeDepthProjection = true) {
+    var endpointJson = endpoints
+        .Select(endpoint => $$"""
+                    {
+                      "endpoint": "{{endpoint.Endpoint}}",
+                      "endpointName": "{{endpoint.EndpointName}}",
+                      "columnName": "{{endpoint.ColumnName}}"
+                    }
+          """)
+        .ToArray();
+    var endpointColumns = endpoints
+        .Select(endpoint => "\"" + endpoint.ColumnName + "\"")
+        .ToArray();
+    var orderingColumns = string.Equals(bridgeKind, "Hierarchy", StringComparison.Ordinal)
+        ? endpointColumns.Append("\"TraversalDepth\"").ToArray()
+        : endpointColumns;
+    var depthPredicateJson = string.Equals(bridgeKind, "Hierarchy", StringComparison.Ordinal) && includeDepthPredicate
+        ? "," + Environment.NewLine + """
+                  "depthPredicate": {
+                    "role": "maximumDepthPredicate",
+                    "columnNames": ["TraversalDepth"]
+                  },
+          """
+        : "," + Environment.NewLine;
+    var depthProjectionJson = string.Equals(bridgeKind, "Hierarchy", StringComparison.Ordinal) && includeDepthProjection
+        ? "," + Environment.NewLine + """
+                    {
+                      "role": "depthProjection",
+                      "columnNames": ["TraversalDepth"]
+                    }
+          """
+        : string.Empty;
+
+    return $$"""
+              {
+                "kind": "Bridge",
+                "bridge": {
+                  "bridgeKind": "{{bridgeKind}}",
+                  "bridge": {
+                    "metadataName": "{{metadataName}}",
+                    "tableKind": "Bridge",
+                    "tableName": "{{tableName}}"
+                  },
+                  "endpoints": [
+                    {{string.Join("," + Environment.NewLine, endpointJson)}}
+                  ],
+                  "filterEndpoint": "{{endpoints[0].Endpoint}}",
+                  "endpointFilter": {
+                    "role": "endpointHashKeyFilter",
+                    "columnNames": ["{{endpoints[0].ColumnName}}"]
+                  }{{depthPredicateJson}}
+                  "deterministicOrdering": [
+                    {
+                      "role": "resultOrdering",
+                      "columnNames": [{{string.Join(", ", orderingColumns)}}]
+                    }
+                  ],
+                  "projectedColumns": [
+                    {
+                      "role": "endpointProjection",
+                      "columnNames": [{{string.Join(", ", endpointColumns)}}]
+                    }{{depthProjectionJson}}
+                  ]
+                }
+              }
+        """;
+  }
   private static string CreateSupportBundleEntityJson(
       string tableName,
       string tableKind,
@@ -977,6 +1375,18 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
         false);
   }
 
+  private static SupportBundleField BridgeDepth(string producedName) {
+    return new SupportBundleField(
+        producedName,
+        "BridgeDepth",
+        null,
+        "TraversalDepth",
+        "BridgeDepth",
+        "NativeInteger",
+        "System.Int32",
+        false);
+  }
+
   private static SupportBundleField Payload(
       string producedName,
       string metadataName,
@@ -1008,10 +1418,16 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
       string SnapshotReferenceColumnName,
       IReadOnlyList<string> DrivingKeyColumnNames);
 
+  private sealed record BridgeReadShapeEndpoint(
+      string Endpoint,
+      string EndpointName,
+      string ColumnName);
+
   private sealed record GeneratorRunResult(
       IReadOnlyList<Diagnostic> GeneratorDiagnostics,
       IReadOnlyList<Diagnostic> CompilationErrors,
-      IReadOnlyDictionary<string, string> GeneratedSources);
+      IReadOnlyDictionary<string, string> GeneratedSources,
+      Compilation Compilation);
 
   private sealed class TestAnalyzerConfigOptionsProvider : AnalyzerConfigOptionsProvider {
     private readonly AnalyzerConfigOptions _options;
@@ -1070,6 +1486,52 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
               DbContext dbContext,
               DataVaultPitAsOfReadRequest request,
               CancellationToken cancellationToken = default);
+        }
+
+        public sealed class RecordingReadService : IDataVaultReadService {
+          public Task<IReadOnlyList<DataVaultPitReadRecord>> ReadPitRowsAsync(
+              DbContext dbContext,
+              DataVaultPitAsOfReadRequest request,
+              CancellationToken cancellationToken = default) {
+            return Task.FromResult<IReadOnlyList<DataVaultPitReadRecord>>(Array.Empty<DataVaultPitReadRecord>());
+          }
+        }
+
+        public enum DataVaultBridgeTraversalEndpoint {
+          From,
+          To,
+          Ancestor,
+          Descendant,
+        }
+
+        public sealed class DataVaultBridgeReadRequest {
+          public DataVaultBridgeReadRequest(
+              Modeling.DataVaultBridgeMetadata bridge,
+              DataVaultBridgeTraversalEndpoint endpoint,
+              IEnumerable<string> endpointHashKeys) {
+            Bridge = bridge;
+            Endpoint = endpoint;
+            EndpointHashKeys = endpointHashKeys.ToArray();
+          }
+
+          public DataVaultBridgeReadRequest(
+              Modeling.DataVaultBridgeMetadata bridge,
+              DataVaultBridgeTraversalEndpoint endpoint,
+              IEnumerable<string> endpointHashKeys,
+              int? maximumDepth) {
+            Bridge = bridge;
+            Endpoint = endpoint;
+            EndpointHashKeys = endpointHashKeys.ToArray();
+            MaximumDepth = maximumDepth;
+          }
+
+          public Modeling.DataVaultBridgeMetadata Bridge { get; }
+
+          public DataVaultBridgeTraversalEndpoint Endpoint { get; }
+
+          public IReadOnlyList<string> EndpointHashKeys { get; }
+
+          public int? MaximumDepth { get; }
         }
 
         public sealed class DataVaultLatestSatelliteReadRequest {
@@ -1147,6 +1609,22 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
           }
         }
 
+        public sealed class DataVaultBridgeProjectionRow {
+          private readonly IReadOnlyDictionary<string, object> _values;
+
+          public DataVaultBridgeProjectionRow(IReadOnlyDictionary<string, object> values) {
+            _values = values;
+          }
+
+          public string RequiredString(string name) {
+            return (string)_values[name];
+          }
+
+          public int RequiredInt32(string name) {
+            return (int)_values[name];
+          }
+        }
+
         public static class DataVaultReadServiceCurrentSatelliteExtensions {
           public static Task<IReadOnlyList<TProjection>> ReadCurrentSatelliteAsync<TProjection>(
               IDataVaultReadService readService,
@@ -1180,15 +1658,61 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
             return Task.FromResult<IReadOnlyList<TProjection>>(Array.Empty<TProjection>());
           }
         }
+
+        public static class DataVaultReadServiceBridgeExtensions {
+          public static DataVaultBridgeReadRequest? LastRequest { get; private set; }
+
+          public static Task<IReadOnlyList<TProjection>> ReadBridgeAsync<TProjection>(
+              IDataVaultReadService readService,
+              DbContext dbContext,
+              DataVaultBridgeReadRequest request,
+              Func<DataVaultBridgeProjectionRow, TProjection> projector,
+              CancellationToken cancellationToken = default) {
+            LastRequest = request;
+            var row = new DataVaultBridgeProjectionRow(new Dictionary<string, object>(StringComparer.Ordinal) {
+              ["CustomerHashKey"] = "customer-row-hk",
+              ["OrderHashKey"] = "order-row-hk",
+              ["AncestorSalesRegionHashKey"] = "ancestor-row-hk",
+              ["DescendantSalesRegionHashKey"] = "descendant-row-hk",
+              ["TraversalDepth"] = 2,
+            });
+            return Task.FromResult<IReadOnlyList<TProjection>>(new List<TProjection> { projector(row) });
+          }
+        }
       }
 
       namespace DCoding.Data.DVault.Modeling {
         using System.Collections.Generic;
 
+        public enum DataVaultBridgeKind {
+          ManyToMany,
+          Hierarchy,
+        }
+
         public sealed class DataVaultMetadataReference {
           public static DataVaultMetadataReference Hub(string name) => new();
 
           public static DataVaultMetadataReference Link(string name) => new();
+        }
+
+        public sealed class DataVaultBridgeMetadata {
+          public static DataVaultBridgeMetadata ManyToMany(
+              string name,
+              DataVaultMetadataReference sourceHubReference,
+              DataVaultMetadataReference linkReference,
+              DataVaultMetadataReference targetHubReference) {
+            return new();
+          }
+
+          public static DataVaultBridgeMetadata Hierarchy(
+              string name,
+              DataVaultMetadataReference ancestorHubReference,
+              DataVaultMetadataReference linkReference,
+              DataVaultMetadataReference descendantHubReference,
+              int ancestorParticipantOrdinal,
+              int descendantParticipantOrdinal) {
+            return new();
+          }
         }
 
         public sealed class DataVaultSatelliteMetadata {
