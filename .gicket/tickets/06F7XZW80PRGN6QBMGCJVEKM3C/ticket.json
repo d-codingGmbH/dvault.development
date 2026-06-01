@@ -3,22 +3,21 @@
   "ticket-id": "06F7XZW80PRGN6QBMGCJVEKM3C",
   "ticket-type": "epic",
   "title": "Epic: Async streaming save and EF Core safety",
-  "revision": "06F7Y0TX56R99KKPDDMN8SGS20",
-  "status": "todo",
+  "revision": "06F825B2D46NXDJ9P366TP4WF8",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/epic",
-    "area/ef-core",
-    "area/persistence",
     "area/analyzers",
+    "area/developer-experience",
+    "area/ef-core",
     "area/performance",
-    "area/developer-experience"
+    "area/persistence",
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F7XZVWXBWQV2B2Z94K22KMBR",
   "releaseId": "06F7XZVSFEX210HTCBC7DC752G",
   "created-at": "2026-05-31T17:05:36.8363046Z",
-  "updated-at": "2026-05-31T17:09:47.4337050Z"
+  "updated-at": "2026-06-01T02:48:42.8572851Z"
 }
