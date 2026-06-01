@@ -1,0 +1,1 @@
+﻿Closing as duplicate/already implemented: the read-plan/read-shape diagnostics and redacted support-bundle surface requested here already landed on develop under 06F7Y0FZXX5J0G7G15681HVEBR. No additional implementation delta remains for this release.
