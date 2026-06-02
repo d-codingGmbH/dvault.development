@@ -79,7 +79,7 @@ The support-bundle-driven satellite, PIT, and bridge helper contract is document
 | `DMV1965` | Deterministic generated type, method, property, or helper name collision. |
 | `DMV1966` | Payload nullability cannot be proven from the support-bundle descriptor, so the generated payload property falls back to nullable. |
 | `DMV1967` | The shape would require dynamic runtime query construction, provider SQL, runtime projection selection, or unbounded traversal. |
-| `DMV1968` | A model-first source appears in the projected support-bundle evidence but is outside the generator's helper contract. |
+| `DMV1968` | A raw or residual model-first source appears outside the projected support-bundle helper contract. Complete model-first support bundles with request-bound `ReadShape` evidence can still emit supported helpers. |
 | `DMV1969` | A valid runtime metadata shape is skipped because it is outside the v1 generated-helper boundary. |
 
 ## Suppression

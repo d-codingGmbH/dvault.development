@@ -3,6 +3,6 @@
   "milestoneId": "06F7XZW0CV4JHEW9HV6ZPQJJN4",
   "name": "v0.25.0 - Read-plan explainability",
   "description": "Bounded redacted read-plan explanations for latest satellite, PIT, and bridge reads without raw SQL or query plans.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-31T17:05:34.3103243Z"
 }

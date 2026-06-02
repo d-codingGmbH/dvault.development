@@ -219,21 +219,6 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       }
 
       if (string.Equals(tableKind, "Bridge", StringComparison.Ordinal)) {
-        if (IsModelFirstMetadataSource(sourceKind)) {
-          var producedTableName = GetSupportBundleEntityString(entity, "tableName", "<unknown>");
-          var metadataName = GetSupportBundleEntityString(entity, "metadataName", producedTableName);
-          ReportUnsupportedReadModelShape(
-              context,
-              DataVaultTypedReadModelDiagnosticCatalog.UnsupportedModelFirstShape,
-              tableKind,
-              sourceKind,
-              sourceFingerprint,
-              metadataName,
-              producedTableName,
-              "projected model-first metadata is outside the public typed read-model generator contract.");
-          continue;
-        }
-
         if (TryCreateSupportBundleBridge(
             entity,
             bridgeReadShape,
@@ -249,7 +234,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       }
 
       if (!string.Equals(tableKind, "Satellite", StringComparison.Ordinal)) {
-        if (tableKind is "Pit" or "PointInTime" && !IsModelFirstMetadataSource(sourceKind)) {
+        if (tableKind is "Pit" or "PointInTime") {
           if (TryCreateSupportBundlePit(
               entity,
               diagnostics,
@@ -301,20 +286,6 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
 
     var producedTableName = GetSupportBundleEntityString(entity, "tableName", "<unknown>");
     var metadataName = GetSupportBundleEntityString(entity, "metadataName", producedTableName);
-    if (IsModelFirstMetadataSource(sourceKind) &&
-        tableKind is "Pit" or "PointInTime" or "Bridge") {
-      ReportUnsupportedReadModelShape(
-          context,
-          DataVaultTypedReadModelDiagnosticCatalog.UnsupportedModelFirstShape,
-          tableKind,
-          sourceKind,
-          sourceFingerprint,
-          metadataName,
-          producedTableName,
-          "projected model-first metadata is outside the public typed read-model generator contract.");
-      return;
-    }
-
     if (tableKind is "Pit" or "PointInTime") {
       ReportUnsupportedSupportBundlePit(
           entity,
@@ -2398,10 +2369,6 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     return optionsProvider.GlobalOptions.TryGetValue(LegacyExpectedFingerprintProperty, out value)
         ? value
         : string.Empty;
-  }
-
-  private static bool IsModelFirstMetadataSource(string sourceKind) {
-    return string.Equals(sourceKind, "model-artifact", StringComparison.Ordinal);
   }
 
   private static void ReportUnsupportedReadModelShape(

@@ -208,6 +208,44 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
   }
 
   [Fact]
+  public void GeneratesBridgeReadModelFromModelFirstSupportBundleWhenReadShapeIsPresent() {
+    var result = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJsonForSourceWithReadShape(
+                "model-artifact",
+                "model-first-fingerprint",
+                CreateBridgeReadShapeJson(
+                    "ManyToMany",
+                    "BridgeCustomerOrder",
+                    "CustomerOrder",
+                    [
+                        new("From", "Customer", "CustomerHashKey"),
+                        new("To", "Order", "OrderHashKey"),
+                    ]),
+                CreateSupportBundleEntityJson(
+                    "BridgeCustomerOrder",
+                    "Bridge",
+                    "CustomerOrder",
+                    fields:
+                    [
+                        ParticipantReference("CustomerHashKey", "Customer"),
+                        ParticipantReference("OrderHashKey", "Order"),
+                    ]))),
+        ]);
+
+    Assert.Empty(result.CompilationErrors);
+    Assert.Empty(result.GeneratorDiagnostics);
+
+    var source = AssertGeneratedSource(result, "DVault.GeneratedReadModels.BridgeCustomerOrder.g.cs");
+    Assert.Contains("public const string MetadataSourceKind = \"model-artifact\";", source, StringComparison.Ordinal);
+    Assert.Contains("public const string MetadataSourceFingerprint = \"model-first-fingerprint\";", source, StringComparison.Ordinal);
+    Assert.Contains("ReadBridgeCustomerOrderFromAsync", source, StringComparison.Ordinal);
+    Assert.Contains("ReadBridgeCustomerOrderToAsync", source, StringComparison.Ordinal);
+  }
+
+  [Fact]
   public async Task GeneratedBridgeHelpersDelegateThroughRuntimeReadBoundaryWithEquivalentRequestsAndProjection() {
     var manyToManyResult = RunGenerator(
         RuntimeStubs,
@@ -696,14 +734,25 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
   }
 
   [Fact]
-  public void ReportsModelFirstUnsupportedShapeFromProjectedSupportBundleAndSkipsHelper() {
+  public void GeneratesPitReadModelFromModelFirstSupportBundleWhenReadShapeIsPresent() {
     var result = RunGenerator(
         RuntimeStubs,
         additionalTexts:
         [
-            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJsonForSource(
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJsonForSourceWithReadShape(
                 "model-artifact",
                 "model-first-fingerprint",
+                CreatePitReadShapeJson(
+                    "PitModelFirstCustomerProfile",
+                    "ModelFirstCustomerProfile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "LoadTimestamp",
+                    [],
+                    [
+                        new PitReadShapeSatellite("Profile", "ProfileLoadTimestamp", []),
+                    ]),
                 CreateSupportBundleEntityJson(
                     "PitModelFirstCustomerProfile",
                     "Pit",
@@ -717,10 +766,14 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
                     ]))),
         ]);
 
-    var diagnostic = Assert.Single(result.GeneratorDiagnostics);
-    Assert.Equal("DMV1968", diagnostic.Id);
-    Assert.Contains("model-first", diagnostic.GetMessage(), StringComparison.Ordinal);
-    Assert.Empty(result.GeneratedSources);
+    Assert.Empty(result.CompilationErrors);
+    Assert.Empty(result.GeneratorDiagnostics);
+
+    var source = AssertGeneratedSource(result, "DVault.GeneratedReadModels.PitModelFirstCustomerProfile.g.cs");
+    Assert.Contains("public const string MetadataSourceKind = \"model-artifact\";", source, StringComparison.Ordinal);
+    Assert.Contains("public const string MetadataSourceFingerprint = \"model-first-fingerprint\";", source, StringComparison.Ordinal);
+    Assert.Contains("ReadPitModelFirstCustomerProfileAsOfAsync", source, StringComparison.Ordinal);
+    Assert.Contains("readService.ReadPitRowsAsync", source, StringComparison.Ordinal);
   }
 
   [Fact]

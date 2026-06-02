@@ -3,6 +3,6 @@
   "releaseId": "06F7XZVV35BSZ2BX7CY36NK3QR",
   "name": "v0.25.0 - Read Plan Explainability and Typed Read Helpers",
   "description": "Redacted read-plan explanations plus support-bundle driven typed PIT and bridge helper expansion, staying inside EF Core read-service and source-generator boundaries.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-05-31T17:05:32.9535251Z"
 }
