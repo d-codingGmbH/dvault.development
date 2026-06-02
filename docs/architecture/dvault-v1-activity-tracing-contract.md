@@ -2,7 +2,8 @@
 
 Status: v1 contract
 Ticket: 06F5Q93YXHSKABD2SABWY85S78
-Current public baseline: [DVault v0.23.0 Release Notes](../releases/v0.23.0.md)
+Current public baseline: [DVault v0.26.0 Release Notes](../releases/v0.26.0.md)
+Activity tracing feature-introduction baseline: [DVault v0.23.0 Release Notes](../releases/v0.23.0.md)
 Telemetry baseline: [DVault v0.16.0 Release Notes](../releases/v0.16.0.md)
 
 ## Decision

@@ -5,7 +5,7 @@ Ticket: 06F1XPVPKVGYKCV04PY98TSS78
 
 ## Decision
 
-DVault v1 supports one `dotnet ef` composition boundary: the application that owns the configured `DbContext` also owns an Entity Framework Core `IDesignTimeDbContextFactory<TContext>` and a small preflight entrypoint. The factory builds the same configured `DbContext` that normal EF design-time commands use. The preflight entrypoint constructs that context through the factory, runs DVault diagnostics against the configured model, and optionally analyzes the scaffolded migration operations before the migration is applied.
+DVault v1 supports one `dotnet ef` composition boundary: the application that owns the configured `DbContext` also owns an Entity Framework Core `IDesignTimeDbContextFactory<TContext>` and a small preflight entrypoint. The factory builds the same configured `DbContext` that normal EF design-time commands use. The preflight entrypoint constructs that context through the factory, runs DVault diagnostics against the configured model, can compare caller-supplied live-schema evidence for idempotency-critical structures, and optionally analyzes the scaffolded migration operations before the migration is applied.
 
 The DVault package does not provide `IDesignTimeServices`, does not provide a custom `dotnet ef` shim, does not intercept EF CLI commands, and does not reference `Microsoft.EntityFrameworkCore.Design`. Any EF design package reference belongs in the consumer project that owns the factory and invokes `dotnet ef`.
 
@@ -232,6 +232,29 @@ dotnet run --project src/SalesVault/SalesVault.csproj -- drift --artifact src/Sa
 
 Use the live-schema lane only inside the documented boundary. SQLite is the first-class local live-schema reader. PostgreSQL, SQL Server, Oracle, and MySQL have built-in reader dispatch, but their checks require external opt-in evidence with consumer-managed databases, credentials, lifecycle cleanup, and CI isolation rather than a default DVault-provided CI environment.
 
+## Idempotency Schema Preflight
+
+Idempotency preflight is an explicit live-schema check over provider-shaped structures that DVault save and bounded read operations rely on for repeatable behavior. It compares the expected hub/link primary keys, business-key indexes, satellite latest-state indexes, PIT read indexes, and bridge traversal indexes against a caller-supplied `DataVaultLiveSchemaReadResult`.
+
+The standalone shape is:
+
+```csharp
+using DCoding.Data.DVault;
+
+using var context = new SalesVaultDesignTimeFactory().CreateDbContext(args);
+var liveSchema = await DataVaultLiveSchemaReader.ReadAsync(context);
+var report = DataVaultIdempotencyPreflight.Compare(
+    SalesVaultMetadata.CreateModel(),
+    liveSchema);
+
+Console.WriteLine(report.ToDisplayString());
+return report.IsBlocked ? 1 : 0;
+```
+
+The aggregate shape supplies the same live-schema result through `DataVaultPreflightRequest.IdempotencyLiveSchemaReadResult`. A null value skips the lane; unsupported providers, unavailable live schema, missing structures, or mismatched idempotency-critical columns, uniqueness, or primary-key names become bounded preflight outcomes. The report uses deterministic table, structure, code, severity, and property-path facts, and it must not include credentials, connection strings, provider exception text, raw data values, or schema repair instructions.
+
+This lane does not open a live database by default, run migrations, synchronize EF migrations, create indexes, repair schemas, or select provider-specific runtime behavior. Consumers own when live-schema access is safe, which environments are checked, and whether a blocking finding stops deployment.
+
 ## Snapshot-Model Drift Preflight
 
 When a consumer project owns an EF model snapshot, the consumer can materialize that snapshot as an `IReadOnlyModel` and pass it
@@ -312,7 +335,7 @@ This step does not promise guardrail output inside `dotnet ef migrations add` or
 
 ## Aggregate Preflight Facade
 
-Consumers that want one application-owned entrypoint can aggregate the explicit lanes through `DataVaultPreflight.Run(...)`. The facade validates the configured model through `IDataVaultDiagnosticsService.Analyze(DbContext)` and evaluates only the optional inputs supplied on `DataVaultPreflightRequest`: reviewed artifact import, consumer-materialized snapshot model, migration operations, precomputed representative diagnostics, and representative diagnostics factories.
+Consumers that want one application-owned entrypoint can aggregate the explicit lanes through `DataVaultPreflight.Run(...)`. The facade validates the configured model through `IDataVaultDiagnosticsService.Analyze(DbContext)` and evaluates only the optional inputs supplied on `DataVaultPreflightRequest`: reviewed artifact import, consumer-materialized snapshot model, idempotency live-schema read result, migration operations, precomputed representative diagnostics, and representative diagnostics factories.
 
 ```csharp
 using DCoding.Data.DVault;
@@ -338,6 +361,7 @@ public static class SalesVaultDvaultPreflight {
         new DataVaultPreflightRequest(context, SalesVaultMetadata.CreateModel()) {
           ReviewedArtifactImport = SalesVaultArtifacts.ImportReviewedModel(),
           SnapshotModel = snapshotModel,
+          IdempotencyLiveSchemaReadResult = SalesVaultLiveSchema.ReadIdempotencySnapshot(),
           MigrationOperations = migration.UpOperations,
           RepresentativeDiagnosticsRequests = [
             new DataVaultPreflightRepresentativeDiagnosticsRequest(
@@ -354,7 +378,7 @@ public static class SalesVaultDvaultPreflight {
 }
 ```
 
-This facade does not change the ownership boundary. The consumer still owns the `DbContext`, factory, reviewed artifact path, snapshot materialization, migration resolution, representative request selection, command hosting, and CI failure policy. If an optional lane is not supplied, the aggregate report marks that lane as skipped; DVault does not scan the repository, discover EF snapshot files, discover migrations, invent representative save/read requests, open a live database, execute migrations, or repair schema.
+This facade does not change the ownership boundary. The consumer still owns the `DbContext`, factory, reviewed artifact path, snapshot materialization, live-schema access for idempotency preflight, migration resolution, representative request selection, command hosting, and CI failure policy. If an optional lane is not supplied, the aggregate report marks that lane as skipped; DVault does not scan the repository, discover EF snapshot files, discover migrations, invent representative save/read requests, open a live database, execute migrations, or repair schema.
 
 ## GitHub Actions Example
 
@@ -458,11 +482,12 @@ If an adopter adds a live-schema drift lane, keep it separate from the default j
 2. Build the factory-backed context and run `dotnet run --project <consumer-project> -- validate`; the reusable command host delegates to `IDataVaultDiagnosticsService.Analyze(DbContext)`.
 3. Print `DataVaultDiagnosticsResult.ToDisplayString()` and stop when validation is invalid.
 4. When a reviewed `dvault.model.v1` artifact exists, run `dotnet run --project <consumer-project> -- drift --artifact <path-to-reviewed-artifact>`.
-5. Scaffold the migration normally with `dotnet ef migrations add`.
-6. Run `dotnet run --project <consumer-project> -- guardrail --migration <migration-name>` against the proposed migration `MigrationOperation` set.
-7. Print `DataVaultMigrationGuardrailReport.ToDisplayString()` and stop when guardrail findings exist.
-8. Optionally run a consumer-owned aggregate entrypoint backed by `DataVaultPreflight.Run(...)` when the project wants one report that preserves validation, drift, migration, and representative diagnostics sections together.
-9. Run `dotnet ef database update` only after the explicit preflight steps pass.
+5. Optionally run idempotency schema preflight from a consumer-owned `DataVaultLiveSchemaReadResult` when the target environment can be reached safely.
+6. Scaffold the migration normally with `dotnet ef migrations add`.
+7. Run `dotnet run --project <consumer-project> -- guardrail --migration <migration-name>` against the proposed migration `MigrationOperation` set.
+8. Print `DataVaultMigrationGuardrailReport.ToDisplayString()` and stop when guardrail findings exist.
+9. Optionally run a consumer-owned aggregate entrypoint backed by `DataVaultPreflight.Run(...)` when the project wants one report that preserves validation, drift, idempotency, migration, and representative diagnostics sections together.
+10. Run `dotnet ef database update` only after the explicit preflight steps pass.
 
 ## Unsupported In V1
 
@@ -472,6 +497,7 @@ If an adopter adds a live-schema drift lane, keep it separate from the default j
 - Repo-owned `Microsoft.EntityFrameworkCore.Design` dependencies in DVault packages.
 - Startup-project and target-project split layouts.
 - Live-database validation as a default CI gate, automatic snapshot discovery, or provider-wide live schema drift as a first-class boundary beyond SQLite.
+- Automatic idempotency live-schema discovery, schema repair, index creation, or migration synchronization.
 - Automatic reviewed-artifact discovery, migration discovery, or representative request generation for aggregate preflight.
 - Provider-specific online migration runners.
 

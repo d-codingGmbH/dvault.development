@@ -7,13 +7,13 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned; use one version that has already been published for every selected package id. This documentation baseline does not by itself confirm package publication.
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.25.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.25.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.25.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.25.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.25.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.25.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.25.0
+dotnet add package DCoding.Data.DVault --version 0.26.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.26.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.26.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.26.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.26.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.26.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.26.0
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
@@ -22,7 +22,7 @@ Applications still need their normal Entity Framework Core database provider pac
 
 Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
 
-The current coordinated release baseline is [DVault v0.25.0 Release Notes](docs/releases/v0.25.0.md), which documents request-bound ReadShape diagnostics plus support-bundle-driven satellite, PIT, and bounded bridge typed read helpers over the existing read-service boundary without recording package publication. For detailed performance guidance, see [Performance Profiles](docs/performance-profiles.md). For a short adopter readiness pass before production use, see the [Production Adoption Checklist](docs/production-adoption-checklist.md).
+The current coordinated release baseline is [DVault v0.26.0 Release Notes](docs/releases/v0.26.0.md), which aligns provider-tuning diagnostics, benchmark artifact verifier evidence, migration and idempotency guardrails, stored-procedure artifact boundaries, request-bound ReadShape diagnostics, and support-bundle-driven typed read helpers without recording package publication. Earlier release notes remain historical feature-introduction records. For detailed performance guidance, see [Performance Profiles](docs/performance-profiles.md). For a short adopter readiness pass before production use, see the [Production Adoption Checklist](docs/production-adoption-checklist.md).
 
 ## Quickstart
 
@@ -250,7 +250,7 @@ await saveService.SaveAsync(
 
 Keep `DataVaultBulkSaveRequest` when the loader already has the full ordered request set materialized. Switch to `DataVaultChunkedSaveRequest` when the caller has already formed bounded chunks and wants materialized chunk input without changing explicit timestamps, record sources, request ordering, or caller-owned transaction behavior. Use `IDataVaultSaveService.SaveAsync(DbContext, IAsyncEnumerable<DataVaultSaveChunk>, ...)` or the async source helpers when bounded chunks or source rows are already asynchronous. Provider-specific save strategies remain optimizations around the same public save contract; PostgreSQL and MySQL can stage larger eligible materialized bulk batches behind that boundary, while DVault does not claim provider-native async writes, provider-native chunk execution, background ingestion, or scheduler behavior.
 
-The current v0.25.0 documentation boundary keeps that same write hierarchy and moves typed read helper guidance forward for support-bundle-backed satellite, PIT, and bounded bridge shapes. `IDataVaultSaveService` remains the public write entry point, `DataVaultBulkSaveRequest` remains the compatibility baseline for already-materialized ordered saves, `DataVaultChunkedSaveRequest` remains provider-neutral bounded chunking guidance, and `IAsyncEnumerable<DataVaultSaveChunk>` is the async source shape over those same bounded chunks. Provider-specific optimized write paths stay evidence-bound behind the same service contract: PostgreSQL staged COPY and MySQL staged bulk are the preferred optimized paths only for their documented staged-provider lanes, SQL Server keeps its current native-bulk wording, and Oracle keeps the retained direct optimized path until benchmark evidence selects a staged Oracle path. Stored procedures are not a DVault default write path: treat them only as an explicit design-time or provider-specific escape hatch after provider evidence, migration synchronization, deployment ownership, and cleanup rules are documented.
+The current v0.26.0 documentation boundary keeps that same write hierarchy and carries forward support-bundle-backed satellite, PIT, and bounded bridge typed read helpers. `IDataVaultSaveService` remains the public write entry point, `DataVaultBulkSaveRequest` remains the compatibility baseline for already-materialized ordered saves, `DataVaultChunkedSaveRequest` remains provider-neutral bounded chunking guidance, and `IAsyncEnumerable<DataVaultSaveChunk>` is the async source shape over those same bounded chunks. Provider-specific optimized write paths stay evidence-bound behind the same service contract: PostgreSQL staged COPY and MySQL staged bulk are the preferred optimized paths only for their documented staged-provider lanes, SQL Server keeps its current native-bulk wording, and Oracle keeps the retained direct optimized path until benchmark evidence selects a staged Oracle path. Stored procedures are not a DVault default write path: treat them only as an explicit opt-in, design-time artifact escape hatch after provider evidence, migration synchronization, consumer-owned deployment, rollback, invocation, and cleanup rules are documented.
 
 ### Govern stable hashes
 
@@ -728,7 +728,7 @@ Applications that want representative request-bound save or read strategy eviden
 
 ### Run aggregate preflight checks
 
-`DataVaultPreflight.Run(...)` aggregates the library-local validation lanes that a consumer-owned design-time entrypoint may already run separately: configured-model diagnostics, reviewed-artifact drift, explicit snapshot-model drift, migration-operation guardrails, and representative request-bound diagnostics. Each optional lane is caller-supplied; omitted lanes are reported as skipped rather than auto-discovered.
+`DataVaultPreflight.Run(...)` aggregates the library-local validation lanes that a consumer-owned design-time entrypoint may already run separately: configured-model diagnostics, reviewed-artifact drift, explicit snapshot-model drift, idempotency live-schema preflight, migration-operation guardrails, and representative request-bound diagnostics. Each optional lane is caller-supplied; omitted lanes are reported as skipped rather than auto-discovered.
 
 ```csharp
 using DCoding.Data.DVault;
@@ -764,7 +764,7 @@ Console.WriteLine(report.ToDisplayString());
 return report.IsBlocked ? 1 : 0;
 ```
 
-The aggregate facade does not couple DVault to EF `ModelSnapshot`, scan the repository for migrations or artifacts, generate representative requests, open a live database by default, execute migrations, or repair schema. Snapshot-model input is an explicit consumer-materialized `IReadOnlyModel`; migration input is an explicit reviewed `MigrationOperation` list; representative save/read diagnostics are either precomputed by application code or produced by caller-owned factories.
+The aggregate facade does not couple DVault to EF `ModelSnapshot`, scan the repository for migrations or artifacts, generate representative requests, open a live database by default, execute migrations, or repair schema. Snapshot-model input is an explicit consumer-materialized `IReadOnlyModel`; idempotency input is an explicit `DataVaultLiveSchemaReadResult` from consumer-owned live-schema access; migration input is an explicit reviewed `MigrationOperation` list; representative save/read diagnostics are either precomputed by application code or produced by caller-owned factories.
 
 ### Multi-active satellite opt-in
 
@@ -873,9 +873,25 @@ Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadS
 
 SQLite remains the default local live-schema proof because it does not require external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks require consumer-managed reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation. Keep those external provider checks opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
 
-## v0.25.0 Release Notes
+## v0.26.0 Release Notes
 
-The v0.25.0 release record is the current coordinated seven-package documentation baseline for request-bound ReadShape diagnostics and support-bundle-driven typed read helpers. It preserves the v0.24.0 async streaming and EF safety boundary, the v0.23.0 Activity tracing and performance-profile boundary, the v0.22.0 support-bundle generator and stable hash governance boundary, the v0.21.0 PIT/bridge maintenance and read boundary, and the manual package publication separation from earlier releases. See `docs/releases/v0.25.0.md` for compatibility posture, validation evidence, the `DMV1960` through `DMV1969` typed read-model diagnostic range, and non-goals.
+The v0.26.0 release record is the current coordinated seven-package documentation baseline for provider-tuning diagnostics, benchmark verifier evidence, migration and idempotency guardrails, stored-procedure artifact boundaries, request-bound ReadShape diagnostics, and support-bundle-driven typed read helpers. It preserves the v0.25.0 typed helper boundary, the v0.24.0 async streaming and EF safety boundary, the v0.23.0 Activity tracing and performance-profile boundary, the v0.21.0 PIT/bridge maintenance and read boundary, and the manual package publication separation from earlier releases. See `docs/releases/v0.26.0.md` for compatibility posture, validation evidence, bounded examples, and non-goals.
+
+Notable user-facing changes:
+
+- Performance guidance is explicitly organized around the four checked-in categories: small app-local vault, medium chunked ingestion, staged provider ingestion, and read-model heavy.
+- Provider eligibility diagnostics are documented as bounded `SaveStrategy` and `ReadStrategy` facts: status, provider name, selected strategy name when present, finite fallback causes, candidate facts, and gate requirements.
+- Benchmark verifier evidence points to the root `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` triplet plus row-consistency and regression-budget checks instead of duplicating raw tables.
+- Migration guardrails and idempotency preflight remain consumer-owned operations: callers supply migration operations, reviewed artifacts, snapshot models, live-schema read results, and representative diagnostics explicitly.
+- Stored-procedure and provider-specific SQL artifact discussion is limited to opt-in design-time artifacts with consumer-owned deployment, versioning, invocation, rollback, cleanup, credentials, transactions, and lifecycle.
+- SQLite remains the only repository-proven optimized latest-satellite, PIT, and bridge read provider path; non-SQLite optimized read claims require future evidence.
+- No runtime code changes, new diagnostics fields, new benchmark artifact schema, package publication, provider-specific SQL generation, automatic migrations, automatic schema repair, stored-procedure runtime dispatch, or deployment automation are introduced by the documentation baseline.
+
+Primary v0.26.0 validation surfaces are [BenchmarkScenarioExecutionTests.cs](tests/DCoding.Data.DVault.Tests/Integration/BenchmarkScenarioExecutionTests.cs), [DataVaultDiagnosticsIntegrationTests.cs](tests/DCoding.Data.DVault.Tests/Integration/DataVaultDiagnosticsIntegrationTests.cs), [DataVaultPreflightTests.cs](tests/DCoding.Data.DVault.Tests/Unit/DataVaultPreflightTests.cs), [DataVaultIdempotencyPreflightTests.cs](tests/DCoding.Data.DVault.Tests/Unit/DataVaultIdempotencyPreflightTests.cs), [DVault V2 Redacted Read-Plan Explain Contract](docs/architecture/dvault-v2-redacted-read-plan-explain-contract.md), [DVault Dotnet EF Design-Time Workflow](docs/architecture/dvault-dotnet-ef-design-time-workflow.md), [Performance Profiles](docs/performance-profiles.md), and the package-local [DCoding.Data.DVault.Analyzers README](src/DCoding.Data.DVault.Analyzers/README.md).
+
+## v0.25.0 Historical Release Notes
+
+The v0.25.0 release record moved the coordinated seven-package documentation baseline forward for request-bound ReadShape diagnostics and support-bundle-driven typed read helpers. It preserves the v0.24.0 async streaming and EF safety boundary, the v0.23.0 Activity tracing and performance-profile boundary, the v0.22.0 support-bundle generator and stable hash governance boundary, the v0.21.0 PIT/bridge maintenance and read boundary, and the manual package publication separation from earlier releases. See `docs/releases/v0.25.0.md` for compatibility posture, validation evidence, the `DMV1960` through `DMV1969` typed read-model diagnostic range, and non-goals.
 
 Notable user-facing changes:
 
@@ -998,7 +1014,7 @@ Notable user-facing changes:
 
 ## v0.20.0 Historical Provider-Optimized Write Boundary
 
-The [v0.20.0 notes](docs/releases/v0.20.0.md) document a provider-specific optimized write-path boundary without changing the public write API. v0.19.0 remains the historical baseline for provider-neutral chunked explicit saves and kept staged provider bulk ingestion outside that release's claim set. v0.20.0 moved the write documentation boundary forward only where repository evidence already exposed a supported or measured provider path; v0.21.0 carried that write guidance forward as the PIT/bridge read-model documentation boundary preserved by the current v0.25.0 baseline.
+The [v0.20.0 notes](docs/releases/v0.20.0.md) document a provider-specific optimized write-path boundary without changing the public write API. v0.19.0 remains the historical baseline for provider-neutral chunked explicit saves and kept staged provider bulk ingestion outside that release's claim set. v0.20.0 moved the write documentation boundary forward only where repository evidence already exposed a supported or measured provider path; v0.21.0 carried that write guidance forward as the PIT/bridge read-model documentation boundary preserved by the current v0.26.0 baseline.
 
 Use this carried-forward hierarchy when planning provider-optimized write adoption:
 
@@ -1013,15 +1029,15 @@ Use this carried-forward hierarchy when planning provider-optimized write adopti
 
 The benchmark-facing evidence continues to use the root `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` triplet plus the shared [Performance Evidence And Benchmark Artifact Contract](docs/plans/performance-evidence-benchmark-artifact-contract.md). Provider-specific timing claims must preserve provider, strategy, execution-detail, skip, and run-context information instead of introducing new ad hoc evidence files.
 
-## Current v0.25.0 Limitations
+## Current v0.26.0 Limitations
 
-Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.25.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
+Lifecycle guardrails remain explicit library APIs hosted by the consumer application. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.26.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation.
 
 Compiled-model, compiled-query, and `DbContext` pooling evidence is SQLite timing and allocation evidence for bounded EF shapes. It does not assert provider-specific SQL shape, index usage, generated compiled-model code ownership, dynamic request-built read compilation, or pooling for caller-owned variable model shapes.
 
 The SaveChanges guard is opt-in and generated-row focused. `AddDVault()` does not enable it automatically, warning mode is caller-observed, and blocking mode protects only the unsafe generated-table changes it can identify at `SaveChanges` time. It does not compute hash keys, compute hash diffs, create generated rows, replace `IDataVaultSaveService`, or make ordinary EF entity tracking the default DVault persistence path.
 
-Aggregate preflight is an explicit facade over caller-owned inputs. DVault does not discover EF snapshots, scan repositories for migrations or reviewed artifacts, generate representative save or read requests, open live databases by default, publish dashboards, or route support-bundle artifacts. Consumers must supply snapshot models, reviewed imports, migration operations, and representative diagnostics when they want those lanes evaluated.
+Aggregate preflight is an explicit facade over caller-owned inputs. DVault does not discover EF snapshots, scan repositories for migrations or reviewed artifacts, generate representative save or read requests, open live databases by default, publish dashboards, or route support-bundle artifacts. Consumers must supply snapshot models, reviewed imports, idempotency live-schema read results, migration operations, and representative diagnostics when they want those lanes evaluated.
 
 Telemetry remains explicit opt-in application wiring. DVault does not configure metric listeners, exporters, dashboards, alert rules, or backend-specific observability pipelines, and it does not emit high-cardinality raw values such as exception messages, hash keys, record sources, metadata names, table names, generated SQL, or full diagnostics text as metric tags.
 

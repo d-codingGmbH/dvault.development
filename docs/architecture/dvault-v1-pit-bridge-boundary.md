@@ -2,7 +2,8 @@
 
 Status: v1 implementation note
 Ticket: 06F5Q91M0PM17RP43ZQRPBDXP0
-Current public baseline: [DVault v0.21.0 Release Notes](../releases/v0.21.0.md)
+Current public baseline: [DVault v0.26.0 Release Notes](../releases/v0.26.0.md)
+PIT/bridge feature-introduction baseline: [DVault v0.21.0 Release Notes](../releases/v0.21.0.md)
 
 ## Decision
 

@@ -3,7 +3,8 @@
 Status: v1 contract
 Ticket: 06F5Q8X261DQHG7N1445NGXB5W
 Async source contract update: 06F7Y0CN1804HZW03J4XQ8XEJR
-Current public baseline: [DVault v0.21.0 Release Notes](../releases/v0.21.0.md)
+Current public baseline: [DVault v0.26.0 Release Notes](../releases/v0.26.0.md)
+Streaming feature-introduction baseline: [DVault v0.21.0 Release Notes](../releases/v0.21.0.md)
 
 ## Decision
 

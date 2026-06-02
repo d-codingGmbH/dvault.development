@@ -28,7 +28,7 @@ SaveChanges interceptors remain outside the default v1 persistence path. v0.9.0 
 
 ## Chunked Save Boundary
 
-The v0.19.0 public baseline added `IDataVaultSaveService.SaveAsync(DbContext, DataVaultChunkedSaveRequest, ...)` beside the existing single-request and ordered-bulk overloads. `DataVaultChunkedSaveRequest` contains caller-ordered `DataVaultSaveChunk` values, and each chunk contains ordinary `DataVaultSaveRequest` values. The detailed behavior contract is [DVault V1 Streaming Explicit Save Contract](dvault-v1-streaming-explicit-save-contract.md); the current public release summary is [DVault v0.21.0 Release Notes](../releases/v0.21.0.md).
+The v0.19.0 public baseline added `IDataVaultSaveService.SaveAsync(DbContext, DataVaultChunkedSaveRequest, ...)` beside the existing single-request and ordered-bulk overloads. `DataVaultChunkedSaveRequest` contains caller-ordered `DataVaultSaveChunk` values, and each chunk contains ordinary `DataVaultSaveRequest` values. The detailed behavior contract is [DVault V1 Streaming Explicit Save Contract](dvault-v1-streaming-explicit-save-contract.md); the current public release summary is [DVault v0.26.0 Release Notes](../releases/v0.26.0.md).
 
 The migration rule is intentionally narrow:
 
@@ -50,6 +50,14 @@ The core save service does not branch on provider names. It captures the registe
 When no provider-specific strategy is registered, or when every registered strategy rejects the current context and request batch, the dispatcher uses the built-in provider-neutral `IDataVaultSaveService` writer. Unsupported or unknown provider packages, and provider packages without a compatible strategy for the current batch, therefore keep the same public caller contract and fall back without requiring provider-name checks in the core package.
 
 Provider-specific save-strategy registration is separate from provider-name capability-profile selection. The core package contains built-in capability profiles for the known SQLite, PostgreSQL, SQL Server, Oracle, Pomelo MySQL, and official MySQL EF provider names. Provider packages register optimized save strategies and can still register or override provider-name mappings when a future provider needs a custom profile.
+
+## Provider-Specific SQL Artifact Boundary
+
+Stored procedures, generated routines, and provider-specific SQL artifacts are not part of the default v1 save path. The default runtime boundary remains DI-resolved `IDataVaultSaveService` plus diagnostics-gated provider save strategies. Provider packages must not auto-generate stored procedures, register a procedure dispatcher, auto-run provider SQL artifacts, or silently route ordinary saves through a design-time artifact lane.
+
+A future stored-procedure or provider-specific SQL artifact lane must be explicit opt-in design-time output for a reviewed consumer project. The consuming application owns artifact review, storage, deployment, invocation, versioning, rollback, cleanup, credentials, environment selection, observability, and transaction policy. Migration synchronization is also consumer-owned: DVault does not automatically align procedures or SQL artifacts with EF migrations, live schema reads, metadata changes, model-first import/export, or support-bundle refreshes.
+
+Provider-specific artifact proposals should be compared against the existing save strategy dispatch and benchmark artifact contract before implementation. At minimum, they need representative request-bound save diagnostics for the exact provider and workload, the root benchmark artifact triplet or a documented before/after triplet set, parity with explicit DVault semantics, and public non-goals for runtime dispatch, automatic execution, migration hooks, deployment automation, and default provider routing.
 
 ## Hashing Compatibility Boundary
 

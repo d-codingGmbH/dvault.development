@@ -11,7 +11,7 @@ Roslyn analyzers and source generators for DVault compile-time metadata declarat
 
 The package also provides bounded code fixes for DMV1901 anonymous-object direct-member expansion and DMV1902 later-duplicate removal. Its mapping source generator emits registry-backed typed row mappers from the public `DCoding.Data.DVault` compile-time mapping attributes; generated save helpers still require callers to supply load timestamps and record sources through the existing explicit save flow. Its typed read-model source generator is a separate opt-in support-bundle-driven surface for satellite latest/current/as-of helpers, PIT as-of helpers, and bounded bridge traversal helpers.
 
-The v0.25.0 documentation baseline does not add model-cache, compiled-model, or `DbContext` pooling diagnostics. `DMV1910` and `DMV1911` are generated shared-type-table misuse diagnostics only. For EF model-cache isolation guidance, use the README section "Isolate EF model cache entries"; for `UseModel(...)` and `AddDbContextPool<TContext>(...)` guardrails, use `docs/architecture/dvault-ef-compiled-compatibility.md`.
+The v0.26.0 documentation baseline carries forward the v0.25.0 typed read-helper generator surface and does not add model-cache, compiled-model, or `DbContext` pooling diagnostics. `DMV1910` and `DMV1911` are generated shared-type-table misuse diagnostics only. For EF model-cache isolation guidance, use the README section "Isolate EF model cache entries"; for `UseModel(...)` and `AddDbContextPool<TContext>(...)` guardrails, use `docs/architecture/dvault-ef-compiled-compatibility.md`.
 
 ## Installation
 
@@ -19,7 +19,7 @@ Install the analyzer package in projects that declare DVault Code-First metadata
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="0.25.0" PrivateAssets="all" />
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="0.26.0" PrivateAssets="all" />
 </ItemGroup>
 ```
 
@@ -41,7 +41,7 @@ The EF Core misuse analyzer keeps the generated DVault table boundary explicit. 
 
 The analyzer does not attempt whole-application DI inference and does not treat `UseDataVaultSaveChangesMetadataInterceptor(...)` as a replacement for the explicit save boundary. That interceptor remains an opt-in metadata filler for tracked generated rows; ordinary hub, link, and satellite writes should flow through `IDataVaultSaveService`. The runtime `UseDataVaultSaveChangesGuardInterceptor(...)` is a separate opt-in blocking or warning guard for applications that want SaveChanges-time enforcement; it is not enabled by `AddDVault()` and does not broaden the analyzer into arbitrary dataflow or provider-specific SQL analysis.
 
-This analyzer surface also does not prove that an application-owned `IModelCacheKeyFactory` includes every tenant, schema, naming, provider, or profile discriminator, and it does not diagnose whether a compiled model or pooled context is safe for a variable model shape. Those boundaries are guidance-only in v0.25.0 and remain documented in the root README and the EF compiled compatibility note.
+This analyzer surface also does not prove that an application-owned `IModelCacheKeyFactory` includes every tenant, schema, naming, provider, or profile discriminator, and it does not diagnose whether a compiled model or pooled context is safe for a variable model shape. Those boundaries remain guidance-only in v0.26.0 and are documented in the root README and the EF compiled compatibility note.
 
 ## Generated Mapper Scope
 

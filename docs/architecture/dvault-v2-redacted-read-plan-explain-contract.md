@@ -2,7 +2,7 @@
 
 Status: v2 contract
 Ticket: 06F7Y0FZXX5J0G7G15681HVEBR
-Current public baseline: [DVault v0.25.0 Release Notes](../releases/v0.25.0.md)
+Current public baseline: [DVault v0.26.0 Release Notes](../releases/v0.26.0.md)
 
 ## Decision
 

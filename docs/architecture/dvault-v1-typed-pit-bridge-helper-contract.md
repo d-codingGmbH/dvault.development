@@ -2,7 +2,8 @@
 
 Status: v1 implemented generator contract
 Ticket: 06F7Y0GT7A5QT77TADMRZBVYN8
-Current implemented baseline: [DVault v0.25.0 Release Notes](../releases/v0.25.0.md)
+Current public baseline: [DVault v0.26.0 Release Notes](../releases/v0.26.0.md)
+Typed helper implementation baseline: [DVault v0.25.0 Release Notes](../releases/v0.25.0.md)
 
 ## Decision
 
@@ -159,7 +160,7 @@ This contract does not add:
 Repository evidence for this contract:
 
 - [DCoding.Data.DVault.Analyzers README](../../src/DCoding.Data.DVault.Analyzers/README.md) documents the implemented support-bundle-driven satellite, PIT, and bridge typed read-model generator baseline.
-- [DVault v0.25.0 Release Notes](../releases/v0.25.0.md) records the current ReadShape and typed helper documentation baseline.
+- [DVault v0.25.0 Release Notes](../releases/v0.25.0.md) records the historical ReadShape and typed helper implementation baseline carried forward by the current release.
 - [DVault V1 PIT And Bridge Boundary](dvault-v1-pit-bridge-boundary.md) defines the supported runtime PIT and bridge read shapes.
 - [DVault V2 Redacted Read-Plan Explain Contract](dvault-v2-redacted-read-plan-explain-contract.md) defines request-bound `readShape.pit` and `readShape.bridge` support-bundle evidence.
 - [DataVaultBridgeTraversalEndpoint.cs](../../src/DCoding.Data.DVault/DataVaultBridgeTraversalEndpoint.cs) defines the closed bridge endpoint vocabulary.

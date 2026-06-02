@@ -1,8 +1,8 @@
 # Performance Profiles
 
-Status: v0.24.0 adopter guidance
+Status: v0.26.0 adopter guidance
 
-This guide is the detailed performance-profile reference for the current v0.24.0 DVault documentation baseline. It translates the checked-in benchmark evidence into starting profiles, stop conditions, and rerun triggers. It also records the decision gate for future stored-procedure or provider-specific SQL artifact proposals. It does not create absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, credential-management guidance, or provider-specific SQL artifact generation. The coordinated release record is [DVault v0.24.0 Release Notes](releases/v0.24.0.md).
+This guide is the detailed performance-profile reference for the current v0.26.0 DVault documentation baseline. It translates the checked-in benchmark evidence into starting profiles, stop conditions, and rerun triggers. It also records the decision gate for future stored-procedure or provider-specific SQL artifact proposals. It does not create absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, credential-management guidance, or provider-specific SQL artifact generation. The coordinated release record is [DVault v0.26.0 Release Notes](releases/v0.26.0.md). Earlier release notes remain historical feature-introduction records.
 
 ## Evidence Baseline
 
@@ -25,6 +25,26 @@ The current checked-in root run used:
 - Optional PostgreSQL, SQL Server, MySQL, and Oracle rows emitted as `executionStatus=skipped` because `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_MYSQL_CONNECTION_STRING`, and `DVAULT_TEST_ORACLE_CONNECTION_STRING` were unset.
 
 Treat all millisecond values below as observations from that run only. Rerun the benchmarks when provider, hardware, runtime, load-timestamp storage, iteration count, warmup count, dataset size, request shape, or provider configuration changes.
+
+## Benchmark Verifier And Redaction Boundary
+
+The repository evidence is the artifact triplet plus verifier coverage, not copied raw benchmark tables in adopter docs. The verifier expectations keep these facts bounded and reusable:
+
+- `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` are emitted from one run and contain the same result rows.
+- The checked-in run keeps the four profile categories visible: `SmallAppLocalVault`, `MediumChunkedIngestion`, `StagedProviderIngestion`, and `ReadModelHeavy`.
+- Provider guidance rows stay visible for PostgreSQL, SQL Server, MySQL, and Oracle even when their external provider lanes are skipped.
+- Regression-budget guidance stays attached to the shared artifact contract instead of being inferred from one timing row.
+
+Use redacted verifier summaries when referencing this evidence in tickets or release notes:
+
+```text
+benchmark artifact verifier: passed
+artifact triplet: benchmark-summary.md, benchmark-summary.csv, benchmark-summary.json
+profile categories: SmallAppLocalVault, MediumChunkedIngestion, StagedProviderIngestion, ReadModelHeavy
+required provider: SQLite local temporary files
+optional provider rows: preserved as skipped when connection-string environment variables are unset
+raw timings: see checked-in artifact triplet
+```
 
 ## Profile Selection
 
@@ -144,6 +164,19 @@ Use these provider boundaries as starting gates, not timing claims from the chec
 ### Diagnostics And Telemetry
 
 Before claiming provider-native behavior, run request-bound `IDataVaultDiagnosticsService` analysis for the exact batch and verify strategy status, selected strategy name, candidate diagnostics, operation counts, and fallback causes. Use `AddDVaultTelemetry()` for bounded save summaries after the application opts into metrics. Rerun the benchmark with the relevant provider environment variable set when the claim needs measured external-provider timings.
+
+Bounded provider eligibility examples should show enum values and strategy facts without request data, SQL, provider errors, credentials, or connection strings:
+
+```text
+save strategy: ProviderNeutralFallback
+provider: Microsoft.EntityFrameworkCore.SqlServer
+selected strategy: <none>
+candidate: SqlServerDataVaultSaveStrategy
+candidate gate requirements: ProviderNameMismatch, DirtyDbContext
+fallback causes: DirtyDbContext
+raw SQL: omitted
+connection string: omitted
+```
 
 ### Supporting Rows
 
