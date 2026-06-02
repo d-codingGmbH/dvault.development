@@ -3,22 +3,21 @@
   "ticket-id": "06F7Y0KGY29HHGZWHC470KVJBG",
   "ticket-type": "story",
   "title": "Story: Strengthen migration guardrails for destructive generated Data Vault structure changes",
-  "revision": "06F7Y0ZENQVA3AA3DJS5F91CC0",
-  "status": "todo",
+  "revision": "06F8G916F62CW3PPZP9HBA4BFM",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
     "area/ef-core",
     "area/migrations",
     "area/modeling",
     "area/quality",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F7XZW5DYYMYMH7MZYF05HA2G",
   "releaseId": "06F7XZVW426YZYKJJG0P0NZJ2W",
   "created-at": "2026-05-31T17:08:47.4628902Z",
-  "updated-at": "2026-05-31T17:10:24.6856289Z"
+  "updated-at": "2026-06-02T11:42:11.0650993Z"
 }

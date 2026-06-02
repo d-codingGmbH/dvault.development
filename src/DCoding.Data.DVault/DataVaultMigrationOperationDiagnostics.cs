@@ -106,12 +106,14 @@ public static class DataVaultMigrationOperationDiagnostics {
     ArgumentNullException.ThrowIfNull(operations);
 
     var schema = DataVaultMigrationSchemaBaseline.Create(baseline.Explain);
+    var operationSet = operations.ToArray();
+    var operationContext = DataVaultMigrationOperationContext.Create(schema, operationSet);
     var operationIssues = new List<DataVaultDiagnosticsIssue>();
     var operationSummaries = new List<DataVaultMigrationGuardrailOperationSummary>();
     var ordinal = 0;
 
-    foreach (var operation in operations) {
-      var currentIssues = AnalyzeOperation(schema, operation).ToArray();
+    foreach (var operation in operationSet) {
+      var currentIssues = AnalyzeOperation(schema, operationContext, operation).ToArray();
       operationIssues.AddRange(currentIssues);
       operationSummaries.Add(CreateOperationSummary(ordinal, operation, currentIssues));
       ordinal++;
@@ -182,6 +184,7 @@ public static class DataVaultMigrationOperationDiagnostics {
           NormalizeName(addPrimaryKey.Name) ?? "<unnamed>"),
       DropPrimaryKeyOperation dropPrimaryKey => CreateOperationDescriptor("DropPrimaryKey", dropPrimaryKey.Table, dropPrimaryKey.Name),
       DropTableOperation dropTable => CreateOperationDescriptor("DropTable", dropTable.Name, memberName: null),
+      RenameTableOperation renameTable => CreateOperationDescriptor("RenameTable", renameTable.Name, renameTable.NewName),
       _ => CreateOperationDescriptor(GetOperationName(operation), targetName: null, memberName: null),
     };
   }
@@ -229,6 +232,7 @@ public static class DataVaultMigrationOperationDiagnostics {
 
   private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeOperation(
       DataVaultMigrationSchemaBaseline schema,
+      DataVaultMigrationOperationContext operationContext,
       MigrationOperation operation) {
     ArgumentNullException.ThrowIfNull(operation);
 
@@ -238,12 +242,10 @@ public static class DataVaultMigrationOperationDiagnostics {
       case AddColumnOperation addColumn:
         return AnalyzeAddColumn(schema, addColumn);
       case DropColumnOperation dropColumn:
-        return AnalyzeDropOrAlterColumn(
+        return AnalyzeDropColumn(
             schema,
-            "DropColumn",
-            dropColumn.Table,
-            dropColumn.Name,
-            action: "drops");
+            operationContext,
+            dropColumn);
       case AlterColumnOperation alterColumn:
         return AnalyzeDropOrAlterColumn(
             schema,
@@ -256,15 +258,17 @@ public static class DataVaultMigrationOperationDiagnostics {
       case CreateIndexOperation createIndex:
         return AnalyzeCreateIndex(schema, createIndex);
       case DropIndexOperation dropIndex:
-        return AnalyzeDropIndex(schema, dropIndex);
+        return AnalyzeDropIndex(schema, operationContext, dropIndex);
       case RenameIndexOperation renameIndex:
         return AnalyzeRenameIndex(schema, renameIndex);
       case AddPrimaryKeyOperation addPrimaryKey:
         return AnalyzeAddPrimaryKey(schema, addPrimaryKey);
       case DropPrimaryKeyOperation dropPrimaryKey:
-        return AnalyzeDropPrimaryKey(schema, dropPrimaryKey);
+        return AnalyzeDropPrimaryKey(schema, operationContext, dropPrimaryKey);
       case DropTableOperation dropTable:
-        return AnalyzeDropTable(schema, dropTable);
+        return AnalyzeDropTable(schema, operationContext, dropTable);
+      case RenameTableOperation renameTable:
+        return AnalyzeRenameTable(schema, renameTable);
       default:
         return [];
     }
@@ -288,19 +292,19 @@ public static class DataVaultMigrationOperationDiagnostics {
         continue;
       }
 
-      var code = GetDropOrAlterColumnCode(column);
+      var code = GetDropColumnCode(column);
       if (code is null) {
         continue;
       }
 
       var shape = code == "DVM2002"
           ? "required technical column"
-          : "stable key, parent, participant, driving-key, snapshot-reference, or bridge-depth column";
+          : "generated structural or payload column";
       var invariant = code == "DVM2002" ? "MI-2" : "MI-3";
       issues.Add(CreateIssue(
           code,
-          invariant + " violation: migration creates Data Vault " + FormatTableKind(entity.Kind) +
-          " table '" + entity.TableName + "' without " + shape + " '" + column.Name + "'.",
+          invariant + " violation: migration creates " + FormatEntityContext(entity) +
+          " without " + shape + " " + FormatColumnContext(column) + ".",
           CreatePath("CreateTable", entity.TableName, column.Name)));
     }
 
@@ -329,8 +333,8 @@ public static class DataVaultMigrationOperationDiagnostics {
     if (entity.Kind is DataVaultTableKind.Hub or DataVaultTableKind.Link) {
       return CreateIssue(
           "DVM2001",
-          "MI-1 violation: migration creates Data Vault " + FormatTableKind(entity.Kind) +
-          " table '" + entity.TableName + "' with payload column '" + columnName + "'.",
+          "MI-1 violation: migration creates " + FormatEntityContext(entity) +
+          " with unexpected payload column '" + columnName + "'.",
           CreatePath("CreateTable", entity.TableName, columnName));
     }
 
@@ -340,8 +344,8 @@ public static class DataVaultMigrationOperationDiagnostics {
 
     return CreateIssue(
         "DVM2003",
-        "MI-3 violation: migration creates Data Vault " + FormatTableKind(entity.Kind) +
-        " table '" + entity.TableName + "' with unsupported structural column '" + columnName + "'.",
+        "MI-3 violation: migration creates " + FormatEntityContext(entity) +
+        " with unsupported structural column '" + columnName + "'.",
         CreatePath("CreateTable", entity.TableName, columnName));
   }
 
@@ -360,10 +364,9 @@ public static class DataVaultMigrationOperationDiagnostics {
 
     return [CreateIssue(
         "DVM2004",
-        "MI-4 violation: migration creates Data Vault table '" + entity.TableName +
-        "' with inline primary key '" + operationName +
-        "' with wrong name or columns; expected '" + entity.PrimaryKey.Name + "' on columns [" +
-        string.Join(", ", entity.PrimaryKey.PropertyNames) + "].",
+        "MI-4 violation: migration creates " + FormatEntityContext(entity) +
+        " with inline primary key '" + operationName +
+        "' with wrong name or columns; expected " + FormatPrimaryKeyContext(entity.PrimaryKey) + ".",
         CreatePath("CreateTable", entity.TableName, operationName))];
   }
 
@@ -379,7 +382,7 @@ public static class DataVaultMigrationOperationDiagnostics {
       return [CreateIssue(
           "DVM2001",
           "MI-1 violation: migration adds payload column '" + operation.Name +
-          "' to Data Vault " + FormatTableKind(entity.Kind) + " table '" + entity.TableName + "'.",
+          "' to " + FormatEntityContext(entity) + ".",
           CreatePath("AddColumn", entity.TableName, operation.Name))];
     }
 
@@ -390,9 +393,38 @@ public static class DataVaultMigrationOperationDiagnostics {
     return [CreateIssue(
         "DVM2003",
         "MI-3 violation: migration adds unsupported structural column '" +
-        operation.Name + "' to Data Vault " + FormatTableKind(entity.Kind) +
-        " table '" + entity.TableName + "'.",
+        operation.Name + "' to " + FormatEntityContext(entity) + ".",
         CreatePath("AddColumn", entity.TableName, operation.Name))];
+  }
+
+  private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeDropColumn(
+      DataVaultMigrationSchemaBaseline schema,
+      DataVaultMigrationOperationContext operationContext,
+      DropColumnOperation operation) {
+    if (!schema.TryGetEntity(operation.Table, out var entity)) {
+      return [];
+    }
+
+    if (entity.Columns.TryGetValue(operation.Name, out var column)) {
+      return AnalyzeGeneratedColumnChange(
+          entity,
+          column,
+          "DropColumn",
+          action: "drops",
+          code: GetDropColumnCode(column));
+    }
+
+    if (operationContext.TryFindSuspiciousColumnReplacement(operation, out var replacement)) {
+      return [CreateIssue(
+          "DVM2008",
+          "MI-5 suspicious drift: migration drops column '" + operation.Name +
+          "' from " + FormatEntityContext(entity) +
+          " and adds generated " + FormatColumnContext(replacement.Column) +
+          " in the same migration instead of preserving an explicit EF rename or metadata-evolution operation.",
+          CreatePath("DropColumn", entity.TableName, operation.Name))];
+    }
+
+    return [];
   }
 
   private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeDropOrAlterColumn(
@@ -406,7 +438,20 @@ public static class DataVaultMigrationOperationDiagnostics {
       return [];
     }
 
-    var code = GetDropOrAlterColumnCode(column);
+    return AnalyzeGeneratedColumnChange(
+        entity,
+        column,
+        operationName,
+        action,
+        GetAlterColumnCode(column));
+  }
+
+  private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeGeneratedColumnChange(
+      DataVaultMigrationEntityBaseline entity,
+      DataVaultMigrationColumnBaseline column,
+      string operationName,
+      string action,
+      string? code) {
     if (code is null) {
       return [];
     }
@@ -414,16 +459,16 @@ public static class DataVaultMigrationOperationDiagnostics {
     var invariant = code == "DVM2002" ? "MI-2" : "MI-3";
     var shape = code == "DVM2002"
         ? "required technical column"
-        : "stable key, parent, participant, driving-key, snapshot-reference, or bridge-depth column";
+        : "generated structural or payload column";
 
     return [CreateIssue(
         code,
-        invariant + " violation: migration " + action + " " + shape + " '" +
-        column.Name + "' on Data Vault " + FormatTableKind(entity.Kind) + " table '" + entity.TableName + "'.",
+        invariant + " violation: migration " + action + " " + shape + " " +
+        FormatColumnContext(column) + " on " + FormatEntityContext(entity) + ".",
         CreatePath(operationName, entity.TableName, column.Name))];
   }
 
-  private static string? GetDropOrAlterColumnCode(DataVaultMigrationColumnBaseline column) {
+  private static string? GetDropColumnCode(DataVaultMigrationColumnBaseline column) {
     if (column.Role == DataVaultPropertyRole.Technical) {
       return column.TechnicalRole is TechnicalMetadataColumnRole.LoadTimestamp or
           TechnicalMetadataColumnRole.RecordSource or
@@ -434,11 +479,20 @@ public static class DataVaultMigrationOperationDiagnostics {
 
     return column.Role is DataVaultPropertyRole.BusinessKey or
         DataVaultPropertyRole.ParticipantReference or
+        DataVaultPropertyRole.Payload or
         DataVaultPropertyRole.DrivingKey or
         DataVaultPropertyRole.SnapshotReference or
         DataVaultPropertyRole.BridgeDepth
         ? "DVM2003"
         : null;
+  }
+
+  private static string? GetAlterColumnCode(DataVaultMigrationColumnBaseline column) {
+    if (column.Role == DataVaultPropertyRole.Payload) {
+      return null;
+    }
+
+    return GetDropColumnCode(column);
   }
 
   private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeRenameColumn(
@@ -452,8 +506,8 @@ public static class DataVaultMigrationOperationDiagnostics {
 
     return [CreateIssue(
         "DVM2005",
-        "MI-5 violation: migration renames Data Vault-owned column '" + column.Name +
-        "' on table '" + entity.TableName + "' away from the produced name.",
+        "MI-5 explicit rename: migration renames Data Vault-owned " + FormatColumnContext(column) +
+        " on " + FormatEntityContext(entity) + " away from the produced name.",
         CreatePath("RenameColumn", entity.TableName, column.Name))];
   }
 
@@ -469,24 +523,39 @@ public static class DataVaultMigrationOperationDiagnostics {
 
     return [CreateIssue(
         "DVM2004",
-        "MI-4 violation: migration creates Data Vault default index '" + index.Name +
-        "' on table '" + entity.TableName + "' with wrong uniqueness or columns.",
+        "MI-4 violation: migration creates generated index '" + operation.Name +
+        "' on " + FormatEntityContext(entity) +
+        " with wrong uniqueness or columns; expected " + FormatIndexContext(index) + ".",
         CreatePath("CreateIndex", entity.TableName, index.Name))];
   }
 
   private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeDropIndex(
       DataVaultMigrationSchemaBaseline schema,
+      DataVaultMigrationOperationContext operationContext,
       DropIndexOperation operation) {
     if (string.IsNullOrWhiteSpace(operation.Table) ||
-        !schema.TryGetEntity(operation.Table, out var entity) ||
-        !entity.Indexes.TryGetValue(operation.Name, out var index)) {
+        !schema.TryGetEntity(operation.Table, out var entity)) {
+      return [];
+    }
+
+    if (!entity.Indexes.TryGetValue(operation.Name, out var index)) {
+      if (operationContext.TryFindSuspiciousIndexReplacement(operation, out var replacement)) {
+        return [CreateIssue(
+            "DVM2008",
+            "MI-5 suspicious drift: migration drops index '" + operation.Name +
+            "' from " + FormatEntityContext(entity) +
+            " and creates generated " + FormatIndexContext(replacement.Index) +
+            " in the same migration instead of preserving an explicit EF rename or metadata-evolution operation.",
+            CreatePath("DropIndex", entity.TableName, operation.Name))];
+      }
+
       return [];
     }
 
     return [CreateIssue(
-        "DVM2004",
-        "MI-4 violation: migration drops Data Vault default index '" + index.Name +
-        "' from table '" + entity.TableName + "'.",
+        "DVM2007",
+        "MI-4 destructive change: migration drops generated secondary index " +
+        FormatIndexContext(index) + " from " + FormatEntityContext(entity) + ".",
         CreatePath("DropIndex", entity.TableName, index.Name))];
   }
 
@@ -501,8 +570,8 @@ public static class DataVaultMigrationOperationDiagnostics {
 
     return [CreateIssue(
         "DVM2004",
-        "MI-4 violation: migration renames Data Vault default index '" + index.Name +
-        "' on table '" + entity.TableName + "' away from the produced name.",
+        "MI-4 explicit rename: migration renames generated secondary index " +
+        FormatIndexContext(index) + " on " + FormatEntityContext(entity) + " away from the produced name.",
         CreatePath("RenameIndex", entity.TableName, index.Name))];
   }
 
@@ -526,38 +595,76 @@ public static class DataVaultMigrationOperationDiagnostics {
     return [CreateIssue(
         "DVM2004",
         "MI-4 violation: migration creates Data Vault primary key '" + operationName +
-        "' on table '" + entity.TableName + "' with wrong name or columns; expected '" +
-        entity.PrimaryKey.Name + "' on columns [" +
-        string.Join(", ", entity.PrimaryKey.PropertyNames) + "].",
+        "' on " + FormatEntityContext(entity) + " with wrong name or columns; expected " +
+        FormatPrimaryKeyContext(entity.PrimaryKey) + ".",
         CreatePath("AddPrimaryKey", entity.TableName, operationName))];
   }
 
   private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeDropPrimaryKey(
       DataVaultMigrationSchemaBaseline schema,
+      DataVaultMigrationOperationContext operationContext,
       DropPrimaryKeyOperation operation) {
-    if (!schema.TryGetEntity(operation.Table, out var entity) ||
-        !string.Equals(operation.Name, entity.PrimaryKey.Name, StringComparison.Ordinal)) {
+    if (!schema.TryGetEntity(operation.Table, out var entity)) {
+      return [];
+    }
+
+    if (!string.Equals(operation.Name, entity.PrimaryKey.Name, StringComparison.Ordinal)) {
+      if (operationContext.TryFindSuspiciousPrimaryKeyReplacement(operation, out var replacement)) {
+        return [CreateIssue(
+            "DVM2008",
+            "MI-5 suspicious drift: migration drops primary key '" + operation.Name +
+            "' from " + FormatEntityContext(entity) +
+            " and creates generated " + FormatPrimaryKeyContext(replacement.PrimaryKey) +
+            " in the same migration instead of preserving an explicit EF rename or metadata-evolution operation.",
+            CreatePath("DropPrimaryKey", entity.TableName, operation.Name))];
+      }
+
       return [];
     }
 
     return [CreateIssue(
-        "DVM2004",
-        "MI-4 violation: migration drops Data Vault primary key '" + entity.PrimaryKey.Name +
-        "' from table '" + entity.TableName + "'.",
+        "DVM2007",
+        "MI-4 destructive change: migration drops generated primary-key constraint " +
+        FormatPrimaryKeyContext(entity.PrimaryKey) + " from " + FormatEntityContext(entity) + ".",
         CreatePath("DropPrimaryKey", entity.TableName, entity.PrimaryKey.Name))];
   }
 
   private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeDropTable(
       DataVaultMigrationSchemaBaseline schema,
+      DataVaultMigrationOperationContext operationContext,
       DropTableOperation operation) {
     if (!schema.TryGetEntity(operation.Name, out var entity)) {
+      if (operationContext.TryFindSuspiciousTableReplacement(operation, out var replacement)) {
+        return [CreateIssue(
+            "DVM2008",
+            "MI-5 suspicious drift: migration drops table '" + operation.Name +
+            "' and creates " + FormatEntityContext(replacement.Entity) +
+            " in the same migration instead of preserving an explicit EF rename or metadata-evolution operation.",
+            CreatePath("DropTable", operation.Name))];
+      }
+
       return [];
     }
 
     return [CreateIssue(
         "DVM2006",
-        "MI-5 violation: migration drops Data Vault-produced table '" + entity.TableName + "'.",
+        "MI-5 destructive change: migration drops " + FormatEntityContext(entity) + ".",
         CreatePath("DropTable", entity.TableName))];
+  }
+
+  private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeRenameTable(
+      DataVaultMigrationSchemaBaseline schema,
+      RenameTableOperation operation) {
+    if (!schema.TryGetEntity(operation.Name, out var entity)) {
+      return [];
+    }
+
+    var newName = NormalizeName(operation.NewName) ?? "<unchanged>";
+    return [CreateIssue(
+        "DVM2005",
+        "MI-5 explicit rename: migration renames " + FormatEntityContext(entity) +
+        " away from the produced table name to '" + newName + "'.",
+        CreatePath("RenameTable", entity.TableName, newName))];
   }
 
   private static DataVaultDiagnosticsIssue CreateIssue(
@@ -582,8 +689,43 @@ public static class DataVaultMigrationOperationDiagnostics {
         : "migration/" + operationName + "/" + targetName + "/" + memberName;
   }
 
-  private static string FormatTableKind(DataVaultTableKind kind) {
+  private static string FormatEntityContext(DataVaultMigrationEntityBaseline entity) {
+    var parentContext = entity.ParentReference is null
+        ? string.Empty
+        : ", parent " + entity.ParentReference.Kind.ToString().ToLowerInvariant() +
+            " '" + entity.ParentReference.Name + "'";
+
+    return "Data Vault " + FormatStructureKind(entity.Kind) + " table '" + entity.TableName +
+        "' (metadata name '" + entity.MetadataName + "', produced name '" + entity.TableName + "'" +
+        parentContext + ")";
+  }
+
+  private static string FormatColumnContext(DataVaultMigrationColumnBaseline column) {
+    return "column '" + column.Name + "' (metadata name '" + column.MetadataName +
+        "', produced name '" + column.Name + "', role " + FormatColumnRole(column) + ")";
+  }
+
+  private static string FormatPrimaryKeyContext(DataVaultMigrationKeyBaseline primaryKey) {
+    return "primary-key constraint '" + primaryKey.Name + "' (produced name '" +
+        primaryKey.Name + "', columns [" + string.Join(", ", primaryKey.PropertyNames) + "])";
+  }
+
+  private static string FormatIndexContext(DataVaultMigrationIndexBaseline index) {
+    return "secondary index '" + index.Name + "' (produced name '" + index.Name +
+        "', columns [" + string.Join(", ", index.PropertyNames) + "], unique " +
+        index.IsUnique.ToString().ToLowerInvariant() + ")";
+  }
+
+  private static string FormatStructureKind(DataVaultTableKind kind) {
     return kind.ToString().ToLowerInvariant();
+  }
+
+  private static string FormatColumnRole(DataVaultMigrationColumnBaseline column) {
+    if (column.Role == DataVaultPropertyRole.Technical && column.TechnicalRole is not null) {
+      return "technical " + column.TechnicalRole.Value.ToString().ToLowerInvariant();
+    }
+
+    return column.Role.ToString().ToLowerInvariant();
   }
 
   private sealed record DataVaultMigrationOperationAnalysis(
@@ -595,6 +737,368 @@ public static class DataVaultMigrationOperationDiagnostics {
       string? TargetName,
       string? MemberName,
       string Path);
+
+  private sealed record CreatedTableCandidate(
+      CreateTableOperation Operation,
+      DataVaultMigrationEntityBaseline Entity);
+
+  private sealed class DataVaultMigrationOperationContext {
+    private DataVaultMigrationOperationContext(
+        IReadOnlyList<TableReplacementCandidate> tableReplacements,
+        IReadOnlyList<ColumnReplacementCandidate> columnReplacements,
+        IReadOnlyList<IndexReplacementCandidate> indexReplacements,
+        IReadOnlyList<PrimaryKeyReplacementCandidate> primaryKeyReplacements) {
+      TableReplacements = tableReplacements;
+      ColumnReplacements = columnReplacements;
+      IndexReplacements = indexReplacements;
+      PrimaryKeyReplacements = primaryKeyReplacements;
+    }
+
+    private IReadOnlyList<TableReplacementCandidate> TableReplacements { get; }
+
+    private IReadOnlyList<ColumnReplacementCandidate> ColumnReplacements { get; }
+
+    private IReadOnlyList<IndexReplacementCandidate> IndexReplacements { get; }
+
+    private IReadOnlyList<PrimaryKeyReplacementCandidate> PrimaryKeyReplacements { get; }
+
+    public static DataVaultMigrationOperationContext Create(
+        DataVaultMigrationSchemaBaseline schema,
+        IReadOnlyList<MigrationOperation> operations) {
+      var tableReplacements = CreateTableReplacementCandidates(schema, operations);
+      var columnReplacements = CreateColumnReplacementCandidates(schema, operations);
+      var indexReplacements = CreateIndexReplacementCandidates(schema, operations);
+      var primaryKeyReplacements = CreatePrimaryKeyReplacementCandidates(schema, operations);
+
+      return new DataVaultMigrationOperationContext(
+          tableReplacements,
+          columnReplacements,
+          indexReplacements,
+          primaryKeyReplacements);
+    }
+
+    public bool TryFindSuspiciousTableReplacement(
+        DropTableOperation operation,
+        out TableReplacementCandidate replacement) {
+      replacement = TableReplacements.FirstOrDefault(candidate =>
+          string.Equals(candidate.DroppedName, operation.Name, StringComparison.Ordinal))!;
+
+      return replacement is not null;
+    }
+
+    public bool TryFindSuspiciousColumnReplacement(
+        DropColumnOperation operation,
+        out ColumnReplacementCandidate replacement) {
+      replacement = ColumnReplacements.FirstOrDefault(candidate =>
+          string.Equals(candidate.TableName, operation.Table, StringComparison.Ordinal) &&
+          string.Equals(candidate.DroppedName, operation.Name, StringComparison.Ordinal))!;
+
+      return replacement is not null;
+    }
+
+    public bool TryFindSuspiciousIndexReplacement(
+        DropIndexOperation operation,
+        out IndexReplacementCandidate replacement) {
+      replacement = IndexReplacements.FirstOrDefault(candidate =>
+          string.Equals(candidate.TableName, operation.Table, StringComparison.Ordinal) &&
+          string.Equals(candidate.DroppedName, operation.Name, StringComparison.Ordinal))!;
+
+      return replacement is not null;
+    }
+
+    public bool TryFindSuspiciousPrimaryKeyReplacement(
+        DropPrimaryKeyOperation operation,
+        out PrimaryKeyReplacementCandidate replacement) {
+      replacement = PrimaryKeyReplacements.FirstOrDefault(candidate =>
+          string.Equals(candidate.TableName, operation.Table, StringComparison.Ordinal) &&
+          string.Equals(candidate.DroppedName, operation.Name, StringComparison.Ordinal))!;
+
+      return replacement is not null;
+    }
+
+    private static IReadOnlyList<TableReplacementCandidate> CreateTableReplacementCandidates(
+        DataVaultMigrationSchemaBaseline schema,
+        IReadOnlyList<MigrationOperation> operations) {
+      var createdTables = new List<CreatedTableCandidate>();
+      foreach (var createTable in operations.OfType<CreateTableOperation>()) {
+        if (!schema.TryGetEntity(createTable.Name, out var entity)) {
+          continue;
+        }
+
+        createdTables.Add(new CreatedTableCandidate(createTable, entity));
+      }
+
+      if (createdTables.Count == 0) {
+        return Array.Empty<TableReplacementCandidate>();
+      }
+
+      var candidates = new List<TableReplacementCandidate>();
+      foreach (var dropTable in operations.OfType<DropTableOperation>()) {
+        if (schema.TryGetEntity(dropTable.Name, out _)) {
+          continue;
+        }
+
+        var replacement = createdTables
+            .FirstOrDefault(candidate => IsSuspiciousTableReplacement(dropTable, candidate.Entity));
+        if (replacement is not null) {
+          candidates.Add(new TableReplacementCandidate(dropTable.Name, replacement.Entity));
+        }
+      }
+
+      return candidates;
+    }
+
+    private static IReadOnlyList<ColumnReplacementCandidate> CreateColumnReplacementCandidates(
+        DataVaultMigrationSchemaBaseline schema,
+        IReadOnlyList<MigrationOperation> operations) {
+      var addedColumns = new List<AddedColumnCandidate>();
+      foreach (var addColumn in operations.OfType<AddColumnOperation>()) {
+        if (!schema.TryGetEntity(addColumn.Table, out var entity) ||
+            !entity.Columns.TryGetValue(addColumn.Name, out var column)) {
+          continue;
+        }
+
+        addedColumns.Add(new AddedColumnCandidate(addColumn, column));
+      }
+
+      if (addedColumns.Count == 0) {
+        return Array.Empty<ColumnReplacementCandidate>();
+      }
+
+      var candidates = new List<ColumnReplacementCandidate>();
+      foreach (var dropColumn in operations.OfType<DropColumnOperation>()) {
+        if (!schema.TryGetEntity(dropColumn.Table, out var entity) ||
+            entity.Columns.ContainsKey(dropColumn.Name)) {
+          continue;
+        }
+
+        var replacement = addedColumns.FirstOrDefault(candidate =>
+            string.Equals(candidate.Operation.Table, dropColumn.Table, StringComparison.Ordinal) &&
+            IsSuspiciousColumnReplacement(dropColumn, candidate.Column));
+        if (replacement is not null) {
+          candidates.Add(new ColumnReplacementCandidate(dropColumn.Table, dropColumn.Name, replacement.Column));
+        }
+      }
+
+      return candidates;
+    }
+
+    private static IReadOnlyList<IndexReplacementCandidate> CreateIndexReplacementCandidates(
+        DataVaultMigrationSchemaBaseline schema,
+        IReadOnlyList<MigrationOperation> operations) {
+      var createdIndexes = new List<CreatedIndexCandidate>();
+      foreach (var createIndex in operations.OfType<CreateIndexOperation>()) {
+        if (!schema.TryGetEntity(createIndex.Table, out var entity) ||
+            !entity.Indexes.TryGetValue(createIndex.Name, out var index)) {
+          continue;
+        }
+
+        createdIndexes.Add(new CreatedIndexCandidate(createIndex, index));
+      }
+
+      if (createdIndexes.Count == 0) {
+        return Array.Empty<IndexReplacementCandidate>();
+      }
+
+      var candidates = new List<IndexReplacementCandidate>();
+      foreach (var dropIndex in operations.OfType<DropIndexOperation>()) {
+        if (string.IsNullOrWhiteSpace(dropIndex.Table) ||
+            !schema.TryGetEntity(dropIndex.Table, out var entity) ||
+            entity.Indexes.ContainsKey(dropIndex.Name)) {
+          continue;
+        }
+
+        var replacement = createdIndexes.FirstOrDefault(candidate =>
+            string.Equals(candidate.Operation.Table, dropIndex.Table, StringComparison.Ordinal) &&
+            IsSuspiciousIndexReplacement(dropIndex, candidate.Index));
+        if (replacement is not null) {
+          candidates.Add(new IndexReplacementCandidate(dropIndex.Table, dropIndex.Name, replacement.Index));
+        }
+      }
+
+      return candidates;
+    }
+
+    private static IReadOnlyList<PrimaryKeyReplacementCandidate> CreatePrimaryKeyReplacementCandidates(
+        DataVaultMigrationSchemaBaseline schema,
+        IReadOnlyList<MigrationOperation> operations) {
+      var addedPrimaryKeys = new List<AddedPrimaryKeyCandidate>();
+      foreach (var addPrimaryKey in operations.OfType<AddPrimaryKeyOperation>()) {
+        if (!schema.TryGetEntity(addPrimaryKey.Table, out _)) {
+          continue;
+        }
+
+        addedPrimaryKeys.Add(new AddedPrimaryKeyCandidate(addPrimaryKey));
+      }
+
+      if (addedPrimaryKeys.Count == 0) {
+        return Array.Empty<PrimaryKeyReplacementCandidate>();
+      }
+
+      var candidates = new List<PrimaryKeyReplacementCandidate>();
+      foreach (var dropPrimaryKey in operations.OfType<DropPrimaryKeyOperation>()) {
+        if (!schema.TryGetEntity(dropPrimaryKey.Table, out var entity) ||
+            string.Equals(dropPrimaryKey.Name, entity.PrimaryKey.Name, StringComparison.Ordinal)) {
+          continue;
+        }
+
+        var replacement = addedPrimaryKeys.FirstOrDefault(candidate =>
+            string.Equals(candidate.Operation.Table, dropPrimaryKey.Table, StringComparison.Ordinal) &&
+            IsSuspiciousPrimaryKeyReplacement(dropPrimaryKey, entity.PrimaryKey, candidate.Operation));
+        if (replacement is not null) {
+          candidates.Add(new PrimaryKeyReplacementCandidate(dropPrimaryKey.Table, dropPrimaryKey.Name, entity.PrimaryKey));
+        }
+      }
+
+      return candidates;
+    }
+
+    private static bool IsSuspiciousTableReplacement(
+        DropTableOperation operation,
+        DataVaultMigrationEntityBaseline entity) {
+      return AnnotationMatchesEntity(operation, entity) ||
+          IdentifierLooksRelated(operation.Name, entity.TableName) ||
+          IdentifierLooksRelated(operation.Name, entity.MetadataName);
+    }
+
+    private static bool IsSuspiciousColumnReplacement(
+        DropColumnOperation operation,
+        DataVaultMigrationColumnBaseline column) {
+      return AnnotationMatchesColumn(operation, column) ||
+          IdentifierLooksRelated(operation.Name, column.Name) ||
+          IdentifierLooksRelated(operation.Name, column.MetadataName) ||
+          IdentifierCarriesRole(operation.Name, column);
+    }
+
+    private static bool IsSuspiciousIndexReplacement(
+        DropIndexOperation operation,
+        DataVaultMigrationIndexBaseline index) {
+      return IdentifierLooksRelated(operation.Name, index.Name) ||
+          index.PropertyNames.Any(propertyName => IdentifierLooksRelated(operation.Name, propertyName));
+    }
+
+    private static bool IsSuspiciousPrimaryKeyReplacement(
+        DropPrimaryKeyOperation dropOperation,
+        DataVaultMigrationKeyBaseline primaryKey,
+        AddPrimaryKeyOperation addOperation) {
+      var addedColumns = addOperation.Columns ?? Array.Empty<string>();
+      return primaryKey.PropertyNames.SequenceEqual(addedColumns, StringComparer.Ordinal) &&
+          (IdentifierLooksRelated(dropOperation.Name, primaryKey.Name) ||
+              primaryKey.PropertyNames.Any(propertyName => IdentifierLooksRelated(dropOperation.Name, propertyName)));
+    }
+
+    private static bool AnnotationMatchesEntity(
+        MigrationOperation operation,
+        DataVaultMigrationEntityBaseline entity) {
+      if (string.Equals(GetStringAnnotation(operation, DataVaultAnnotationNames.ProducedName), entity.TableName, StringComparison.Ordinal) ||
+          string.Equals(GetStringAnnotation(operation, DataVaultAnnotationNames.MetadataName), entity.MetadataName, StringComparison.Ordinal)) {
+        return true;
+      }
+
+      return GetAnnotationValue<DataVaultTableKind>(operation, DataVaultAnnotationNames.EntityKind) == entity.Kind &&
+          (IdentifierLooksRelated(GetStringAnnotation(operation, DataVaultAnnotationNames.ProducedName), entity.TableName) ||
+              IdentifierLooksRelated(GetStringAnnotation(operation, DataVaultAnnotationNames.MetadataName), entity.MetadataName));
+    }
+
+    private static bool AnnotationMatchesColumn(
+        MigrationOperation operation,
+        DataVaultMigrationColumnBaseline column) {
+      if (string.Equals(GetStringAnnotation(operation, DataVaultAnnotationNames.ProducedName), column.Name, StringComparison.Ordinal) ||
+          string.Equals(GetStringAnnotation(operation, DataVaultAnnotationNames.MetadataName), column.MetadataName, StringComparison.Ordinal)) {
+        return true;
+      }
+
+      return GetAnnotationValue<DataVaultPropertyRole>(operation, DataVaultAnnotationNames.PropertyRole) == column.Role &&
+          operation is DropColumnOperation dropColumn &&
+          (IdentifierLooksRelated(dropColumn.Name, column.Name) ||
+              IdentifierLooksRelated(dropColumn.Name, column.MetadataName) ||
+              IdentifierCarriesRole(dropColumn.Name, column));
+    }
+
+    private static bool IdentifierCarriesRole(
+        string identifier,
+        DataVaultMigrationColumnBaseline column) {
+      var normalizedIdentifier = NormalizeIdentifier(identifier);
+      if (normalizedIdentifier.Length == 0) {
+        return false;
+      }
+
+      if (column.TechnicalRole is not null &&
+          normalizedIdentifier.Contains(NormalizeIdentifier(column.TechnicalRole.Value.ToString()), StringComparison.Ordinal)) {
+        return true;
+      }
+
+      return column.Role switch {
+        DataVaultPropertyRole.BusinessKey => normalizedIdentifier.Contains("businesskey", StringComparison.Ordinal),
+        DataVaultPropertyRole.ParticipantReference => normalizedIdentifier.Contains("hashkey", StringComparison.Ordinal),
+        DataVaultPropertyRole.DrivingKey => normalizedIdentifier.Contains("drivingkey", StringComparison.Ordinal),
+        DataVaultPropertyRole.SnapshotReference => normalizedIdentifier.Contains("loadtimestamp", StringComparison.Ordinal),
+        DataVaultPropertyRole.BridgeDepth => normalizedIdentifier.Contains("traversaldepth", StringComparison.Ordinal),
+        _ => false,
+      };
+    }
+
+    private static bool IdentifierLooksRelated(string? left, string? right) {
+      var normalizedLeft = NormalizeIdentifier(left);
+      var normalizedRight = NormalizeIdentifier(right);
+
+      return normalizedLeft.Length > 0 &&
+          normalizedRight.Length > 0 &&
+          (normalizedLeft.Contains(normalizedRight, StringComparison.Ordinal) ||
+              normalizedRight.Contains(normalizedLeft, StringComparison.Ordinal));
+    }
+
+    private static string NormalizeIdentifier(string? value) {
+      if (string.IsNullOrWhiteSpace(value)) {
+        return string.Empty;
+      }
+
+      return new string(value
+          .Where(char.IsLetterOrDigit)
+          .Select(char.ToLowerInvariant)
+          .ToArray());
+    }
+
+    private static string? GetStringAnnotation(MigrationOperation operation, string annotationName) {
+      return operation.FindAnnotation(annotationName)?.Value as string;
+    }
+
+    private static T? GetAnnotationValue<T>(MigrationOperation operation, string annotationName)
+        where T : struct {
+      return operation.FindAnnotation(annotationName)?.Value is T value
+          ? value
+          : null;
+    }
+  }
+
+  private sealed record TableReplacementCandidate(
+      string DroppedName,
+      DataVaultMigrationEntityBaseline Entity);
+
+  private sealed record AddedColumnCandidate(
+      AddColumnOperation Operation,
+      DataVaultMigrationColumnBaseline Column);
+
+  private sealed record ColumnReplacementCandidate(
+      string TableName,
+      string DroppedName,
+      DataVaultMigrationColumnBaseline Column);
+
+  private sealed record CreatedIndexCandidate(
+      CreateIndexOperation Operation,
+      DataVaultMigrationIndexBaseline Index);
+
+  private sealed record IndexReplacementCandidate(
+      string TableName,
+      string DroppedName,
+      DataVaultMigrationIndexBaseline Index);
+
+  private sealed record PrimaryKeyReplacementCandidate(
+      string TableName,
+      string DroppedName,
+      DataVaultMigrationKeyBaseline PrimaryKey);
+
+  private sealed record AddedPrimaryKeyCandidate(AddPrimaryKeyOperation Operation);
 
   private sealed class DataVaultMigrationSchemaBaseline {
     private DataVaultMigrationSchemaBaseline(IReadOnlyDictionary<string, DataVaultMigrationEntityBaseline> entities) {
@@ -630,12 +1134,16 @@ public static class DataVaultMigrationOperationDiagnostics {
     private DataVaultMigrationEntityBaseline(
         string tableName,
         DataVaultTableKind kind,
+        string metadataName,
+        DataVaultParentReferenceExplain? parentReference,
         IReadOnlyList<DataVaultMigrationColumnBaseline> columnsInOrder,
         IReadOnlyDictionary<string, DataVaultMigrationColumnBaseline> columns,
         DataVaultMigrationKeyBaseline primaryKey,
         IReadOnlyDictionary<string, DataVaultMigrationIndexBaseline> indexes) {
       TableName = tableName;
       Kind = kind;
+      MetadataName = metadataName;
+      ParentReference = parentReference;
       ColumnsInOrder = columnsInOrder;
       Columns = columns;
       PrimaryKey = primaryKey;
@@ -645,6 +1153,10 @@ public static class DataVaultMigrationOperationDiagnostics {
     public string TableName { get; }
 
     public DataVaultTableKind Kind { get; }
+
+    public string MetadataName { get; }
+
+    public DataVaultParentReferenceExplain? ParentReference { get; }
 
     public IReadOnlyList<DataVaultMigrationColumnBaseline> ColumnsInOrder { get; }
 
@@ -668,6 +1180,8 @@ public static class DataVaultMigrationOperationDiagnostics {
       return new DataVaultMigrationEntityBaseline(
           entity.TableName,
           entity.TableKind,
+          entity.MetadataName,
+          entity.ParentReference,
           columnsInOrder,
           columns,
           primaryKey,
@@ -678,9 +1192,14 @@ public static class DataVaultMigrationOperationDiagnostics {
   private sealed record DataVaultMigrationColumnBaseline(
       string Name,
       DataVaultPropertyRole Role,
-      TechnicalMetadataColumnRole? TechnicalRole) {
+      TechnicalMetadataColumnRole? TechnicalRole,
+      string MetadataName) {
     public static DataVaultMigrationColumnBaseline Create(DataVaultPropertyExplain property) {
-      return new DataVaultMigrationColumnBaseline(property.Name, property.Role, property.TechnicalRole);
+      return new DataVaultMigrationColumnBaseline(
+          property.Name,
+          property.Role,
+          property.TechnicalRole,
+          property.MetadataName);
     }
   }
 

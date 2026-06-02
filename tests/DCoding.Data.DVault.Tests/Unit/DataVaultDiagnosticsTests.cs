@@ -512,10 +512,6 @@ public sealed class DataVaultDiagnosticsTests {
               Name = "PhoneNumber",
               ClrType = typeof(string),
             },
-            new DropColumnOperation {
-              Table = "SatCustomerContact",
-              Name = "EmailAddress",
-            },
             new DropTableOperation {
               Name = "LegacyAuditScratch",
             },

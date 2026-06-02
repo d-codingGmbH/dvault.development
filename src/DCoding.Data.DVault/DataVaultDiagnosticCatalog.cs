@@ -156,9 +156,9 @@ internal static class DataVaultDiagnosticCatalog {
           "DVM2003",
           ErrorSeverity,
           "migration-guardrail",
-          "Data Vault key or structural shape changed",
-          "Raised when a migration adds, drops, alters, or omits a hash key, participant reference, parent hash key, satellite driving key, PIT snapshot reference, or bridge traversal-depth column.",
-          "Preserve the translated key, parent, participant, PIT snapshot, and bridge traversal columns or update the Data Vault model intentionally."),
+          "Data Vault generated column or structural shape changed",
+          "Raised when a migration adds, drops, alters, or omits a generated hash key, participant reference, parent hash key, satellite payload, satellite driving key, PIT snapshot reference, or bridge traversal-depth column.",
+          "Preserve the translated generated columns or re-author the migration as an explicit Data Vault metadata evolution."),
       new DataVaultDiagnosticDefinition(
           "DVM2004",
           WarningSeverity,
@@ -170,9 +170,9 @@ internal static class DataVaultDiagnosticCatalog {
           "DVM2005",
           WarningSeverity,
           "migration-guardrail",
-          "Data Vault-owned column renamed",
-          "Raised when a migration renames a Data Vault-owned technical, key, participant, or driving-key column away from its produced name.",
-          "Keep Data Vault-owned column names aligned with the current naming policy output."),
+          "Data Vault-owned generated structure renamed",
+          "Raised when a migration explicitly renames a Data Vault-owned table, column, primary key, or default index away from its produced name.",
+          "Keep Data Vault-owned generated names aligned with the current naming policy output or keep the explicit rename operation visible when the metadata evolution is intentional."),
       new DataVaultDiagnosticDefinition(
           "DVM2006",
           ErrorSeverity,
@@ -180,6 +180,20 @@ internal static class DataVaultDiagnosticCatalog {
           "Data Vault-owned table dropped",
           "Raised when a migration drops a hub, link, satellite, PIT, or bridge table produced by Data Vault metadata translation.",
           "Do not drop Data Vault-produced hub, link, satellite, PIT, or bridge tables unless the owning metadata declaration is intentionally removed."),
+      new DataVaultDiagnosticDefinition(
+          "DVM2007",
+          ErrorSeverity,
+          "migration-guardrail",
+          "Data Vault generated index or constraint dropped",
+          "Raised when a migration drops a Data Vault-produced secondary index or named generated primary-key constraint.",
+          "Do not drop Data Vault-produced indexes or named generated constraints; restore the generated object or re-author the migration as an explicit rename or metadata evolution."),
+      new DataVaultDiagnosticDefinition(
+          "DVM2008",
+          WarningSeverity,
+          "migration-guardrail",
+          "Suspicious Data Vault generated structure replacement",
+          "Raised when a migration uses a drop-plus-add sequence that appears to replace a generated Data Vault table, column, index, or constraint without an explicit EF rename operation.",
+          "Review the metadata name and produced-name continuity; use an explicit EF rename operation for intentional renames or restore the original generated structure before applying the migration."),
   ];
 
   private static readonly IReadOnlyDictionary<string, DataVaultDiagnosticDefinition> MigrationOperationSeedDefinitionsByCode =
