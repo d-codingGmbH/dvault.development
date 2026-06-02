@@ -1,0 +1,1 @@
+﻿Define the contract for provider-specific PIT and bridge read strategy candidates beyond SQLite, including eligibility gates, fallback causes, benchmark rows, read-shape diagnostics, and non-goals for raw SQL exposure or automatic maintenance.

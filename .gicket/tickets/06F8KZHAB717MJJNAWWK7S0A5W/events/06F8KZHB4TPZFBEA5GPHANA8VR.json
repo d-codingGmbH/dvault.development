@@ -1,0 +1,14 @@
+{
+  "event-id": "06F8KZHB4TPZFBEA5GPHANA8VR",
+  "occurred-at": "2026-06-02T20:19:56.3262960Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Update v0.27.0 analyzer and EF lifecycle documentation",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

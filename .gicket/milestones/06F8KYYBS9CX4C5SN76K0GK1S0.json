@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F8KYYBS9CX4C5SN76K0GK1S0",
+  "name": "v0.31.0 - Performance decision guidance",
+  "description": "Create bounded decision-tree guidance for save/read profiles and stop conditions.",
+  "status": "planned",
+  "createdAt": "2026-06-02T20:17:20.8421798Z"
+}

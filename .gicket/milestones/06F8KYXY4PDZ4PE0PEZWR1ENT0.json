@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F8KYXY4PDZ4PE0PEZWR1ENT0",
+  "name": "v0.27.0 - EF lifecycle analyzer implementation",
+  "description": "Implement analyzer diagnostics, tests, and fixtures for visible unsafe DVault EF lifecycle patterns.",
+  "status": "active",
+  "createdAt": "2026-06-02T20:17:17.3493534Z"
+}

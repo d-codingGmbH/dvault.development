@@ -1,0 +1,26 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZHZ27SDTNCFNMFDQRVCKM",
+  "ticket-type": "story",
+  "title": "Story: Define provider read strategy evidence contract",
+  "revision": "06F8M00SBBR38SMW9HF4C0Y5B0",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/architecture",
+    "area/benchmarks",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/performance",
+    "area/provider-support",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYXZPX6VE3ZZ5MWY3RXABG",
+  "releaseId": "06F8KYXQFNEK9XJV167HVT4RCG",
+  "created-at": "2026-06-02T20:20:02.0555382Z",
+  "updated-at": "2026-06-02T20:22:02.8424782Z"
+}

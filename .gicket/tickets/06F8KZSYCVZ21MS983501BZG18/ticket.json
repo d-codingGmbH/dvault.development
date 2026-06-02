@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZSYCVZ21MS983501BZG18",
+  "ticket-type": "task",
+  "title": "Task: Update v0.31.0 performance guidance release documentation",
+  "revision": "06F8M03Q68T58SWN2ZD06M7DDM",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/developer-experience",
+    "area/documentation",
+    "area/ef-core",
+    "area/observability",
+    "area/performance"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYYF0RFMACDGBAXJXS3T1M",
+  "releaseId": "06F8KYXVRYYTMC82QKPWRXC8HR",
+  "created-at": "2026-06-02T20:21:07.7099885Z",
+  "updated-at": "2026-06-02T20:22:26.8660264Z"
+}

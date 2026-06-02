@@ -1,0 +1,1 @@
+﻿Define the decision-tree contract for choosing materialized bulk, chunked saves, async source saves, staged provider ingestion, latest reads, PIT reads, bridge reads, and typed helper generation based on diagnostics and stop conditions.

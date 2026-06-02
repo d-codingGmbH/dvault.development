@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "releaseId": "06F8KYXWH4YTM5WXQZHR41EPQG",
+  "name": "v0.32.0 - High-Performance Artifact Evidence Lane",
+  "description": "Design-time, explicitly opted-in provider-specific SQL or stored-procedure artifact exploration with consumer-owned deployment and no default runtime dispatch.",
+  "status": "planned",
+  "createdAt": "2026-06-02T20:17:16.9376838Z"
+}

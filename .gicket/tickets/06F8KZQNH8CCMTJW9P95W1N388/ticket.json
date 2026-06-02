@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZQNH8CCMTJW9P95W1N388",
+  "ticket-type": "epic",
+  "title": "Epic: Performance decision guidance and observability examples",
+  "revision": "06F8KZZBD8D1X2W39DS4Z5HZ7M",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/epic",
+    "area/developer-experience",
+    "area/documentation",
+    "area/ef-core",
+    "area/observability",
+    "area/performance"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYYBS9CX4C5SN76K0GK1S0",
+  "releaseId": "06F8KYXVRYYTMC82QKPWRXC8HR",
+  "created-at": "2026-06-02T20:20:48.6417677Z",
+  "updated-at": "2026-06-02T20:21:51.0824919Z"
+}

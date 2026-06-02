@@ -1,0 +1,1 @@
+﻿Add realistic but compact EF Core scenarios such as retail customer/order or finance account activity that demonstrate metadata, explicit saves, typed reads, diagnostics, and guardrails without becoming a sample platform.

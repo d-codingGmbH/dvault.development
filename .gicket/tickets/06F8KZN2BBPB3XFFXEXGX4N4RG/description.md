@@ -1,0 +1,1 @@
+﻿Implement preflight checks for generated table, column, index, and constraint names against provider identifier length limits, reserved words, duplicate produced names, and unsafe naming-policy combinations.

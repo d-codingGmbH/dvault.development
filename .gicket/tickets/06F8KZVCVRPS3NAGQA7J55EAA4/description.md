@@ -1,0 +1,1 @@
+﻿Define benchmark and equivalence requirements for artifact proposals, including ordering, load timestamps, record source, hash keys, hash diffs, fallback, cancellation, cleanup, and transaction parity.

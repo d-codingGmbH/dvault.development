@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZGC4NY41PRYB2RP00ZA1M",
+  "ticket-type": "story",
+  "title": "Story: Define EF lifecycle analyzer contract",
+  "revision": "06F8M00CYRQXAC64J54P7TQTP4",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/analyzers",
+    "area/architecture",
+    "area/ef-core",
+    "area/modeling"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYXXAKQH8BEP0ACX3KZTZ0",
+  "releaseId": "06F8KYXNNBG8TNDWQ6ZAJHS8AR",
+  "created-at": "2026-06-02T20:19:49.0108265Z",
+  "updated-at": "2026-06-02T20:21:59.6700243Z"
+}

@@ -1,0 +1,14 @@
+{
+  "event-id": "06F8KZSP6EMKZAHAD6H26EHQ5M",
+  "occurred-at": "2026-06-02T20:21:04.6916030Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add realistic EF Core sample scenarios within existing examples boundary",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

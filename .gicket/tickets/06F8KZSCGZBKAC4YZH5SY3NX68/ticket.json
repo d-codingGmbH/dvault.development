@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZSCGZBKAC4YZH5SY3NX68",
+  "ticket-type": "task",
+  "title": "Task: Add OpenTelemetry examples for DVault Activity and Metrics",
+  "revision": "06F8M02DB5TJ3M0FT1969Q67QC",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/developer-experience",
+    "area/documentation",
+    "area/ef-core",
+    "area/observability"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYYCJCVNZGCP0NC1T5EPRW",
+  "releaseId": "06F8KYXVRYYTMC82QKPWRXC8HR",
+  "created-at": "2026-06-02T20:21:02.4088629Z",
+  "updated-at": "2026-06-02T20:22:16.1536626Z"
+}

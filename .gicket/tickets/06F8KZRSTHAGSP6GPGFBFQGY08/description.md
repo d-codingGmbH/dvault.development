@@ -1,0 +1,1 @@
+﻿Add practical decision trees and recommended patterns for save and read profiles, including fallback examples, rerun triggers, and when not to optimize.

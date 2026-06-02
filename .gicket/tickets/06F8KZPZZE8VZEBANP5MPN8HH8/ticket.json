@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZPZZE8VZEBANP5MPN8HH8",
+  "ticket-type": "story",
+  "title": "Story: Add typed helper freshness transition tests",
+  "revision": "06F8M01XNYRBZ7QCQVE3864C44",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/analyzers",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/read-models",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYY6TPZ9DRFXCRCPKGXFQ8",
+  "releaseId": "06F8KYXV0CX15E5H1JSDVF3EBC",
+  "created-at": "2026-06-02T20:20:43.2609266Z",
+  "updated-at": "2026-06-02T20:22:12.1438554Z"
+}

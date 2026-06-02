@@ -1,0 +1,26 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZMRXRHRKHV56Y96M4S90G",
+  "ticket-type": "story",
+  "title": "Story: Define provider identifier and DDL guardrail contract",
+  "revision": "06F8M01AGYMPKNYEM4R8XJ76QR",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/architecture",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/migrations",
+    "area/modeling",
+    "area/provider-support",
+    "area/schema"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYY20XYSK651RSS7E5J3W8",
+  "releaseId": "06F8KYXT6TK1D2D3T0AEZZZXSR",
+  "created-at": "2026-06-02T20:20:24.6270667Z",
+  "updated-at": "2026-06-02T20:22:07.2397731Z"
+}

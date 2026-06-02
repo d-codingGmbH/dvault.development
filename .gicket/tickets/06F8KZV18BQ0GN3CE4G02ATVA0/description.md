@@ -1,0 +1,1 @@
+﻿Prototype a dry-run artifact manifest for one provider and one representative workload. It must not deploy, invoke, register runtime dispatch, or alter EF migrations automatically.

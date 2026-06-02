@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F8KYY99T9H9G5QX1PAZT46M4",
+  "name": "v0.30.0 - Typed helper freshness docs",
+  "description": "Document support-bundle refresh workflow and typed helper failure examples.",
+  "status": "planned",
+  "createdAt": "2026-06-02T20:17:20.2062824Z"
+}

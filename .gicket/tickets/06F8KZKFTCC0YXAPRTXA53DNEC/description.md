@@ -1,0 +1,1 @@
+﻿Update README, performance profiles, read-plan architecture notes, production checklist, and release notes with provider read optimization boundaries, evidence, fallback guidance, and non-goals.

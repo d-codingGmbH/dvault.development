@@ -1,0 +1,25 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZN2BBPB3XFFXEXGX4N4RG",
+  "ticket-type": "story",
+  "title": "Story: Add provider identifier preflight checks",
+  "revision": "06F8M01ETSK42ABZNF6KWF6HFR",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/modeling",
+    "area/provider-support",
+    "area/schema",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYY4H040R5A8KRT3AVH9D4",
+  "releaseId": "06F8KYXT6TK1D2D3T0AEZZZXSR",
+  "created-at": "2026-06-02T20:20:27.0347643Z",
+  "updated-at": "2026-06-02T20:22:08.3422114Z"
+}

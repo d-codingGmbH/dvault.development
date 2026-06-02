@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F8KYXXAKQH8BEP0ACX3KZTZ0",
+  "name": "v0.27.0 - EF lifecycle analyzer contract",
+  "description": "Define the bounded, high-confidence analyzer contract for EF model-cache, compiled-model, and DbContext pooling safety.",
+  "status": "active",
+  "createdAt": "2026-06-02T20:17:17.1404712Z"
+}

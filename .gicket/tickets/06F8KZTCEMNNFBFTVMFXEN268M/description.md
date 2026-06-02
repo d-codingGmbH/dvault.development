@@ -1,0 +1,1 @@
+﻿Plan an explicitly opted-in design-time artifact lane for provider-specific SQL or stored-procedure exploration without default runtime dispatch, automatic deployment, or migration ownership.

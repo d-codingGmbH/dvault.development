@@ -1,0 +1,25 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZJNZ999C8NKY0S92VBDN0",
+  "ticket-type": "story",
+  "title": "Story: Add MySQL and Oracle PIT/bridge read strategy candidate evidence",
+  "revision": "06F8M0115MQMYWRF3PFT72Z3EM",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/performance",
+    "area/provider-support",
+    "area/read-models",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYY0FSVTMTWN65NN1QEEYM",
+  "releaseId": "06F8KYXQFNEK9XJV167HVT4RCG",
+  "created-at": "2026-06-02T20:20:07.9328953Z",
+  "updated-at": "2026-06-02T20:22:04.8453614Z"
+}

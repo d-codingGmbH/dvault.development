@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZGZND5ZCH147PVBRWXYN4",
+  "ticket-type": "story",
+  "title": "Story: Add EF lifecycle analyzer fixtures and regression tests",
+  "revision": "06F8M00M2F80AN0682K4RTMMB8",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/analyzers",
+    "area/ef-core",
+    "area/modeling",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYXY4PDZ4PE0PEZWR1ENT0",
+  "releaseId": "06F8KYXNNBG8TNDWQ6ZAJHS8AR",
+  "created-at": "2026-06-02T20:19:53.9771119Z",
+  "updated-at": "2026-06-02T20:22:01.4911558Z"
+}

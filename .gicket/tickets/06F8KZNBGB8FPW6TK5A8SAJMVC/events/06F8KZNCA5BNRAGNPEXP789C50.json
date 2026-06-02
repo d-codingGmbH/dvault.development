@@ -1,0 +1,14 @@
+{
+  "event-id": "06F8KZNCA5BNRAGNPEXP789C50",
+  "occurred-at": "2026-06-02T20:20:29.3931652Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Strengthen provider-specific migration guardrails",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

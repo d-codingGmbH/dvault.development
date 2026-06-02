@@ -1,0 +1,1 @@
+﻿Update the analyzer README, EF compiled compatibility note, README, production checklist, and release notes to describe the v0.27 analyzer boundary, diagnostics, limitations, and no-runtime-change posture.

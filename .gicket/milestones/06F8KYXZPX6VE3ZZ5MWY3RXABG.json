@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F8KYXZPX6VE3ZZ5MWY3RXABG",
+  "name": "v0.28.0 - Provider read optimization evidence",
+  "description": "Define evidence gates, diagnostics, and benchmark posture for non-SQLite optimized PIT and bridge read paths.",
+  "status": "planned",
+  "createdAt": "2026-06-02T20:17:17.7516618Z"
+}

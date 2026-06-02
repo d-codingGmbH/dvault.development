@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F8KYY59N9JXTNMC62SAMKD9C",
+  "name": "v0.29.0 - Provider schema guardrail docs",
+  "description": "Document provider DDL limitations, examples, and adoption workflow.",
+  "status": "planned",
+  "createdAt": "2026-06-02T20:17:19.1818614Z"
+}

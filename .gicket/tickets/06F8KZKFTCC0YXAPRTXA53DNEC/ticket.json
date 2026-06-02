@@ -1,0 +1,26 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZKFTCC0YXAPRTXA53DNEC",
+  "ticket-type": "task",
+  "title": "Task: Update v0.28.0 provider read optimization documentation",
+  "revision": "06F8M03BYV6WSRBJKPGQK8S8Z8",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/benchmarks",
+    "area/documentation",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/performance",
+    "area/provider-support",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYY18CM34WFHAYYW9JQ4WC",
+  "releaseId": "06F8KYXQFNEK9XJV167HVT4RCG",
+  "created-at": "2026-06-02T20:20:14.5316627Z",
+  "updated-at": "2026-06-02T20:22:23.9905196Z"
+}

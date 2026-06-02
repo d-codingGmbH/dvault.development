@@ -1,0 +1,25 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZVCVRPS3NAGQA7J55EAA4",
+  "ticket-type": "task",
+  "title": "Task: Define artifact benchmark and semantic parity evidence requirements",
+  "revision": "06F8M031C0MZ28JGZD5GX1Q2P0",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/benchmarks",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/performance",
+    "area/provider-support",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYYGJVV6ET45XT2HS8T9YC",
+  "releaseId": "06F8KYXWH4YTM5WXQZHR41EPQG",
+  "created-at": "2026-06-02T20:21:19.5095127Z",
+  "updated-at": "2026-06-02T20:22:21.2803907Z"
+}

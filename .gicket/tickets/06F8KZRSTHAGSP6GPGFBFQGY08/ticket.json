@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZRSTHAGSP6GPGFBFQGY08",
+  "ticket-type": "task",
+  "title": "Task: Add bounded performance decision tree documentation",
+  "revision": "06F8M02AMC43FN761H794XJSX0",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/developer-experience",
+    "area/documentation",
+    "area/ef-core",
+    "area/performance",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYYBS9CX4C5SN76K0GK1S0",
+  "releaseId": "06F8KYXVRYYTMC82QKPWRXC8HR",
+  "created-at": "2026-06-02T20:20:58.0482765Z",
+  "updated-at": "2026-06-02T20:22:15.4599472Z"
+}

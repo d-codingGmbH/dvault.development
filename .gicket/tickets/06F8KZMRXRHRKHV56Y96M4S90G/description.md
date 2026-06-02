@@ -1,0 +1,1 @@
+﻿Define provider-specific identifier limits, reserved-word handling, generated-name collision rules, index/constraint caveats, timestamp storage implications, diagnostics, and non-goals for automatic DDL rewriting.

@@ -1,0 +1,1 @@
+﻿Implement source-generator diagnostics for stale fingerprints, missing ReadShape facts, incompatible support-bundle versions, missing metadata sources, and changed model-first artifacts.

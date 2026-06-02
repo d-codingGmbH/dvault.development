@@ -1,0 +1,25 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZPN02NWFGMRC2Q1PKYKDR",
+  "ticket-type": "story",
+  "title": "Story: Add generator diagnostics for stale or incompatible support bundles",
+  "revision": "06F8M01V3HTAQ6RG3PX31PZKAW",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/analyzers",
+    "area/developer-experience",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/read-models",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYY6TPZ9DRFXCRCPKGXFQ8",
+  "releaseId": "06F8KYXV0CX15E5H1JSDVF3EBC",
+  "created-at": "2026-06-02T20:20:40.0142583Z",
+  "updated-at": "2026-06-02T20:22:11.4848846Z"
+}

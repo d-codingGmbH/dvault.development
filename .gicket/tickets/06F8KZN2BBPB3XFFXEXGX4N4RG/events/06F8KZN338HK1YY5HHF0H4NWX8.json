@@ -1,0 +1,14 @@
+{
+  "event-id": "06F8KZN338HK1YY5HHF0H4NWX8",
+  "occurred-at": "2026-06-02T20:20:27.0347643Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add provider identifier preflight checks",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

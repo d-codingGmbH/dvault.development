@@ -1,0 +1,14 @@
+{
+  "event-id": "06F8KZJ1GXY2GFCK5AM8N5FFA8",
+  "occurred-at": "2026-06-02T20:20:02.0555382Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define provider read strategy evidence contract",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

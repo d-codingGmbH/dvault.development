@@ -1,0 +1,14 @@
+{
+  "event-id": "06F8KZJRFJFZDQGVWMMTZ63TRW",
+  "occurred-at": "2026-06-02T20:20:07.9328953Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add MySQL and Oracle PIT/bridge read strategy candidate evidence",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

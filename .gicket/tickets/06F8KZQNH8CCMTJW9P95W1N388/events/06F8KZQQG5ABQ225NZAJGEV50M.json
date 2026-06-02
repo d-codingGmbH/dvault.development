@@ -1,0 +1,14 @@
+{
+  "event-id": "06F8KZQQG5ABQ225NZAJGEV50M",
+  "occurred-at": "2026-06-02T20:20:48.6417677Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Epic: Performance decision guidance and observability examples",
+    "status": "todo",
+    "ticket-type": "epic"
+  }
+}

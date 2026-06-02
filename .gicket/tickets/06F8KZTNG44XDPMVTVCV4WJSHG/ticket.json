@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZTNG44XDPMVTVCV4WJSHG",
+  "ticket-type": "story",
+  "title": "Story: Define design-time provider-specific SQL artifact contract",
+  "revision": "06F8M02T2QPWQ96JMZQPTAEF1C",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/architecture",
+    "area/benchmarks",
+    "area/ef-core",
+    "area/performance",
+    "area/provider-support"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYYFT0JVPVVWC38D43D4VW",
+  "releaseId": "06F8KYXWH4YTM5WXQZHR41EPQG",
+  "created-at": "2026-06-02T20:21:13.5699453Z",
+  "updated-at": "2026-06-02T20:22:19.4132024Z"
+}

@@ -1,0 +1,1 @@
+﻿Define the contract for reviewed design-time provider-specific SQL or stored-procedure artifacts, including opt-in workflow, artifact format, review rules, consumer-owned deployment, and explicit non-goals.

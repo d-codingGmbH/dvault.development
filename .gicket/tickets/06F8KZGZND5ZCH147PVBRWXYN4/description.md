@@ -1,0 +1,1 @@
+﻿Add analyzer test fixtures covering Code-First, metadata-first, and model-first DVault declarations, safe stable models, unsafe variable model-shape examples, and documented non-diagnostic cases.

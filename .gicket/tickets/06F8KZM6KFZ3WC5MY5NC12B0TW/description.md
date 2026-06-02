@@ -1,0 +1,1 @@
+﻿Plan and deliver provider-aware naming, identifier, DDL, index, constraint, and migration guardrails without automatic schema repair or migration execution.

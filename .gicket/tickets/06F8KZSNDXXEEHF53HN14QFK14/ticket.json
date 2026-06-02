@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZSNDXXEEHF53HN14QFK14",
+  "ticket-type": "task",
+  "title": "Task: Add realistic EF Core sample scenarios within existing examples boundary",
+  "revision": "06F8M02JH8Q9QRA8N2WEHMH9QG",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/developer-experience",
+    "area/documentation",
+    "area/ef-core",
+    "area/examples",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYYCJCVNZGCP0NC1T5EPRW",
+  "releaseId": "06F8KYXVRYYTMC82QKPWRXC8HR",
+  "created-at": "2026-06-02T20:21:04.6916030Z",
+  "updated-at": "2026-06-02T20:22:17.4824457Z"
+}

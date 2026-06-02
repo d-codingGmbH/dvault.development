@@ -1,0 +1,1 @@
+﻿Add or deliberately decline MySQL and Oracle optimized read strategy candidates with explicit evidence, diagnostics, provider limitations, and safe fallback gates.

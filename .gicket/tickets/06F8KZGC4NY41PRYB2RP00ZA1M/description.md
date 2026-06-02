@@ -1,0 +1,1 @@
+﻿Define the analyzer contract for visible DVault misuse around EF model-cache keys, compiled models, UseModel(...), and DbContext pooling. Acceptance requires explicit supported patterns, unsupported inference boundaries, diagnostic ids, false-positive avoidance rules, and fixture expectations.

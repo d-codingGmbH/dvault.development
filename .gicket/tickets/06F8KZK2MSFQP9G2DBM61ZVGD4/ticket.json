@@ -1,0 +1,25 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZK2MSFQP9G2DBM61ZVGD4",
+  "ticket-type": "task",
+  "title": "Task: Add provider read benchmark rows and verifier coverage",
+  "revision": "06F8M0156PSJGZXN4JSNXCDS7M",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/benchmarks",
+    "area/ef-core",
+    "area/performance",
+    "area/provider-support",
+    "area/read-models",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYXZPX6VE3ZZ5MWY3RXABG",
+  "releaseId": "06F8KYXQFNEK9XJV167HVT4RCG",
+  "created-at": "2026-06-02T20:20:11.3474326Z",
+  "updated-at": "2026-06-02T20:22:05.8772801Z"
+}

@@ -1,0 +1,1 @@
+﻿Implement high-confidence Roslyn diagnostics for source-visible DVault metadata selection that is unsafe with pooled contexts, compiled models, or missing model-cache discriminators. The implementation must not infer arbitrary DI graphs or runtime tenant state.

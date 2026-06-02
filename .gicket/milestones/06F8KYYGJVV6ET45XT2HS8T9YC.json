@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F8KYYGJVV6ET45XT2HS8T9YC",
+  "name": "v0.32.0 - Artifact evidence prototype",
+  "description": "Prototype dry-run artifact manifests and evidence requirements without deployment or runtime dispatch.",
+  "status": "planned",
+  "createdAt": "2026-06-02T20:17:22.0700809Z"
+}

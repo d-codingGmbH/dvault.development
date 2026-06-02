@@ -1,0 +1,1 @@
+﻿Extend migration guardrails for provider-specific index, unique constraint, nullable timestamp, included-column, and destructive generated-structure risks while keeping migration execution consumer-owned.

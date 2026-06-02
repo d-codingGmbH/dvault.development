@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F8KYYFT0JVPVVWC38D43D4VW",
+  "name": "v0.32.0 - Artifact lane contract",
+  "description": "Define design-time provider-specific SQL and stored-procedure artifact contracts and non-goals.",
+  "status": "planned",
+  "createdAt": "2026-06-02T20:17:21.8726212Z"
+}

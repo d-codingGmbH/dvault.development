@@ -1,0 +1,1 @@
+﻿Document provider DDL guardrail behavior, examples, adoption workflow, limitations, and release notes for v0.29.0.

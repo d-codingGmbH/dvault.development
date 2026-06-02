@@ -1,0 +1,14 @@
+{
+  "event-id": "06F8KZGEJ9MH741VVTJ5847QF4",
+  "occurred-at": "2026-06-02T20:19:49.0108265Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define EF lifecycle analyzer contract",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "event-id": "06F8KZJBEK99Q42ZNMQCBXA9MC",
+  "occurred-at": "2026-06-02T20:20:04.5962657Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add PostgreSQL and SQL Server PIT/bridge read strategy candidates",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

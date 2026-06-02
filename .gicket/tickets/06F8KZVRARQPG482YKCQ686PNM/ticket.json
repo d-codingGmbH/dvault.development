@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZVRARQPG482YKCQ686PNM",
+  "ticket-type": "task",
+  "title": "Task: Update v0.32.0 artifact lane documentation and non-goals",
+  "revision": "06F8M036C0FG0T1YXRYG80MHQW",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/architecture",
+    "area/documentation",
+    "area/ef-core",
+    "area/performance",
+    "area/provider-support"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYYHBXR7BZ5NRKAC1PQCZ4",
+  "releaseId": "06F8KYXWH4YTM5WXQZHR41EPQG",
+  "created-at": "2026-06-02T20:21:22.2617689Z",
+  "updated-at": "2026-06-02T20:22:22.5604690Z"
+}

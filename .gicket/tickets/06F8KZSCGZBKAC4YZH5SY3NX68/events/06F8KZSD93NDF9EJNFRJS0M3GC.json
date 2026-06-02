@@ -1,0 +1,14 @@
+{
+  "event-id": "06F8KZSD93NDF9EJNFRJS0M3GC",
+  "occurred-at": "2026-06-02T20:21:02.4088629Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add OpenTelemetry examples for DVault Activity and Metrics",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

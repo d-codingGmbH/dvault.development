@@ -1,0 +1,1 @@
+﻿Add bounded examples for wiring DVault ActivitySource and Metrics into OpenTelemetry/AppInsights/Jaeger-style exporters while keeping exporters, dashboards, alerts, and hosting application-owned.

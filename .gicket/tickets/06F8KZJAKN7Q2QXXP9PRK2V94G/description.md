@@ -1,0 +1,1 @@
+﻿Add diagnostics-gated PostgreSQL and SQL Server optimized read strategy candidates for supported maintained PIT and bridge shapes. Unsupported shapes, stale maintenance, or missing evidence must fall back safely.

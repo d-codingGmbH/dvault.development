@@ -1,0 +1,1 @@
+﻿Plan and deliver evidence-backed non-SQLite PIT and bridge read optimization work while preserving provider-neutral fallback, explicit maintenance ownership, and redacted diagnostics.

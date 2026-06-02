@@ -1,0 +1,1 @@
+﻿Document the design-time artifact lane, consumer-owned deployment and invocation responsibilities, evidence gate, limitations, release notes, and explicit non-goals.

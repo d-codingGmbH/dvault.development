@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZP9XJ868GY6GT934QVFH4",
+  "ticket-type": "story",
+  "title": "Story: Define support-bundle freshness and fingerprint contract",
+  "revision": "06F8M01RFQA6HF4MRYT8WJGZTW",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/analyzers",
+    "area/architecture",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYY6271BGN44RZCW03S83C",
+  "releaseId": "06F8KYXV0CX15E5H1JSDVF3EBC",
+  "created-at": "2026-06-02T20:20:37.6085719Z",
+  "updated-at": "2026-06-02T20:22:10.8132812Z"
+}

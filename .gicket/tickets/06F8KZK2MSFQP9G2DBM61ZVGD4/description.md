@@ -1,0 +1,1 @@
+﻿Extend benchmark artifacts and verifier coverage for provider read optimization rows, preserving skipped optional-provider rows when connection strings are absent and avoiding unmeasured performance claims.

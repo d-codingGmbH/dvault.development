@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F8KYY6271BGN44RZCW03S83C",
+  "name": "v0.30.0 - Support-bundle freshness contract",
+  "description": "Define support-bundle freshness, fingerprint, schema-version, and ReadShape compatibility rules.",
+  "status": "planned",
+  "createdAt": "2026-06-02T20:17:19.3776109Z"
+}

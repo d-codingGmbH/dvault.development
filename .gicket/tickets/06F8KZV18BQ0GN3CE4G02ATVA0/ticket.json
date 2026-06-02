@@ -1,0 +1,25 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZV18BQ0GN3CE4G02ATVA0",
+  "ticket-type": "story",
+  "title": "Story: Add dry-run artifact manifest prototype for one provider",
+  "revision": "06F8M02YPJSK6RBJ79MMBFM6K0",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/architecture",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/performance",
+    "area/provider-support",
+    "area/testing"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYYGJVV6ET45XT2HS8T9YC",
+  "releaseId": "06F8KYXWH4YTM5WXQZHR41EPQG",
+  "created-at": "2026-06-02T20:21:16.5542050Z",
+  "updated-at": "2026-06-02T20:22:20.5968266Z"
+}

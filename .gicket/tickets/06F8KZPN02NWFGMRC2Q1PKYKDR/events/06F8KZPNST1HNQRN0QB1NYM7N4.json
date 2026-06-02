@@ -1,0 +1,14 @@
+{
+  "event-id": "06F8KZPNST1HNQRN0QB1NYM7N4",
+  "occurred-at": "2026-06-02T20:20:40.0142583Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add generator diagnostics for stale or incompatible support bundles",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

@@ -1,0 +1,1 @@
+﻿Plan and deliver stronger stale support-bundle, fingerprint, ReadShape, and typed read helper diagnostics without runtime reflection or dynamic query expansion.

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "releaseId": "06F8KYXQFNEK9XJV167HVT4RCG",
+  "name": "v0.28.0 - Provider Read Optimization Evidence",
+  "description": "Provider-specific PIT and bridge read optimization expansion beyond SQLite, gated by diagnostics, benchmarks, and provider-neutral fallback.",
+  "status": "planned",
+  "createdAt": "2026-06-02T20:17:15.6450362Z"
+}

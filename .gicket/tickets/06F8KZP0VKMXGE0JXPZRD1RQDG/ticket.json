@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZP0VKMXGE0JXPZRD1RQDG",
+  "ticket-type": "epic",
+  "title": "Epic: Support-bundle freshness and generator diagnostics",
+  "revision": "06F8KZYQKP9VVRG30FCH6KAKBC",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/epic",
+    "area/analyzers",
+    "area/developer-experience",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYY6271BGN44RZCW03S83C",
+  "releaseId": "06F8KYXV0CX15E5H1JSDVF3EBC",
+  "created-at": "2026-06-02T20:20:34.8546765Z",
+  "updated-at": "2026-06-02T20:21:46.0136729Z"
+}

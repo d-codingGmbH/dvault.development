@@ -1,0 +1,1 @@
+﻿Plan and deliver high-confidence analyzer diagnostics for DVault EF lifecycle safety. The release must stay inside Roslyn analyzer and documentation boundaries, avoid whole-application DI inference, and keep runtime behavior unchanged.

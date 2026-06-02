@@ -1,0 +1,1 @@
+﻿Add tests for refreshed and stale support-bundle transitions, including satellite, PIT, bridge, fingerprint mismatch, schema-version mismatch, and documented skip behavior.

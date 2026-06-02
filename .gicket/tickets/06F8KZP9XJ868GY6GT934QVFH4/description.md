@@ -1,0 +1,1 @@
+﻿Define how support-bundle schema versions, model fingerprints, diagnostics explain metadata, ReadShape facts, and dvault.model.v1 inputs must align for typed read helper generation.

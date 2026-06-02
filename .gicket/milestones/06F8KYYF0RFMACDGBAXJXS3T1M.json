@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F8KYYF0RFMACDGBAXJXS3T1M",
+  "name": "v0.31.0 - Guidance release docs",
+  "description": "Update README, performance profiles, production checklist, and release notes for v0.31.",
+  "status": "planned",
+  "createdAt": "2026-06-02T20:17:21.6707567Z"
+}

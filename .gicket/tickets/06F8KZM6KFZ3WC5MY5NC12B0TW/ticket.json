@@ -1,0 +1,25 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F8KZM6KFZ3WC5MY5NC12B0TW",
+  "ticket-type": "epic",
+  "title": "Epic: Provider naming and DDL guardrails",
+  "revision": "06F8KZY9HXF26TRPHVEPE35Y64",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/epic",
+    "area/diagnostics",
+    "area/ef-core",
+    "area/migrations",
+    "area/modeling",
+    "area/provider-support",
+    "area/schema"
+  ],
+  "assignees": [],
+  "isBlocked": false,
+  "milestoneId": "06F8KYY20XYSK651RSS7E5J3W8",
+  "releaseId": "06F8KYXT6TK1D2D3T0AEZZZXSR",
+  "created-at": "2026-06-02T20:20:20.9221201Z",
+  "updated-at": "2026-06-02T20:21:42.4158829Z"
+}

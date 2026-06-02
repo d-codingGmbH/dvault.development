@@ -1,0 +1,14 @@
+{
+  "event-id": "06F8KZP1MSGJYDZJZGBA85MDFC",
+  "occurred-at": "2026-06-02T20:20:34.8546765Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Epic: Support-bundle freshness and generator diagnostics",
+    "status": "todo",
+    "ticket-type": "epic"
+  }
+}

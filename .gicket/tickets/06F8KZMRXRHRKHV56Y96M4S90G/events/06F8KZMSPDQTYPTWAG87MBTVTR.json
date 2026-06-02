@@ -1,0 +1,14 @@
+{
+  "event-id": "06F8KZMSPDQTYPTWAG87MBTVTR",
+  "occurred-at": "2026-06-02T20:20:24.6270667Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define provider identifier and DDL guardrail contract",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

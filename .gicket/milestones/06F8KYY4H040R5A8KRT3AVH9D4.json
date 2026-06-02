@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestoneId": "06F8KYY4H040R5A8KRT3AVH9D4",
+  "name": "v0.29.0 - Provider schema guardrail implementation",
+  "description": "Implement provider identifier preflight and migration guardrail checks with tests.",
+  "status": "planned",
+  "createdAt": "2026-06-02T20:17:18.9845789Z"
+}
