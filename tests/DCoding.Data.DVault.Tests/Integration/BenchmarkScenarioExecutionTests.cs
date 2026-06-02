@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using DCoding.Data.DVault;
 using DCoding.Data.DVault.Benchmarks;
@@ -15,6 +16,9 @@ public sealed class BenchmarkScenarioExecutionTests {
   private const string SqlServerProviderName = "SQL Server external provider";
   private const string MySqlProviderName = "MySQL external provider";
   private const string OracleProviderName = "Oracle external provider";
+  private const string BenchmarkCsvHeader = "scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,meanAllocatedBytes,minAllocatedBytes,maxAllocatedBytes,executionDetail,persistedOutcome";
+  private const string BenchmarkMarkdownHeader = "| Scenario | Provider | Baseline | Strategy family | Dataset size | Change ratio | Execution status | Skip reason | Iterations | Mean ms | Min ms | Max ms | Mean allocated bytes | Min allocated bytes | Max allocated bytes | Execution detail | Persisted outcome |";
+  private const string BenchmarkMarkdownSeparator = "| --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |";
 
   private static readonly ExpectedBenchmarkRow[] ExpectedRows =
   [
@@ -266,6 +270,51 @@ public sealed class BenchmarkScenarioExecutionTests {
           "20 order-product pairs, 3 fulfillment satellite operations",
           "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable)),
+  ];
+
+  private static readonly ExpectedPerformanceProfile[] ExpectedPerformanceProfiles =
+  [
+      new(DataVaultPerformanceProfileCategory.SmallAppLocalVault, "Small app-local vault", "Small App-Local Vault"),
+      new(DataVaultPerformanceProfileCategory.MediumChunkedIngestion, "Medium chunked ingestion", "Medium Chunked Ingestion"),
+      new(DataVaultPerformanceProfileCategory.StagedProviderIngestion, "Staged provider ingestion", "Staged Provider Ingestion"),
+      new(DataVaultPerformanceProfileCategory.ReadModelHeavy, "Read-model heavy", "Read-Model Heavy"),
+  ];
+
+  private static readonly ExpectedGuidanceRow[] ExpectedPerformanceGuidanceRows =
+  [
+      new("customer-profile-history", "dvault-adddvault-fallback"),
+      new("customer-profile-history", "dvault-adddvaultsqlite-optimized"),
+      new("customer-profile-bulk-insert-only", "dvault-adddvault-fallback"),
+      new("customer-profile-bulk-insert-only", "dvault-adddvaultsqlite-optimized"),
+      new("customer-profile-bulk-history", "dvault-adddvault-fallback"),
+      new("customer-profile-bulk-history", "dvault-adddvaultsqlite-optimized"),
+      new("customer-profile-streaming-save", "dvault-adddvault-fallback/materialized-explicit-bulk"),
+      new("customer-profile-streaming-save", "dvault-adddvault-fallback/chunked-save-bounded-10"),
+      new("customer-profile-streaming-save", "dvault-adddvault-fallback/async-source-bounded-10"),
+      new("customer-profile-streaming-save", "dvault-adddvault-fallback/chunked-save-bounded-5"),
+      new("latest-satellite-read", "dvault-adddvault-fallback"),
+      new("latest-satellite-read", "dvault-adddvaultsqlite-optimized"),
+      new("pit-as-of-read", "dvault-adddvault-fallback"),
+      new("pit-as-of-read", "dvault-adddvaultsqlite-optimized"),
+      new("bridge-traversal-read", "dvault-adddvault-fallback"),
+      new("bridge-traversal-read", "dvault-adddvaultsqlite-optimized"),
+  ];
+
+  private static readonly ExpectedProviderGuidanceRow[] ExpectedProviderGuidanceRows =
+  [
+      new(PostgresProviderName, "dvault-adddvaultpostgres-direct-or-unnest", ["stagedBulkBoundary=below-60-operations", "cleanupBoundary=no-staging-table"]),
+      new(PostgresProviderName, "dvault-adddvaultpostgres-optimized", ["transfer=COPY", "stagedBulkBoundary=60-plus-operations", "smallBatchBoundary=direct-or-UNNEST"]),
+      new(SqlServerProviderName, "dvault-adddvaultsqlserver-optimized", ["transfer=SqlBulkCopy", "nativeBulkBoundary=50-plus-operations"]),
+      new(MySqlProviderName, "dvault-adddvaultmysql-multi-row", ["selectedStrategy=MySqlDataVaultSaveStrategy", "stagedBulkBoundary=below-60-operations"]),
+      new(MySqlProviderName, "dvault-adddvaultmysql-optimized", ["selectedStrategy=MySqlStagedDataVaultSaveStrategy", "stagedBulkBoundary=60-plus-operations"]),
+      new(OracleProviderName, "dvault-adddvaultoracle-optimized", ["selectedStrategy=OracleDataVaultSaveStrategy", "stagedOracleBulk=not-selected-no-measured-win"]),
+  ];
+
+  private static readonly string[] RegressionBudgetRules =
+  [
+      "The targeted metric must improve or hold.",
+      "For required SQLite rows, non-target mean-time and allocation regressions above 5% fail by default.",
+      "For configured optional-provider rows, regressions above 10% must be explicitly called out and justified.",
   ];
 
   [Fact]
@@ -533,6 +582,25 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
+  public void CheckedInBenchmarkArtifactsAndPerformanceGuidanceStayInSync() {
+    var markdown = ReadRepositoryText("benchmark-summary.md");
+    var csv = ReadRepositoryText("benchmark-summary.csv");
+    var json = ReadRepositoryText("benchmark-summary.json");
+    var guidance = ReadRepositoryText(Path.Combine("docs", "performance-profiles.md"));
+    var benchmarkContract = ReadRepositoryText(Path.Combine(
+        "docs",
+        "plans",
+        "performance-evidence-benchmark-artifact-contract.md"));
+
+    var artifacts = VerifyBenchmarkArtifactTriplet(markdown, csv, json);
+
+    AssertExpectedRootBenchmarkRows(artifacts);
+    AssertPerformanceGuidanceMatchesArtifacts(guidance, artifacts);
+    AssertProviderTuningProfileCategoriesMatchGuidance(guidance);
+    AssertRegressionBudgetDefaultsAreDocumented(benchmarkContract);
+  }
+
+  [Fact]
   public async Task ProviderNativeBulkBenchmarkProvesSelectedProviderStrategyBeforeTimingNativeRow() {
     var benchmark = new ProviderNativeBulkIngestionBenchmark(
         BenchmarkDatabaseProviders.Sqlite,
@@ -691,6 +759,535 @@ public sealed class BenchmarkScenarioExecutionTests {
     return output.ToString();
   }
 
+  private static VerifiedBenchmarkArtifacts VerifyBenchmarkArtifactTriplet(
+      string markdown,
+      string csv,
+      string json) {
+    using var document = JsonDocument.Parse(json);
+    var context = ParseBenchmarkContext(document.RootElement.GetProperty("context"));
+    var jsonRows = ParseBenchmarkJsonRows(document.RootElement.GetProperty("results"), context);
+    var csvRows = ParseBenchmarkCsv(csv);
+    var markdownRows = ParseBenchmarkMarkdown(markdown);
+
+    AssertMarkdownContextMatchesJson(markdown, context, jsonRows.Count);
+    AssertTripletRowsMatch(jsonRows, csvRows, "benchmark-summary.csv");
+    AssertTripletRowsMatch(jsonRows, markdownRows, "benchmark-summary.md");
+
+    return new VerifiedBenchmarkArtifacts(context, jsonRows);
+  }
+
+  private static BenchmarkArtifactContext ParseBenchmarkContext(JsonElement context) {
+    var optionalProviders = context.GetProperty("optionalProviders")
+        .EnumerateArray()
+        .Select(provider => new BenchmarkOptionalProviderContext(
+            GetRequiredString(provider, "providerName"),
+            GetRequiredString(provider, "connectionStringEnvironmentVariable"),
+            GetRequiredString(provider, "executionStatus"),
+            GetRequiredString(provider, "skipReason")))
+        .ToArray();
+
+    var optionalProvidersByName = new Dictionary<string, BenchmarkOptionalProviderContext>(StringComparer.Ordinal);
+    foreach (var provider in optionalProviders) {
+      Assert.False(string.IsNullOrWhiteSpace(provider.ProviderName), "benchmark-summary.json context has an optional provider with a blank providerName.");
+      Assert.False(
+          string.IsNullOrWhiteSpace(provider.ConnectionStringEnvironmentVariable),
+          "benchmark-summary.json context has an optional provider with a blank connectionStringEnvironmentVariable.");
+      Assert.True(
+          optionalProvidersByName.TryAdd(provider.ProviderName, provider),
+          "benchmark-summary.json context has a duplicate optional provider '" + provider.ProviderName + "'.");
+    }
+
+    return new BenchmarkArtifactContext(
+        GetRequiredString(context, "provider"),
+        GetRequiredInt32(context, "iterations"),
+        GetRequiredInt32(context, "warmupIterations"),
+        GetRequiredString(context, "loadTimestampStorage"),
+        GetRequiredString(context, "providerFilter"),
+        GetRequiredString(context, "osDescription"),
+        GetRequiredString(context, "osArchitecture"),
+        GetRequiredString(context, "processArchitecture"),
+        GetRequiredInt32(context, "processorCount"),
+        GetRequiredString(context, "dotNetRuntimeDescription"),
+        GetRequiredString(context, "dotNetRuntimeVersion"),
+        optionalProvidersByName);
+  }
+
+  private static IReadOnlyDictionary<string, BenchmarkArtifactRow> ParseBenchmarkJsonRows(
+      JsonElement results,
+      BenchmarkArtifactContext context) {
+    var rows = results
+        .EnumerateArray()
+        .Select(result => ParseBenchmarkJsonRow(result, context))
+        .ToArray();
+
+    return ToRowDictionary(rows, "benchmark-summary.json");
+  }
+
+  private static BenchmarkArtifactRow ParseBenchmarkJsonRow(
+      JsonElement result,
+      BenchmarkArtifactContext context) {
+    var executionStatus = GetRequiredString(result, "executionStatus");
+    var row = new BenchmarkArtifactRow(
+        GetRequiredString(result, "scenarioName"),
+        GetRequiredString(result, "provider"),
+        GetRequiredString(result, "baselineName"),
+        GetRequiredString(result, "strategyFamily"),
+        GetRequiredString(result, "datasetSize"),
+        GetRequiredString(result, "changeRatio"),
+        executionStatus,
+        GetRequiredString(result, "skipReason"),
+        GetRequiredInt32(result, "iterations"),
+        FormatJsonNumber(result, "meanMilliseconds", "F3"),
+        FormatJsonNumber(result, "minMilliseconds", "F3"),
+        FormatJsonNumber(result, "maxMilliseconds", "F3"),
+        FormatJsonNumber(result, "meanAllocatedBytes", "F0"),
+        FormatJsonNumber(result, "minAllocatedBytes", "F0"),
+        FormatJsonNumber(result, "maxAllocatedBytes", "F0"),
+        GetRequiredString(result, "executionDetail"),
+        GetRequiredString(result, "persistedOutcome"));
+
+    Assert.False(string.IsNullOrWhiteSpace(row.ScenarioName), "benchmark-summary.json has a row with a blank scenarioName.");
+    Assert.False(string.IsNullOrWhiteSpace(row.ProviderName), "benchmark-summary.json row '" + row.Key + "' has a blank provider.");
+    Assert.False(string.IsNullOrWhiteSpace(row.BaselineName), "benchmark-summary.json has a row with a blank baselineName.");
+    Assert.False(string.IsNullOrWhiteSpace(row.StrategyFamily), "benchmark-summary.json row '" + row.Key + "' has a blank strategyFamily.");
+    Assert.False(string.IsNullOrWhiteSpace(row.DatasetSize), "benchmark-summary.json row '" + row.Key + "' has a blank datasetSize.");
+    Assert.False(string.IsNullOrWhiteSpace(row.ChangeRatio), "benchmark-summary.json row '" + row.Key + "' has a blank changeRatio.");
+    Assert.False(string.IsNullOrWhiteSpace(row.ExecutionDetail), "benchmark-summary.json row '" + row.Key + "' has a blank executionDetail.");
+    Assert.False(string.IsNullOrWhiteSpace(row.PersistedOutcome), "benchmark-summary.json row '" + row.Key + "' has a blank persistedOutcome.");
+
+    if (row.ExecutionStatus == "completed") {
+      Assert.Equal(context.Iterations, row.Iterations);
+      Assert.Equal(string.Empty, row.SkipReason);
+      AssertCompletedMetricsPresent(row);
+    }
+    else {
+      Assert.Contains(row.ExecutionStatus, new[] { "skipped", "failed" });
+      Assert.Equal(0, row.Iterations);
+      Assert.False(string.IsNullOrWhiteSpace(row.SkipReason), "benchmark-summary.json row '" + row.Key + "' has no skip/failure reason.");
+      Assert.Equal("not executed", row.PersistedOutcome);
+      AssertSkippedMetricsBlank(row);
+      AssertJsonMetricNull(result, "meanMilliseconds");
+      AssertJsonMetricNull(result, "minMilliseconds");
+      AssertJsonMetricNull(result, "maxMilliseconds");
+      AssertJsonMetricNull(result, "meanAllocatedBytes");
+      AssertJsonMetricNull(result, "minAllocatedBytes");
+      AssertJsonMetricNull(result, "maxAllocatedBytes");
+    }
+
+    return row;
+  }
+
+  private static IReadOnlyDictionary<string, BenchmarkArtifactRow> ParseBenchmarkCsv(string csv) {
+    var lines = NormalizeLineEndings(csv).Split('\n', StringSplitOptions.RemoveEmptyEntries);
+    Assert.True(lines.Length > 1, "benchmark-summary.csv must contain a header and at least one result row.");
+    Assert.Equal(BenchmarkCsvHeader, lines[0]);
+
+    var rows = lines
+        .Skip(1)
+        .Select((line, index) => ParseBenchmarkDelimitedRow(ParseCsvLine(line), "benchmark-summary.csv line " + (index + 2).ToString(CultureInfo.InvariantCulture)))
+        .ToArray();
+
+    return ToRowDictionary(rows, "benchmark-summary.csv");
+  }
+
+  private static IReadOnlyDictionary<string, BenchmarkArtifactRow> ParseBenchmarkMarkdown(string markdown) {
+    var lines = NormalizeLineEndings(markdown).Split('\n');
+    var headerIndex = Array.FindIndex(lines, line => string.Equals(line, BenchmarkMarkdownHeader, StringComparison.Ordinal));
+    Assert.True(headerIndex >= 0, "benchmark-summary.md is missing the benchmark result table header.");
+    Assert.True(headerIndex + 1 < lines.Length, "benchmark-summary.md is missing the benchmark result table separator.");
+    Assert.Equal(BenchmarkMarkdownSeparator, lines[headerIndex + 1]);
+
+    var rows = lines
+        .Skip(headerIndex + 2)
+        .Where(line => line.StartsWith("| ", StringComparison.Ordinal))
+        .Select((line, index) => ParseBenchmarkDelimitedRow(ParseMarkdownTableLine(line), "benchmark-summary.md result row " + (index + 1).ToString(CultureInfo.InvariantCulture)))
+        .ToArray();
+
+    return ToRowDictionary(rows, "benchmark-summary.md");
+  }
+
+  private static BenchmarkArtifactRow ParseBenchmarkDelimitedRow(string[] fields, string source) {
+    Assert.Equal(17, fields.Length);
+
+    var row = new BenchmarkArtifactRow(
+        fields[0],
+        fields[1],
+        fields[2],
+        fields[3],
+        fields[4],
+        fields[5],
+        fields[6],
+        fields[7],
+        int.Parse(fields[8], CultureInfo.InvariantCulture),
+        fields[9],
+        fields[10],
+        fields[11],
+        fields[12],
+        fields[13],
+        fields[14],
+        fields[15],
+        fields[16]);
+
+    Assert.False(string.IsNullOrWhiteSpace(row.ExecutionDetail), source + " row '" + row.Key + "' has a blank execution detail.");
+    Assert.False(string.IsNullOrWhiteSpace(row.PersistedOutcome), source + " row '" + row.Key + "' has a blank persisted outcome.");
+
+    if (row.ExecutionStatus == "skipped" || row.ExecutionStatus == "failed") {
+      Assert.Equal(0, row.Iterations);
+      Assert.False(string.IsNullOrWhiteSpace(row.SkipReason), source + " row '" + row.Key + "' has no skip/failure reason.");
+      Assert.Equal("not executed", row.PersistedOutcome);
+      AssertSkippedMetricsBlank(row);
+    }
+    else {
+      Assert.Equal("completed", row.ExecutionStatus);
+      Assert.Equal(string.Empty, row.SkipReason);
+      AssertCompletedMetricsPresent(row);
+    }
+
+    return row;
+  }
+
+  private static IReadOnlyDictionary<string, BenchmarkArtifactRow> ToRowDictionary(
+      IEnumerable<BenchmarkArtifactRow> rows,
+      string source) {
+    var rowsByKey = new Dictionary<string, BenchmarkArtifactRow>(StringComparer.Ordinal);
+    foreach (var row in rows) {
+      Assert.True(
+          rowsByKey.TryAdd(row.Key, row),
+          source + " contains a duplicate benchmark row for '" + row.Key + "'.");
+    }
+
+    return rowsByKey;
+  }
+
+  private static void AssertTripletRowsMatch(
+      IReadOnlyDictionary<string, BenchmarkArtifactRow> expectedRows,
+      IReadOnlyDictionary<string, BenchmarkArtifactRow> actualRows,
+      string source) {
+    var expectedKeys = expectedRows.Keys.Order(StringComparer.Ordinal).ToArray();
+    var actualKeys = actualRows.Keys.Order(StringComparer.Ordinal).ToArray();
+    Assert.Equal(expectedKeys, actualKeys);
+
+    foreach (var key in expectedKeys) {
+      Assert.Equal(expectedRows[key].ToArtifactFields(), actualRows[key].ToArtifactFields());
+    }
+  }
+
+  private static void AssertMarkdownContextMatchesJson(
+      string markdown,
+      BenchmarkArtifactContext context,
+      int resultRowCount) {
+    Assert.Contains("# DVault Benchmark Summary", markdown, StringComparison.Ordinal);
+    Assert.Contains(
+        "- Benchmark baselines: " + resultRowCount.ToString(CultureInfo.InvariantCulture),
+        markdown,
+        StringComparison.Ordinal);
+    Assert.Contains("- Required provider: " + context.Provider, markdown, StringComparison.Ordinal);
+    Assert.Contains("- Iterations: " + context.Iterations.ToString(CultureInfo.InvariantCulture), markdown, StringComparison.Ordinal);
+    Assert.Contains("- Warmup iterations: " + context.WarmupIterations.ToString(CultureInfo.InvariantCulture), markdown, StringComparison.Ordinal);
+    Assert.Contains("- Load timestamp storage: " + context.LoadTimestampStorage, markdown, StringComparison.Ordinal);
+    Assert.Contains("- Provider filter: " + context.ProviderFilter, markdown, StringComparison.Ordinal);
+    Assert.Contains("- OS description: " + context.OsDescription, markdown, StringComparison.Ordinal);
+    Assert.Contains("- OS architecture: " + context.OsArchitecture, markdown, StringComparison.Ordinal);
+    Assert.Contains("- Process architecture: " + context.ProcessArchitecture, markdown, StringComparison.Ordinal);
+    Assert.Contains("- Processor count: " + context.ProcessorCount.ToString(CultureInfo.InvariantCulture), markdown, StringComparison.Ordinal);
+    Assert.Contains("- .NET runtime description: " + context.DotNetRuntimeDescription, markdown, StringComparison.Ordinal);
+    Assert.Contains("- .NET runtime version: " + context.DotNetRuntimeVersion, markdown, StringComparison.Ordinal);
+
+    foreach (var provider in context.OptionalProviders.Values) {
+      var expectedLine = "  - " + provider.ProviderName + ": " + provider.ExecutionStatus;
+      if (!string.IsNullOrEmpty(provider.SkipReason)) {
+        expectedLine += " - " + provider.SkipReason;
+      }
+
+      Assert.Contains(expectedLine, markdown, StringComparison.Ordinal);
+    }
+  }
+
+  private static void AssertExpectedRootBenchmarkRows(VerifiedBenchmarkArtifacts artifacts) {
+    Assert.Equal(SqliteProviderName, artifacts.Context.Provider);
+    Assert.Equal(ExpectedRows.Length, artifacts.RowsByKey.Count);
+    AssertOptionalProviderContext(
+        artifacts.Context.OptionalProviders,
+        PostgresProviderName,
+        BenchmarkExternalProviderDefinitions.Postgres.ConnectionStringEnvironmentVariable,
+        NotConfiguredSkipReason);
+    AssertOptionalProviderContext(
+        artifacts.Context.OptionalProviders,
+        SqlServerProviderName,
+        BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable,
+        NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable));
+    AssertOptionalProviderContext(
+        artifacts.Context.OptionalProviders,
+        MySqlProviderName,
+        BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable,
+        NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable));
+    AssertOptionalProviderContext(
+        artifacts.Context.OptionalProviders,
+        OracleProviderName,
+        BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable,
+        NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable));
+
+    foreach (var expectedRow in ExpectedRows) {
+      var row = FindArtifactRow(
+          artifacts,
+          expectedRow.ProviderName,
+          expectedRow.ScenarioName,
+          expectedRow.BaselineName);
+
+      Assert.Equal(expectedRow.StrategyFamily, row.StrategyFamily);
+      Assert.Equal(expectedRow.DatasetSize, row.DatasetSize);
+      Assert.Equal(expectedRow.ChangeRatio, row.ChangeRatio);
+      Assert.Equal(expectedRow.ExecutionStatus, row.ExecutionStatus);
+      Assert.Equal(expectedRow.SkipReason, row.SkipReason);
+      Assert.Equal(
+          expectedRow.ExecutionStatus == "completed" ? artifacts.Context.Iterations : 0,
+          row.Iterations);
+    }
+  }
+
+  private static void AssertPerformanceGuidanceMatchesArtifacts(
+      string guidance,
+      VerifiedBenchmarkArtifacts artifacts) {
+    Assert.Contains("- [benchmark-summary.md](../benchmark-summary.md)", guidance, StringComparison.Ordinal);
+    Assert.Contains("- [benchmark-summary.csv](../benchmark-summary.csv)", guidance, StringComparison.Ordinal);
+    Assert.Contains("- [benchmark-summary.json](../benchmark-summary.json)", guidance, StringComparison.Ordinal);
+
+    Assert.Contains(
+        "- " +
+        FormatCount(artifacts.Context.Iterations, "iteration", "iterations") +
+        " and " +
+        FormatCount(artifacts.Context.WarmupIterations, "warmup iteration", "warmup iterations") +
+        ".",
+        guidance,
+        StringComparison.Ordinal);
+    Assert.Contains("- Load timestamp storage `" + artifacts.Context.LoadTimestampStorage + "`.", guidance, StringComparison.Ordinal);
+    Assert.Contains("- Provider filter `" + artifacts.Context.ProviderFilter + "`.", guidance, StringComparison.Ordinal);
+    Assert.Contains(
+        "- " +
+        artifacts.Context.OsDescription +
+        ", " +
+        artifacts.Context.OsArchitecture +
+        " OS and process architecture, " +
+        artifacts.Context.ProcessorCount.ToString(CultureInfo.InvariantCulture) +
+        " processors.",
+        guidance,
+        StringComparison.Ordinal);
+    Assert.Contains("- " + artifacts.Context.DotNetRuntimeDescription + ".", guidance, StringComparison.Ordinal);
+    Assert.Contains("- Required provider `" + artifacts.Context.Provider + "`.", guidance, StringComparison.Ordinal);
+    Assert.Contains(
+        "Optional PostgreSQL, SQL Server, MySQL, and Oracle rows emitted as `executionStatus=skipped`",
+        guidance,
+        StringComparison.Ordinal);
+    foreach (var provider in artifacts.Context.OptionalProviders.Values) {
+      Assert.Contains("`" + provider.ConnectionStringEnvironmentVariable + "`", guidance, StringComparison.Ordinal);
+    }
+
+    foreach (var profile in ExpectedPerformanceProfiles) {
+      Assert.Contains("| " + profile.ProfileName + " |", guidance, StringComparison.Ordinal);
+      Assert.Contains("## " + profile.DocumentHeading, guidance, StringComparison.Ordinal);
+    }
+
+    foreach (var expectedRow in ExpectedPerformanceGuidanceRows) {
+      var row = FindArtifactRow(artifacts, SqliteProviderName, expectedRow.ScenarioName, expectedRow.BaselineName);
+      Assert.Equal("completed", row.ExecutionStatus);
+      Assert.Contains(
+          "| `" + row.ScenarioName + "` | `" + row.BaselineName + "` | " + row.MeanMilliseconds + " |",
+          guidance,
+          StringComparison.Ordinal);
+    }
+
+    foreach (var expectedRow in ExpectedProviderGuidanceRows) {
+      var row = FindArtifactRow(
+          artifacts,
+          expectedRow.ProviderName,
+          "provider-native-bulk-ingestion",
+          expectedRow.BaselineName);
+
+      Assert.Equal("skipped", row.ExecutionStatus);
+      Assert.Equal(0, row.Iterations);
+      Assert.Equal("not executed", row.PersistedOutcome);
+      Assert.Contains("`" + row.BaselineName + "`", guidance, StringComparison.Ordinal);
+      foreach (var fragment in expectedRow.RequiredExecutionDetailFragments) {
+        Assert.Contains(fragment, row.ExecutionDetail, StringComparison.Ordinal);
+      }
+    }
+  }
+
+  private static void AssertProviderTuningProfileCategoriesMatchGuidance(string guidance) {
+    var expectedCategories = ExpectedPerformanceProfiles
+        .Select(profile => profile.Category)
+        .ToArray();
+    var actualCategories = Enum.GetValues<DataVaultPerformanceProfileCategory>();
+    Assert.Equal(expectedCategories, actualCategories);
+
+    foreach (var profile in ExpectedPerformanceProfiles) {
+      Assert.Contains(profile.ProfileName, guidance, StringComparison.Ordinal);
+    }
+  }
+
+  private static void AssertRegressionBudgetDefaultsAreDocumented(string benchmarkContract) {
+    Assert.Contains("## Regression Budget", benchmarkContract, StringComparison.Ordinal);
+    foreach (var rule in RegressionBudgetRules) {
+      Assert.Contains(rule, benchmarkContract, StringComparison.Ordinal);
+    }
+  }
+
+  private static BenchmarkArtifactRow FindArtifactRow(
+      VerifiedBenchmarkArtifacts artifacts,
+      string providerName,
+      string scenarioName,
+      string baselineName) {
+    var key = CreateBenchmarkRowKey(scenarioName, providerName, baselineName);
+    Assert.True(
+        artifacts.RowsByKey.TryGetValue(key, out var row),
+        "benchmark-summary artifact triplet is missing row '" + key + "'.");
+
+    return row;
+  }
+
+  private static void AssertOptionalProviderContext(
+      IReadOnlyDictionary<string, BenchmarkOptionalProviderContext> optionalProviders,
+      string providerName,
+      string connectionStringEnvironmentVariable,
+      string skipReason) {
+    Assert.True(
+        optionalProviders.TryGetValue(providerName, out var provider),
+        "benchmark-summary.json context is missing optional provider '" + providerName + "'.");
+    Assert.Equal(connectionStringEnvironmentVariable, provider.ConnectionStringEnvironmentVariable);
+    Assert.Equal("skipped", provider.ExecutionStatus);
+    Assert.Equal(skipReason, provider.SkipReason);
+  }
+
+  private static void AssertCompletedMetricsPresent(BenchmarkArtifactRow row) {
+    Assert.False(string.IsNullOrWhiteSpace(row.MeanMilliseconds), "Completed row '" + row.Key + "' has no meanMilliseconds.");
+    Assert.False(string.IsNullOrWhiteSpace(row.MinMilliseconds), "Completed row '" + row.Key + "' has no minMilliseconds.");
+    Assert.False(string.IsNullOrWhiteSpace(row.MaxMilliseconds), "Completed row '" + row.Key + "' has no maxMilliseconds.");
+    Assert.False(string.IsNullOrWhiteSpace(row.MeanAllocatedBytes), "Completed row '" + row.Key + "' has no meanAllocatedBytes.");
+    Assert.False(string.IsNullOrWhiteSpace(row.MinAllocatedBytes), "Completed row '" + row.Key + "' has no minAllocatedBytes.");
+    Assert.False(string.IsNullOrWhiteSpace(row.MaxAllocatedBytes), "Completed row '" + row.Key + "' has no maxAllocatedBytes.");
+  }
+
+  private static void AssertSkippedMetricsBlank(BenchmarkArtifactRow row) {
+    Assert.Equal(string.Empty, row.MeanMilliseconds);
+    Assert.Equal(string.Empty, row.MinMilliseconds);
+    Assert.Equal(string.Empty, row.MaxMilliseconds);
+    Assert.Equal(string.Empty, row.MeanAllocatedBytes);
+    Assert.Equal(string.Empty, row.MinAllocatedBytes);
+    Assert.Equal(string.Empty, row.MaxAllocatedBytes);
+  }
+
+  private static void AssertJsonMetricNull(JsonElement result, string propertyName) {
+    Assert.Equal(JsonValueKind.Null, result.GetProperty(propertyName).ValueKind);
+  }
+
+  private static string[] ParseCsvLine(string line) {
+    var values = new List<string>();
+    var builder = new StringBuilder();
+    var inQuotes = false;
+
+    for (var index = 0; index < line.Length; index++) {
+      var value = line[index];
+      if (inQuotes) {
+        if (value == '"' && index + 1 < line.Length && line[index + 1] == '"') {
+          builder.Append('"');
+          index++;
+        }
+        else if (value == '"') {
+          inQuotes = false;
+        }
+        else {
+          builder.Append(value);
+        }
+      }
+      else if (value == ',') {
+        values.Add(builder.ToString());
+        builder.Clear();
+      }
+      else if (value == '"') {
+        inQuotes = true;
+      }
+      else {
+        builder.Append(value);
+      }
+    }
+
+    Assert.False(inQuotes, "CSV row has an unterminated quoted value.");
+    values.Add(builder.ToString());
+
+    return [.. values];
+  }
+
+  private static string[] ParseMarkdownTableLine(string line) {
+    Assert.StartsWith("| ", line);
+    Assert.EndsWith(" |", line);
+
+    return line[2..^2]
+        .Split(" | ", StringSplitOptions.None)
+        .Select(value => value.Replace("\\|", "|", StringComparison.Ordinal))
+        .ToArray();
+  }
+
+  private static string GetRequiredString(JsonElement element, string propertyName) {
+    var property = element.GetProperty(propertyName);
+    Assert.Equal(JsonValueKind.String, property.ValueKind);
+
+    return property.GetString() ?? string.Empty;
+  }
+
+  private static int GetRequiredInt32(JsonElement element, string propertyName) {
+    var property = element.GetProperty(propertyName);
+    Assert.Equal(JsonValueKind.Number, property.ValueKind);
+
+    return property.GetInt32();
+  }
+
+  private static string FormatJsonNumber(JsonElement element, string propertyName, string format) {
+    var property = element.GetProperty(propertyName);
+    if (property.ValueKind == JsonValueKind.Null) {
+      return string.Empty;
+    }
+
+    Assert.Equal(JsonValueKind.Number, property.ValueKind);
+
+    return property.GetDouble().ToString(format, CultureInfo.InvariantCulture);
+  }
+
+  private static string CreateBenchmarkRowKey(
+      string scenarioName,
+      string providerName,
+      string baselineName) {
+    return scenarioName + "\u001f" + providerName + "\u001f" + baselineName;
+  }
+
+  private static string ReadRepositoryText(string relativePath) {
+    var repositoryPath = Path.Combine(FindRepositoryRoot(), relativePath);
+    Assert.True(File.Exists(repositoryPath), relativePath + " is missing from the repository root.");
+
+    return File.ReadAllText(repositoryPath);
+  }
+
+  private static string FindRepositoryRoot() {
+    var directory = new DirectoryInfo(AppContext.BaseDirectory);
+
+    while (directory is not null) {
+      if (File.Exists(Path.Combine(directory.FullName, "DVault.slnx"))) {
+        return directory.FullName;
+      }
+
+      directory = directory.Parent;
+    }
+
+    throw new InvalidOperationException("Unable to locate the DVault repository root.");
+  }
+
+  private static string NormalizeLineEndings(string value) {
+    return value.Replace("\r\n", "\n", StringComparison.Ordinal);
+  }
+
+  private static string FormatCount(int count, string singular, string plural) {
+    return count.ToString(CultureInfo.InvariantCulture) + " " + (count == 1 ? singular : plural);
+  }
+
   private static string CreateMarkdownRowPrefix(ExpectedBenchmarkRow expectedRow) {
     return "| " +
         expectedRow.ScenarioName +
@@ -809,4 +1406,84 @@ public sealed class BenchmarkScenarioExecutionTests {
       string ExecutionStatus,
       string SkipReason,
       int Iterations);
+
+  private sealed record ExpectedPerformanceProfile(
+      DataVaultPerformanceProfileCategory Category,
+      string ProfileName,
+      string DocumentHeading);
+
+  private sealed record ExpectedGuidanceRow(string ScenarioName, string BaselineName);
+
+  private sealed record ExpectedProviderGuidanceRow(
+      string ProviderName,
+      string BaselineName,
+      string[] RequiredExecutionDetailFragments);
+
+  private sealed record VerifiedBenchmarkArtifacts(
+      BenchmarkArtifactContext Context,
+      IReadOnlyDictionary<string, BenchmarkArtifactRow> RowsByKey);
+
+  private sealed record BenchmarkArtifactContext(
+      string Provider,
+      int Iterations,
+      int WarmupIterations,
+      string LoadTimestampStorage,
+      string ProviderFilter,
+      string OsDescription,
+      string OsArchitecture,
+      string ProcessArchitecture,
+      int ProcessorCount,
+      string DotNetRuntimeDescription,
+      string DotNetRuntimeVersion,
+      IReadOnlyDictionary<string, BenchmarkOptionalProviderContext> OptionalProviders);
+
+  private sealed record BenchmarkOptionalProviderContext(
+      string ProviderName,
+      string ConnectionStringEnvironmentVariable,
+      string ExecutionStatus,
+      string SkipReason);
+
+  private sealed record BenchmarkArtifactRow(
+      string ScenarioName,
+      string ProviderName,
+      string BaselineName,
+      string StrategyFamily,
+      string DatasetSize,
+      string ChangeRatio,
+      string ExecutionStatus,
+      string SkipReason,
+      int Iterations,
+      string MeanMilliseconds,
+      string MinMilliseconds,
+      string MaxMilliseconds,
+      string MeanAllocatedBytes,
+      string MinAllocatedBytes,
+      string MaxAllocatedBytes,
+      string ExecutionDetail,
+      string PersistedOutcome) {
+    public string Key => CreateBenchmarkRowKey(ScenarioName, ProviderName, BaselineName);
+
+    public string[] ToArtifactFields() {
+      return
+      [
+          ScenarioName,
+          ProviderName,
+          BaselineName,
+          StrategyFamily,
+          DatasetSize,
+          ChangeRatio,
+          ExecutionStatus,
+          SkipReason,
+          Iterations.ToString(CultureInfo.InvariantCulture),
+          MeanMilliseconds,
+          MinMilliseconds,
+          MaxMilliseconds,
+          MeanAllocatedBytes,
+          MinAllocatedBytes,
+          MaxAllocatedBytes,
+          ExecutionDetail,
+          PersistedOutcome,
+      ];
+    }
+  }
 }

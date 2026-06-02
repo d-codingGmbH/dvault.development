@@ -3,22 +3,21 @@
   "ticket-id": "06F7Y0K95VW0PX21F6R2YGP8DM",
   "ticket-type": "story",
   "title": "Story: Add benchmark regression artifact verifier for supported provider profiles",
-  "revision": "06F7Y0ZQ2FP43C4F1P763K6K1C",
-  "status": "todo",
+  "revision": "06F8JFRJSAEJF4M1EB9QC70KE4",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
     "area/benchmarks",
     "area/ef-core",
     "area/performance",
     "area/provider-support",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F7XZW4N5Q9NS9J5VC381JJT4",
   "releaseId": "06F7XZVW426YZYKJJG0P0NZJ2W",
   "created-at": "2026-05-31T17:08:45.1760073Z",
-  "updated-at": "2026-05-31T17:10:26.8359378Z"
+  "updated-at": "2026-06-02T16:51:12.7149258Z"
 }

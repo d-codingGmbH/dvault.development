@@ -1,21 +1,20 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the story around a deterministic repository-side verifier for the checked-in benchmark artifact triplet, the four benchmark-backed performance-profile categories, and the current provider-native evidence rows used by active docs and provider-tuning diagnostics.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - This story is about verifying checked-in repository evidence, not rerunning benchmarks or requiring live external providers in CI.
 - For v1, 'supported provider profiles' means the checked-in performance-profile guidance surface and the current benchmark provider matrix: required SQLite local temporary files plus optional PostgreSQL, SQL Server, MySQL, and Oracle external-provider rows. It does not reopen the separate EF metadata provider-profile annotation surface.
 - The verifier should treat skipped optional-provider rows as valid evidence when the row is present with executionStatus=skipped, iterations=0, a normalized skip reason, and planned execution detail.
 - Stale means the active evidence or copied guidance has drifted from the current artifact contract: missing files, missing required rows or dimensions, row-set mismatch across markdown/CSV/JSON, missing required context fields, or copied performance-profile values and run-context facts that no longer match the verified artifact source.
 - Regression-budget validation should ratify the shared defaults already documented in the performance-evidence contract: the targeted metric must improve or hold, required SQLite non-target regressions over 5% fail by default, and configured optional-provider regressions over 10% require explicit callout and justification.
 
-### Scope In
+Scope In
 - Add a deterministic verifier that validates the checked-in root benchmark artifact triplet `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` against the current repository contract.
 - Validate the expected root scenario and provider row set from the current harness: customer-profile history, bulk insert-only, bulk history, streaming save variants, order-product fulfillment history, latest-satellite read, PIT as-of read, bridge traversal read, compiled-model startup, compiled-query hub read, DbContext pooling, and provider-native bulk rows for PostgreSQL, SQL Server, MySQL, and Oracle.
 - Validate required measured dimensions and schema semantics across the artifact triplet, including scenario/provider/baseline identity, strategy family, dataset size, change ratio, execution status, skip reason, iterations, timing metrics, allocation metrics, execution detail, persisted outcome, and run-context metadata including optionalProviders.
@@ -23,70 +22,40 @@
 - Validate that active guidance backed by skipped provider-native rows only cites the current checked-in retained-path and staged-path baselines for PostgreSQL and MySQL plus the current SQL Server and Oracle optimized rows, instead of inventing unsupported provider claims.
 - Validate repository-owned regression-budget metadata or expectations used by the verifier against the shared benchmark artifact contract so downstream guidance does not drift from the documented 5% and 10% default gates.
 
-### Scope Out
+Scope Out
 - Re-running benchmarks, provisioning external providers, or requiring live PostgreSQL, SQL Server, MySQL, or Oracle timings as part of the verifier.
 - Hosted dashboards, external performance services, CI publication pipelines, or benchmark result transport/reporting infrastructure.
 - Adding new benchmark scenarios, new provider families, or new performance-profile categories beyond the current checked-in root harness and four profile categories.
 - Validating every exploratory artifact directory under `artifacts/benchmarks` or backfilling every historical release-note bundle that is not part of the active performance-profile or provider-tuning guidance surface.
 - Automatic adjudication of fresh before/after performance wins from new benchmark runs; v1 is a checked-in evidence and citation verifier, not a live benchmark approval system.
 
-## Acceptance Criteria
-- The repository has a deterministic verifier that can run in the existing quality/test workflow or as a focused test without requiring network access or live external-provider databases.
-- The verifier fails when the root benchmark artifact triplet is missing, when markdown/CSV/JSON do not describe the same row set, when required context or row fields drift from the current contract, or when skipped-row semantics no longer preserve `iterations=0`, blank markdown/CSV metrics, JSON `null` metrics, a skip reason, and `persistedOutcome=not executed`.
-- The verifier validates the current expected provider matrix and row identities: required SQLite rows, optional PostgreSQL/SQL Server/MySQL/Oracle rows, retained PostgreSQL direct-or-UNNEST and MySQL multi-row rows below staged boundaries, and the current SQL Server and Oracle optimized-path boundaries.
-- The verifier validates the active benchmark-backed performance guidance in `docs/performance-profiles.md` by checking the root artifact links, the copied run-context facts, the four checked-in profile names, and the cited supporting-row mean-ms values and baselines against the verified root artifact source.
-- The verifier validates that the closed provider-tuning recommendation category set remains a 1:1 match with the four checked-in performance-profile categories used by current docs and diagnostics.
-- The verifier treats stale evidence as a hard failure when active guidance or diagnostics-backed profile mapping references missing rows, unsupported provider claims, or artifact files that no longer expose the required measured dimensions such as execution detail or allocation metrics.
-- The verifier validates the shared default regression-budget metadata used by the repository guidance: targeted metric improves or holds, required SQLite non-target regressions over 5% fail by default, and configured optional-provider regressions over 10% require explicit callout and justification.
-
-## Definition of Done
-- A deterministic repository-side verifier guards the checked-in benchmark artifact triplet and the current benchmark-backed performance-profile guidance without depending on live benchmark execution.
-- The verifier leaves no ambiguity about the active v1 evidence surface: the root triplet, the current provider-native row matrix, the four checked-in performance profiles, and the shared regression-budget defaults.
-- A developer who changes benchmark artifact schema, scenario identities, provider-native row boundaries, or copied performance-profile values must update the checked-in artifacts or guidance in the same change or the verifier fails.
-- Skipped optional-provider rows remain an accepted checked-in baseline when they preserve the required skip metadata; missing rows or silently omitted providers do not pass.
-- The verifier emits deterministic failures that identify the artifact or guidance file and the stale or missing field, row, or profile mapping so the follow-on documentation story can reference stable output.
-
-## Implementation Notes
-- Prefer a repository test under the existing tests project that reads checked-in files directly, matching the existing repository-file and benchmark-artifact test pattern.
-- Reuse the current harness baseline and expected row identities already proven by `BenchmarkScenarioExecutionTests` instead of inventing a second ad hoc scenario catalog.
-- Treat JSON `optionalProviders` as the authoritative optional-provider matrix while tolerating the legacy PostgreSQL compatibility fields that still exist in the current artifact format.
-- Keep the verifier's expected profile-to-row mapping and regression-budget rules in deterministic code or fixture data rather than parsing free-form prose as the primary source of truth at runtime.
-- Compare copied performance-profile timings and run-context facts against the checked-in root artifact values so normal artifact refreshes require doc alignment rather than hard-coded machine constants in multiple places.
-- Keep the v1 citation surface bounded to active performance-profile and provider-tuning guidance; if the team later wants archival release-note or exploratory-bundle validation, add an explicit manifest or separate follow-up story instead of silently widening this verifier.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After v1 lands, should the same verifier be widened to `README.md` and `docs/production-adoption-checklist.md` current benchmark citations, or should those stay as separate documentation-alignment checks?
 - Should a later story add computed before/after budget evaluation for the historical tuning bundles under `artifacts/benchmarks/*/before` and `after`, instead of limiting v1 to checked-in evidence schema and guidance consistency?
 - If the team wants historical release-note benchmark links to stay machine-verified, should those older bundles be backfilled to the current artifact schema or tracked through an explicit historical manifest?
 
-## Risks
+Risks
 - The shared regression-budget rules currently live in contract documentation, so duplicating them carelessly in verifier code can create silent drift unless one deterministic expectation source is maintained.
 - Optional external-provider evidence is environment-dependent; the verifier must accept documented skipped rows and reject silent omission, or it will produce false failures or false confidence.
 - The repository contains exploratory and historical benchmark directories with older shapes; widening v1 indiscriminately beyond the active guidance surface will create noise and obscure real drift in current evidence-backed docs and diagnostics.
 
-## Split Recommendations
+Split recommendations
 - No split is required for the current bounded verifier story.
 - If the team later wants full historical artifact archive validation or live before/after regression adjudication, split that into separate follow-up work instead of widening this story beyond the active checked-in guidance surface.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 7
+- definition-of-done items: 5
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-# Goal
-Add a deterministic verifier for benchmark artifacts so performance guidance stays evidence-backed.
-
-# Scope In
-- Validate expected scenario names, provider profiles, artifact schema, measured dimensions, and regression budget metadata.
-- Fail fast on missing or stale artifacts used by docs or diagnostics.
-
-# Scope Out
-No hosted dashboard or external performance service.
-
-# Acceptance Criteria
-- Verifier can run in the existing quality/test workflow or as a focused test.
-- Performance profile docs cite artifacts that pass verification.
+Run mode
+- apply: planned updates are applied after this comment
