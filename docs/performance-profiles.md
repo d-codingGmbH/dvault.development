@@ -2,7 +2,7 @@
 
 Status: v0.24.0 adopter guidance
 
-This guide is the detailed performance-profile reference for the current v0.24.0 DVault documentation baseline. It translates the checked-in benchmark evidence into starting profiles, stop conditions, and rerun triggers. It does not create absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, or credential-management guidance. The coordinated release record is [DVault v0.24.0 Release Notes](releases/v0.24.0.md).
+This guide is the detailed performance-profile reference for the current v0.24.0 DVault documentation baseline. It translates the checked-in benchmark evidence into starting profiles, stop conditions, and rerun triggers. It also records the decision gate for future stored-procedure or provider-specific SQL artifact proposals. It does not create absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, credential-management guidance, or provider-specific SQL artifact generation. The coordinated release record is [DVault v0.24.0 Release Notes](releases/v0.24.0.md).
 
 ## Evidence Baseline
 
@@ -159,6 +159,26 @@ Rows to cite:
 ### Stop Conditions And Rerun Triggers
 
 Stop before making a measured provider-specific performance claim when optional provider rows are skipped, connection strings are unset, provider packages are not restored for the benchmark run, the context has pending tracked changes, the operation count is below the provider gate, the satellite count exceeds SQL Server or Oracle limits, or diagnostics do not select the expected strategy. Rerun the benchmark triplet with the relevant provider configured and preserve skipped or failed rows exactly as the artifact contract requires.
+
+## Stored-Procedure And Provider-Specific SQL Artifact Gate
+
+Stored procedures, generated database routines, and other provider-specific SQL artifacts are not DVault's default save or read path. The default runtime surfaces remain `IDataVaultSaveService` and `IDataVaultReadService`. Typed read-model helper generation is opt-in design-time ergonomics over those surfaces and must not be widened into provider-specific SQL generation. Do not describe a future artifact lane as package registration behavior, default provider routing, runtime metadata inspection, EF interceptor behavior, or automatic migration or deployment ownership.
+
+A future artifact lane can enter scope only as an explicitly opted-in consumer workflow. Approved artifacts are design-time outputs for reviewed consumer projects only. The consuming application owns deployment, invocation, versioning, rollback, cleanup, transactions, credentials, environment selection, and operational observability. DVault must not auto-create runtime dispatch, auto-run stored procedures or SQL artifacts, register a procedure dispatcher, or automatically synchronize artifacts with EF migrations, live schema, metadata changes, model-first import/export, or support-bundle refreshes.
+
+Use the staged provider ingestion profile above as the comparison baseline. That profile is diagnostics-gated behind the existing save service, keeps skipped optional-provider rows visible when provider evidence is missing, and requires benchmark artifacts before making provider-specific timing claims. Stored-procedure or provider-specific artifact proposals must meet at least that evidence posture before implementation tickets are accepted: run representative request-bound save/read diagnostics for the exact provider and workload, preserve the benchmark artifact triplet and run context, keep unsupported/skipped rows visible, and prove parity with explicit DVault semantics such as ordering, load timestamp, record source, hash key, hash diff, satellite latest-state behavior, PIT or bridge maintenance when relevant, cancellation, cleanup, and caller-owned transaction behavior.
+
+Future implementation tickets must treat these items as prerequisites, not implementation details to discover after coding:
+
+- explicit provider and representative workload.
+- consumer opt-in mechanism and reviewed design-time workflow.
+- generated artifact format, storage, and review rules.
+- consumer-owned deployment, invocation, versioning, rollback, cleanup, transaction, credential, and environment responsibilities.
+- consumer-owned migration and model-change compatibility plan that does not rely on DVault automatic synchronization.
+- representative diagnostics plus benchmark evidence for the exact provider, workload, and artifact shape.
+- public non-goals covering runtime dispatchers, automatic execution, EF interceptors, migration hooks, deployment automation, and default provider routing.
+
+Tickets that lack those prerequisites should remain documentation, design, or evidence-gathering work. They must not enter implementation scope for provider-specific artifact generation or execution, and they must not create unmeasured performance claims.
 
 ## Read-Model Heavy
 
