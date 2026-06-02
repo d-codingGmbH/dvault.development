@@ -26,13 +26,15 @@ public sealed class DataVaultPreflightTests {
     Assert.Same(diagnosticsResult, report.ValidationProvider.Report);
     Assert.Equal(DataVaultPreflightSectionStatus.Skipped, report.ArtifactDrift.Status);
     Assert.Equal(DataVaultPreflightSectionStatus.Skipped, report.SnapshotDrift.Status);
+    Assert.Equal(DataVaultPreflightSectionStatus.Skipped, report.IdempotencySchema.Status);
     Assert.Equal(DataVaultPreflightSectionStatus.Skipped, report.MigrationGuardrail.Status);
     Assert.Equal(DataVaultPreflightSectionStatus.Skipped, report.RequestDiagnostics.Status);
 
     var display = report.ToDisplayString();
-    Assert.Contains("DVault preflight: passed, passed 1, blocked 0, skipped 4.", display, StringComparison.Ordinal);
+    Assert.Contains("DVault preflight: passed, passed 1, blocked 0, skipped 5.", display, StringComparison.Ordinal);
     Assert.Contains("artifact-drift: skipped", display, StringComparison.Ordinal);
     Assert.Contains("snapshot-drift: skipped", display, StringComparison.Ordinal);
+    Assert.Contains("idempotency-schema: skipped", display, StringComparison.Ordinal);
     Assert.Contains("migration-guardrail: skipped", display, StringComparison.Ordinal);
     Assert.Contains("request-diagnostics: skipped", display, StringComparison.Ordinal);
   }
@@ -183,6 +185,29 @@ public sealed class DataVaultPreflightTests {
     Assert.Contains("request-diagnostics: blocked", report.ToDisplayString(), StringComparison.Ordinal);
   }
 
+  [Fact]
+  public void RunEvaluatesExplicitIdempotencyLiveSchemaLaneWithoutOpeningLiveDatabase() {
+    var metadataModel = CreateCustomerContactMetadataModel();
+    var expectedStructures = DataVaultIdempotencyPreflight.CreateExpectedStructures(
+        metadataModel,
+        DataVaultProviderCapabilityProfiles.Sqlite);
+    using var context = CreateContext(metadataModel);
+
+    var report = DataVaultPreflight.Run(
+        new StubDiagnosticsService(CreateDiagnosticsResult(isValid: true)),
+        new DataVaultPreflightRequest(context, metadataModel) {
+          IdempotencyLiveSchemaReadResult = DataVaultLiveSchemaReadResult.Success(
+              "Microsoft.EntityFrameworkCore.Sqlite",
+              CreateLiveSchema(expectedStructures)),
+        });
+
+    Assert.Equal(DataVaultPreflightStatus.Passed, report.Status);
+    Assert.Equal(DataVaultPreflightSectionStatus.Passed, report.IdempotencySchema.Status);
+    Assert.NotNull(report.IdempotencySchema.Report);
+    Assert.Equal(DataVaultIdempotencyPreflightStatus.Passed, report.IdempotencySchema.Report.Status);
+    Assert.Contains("idempotency-schema: passed", report.ToDisplayString(), StringComparison.Ordinal);
+  }
+
   private static ServiceProvider CreateServiceProvider() {
     var services = new ServiceCollection();
     services.AddDVaultSqlite();
@@ -210,6 +235,33 @@ public sealed class DataVaultPreflightTests {
     return DataVaultModelArtifactImporter.ImportJson(
         DataVaultModelArtifactExporter.ExportJson(metadataModel),
         "preflight-test.model.json");
+  }
+
+  private static DataVaultLiveSchemaSnapshot CreateLiveSchema(
+      IReadOnlyList<DataVaultIdempotencyPreflightStructure> expectedStructures) {
+    return new DataVaultLiveSchemaSnapshot(expectedStructures
+        .GroupBy(structure => structure.TableName, StringComparer.Ordinal)
+        .Select(group => {
+          var primaryKey = group.Single(structure => structure.Kind == "primary-key");
+          var indexes = group
+              .Where(structure => structure.Kind == "secondary-index")
+              .Select(structure => new DataVaultLiveSchemaIndex(
+                  structure.Name,
+                  structure.ColumnNames,
+                  structure.IsUnique,
+                  structure.DescendingColumnNames,
+                  structure.IncludedColumnNames));
+          var columns = group
+              .SelectMany(structure => structure.ColumnNames.Concat(structure.IncludedColumnNames))
+              .Distinct(StringComparer.Ordinal)
+              .Select((columnName, ordinal) => new DataVaultLiveSchemaColumn(columnName, ordinal, "TEXT"));
+
+          return new DataVaultLiveSchemaTable(
+              group.Key,
+              columns,
+              new DataVaultLiveSchemaPrimaryKey(primaryKey.Name, primaryKey.ColumnNames),
+              indexes);
+        }));
   }
 
   private static DataVaultMetadataModel CreateCustomerContactMetadataModel() {

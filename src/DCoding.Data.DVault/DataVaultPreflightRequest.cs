@@ -73,6 +73,12 @@ public sealed class DataVaultPreflightRequest {
   public IReadOnlyList<MigrationOperation>? MigrationOperations { get; init; }
 
   /// <summary>
+  /// Gets the optional explicit live-schema read result used for idempotency constraint and index preflight checks.
+  /// A null value skips the idempotency lane; callers own any live database access needed to produce the result.
+  /// </summary>
+  public DataVaultLiveSchemaReadResult? IdempotencyLiveSchemaReadResult { get; init; }
+
+  /// <summary>
   /// Gets optional precomputed representative diagnostics results to preserve in the aggregate report.
   /// </summary>
   public IReadOnlyList<DataVaultPreflightRepresentativeDiagnostics> RepresentativeDiagnostics { get; init; } =

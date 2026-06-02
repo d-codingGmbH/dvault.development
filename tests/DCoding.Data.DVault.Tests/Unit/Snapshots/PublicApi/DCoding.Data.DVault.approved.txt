@@ -323,6 +323,74 @@ type public sealed class DCoding.Data.DVault.DataVaultHubSaveOperation
   property public DCoding.Data.DVault.Modeling.DataVaultHubMetadata Metadata { get; }
   property public System.Collections.Generic.IReadOnlyDictionary<string, string> BusinessKeyValues { get; }
 
+type public static class DCoding.Data.DVault.DataVaultIdempotencyPreflight
+  method public static DCoding.Data.DVault.DataVaultIdempotencyPreflightReport Compare(DCoding.Data.DVault.DataVaultModelImportResult expectedImport, DCoding.Data.DVault.DataVaultLiveSchemaReadResult liveSchemaReadResult, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
+  method public static DCoding.Data.DVault.DataVaultIdempotencyPreflightReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, DCoding.Data.DVault.DataVaultLiveSchemaReadResult liveSchemaReadResult)
+  method public static DCoding.Data.DVault.DataVaultIdempotencyPreflightReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, DCoding.Data.DVault.DataVaultLiveSchemaReadResult liveSchemaReadResult, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
+  method public static DCoding.Data.DVault.DataVaultIdempotencyPreflightReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, DCoding.Data.DVault.DataVaultLiveSchemaSnapshot liveSchemaSnapshot)
+  method public static DCoding.Data.DVault.DataVaultIdempotencyPreflightReport Compare(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, DCoding.Data.DVault.DataVaultLiveSchemaSnapshot liveSchemaSnapshot, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
+  method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultIdempotencyPreflightReport> CompareAsync(DCoding.Data.DVault.DataVaultModelImportResult expectedImport, Microsoft.EntityFrameworkCore.DbContext currentContext, DCoding.Data.DVault.IDataVaultLiveSchemaReader liveSchemaReader, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultIdempotencyPreflightReport> CompareAsync(DCoding.Data.DVault.DataVaultModelImportResult expectedImport, Microsoft.EntityFrameworkCore.DbContext currentContext, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultIdempotencyPreflightReport> CompareAsync(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, Microsoft.EntityFrameworkCore.DbContext currentContext, DCoding.Data.DVault.IDataVaultLiveSchemaReader liveSchemaReader, System.Threading.CancellationToken cancellationToken = default)
+  method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultIdempotencyPreflightReport> CompareAsync(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, Microsoft.EntityFrameworkCore.DbContext currentContext, System.Threading.CancellationToken cancellationToken = default)
+
+type public sealed class DCoding.Data.DVault.DataVaultIdempotencyPreflightFinding : System.IEquatable<DCoding.Data.DVault.DataVaultIdempotencyPreflightFinding>
+  ctor public DataVaultIdempotencyPreflightFinding(DCoding.Data.DVault.DataVaultModelDriftSeverity Severity, string Code, string TableName, string OperationFamily, string StructureKind, string StructureName, string PropertyPath, string? ExpectedValue, string? ActualValue, string Message)
+  property public DCoding.Data.DVault.DataVaultModelDriftSeverity Severity { get; init; }
+  property public string Code { get; init; }
+  property public string Message { get; init; }
+  property public string OperationFamily { get; init; }
+  property public string PropertyPath { get; init; }
+  property public string StructureKind { get; init; }
+  property public string StructureName { get; init; }
+  property public string TableName { get; init; }
+  property public string? ActualValue { get; init; }
+  property public string? ExpectedValue { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultIdempotencyPreflightFinding? left, DCoding.Data.DVault.DataVaultIdempotencyPreflightFinding? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultIdempotencyPreflightFinding? left, DCoding.Data.DVault.DataVaultIdempotencyPreflightFinding? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultIdempotencyPreflightFinding? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultModelDriftSeverity Severity, out string Code, out string TableName, out string OperationFamily, out string StructureKind, out string StructureName, out string PropertyPath, out string? ExpectedValue, out string? ActualValue, out string Message)
+
+type public sealed class DCoding.Data.DVault.DataVaultIdempotencyPreflightReport
+  ctor public DataVaultIdempotencyPreflightReport(DCoding.Data.DVault.DataVaultIdempotencyPreflightStatus status, string? providerName, string capabilityProfileName, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultIdempotencyPreflightStructure> expectedStructures, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultIdempotencyPreflightFinding> findings, string? message = null)
+  property public DCoding.Data.DVault.DataVaultIdempotencyPreflightStatus Status { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultIdempotencyPreflightFinding> Findings { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultIdempotencyPreflightStructure> ExpectedStructures { get; }
+  property public bool IsBlocked { get; }
+  property public string CapabilityProfileName { get; }
+  property public string? Message { get; }
+  property public string? ProviderName { get; }
+  method public static DCoding.Data.DVault.DataVaultIdempotencyPreflightReport Skipped(string reason)
+  method public string ToDisplayString()
+
+type public enum DCoding.Data.DVault.DataVaultIdempotencyPreflightStatus
+  value Passed = 0
+  value Blocked = 1
+  value Skipped = 2
+  value UnsupportedProvider = 3
+  value UnavailableLiveSchema = 4
+
+type public sealed class DCoding.Data.DVault.DataVaultIdempotencyPreflightStructure : System.IEquatable<DCoding.Data.DVault.DataVaultIdempotencyPreflightStructure>
+  ctor public DataVaultIdempotencyPreflightStructure(string TableName, string OperationFamily, string Kind, string Name, System.Collections.Generic.IReadOnlyList<string> ColumnNames, bool IsUnique, System.Collections.Generic.IReadOnlyList<string> DescendingColumnNames, System.Collections.Generic.IReadOnlyList<string> IncludedColumnNames)
+  property public System.Collections.Generic.IReadOnlyList<string> ColumnNames { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<string> DescendingColumnNames { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<string> IncludedColumnNames { get; init; }
+  property public bool IsUnique { get; init; }
+  property public string Kind { get; init; }
+  property public string Name { get; init; }
+  property public string OperationFamily { get; init; }
+  property public string TableName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultIdempotencyPreflightStructure? left, DCoding.Data.DVault.DataVaultIdempotencyPreflightStructure? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultIdempotencyPreflightStructure? left, DCoding.Data.DVault.DataVaultIdempotencyPreflightStructure? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultIdempotencyPreflightStructure? other)
+  method public void Deconstruct(out string TableName, out string OperationFamily, out string Kind, out string Name, out System.Collections.Generic.IReadOnlyList<string> ColumnNames, out bool IsUnique, out System.Collections.Generic.IReadOnlyList<string> DescendingColumnNames, out System.Collections.Generic.IReadOnlyList<string> IncludedColumnNames)
+
 type public sealed class DCoding.Data.DVault.DataVaultIndexExplain : System.IEquatable<DCoding.Data.DVault.DataVaultIndexExplain>
   ctor public DataVaultIndexExplain(string Name, System.Collections.Generic.IReadOnlyList<string> PropertyNames, bool IsUnique, System.Collections.Generic.IReadOnlyList<string> DescendingPropertyNames, System.Collections.Generic.IReadOnlyList<string> IncludedPropertyNames)
   property public System.Collections.Generic.IReadOnlyList<string> DescendingPropertyNames { get; init; }
@@ -397,8 +465,10 @@ type public static class DCoding.Data.DVault.DataVaultLiveSchemaDriftReporter
   method public static System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultModelDriftReport> CompareAsync(DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel, Microsoft.EntityFrameworkCore.DbContext currentContext, System.Threading.CancellationToken cancellationToken = default)
 
 type public sealed class DCoding.Data.DVault.DataVaultLiveSchemaIndex
-  ctor public DataVaultLiveSchemaIndex(string indexName, System.Collections.Generic.IEnumerable<string> columnNames, bool isUnique)
+  ctor public DataVaultLiveSchemaIndex(string indexName, System.Collections.Generic.IEnumerable<string> columnNames, bool isUnique, System.Collections.Generic.IEnumerable<string>? descendingColumnNames = null, System.Collections.Generic.IEnumerable<string>? includedColumnNames = null)
   property public System.Collections.Generic.IReadOnlyList<string> ColumnNames { get; }
+  property public System.Collections.Generic.IReadOnlyList<string> DescendingColumnNames { get; }
+  property public System.Collections.Generic.IReadOnlyList<string> IncludedColumnNames { get; }
   property public bool IsUnique { get; }
   property public string IndexName { get; }
 
@@ -760,8 +830,10 @@ type public static class DCoding.Data.DVault.DataVaultPreflight
   method public static DCoding.Data.DVault.DataVaultPreflightReport Run(DCoding.Data.DVault.IDataVaultDiagnosticsService diagnostics, DCoding.Data.DVault.DataVaultPreflightRequest request)
 
 type public sealed class DCoding.Data.DVault.DataVaultPreflightReport
+  ctor public DataVaultPreflightReport(DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultDiagnosticsResult> validationProvider, DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultModelDriftReport> artifactDrift, DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultModelDriftPreflightReport> snapshotDrift, DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultIdempotencyPreflightReport> idempotencySchema, DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultMigrationGuardrailReport> migrationGuardrail, DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultPreflightRequestDiagnosticsReport> requestDiagnostics)
   ctor public DataVaultPreflightReport(DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultDiagnosticsResult> validationProvider, DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultModelDriftReport> artifactDrift, DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultModelDriftPreflightReport> snapshotDrift, DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultMigrationGuardrailReport> migrationGuardrail, DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultPreflightRequestDiagnosticsReport> requestDiagnostics)
   property public DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultDiagnosticsResult> ValidationProvider { get; }
+  property public DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultIdempotencyPreflightReport> IdempotencySchema { get; }
   property public DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultMigrationGuardrailReport> MigrationGuardrail { get; }
   property public DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultModelDriftPreflightReport> SnapshotDrift { get; }
   property public DCoding.Data.DVault.DataVaultPreflightSection<DCoding.Data.DVault.DataVaultModelDriftReport> ArtifactDrift { get; }
@@ -784,6 +856,7 @@ type public sealed class DCoding.Data.DVault.DataVaultPreflightRepresentativeDia
 type public sealed class DCoding.Data.DVault.DataVaultPreflightRequest
   ctor public DataVaultPreflightRequest(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultModelImportResult expectedImport)
   ctor public DataVaultPreflightRequest(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.Modeling.DataVaultMetadataModel expectedMetadataModel)
+  property public DCoding.Data.DVault.DataVaultLiveSchemaReadResult? IdempotencyLiveSchemaReadResult { get; init; }
   property public DCoding.Data.DVault.DataVaultModelImportResult? ExpectedImport { get; }
   property public DCoding.Data.DVault.DataVaultModelImportResult? ReviewedArtifactImport { get; init; }
   property public DCoding.Data.DVault.Modeling.DataVaultMetadataModel? ExpectedMetadataModel { get; }

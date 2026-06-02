@@ -393,27 +393,31 @@ internal sealed class PostgresDataVaultLiveSchemaReader : CatalogDataVaultLiveSc
 
     var indexes = new List<DataVaultLiveSchemaIndex>();
     foreach (var indexHeader in indexHeaders) {
+      var columns = await ReadIndexColumnsAsync(
+          connection,
+          tableIdentifier,
+          indexHeader.IndexName,
+          cancellationToken).ConfigureAwait(false);
       indexes.Add(new DataVaultLiveSchemaIndex(
           indexHeader.IndexName,
-          await ReadIndexColumnNamesAsync(
-              connection,
-              tableIdentifier,
-              indexHeader.IndexName,
-              cancellationToken).ConfigureAwait(false),
-          indexHeader.IsUnique));
+          columns.ColumnNames,
+          indexHeader.IsUnique,
+          columns.DescendingColumnNames,
+          columns.IncludedColumnNames));
     }
 
     return indexes;
   }
 
-  private static Task<IReadOnlyList<string>> ReadIndexColumnNamesAsync(
+  private static async Task<IndexColumnSet> ReadIndexColumnsAsync(
       DbConnection connection,
       LiveSchemaTableIdentifier tableIdentifier,
       string indexName,
       CancellationToken cancellationToken) {
-    return ReadStringListAsync(
+    using var keyCommand = CreateCommand(
         connection,
         "SELECT a.attname " +
+        ", CASE WHEN (i.indoption[key_columns.column_ordinal - 1] & 1) = 1 THEN TRUE ELSE FALSE END " +
         "FROM pg_index i " +
         "INNER JOIN pg_class ix ON ix.oid = i.indexrelid " +
         "INNER JOIN pg_class c ON c.oid = i.indrelid " +
@@ -423,10 +427,40 @@ internal sealed class PostgresDataVaultLiveSchemaReader : CatalogDataVaultLiveSc
         "WHERE n.nspname = @schema AND c.relname = @table AND ix.relname = @index " +
         "AND key_columns.column_ordinal <= i.indnkeyatts " +
         "ORDER BY key_columns.column_ordinal;",
-        cancellationToken,
         ("@schema", tableIdentifier.SchemaName),
         ("@table", tableIdentifier.TableName),
         ("@index", indexName));
+
+    var columnNames = new List<string>();
+    var descendingColumnNames = new List<string>();
+    await using (var reader = await keyCommand.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false)) {
+      while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
+        var columnName = reader.GetString(0);
+        columnNames.Add(columnName);
+        if (reader.GetBoolean(1)) {
+          descendingColumnNames.Add(columnName);
+        }
+      }
+    }
+
+    var includedColumnNames = await ReadStringListAsync(
+        connection,
+        "SELECT a.attname " +
+        "FROM pg_index i " +
+        "INNER JOIN pg_class ix ON ix.oid = i.indexrelid " +
+        "INNER JOIN pg_class c ON c.oid = i.indrelid " +
+        "INNER JOIN pg_namespace n ON n.oid = c.relnamespace " +
+        "INNER JOIN LATERAL unnest(i.indkey) WITH ORDINALITY AS key_columns(attnum, column_ordinal) ON TRUE " +
+        "INNER JOIN pg_attribute a ON a.attrelid = c.oid AND a.attnum = key_columns.attnum " +
+        "WHERE n.nspname = @schema AND c.relname = @table AND ix.relname = @index " +
+        "AND key_columns.column_ordinal > i.indnkeyatts " +
+        "ORDER BY key_columns.column_ordinal;",
+        cancellationToken,
+        ("@schema", tableIdentifier.SchemaName),
+        ("@table", tableIdentifier.TableName),
+        ("@index", indexName)).ConfigureAwait(false);
+
+    return new IndexColumnSet(columnNames, descendingColumnNames, includedColumnNames);
   }
 }
 
@@ -554,27 +588,30 @@ internal sealed class SqlServerDataVaultLiveSchemaReader : CatalogDataVaultLiveS
 
     var indexes = new List<DataVaultLiveSchemaIndex>();
     foreach (var indexHeader in indexHeaders) {
+      var columns = await ReadIndexColumnsAsync(
+          connection,
+          tableIdentifier,
+          indexHeader.IndexName,
+          cancellationToken).ConfigureAwait(false);
       indexes.Add(new DataVaultLiveSchemaIndex(
           indexHeader.IndexName,
-          await ReadIndexColumnNamesAsync(
-              connection,
-              tableIdentifier,
-              indexHeader.IndexName,
-              cancellationToken).ConfigureAwait(false),
-          indexHeader.IsUnique));
+          columns.ColumnNames,
+          indexHeader.IsUnique,
+          columns.DescendingColumnNames,
+          columns.IncludedColumnNames));
     }
 
     return indexes;
   }
 
-  private static Task<IReadOnlyList<string>> ReadIndexColumnNamesAsync(
+  private static async Task<IndexColumnSet> ReadIndexColumnsAsync(
       DbConnection connection,
       LiveSchemaTableIdentifier tableIdentifier,
       string indexName,
       CancellationToken cancellationToken) {
-    return ReadStringListAsync(
+    using var keyCommand = CreateCommand(
         connection,
-        "SELECT c.name " +
+        "SELECT c.name, ic.is_descending_key " +
         "FROM sys.indexes i " +
         "INNER JOIN sys.tables t ON t.object_id = i.object_id " +
         "INNER JOIN sys.schemas s ON s.schema_id = t.schema_id " +
@@ -583,10 +620,39 @@ internal sealed class SqlServerDataVaultLiveSchemaReader : CatalogDataVaultLiveS
         "WHERE s.name = @schema AND t.name = @table AND i.name = @index " +
         "AND ic.is_included_column = 0 AND ic.key_ordinal > 0 " +
         "ORDER BY ic.key_ordinal;",
-        cancellationToken,
         ("@schema", tableIdentifier.SchemaName),
         ("@table", tableIdentifier.TableName),
         ("@index", indexName));
+
+    var columnNames = new List<string>();
+    var descendingColumnNames = new List<string>();
+    await using (var reader = await keyCommand.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false)) {
+      while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
+        var columnName = reader.GetString(0);
+        columnNames.Add(columnName);
+        if (ConvertToBoolean(reader.GetValue(1))) {
+          descendingColumnNames.Add(columnName);
+        }
+      }
+    }
+
+    var includedColumnNames = await ReadStringListAsync(
+        connection,
+        "SELECT c.name " +
+        "FROM sys.indexes i " +
+        "INNER JOIN sys.tables t ON t.object_id = i.object_id " +
+        "INNER JOIN sys.schemas s ON s.schema_id = t.schema_id " +
+        "INNER JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id " +
+        "INNER JOIN sys.columns c ON c.object_id = t.object_id AND c.column_id = ic.column_id " +
+        "WHERE s.name = @schema AND t.name = @table AND i.name = @index " +
+        "AND ic.is_included_column = 1 " +
+        "ORDER BY ic.index_column_id;",
+        cancellationToken,
+        ("@schema", tableIdentifier.SchemaName),
+        ("@table", tableIdentifier.TableName),
+        ("@index", indexName)).ConfigureAwait(false);
+
+    return new IndexColumnSet(columnNames, descendingColumnNames, includedColumnNames);
   }
 }
 
@@ -706,34 +772,48 @@ internal sealed class OracleDataVaultLiveSchemaReader : CatalogDataVaultLiveSche
 
     var indexes = new List<DataVaultLiveSchemaIndex>();
     foreach (var indexHeader in indexHeaders) {
+      var columns = await ReadIndexColumnsAsync(
+          connection,
+          tableIdentifier,
+          indexHeader.IndexName,
+          cancellationToken).ConfigureAwait(false);
       indexes.Add(new DataVaultLiveSchemaIndex(
           indexHeader.IndexName,
-          await ReadIndexColumnNamesAsync(
-              connection,
-              tableIdentifier,
-              indexHeader.IndexName,
-              cancellationToken).ConfigureAwait(false),
-          indexHeader.IsUnique));
+          columns.ColumnNames,
+          indexHeader.IsUnique,
+          columns.DescendingColumnNames));
     }
 
     return indexes;
   }
 
-  private static Task<IReadOnlyList<string>> ReadIndexColumnNamesAsync(
+  private static async Task<IndexColumnSet> ReadIndexColumnsAsync(
       DbConnection connection,
       LiveSchemaTableIdentifier tableIdentifier,
       string indexName,
       CancellationToken cancellationToken) {
-    return ReadStringListAsync(
+    using var command = CreateCommand(
         connection,
-        "SELECT column_name " +
+        "SELECT column_name, descend " +
         "FROM all_ind_columns " +
         "WHERE index_owner = :schema AND table_name = :table AND index_name = :index " +
         "ORDER BY column_position",
-        cancellationToken,
         ("schema", tableIdentifier.SchemaName),
         ("table", tableIdentifier.TableName),
         ("index", indexName));
+
+    var columnNames = new List<string>();
+    var descendingColumnNames = new List<string>();
+    await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+    while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
+      var columnName = reader.GetString(0);
+      columnNames.Add(columnName);
+      if (!reader.IsDBNull(1) && string.Equals(reader.GetString(1), "DESC", StringComparison.OrdinalIgnoreCase)) {
+        descendingColumnNames.Add(columnName);
+      }
+    }
+
+    return new IndexColumnSet(columnNames, descendingColumnNames, IncludedColumnNames: Array.Empty<string>());
   }
 }
 
@@ -857,34 +937,48 @@ internal sealed class MySqlDataVaultLiveSchemaReader : CatalogDataVaultLiveSchem
 
     var indexes = new List<DataVaultLiveSchemaIndex>();
     foreach (var indexHeader in indexHeaders) {
+      var columns = await ReadIndexColumnsAsync(
+          connection,
+          tableIdentifier,
+          indexHeader.IndexName,
+          cancellationToken).ConfigureAwait(false);
       indexes.Add(new DataVaultLiveSchemaIndex(
           indexHeader.IndexName,
-          await ReadIndexColumnNamesAsync(
-              connection,
-              tableIdentifier,
-              indexHeader.IndexName,
-              cancellationToken).ConfigureAwait(false),
-          indexHeader.IsUnique));
+          columns.ColumnNames,
+          indexHeader.IsUnique,
+          columns.DescendingColumnNames));
     }
 
     return indexes;
   }
 
-  private static Task<IReadOnlyList<string>> ReadIndexColumnNamesAsync(
+  private static async Task<IndexColumnSet> ReadIndexColumnsAsync(
       DbConnection connection,
       LiveSchemaTableIdentifier tableIdentifier,
       string indexName,
       CancellationToken cancellationToken) {
-    return ReadStringListAsync(
+    using var command = CreateCommand(
         connection,
-        "SELECT COLUMN_NAME " +
+        "SELECT COLUMN_NAME, COLLATION " +
         "FROM information_schema.STATISTICS " +
         "WHERE TABLE_SCHEMA = @schema AND TABLE_NAME = @table AND INDEX_NAME = @index " +
         "ORDER BY SEQ_IN_INDEX;",
-        cancellationToken,
         ("@schema", tableIdentifier.SchemaName),
         ("@table", tableIdentifier.TableName),
         ("@index", indexName));
+
+    var columnNames = new List<string>();
+    var descendingColumnNames = new List<string>();
+    await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+    while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
+      var columnName = reader.GetString(0);
+      columnNames.Add(columnName);
+      if (!reader.IsDBNull(1) && string.Equals(reader.GetString(1), "D", StringComparison.Ordinal)) {
+        descendingColumnNames.Add(columnName);
+      }
+    }
+
+    return new IndexColumnSet(columnNames, descendingColumnNames, IncludedColumnNames: Array.Empty<string>());
   }
 }
 
@@ -1076,23 +1170,38 @@ internal sealed class SqliteDataVaultLiveSchemaReader : IDataVaultLiveSchemaRead
     }
 
     foreach (var indexHeader in indexHeaders) {
+      var columns = await ReadIndexColumnsAsync(connection, indexHeader.IndexName, cancellationToken).ConfigureAwait(false);
       indexes.Add(new DataVaultLiveSchemaIndex(
           indexHeader.IndexName,
-          await ReadIndexColumnNamesAsync(connection, indexHeader.IndexName, cancellationToken).ConfigureAwait(false),
-          indexHeader.IsUnique));
+          columns.ColumnNames,
+          indexHeader.IsUnique,
+          columns.DescendingColumnNames));
     }
 
     return indexes;
   }
 
-  private static Task<IReadOnlyList<string>> ReadIndexColumnNamesAsync(
+  private static async Task<IndexColumnSet> ReadIndexColumnsAsync(
       DbConnection connection,
       string indexName,
       CancellationToken cancellationToken) {
-    return ReadStringListAsync(
-        connection,
-        "SELECT name FROM pragma_index_info(" + SqlLiteral(indexName) + ") ORDER BY seqno;",
-        cancellationToken);
+    using var command = connection.CreateCommand();
+    command.CommandText =
+        "SELECT name, \"desc\" FROM pragma_index_xinfo(" + SqlLiteral(indexName) + ") " +
+        "WHERE key = 1 AND name IS NOT NULL ORDER BY seqno;";
+
+    var columnNames = new List<string>();
+    var descendingColumnNames = new List<string>();
+    await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+    while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
+      var columnName = reader.GetString(0);
+      columnNames.Add(columnName);
+      if (Convert.ToInt32(reader.GetValue(1), CultureInfo.InvariantCulture) != 0) {
+        descendingColumnNames.Add(columnName);
+      }
+    }
+
+    return new IndexColumnSet(columnNames, descendingColumnNames, IncludedColumnNames: Array.Empty<string>());
   }
 
   private static async Task<IReadOnlyList<string>> ReadStringListAsync(
@@ -1144,3 +1253,8 @@ internal sealed record LiveSchemaTableIdentifier(string TableName, string? Schem
 internal sealed record LiveSchemaExpectedTable(LiveSchemaTableIdentifier Identifier, string? PrimaryKeyName);
 
 internal sealed record IndexHeader(string IndexName, bool IsUnique);
+
+internal sealed record IndexColumnSet(
+    IReadOnlyList<string> ColumnNames,
+    IReadOnlyList<string> DescendingColumnNames,
+    IReadOnlyList<string> IncludedColumnNames);

@@ -3,22 +3,21 @@
   "ticket-id": "06F7Y0KVHGTTVS216ERSG4XNMM",
   "ticket-type": "story",
   "title": "Story: Add provider idempotency constraint and index preflight checks",
-  "revision": "06F7Y0ZRY0GEASKW4RZ3R7JN6C",
-  "status": "todo",
+  "revision": "06F8JK3Y55PQXSV6B5S5JRF424",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
     "area/diagnostics",
     "area/ef-core",
     "area/provider-support",
     "area/schema",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F7XZW5DYYMYMH7MZYF05HA2G",
   "releaseId": "06F7XZVW426YZYKJJG0P0NZJ2W",
   "created-at": "2026-05-31T17:08:49.8831552Z",
-  "updated-at": "2026-05-31T17:10:27.3123712Z"
+  "updated-at": "2026-06-02T17:05:52.1694834Z"
 }

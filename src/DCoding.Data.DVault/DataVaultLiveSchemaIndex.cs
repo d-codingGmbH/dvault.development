@@ -10,7 +10,14 @@ public sealed class DataVaultLiveSchemaIndex {
   /// <param name="indexName">The physical index name.</param>
   /// <param name="columnNames">The ordered physical index columns.</param>
   /// <param name="isUnique">A value indicating whether the index is unique.</param>
-  public DataVaultLiveSchemaIndex(string indexName, IEnumerable<string> columnNames, bool isUnique) {
+  /// <param name="descendingColumnNames">The ordered physical key columns that are stored descending, when the provider exposes direction.</param>
+  /// <param name="includedColumnNames">The ordered physical included columns, when the provider exposes native included columns.</param>
+  public DataVaultLiveSchemaIndex(
+      string indexName,
+      IEnumerable<string> columnNames,
+      bool isUnique,
+      IEnumerable<string>? descendingColumnNames = null,
+      IEnumerable<string>? includedColumnNames = null) {
     ArgumentException.ThrowIfNullOrWhiteSpace(indexName);
     ArgumentNullException.ThrowIfNull(columnNames);
 
@@ -22,6 +29,18 @@ public sealed class DataVaultLiveSchemaIndex {
         })
         .ToArray();
     IsUnique = isUnique;
+    DescendingColumnNames = (descendingColumnNames ?? Array.Empty<string>())
+        .Select(columnName => {
+          ArgumentException.ThrowIfNullOrWhiteSpace(columnName);
+          return columnName;
+        })
+        .ToArray();
+    IncludedColumnNames = (includedColumnNames ?? Array.Empty<string>())
+        .Select(columnName => {
+          ArgumentException.ThrowIfNullOrWhiteSpace(columnName);
+          return columnName;
+        })
+        .ToArray();
   }
 
   /// <summary>
@@ -38,4 +57,14 @@ public sealed class DataVaultLiveSchemaIndex {
   /// Gets a value indicating whether the index is unique.
   /// </summary>
   public bool IsUnique { get; }
+
+  /// <summary>
+  /// Gets the ordered physical key columns that are stored descending, when the provider exposes direction.
+  /// </summary>
+  public IReadOnlyList<string> DescendingColumnNames { get; }
+
+  /// <summary>
+  /// Gets the ordered physical included columns, when the provider exposes native included columns.
+  /// </summary>
+  public IReadOnlyList<string> IncludedColumnNames { get; }
 }

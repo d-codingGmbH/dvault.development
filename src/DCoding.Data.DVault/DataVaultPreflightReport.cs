@@ -7,6 +7,8 @@ namespace DCoding.Data.DVault;
 /// Structured aggregate Data Vault preflight report with deterministic section status and preserved lane reports.
 /// </summary>
 public sealed class DataVaultPreflightReport {
+  private const string IdempotencyLiveSchemaNotProvided = "No idempotency live schema read result was provided.";
+
   /// <summary>
   /// Initializes a new aggregate preflight report.
   /// </summary>
@@ -20,16 +22,47 @@ public sealed class DataVaultPreflightReport {
       DataVaultPreflightSection<DataVaultModelDriftReport> artifactDrift,
       DataVaultPreflightSection<DataVaultModelDriftPreflightReport> snapshotDrift,
       DataVaultPreflightSection<DataVaultMigrationGuardrailReport> migrationGuardrail,
+      DataVaultPreflightSection<DataVaultPreflightRequestDiagnosticsReport> requestDiagnostics)
+      : this(
+          validationProvider,
+          artifactDrift,
+          snapshotDrift,
+          new DataVaultPreflightSection<DataVaultIdempotencyPreflightReport>(
+              "idempotency-schema",
+              DataVaultPreflightSectionStatus.Skipped,
+              report: null,
+              IdempotencyLiveSchemaNotProvided),
+          migrationGuardrail,
+          requestDiagnostics) {
+  }
+
+  /// <summary>
+  /// Initializes a new aggregate preflight report with an explicit idempotency schema section.
+  /// </summary>
+  /// <param name="validationProvider">The validation and provider-explain diagnostics section.</param>
+  /// <param name="artifactDrift">The artifact-versus-design-time drift section.</param>
+  /// <param name="snapshotDrift">The snapshot-model preflight drift section.</param>
+  /// <param name="idempotencySchema">The explicit idempotency constraint and index schema section.</param>
+  /// <param name="migrationGuardrail">The migration operation guardrail section.</param>
+  /// <param name="requestDiagnostics">The representative request-bound diagnostics section.</param>
+  public DataVaultPreflightReport(
+      DataVaultPreflightSection<DataVaultDiagnosticsResult> validationProvider,
+      DataVaultPreflightSection<DataVaultModelDriftReport> artifactDrift,
+      DataVaultPreflightSection<DataVaultModelDriftPreflightReport> snapshotDrift,
+      DataVaultPreflightSection<DataVaultIdempotencyPreflightReport> idempotencySchema,
+      DataVaultPreflightSection<DataVaultMigrationGuardrailReport> migrationGuardrail,
       DataVaultPreflightSection<DataVaultPreflightRequestDiagnosticsReport> requestDiagnostics) {
     ArgumentNullException.ThrowIfNull(validationProvider);
     ArgumentNullException.ThrowIfNull(artifactDrift);
     ArgumentNullException.ThrowIfNull(snapshotDrift);
+    ArgumentNullException.ThrowIfNull(idempotencySchema);
     ArgumentNullException.ThrowIfNull(migrationGuardrail);
     ArgumentNullException.ThrowIfNull(requestDiagnostics);
 
     ValidationProvider = validationProvider;
     ArtifactDrift = artifactDrift;
     SnapshotDrift = snapshotDrift;
+    IdempotencySchema = idempotencySchema;
     MigrationGuardrail = migrationGuardrail;
     RequestDiagnostics = requestDiagnostics;
   }
@@ -48,6 +81,11 @@ public sealed class DataVaultPreflightReport {
   /// Gets the snapshot-model preflight drift section.
   /// </summary>
   public DataVaultPreflightSection<DataVaultModelDriftPreflightReport> SnapshotDrift { get; }
+
+  /// <summary>
+  /// Gets the explicit idempotency constraint and index schema section.
+  /// </summary>
+  public DataVaultPreflightSection<DataVaultIdempotencyPreflightReport> IdempotencySchema { get; }
 
   /// <summary>
   /// Gets the migration operation guardrail section.
@@ -92,6 +130,7 @@ public sealed class DataVaultPreflightReport {
     AppendSection(builder, ValidationProvider, report => report.ToDisplayString());
     AppendSection(builder, ArtifactDrift, report => report.ToDisplayString());
     AppendSection(builder, SnapshotDrift, report => report.ToDisplayString());
+    AppendSection(builder, IdempotencySchema, report => report.ToDisplayString());
     AppendSection(builder, MigrationGuardrail, report => report.ToDisplayString());
     AppendSection(builder, RequestDiagnostics, report => report.ToDisplayString());
 
@@ -102,6 +141,7 @@ public sealed class DataVaultPreflightReport {
     new(ValidationProvider.Name, ValidationProvider.Status),
     new(ArtifactDrift.Name, ArtifactDrift.Status),
     new(SnapshotDrift.Name, SnapshotDrift.Status),
+    new(IdempotencySchema.Name, IdempotencySchema.Status),
     new(MigrationGuardrail.Name, MigrationGuardrail.Status),
     new(RequestDiagnostics.Name, RequestDiagnostics.Status),
   ];

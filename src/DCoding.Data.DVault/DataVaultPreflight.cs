@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 
 namespace DCoding.Data.DVault;
@@ -7,6 +8,7 @@ namespace DCoding.Data.DVault;
 /// </summary>
 public static class DataVaultPreflight {
   private const string ArtifactDriftNotProvided = "No reviewed model artifact import result was provided.";
+  private const string IdempotencyLiveSchemaNotProvided = "No idempotency live schema read result was provided.";
   private const string MigrationOperationsNotProvided = "No migration operations were provided.";
   private const string RequestDiagnosticsNotProvided = "No representative request diagnostics were provided.";
   private const string SnapshotModelNotProvided = "No snapshot model was provided.";
@@ -27,6 +29,7 @@ public static class DataVaultPreflight {
     var validationProvider = CreateDiagnosticsSection("validation-provider", validationResult);
     var artifactDrift = CreateArtifactDriftSection(request);
     var snapshotDrift = CreateSnapshotDriftSection(request);
+    var idempotencySchema = CreateIdempotencySchemaSection(request);
     var migrationGuardrail = CreateMigrationGuardrailSection(validationResult, request.MigrationOperations);
     var requestDiagnostics = CreateRequestDiagnosticsSection(request);
 
@@ -34,6 +37,7 @@ public static class DataVaultPreflight {
         validationProvider,
         artifactDrift,
         snapshotDrift,
+        idempotencySchema,
         migrationGuardrail,
         requestDiagnostics);
   }
@@ -65,6 +69,35 @@ public static class DataVaultPreflight {
     return new DataVaultPreflightSection<DataVaultModelDriftReport>(
         "artifact-drift",
         report.HasBlockingDifferences
+            ? DataVaultPreflightSectionStatus.Blocked
+            : DataVaultPreflightSectionStatus.Passed,
+        report);
+  }
+
+  private static DataVaultPreflightSection<DataVaultIdempotencyPreflightReport> CreateIdempotencySchemaSection(
+      DataVaultPreflightRequest request) {
+    if (request.IdempotencyLiveSchemaReadResult is null) {
+      return new DataVaultPreflightSection<DataVaultIdempotencyPreflightReport>(
+          "idempotency-schema",
+          DataVaultPreflightSectionStatus.Skipped,
+          report: null,
+          IdempotencyLiveSchemaNotProvided);
+    }
+
+    var providerCapabilities = DataVaultProviderCapabilityProfileSelection.Select(TryGetProviderName(request.DbContext));
+    var report = request.ExpectedImport is null
+        ? DataVaultIdempotencyPreflight.Compare(
+            request.ExpectedMetadataModel!,
+            request.IdempotencyLiveSchemaReadResult,
+            providerCapabilities)
+        : DataVaultIdempotencyPreflight.Compare(
+            request.ExpectedImport,
+            request.IdempotencyLiveSchemaReadResult,
+            providerCapabilities);
+
+    return new DataVaultPreflightSection<DataVaultIdempotencyPreflightReport>(
+        "idempotency-schema",
+        report.IsBlocked
             ? DataVaultPreflightSectionStatus.Blocked
             : DataVaultPreflightSectionStatus.Passed,
         report);
@@ -166,6 +199,15 @@ public static class DataVaultPreflight {
       ArgumentNullException.ThrowIfNull(diagnosticsRequest);
       var diagnostics = diagnosticsRequest.CreateDiagnostics(request.DbContext);
       results.Add(new DataVaultPreflightRepresentativeDiagnostics(diagnosticsRequest.Name, diagnostics));
+    }
+  }
+
+  private static string? TryGetProviderName(DbContext dbContext) {
+    try {
+      return dbContext.Database.ProviderName;
+    }
+    catch (InvalidOperationException) {
+      return null;
     }
   }
 }
