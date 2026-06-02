@@ -1,22 +1,22 @@
 # DVault V1 Typed PIT And Bridge Helper Contract
 
-Status: v1 additive generator contract
+Status: v1 implemented generator contract
 Ticket: 06F7Y0GT7A5QT77TADMRZBVYN8
-Current implemented baseline: [DVault v0.24.0 Release Notes](../releases/v0.24.0.md)
+Current implemented baseline: [DVault v0.25.0 Release Notes](../releases/v0.25.0.md)
 
 ## Decision
 
-The implemented typed read-model generator baseline before this contract is support-bundle-driven and satellite-only. PIT and bridge helper generation is additive to that baseline and must not be described as shipped until generator code and approval coverage are added.
+The implemented typed read-model generator baseline is support-bundle-driven and emits helpers for reviewed satellite, PIT, and bounded bridge read shapes. Satellite helpers continue to cover latest/current/as-of reads. PIT and bridge helpers are now part of the current v1 generated-helper contract when the authoritative support bundle carries the request-bound ReadShape evidence described below.
 
-Typed PIT and bridge helpers consume exactly one authoritative `dvault.support-bundle.v1` additional file. The support bundle must carry reviewed request-bound `readShape.pit` or `readShape.bridge` explain metadata plus the existing optional `DVaultTypedReadModelMetadataSourceFingerprint` gate. The generator must not parse raw `dvault.model.v1` files directly, inspect source-visible Code-First callbacks, infer helpers from literal metadata-first declarations, or fall back to unreviewed metadata sources.
+Typed helpers consume exactly one authoritative `dvault.support-bundle.v1` additional file. PIT and bridge helper emission requires reviewed request-bound `readShape.pit` or `readShape.bridge` explain metadata plus the existing optional `DVaultTypedReadModelMetadataSourceFingerprint` gate. The generator must not parse raw `dvault.model.v1` files directly, inspect source-visible Code-First callbacks, infer helpers from literal metadata-first declarations, or fall back to unreviewed metadata sources.
 
-Generated helpers are ergonomic extension methods over the existing provider-neutral `IDataVaultReadService` boundary. They construct stable metadata/read request values and project maintained PIT or bridge rows. They do not generate provider-specific SQL, perform PIT or bridge maintenance, schedule refresh, call `SaveChanges`, compile dynamic read requests, or widen runtime read semantics.
+Generated helpers are ergonomic extension methods over the existing provider-neutral `IDataVaultReadService` boundary. They construct stable metadata/read request values and project generated satellite rows, maintained PIT rows, or maintained bridge rows. They do not generate provider-specific SQL, perform PIT or bridge maintenance, schedule refresh, call `SaveChanges`, compile dynamic read requests, or widen runtime read semantics.
 
 ## Input And Fingerprint Boundary
 
 Helper generation starts only when the project opts in through `DVaultGenerateTypedReadModels=true` and exactly one authoritative `dvault.support-bundle.v1` source is resolved. Missing, malformed, non-authoritative, or ambiguous support-bundle input remains `DMV1960`. A configured `DVaultTypedReadModelMetadataSourceFingerprint` that differs from the support-bundle metadata-source fingerprint remains `DMV1961`.
 
-PIT and bridge helper emission uses support-bundle explain facts because `readShape` is request-bound. The support bundle must prove the translated table name, produced or mapped column names, parent reference, endpoint vocabulary, traversal depth requirement, deterministic ordering, and projected column groups needed for the generated helper. A support bundle that only proves a runtime metadata declaration but omits the request-bound read-shape facts is insufficient for typed PIT or bridge helper emission.
+PIT and bridge helper emission uses support-bundle explain facts because `readShape` is request-bound. The support bundle must prove the translated table name, produced or mapped column names, parent reference, endpoint vocabulary, traversal depth requirement, deterministic ordering, and projected column groups needed for the generated helper. A support bundle that only proves a runtime metadata declaration but omits the request-bound read-shape facts is insufficient for typed PIT or bridge helper emission. Application code supplies representative request-bound diagnostics to the support-bundle verb through `DataVaultDesignTimeCommandHost.CreateSupportBundleDiagnostics`; the reusable command runner does not invent representative PIT or bridge requests.
 
 Unsupported PIT or bridge facts produce an entity-specific diagnostic and skip only the affected helper. Other supported satellite, PIT, or bridge helpers in the same support bundle continue to generate when their own evidence is valid.
 
@@ -158,9 +158,9 @@ This contract does not add:
 
 Repository evidence for this contract:
 
-- [DCoding.Data.DVault.Analyzers README](../../src/DCoding.Data.DVault.Analyzers/README.md) documents the implemented satellite-only typed read-model generator baseline.
-- [DVault v0.24.0 Release Notes](../releases/v0.24.0.md) keeps typed satellite read-model generation support-bundle-driven and satellite-only.
+- [DCoding.Data.DVault.Analyzers README](../../src/DCoding.Data.DVault.Analyzers/README.md) documents the implemented support-bundle-driven satellite, PIT, and bridge typed read-model generator baseline.
+- [DVault v0.25.0 Release Notes](../releases/v0.25.0.md) records the current ReadShape and typed helper documentation baseline.
 - [DVault V1 PIT And Bridge Boundary](dvault-v1-pit-bridge-boundary.md) defines the supported runtime PIT and bridge read shapes.
 - [DVault V2 Redacted Read-Plan Explain Contract](dvault-v2-redacted-read-plan-explain-contract.md) defines request-bound `readShape.pit` and `readShape.bridge` support-bundle evidence.
 - [DataVaultBridgeTraversalEndpoint.cs](../../src/DCoding.Data.DVault/DataVaultBridgeTraversalEndpoint.cs) defines the closed bridge endpoint vocabulary.
-- [DataVaultTypedReadModelSourceGeneratorTests.cs](../../tests/DCoding.Data.DVault.Tests/Analyzers/DataVaultTypedReadModelSourceGeneratorTests.cs) covers the current satellite-only generator boundary and PIT/bridge skip diagnostics.
+- [DataVaultTypedReadModelSourceGeneratorTests.cs](../../tests/DCoding.Data.DVault.Tests/Analyzers/DataVaultTypedReadModelSourceGeneratorTests.cs) covers generated PIT and bridge helper output, bridge helper delegation through `IDataVaultReadService`, required hierarchy `maximumDepth`, and PIT/bridge skip diagnostics.

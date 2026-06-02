@@ -2,7 +2,7 @@
 
 Status: v2 contract
 Ticket: 06F7Y0FZXX5J0G7G15681HVEBR
-Current public baseline: [DVault v0.24.0 Release Notes](../releases/v0.24.0.md)
+Current public baseline: [DVault v0.25.0 Release Notes](../releases/v0.25.0.md)
 
 ## Decision
 
@@ -13,6 +13,8 @@ DVault v2 read-plan explainability is the request-bound diagnostics surface expo
 - Support-bundle export serializes the same bounded data as deterministic camelCase JSON under `readShape` when callers supply representative request-bound read diagnostics.
 
 This contract formalizes the current diagnostics and support-bundle shape. It does not create a new query execution API, query planner, LINQ provider, raw-SQL advisor, automatic-index advisor, or provider physical-plan promise.
+
+The same redacted `ReadShape` payload is also the reviewed support-bundle evidence consumed by the typed read-model generator for PIT and bridge helpers. That generator remains a separate compile-time surface documented by [DVault V1 Typed PIT And Bridge Helper Contract](dvault-v1-typed-pit-bridge-helper-contract.md); this diagnostics contract defines the value-free facts it can rely on.
 
 ## Closed Vocabularies
 
@@ -119,6 +121,92 @@ For `DataVaultReadShapeKind.Bridge`, `readShape.bridge` contains:
 
 Bridge explain output describes one maintained bridge table and one endpoint-filtered traversal request. It does not add graph traversal APIs, path payload contracts, closure-state contracts, automatic bridge maintenance, or provider physical-plan inspection.
 
+## Support-Bundle Helper Evidence Example
+
+When application code supplies representative request-bound diagnostics through `DataVaultDesignTimeCommandHost.CreateSupportBundleDiagnostics`, `dvault.support-bundle.v1` can carry the same redacted `readShape` section that typed helper generation consumes. The generic design-time command runner does not invent these requests.
+
+This deterministic example includes translated table and column facts, read-strategy status, and fallback data while omitting raw endpoint hash keys, request timestamps, SQL text, provider physical plans, credentials, and provider error text:
+
+```json
+{
+  "diagnostics": {
+    "readStrategy": {
+      "status": "ProviderNeutralFallback",
+      "providerName": "Microsoft.EntityFrameworkCore.Sqlite",
+      "fallbackCauses": [
+        {
+          "kind": "UnsupportedBridgeShape"
+        }
+      ]
+    },
+    "readShape": {
+      "kind": "Bridge",
+      "provider": {
+        "providerName": "Microsoft.EntityFrameworkCore.Sqlite",
+        "capabilityProfileName": "sqlite",
+        "capabilityProfileDefaulted": false,
+        "providerBehaviorProfileName": "sqlite",
+        "providerBehaviorDefaulted": false,
+        "readStrategyStatus": "ProviderNeutralFallback",
+        "readStrategyFallbackCauses": [
+          {
+            "kind": "UnsupportedBridgeShape"
+          }
+        ]
+      },
+      "bridge": {
+        "bridgeKind": "Hierarchy",
+        "bridge": {
+          "metadataName": "SalesRegionHierarchy",
+          "tableKind": "Bridge",
+          "tableName": "BridgeSalesRegionHierarchy"
+        },
+        "endpoints": [
+          {
+            "endpoint": "Ancestor",
+            "endpointName": "SalesRegion",
+            "columnName": "AncestorSalesRegionHashKey"
+          },
+          {
+            "endpoint": "Descendant",
+            "endpointName": "SalesRegion",
+            "columnName": "DescendantSalesRegionHashKey"
+          }
+        ],
+        "filterEndpoint": "Ancestor",
+        "endpointFilter": {
+          "role": "endpointHashKeyFilter",
+          "columnNames": [
+            "AncestorSalesRegionHashKey"
+          ]
+        },
+        "depthPredicate": {
+          "role": "maximumDepthPredicate",
+          "columnNames": [
+            "TraversalDepth"
+          ]
+        },
+        "projectedColumns": [
+          {
+            "role": "endpointProjection",
+            "columnNames": [
+              "AncestorSalesRegionHashKey",
+              "DescendantSalesRegionHashKey"
+            ]
+          },
+          {
+            "role": "depthProjection",
+            "columnNames": [
+              "TraversalDepth"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
 ## Redaction Rules
 
 Read-plan explain output is value-free diagnostics. Diagnostics, support bundles, logs, telemetry, and user-facing guidance for this contract must not include:
@@ -157,7 +245,7 @@ Support-bundle JSON should keep finite arrays as arrays, including empty fallbac
 This contract does not provide:
 
 - new runtime read execution APIs.
-- typed PIT or bridge helper generation.
+- direct typed helper emission or new helper shapes by this diagnostics contract; helper generation consumes this evidence through the separate generator contract.
 - LINQ provider behavior or query-planner behavior.
 - raw SQL capture.
 - provider query-plan export.
