@@ -18,6 +18,7 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.True(result.Validation.IsValid);
     Assert.Equal(DataVaultSaveStrategyDiagnosticsStatus.NotEvaluated, result.SaveStrategy.Status);
     Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.NotEvaluated, result.ReadStrategy.Status);
+    Assert.Null(result.ProviderTuning);
     Assert.Equal("sqlite-v1", result.Explain.CapabilityProfileName);
     Assert.Equal("provider-neutral-v1", result.Explain.ProviderBehaviorProfileName);
     Assert.Equal(
@@ -42,6 +43,9 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains("HubCustomer", json, StringComparison.Ordinal);
     Assert.Contains("SatelliteSnapshotReference", json, StringComparison.Ordinal);
     Assert.Contains("not", result.ToDisplayString(), StringComparison.OrdinalIgnoreCase);
+
+    var bundleJson = DataVaultSupportBundleExporter.ExportJson(result);
+    Assert.DoesNotContain("\"providerTuning\"", bundleJson, StringComparison.Ordinal);
   }
 
   [Fact]
@@ -117,6 +121,8 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.NotNull(explicitLatest.ReadShape);
     var latestShape = explicitLatest.ReadShape!;
     Assert.Equal(DataVaultReadShapeKind.LatestSatellite, latestShape.Kind);
+    Assert.NotNull(latestShape.Provider.Recommendation);
+    Assert.Equal(DataVaultPerformanceProfileCategory.ReadModelHeavy, latestShape.Provider.Recommendation!.Category);
     Assert.NotNull(latestShape.Satellite);
     var latestSatelliteShape = latestShape.Satellite!;
     Assert.Equal(DataVaultSatelliteReadSemantics.AsOf, latestSatelliteShape.Semantics);
@@ -451,6 +457,67 @@ public sealed class DataVaultDiagnosticsTests {
         expectedSelectedStrategyName: null,
         expectedFallbackCause: DataVaultReadStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered,
         forbiddenValues: ["secret-bridge-fallback-hash-key"]);
+  }
+
+  [Fact]
+  public void SupportBundleSerializesSaveProviderTuningThresholdFactsWithoutRequestValues() {
+    var metadata = CreateReadShapeMetadata();
+    var optionsBuilder = new DbContextOptionsBuilder<ReadShapeDiagnosticsContext>()
+        .UseSqlite("Data Source=:memory:");
+    optionsBuilder.UseDataVaultMetadata(DataVaultMetadataRegistry.Create(metadata.Model));
+    using var provider = CreateSqlServerProbeServiceProvider();
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    using var context = new ReadShapeDiagnosticsContext(optionsBuilder.Options);
+    var result = diagnostics.Analyze(
+        context,
+        new DataVaultBulkSaveRequest(CreateRequests(totalOperationCount: 1, satelliteOperationCount: 0)));
+
+    Assert.Equal(DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback, result.SaveStrategy.Status);
+    Assert.NotNull(result.ProviderTuning);
+    Assert.NotNull(result.ProviderTuning!.Save);
+    Assert.Equal(
+        DataVaultPerformanceProfileCategory.StagedProviderIngestion,
+        result.ProviderTuning.Save!.Recommendation!.Category);
+    Assert.Contains(
+        result.ProviderTuning.Save.ThresholdFacts!,
+        fact =>
+            fact.Kind == DataVaultProviderThresholdFactKind.MinimumTotalOperationCount &&
+            fact.GateKind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold &&
+            fact.ProviderName == KnownProviderNames.SqlServer &&
+            fact.MinimumTotalOperationCount == 50);
+    Assert.Contains(
+        result.ProviderTuning.Save.ThresholdFacts!,
+        fact =>
+            fact.Kind == DataVaultProviderThresholdFactKind.MaximumSatelliteOperationCount &&
+            fact.GateKind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold &&
+            fact.ProviderName == KnownProviderNames.SqlServer &&
+            fact.MaximumSatelliteOperationCount == 500);
+
+    var json = DataVaultSupportBundleExporter.ExportJson(result);
+
+    Assert.Contains("\"providerTuning\"", json, StringComparison.Ordinal);
+    Assert.Contains("\"thresholdFacts\"", json, StringComparison.Ordinal);
+    Assert.Contains("\"minimumTotalOperationCount\": 50", json, StringComparison.Ordinal);
+    Assert.Contains("\"maximumSatelliteOperationCount\": 500", json, StringComparison.Ordinal);
+    Assert.DoesNotContain("unit-test", json, StringComparison.Ordinal);
+
+    using var document = JsonDocument.Parse(json);
+    var save = document
+        .RootElement
+        .GetProperty("diagnostics")
+        .GetProperty("providerTuning")
+        .GetProperty("save");
+
+    Assert.Equal(
+        DataVaultPerformanceProfileCategory.StagedProviderIngestion.ToString(),
+        save.GetProperty("recommendation").GetProperty("category").GetString());
+    Assert.False(
+        document
+            .RootElement
+            .GetProperty("diagnostics")
+            .GetProperty("saveStrategy")
+            .TryGetProperty("selectedStrategyName", out _));
   }
 
   [Fact]
@@ -842,6 +909,14 @@ public sealed class DataVaultDiagnosticsTests {
     return services.BuildServiceProvider(validateScopes: true);
   }
 
+  private static ServiceProvider CreateSqlServerProbeServiceProvider() {
+    var services = new ServiceCollection();
+    services.AddSingleton<IDataVaultProviderSaveStrategy, SqlServerDataVaultSaveStrategy>();
+    services.AddDVault();
+
+    return services.BuildServiceProvider(validateScopes: true);
+  }
+
   private static DataVaultMetadataModel CreateCustomerMetadataModel() {
     var customerHub = new DataVaultHubMetadata("Customer", ["CustomerNumber"]);
     var customerSatellite = new DataVaultSatelliteMetadata(
@@ -965,6 +1040,17 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal(expectedKind.ToString(), readShape.GetProperty("kind").GetString());
     Assert.Equal(expectedStatus.ToString(), readStrategy.GetProperty("status").GetString());
     Assert.Equal(expectedStatus.ToString(), provider.GetProperty("readStrategyStatus").GetString());
+    Assert.Equal(
+        DataVaultPerformanceProfileCategory.ReadModelHeavy.ToString(),
+        provider.GetProperty("recommendation").GetProperty("category").GetString());
+    Assert.Equal(
+        DataVaultPerformanceProfileCategory.ReadModelHeavy.ToString(),
+        diagnostics
+            .GetProperty("providerTuning")
+            .GetProperty("read")
+            .GetProperty("recommendation")
+            .GetProperty("category")
+            .GetString());
 
     if (expectedSelectedStrategyName is null) {
       Assert.False(readStrategy.TryGetProperty("selectedStrategyName", out _));

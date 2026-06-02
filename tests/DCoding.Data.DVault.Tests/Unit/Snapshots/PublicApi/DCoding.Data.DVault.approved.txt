@@ -248,6 +248,7 @@ type public enum DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity
 type public sealed class DCoding.Data.DVault.DataVaultDiagnosticsResult : System.IEquatable<DCoding.Data.DVault.DataVaultDiagnosticsResult>
   ctor public DataVaultDiagnosticsResult(DCoding.Data.DVault.DataVaultValidationDiagnostics Validation, DCoding.Data.DVault.DataVaultExplainDiagnostics Explain, DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics SaveStrategy, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultDiagnosticsIssue> Issues)
   property public DCoding.Data.DVault.DataVaultExplainDiagnostics Explain { get; init; }
+  property public DCoding.Data.DVault.DataVaultProviderTuningDiagnostics? ProviderTuning { get; init; }
   property public DCoding.Data.DVault.DataVaultReadShapeDiagnostics? ReadShape { get; init; }
   property public DCoding.Data.DVault.DataVaultReadStrategyDiagnostics ReadStrategy { get; init; }
   property public DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics SaveStrategy { get; init; }
@@ -655,6 +656,12 @@ type public sealed class DCoding.Data.DVault.DataVaultParentReferenceExplain : S
   method public virtual bool Equals(DCoding.Data.DVault.DataVaultParentReferenceExplain? other)
   method public void Deconstruct(out DCoding.Data.DVault.Modeling.DataVaultMetadataReferenceKind Kind, out string Name)
 
+type public enum DCoding.Data.DVault.DataVaultPerformanceProfileCategory
+  value SmallAppLocalVault = 0
+  value MediumChunkedIngestion = 1
+  value StagedProviderIngestion = 2
+  value ReadModelHeavy = 3
+
 type public sealed class DCoding.Data.DVault.DataVaultPitAsOfReadRequest
   ctor public DataVaultPitAsOfReadRequest(DCoding.Data.DVault.Modeling.DataVaultPitMetadata pit, System.Collections.Generic.IEnumerable<string> parentHashKeys, System.DateTimeOffset asOf)
   property public DCoding.Data.DVault.Modeling.DataVaultPitMetadata Pit { get; }
@@ -895,6 +902,51 @@ type public sealed class DCoding.Data.DVault.DataVaultProviderSaveStrategyContex
 type public enum DCoding.Data.DVault.DataVaultProviderSqlFunctionSupport
   value NoneInV1Unsupported = 0
 
+type public sealed class DCoding.Data.DVault.DataVaultProviderThresholdFact : System.IEquatable<DCoding.Data.DVault.DataVaultProviderThresholdFact>
+  ctor public DataVaultProviderThresholdFact(DCoding.Data.DVault.DataVaultProviderThresholdFactKind Kind, DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind GateKind, string ProviderName, string Message)
+  property public DCoding.Data.DVault.DataVaultProviderThresholdFactKind Kind { get; init; }
+  property public DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind GateKind { get; init; }
+  property public int? MaximumSatelliteOperationCount { get; init; }
+  property public int? MinimumTotalOperationCount { get; init; }
+  property public string Message { get; init; }
+  property public string ProviderName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultProviderThresholdFact? left, DCoding.Data.DVault.DataVaultProviderThresholdFact? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultProviderThresholdFact? left, DCoding.Data.DVault.DataVaultProviderThresholdFact? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultProviderThresholdFact? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultProviderThresholdFactKind Kind, out DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind GateKind, out string ProviderName, out string Message)
+
+type public enum DCoding.Data.DVault.DataVaultProviderThresholdFactKind
+  value MinimumTotalOperationCount = 0
+  value MaximumSatelliteOperationCount = 1
+
+type public sealed class DCoding.Data.DVault.DataVaultProviderTuningDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultProviderTuningDiagnostics>
+  ctor public DataVaultProviderTuningDiagnostics(DCoding.Data.DVault.DataVaultSaveProviderTuningDiagnostics? Save = null, DCoding.Data.DVault.DataVaultReadProviderTuningDiagnostics? Read = null)
+  property public DCoding.Data.DVault.DataVaultReadProviderTuningDiagnostics? Read { get; init; }
+  property public DCoding.Data.DVault.DataVaultSaveProviderTuningDiagnostics? Save { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultProviderTuningDiagnostics? left, DCoding.Data.DVault.DataVaultProviderTuningDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultProviderTuningDiagnostics? left, DCoding.Data.DVault.DataVaultProviderTuningDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultProviderTuningDiagnostics? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultSaveProviderTuningDiagnostics? Save, out DCoding.Data.DVault.DataVaultReadProviderTuningDiagnostics? Read)
+
+type public sealed class DCoding.Data.DVault.DataVaultProviderTuningRecommendation : System.IEquatable<DCoding.Data.DVault.DataVaultProviderTuningRecommendation>
+  ctor public DataVaultProviderTuningRecommendation(DCoding.Data.DVault.DataVaultPerformanceProfileCategory Category, string ProfileName, string Message)
+  property public DCoding.Data.DVault.DataVaultPerformanceProfileCategory Category { get; init; }
+  property public string Message { get; init; }
+  property public string ProfileName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultProviderTuningRecommendation? left, DCoding.Data.DVault.DataVaultProviderTuningRecommendation? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultProviderTuningRecommendation? left, DCoding.Data.DVault.DataVaultProviderTuningRecommendation? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultProviderTuningRecommendation? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultPerformanceProfileCategory Category, out string ProfileName, out string Message)
+
 type public sealed class DCoding.Data.DVault.DataVaultProviderTypeMapping : System.IEquatable<DCoding.Data.DVault.DataVaultProviderTypeMapping>
   ctor public DataVaultProviderTypeMapping(DCoding.Data.DVault.DataVaultLogicalPropertyKind logicalPropertyKind, System.Type modelClrType, string nativeStoreType, DCoding.Data.DVault.DataVaultProviderValueFormat valueFormat)
   property public DCoding.Data.DVault.DataVaultLogicalPropertyKind LogicalPropertyKind { get; }
@@ -928,6 +980,17 @@ type public enum DCoding.Data.DVault.DataVaultProviderValueFormat
   value NativeDateTimeOffset = 2
   value NativeInteger = 3
   value UtcTicks = 4
+
+type public sealed class DCoding.Data.DVault.DataVaultReadProviderTuningDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultReadProviderTuningDiagnostics>
+  ctor public DataVaultReadProviderTuningDiagnostics(DCoding.Data.DVault.DataVaultProviderTuningRecommendation? Recommendation = null)
+  property public DCoding.Data.DVault.DataVaultProviderTuningRecommendation? Recommendation { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultReadProviderTuningDiagnostics? left, DCoding.Data.DVault.DataVaultReadProviderTuningDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultReadProviderTuningDiagnostics? left, DCoding.Data.DVault.DataVaultReadProviderTuningDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultReadProviderTuningDiagnostics? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultProviderTuningRecommendation? Recommendation)
 
 type public static class DCoding.Data.DVault.DataVaultReadServiceBridgeExtensions
   method public static System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultBridgeReadRecord>> ReadBridgeRowsAsync(this DCoding.Data.DVault.IDataVaultReadService readService, Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultBridgeReadRequest request, System.Threading.CancellationToken cancellationToken = default)
@@ -1018,6 +1081,7 @@ type public enum DCoding.Data.DVault.DataVaultReadShapeKind
 
 type public sealed class DCoding.Data.DVault.DataVaultReadShapeProviderDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultReadShapeProviderDiagnostics>
   ctor public DataVaultReadShapeProviderDiagnostics(string? ProviderName, string CapabilityProfileName, bool CapabilityProfileDefaulted, string ProviderBehaviorProfileName, bool ProviderBehaviorDefaulted, DCoding.Data.DVault.DataVaultReadStrategyDiagnosticsStatus ReadStrategyStatus, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyFallbackCause> ReadStrategyFallbackCauses)
+  property public DCoding.Data.DVault.DataVaultProviderTuningRecommendation? Recommendation { get; init; }
   property public DCoding.Data.DVault.DataVaultReadStrategyDiagnosticsStatus ReadStrategyStatus { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultReadStrategyFallbackCause> ReadStrategyFallbackCauses { get; init; }
   property public bool CapabilityProfileDefaulted { get; init; }
@@ -1305,6 +1369,18 @@ type public sealed class DCoding.Data.DVault.DataVaultSaveChangesMetadataInterce
 type public sealed class DCoding.Data.DVault.DataVaultSaveChunk
   ctor public DataVaultSaveChunk(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveRequest> requests)
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultSaveRequest> Requests { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultSaveProviderTuningDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultSaveProviderTuningDiagnostics>
+  ctor public DataVaultSaveProviderTuningDiagnostics(DCoding.Data.DVault.DataVaultProviderTuningRecommendation? Recommendation = null, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultProviderThresholdFact>? ThresholdFacts = null)
+  property public DCoding.Data.DVault.DataVaultProviderTuningRecommendation? Recommendation { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultProviderThresholdFact>? ThresholdFacts { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultSaveProviderTuningDiagnostics? left, DCoding.Data.DVault.DataVaultSaveProviderTuningDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultSaveProviderTuningDiagnostics? left, DCoding.Data.DVault.DataVaultSaveProviderTuningDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultSaveProviderTuningDiagnostics? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultProviderTuningRecommendation? Recommendation, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultProviderThresholdFact>? ThresholdFacts)
 
 type public sealed class DCoding.Data.DVault.DataVaultSaveRequest
   ctor public DataVaultSaveRequest(System.DateTimeOffset loadTimestamp, string recordSource, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultHubSaveOperation> hubOperations, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultLinkSaveOperation> linkOperations)

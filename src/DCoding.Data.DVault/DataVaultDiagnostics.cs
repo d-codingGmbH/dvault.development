@@ -529,6 +529,11 @@ public sealed record DataVaultReadShapeProviderDiagnostics(
   /// Gets the selected provider-specific read strategy name when a provider strategy accepted the request.
   /// </summary>
   public string? SelectedStrategyName { get; init; }
+
+  /// <summary>
+  /// Gets bounded performance-profile recommendation context for this provider/read-shape evaluation.
+  /// </summary>
+  public DataVaultProviderTuningRecommendation? Recommendation { get; init; }
 }
 
 /// <summary>
@@ -631,6 +636,93 @@ public sealed record DataVaultReadShapeDiagnostics(
     DataVaultBridgeReadShapeDiagnostics? Bridge = null);
 
 /// <summary>
+/// Closed repository-backed performance-profile category used by provider tuning diagnostics.
+/// </summary>
+public enum DataVaultPerformanceProfileCategory {
+  /// <summary>
+  /// The checked-in "Small app-local vault" performance profile.
+  /// </summary>
+  SmallAppLocalVault,
+
+  /// <summary>
+  /// The checked-in "Medium chunked ingestion" performance profile.
+  /// </summary>
+  MediumChunkedIngestion,
+
+  /// <summary>
+  /// The checked-in "Staged provider ingestion" performance profile.
+  /// </summary>
+  StagedProviderIngestion,
+
+  /// <summary>
+  /// The checked-in "Read-model heavy" performance profile.
+  /// </summary>
+  ReadModelHeavy,
+}
+
+/// <summary>
+/// Identifies the bounded threshold fact carried by provider tuning diagnostics.
+/// </summary>
+public enum DataVaultProviderThresholdFactKind {
+  /// <summary>
+  /// A provider strategy requires at least the specified total operation count.
+  /// </summary>
+  MinimumTotalOperationCount,
+
+  /// <summary>
+  /// A provider strategy accepts at most the specified satellite operation count.
+  /// </summary>
+  MaximumSatelliteOperationCount,
+}
+
+/// <summary>
+/// Bounded performance-profile recommendation derived from request-bound provider diagnostics.
+/// </summary>
+public sealed record DataVaultProviderTuningRecommendation(
+    DataVaultPerformanceProfileCategory Category,
+    string ProfileName,
+    string Message);
+
+/// <summary>
+/// Bounded provider threshold fact derived from known provider save-strategy gates.
+/// </summary>
+public sealed record DataVaultProviderThresholdFact(
+    DataVaultProviderThresholdFactKind Kind,
+    DataVaultSaveStrategyFallbackCauseKind GateKind,
+    string ProviderName,
+    string Message) {
+  /// <summary>
+  /// Gets the minimum total operation count when the threshold is a minimum-operation gate.
+  /// </summary>
+  public int? MinimumTotalOperationCount { get; init; }
+
+  /// <summary>
+  /// Gets the maximum satellite operation count when the threshold is a maximum-satellite gate.
+  /// </summary>
+  public int? MaximumSatelliteOperationCount { get; init; }
+}
+
+/// <summary>
+/// Request-bound provider tuning diagnostics for save dispatch.
+/// </summary>
+public sealed record DataVaultSaveProviderTuningDiagnostics(
+    DataVaultProviderTuningRecommendation? Recommendation = null,
+    IReadOnlyList<DataVaultProviderThresholdFact>? ThresholdFacts = null);
+
+/// <summary>
+/// Request-bound provider tuning diagnostics for read dispatch.
+/// </summary>
+public sealed record DataVaultReadProviderTuningDiagnostics(
+    DataVaultProviderTuningRecommendation? Recommendation = null);
+
+/// <summary>
+/// Request-bound provider tuning diagnostics derived from save/read strategy diagnostics.
+/// </summary>
+public sealed record DataVaultProviderTuningDiagnostics(
+    DataVaultSaveProviderTuningDiagnostics? Save = null,
+    DataVaultReadProviderTuningDiagnostics? Read = null);
+
+/// <summary>
 /// Stable structured Data Vault diagnostics payload.
 /// </summary>
 public sealed record DataVaultDiagnosticsResult(
@@ -653,6 +745,11 @@ public sealed record DataVaultDiagnosticsResult(
   /// Gets request-bound read/query-shape diagnostics for supported Data Vault read requests.
   /// </summary>
   public DataVaultReadShapeDiagnostics? ReadShape { get; init; }
+
+  /// <summary>
+  /// Gets request-bound provider tuning diagnostics derived from save/read strategy and read-shape facts.
+  /// </summary>
+  public DataVaultProviderTuningDiagnostics? ProviderTuning { get; init; }
 
   /// <summary>
   /// Produces a concise human-readable rendering of the structured diagnostics payload.
@@ -718,6 +815,8 @@ public sealed record DataVaultDiagnosticsResult(
       builder.Append(ReadShape.Kind);
       AppendReadShapeDisplayDetails(builder, ReadShape);
     }
+
+    AppendProviderTuningDisplayDetails(builder, ProviderTuning);
 
     if (Issues.Count > 0) {
       builder.AppendLine();
@@ -801,6 +900,20 @@ public sealed record DataVaultDiagnosticsResult(
         builder.Append(readShape.Bridge.FilterEndpoint);
         builder.Append(')');
         return;
+    }
+  }
+
+  private static void AppendProviderTuningDisplayDetails(
+      StringBuilder builder,
+      DataVaultProviderTuningDiagnostics? providerTuning) {
+    if (providerTuning?.Save?.Recommendation is not null) {
+      builder.Append(", save recommendation ");
+      builder.Append(providerTuning.Save.Recommendation.Category);
+    }
+
+    if (providerTuning?.Read?.Recommendation is not null) {
+      builder.Append(", read recommendation ");
+      builder.Append(providerTuning.Read.Recommendation.Category);
     }
   }
 }
@@ -1279,8 +1392,9 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       _ => NotEvaluatedReadStrategy with { ProviderName = providerName },
     };
     var readShape = CreateReadShapeDiagnostics(explain, readStrategy, readRequest);
+    var providerTuning = CreateProviderTuningDiagnostics(strategy, readStrategy, readShape);
 
-    return CreateResult(explain, strategy, readStrategy, issues, readShape);
+    return CreateResult(explain, strategy, readStrategy, issues, readShape, providerTuning);
   }
 
   private DataVaultSaveStrategyDiagnostics EvaluateSaveStrategy(
@@ -1671,15 +1785,15 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     return readRequest switch {
       DataVaultLatestSatelliteReadRequest latestRequest => new DataVaultReadShapeDiagnostics(
           DataVaultReadShapeKind.LatestSatellite,
-          CreateReadShapeProviderDiagnostics(explain, readStrategy),
+          CreateReadShapeProviderDiagnostics(explain, readStrategy, DataVaultReadShapeKind.LatestSatellite),
           Satellite: CreateSatelliteReadShapeDiagnostics(explain, latestRequest)),
       DataVaultPitAsOfReadRequest pitRequest => new DataVaultReadShapeDiagnostics(
           DataVaultReadShapeKind.PitAsOf,
-          CreateReadShapeProviderDiagnostics(explain, readStrategy),
+          CreateReadShapeProviderDiagnostics(explain, readStrategy, DataVaultReadShapeKind.PitAsOf),
           Pit: CreatePitReadShapeDiagnostics(explain, pitRequest)),
       DataVaultBridgeReadRequest bridgeRequest => new DataVaultReadShapeDiagnostics(
           DataVaultReadShapeKind.Bridge,
-          CreateReadShapeProviderDiagnostics(explain, readStrategy),
+          CreateReadShapeProviderDiagnostics(explain, readStrategy, DataVaultReadShapeKind.Bridge),
           Bridge: CreateBridgeReadShapeDiagnostics(explain, bridgeRequest)),
       _ => null,
     };
@@ -1687,7 +1801,8 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
 
   private static DataVaultReadShapeProviderDiagnostics CreateReadShapeProviderDiagnostics(
       DataVaultExplainDiagnostics explain,
-      DataVaultReadStrategyDiagnostics readStrategy) {
+      DataVaultReadStrategyDiagnostics readStrategy,
+      DataVaultReadShapeKind readShapeKind) {
     return new DataVaultReadShapeProviderDiagnostics(
         readStrategy.ProviderName ?? explain.ProviderName,
         explain.CapabilityProfileName,
@@ -1697,6 +1812,157 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         readStrategy.Status,
         readStrategy.FallbackCauses) {
       SelectedStrategyName = readStrategy.SelectedStrategyName,
+      Recommendation = CreateReadProviderTuningRecommendation(readStrategy, readShapeKind),
+    };
+  }
+
+  private static DataVaultProviderTuningDiagnostics? CreateProviderTuningDiagnostics(
+      DataVaultSaveStrategyDiagnostics saveStrategy,
+      DataVaultReadStrategyDiagnostics readStrategy,
+      DataVaultReadShapeDiagnostics? readShape) {
+    var save = CreateSaveProviderTuningDiagnostics(saveStrategy);
+    var read = readShape is null ? null : CreateReadProviderTuningDiagnostics(readStrategy, readShape.Kind);
+
+    return save is null && read is null
+        ? null
+        : new DataVaultProviderTuningDiagnostics(save, read);
+  }
+
+  private static DataVaultSaveProviderTuningDiagnostics? CreateSaveProviderTuningDiagnostics(
+      DataVaultSaveStrategyDiagnostics strategy) {
+    if (strategy.Status == DataVaultSaveStrategyDiagnosticsStatus.NotEvaluated) {
+      return null;
+    }
+
+    var thresholdFacts = CreateSaveProviderThresholdFacts(strategy);
+    return new DataVaultSaveProviderTuningDiagnostics(
+        CreateSaveProviderTuningRecommendation(strategy),
+        thresholdFacts.Count == 0 ? null : thresholdFacts);
+  }
+
+  private static DataVaultReadProviderTuningDiagnostics? CreateReadProviderTuningDiagnostics(
+      DataVaultReadStrategyDiagnostics strategy,
+      DataVaultReadShapeKind readShapeKind) {
+    if (strategy.Status == DataVaultReadStrategyDiagnosticsStatus.NotEvaluated) {
+      return null;
+    }
+
+    return new DataVaultReadProviderTuningDiagnostics(
+        CreateReadProviderTuningRecommendation(strategy, readShapeKind));
+  }
+
+  private static DataVaultProviderTuningRecommendation CreateSaveProviderTuningRecommendation(
+      DataVaultSaveStrategyDiagnostics strategy) {
+    if (strategy.Status == DataVaultSaveStrategyDiagnosticsStatus.ProviderStrategySelected &&
+        !string.Equals(strategy.SelectedStrategyName, "SqliteDataVaultSaveStrategy", StringComparison.Ordinal)) {
+      return new DataVaultProviderTuningRecommendation(
+          DataVaultPerformanceProfileCategory.StagedProviderIngestion,
+          "Staged provider ingestion",
+          "Provider-specific save diagnostics selected an eligible ordered bulk path; keep the context clean and verify provider-local benchmark evidence before claiming provider-native ingestion behavior.");
+    }
+
+    if (strategy.Status == DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback &&
+        strategy.Candidates.Any(candidate => candidate.SupportedProviderNames.Count > 0)) {
+      return new DataVaultProviderTuningRecommendation(
+          DataVaultPerformanceProfileCategory.StagedProviderIngestion,
+          "Staged provider ingestion",
+          "Provider-specific save diagnostics evaluated registered candidates but fell back; use the reported gates, fallback causes, and threshold facts before claiming provider-native ingestion behavior.");
+    }
+
+    return new DataVaultProviderTuningRecommendation(
+        DataVaultPerformanceProfileCategory.SmallAppLocalVault,
+        "Small app-local vault",
+        "Save diagnostics are provider-neutral or SQLite-selected; use the small app-local vault profile until provider-specific eligibility and local evidence justify a wider ingestion profile.");
+  }
+
+  private static DataVaultProviderTuningRecommendation CreateReadProviderTuningRecommendation(
+      DataVaultReadStrategyDiagnostics strategy,
+      DataVaultReadShapeKind readShapeKind) {
+    if (strategy.Status == DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected &&
+        string.Equals(strategy.SelectedStrategyName, "SqliteDataVaultReadStrategy", StringComparison.Ordinal)) {
+      return new DataVaultProviderTuningRecommendation(
+          DataVaultPerformanceProfileCategory.ReadModelHeavy,
+          "Read-model heavy",
+          "Read diagnostics selected the repository-proven SQLite optimized path for " + readShapeKind + "; keep PIT and bridge rows maintained when those shapes are used.");
+    }
+
+    return new DataVaultProviderTuningRecommendation(
+        DataVaultPerformanceProfileCategory.ReadModelHeavy,
+        "Read-model heavy",
+        "Read diagnostics provide provider-neutral " + readShapeKind + " guidance; SQLite is the only repository-proven optimized read provider path, so non-SQLite or unsupported shapes remain fallback guidance.");
+  }
+
+  private static IReadOnlyList<DataVaultProviderThresholdFact> CreateSaveProviderThresholdFacts(
+      DataVaultSaveStrategyDiagnostics strategy) {
+    var facts = new List<DataVaultProviderThresholdFact>();
+    var keys = new HashSet<string>(StringComparer.Ordinal);
+    foreach (var candidate in strategy.Candidates.OrderBy(candidate => candidate.Ordinal)) {
+      foreach (var requirement in candidate.GateRequirements) {
+        if (!requirement.MinimumTotalOperationCount.HasValue && !requirement.MaximumSatelliteOperationCount.HasValue) {
+          continue;
+        }
+
+        foreach (var providerName in candidate.SupportedProviderNames) {
+          var fact = CreateSaveProviderThresholdFact(candidate.StrategyName, providerName, requirement);
+          var key = fact.Kind +
+              "\u001f" +
+              fact.GateKind +
+              "\u001f" +
+              fact.ProviderName +
+              "\u001f" +
+              fact.MinimumTotalOperationCount?.ToString(CultureInfo.InvariantCulture) +
+              "\u001f" +
+              fact.MaximumSatelliteOperationCount?.ToString(CultureInfo.InvariantCulture);
+          if (keys.Add(key)) {
+            facts.Add(fact);
+          }
+        }
+      }
+    }
+
+    return facts;
+  }
+
+  private static DataVaultProviderThresholdFact CreateSaveProviderThresholdFact(
+      string strategyName,
+      string providerName,
+      DataVaultSaveStrategyGateRequirement requirement) {
+    if (requirement.MinimumTotalOperationCount.HasValue) {
+      var minimum = requirement.MinimumTotalOperationCount.Value;
+      return new DataVaultProviderThresholdFact(
+          DataVaultProviderThresholdFactKind.MinimumTotalOperationCount,
+          requirement.Kind,
+          providerName,
+          FormatSaveStrategyDisplayName(strategyName) +
+          " optimized dispatch requires at least " +
+          minimum.ToString(CultureInfo.InvariantCulture) +
+          " total operations.") {
+        MinimumTotalOperationCount = minimum,
+      };
+    }
+
+    var maximum = requirement.MaximumSatelliteOperationCount.GetValueOrDefault();
+    return new DataVaultProviderThresholdFact(
+        DataVaultProviderThresholdFactKind.MaximumSatelliteOperationCount,
+        requirement.Kind,
+        providerName,
+        FormatSaveStrategyDisplayName(strategyName) +
+        " optimized dispatch accepts at most " +
+        maximum.ToString(CultureInfo.InvariantCulture) +
+        " satellite operations.") {
+      MaximumSatelliteOperationCount = maximum,
+    };
+  }
+
+  private static string FormatSaveStrategyDisplayName(string strategyName) {
+    return strategyName switch {
+      "SqlServerDataVaultSaveStrategy" => "SQL Server",
+      "MySqlStagedDataVaultSaveStrategy" => "MySQL staged bulk",
+      "MySqlDataVaultSaveStrategy" => "MySQL",
+      "OracleDataVaultSaveStrategy" => "Oracle",
+      "PostgresDataVaultSaveStrategy" => "PostgreSQL",
+      "SqliteDataVaultSaveStrategy" => "SQLite",
+      _ => strategyName,
     };
   }
 
@@ -2046,7 +2312,8 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       DataVaultSaveStrategyDiagnostics strategy,
       DataVaultReadStrategyDiagnostics readStrategy,
       IReadOnlyList<DataVaultDiagnosticsIssue> issues,
-      DataVaultReadShapeDiagnostics? readShape = null) {
+      DataVaultReadShapeDiagnostics? readShape = null,
+      DataVaultProviderTuningDiagnostics? providerTuning = null) {
     var issueArray = issues.ToArray();
     var validationIssues = issueArray
         .Where(issue => issue.Severity == DataVaultDiagnosticsIssueSeverity.Error)
@@ -2056,6 +2323,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     return new DataVaultDiagnosticsResult(validation, explain, strategy, issueArray) {
       ReadStrategy = readStrategy,
       ReadShape = readShape,
+      ProviderTuning = providerTuning,
     };
   }
 
