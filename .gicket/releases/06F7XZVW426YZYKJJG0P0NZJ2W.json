@@ -3,6 +3,6 @@
   "releaseId": "06F7XZVW426YZYKJJG0P0NZJ2W",
   "name": "v0.26.0 - Provider Performance and Schema Guardrails",
   "description": "Evidence-driven provider tuning, benchmark regression checks, migration/schema safety, and a documented high-performance artifact boundary without making stored procedures a default runtime path.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-05-31T17:05:33.2161927Z"
 }
