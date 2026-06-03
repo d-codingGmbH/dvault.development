@@ -3,6 +3,6 @@
   "milestoneId": "06F8KYY18CM34WFHAYYW9JQ4WC",
   "name": "v0.28.0 - Provider read optimization docs",
   "description": "Document provider read optimization boundaries, benchmark rows, and release guidance.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-06-02T20:17:18.1475936Z"
 }
