@@ -3,22 +3,21 @@
   "ticket-id": "06F8KYYJEM7HF4AFRAQA81F4S8",
   "ticket-type": "epic",
   "title": "Epic: EF Core lifecycle analyzer guardrails",
-  "revision": "06F8KZWNFGHPRF1TJ4JNQXVB64",
-  "status": "todo",
+  "revision": "06F8W5GVVPETVQVGPMPGJFQDNR",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/epic",
     "area/analyzers",
     "area/developer-experience",
     "area/ef-core",
     "area/modeling",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F8KYXXAKQH8BEP0ACX3KZTZ0",
   "releaseId": "06F8KYXNNBG8TNDWQ6ZAJHS8AR",
   "created-at": "2026-06-02T20:17:22.7604853Z",
-  "updated-at": "2026-06-02T20:21:29.0842653Z"
+  "updated-at": "2026-06-03T15:24:34.1410000Z"
 }
