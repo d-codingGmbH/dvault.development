@@ -3,23 +3,22 @@
   "ticket-id": "06F8KZJAKN7Q2QXXP9PRK2V94G",
   "ticket-type": "story",
   "title": "Story: Add PostgreSQL and SQL Server PIT/bridge read strategy candidates",
-  "revision": "06F8M00YEH5NF7B2NDH1EZF7AR",
-  "status": "todo",
+  "revision": "06F8Z6YC8205W38R1F9BRSES2M",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
     "area/diagnostics",
     "area/ef-core",
     "area/performance",
     "area/provider-support",
     "area/read-models",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F8KYY0FSVTMTWN65NN1QEEYM",
   "releaseId": "06F8KYXQFNEK9XJV167HVT4RCG",
   "created-at": "2026-06-02T20:20:04.5962657Z",
-  "updated-at": "2026-06-02T20:22:04.1481798Z"
+  "updated-at": "2026-06-03T22:30:12.8002715Z"
 }

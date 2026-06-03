@@ -1230,6 +1230,8 @@ type public enum DCoding.Data.DVault.DataVaultReadStrategyFallbackCauseKind
   value StrategyDeclined = 5
   value UnsupportedPitShape = 6
   value UnsupportedBridgeShape = 7
+  value IncompleteReadShapeEvidence = 8
+  value StaleReadModelMaintenance = 9
 
 type public sealed class DCoding.Data.DVault.DataVaultReadStrategyGateRequirement : System.IEquatable<DCoding.Data.DVault.DataVaultReadStrategyGateRequirement>
   ctor public DataVaultReadStrategyGateRequirement(DCoding.Data.DVault.DataVaultReadStrategyFallbackCauseKind Kind)

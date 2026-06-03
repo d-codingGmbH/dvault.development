@@ -1,0 +1,436 @@
+using System.Globalization;
+using DCoding.Data.DVault.Modeling;
+using DCoding.Data.DVault.Tests.Shared;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Xunit;
+
+namespace DCoding.Data.DVault.Tests.Unit;
+
+public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
+  [Fact]
+  public async Task PostgresAndSqlServerPitCandidatesReturnProviderNeutralRowsAndProjections() {
+    var metadata = CreatePitMetadata();
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<PitReadParityContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    using var provider = CreateSqliteProvider();
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    using var fallbackProvider = CreateFallbackProvider();
+    var fallbackReadService = fallbackProvider.GetRequiredService<IDataVaultReadService>();
+    var postgresReadService = CreatePitCandidateReadService(new PostgresDataVaultReadStrategy());
+    var sqlServerReadService = CreatePitCandidateReadService(new SqlServerDataVaultReadStrategy());
+    string customerHashKey;
+
+    await using (var context = new PitReadParityContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+      customerHashKey = await SaveCustomerAsync(saveService, context, metadata);
+      await SaveProfileAsync(
+          saveService,
+          context,
+          metadata,
+          customerHashKey,
+          Utc(2026, 5, 11, 10, 0),
+          "Alice Adams",
+          "Gold",
+          "profile-hash-1");
+      await SaveStatusAsync(
+          saveService,
+          context,
+          metadata,
+          customerHashKey,
+          Utc(2026, 5, 11, 10, 30),
+          "Active",
+          "status-hash-1");
+      await SaveProfileAsync(
+          saveService,
+          context,
+          metadata,
+          customerHashKey,
+          Utc(2026, 5, 11, 11, 0),
+          "Alice Baker",
+          "Platinum",
+          "profile-hash-2");
+
+      context.Set<Dictionary<string, object>>("PitCustomerProfileStatus").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
+        ["CustomerHashKey"] = customerHashKey,
+        ["LoadTimestamp"] = Utc(2026, 5, 11, 11, 15),
+        ["ProfileLoadTimestamp"] = Utc(2026, 5, 11, 11, 0),
+        ["StatusLoadTimestamp"] = Utc(2026, 5, 11, 10, 30),
+      });
+      await context.SaveChangesAsync();
+    }
+
+    await using (var context = new PitReadParityContext(options)) {
+      var request = new DataVaultPitAsOfReadRequest(
+          metadata.Pit,
+          [customerHashKey],
+          Utc(2026, 5, 11, 12, 0));
+
+      Assert.True(DataVaultProviderReadStrategyGateEvaluator
+          .EvaluatePostgres(KnownProviderNames.Postgres, request)
+          .CanRead);
+      Assert.True(DataVaultProviderReadStrategyGateEvaluator
+          .EvaluateSqlServer(KnownProviderNames.SqlServer, request)
+          .CanRead);
+
+      var fallbackRows = await fallbackReadService.ReadPitRowsAsync(context, request);
+      var postgresRows = await new PostgresDataVaultReadStrategy().ReadPitRowsAsync(
+          new DataVaultProviderPitReadStrategyContext(context, request));
+      var sqlServerRows = await new SqlServerDataVaultReadStrategy().ReadPitRowsAsync(
+          new DataVaultProviderPitReadStrategyContext(context, request));
+      var fallbackProjections = await ProjectPitRowsAsync(fallbackReadService, context, request);
+      var postgresProjections = await ProjectPitRowsAsync(postgresReadService, context, request);
+      var sqlServerProjections = await ProjectPitRowsAsync(sqlServerReadService, context, request);
+
+      Assert.Equal(FormatPitRows(fallbackRows), FormatPitRows(postgresRows));
+      Assert.Equal(FormatPitRows(fallbackRows), FormatPitRows(sqlServerRows));
+      Assert.Equal(fallbackProjections, postgresProjections);
+      Assert.Equal(fallbackProjections, sqlServerProjections);
+    }
+  }
+
+  [Fact]
+  public async Task PostgresAndSqlServerBridgeCandidatesReturnProviderNeutralRowsAndProjections() {
+    var bridge = ManyToManyMetadataModel.Bridges.Single();
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<BridgeReadParityContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    using var fallbackProvider = CreateFallbackProvider();
+    var fallbackReadService = fallbackProvider.GetRequiredService<IDataVaultReadService>();
+    var postgresReadService = CreateBridgeCandidateReadService(new PostgresDataVaultReadStrategy());
+    var sqlServerReadService = CreateBridgeCandidateReadService(new SqlServerDataVaultReadStrategy());
+
+    await using (var context = new BridgeReadParityContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+      await SeedBridgeRowAsync(context, "customer-1", "order-2");
+      await SeedBridgeRowAsync(context, "customer-2", "order-3");
+      await SeedBridgeRowAsync(context, "customer-1", "order-1");
+    }
+
+    await using (var context = new BridgeReadParityContext(options)) {
+      var request = new DataVaultBridgeReadRequest(
+          bridge,
+          DataVaultBridgeTraversalEndpoint.From,
+          ["customer-1"]);
+
+      Assert.True(DataVaultProviderReadStrategyGateEvaluator
+          .EvaluatePostgres(KnownProviderNames.Postgres, request)
+          .CanRead);
+      Assert.True(DataVaultProviderReadStrategyGateEvaluator
+          .EvaluateSqlServer(KnownProviderNames.SqlServer, request)
+          .CanRead);
+
+      var fallbackRows = await fallbackReadService.ReadBridgeRowsAsync(context, request);
+      var postgresRows = await new PostgresDataVaultReadStrategy().ReadBridgeRowsAsync(
+          new DataVaultProviderBridgeReadStrategyContext(context, request));
+      var sqlServerRows = await new SqlServerDataVaultReadStrategy().ReadBridgeRowsAsync(
+          new DataVaultProviderBridgeReadStrategyContext(context, request));
+      var fallbackProjections = await ProjectBridgeRowsAsync(fallbackReadService, context, request);
+      var postgresProjections = await ProjectBridgeRowsAsync(postgresReadService, context, request);
+      var sqlServerProjections = await ProjectBridgeRowsAsync(sqlServerReadService, context, request);
+
+      Assert.Equal(FormatBridgeRows(fallbackRows), FormatBridgeRows(postgresRows));
+      Assert.Equal(FormatBridgeRows(fallbackRows), FormatBridgeRows(sqlServerRows));
+      Assert.Equal(fallbackProjections, postgresProjections);
+      Assert.Equal(fallbackProjections, sqlServerProjections);
+    }
+  }
+
+  private static ServiceProvider CreateSqliteProvider() {
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+
+    return services.BuildServiceProvider(validateScopes: true);
+  }
+
+  private static ServiceProvider CreateFallbackProvider() {
+    var services = new ServiceCollection();
+    services.AddDVault();
+
+    return services.BuildServiceProvider(validateScopes: true);
+  }
+
+  private static IDataVaultReadService CreatePitCandidateReadService(IDataVaultProviderPitReadStrategy strategy) {
+    return new DefaultDataVaultReadService(
+        Array.Empty<IDataVaultProviderReadStrategy>(),
+        [new AlwaysAcceptPitReadStrategy(strategy)],
+        Array.Empty<IDataVaultProviderBridgeReadStrategy>());
+  }
+
+  private static IDataVaultReadService CreateBridgeCandidateReadService(IDataVaultProviderBridgeReadStrategy strategy) {
+    return new DefaultDataVaultReadService(
+        Array.Empty<IDataVaultProviderReadStrategy>(),
+        Array.Empty<IDataVaultProviderPitReadStrategy>(),
+        [new AlwaysAcceptBridgeReadStrategy(strategy)]);
+  }
+
+  private static async Task<IReadOnlyList<CustomerSnapshotRead>> ProjectPitRowsAsync(
+      IDataVaultReadService readService,
+      DbContext context,
+      DataVaultPitAsOfReadRequest request) {
+    return await readService.ReadPitAsync(
+        context,
+        request,
+        row => {
+          var profile = row.RequiredSatellite("Profile");
+          var status = row.RequiredSatellite("Status");
+
+          return new CustomerSnapshotRead(
+              row.RequiredString("ParentHashKey"),
+              row.RequiredDateTimeOffset("LoadTimestamp"),
+              profile.RequiredString("Customer Name"),
+              profile.RequiredString("Customer Tier"),
+              status.RequiredString("Status Code"));
+        });
+  }
+
+  private static async Task<IReadOnlyList<string>> ProjectBridgeRowsAsync(
+      IDataVaultReadService readService,
+      DbContext context,
+      DataVaultBridgeReadRequest request) {
+    return await readService.ReadBridgeAsync(
+        context,
+        request,
+        row => row.RequiredString("CustomerHashKey") + "->" + row.RequiredString("OrderHashKey"));
+  }
+
+  private static async Task<string> SaveCustomerAsync(
+      IDataVaultSaveService saveService,
+      DbContext context,
+      PitReadMetadata metadata) {
+    var result = await saveService.SaveAsync(
+        context,
+        new DataVaultSaveRequest(
+            Utc(2026, 5, 11, 8, 0),
+            "crm-import",
+            [new(metadata.Customer, [new("Customer Id", "C-100")])],
+            []));
+
+    return result.SavedRecords
+        .Single(record => record.Kind == DataVaultTableKind.Hub && record.MetadataName == "Customer")
+        .HashKey;
+  }
+
+  private static Task SaveProfileAsync(
+      IDataVaultSaveService saveService,
+      DbContext context,
+      PitReadMetadata metadata,
+      string customerHashKey,
+      DateTimeOffset loadTimestamp,
+      string customerName,
+      string customerTier,
+      string hashDiff) {
+    return saveService.SaveAsync(
+        context,
+        new DataVaultSaveRequest(
+            loadTimestamp,
+            "crm-profile",
+            [],
+            [],
+            [
+                new(
+                    metadata.Profile,
+                    customerHashKey,
+                    [new("Customer Name", customerName), new("Customer Tier", customerTier)],
+                    hashDiff),
+            ]));
+  }
+
+  private static Task SaveStatusAsync(
+      IDataVaultSaveService saveService,
+      DbContext context,
+      PitReadMetadata metadata,
+      string customerHashKey,
+      DateTimeOffset loadTimestamp,
+      string statusCode,
+      string hashDiff) {
+    return saveService.SaveAsync(
+        context,
+        new DataVaultSaveRequest(
+            loadTimestamp,
+            "crm-status",
+            [],
+            [],
+            [
+                new(
+                    metadata.Status,
+                    customerHashKey,
+                    [new("Status Code", statusCode)],
+                    hashDiff),
+            ]));
+  }
+
+  private static Task SeedBridgeRowAsync(
+      DbContext context,
+      string customerHashKey,
+      string orderHashKey) {
+    return context.Database.ExecuteSqlRawAsync(
+        "INSERT INTO \"BridgeCustomerOrder\" (\"CustomerHashKey\", \"OrderHashKey\") VALUES ({0}, {1});",
+        customerHashKey,
+        orderHashKey);
+  }
+
+  private static IReadOnlyList<string> FormatPitRows(IReadOnlyList<DataVaultPitReadRecord> rows) {
+    return rows
+        .Select(row =>
+            row.ParentHashKey +
+            "|" +
+            row.LoadTimestamp.ToString("O", CultureInfo.InvariantCulture) +
+            "|" +
+            FormatDictionary(row.DrivingKeyValues) +
+            "|" +
+            string.Join(";", row.SatelliteSnapshots.Select(FormatSnapshot)))
+        .ToArray();
+  }
+
+  private static string FormatSnapshot(DataVaultPitSatelliteSnapshot snapshot) {
+    return snapshot.SatelliteName +
+        ":" +
+        snapshot.Ordinal.ToString(CultureInfo.InvariantCulture) +
+        ":" +
+        snapshot.IsPresent.ToString(CultureInfo.InvariantCulture) +
+        ":" +
+        (snapshot.SnapshotLoadTimestamp?.ToString("O", CultureInfo.InvariantCulture) ?? "<null>") +
+        ":" +
+        (snapshot.HashDiff ?? "<null>") +
+        ":" +
+        (snapshot.RecordSource ?? "<null>") +
+        ":" +
+        FormatDictionary(snapshot.PayloadValues);
+  }
+
+  private static IReadOnlyList<string> FormatBridgeRows(IReadOnlyList<DataVaultBridgeReadRecord> rows) {
+    return rows
+        .Select(row =>
+            row.MetadataName +
+            "|" +
+            row.TableName +
+            "|" +
+            (row.TraversalDepth?.ToString(CultureInfo.InvariantCulture) ?? "<null>") +
+            "|" +
+            string.Join(";", row.EndpointHashKeys.Select(FormatEndpoint)))
+        .ToArray();
+  }
+
+  private static string FormatEndpoint(DataVaultBridgeEndpointReadValue endpoint) {
+    return endpoint.Endpoint +
+        ":" +
+        endpoint.EndpointName +
+        ":" +
+        endpoint.ColumnName +
+        ":" +
+        endpoint.HashKey;
+  }
+
+  private static string FormatDictionary<TValue>(IReadOnlyDictionary<string, TValue> values) {
+    return string.Join(
+        ",",
+        values
+            .OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => pair.Key + "=" + (pair.Value?.ToString() ?? "<null>")));
+  }
+
+  private static PitReadMetadata CreatePitMetadata() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["Customer Name", "Customer Tier"]);
+    var status = new DataVaultSatelliteMetadata(
+        "Status",
+        customer.ToReference(),
+        ["Status Code"]);
+    var pit = new DataVaultPitMetadata(customer.ToReference(), ["Profile", "Status"]);
+    var model = new DataVaultMetadataModel([customer], [], [profile, status], [pit]);
+
+    return new PitReadMetadata(customer, profile, status, pit, model);
+  }
+
+  private static DataVaultMetadataModel CreateManyToManyMetadataModel() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+    var customerOrder = new DataVaultLinkMetadata("CustomerOrder", [customer.ToReference(), order.ToReference()]);
+    var bridge = DataVaultBridgeMetadata.ManyToMany(
+        "CustomerOrder",
+        customer.ToReference(),
+        customerOrder.ToReference(),
+        order.ToReference());
+
+    return new DataVaultMetadataModel([customer, order], [customerOrder], [], [bridge]);
+  }
+
+  private static DateTimeOffset Utc(int year, int month, int day, int hour, int minute) {
+    return new DateTimeOffset(year, month, day, hour, minute, 0, TimeSpan.Zero);
+  }
+
+  private static DataVaultMetadataModel ManyToManyMetadataModel { get; } = CreateManyToManyMetadataModel();
+
+  private sealed class PitReadParityContext(DbContextOptions<PitReadParityContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(CreatePitMetadata().Model, DataVaultProviderCapabilityProfiles.Sqlite);
+    }
+  }
+
+  private sealed class BridgeReadParityContext(DbContextOptions<BridgeReadParityContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(ManyToManyMetadataModel, DataVaultProviderCapabilityProfiles.Sqlite);
+    }
+  }
+
+  private sealed class AlwaysAcceptPitReadStrategy(IDataVaultProviderPitReadStrategy inner) : IDataVaultProviderPitReadStrategy {
+    public int Priority => inner.Priority;
+
+    public bool CanReadPitRows(DbContext dbContext, DataVaultPitAsOfReadRequest request) {
+      ArgumentNullException.ThrowIfNull(dbContext);
+      ArgumentNullException.ThrowIfNull(request);
+
+      return true;
+    }
+
+    public Task<IReadOnlyList<DataVaultPitReadRecord>> ReadPitRowsAsync(
+        DataVaultProviderPitReadStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      return inner.ReadPitRowsAsync(context, cancellationToken);
+    }
+  }
+
+  private sealed class AlwaysAcceptBridgeReadStrategy(IDataVaultProviderBridgeReadStrategy inner) : IDataVaultProviderBridgeReadStrategy {
+    public int Priority => inner.Priority;
+
+    public bool CanReadBridgeRows(DbContext dbContext, DataVaultBridgeReadRequest request) {
+      ArgumentNullException.ThrowIfNull(dbContext);
+      ArgumentNullException.ThrowIfNull(request);
+
+      return true;
+    }
+
+    public Task<IReadOnlyList<DataVaultBridgeReadRecord>> ReadBridgeRowsAsync(
+        DataVaultProviderBridgeReadStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      return inner.ReadBridgeRowsAsync(context, cancellationToken);
+    }
+
+    public Task<IReadOnlyList<DataVaultBridgeProjectionRow>> ReadBridgeProjectionRowsAsync(
+        DataVaultProviderBridgeReadStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      return inner.ReadBridgeProjectionRowsAsync(context, cancellationToken);
+    }
+  }
+
+  private sealed record PitReadMetadata(
+      DataVaultHubMetadata Customer,
+      DataVaultSatelliteMetadata Profile,
+      DataVaultSatelliteMetadata Status,
+      DataVaultPitMetadata Pit,
+      DataVaultMetadataModel Model);
+
+  private sealed record CustomerSnapshotRead(
+      string ParentHashKey,
+      DateTimeOffset LoadTimestamp,
+      string CustomerName,
+      string CustomerTier,
+      string StatusCode);
+}

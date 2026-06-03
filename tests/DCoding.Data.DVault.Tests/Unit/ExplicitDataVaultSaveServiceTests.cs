@@ -228,6 +228,19 @@ public sealed class ExplicitDataVaultSaveServiceTests {
 
   [Fact]
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.PostgresProvider)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqlServerProvider)]
+  public void PostgresAndSqlServerProviderPackagesRegisterOptimizedPitAndBridgeReadStrategies() {
+    AssertProviderPitBridgeReadRegistration(
+        services => services.AddDVaultPostgres(),
+        "PostgresDataVaultReadStrategy");
+    AssertProviderPitBridgeReadRegistration(
+        services => services.AddDVaultSqlServer(),
+        "SqlServerDataVaultReadStrategy");
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqlServerProvider)]
   public void SqlServerProviderPackageRegistersOptimizedSaveStrategy() {
     AssertProviderRegistration(services => services.AddDVaultSqlServer(), expectProviderStrategy: true);
@@ -807,6 +820,25 @@ public sealed class ExplicitDataVaultSaveServiceTests {
       else {
         Assert.Empty(provider.GetServices<IDataVaultProviderSaveStrategy>());
       }
+    }
+    finally {
+      DataVaultProviderCapabilityProfileSelection.Reset();
+    }
+  }
+
+  private static void AssertProviderPitBridgeReadRegistration(
+      Action<IServiceCollection> configure,
+      string expectedStrategyName) {
+    try {
+      var services = new ServiceCollection();
+
+      configure(services);
+
+      using var provider = services.BuildServiceProvider(validateScopes: true);
+
+      Assert.Empty(provider.GetServices<IDataVaultProviderReadStrategy>());
+      Assert.Equal(expectedStrategyName, Assert.Single(provider.GetServices<IDataVaultProviderPitReadStrategy>()).GetType().Name);
+      Assert.Equal(expectedStrategyName, Assert.Single(provider.GetServices<IDataVaultProviderBridgeReadStrategy>()).GetType().Name);
     }
     finally {
       DataVaultProviderCapabilityProfileSelection.Reset();

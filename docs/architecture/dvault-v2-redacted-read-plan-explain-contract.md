@@ -47,6 +47,8 @@ Read-strategy fallback causes are the finite `DataVaultReadStrategyFallbackCause
 - `StrategyDeclined`
 - `UnsupportedPitShape`
 - `UnsupportedBridgeShape`
+- `IncompleteReadShapeEvidence`
+- `StaleReadModelMaintenance`
 
 Fallback causes stay machine-readable enum values with bounded messages. Consumers should not parse fallback prose as a compatibility contract.
 

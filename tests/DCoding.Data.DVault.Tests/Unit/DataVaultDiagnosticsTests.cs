@@ -356,6 +356,8 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains("MultiActiveSatelliteUnsupported", document, StringComparison.Ordinal);
     Assert.Contains("UnsupportedPitShape", document, StringComparison.Ordinal);
     Assert.Contains("UnsupportedBridgeShape", document, StringComparison.Ordinal);
+    Assert.Contains("IncompleteReadShapeEvidence", document, StringComparison.Ordinal);
+    Assert.Contains("StaleReadModelMaintenance", document, StringComparison.Ordinal);
     Assert.Contains("selectedStrategyName", document, StringComparison.Ordinal);
     Assert.Contains("raw request keys", document, StringComparison.Ordinal);
     Assert.Contains("raw hash-key values", document, StringComparison.Ordinal);

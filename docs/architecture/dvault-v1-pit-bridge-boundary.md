@@ -9,7 +9,7 @@ PIT/bridge feature-introduction baseline: [DVault v0.21.0 Release Notes](../rele
 
 DVault v1 treats PIT and bridge tables as explicit read models. Application code owns when those read models are maintained, and `IDataVaultReadService` consumes the already-maintained rows for PIT as-of and bridge traversal reads.
 
-`AddDVaultSqlite()` is the only repository-proven optimized PIT/bridge read provider path. Unsupported providers and unsupported request shapes keep the provider-neutral read pipelines. Neither read path performs maintenance, schedules background work, updates rows during `SaveChanges`, or turns PIT/bridge metadata into automatic orchestration.
+`AddDVaultSqlite()`, `AddDVaultPostgres()`, and `AddDVaultSqlServer()` register repository-proven optimized PIT/bridge read strategy candidates. SQLite also remains the optimized latest-satellite read provider path. Unsupported providers and declined request shapes keep the provider-neutral read pipelines. Neither read path performs maintenance, schedules background work, updates rows during `SaveChanges`, or turns PIT/bridge metadata into automatic orchestration.
 
 ## PIT Maintenance Boundary
 
@@ -56,7 +56,7 @@ Bridge reads target one `DataVaultBridgeMetadata` declaration and filter by endp
 
 ## Provider Dispatch And Diagnostics
 
-The public read request contract is provider-neutral. `AddDVaultSqlite()` registers optimized SQLite read dispatch for supported latest-satellite, PIT, and bridge read shapes. `AddDVault()` without a provider-specific read strategy and non-SQLite provider registrations fall back to the provider-neutral read path for PIT/bridge requests.
+The public read request contract is provider-neutral. `AddDVaultSqlite()` registers optimized SQLite read dispatch for supported latest-satellite, PIT, and bridge read shapes. `AddDVaultPostgres()` and `AddDVaultSqlServer()` register optimized PIT and bridge read strategy candidates for PostgreSQL and SQL Server without adding latest-satellite read dispatch. `AddDVault()` without a provider-specific read strategy, unsupported providers, declined request shapes, incomplete generated read-model projection evidence, and observable stale-maintenance signals such as pending tracked changes fall back to the provider-neutral read path for PIT/bridge requests.
 
 `IDataVaultReadDiagnosticsService` is the diagnostics boundary for read strategy and read-shape evidence. Request-bound diagnostics keep provider strategy selection in `ReadStrategy` and add `ReadShape` facts for translated PIT or bridge table identity, filter columns, deterministic row-selection and ordering rules, expected key/index access paths, and provider fallback caveats. The bounded payload and support-bundle redaction rules are defined by [DVault V2 Redacted Read-Plan Explain Contract](dvault-v2-redacted-read-plan-explain-contract.md). Diagnostics do not expose raw hash-key values, as-of values, request keys, generated SQL, or provider query plans.
 
@@ -68,6 +68,8 @@ Focused integration coverage:
 
 - [DataVaultPitReadServiceSqliteTests.cs](../../tests/DCoding.Data.DVault.Tests/Integration/DataVaultPitReadServiceSqliteTests.cs) covers SQLite PIT as-of reads, provider strategy selection, provider-neutral fallback diagnostics, and PIT read-shape facts.
 - [DataVaultPitMaintenanceServiceSqliteTests.cs](../../tests/DCoding.Data.DVault.Tests/Integration/DataVaultPitMaintenanceServiceSqliteTests.cs) covers PIT rebuild, parent maintenance, late-arriving correction, shared-driving-key multi-active PITs, link-parent runtime PITs, and registry-backed PIT maintenance requests.
+- [DataVaultProviderReadStrategyTests.cs](../../tests/DCoding.Data.DVault.Tests/Unit/DataVaultProviderReadStrategyTests.cs) covers PostgreSQL and SQL Server PIT/bridge candidate gates for provider match, supported shape selection, unsupported-shape fallback, incomplete-evidence fallback, and stale-maintenance-signal fallback causes.
+- [DataVaultRelationalPitBridgeReadStrategyParityTests.cs](../../tests/DCoding.Data.DVault.Tests/Unit/DataVaultRelationalPitBridgeReadStrategyParityTests.cs) executes PostgreSQL and SQL Server PIT/bridge candidate read paths against maintained rows and compares row plus typed projection results with the provider-neutral `AddDVault()` fallback path.
 - [DataVaultBridgeReadServiceSqliteTests.cs](../../tests/DCoding.Data.DVault.Tests/Integration/DataVaultBridgeReadServiceSqliteTests.cs) covers SQLite bridge reads, bounded hierarchy depth, registry-backed bridge read shape, and provider-neutral fallback behavior.
 - [DataVaultBridgeMaintenanceServiceSqliteTests.cs](../../tests/DCoding.Data.DVault.Tests/Integration/DataVaultBridgeMaintenanceServiceSqliteTests.cs) covers many-to-many bridge maintenance, hierarchy depth behavior, rebuild after topology shrink/delete scenarios, cycle handling without implicit self rows, and registry-backed bridge maintenance.
 - [DataVaultDiagnosticsIntegrationTests.cs](../../tests/DCoding.Data.DVault.Tests/Integration/DataVaultDiagnosticsIntegrationTests.cs) covers SQLite read strategy diagnostics, read-shape diagnostics, registry-backed read-shape equivalence, and aggregate preflight representative diagnostics.
@@ -95,7 +97,7 @@ Compiled-model, compiled-query, and pooled-context guidance remains in [DVault E
 - Read-time PIT or bridge refresh.
 - Background schedulers, triggers, or implicit EF `SaveChanges` orchestration.
 - Provider-specific PIT or bridge maintenance strategies.
-- Non-SQLite optimized PIT or bridge read claims.
+- Non-SQLite optimized latest-satellite read claims.
 - Registry-backed PIT as-of read requests.
 - Model-first link-parent PIT artifacts.
 - Link-parent multi-active PITs.

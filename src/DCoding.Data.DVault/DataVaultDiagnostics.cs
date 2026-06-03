@@ -196,6 +196,16 @@ public enum DataVaultReadStrategyFallbackCauseKind {
   /// The read request targets a bridge shape not supported by the provider strategy.
   /// </summary>
   UnsupportedBridgeShape,
+
+  /// <summary>
+  /// The read request is missing complete generated read-model projection evidence required by the provider strategy.
+  /// </summary>
+  IncompleteReadShapeEvidence,
+
+  /// <summary>
+  /// The context carries an observable signal that maintained PIT or bridge rows may be stale for provider strategy dispatch.
+  /// </summary>
+  StaleReadModelMaintenance,
 }
 
 /// <summary>
@@ -1879,17 +1889,43 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       DataVaultReadStrategyDiagnostics strategy,
       DataVaultReadShapeKind readShapeKind) {
     if (strategy.Status == DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected &&
-        string.Equals(strategy.SelectedStrategyName, "SqliteDataVaultReadStrategy", StringComparison.Ordinal)) {
+        IsRepositoryProvenOptimizedReadStrategy(strategy.SelectedStrategyName, readShapeKind)) {
       return new DataVaultProviderTuningRecommendation(
           DataVaultPerformanceProfileCategory.ReadModelHeavy,
           "Read-model heavy",
-          "Read diagnostics selected the repository-proven SQLite optimized path for " + readShapeKind + "; keep PIT and bridge rows maintained when those shapes are used.");
+          "Read diagnostics selected the repository-proven " +
+          FormatOptimizedReadProviderName(strategy.SelectedStrategyName) +
+          " optimized path for " +
+          readShapeKind +
+          "; keep PIT and bridge rows maintained when those shapes are used.");
     }
 
     return new DataVaultProviderTuningRecommendation(
         DataVaultPerformanceProfileCategory.ReadModelHeavy,
         "Read-model heavy",
-        "Read diagnostics provide provider-neutral " + readShapeKind + " guidance; SQLite is the only repository-proven optimized read provider path, so non-SQLite or unsupported shapes remain fallback guidance.");
+        "Read diagnostics provide provider-neutral " +
+        readShapeKind +
+        " guidance; SQLite remains the repository-proven optimized latest-satellite provider, while SQLite, PostgreSQL, and SQL Server are repository-proven optimized PIT/bridge providers when diagnostics select their candidates. Unsupported providers, unsupported shapes, or incomplete read-shape evidence remain fallback guidance.");
+  }
+
+  private static bool IsRepositoryProvenOptimizedReadStrategy(
+      string? selectedStrategyName,
+      DataVaultReadShapeKind readShapeKind) {
+    return selectedStrategyName switch {
+      "SqliteDataVaultReadStrategy" => true,
+      "PostgresDataVaultReadStrategy" => readShapeKind is DataVaultReadShapeKind.PitAsOf or DataVaultReadShapeKind.Bridge,
+      "SqlServerDataVaultReadStrategy" => readShapeKind is DataVaultReadShapeKind.PitAsOf or DataVaultReadShapeKind.Bridge,
+      _ => false,
+    };
+  }
+
+  private static string FormatOptimizedReadProviderName(string? selectedStrategyName) {
+    return selectedStrategyName switch {
+      "SqliteDataVaultReadStrategy" => "SQLite",
+      "PostgresDataVaultReadStrategy" => "PostgreSQL",
+      "SqlServerDataVaultReadStrategy" => "SQL Server",
+      _ => "provider-specific",
+    };
   }
 
   private static IReadOnlyList<DataVaultProviderThresholdFact> CreateSaveProviderThresholdFacts(
@@ -3180,6 +3216,8 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
 
 internal enum DataVaultKnownProviderReadStrategy {
   Sqlite,
+  Postgres,
+  SqlServer,
 }
 
 internal sealed record DataVaultProviderReadStrategyGateEvaluation(
@@ -3200,7 +3238,11 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
       DataVaultPitAsOfReadRequest request) {
     ArgumentNullException.ThrowIfNull(dbContext);
 
-    return EvaluateSqlite(dbContext.Database.ProviderName, request);
+    return EvaluateSqlite(
+        dbContext.Database.ProviderName,
+        request,
+        HasCompletePitReadShapeEvidence(dbContext, request),
+        HasStaleReadModelMaintenanceSignal(dbContext));
   }
 
   public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlite(
@@ -3208,7 +3250,59 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
       DataVaultBridgeReadRequest request) {
     ArgumentNullException.ThrowIfNull(dbContext);
 
-    return EvaluateSqlite(dbContext.Database.ProviderName, request);
+    return EvaluateSqlite(
+        dbContext.Database.ProviderName,
+        request,
+        HasCompleteBridgeReadShapeEvidence(dbContext, request),
+        HasStaleReadModelMaintenanceSignal(dbContext));
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluatePostgres(
+      DbContext dbContext,
+      DataVaultPitAsOfReadRequest request) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    return EvaluatePostgres(
+        dbContext.Database.ProviderName,
+        request,
+        HasCompletePitReadShapeEvidence(dbContext, request),
+        HasStaleReadModelMaintenanceSignal(dbContext));
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluatePostgres(
+      DbContext dbContext,
+      DataVaultBridgeReadRequest request) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    return EvaluatePostgres(
+        dbContext.Database.ProviderName,
+        request,
+        HasCompleteBridgeReadShapeEvidence(dbContext, request),
+        HasStaleReadModelMaintenanceSignal(dbContext));
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlServer(
+      DbContext dbContext,
+      DataVaultPitAsOfReadRequest request) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    return EvaluateSqlServer(
+        dbContext.Database.ProviderName,
+        request,
+        HasCompletePitReadShapeEvidence(dbContext, request),
+        HasStaleReadModelMaintenanceSignal(dbContext));
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlServer(
+      DbContext dbContext,
+      DataVaultBridgeReadRequest request) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    return EvaluateSqlServer(
+        dbContext.Database.ProviderName,
+        request,
+        HasCompleteBridgeReadShapeEvidence(dbContext, request),
+        HasStaleReadModelMaintenanceSignal(dbContext));
   }
 
   public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlite(
@@ -3224,21 +3318,191 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
   public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlite(
       string? providerName,
       DataVaultPitAsOfReadRequest request) {
+    return EvaluateSqlite(providerName, request, hasCompleteReadShapeEvidence: true);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlite(
+      string? providerName,
+      DataVaultPitAsOfReadRequest request,
+      bool hasCompleteReadShapeEvidence) {
+    return EvaluateSqlite(
+        providerName,
+        request,
+        hasCompleteReadShapeEvidence,
+        hasStaleReadModelMaintenanceSignal: false);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlite(
+      string? providerName,
+      DataVaultPitAsOfReadRequest request,
+      bool hasCompleteReadShapeEvidence,
+      bool hasStaleReadModelMaintenanceSignal) {
     return EvaluatePit(
         DataVaultKnownProviderReadStrategy.Sqlite,
         providerName,
         request,
-        supportedProviderNames: [KnownProviderNames.Sqlite]);
+        supportedProviderNames: [KnownProviderNames.Sqlite],
+        hasCompleteReadShapeEvidence: hasCompleteReadShapeEvidence,
+        hasStaleReadModelMaintenanceSignal: hasStaleReadModelMaintenanceSignal);
   }
 
   public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlite(
       string? providerName,
       DataVaultBridgeReadRequest request) {
+    return EvaluateSqlite(providerName, request, hasCompleteReadShapeEvidence: true);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlite(
+      string? providerName,
+      DataVaultBridgeReadRequest request,
+      bool hasCompleteReadShapeEvidence) {
+    return EvaluateSqlite(
+        providerName,
+        request,
+        hasCompleteReadShapeEvidence,
+        hasStaleReadModelMaintenanceSignal: false);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlite(
+      string? providerName,
+      DataVaultBridgeReadRequest request,
+      bool hasCompleteReadShapeEvidence,
+      bool hasStaleReadModelMaintenanceSignal) {
     return EvaluateBridge(
         DataVaultKnownProviderReadStrategy.Sqlite,
         providerName,
         request,
-        supportedProviderNames: [KnownProviderNames.Sqlite]);
+        supportedProviderNames: [KnownProviderNames.Sqlite],
+        hasCompleteReadShapeEvidence: hasCompleteReadShapeEvidence,
+        hasStaleReadModelMaintenanceSignal: hasStaleReadModelMaintenanceSignal);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluatePostgres(
+      string? providerName,
+      DataVaultPitAsOfReadRequest request) {
+    return EvaluatePostgres(providerName, request, hasCompleteReadShapeEvidence: true);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluatePostgres(
+      string? providerName,
+      DataVaultPitAsOfReadRequest request,
+      bool hasCompleteReadShapeEvidence) {
+    return EvaluatePostgres(
+        providerName,
+        request,
+        hasCompleteReadShapeEvidence,
+        hasStaleReadModelMaintenanceSignal: false);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluatePostgres(
+      string? providerName,
+      DataVaultPitAsOfReadRequest request,
+      bool hasCompleteReadShapeEvidence,
+      bool hasStaleReadModelMaintenanceSignal) {
+    return EvaluatePit(
+        DataVaultKnownProviderReadStrategy.Postgres,
+        providerName,
+        request,
+        supportedProviderNames: [KnownProviderNames.Postgres],
+        supportsLinkParent: true,
+        supportsMultiActive: true,
+        hasCompleteReadShapeEvidence: hasCompleteReadShapeEvidence,
+        hasStaleReadModelMaintenanceSignal: hasStaleReadModelMaintenanceSignal);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluatePostgres(
+      string? providerName,
+      DataVaultBridgeReadRequest request) {
+    return EvaluatePostgres(providerName, request, hasCompleteReadShapeEvidence: true);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluatePostgres(
+      string? providerName,
+      DataVaultBridgeReadRequest request,
+      bool hasCompleteReadShapeEvidence) {
+    return EvaluatePostgres(
+        providerName,
+        request,
+        hasCompleteReadShapeEvidence,
+        hasStaleReadModelMaintenanceSignal: false);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluatePostgres(
+      string? providerName,
+      DataVaultBridgeReadRequest request,
+      bool hasCompleteReadShapeEvidence,
+      bool hasStaleReadModelMaintenanceSignal) {
+    return EvaluateBridge(
+        DataVaultKnownProviderReadStrategy.Postgres,
+        providerName,
+        request,
+        supportedProviderNames: [KnownProviderNames.Postgres],
+        hasCompleteReadShapeEvidence: hasCompleteReadShapeEvidence,
+        hasStaleReadModelMaintenanceSignal: hasStaleReadModelMaintenanceSignal);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlServer(
+      string? providerName,
+      DataVaultPitAsOfReadRequest request) {
+    return EvaluateSqlServer(providerName, request, hasCompleteReadShapeEvidence: true);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlServer(
+      string? providerName,
+      DataVaultPitAsOfReadRequest request,
+      bool hasCompleteReadShapeEvidence) {
+    return EvaluateSqlServer(
+        providerName,
+        request,
+        hasCompleteReadShapeEvidence,
+        hasStaleReadModelMaintenanceSignal: false);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlServer(
+      string? providerName,
+      DataVaultPitAsOfReadRequest request,
+      bool hasCompleteReadShapeEvidence,
+      bool hasStaleReadModelMaintenanceSignal) {
+    return EvaluatePit(
+        DataVaultKnownProviderReadStrategy.SqlServer,
+        providerName,
+        request,
+        supportedProviderNames: [KnownProviderNames.SqlServer],
+        supportsLinkParent: true,
+        supportsMultiActive: true,
+        hasCompleteReadShapeEvidence: hasCompleteReadShapeEvidence,
+        hasStaleReadModelMaintenanceSignal: hasStaleReadModelMaintenanceSignal);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlServer(
+      string? providerName,
+      DataVaultBridgeReadRequest request) {
+    return EvaluateSqlServer(providerName, request, hasCompleteReadShapeEvidence: true);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlServer(
+      string? providerName,
+      DataVaultBridgeReadRequest request,
+      bool hasCompleteReadShapeEvidence) {
+    return EvaluateSqlServer(
+        providerName,
+        request,
+        hasCompleteReadShapeEvidence,
+        hasStaleReadModelMaintenanceSignal: false);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlServer(
+      string? providerName,
+      DataVaultBridgeReadRequest request,
+      bool hasCompleteReadShapeEvidence,
+      bool hasStaleReadModelMaintenanceSignal) {
+    return EvaluateBridge(
+        DataVaultKnownProviderReadStrategy.SqlServer,
+        providerName,
+        request,
+        supportedProviderNames: [KnownProviderNames.SqlServer],
+        hasCompleteReadShapeEvidence: hasCompleteReadShapeEvidence,
+        hasStaleReadModelMaintenanceSignal: hasStaleReadModelMaintenanceSignal);
   }
 
   public static bool TryEvaluateKnownStrategy(
@@ -3261,6 +3525,8 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
       out DataVaultProviderReadStrategyGateEvaluation evaluation) {
     evaluation = strategy.GetType().Name switch {
       "SqliteDataVaultReadStrategy" => EvaluateSqlite(dbContext, request),
+      "PostgresDataVaultReadStrategy" => EvaluatePostgres(dbContext, request),
+      "SqlServerDataVaultReadStrategy" => EvaluateSqlServer(dbContext, request),
       _ => new DataVaultProviderReadStrategyGateEvaluation(false, Array.Empty<DataVaultReadStrategyFallbackCause>()),
     };
 
@@ -3274,6 +3540,8 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
       out DataVaultProviderReadStrategyGateEvaluation evaluation) {
     evaluation = strategy.GetType().Name switch {
       "SqliteDataVaultReadStrategy" => EvaluateSqlite(dbContext, request),
+      "PostgresDataVaultReadStrategy" => EvaluatePostgres(dbContext, request),
+      "SqlServerDataVaultReadStrategy" => EvaluateSqlServer(dbContext, request),
       _ => new DataVaultProviderReadStrategyGateEvaluation(false, Array.Empty<DataVaultReadStrategyFallbackCause>()),
     };
 
@@ -3320,6 +3588,20 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
       "SqliteDataVaultReadStrategy" => [
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance),
+      ],
+      "PostgresDataVaultReadStrategy" => [
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance),
+      ],
+      "SqlServerDataVaultReadStrategy" => [
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance),
       ],
       _ => Array.Empty<DataVaultReadStrategyGateRequirement>(),
     };
@@ -3333,6 +3615,20 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
       "SqliteDataVaultReadStrategy" => [
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedBridgeShape),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance),
+      ],
+      "PostgresDataVaultReadStrategy" => [
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedBridgeShape),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance),
+      ],
+      "SqlServerDataVaultReadStrategy" => [
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedBridgeShape),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance),
       ],
       _ => Array.Empty<DataVaultReadStrategyGateRequirement>(),
     };
@@ -3371,14 +3667,29 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
       DataVaultKnownProviderReadStrategy strategy,
       string? providerName,
       DataVaultPitAsOfReadRequest request,
-      IReadOnlyList<string> supportedProviderNames) {
+      IReadOnlyList<string> supportedProviderNames,
+      bool supportsLinkParent = false,
+      bool supportsMultiActive = false,
+      bool hasCompleteReadShapeEvidence = true,
+      bool hasStaleReadModelMaintenanceSignal = false) {
     ArgumentNullException.ThrowIfNull(request);
 
     var causes = CreateProviderMismatchCauses(strategy, providerName, supportedProviderNames);
-    if (request.Pit.Parent.Kind != DataVaultMetadataReferenceKind.Hub) {
+    AddStaleReadModelMaintenanceCause(causes, strategy, hasStaleReadModelMaintenanceSignal, "PIT");
+
+    if (!hasCompleteReadShapeEvidence) {
+      causes.Add(new DataVaultReadStrategyFallbackCause(
+          DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence,
+          FormatStrategyName(strategy) + " optimized PIT reads require a complete generated PIT table/entity projection and referenced satellite projection evidence in the DbContext model."));
+    }
+
+    if (request.Pit.Parent.Kind != DataVaultMetadataReferenceKind.Hub &&
+        (!supportsLinkParent || request.Pit.Parent.Kind != DataVaultMetadataReferenceKind.Link)) {
       causes.Add(new DataVaultReadStrategyFallbackCause(
           DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape,
-          FormatStrategyName(strategy) + " optimized PIT reads support hub-parent PIT declarations only."));
+          supportsLinkParent
+              ? FormatStrategyName(strategy) + " optimized PIT reads support hub- or link-parent PIT declarations only."
+              : FormatStrategyName(strategy) + " optimized PIT reads support hub-parent PIT declarations only."));
     }
 
     if (request.Pit.Satellites.Count == 0) {
@@ -3387,10 +3698,18 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
           FormatStrategyName(strategy) + " optimized PIT reads require at least one satellite snapshot reference."));
     }
 
-    if (request.Pit.Satellites.Any(satellite => satellite.IsMultiActive)) {
+    if (!supportsMultiActive && request.Pit.Satellites.Any(satellite => satellite.IsMultiActive)) {
       causes.Add(new DataVaultReadStrategyFallbackCause(
           DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape,
           FormatStrategyName(strategy) + " optimized PIT reads do not support multi-active satellite references."));
+    }
+
+    if (supportsLinkParent &&
+        request.Pit.Parent.Kind == DataVaultMetadataReferenceKind.Link &&
+        request.Pit.Satellites.Any(satellite => satellite.IsMultiActive)) {
+      causes.Add(new DataVaultReadStrategyFallbackCause(
+          DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape,
+          FormatStrategyName(strategy) + " optimized link-parent PIT reads require non-multi-active satellite references."));
     }
 
     var duplicateSatelliteName = request.Pit.Satellites
@@ -3411,10 +3730,20 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
       DataVaultKnownProviderReadStrategy strategy,
       string? providerName,
       DataVaultBridgeReadRequest request,
-      IReadOnlyList<string> supportedProviderNames) {
+      IReadOnlyList<string> supportedProviderNames,
+      bool hasCompleteReadShapeEvidence = true,
+      bool hasStaleReadModelMaintenanceSignal = false) {
     ArgumentNullException.ThrowIfNull(request);
 
     var causes = CreateProviderMismatchCauses(strategy, providerName, supportedProviderNames);
+    AddStaleReadModelMaintenanceCause(causes, strategy, hasStaleReadModelMaintenanceSignal, "bridge");
+
+    if (!hasCompleteReadShapeEvidence) {
+      causes.Add(new DataVaultReadStrategyFallbackCause(
+          DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence,
+          FormatStrategyName(strategy) + " optimized bridge reads require a complete generated bridge table/entity projection in the DbContext model."));
+    }
+
     if (request.Bridge.ProjectionFeatures != DataVaultBridgeProjectionFeatures.None) {
       causes.Add(new DataVaultReadStrategyFallbackCause(
           DataVaultReadStrategyFallbackCauseKind.UnsupportedBridgeShape,
@@ -3428,6 +3757,53 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
     }
 
     return new DataVaultProviderReadStrategyGateEvaluation(causes.Count == 0, causes);
+  }
+
+  private static bool HasCompletePitReadShapeEvidence(
+      DbContext dbContext,
+      DataVaultPitAsOfReadRequest request) {
+    try {
+      _ = DataVaultPitReadPipeline.CreatePitProjection(dbContext, request);
+      return true;
+    }
+    catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or NotSupportedException) {
+      return false;
+    }
+  }
+
+  private static bool HasCompleteBridgeReadShapeEvidence(
+      DbContext dbContext,
+      DataVaultBridgeReadRequest request) {
+    try {
+      _ = DataVaultBridgeReadPipeline.CreateBridgeProjection(dbContext, request);
+      return true;
+    }
+    catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or NotSupportedException) {
+      return false;
+    }
+  }
+
+  private static bool HasStaleReadModelMaintenanceSignal(DbContext dbContext) {
+    try {
+      return dbContext.ChangeTracker.HasChanges();
+    }
+    catch (Exception exception) when (exception is InvalidOperationException or NotSupportedException) {
+      return true;
+    }
+  }
+
+  private static void AddStaleReadModelMaintenanceCause(
+      ICollection<DataVaultReadStrategyFallbackCause> causes,
+      DataVaultKnownProviderReadStrategy strategy,
+      bool hasStaleReadModelMaintenanceSignal,
+      string readModelKind) {
+    if (!hasStaleReadModelMaintenanceSignal) {
+      return;
+    }
+
+    causes.Add(new DataVaultReadStrategyFallbackCause(
+        DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance,
+        FormatStrategyName(strategy) + " optimized " + readModelKind + " reads require clean context evidence because pending tracked changes can make caller-maintained read-model rows stale."));
   }
 
   private static List<DataVaultReadStrategyFallbackCause> CreateProviderMismatchCauses(
@@ -3447,6 +3823,8 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
   private static IReadOnlyList<string> GetKnownStrategySupportedProviderNames(string strategyName) {
     return strategyName switch {
       "SqliteDataVaultReadStrategy" => [KnownProviderNames.Sqlite],
+      "PostgresDataVaultReadStrategy" => [KnownProviderNames.Postgres],
+      "SqlServerDataVaultReadStrategy" => [KnownProviderNames.SqlServer],
       _ => Array.Empty<string>(),
     };
   }
@@ -3454,6 +3832,8 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
   private static string FormatStrategyName(DataVaultKnownProviderReadStrategy strategy) {
     return strategy switch {
       DataVaultKnownProviderReadStrategy.Sqlite => "SQLite",
+      DataVaultKnownProviderReadStrategy.Postgres => "PostgreSQL",
+      DataVaultKnownProviderReadStrategy.SqlServer => "SQL Server",
       _ => strategy.ToString(),
     };
   }

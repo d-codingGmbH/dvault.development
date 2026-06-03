@@ -152,6 +152,124 @@ public sealed class DataVaultProviderReadStrategyTests {
     Assert.Empty(rows);
   }
 
+  [Fact]
+  public void PostgresAndSqlServerPitReadGatesAcceptPublishedMaintainedPitShapes() {
+    var hubPit = new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["Profile"]);
+    var hubMultiActivePit = new DataVaultPitMetadata(
+        DataVaultMetadataReference.Hub("Customer"),
+        [new DataVaultPitSatelliteReferenceMetadata("Contact", isMultiActive: true)]);
+    var linkPit = new DataVaultPitMetadata(DataVaultMetadataReference.Link("CustomerOrder"), ["State"]);
+
+    var postgresHub = DataVaultProviderReadStrategyGateEvaluator.EvaluatePostgres(
+        KnownProviderNames.Postgres,
+        CreatePitReadRequest(hubPit, ["customer-hk"]));
+    var postgresLink = DataVaultProviderReadStrategyGateEvaluator.EvaluatePostgres(
+        KnownProviderNames.Postgres,
+        CreatePitReadRequest(linkPit, ["customer-order-hk"]));
+    var sqlServerMultiActive = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlServer(
+        KnownProviderNames.SqlServer,
+        CreatePitReadRequest(hubMultiActivePit, ["customer-hk"]));
+
+    Assert.True(postgresHub.CanRead);
+    Assert.Empty(postgresHub.FallbackCauses);
+    Assert.True(postgresLink.CanRead);
+    Assert.Empty(postgresLink.FallbackCauses);
+    Assert.True(sqlServerMultiActive.CanRead);
+    Assert.Empty(sqlServerMultiActive.FallbackCauses);
+  }
+
+  [Fact]
+  public void PostgresAndSqlServerPitReadGatesFailClosedForMismatchedProviderOrUnsupportedLinkMultiActiveShape() {
+    var hubPit = new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["Profile"]);
+    var linkMultiActivePit = new DataVaultPitMetadata(
+        DataVaultMetadataReference.Link("CustomerOrder"),
+        [new DataVaultPitSatelliteReferenceMetadata("State", isMultiActive: true)]);
+
+    var providerMismatch = DataVaultProviderReadStrategyGateEvaluator.EvaluatePostgres(
+        KnownProviderNames.SqlServer,
+        CreatePitReadRequest(hubPit, ["customer-hk"]));
+    var unsupportedShape = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlServer(
+        KnownProviderNames.SqlServer,
+        CreatePitReadRequest(linkMultiActivePit, ["customer-order-hk"]));
+
+    Assert.False(providerMismatch.CanRead);
+    Assert.Contains(
+        providerMismatch.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch);
+    Assert.False(unsupportedShape.CanRead);
+    Assert.Contains(
+        unsupportedShape.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape);
+  }
+
+  [Fact]
+  public void PostgresAndSqlServerBridgeReadGatesAcceptManyToManyAndHierarchyShapes() {
+    var manyToManyRequest = CreateBridgeReadRequest(["customer-hk"]);
+    var hierarchyRequest = CreateHierarchyBridgeReadRequest(["ancestor-hk"]);
+
+    var postgresManyToMany = DataVaultProviderReadStrategyGateEvaluator.EvaluatePostgres(
+        KnownProviderNames.Postgres,
+        manyToManyRequest);
+    var sqlServerHierarchy = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlServer(
+        KnownProviderNames.SqlServer,
+        hierarchyRequest);
+
+    Assert.True(postgresManyToMany.CanRead);
+    Assert.Empty(postgresManyToMany.FallbackCauses);
+    Assert.True(sqlServerHierarchy.CanRead);
+    Assert.Empty(sqlServerHierarchy.FallbackCauses);
+  }
+
+  [Fact]
+  public void PostgresAndSqlServerPitAndBridgeReadGatesFailClosedForIncompleteReadShapeEvidence() {
+    var pitRequest = CreatePitReadRequest(["customer-hk"]);
+    var bridgeRequest = CreateBridgeReadRequest(["customer-hk"]);
+
+    var postgresPit = DataVaultProviderReadStrategyGateEvaluator.EvaluatePostgres(
+        KnownProviderNames.Postgres,
+        pitRequest,
+        hasCompleteReadShapeEvidence: false);
+    var sqlServerBridge = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlServer(
+        KnownProviderNames.SqlServer,
+        bridgeRequest,
+        hasCompleteReadShapeEvidence: false);
+
+    Assert.False(postgresPit.CanRead);
+    Assert.Contains(
+        postgresPit.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence);
+    Assert.False(sqlServerBridge.CanRead);
+    Assert.Contains(
+        sqlServerBridge.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence);
+  }
+
+  [Fact]
+  public void PostgresAndSqlServerPitAndBridgeReadGatesFailClosedForStaleMaintenanceSignals() {
+    var pitRequest = CreatePitReadRequest(["customer-hk"]);
+    var bridgeRequest = CreateBridgeReadRequest(["customer-hk"]);
+
+    var postgresPit = DataVaultProviderReadStrategyGateEvaluator.EvaluatePostgres(
+        KnownProviderNames.Postgres,
+        pitRequest,
+        hasCompleteReadShapeEvidence: true,
+        hasStaleReadModelMaintenanceSignal: true);
+    var sqlServerBridge = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlServer(
+        KnownProviderNames.SqlServer,
+        bridgeRequest,
+        hasCompleteReadShapeEvidence: true,
+        hasStaleReadModelMaintenanceSignal: true);
+
+    Assert.False(postgresPit.CanRead);
+    Assert.Contains(
+        postgresPit.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance);
+    Assert.False(sqlServerBridge.CanRead);
+    Assert.Contains(
+        sqlServerBridge.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance);
+  }
+
   private static DataVaultLatestSatelliteReadRequest CreateReadRequest(IEnumerable<string> parentHashKeys) {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var profile = new DataVaultSatelliteMetadata(
@@ -166,6 +284,12 @@ public sealed class DataVaultProviderReadStrategyTests {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var pit = new DataVaultPitMetadata(customer.ToReference(), ["Profile"]);
 
+    return CreatePitReadRequest(pit, parentHashKeys);
+  }
+
+  private static DataVaultPitAsOfReadRequest CreatePitReadRequest(
+      DataVaultPitMetadata pit,
+      IEnumerable<string> parentHashKeys) {
     return new DataVaultPitAsOfReadRequest(
         pit,
         parentHashKeys,
@@ -186,6 +310,24 @@ public sealed class DataVaultProviderReadStrategyTests {
         bridge,
         DataVaultBridgeTraversalEndpoint.From,
         endpointHashKeys);
+  }
+
+  private static DataVaultBridgeReadRequest CreateHierarchyBridgeReadRequest(IEnumerable<string> endpointHashKeys) {
+    var employee = new DataVaultHubMetadata("Employee", ["Employee Id"]);
+    var employeeManager = new DataVaultLinkMetadata("EmployeeManager", [employee.ToReference(), employee.ToReference()]);
+    var bridge = DataVaultBridgeMetadata.Hierarchy(
+        "EmployeeManager",
+        employee.ToReference(),
+        employeeManager.ToReference(),
+        employee.ToReference(),
+        ancestorParticipantOrdinal: 0,
+        descendantParticipantOrdinal: 1);
+
+    return new DataVaultBridgeReadRequest(
+        bridge,
+        DataVaultBridgeTraversalEndpoint.Ancestor,
+        endpointHashKeys,
+        maximumDepth: 3);
   }
 
   private sealed class DispatchProbeReadStrategy(
