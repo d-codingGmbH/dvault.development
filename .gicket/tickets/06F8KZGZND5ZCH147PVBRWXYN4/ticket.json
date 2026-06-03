@@ -3,21 +3,20 @@
   "ticket-id": "06F8KZGZND5ZCH147PVBRWXYN4",
   "ticket-type": "story",
   "title": "Story: Add EF lifecycle analyzer fixtures and regression tests",
-  "revision": "06F8M00M2F80AN0682K4RTMMB8",
-  "status": "todo",
+  "revision": "06F8VK4AEXXYTQYXWQPP89KARM",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
     "area/analyzers",
     "area/ef-core",
     "area/modeling",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F8KYXY4PDZ4PE0PEZWR1ENT0",
   "releaseId": "06F8KYXNNBG8TNDWQ6ZAJHS8AR",
   "created-at": "2026-06-02T20:19:53.9771119Z",
-  "updated-at": "2026-06-02T20:22:01.4911558Z"
+  "updated-at": "2026-06-03T14:04:12.7919946Z"
 }

@@ -6,12 +6,15 @@ Roslyn analyzers and source generators for DVault compile-time metadata declarat
 - `DMV1902` for duplicate logical member declarations inside the same applicable Code-First builder lambda scope.
 - `DMV1910` for exposing DVault generated shared-type tables as `DbSet<Dictionary<string, object>>` members on a `DbContext`.
 - `DMV1911` for direct EF write calls against DVault generated shared-type `DbSet<Dictionary<string, object>>` sets.
+- `DMV1912` for source-visible caller-owned DVault model-shape variation whose visible model-cache key omits the varying discriminator.
+- `DMV1913` for source-visible `UseModel(...)` compiled-model selection on variable-shape DVault contexts.
+- `DMV1914` for direct `AddDbContextPool<TContext>(...)` registration of variable-shape DVault contexts.
 - `DMV1950` through `DMV1955` for malformed generated mapping declarations, missing generated row bindings, invalid source members, duplicate binding order or names, and repeated link participant hub names.
 - `DMV1960` through `DMV1969` for typed read-model generator metadata-source, fingerprint, unsupported-shape, deterministic-name, nullability-fallback, and skipped-helper outcomes.
 
 The package also provides bounded code fixes for DMV1901 anonymous-object direct-member expansion and DMV1902 later-duplicate removal. Its mapping source generator emits registry-backed typed row mappers from the public `DCoding.Data.DVault` compile-time mapping attributes; generated save helpers still require callers to supply load timestamps and record sources through the existing explicit save flow. Its typed read-model source generator is a separate opt-in support-bundle-driven surface for satellite latest/current/as-of helpers, PIT as-of helpers, and bounded bridge traversal helpers.
 
-The v0.26.0 documentation baseline carries forward the v0.25.0 typed read-helper generator surface and does not add model-cache, compiled-model, or `DbContext` pooling diagnostics. `DMV1910` and `DMV1911` are generated shared-type-table misuse diagnostics only. For EF model-cache isolation guidance, use the README section "Isolate EF model cache entries"; for `UseModel(...)` and `AddDbContextPool<TContext>(...)` guardrails, use `docs/architecture/dvault-ef-compiled-compatibility.md`.
+The lifecycle diagnostics `DMV1912` through `DMV1914` are high-confidence EF Core misuse diagnostics for direct source-visible evidence only. They align with the root README section "Isolate EF model cache entries" and with `docs/architecture/dvault-ef-compiled-compatibility.md`; they do not add runtime guards, compiled-model generation, provider-specific lifecycle behavior, or whole-application inference.
 
 ## Installation
 
@@ -41,7 +44,13 @@ The EF Core misuse analyzer keeps the generated DVault table boundary explicit. 
 
 The analyzer does not attempt whole-application DI inference and does not treat `UseDataVaultSaveChangesMetadataInterceptor(...)` as a replacement for the explicit save boundary. That interceptor remains an opt-in metadata filler for tracked generated rows; ordinary hub, link, and satellite writes should flow through `IDataVaultSaveService`. The runtime `UseDataVaultSaveChangesGuardInterceptor(...)` is a separate opt-in blocking or warning guard for applications that want SaveChanges-time enforcement; it is not enabled by `AddDVault()` and does not broaden the analyzer into arbitrary dataflow or provider-specific SQL analysis.
 
-This analyzer surface also does not prove that an application-owned `IModelCacheKeyFactory` includes every tenant, schema, naming, provider, or profile discriminator, and it does not diagnose whether a compiled model or pooled context is safe for a variable model shape. Those boundaries remain guidance-only in v0.26.0 and are documented in the root README and the EF compiled compatibility note.
+`DMV1912` reports when direct `ApplyDataVaultMetadata(...)` model projection visibly varies by caller-owned context state or branches and the directly visible `IModelCacheKeyFactory` path omits that same discriminator. Registry-backed `UseDataVaultMetadata()`, `UseDataVaultMetadata(DataVaultMetadataModel)`, `UseDataVaultMetadata(DataVaultMetadataRegistry)`, and `UseDataVaultMetadata(DataVaultModelImportResult)` are non-diagnostic because DVault carries the metadata-source kind and deterministic metadata fingerprint into EF model-cache isolation.
+
+`DMV1913` reports direct `UseModel(...)` compiled-model selection when the same source visibly applies that runtime model to a DVault context whose realized model shape can vary. Fixed-shape contexts and the documented design-model-to-runtime-model lane remain non-diagnostic because they select one realized DVault model shape. Read-only EF compiled queries over generated shared-type tables remain non-diagnostic because they compile a stable query expression rather than selecting an EF compiled model for a context.
+
+`DMV1914` reports direct `AddDbContextPool<TContext>(...)` registration when the target DVault context visibly has model-shape variation. Options-only pooled contexts with one fixed metadata source, provider configuration, naming, schema, and profile remain non-diagnostic. Pooled factories, helper-expanded registrations, and cross-assembly inference stay outside this analyzer slice.
+
+The lifecycle diagnostics are intentionally limited to direct syntax and semantic facts in the analyzed source: visible instance members read in `OnModelCreating(...)`, direct branches around DVault model projection, direct `ReplaceService<IModelCacheKeyFactory, ...>()` paths, directly visible returned cache-key shapes, and direct `UseModel(...)` or `AddDbContextPool<TContext>(...)` registrations. When the source does not make both the variable model shape and unsafe lifecycle path visible, the analyzer skips instead of guessing.
 
 ## Generated Mapper Scope
 
@@ -101,12 +110,15 @@ dotnet_diagnostic.DMV1901.severity = none
 dotnet_diagnostic.DMV1902.severity = none
 dotnet_diagnostic.DMV1910.severity = none
 dotnet_diagnostic.DMV1911.severity = none
+dotnet_diagnostic.DMV1912.severity = none
+dotnet_diagnostic.DMV1913.severity = none
+dotnet_diagnostic.DMV1914.severity = none
 ```
 
 For MSBuild-level suppression, append the diagnostic ids to `NoWarn`:
 
 ```xml
 <PropertyGroup>
-  <NoWarn>$(NoWarn);DMV1901;DMV1902;DMV1910;DMV1911</NoWarn>
+  <NoWarn>$(NoWarn);DMV1901;DMV1902;DMV1910;DMV1911;DMV1912;DMV1913;DMV1914</NoWarn>
 </PropertyGroup>
 ```

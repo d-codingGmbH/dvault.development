@@ -179,6 +179,69 @@ public sealed class DataVaultEfCoreMisuseAnalyzerTests {
   }
 
   [Fact]
+  public async Task ReportsMissingCacheKeyWhenDirectCodeFirstDeclarationUsesContextState() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: "",
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options, bool includeOrderHub) : base(options) {
+              IncludeOrderHub = includeOrderHub;
+            }
+
+            public bool IncludeOrderHub { get; }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              modelBuilder.ApplyDataVaultMetadata(vault => {
+                vault.Hub<Customer>(hub => hub.BusinessKey(customer => customer.CustomerId));
+
+                if (IncludeOrderHub) {
+                  vault.Hub<Order>(hub => hub.BusinessKey(order => order.OrderId));
+                }
+              });
+            }
+        """));
+    var diagnostic = Assert.Single(diagnostics.Where(diagnostic => diagnostic.Id == "DMV1912"));
+
+    Assert.Contains(
+        "DbContext 'VaultContext' varies its DVault EF model shape from 'IncludeOrderHub'",
+        diagnostic.GetMessage(),
+        StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public async Task DoesNotReportMissingCacheKeyForMetadataFirstRegistryBackedOptions() {
+    var diagnostics = await AnalyzeAsync(CreateSource("""
+        var services = new ServiceCollection();
+        var metadataModel = DataVaultMetadataSamples.CreateModel();
+        var metadataRegistry = DataVaultMetadataRegistry.Create(metadataModel);
+
+        services.AddDbContext<VaultContext>(options => options.UseDataVaultMetadata());
+        services.AddDbContext<VaultContext>(options => options.UseDataVaultMetadata(metadataModel));
+        services.AddDbContext<VaultContext>(options => options.UseDataVaultMetadata(metadataRegistry));
+        """,
+        additionalDeclarations: """
+          public static class DataVaultMetadataSamples {
+            public static DataVaultMetadataModel CreateModel() {
+              return new DataVaultMetadataModel();
+            }
+          }
+        """));
+
+    Assert.Empty(diagnostics);
+  }
+
+  [Fact]
+  public async Task DoesNotReportMissingCacheKeyForModelFirstImportResultOptions() {
+    var diagnostics = await AnalyzeAsync(CreateSource("""
+        var services = new ServiceCollection();
+        var importResult = DataVaultModelArtifactImporter.ImportJson("{}");
+
+        services.AddDbContext<VaultContext>(options => options.UseDataVaultMetadata(importResult));
+        """));
+
+    Assert.Empty(diagnostics);
+  }
+
+  [Fact]
   public async Task ReportsMissingCacheKeyWhenDataVaultModelShapeUsesContextInstanceState() {
     var diagnostics = await AnalyzeAsync(CreateSource(
         usageBody: "",
@@ -797,6 +860,7 @@ public sealed class DataVaultEfCoreMisuseAnalyzerTests {
         using System.Threading;
         using System.Threading.Tasks;
         using DCoding.Data.DVault;
+        using DCoding.Data.DVault.Modeling;
         using Microsoft.EntityFrameworkCore;
         using Microsoft.EntityFrameworkCore.ChangeTracking;
         using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -807,6 +871,10 @@ public sealed class DataVaultEfCoreMisuseAnalyzerTests {
         namespace AnalyzerSample {
           public sealed class Customer {
             public string CustomerId { get; init; } = "";
+          }
+
+          public sealed class Order {
+            public string OrderId { get; init; } = "";
           }
 
           public sealed class VaultContext : DbContext {
@@ -1105,6 +1173,34 @@ public sealed class DataVaultEfCoreMisuseAnalyzerTests {
           }
 
           public static class DataVaultDbContextOptionsBuilderExtensions {
+            public static DbContextOptionsBuilder UseDataVaultMetadata(this DbContextOptionsBuilder optionsBuilder) {
+              return optionsBuilder;
+            }
+
+            public static DbContextOptionsBuilder UseDataVaultMetadata(
+                this DbContextOptionsBuilder optionsBuilder,
+                DataVaultMetadataModel metadataModel) {
+              _ = metadataModel;
+
+              return optionsBuilder;
+            }
+
+            public static DbContextOptionsBuilder UseDataVaultMetadata(
+                this DbContextOptionsBuilder optionsBuilder,
+                DataVaultMetadataRegistry metadataRegistry) {
+              _ = metadataRegistry;
+
+              return optionsBuilder;
+            }
+
+            public static DbContextOptionsBuilder UseDataVaultMetadata(
+                this DbContextOptionsBuilder optionsBuilder,
+                DataVaultModelImportResult importResult) {
+              _ = importResult;
+
+              return optionsBuilder;
+            }
+
             public static DbContextOptionsBuilder UseDataVaultSaveChangesMetadataInterceptor(
                 this DbContextOptionsBuilder optionsBuilder,
                 Func<DataVaultSaveChangesMetadataInterceptorOptions, DataVaultSaveChangesMetadataInterceptorOptions> configure) {
@@ -1115,6 +1211,22 @@ public sealed class DataVaultEfCoreMisuseAnalyzerTests {
           }
 
           public sealed class DataVaultCodeFirstModelBuilder {
+            public DataVaultHubBuilder<TEntity> Hub<TEntity>(
+                Action<DataVaultHubBuilder<TEntity>> configureHub) {
+              var hubBuilder = new DataVaultHubBuilder<TEntity>();
+              configureHub(hubBuilder);
+
+              return hubBuilder;
+            }
+          }
+
+          public sealed class DataVaultHubBuilder<TEntity> {
+            public DataVaultHubBuilder<TEntity> BusinessKey<TProperty>(
+                Expression<Func<TEntity, TProperty>> selector) {
+              _ = selector;
+
+              return this;
+            }
           }
 
           public sealed class DataVaultProviderCapabilityProfile {
@@ -1143,6 +1255,30 @@ public sealed class DataVaultEfCoreMisuseAnalyzerTests {
               _ = providerCapabilities;
 
               return modelBuilder;
+            }
+          }
+        }
+
+        namespace DCoding.Data.DVault.Modeling {
+          public sealed class DataVaultMetadataModel {
+          }
+
+          public sealed class DataVaultMetadataRegistry {
+            public static DataVaultMetadataRegistry Create(DataVaultMetadataModel metadataModel) {
+              _ = metadataModel;
+
+              return new DataVaultMetadataRegistry();
+            }
+          }
+
+          public sealed class DataVaultModelImportResult {
+          }
+
+          public static class DataVaultModelArtifactImporter {
+            public static DataVaultModelImportResult ImportJson(string json) {
+              _ = json;
+
+              return new DataVaultModelImportResult();
             }
           }
         }

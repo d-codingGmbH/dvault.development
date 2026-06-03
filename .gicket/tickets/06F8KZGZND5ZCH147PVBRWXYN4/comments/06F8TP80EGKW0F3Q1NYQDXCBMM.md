@@ -1,68 +1,53 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Repository evidence supports one bounded regression-test story: extend EF lifecycle analyzer fixtures for code-first unsafe model-shape cases plus metadata-first and model-first non-diagnostic baselines; stale blocks relation cleanup from ticket 06F8KZGNRG5FY4WWCY3FAX2NS4 to this ticket was already queued for replay.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Current branch still matches scratch source ref 762b610ef6a278348cf9238e6227a455abb26650, so this story is refining planned coverage rather than describing in-flight implementation.
 - tests/DCoding.Data.DVault.Tests/Analyzers/DataVaultEfCoreMisuseAnalyzerTests.cs already exercises DMV1912 through DMV1914 for direct ApplyDataVaultMetadata(...) code-first lanes and several documented safe lanes, but it does not yet include metadata-first UseDataVaultMetadata(...) or model-first UseDataVaultMetadata(DataVaultModelImportResult) lifecycle fixtures.
 - README.md and tests/DCoding.Data.DVault.Tests/Integration/DataVaultMetadataRegistrationIntegrationTests.cs already establish that UseDataVaultMetadata(), explicit registry selection, and successful model-first imports participate in DVault metadata-source isolation and are the built-in non-diagnostic baseline for lifecycle rules.
 - Queued mutation mutation-85850a0a7eb2c034 removes stale relation 06F8KZGNRG5FY4WWCY3FAX2NS4--06F8KZGZND5ZCH147PVBRWXYN4--blocks on ticket 06F8KZGNRG5FY4WWCY3FAX2NS4's owner branch; that cleanup should be treated as part of this refinement contract.
 
-### Scope In
+Scope In
 - Add analyzer regression fixtures for DMV1912, DMV1913, and DMV1914 around unsafe caller-owned model-shape variation in direct ApplyDataVaultMetadata(...), direct UseModel(...), and direct AddDbContextPool<TContext>(...) lanes.
 - Add explicit metadata-first non-diagnostic fixtures for UseDataVaultMetadata(), UseDataVaultMetadata(DataVaultMetadataModel), and UseDataVaultMetadata(DataVaultMetadataRegistry) because DVault already isolates those registry-backed sources in the EF model cache.
 - Add explicit model-first non-diagnostic fixtures for UseDataVaultMetadata(DataVaultModelImportResult) because successful dvault.model.v1 imports resolve to the same registry-backed projection and built-in cache isolation baseline.
 - Add regression coverage for documented safe fixed-shape lanes, including visible design-model-to-runtime-model UseModel(...) flow, fixed options-only AddDbContextPool<TContext>(...) flow, read-only compiled queries over generated shared-type tables, metadata-interceptor opt-in, and opaque cache-key helpers that the analyzer must skip.
 
-### Scope Out
+Scope Out
 - No expansion of analyzer semantics beyond the documented high-confidence lifecycle contract that relies on direct source-visible evidence.
 - No new diagnostics for pooled factories, cross-assembly/helper-based inference, raw dvault.model.v1 parsing, or literal metadata-model inspection inside the analyzer.
 - No runtime behavior changes, provider-specific lifecycle rules, or unrelated product-code edits outside the minimum analyzer/test adjustments needed for this regression slice.
 
-## Acceptance Criteria
-- Analyzer tests prove DMV1912 when caller-owned instance state visibly changes the direct ApplyDataVaultMetadata(...) DVault model shape and the visible model-cache key path omits the varying discriminator.
-- Analyzer tests prove no DMV1912 for UseDataVaultMetadata(), UseDataVaultMetadata(DataVaultMetadataModel), UseDataVaultMetadata(DataVaultMetadataRegistry), and UseDataVaultMetadata(DataVaultModelImportResult) baselines that already carry DVault metadata-source isolation.
-- Analyzer tests prove DMV1913 only for source-visible UseModel(...) on variable-shape DVault contexts and prove no diagnostic for fixed-shape or visible design-model-to-runtime-model lanes described in docs/architecture/dvault-ef-compiled-compatibility.md.
-- Analyzer tests prove DMV1914 only for direct AddDbContextPool<TContext>(...) on variable-shape DVault contexts and prove no diagnostic for fixed options-only pooled contexts.
-- Regression coverage preserves documented non-diagnostic outcomes for read-only generated-table query patterns, compiled queries, metadata-interceptor opt-in, arbitrary non-DVault dictionary shared-type tables, and intentionally opaque cache-key computations.
-
-## Definition of Done
-- New lifecycle fixtures run in the analyzer test project and distinguish code-first unsafe cases from metadata-first and model-first non-diagnostic baselines with readable, maintainable sources.
-- Any failing gap exposed by the new fixtures is resolved with the minimum analyzer/test change set required to satisfy the documented lifecycle contract.
-- No existing DMV1910/DMV1911 misuse coverage or current DMV1912 through DMV1914 behavior regresses outside the explicitly intended new declaration-path coverage.
-
-## Implementation Notes
-- Use tests/DCoding.Data.DVault.Tests/Analyzers/DataVaultEfCoreMisuseAnalyzerTests.cs as the primary suite; split out helper builders or fixture fragments only if that keeps the declaration-path lanes readable.
-- Mirror the current contract in docs/architecture/dvault-ef-compiled-compatibility.md: registry-backed UseDataVaultMetadata(...) paths are the built-in non-diagnostic baseline, while caller-owned variation around direct ApplyDataVaultMetadata(...), UseModel(...), or AddDbContextPool<TContext>(...) can be diagnostic when the unsafe lifecycle path is directly visible.
-- Model-first fixtures should represent imported-and-projected DataVaultModelImportResult usage, not raw analyzer parsing of dvault.model.v1 JSON files; metadata-first fixtures should represent registry-backed projection, not literal metadata-object inspection by the analyzer.
-- Keep fixtures within the analyzer's documented evidence boundary: direct syntax and semantic facts only, skip rather than guess for helper-expanded or cross-assembly cache-key proof.
-- The repository currently has no branch-local implementation delta from the scratch source ref, so the developer should plan to add this coverage on top of the existing analyzer/test baseline rather than reconcile partial story work.
-- The stale blocks relation cleanup is already queued rather than applied locally, so no additional relation mutation is needed from this ticket unless replay later fails.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should src/DCoding.Data.DVault.Analyzers/README.md be aligned with the v0.27 lifecycle contract now that repository code and tests already reserve DMV1912 through DMV1914, or is that documentation update intentionally tracked elsewhere?
 
-## Risks
+Risks
 - The analyzer currently keys off direct ApplyDataVaultMetadata(...), UseModel(...), and AddDbContextPool<TContext>(...) source evidence, so overly ambitious fixtures could accidentally require unsupported inference instead of validating the documented high-confidence boundary.
 - Metadata-first and model-first baselines are safe because DVault-owned UseDataVaultMetadata(...) isolation is already proven elsewhere; fixtures must preserve that distinction so they do not imply raw model or metadata parsing by the analyzer.
 - The stale blocks relation removal is queued for replay on another ticket's owner branch and may remain visibly present until that replay completes, even though the intended contract has already been cleaned up.
 
-## Split Recommendations
+Split recommendations
 - none
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 3
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Add analyzer test fixtures covering Code-First, metadata-first, and model-first DVault declarations, safe stable models, unsafe variable model-shape examples, and documented non-diagnostic cases.
+Run mode
+- apply: planned updates are applied after this comment
