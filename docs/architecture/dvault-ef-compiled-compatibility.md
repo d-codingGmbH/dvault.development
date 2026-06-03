@@ -80,7 +80,7 @@ DVault does not add a separate diagnostic code for those unsupported compiled-qu
 
 ## EF Lifecycle Analyzer Contract
 
-The v0.27 analyzer lifecycle slice reserves `DMV1912` through `DMV1914` in the existing EfCore category, with warning severity, immediately after the generated shared-type-table misuse diagnostics `DMV1910` and `DMV1911`. These diagnostics are analyzer-only contracts. They do not add a runtime guard, runtime behavior change, compiled-model generator, or change to the supported compiled-query pattern above.
+The v0.27 analyzer lifecycle slice reserves `DMV1912` through `DMV1914` in the existing EfCore category, with warning severity, immediately after the generated shared-type-table misuse diagnostics `DMV1910` and `DMV1911`. These diagnostics are analyzer-only contracts. They do not add a runtime guard, runtime behavior change, compiled-model generator, provider-specific lifecycle guarantee, cross-assembly inference, whole-application inference, or change to the supported compiled-query pattern above.
 
 `DMV1912` reports a missing caller-owned EF model-cache discriminator when all of these facts are directly visible in source:
 

@@ -14,7 +14,7 @@ Roslyn analyzers and source generators for DVault compile-time metadata declarat
 
 The package also provides bounded code fixes for DMV1901 anonymous-object direct-member expansion and DMV1902 later-duplicate removal. Its mapping source generator emits registry-backed typed row mappers from the public `DCoding.Data.DVault` compile-time mapping attributes; generated save helpers still require callers to supply load timestamps and record sources through the existing explicit save flow. Its typed read-model source generator is a separate opt-in support-bundle-driven surface for satellite latest/current/as-of helpers, PIT as-of helpers, and bounded bridge traversal helpers.
 
-The lifecycle diagnostics `DMV1912` through `DMV1914` are high-confidence EF Core misuse diagnostics for direct source-visible evidence only. They align with the root README section "Isolate EF model cache entries" and with `docs/architecture/dvault-ef-compiled-compatibility.md`; they do not add runtime guards, compiled-model generation, provider-specific lifecycle behavior, or whole-application inference.
+The lifecycle diagnostics `DMV1912` through `DMV1914` are high-confidence EF Core misuse diagnostics for direct source-visible evidence only. They align with the root README section "Isolate EF model cache entries" and with `docs/architecture/dvault-ef-compiled-compatibility.md`; they do not add runtime guards, runtime behavior changes, compiled-model generation, provider-specific lifecycle guarantees, cross-assembly inference, or whole-application inference.
 
 ## Installation
 
@@ -22,7 +22,7 @@ Install the analyzer package in projects that declare DVault Code-First metadata
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="0.26.0" PrivateAssets="all" />
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="0.27.0" PrivateAssets="all" />
 </ItemGroup>
 ```
 
