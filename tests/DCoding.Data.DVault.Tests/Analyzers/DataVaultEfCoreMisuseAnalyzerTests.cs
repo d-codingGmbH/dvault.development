@@ -14,7 +14,7 @@ public sealed class DataVaultEfCoreMisuseAnalyzerTests {
     var analyzer = new DataVaultEfCoreMisuseAnalyzer();
     var descriptors = analyzer.SupportedDiagnostics.ToDictionary(descriptor => descriptor.Id, StringComparer.Ordinal);
 
-    Assert.Equal(["DMV1910", "DMV1911"], analyzer.SupportedDiagnostics.Select(descriptor => descriptor.Id).ToArray());
+    Assert.Equal(["DMV1910", "DMV1911", "DMV1912", "DMV1913", "DMV1914"], analyzer.SupportedDiagnostics.Select(descriptor => descriptor.Id).ToArray());
     AssertDescriptor(
         descriptors["DMV1910"],
         "EfCore",
@@ -27,6 +27,24 @@ public sealed class DataVaultEfCoreMisuseAnalyzerTests {
         "Unsafe direct generated DVault table write",
         "source-visible DVault produced table name",
         "Use IDataVaultSaveService");
+    AssertDescriptor(
+        descriptors["DMV1912"],
+        "EfCore",
+        "Missing DVault model-cache discriminator",
+        "source-visible DVault model-shape variation",
+        "Replace IModelCacheKeyFactory");
+    AssertDescriptor(
+        descriptors["DMV1913"],
+        "EfCore",
+        "Unsafe DVault compiled-model selection",
+        "source-visible UseModel(...)",
+        "Use compiled models only for one fixed realized DVault model shape");
+    AssertDescriptor(
+        descriptors["DMV1914"],
+        "EfCore",
+        "Unsafe DVault DbContext pooling",
+        "source-visible AddDbContextPool<TContext>(...)",
+        "Use DbContext pooling only for options-only DVault contexts");
   }
 
   [Fact]
@@ -160,6 +178,546 @@ public sealed class DataVaultEfCoreMisuseAnalyzerTests {
     Assert.Empty(diagnostics);
   }
 
+  [Fact]
+  public async Task ReportsMissingCacheKeyWhenDataVaultModelShapeUsesContextInstanceState() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: "",
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options, string tenantSchema) : base(options) {
+              TenantSchema = tenantSchema;
+            }
+
+            public string TenantSchema { get; }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              modelBuilder.HasDefaultSchema(TenantSchema);
+              modelBuilder.ApplyDataVaultMetadata(vault => { });
+            }
+        """));
+    var diagnostic = Assert.Single(diagnostics);
+
+    Assert.Equal("DMV1912", diagnostic.Id);
+    Assert.Equal("EfCore", diagnostic.Descriptor.Category);
+    Assert.Contains(
+        "DbContext 'VaultContext' varies its DVault EF model shape from 'TenantSchema'",
+        diagnostic.GetMessage(),
+        StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public async Task DoesNotReportVariableShapeWhenVisibleCacheKeyIncludesContextDiscriminators() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: """
+            _ = new DbContextOptionsBuilder<VaultContext>()
+                .ReplaceService<IModelCacheKeyFactory, VaultModelCacheKeyFactory>();
+        """,
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options, string tenantSchema, string tablePrefix) : base(options) {
+              TenantSchema = tenantSchema;
+              TablePrefix = tablePrefix;
+            }
+
+            public string TenantSchema { get; }
+
+            public string TablePrefix { get; }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              modelBuilder.HasDefaultSchema(TenantSchema);
+              modelBuilder.ApplyDataVaultMetadata(vault => { });
+              modelBuilder.SharedTypeEntity<Dictionary<string, object>>("HubCustomer", entity => {
+                entity.ToTable(TablePrefix + "HubCustomer", TenantSchema);
+              });
+            }
+        """,
+        additionalDeclarations: """
+          public sealed class VaultModelCacheKeyFactory : IModelCacheKeyFactory {
+            public object Create(DbContext context, bool designTime) {
+              return context is VaultContext vaultContext
+                  ? (context.GetType(), vaultContext.TenantSchema, vaultContext.TablePrefix, designTime)
+                  : (object)(context.GetType(), designTime);
+            }
+          }
+        """));
+
+    Assert.Empty(diagnostics);
+  }
+
+  [Fact]
+  public async Task DoesNotReportMissingCacheKeyForContextStateOutsideDataVaultShape() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: "",
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options, string diagnosticLabel) : base(options) {
+              DiagnosticLabel = diagnosticLabel;
+            }
+
+            public string DiagnosticLabel { get; }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              _ = DiagnosticLabel.Length;
+              modelBuilder.ApplyDataVaultMetadata(vault => { });
+            }
+        """));
+
+    Assert.Empty(diagnostics);
+  }
+
+  [Fact]
+  public async Task DoesNotReportMissingCacheKeyWhenCustomCacheKeyComputationIsOpaque() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: """
+            _ = new DbContextOptionsBuilder<VaultContext>()
+                .ReplaceService<IModelCacheKeyFactory, VaultModelCacheKeyFactory>();
+        """,
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options, string tenantSchema) : base(options) {
+              TenantSchema = tenantSchema;
+            }
+
+            public string TenantSchema { get; }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              modelBuilder.HasDefaultSchema(TenantSchema);
+              modelBuilder.ApplyDataVaultMetadata(vault => { });
+            }
+        """,
+        additionalDeclarations: """
+          public sealed class VaultModelCacheKeyFactory : IModelCacheKeyFactory {
+            public object Create(DbContext context, bool designTime) {
+              return CacheKeyHelpers.Build(context, designTime);
+            }
+          }
+
+          public static class CacheKeyHelpers {
+            public static object Build(DbContext context, bool designTime) {
+              _ = context;
+              _ = designTime;
+
+              return new object();
+            }
+          }
+        """));
+
+    Assert.Empty(diagnostics);
+  }
+
+  [Fact]
+  public async Task ReportsMissingCacheKeyWhenDataVaultProfileSelectionUsesContextStateThroughLocal() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: "",
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options, bool useOracleProfile) : base(options) {
+              UseOracleProfile = useOracleProfile;
+            }
+
+            public bool UseOracleProfile { get; }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              var providerCapabilities = UseOracleProfile
+                  ? DataVaultProviderCapabilityProfiles.Oracle
+                  : DataVaultProviderCapabilityProfiles.Sqlite;
+
+              modelBuilder.ApplyDataVaultMetadata(vault => { }, providerCapabilities);
+            }
+        """));
+    var diagnostic = Assert.Single(diagnostics.Where(diagnostic => diagnostic.Id == "DMV1912"));
+
+    Assert.Contains(
+        "DbContext 'VaultContext' varies its DVault EF model shape from 'UseOracleProfile'",
+        diagnostic.GetMessage(),
+        StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public async Task DoesNotReportMissingCacheKeyFromOptionsRegistrationSelection() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: """
+            var useOracle = DateTimeOffset.UtcNow.Day == 1;
+            var services = new ServiceCollection();
+            services.AddDbContext<VaultContext>(options => {
+              if (useOracle) {
+                options.UseOracle("Data Source=test");
+              } else {
+                options.UseSqlite("Data Source=test.db");
+              }
+            });
+        """,
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options) : base(options) {
+            }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              modelBuilder.ApplyDataVaultMetadata(vault => { });
+            }
+        """));
+
+    Assert.Empty(diagnostics);
+  }
+
+  [Fact]
+  public async Task ReportsUnsafeUseModelForVisibleVariableDataVaultShape() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: """
+            IModel runtimeModel = new RuntimeModel();
+            _ = new DbContextOptionsBuilder<VaultContext>().UseModel(runtimeModel);
+        """,
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options, string tenantSchema) : base(options) {
+              TenantSchema = tenantSchema;
+            }
+
+            public string TenantSchema { get; }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              modelBuilder.HasDefaultSchema(TenantSchema);
+              modelBuilder.ApplyDataVaultMetadata(vault => { });
+            }
+        """));
+    var diagnostic = Assert.Single(diagnostics.Where(diagnostic => diagnostic.Id == "DMV1913"));
+
+    Assert.Equal("EfCore", diagnostic.Descriptor.Category);
+    Assert.Contains(
+        "UseModel(...) applies a compiled EF model to DVault context 'VaultContext'",
+        diagnostic.GetMessage(),
+        StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public async Task DoesNotReportUseModelForFixedDataVaultShape() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: """
+            IModel runtimeModel = new RuntimeModel();
+            _ = new DbContextOptionsBuilder<VaultContext>().UseModel(runtimeModel);
+        """,
+        contextMembers: """
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              modelBuilder.ApplyDataVaultMetadata(vault => { });
+            }
+        """));
+
+    Assert.Empty(diagnostics);
+  }
+
+  [Fact]
+  public async Task DoesNotReportUseModelOrPoolingForGetterBackedFixedDataVaultShape() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: """
+            IModel runtimeModel = new RuntimeModel();
+            _ = new DbContextOptionsBuilder<VaultContext>().UseModel(runtimeModel);
+
+            var services = new ServiceCollection();
+            services.AddDbContextPool<VaultContext>(options => { });
+        """,
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options) : base(options) {
+            }
+
+            public string TenantSchema => "tenant_a";
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              modelBuilder.HasDefaultSchema(TenantSchema);
+              modelBuilder.ApplyDataVaultMetadata(vault => { });
+            }
+        """));
+
+    Assert.Empty(diagnostics);
+  }
+
+  [Fact]
+  public async Task ReportsUnsafeUseModelWhenDesignRuntimeLaneUsesVariableShape() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: """
+            var tenantSchema = DateTimeOffset.UtcNow.Day == 1 ? "tenant_a" : "tenant_b";
+            var designOptions = new DbContextOptionsBuilder<VaultContext>()
+                .ReplaceService<IModelCacheKeyFactory, VaultModelCacheKeyFactory>()
+                .Options;
+            var designContext = new VaultContext(designOptions, tenantSchema);
+            var designModel = designContext.GetService<IDesignTimeModel>().Model;
+            var runtimeModel = designContext.GetService<IModelRuntimeInitializer>()
+                .Initialize(designModel, designTime: false, validationLogger: null);
+            _ = new DbContextOptionsBuilder<VaultContext>()
+                .ReplaceService<IModelCacheKeyFactory, VaultModelCacheKeyFactory>()
+                .UseModel(runtimeModel);
+        """,
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options, string tenantSchema) : base(options) {
+              TenantSchema = tenantSchema;
+            }
+
+            public string TenantSchema { get; }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              modelBuilder.HasDefaultSchema(TenantSchema);
+              modelBuilder.ApplyDataVaultMetadata(vault => { });
+            }
+        """,
+        additionalDeclarations: """
+          public sealed class VaultModelCacheKeyFactory : IModelCacheKeyFactory {
+            public object Create(DbContext context, bool designTime) {
+              return context is VaultContext vaultContext
+                  ? (context.GetType(), vaultContext.TenantSchema, designTime)
+                  : (object)(context.GetType(), designTime);
+            }
+          }
+        """));
+    var diagnostic = Assert.Single(diagnostics.Where(diagnostic => diagnostic.Id == "DMV1913"));
+
+    Assert.Contains(
+        "UseModel(...) applies a compiled EF model to DVault context 'VaultContext'",
+        diagnostic.GetMessage(),
+        StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public async Task DoesNotReportUseModelForVisibleDesignRuntimeModelLane() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: """
+            var designOptions = new DbContextOptionsBuilder<VaultContext>()
+                .ReplaceService<IModelCacheKeyFactory, VaultModelCacheKeyFactory>()
+                .Options;
+            var designContext = new VaultContext(designOptions, "tenant_a");
+            var designModel = designContext.GetService<IDesignTimeModel>().Model;
+            var runtimeModel = designContext.GetService<IModelRuntimeInitializer>()
+                .Initialize(designModel, designTime: false, validationLogger: null);
+            _ = new DbContextOptionsBuilder<VaultContext>()
+                .ReplaceService<IModelCacheKeyFactory, VaultModelCacheKeyFactory>()
+                .UseModel(runtimeModel);
+        """,
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options, string tenantSchema) : base(options) {
+              TenantSchema = tenantSchema;
+            }
+
+            public string TenantSchema { get; }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              modelBuilder.HasDefaultSchema(TenantSchema);
+              modelBuilder.ApplyDataVaultMetadata(vault => { });
+            }
+        """,
+        additionalDeclarations: """
+          public sealed class VaultModelCacheKeyFactory : IModelCacheKeyFactory {
+            public object Create(DbContext context, bool designTime) {
+              return context is VaultContext vaultContext
+                  ? (context.GetType(), vaultContext.TenantSchema, designTime)
+                  : (object)(context.GetType(), designTime);
+            }
+          }
+        """));
+
+    Assert.Empty(diagnostics);
+  }
+
+  [Fact]
+  public async Task ReportsUnsafeDbContextPoolWhenDataVaultProfileSelectionUsesContextStateThroughLocal() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: """
+            var services = new ServiceCollection();
+            services.AddDbContextPool<VaultContext>(options => { });
+        """,
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options, bool useOracleProfile) : base(options) {
+              UseOracleProfile = useOracleProfile;
+            }
+
+            public bool UseOracleProfile { get; }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              var providerCapabilities = UseOracleProfile
+                  ? DataVaultProviderCapabilityProfiles.Oracle
+                  : DataVaultProviderCapabilityProfiles.Sqlite;
+
+              modelBuilder.ApplyDataVaultMetadata(vault => { }, providerCapabilities);
+            }
+        """));
+    var diagnostic = Assert.Single(diagnostics.Where(diagnostic => diagnostic.Id == "DMV1914"));
+
+    Assert.Contains(
+        "AddDbContextPool<VaultContext>(...) pools a DVault context whose visible model shape varies from 'UseOracleProfile'",
+        diagnostic.GetMessage(),
+        StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public async Task ReportsUnsafeDbContextPoolWhenProviderSelectionVariesInRegistration() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: """
+            var services = new ServiceCollection();
+            services.AddDbContextPool<VaultContext>(options => {
+              if (useOracle) {
+                options.UseOracle("Data Source=test");
+              } else {
+                options.UseSqlite("Data Source=test.db");
+              }
+            });
+        """,
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options) : base(options) {
+            }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              modelBuilder.ApplyDataVaultMetadata(vault => { });
+            }
+        """,
+        additionalUsageParameters: ", bool useOracle"));
+    var diagnostic = Assert.Single(diagnostics.Where(diagnostic => diagnostic.Id == "DMV1914"));
+
+    Assert.Contains(
+        "AddDbContextPool<VaultContext>(...) pools a DVault context whose visible model shape varies from 'useOracle'",
+        diagnostic.GetMessage(),
+        StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public async Task DoesNotReportDbContextPoolWhenProviderSelectionUsesRegistrationServiceProvider() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: """
+            var services = new ServiceCollection();
+            services.AddDbContextPool<VaultContext>((serviceProvider, options) => {
+              if (serviceProvider.GetHashCode() == 0) {
+                options.UseOracle("Data Source=test");
+              } else {
+                options.UseSqlite("Data Source=test.db");
+              }
+            });
+        """,
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options) : base(options) {
+            }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              modelBuilder.ApplyDataVaultMetadata(vault => { });
+            }
+        """));
+
+    Assert.Empty(diagnostics);
+  }
+
+  [Fact]
+  public async Task DoesNotReportDbContextPoolWhenProviderSelectionUsesOpaqueHelperLocal() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: """
+            var useOracle = ProviderSelection.ShouldUseOracle();
+            var services = new ServiceCollection();
+            services.AddDbContextPool<VaultContext>(options => {
+              if (useOracle) {
+                options.UseOracle("Data Source=test");
+              } else {
+                options.UseSqlite("Data Source=test.db");
+              }
+            });
+        """,
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options) : base(options) {
+            }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              modelBuilder.ApplyDataVaultMetadata(vault => { });
+            }
+        """,
+        additionalDeclarations: """
+          public static class ProviderSelection {
+            public static bool ShouldUseOracle() {
+              return DateTimeOffset.UtcNow.Day == 1;
+            }
+          }
+        """));
+
+    Assert.Empty(diagnostics);
+  }
+
+  [Fact]
+  public async Task ReportsUnsafeDbContextPoolForVisibleVariableDataVaultShape() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: """
+            var services = new ServiceCollection();
+            services.AddDbContextPool<VaultContext>(options => { });
+        """,
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options, string tenantSchema) : base(options) {
+              TenantSchema = tenantSchema;
+            }
+
+            public string TenantSchema { get; }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              modelBuilder.HasDefaultSchema(TenantSchema);
+              modelBuilder.ApplyDataVaultMetadata(vault => { });
+            }
+        """));
+    var diagnostic = Assert.Single(diagnostics.Where(diagnostic => diagnostic.Id == "DMV1914"));
+
+    Assert.Equal("EfCore", diagnostic.Descriptor.Category);
+    Assert.Contains(
+        "AddDbContextPool<VaultContext>(...) pools a DVault context",
+        diagnostic.GetMessage(),
+        StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public async Task DoesNotReportDbContextPoolForOptionsOnlyFixedDataVaultShape() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: """
+            var services = new ServiceCollection();
+            services.AddDbContextPool<VaultContext>(options => { });
+        """,
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options) : base(options) {
+            }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              modelBuilder.ApplyDataVaultMetadata(vault => { });
+            }
+        """));
+
+    Assert.Empty(diagnostics);
+  }
+
+  [Fact]
+  public async Task DoesNotReportUserNamedDbContextPoolMethodOutsideEfRegistrationNamespace() {
+    var diagnostics = await AnalyzeAsync(CreateSource(
+        usageBody: """
+            var services = new ServiceCollection();
+            _ = new DbContextOptionsBuilder<VaultContext>()
+                .ReplaceService<IModelCacheKeyFactory, VaultModelCacheKeyFactory>();
+            UserLifecycleExtensions.AddDbContextPool<VaultContext>(services, options => { });
+        """,
+        contextMembers: """
+            public VaultContext(DbContextOptions<VaultContext> options, string tenantSchema) : base(options) {
+              TenantSchema = tenantSchema;
+            }
+
+            public string TenantSchema { get; }
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder) {
+              modelBuilder.HasDefaultSchema(TenantSchema);
+              modelBuilder.ApplyDataVaultMetadata(vault => { });
+            }
+        """,
+        additionalDeclarations: """
+          public sealed class VaultModelCacheKeyFactory : IModelCacheKeyFactory {
+            public object Create(DbContext context, bool designTime) {
+              return context is VaultContext vaultContext
+                  ? (context.GetType(), vaultContext.TenantSchema, designTime)
+                  : (object)(context.GetType(), designTime);
+            }
+          }
+
+          public static class UserLifecycleExtensions {
+            public static IServiceCollection AddDbContextPool<TContext>(
+                IServiceCollection services,
+                Action<DbContextOptionsBuilder> optionsAction)
+                where TContext : DbContext {
+              optionsAction(new DbContextOptionsBuilder());
+
+              return services;
+            }
+          }
+        """));
+
+    Assert.Empty(diagnostics);
+  }
+
   private static void AssertDescriptor(
       DiagnosticDescriptor descriptor,
       string expectedCategory,
@@ -226,7 +784,11 @@ public sealed class DataVaultEfCoreMisuseAnalyzerTests {
     return references;
   }
 
-  private static string CreateSource(string usageBody, string contextMembers = "") {
+  private static string CreateSource(
+      string usageBody,
+      string contextMembers = "",
+      string additionalDeclarations = "",
+      string additionalUsageParameters = "") {
     return """
         using System;
         using System.Collections.Generic;
@@ -237,6 +799,10 @@ public sealed class DataVaultEfCoreMisuseAnalyzerTests {
         using DCoding.Data.DVault;
         using Microsoft.EntityFrameworkCore;
         using Microsoft.EntityFrameworkCore.ChangeTracking;
+        using Microsoft.EntityFrameworkCore.Infrastructure;
+        using Microsoft.EntityFrameworkCore.Metadata;
+        using Microsoft.EntityFrameworkCore.Metadata.Builders;
+        using Microsoft.Extensions.DependencyInjection;
 
         namespace AnalyzerSample {
           public sealed class Customer {
@@ -255,16 +821,28 @@ public sealed class DataVaultEfCoreMisuseAnalyzerTests {
                 VaultContext context,
                 IDataVaultSaveService saveService,
                 DataVaultSaveRequest request,
-                DbContextOptionsBuilder optionsBuilder) {
         """ +
+        "                DbContextOptionsBuilder optionsBuilder" +
+        additionalUsageParameters +
+        ") {\n" +
         usageBody +
         """
             }
           }
+        """ +
+        additionalDeclarations +
+        """
         }
 
         namespace Microsoft.EntityFrameworkCore {
           public class DbContext {
+            public DbContext() {
+            }
+
+            public DbContext(DbContextOptions options) {
+              _ = options;
+            }
+
             public DbSet<TEntity> Set<TEntity>()
                 where TEntity : class {
               return new DbSet<TEntity>();
@@ -275,6 +853,10 @@ public sealed class DataVaultEfCoreMisuseAnalyzerTests {
               _ = name;
 
               return new DbSet<TEntity>();
+            }
+
+            protected virtual void OnModelCreating(ModelBuilder modelBuilder) {
+              _ = modelBuilder;
             }
           }
 
@@ -317,7 +899,49 @@ public sealed class DataVaultEfCoreMisuseAnalyzerTests {
             }
           }
 
-          public sealed class DbContextOptionsBuilder {
+          public class DbContextOptions {
+          }
+
+          public sealed class DbContextOptions<TContext> : DbContextOptions
+              where TContext : DbContext {
+          }
+
+          public class DbContextOptionsBuilder {
+            public DbContextOptions Options => new DbContextOptions();
+          }
+
+          public sealed class DbContextOptionsBuilder<TContext> : DbContextOptionsBuilder
+              where TContext : DbContext {
+            public new DbContextOptions<TContext> Options => new DbContextOptions<TContext>();
+
+            public DbContextOptionsBuilder<TContext> ReplaceService<TService, TImplementation>()
+                where TImplementation : TService {
+              return this;
+            }
+
+            public DbContextOptionsBuilder<TContext> UseModel(IModel model) {
+              _ = model;
+
+              return this;
+            }
+          }
+
+          public sealed class ModelBuilder {
+            public ModelBuilder HasDefaultSchema(string schema) {
+              _ = schema;
+
+              return this;
+            }
+
+            public ModelBuilder SharedTypeEntity<TEntity>(
+                string name,
+                Action<EntityTypeBuilder<TEntity>> buildAction)
+                where TEntity : class {
+              _ = name;
+              buildAction(new EntityTypeBuilder<TEntity>());
+
+              return this;
+            }
           }
 
           public static class EF {
@@ -342,11 +966,113 @@ public sealed class DataVaultEfCoreMisuseAnalyzerTests {
               return Enumerable.Empty<TEntity>().AsQueryable();
             }
           }
+
+          public static class DbContextOptionsBuilderExtensions {
+            public static DbContextOptionsBuilder UseOracle(this DbContextOptionsBuilder optionsBuilder, string connectionString) {
+              _ = connectionString;
+
+              return optionsBuilder;
+            }
+
+            public static DbContextOptionsBuilder UseSqlite(this DbContextOptionsBuilder optionsBuilder, string connectionString) {
+              _ = connectionString;
+
+              return optionsBuilder;
+            }
+          }
         }
 
         namespace Microsoft.EntityFrameworkCore.ChangeTracking {
           public sealed class EntityEntry<TEntity>
               where TEntity : class {
+          }
+        }
+
+        namespace Microsoft.EntityFrameworkCore.Infrastructure {
+          public interface IModelCacheKeyFactory {
+            object Create(DbContext context, bool designTime);
+          }
+
+          public interface IDesignTimeModel {
+            IModel Model { get; }
+          }
+
+          public interface IModelRuntimeInitializer {
+            IModel Initialize(IModel model, bool designTime, object? validationLogger);
+          }
+
+          public static class InfrastructureExtensions {
+            public static TService GetService<TService>(this DbContext context)
+                where TService : class {
+              _ = context;
+
+              return default!;
+            }
+          }
+        }
+
+        namespace Microsoft.EntityFrameworkCore.Metadata {
+          public interface IModel {
+          }
+
+          public sealed class RuntimeModel : IModel {
+          }
+        }
+
+        namespace Microsoft.EntityFrameworkCore.Metadata.Builders {
+          public sealed class EntityTypeBuilder<TEntity>
+              where TEntity : class {
+            public EntityTypeBuilder<TEntity> ToTable(string name, string schema) {
+              _ = name;
+              _ = schema;
+
+              return this;
+            }
+          }
+        }
+
+        namespace Microsoft.Extensions.DependencyInjection {
+          public interface IServiceCollection {
+          }
+
+          public sealed class ServiceCollection : IServiceCollection {
+          }
+
+          public static class EntityFrameworkServiceCollectionExtensions {
+            public static IServiceCollection AddDbContext<TContext>(
+                this IServiceCollection services,
+                Action<DbContextOptionsBuilder> optionsAction)
+                where TContext : DbContext {
+              optionsAction(new DbContextOptionsBuilder());
+
+              return services;
+            }
+
+            public static IServiceCollection AddDbContextPool<TContext>(
+                this IServiceCollection services,
+                Action<DbContextOptionsBuilder> optionsAction)
+                where TContext : DbContext {
+              optionsAction(new DbContextOptionsBuilder());
+
+              return services;
+            }
+
+            public static IServiceCollection AddDbContextPool<TContext>(
+                this IServiceCollection services,
+                Action<IServiceProvider, DbContextOptionsBuilder> optionsAction)
+                where TContext : DbContext {
+              optionsAction(new EmptyServiceProvider(), new DbContextOptionsBuilder());
+
+              return services;
+            }
+          }
+
+          public sealed class EmptyServiceProvider : IServiceProvider {
+            public object? GetService(Type serviceType) {
+              _ = serviceType;
+
+              return null;
+            }
           }
         }
 
@@ -385,6 +1111,38 @@ public sealed class DataVaultEfCoreMisuseAnalyzerTests {
               _ = configure(new DataVaultSaveChangesMetadataInterceptorOptions());
 
               return optionsBuilder;
+            }
+          }
+
+          public sealed class DataVaultCodeFirstModelBuilder {
+          }
+
+          public sealed class DataVaultProviderCapabilityProfile {
+          }
+
+          public static class DataVaultProviderCapabilityProfiles {
+            public static DataVaultProviderCapabilityProfile Oracle { get; } = new DataVaultProviderCapabilityProfile();
+
+            public static DataVaultProviderCapabilityProfile Sqlite { get; } = new DataVaultProviderCapabilityProfile();
+          }
+
+          public static class DataVaultModelBuilderExtensions {
+            public static ModelBuilder ApplyDataVaultMetadata(
+                this ModelBuilder modelBuilder,
+                Action<DataVaultCodeFirstModelBuilder> configureModel) {
+              configureModel(new DataVaultCodeFirstModelBuilder());
+
+              return modelBuilder;
+            }
+
+            public static ModelBuilder ApplyDataVaultMetadata(
+                this ModelBuilder modelBuilder,
+                Action<DataVaultCodeFirstModelBuilder> configureModel,
+                DataVaultProviderCapabilityProfile providerCapabilities) {
+              configureModel(new DataVaultCodeFirstModelBuilder());
+              _ = providerCapabilities;
+
+              return modelBuilder;
             }
           }
         }

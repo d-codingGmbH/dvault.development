@@ -3,22 +3,21 @@
   "ticket-id": "06F8KZGNRG5FY4WWCY3FAX2NS4",
   "ticket-type": "story",
   "title": "Story: Add analyzer diagnostics for unsafe DVault EF lifecycle patterns",
-  "revision": "06F8M00FPHHE55349A8A78RX3R",
-  "status": "todo",
+  "revision": "06F8TKC76DC01EDR6XXGSCWGC8",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
     "area/analyzers",
     "area/developer-experience",
     "area/ef-core",
     "area/modeling",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F8KYXY4PDZ4PE0PEZWR1ENT0",
   "releaseId": "06F8KYXNNBG8TNDWQ6ZAJHS8AR",
   "created-at": "2026-06-02T20:19:51.5165385Z",
-  "updated-at": "2026-06-02T20:22:00.3721184Z"
+  "updated-at": "2026-06-03T11:45:28.8831862Z"
 }
