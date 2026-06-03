@@ -230,13 +230,21 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.PostgresProvider)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqlServerProvider)]
-  public void PostgresAndSqlServerProviderPackagesRegisterOptimizedPitAndBridgeReadStrategies() {
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.MySqlProvider)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.OracleProvider)]
+  public void RelationalProviderPackagesRegisterOptimizedPitAndBridgeReadStrategies() {
     AssertProviderPitBridgeReadRegistration(
         services => services.AddDVaultPostgres(),
         "PostgresDataVaultReadStrategy");
     AssertProviderPitBridgeReadRegistration(
         services => services.AddDVaultSqlServer(),
         "SqlServerDataVaultReadStrategy");
+    AssertProviderPitBridgeReadRegistration(
+        services => services.AddDVaultMySql(),
+        "MySqlDataVaultReadStrategy");
+    AssertProviderPitBridgeReadRegistration(
+        services => services.AddDVaultOracle(),
+        "OracleDataVaultReadStrategy");
   }
 
   [Fact]

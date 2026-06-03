@@ -96,6 +96,10 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
 
   protected abstract string CreateParameterName(int index);
 
+  protected virtual string CreateParameterPlaceholder(int index) {
+    return CreateParameterName(index);
+  }
+
   protected abstract string QuoteIdentifier(string identifier);
 
   private async Task<IReadOnlyDictionary<DataVaultPitReadPipeline.PitRowIdentityKey, DataVaultPitReadPipeline.MatchedPitRow>> ReadMatchedPitRowsAsync(
@@ -294,7 +298,7 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
         builder.Append(", ");
       }
 
-      builder.Append(CreateParameterName(index));
+      builder.Append(CreateParameterPlaceholder(index));
     }
 
     var orderColumns = new[]
@@ -341,7 +345,7 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
         builder.Append(", ");
       }
 
-      builder.Append(CreateParameterName(index));
+      builder.Append(CreateParameterPlaceholder(index));
     }
 
     builder.Append(')');
@@ -349,7 +353,7 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
       builder.Append(" AND ")
           .Append(QuoteIdentifier(projection.TraversalDepthColumnName))
           .Append(" <= ")
-          .Append(CreateParameterName(endpointHashKeyCount));
+          .Append(CreateParameterPlaceholder(endpointHashKeyCount));
     }
 
     builder.Append(" ORDER BY ");
@@ -414,6 +418,10 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
 
   protected static string CreateAtParameterName(int index) {
     return "@p" + index.ToString(CultureInfo.InvariantCulture);
+  }
+
+  protected static string CreateBareParameterName(int index) {
+    return "p" + index.ToString(CultureInfo.InvariantCulture);
   }
 
   private static object NormalizeTraversalDepth(object value) {

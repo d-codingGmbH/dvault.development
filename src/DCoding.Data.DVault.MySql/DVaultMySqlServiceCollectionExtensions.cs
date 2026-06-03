@@ -8,7 +8,7 @@ namespace DCoding.Data.DVault;
 /// </summary>
 public static class DVaultMySqlServiceCollectionExtensions {
   /// <summary>
-  /// Adds DVault defaults plus the MySQL optimized save strategy for supported EF Core MySQL providers.
+  /// Adds DVault defaults plus MySQL optimized save and PIT/bridge read strategy candidates for supported EF Core MySQL providers.
   /// </summary>
   /// <param name="services">The service collection used by the application startup pipeline.</param>
   /// <returns>The same service collection so startup configuration can continue fluently.</returns>
@@ -25,6 +25,8 @@ public static class DVaultMySqlServiceCollectionExtensions {
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBehavior, MySqlDataVaultProviderBehavior>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, MySqlStagedDataVaultSaveStrategy>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, MySqlDataVaultSaveStrategy>());
+    services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderPitReadStrategy, MySqlDataVaultReadStrategy>());
+    services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBridgeReadStrategy, MySqlDataVaultReadStrategy>());
 
     return services;
   }

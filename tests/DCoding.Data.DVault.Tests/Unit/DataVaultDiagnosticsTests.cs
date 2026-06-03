@@ -784,6 +784,29 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains(
         DataVaultProviderReadStrategyGateEvaluator.GetKnownLatestSatelliteGateRequirements(readStrategy),
         requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
+
+    IDataVaultProviderPitReadStrategy mySqlPitReadStrategy = new MySqlDataVaultReadStrategy();
+    IDataVaultProviderBridgeReadStrategy mySqlBridgeReadStrategy = new MySqlDataVaultReadStrategy();
+    IDataVaultProviderPitReadStrategy oraclePitReadStrategy = new OracleDataVaultReadStrategy();
+    IDataVaultProviderBridgeReadStrategy oracleBridgeReadStrategy = new OracleDataVaultReadStrategy();
+    Assert.Equal(
+        [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(mySqlPitReadStrategy));
+    Assert.Equal(
+        [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(mySqlBridgeReadStrategy));
+    Assert.Equal(
+        [KnownProviderNames.Oracle],
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(oraclePitReadStrategy));
+    Assert.Equal(
+        [KnownProviderNames.Oracle],
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(oracleBridgeReadStrategy));
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownPitGateRequirements(mySqlPitReadStrategy),
+        requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownBridgeGateRequirements(oracleBridgeReadStrategy),
+        requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance);
   }
 
   [Fact]

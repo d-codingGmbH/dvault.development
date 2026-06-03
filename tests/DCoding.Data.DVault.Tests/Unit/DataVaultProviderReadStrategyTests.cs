@@ -179,6 +179,32 @@ public sealed class DataVaultProviderReadStrategyTests {
   }
 
   [Fact]
+  public void MySqlAndOraclePitReadGatesAcceptPublishedMaintainedPitShapes() {
+    var hubPit = new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["Profile"]);
+    var hubMultiActivePit = new DataVaultPitMetadata(
+        DataVaultMetadataReference.Hub("Customer"),
+        [new DataVaultPitSatelliteReferenceMetadata("Contact", isMultiActive: true)]);
+    var linkPit = new DataVaultPitMetadata(DataVaultMetadataReference.Link("CustomerOrder"), ["State"]);
+
+    var mySqlPomeloHub = DataVaultProviderReadStrategyGateEvaluator.EvaluateMySql(
+        KnownProviderNames.MySqlPomelo,
+        CreatePitReadRequest(hubPit, ["customer-hk"]));
+    var mySqlOracleLink = DataVaultProviderReadStrategyGateEvaluator.EvaluateMySql(
+        KnownProviderNames.MySqlOracle,
+        CreatePitReadRequest(linkPit, ["customer-order-hk"]));
+    var oracleMultiActive = DataVaultProviderReadStrategyGateEvaluator.EvaluateOracle(
+        KnownProviderNames.Oracle,
+        CreatePitReadRequest(hubMultiActivePit, ["customer-hk"]));
+
+    Assert.True(mySqlPomeloHub.CanRead);
+    Assert.Empty(mySqlPomeloHub.FallbackCauses);
+    Assert.True(mySqlOracleLink.CanRead);
+    Assert.Empty(mySqlOracleLink.FallbackCauses);
+    Assert.True(oracleMultiActive.CanRead);
+    Assert.Empty(oracleMultiActive.FallbackCauses);
+  }
+
+  [Fact]
   public void PostgresAndSqlServerPitReadGatesFailClosedForMismatchedProviderOrUnsupportedLinkMultiActiveShape() {
     var hubPit = new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["Profile"]);
     var linkMultiActivePit = new DataVaultPitMetadata(
@@ -203,6 +229,65 @@ public sealed class DataVaultProviderReadStrategyTests {
   }
 
   [Fact]
+  public void MySqlAndOraclePitReadGatesFailClosedForProviderShapeEvidenceAndMaintenanceFallbacks() {
+    var hubPit = new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["Profile"]);
+    var linkMultiActivePit = new DataVaultPitMetadata(
+        DataVaultMetadataReference.Link("CustomerOrder"),
+        [new DataVaultPitSatelliteReferenceMetadata("State", isMultiActive: true)]);
+    var supportedRequest = CreatePitReadRequest(hubPit, ["customer-hk"]);
+    var unsupportedShapeRequest = CreatePitReadRequest(linkMultiActivePit, ["customer-order-hk"]);
+
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateMySql(KnownProviderNames.SqlServer, supportedRequest)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateOracle(KnownProviderNames.MySqlPomelo, supportedRequest)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateMySql(KnownProviderNames.MySqlPomelo, unsupportedShapeRequest)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateOracle(KnownProviderNames.Oracle, unsupportedShapeRequest)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateMySql(KnownProviderNames.MySqlPomelo, supportedRequest, hasCompleteReadShapeEvidence: false)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateOracle(KnownProviderNames.Oracle, supportedRequest, hasCompleteReadShapeEvidence: false)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateMySql(
+                KnownProviderNames.MySqlOracle,
+                supportedRequest,
+                hasCompleteReadShapeEvidence: true,
+                hasStaleReadModelMaintenanceSignal: true)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateOracle(
+                KnownProviderNames.Oracle,
+                supportedRequest,
+                hasCompleteReadShapeEvidence: true,
+                hasStaleReadModelMaintenanceSignal: true)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance);
+  }
+
+  [Fact]
   public void PostgresAndSqlServerBridgeReadGatesAcceptManyToManyAndHierarchyShapes() {
     var manyToManyRequest = CreateBridgeReadRequest(["customer-hk"]);
     var hierarchyRequest = CreateHierarchyBridgeReadRequest(["ancestor-hk"]);
@@ -218,6 +303,29 @@ public sealed class DataVaultProviderReadStrategyTests {
     Assert.Empty(postgresManyToMany.FallbackCauses);
     Assert.True(sqlServerHierarchy.CanRead);
     Assert.Empty(sqlServerHierarchy.FallbackCauses);
+  }
+
+  [Fact]
+  public void MySqlAndOracleBridgeReadGatesAcceptManyToManyAndHierarchyShapes() {
+    var manyToManyRequest = CreateBridgeReadRequest(["customer-hk"]);
+    var hierarchyRequest = CreateHierarchyBridgeReadRequest(["ancestor-hk"]);
+
+    var mySqlPomeloManyToMany = DataVaultProviderReadStrategyGateEvaluator.EvaluateMySql(
+        KnownProviderNames.MySqlPomelo,
+        manyToManyRequest);
+    var mySqlOracleHierarchy = DataVaultProviderReadStrategyGateEvaluator.EvaluateMySql(
+        KnownProviderNames.MySqlOracle,
+        hierarchyRequest);
+    var oracleHierarchy = DataVaultProviderReadStrategyGateEvaluator.EvaluateOracle(
+        KnownProviderNames.Oracle,
+        hierarchyRequest);
+
+    Assert.True(mySqlPomeloManyToMany.CanRead);
+    Assert.Empty(mySqlPomeloManyToMany.FallbackCauses);
+    Assert.True(mySqlOracleHierarchy.CanRead);
+    Assert.Empty(mySqlOracleHierarchy.FallbackCauses);
+    Assert.True(oracleHierarchy.CanRead);
+    Assert.Empty(oracleHierarchy.FallbackCauses);
   }
 
   [Fact]
@@ -242,6 +350,61 @@ public sealed class DataVaultProviderReadStrategyTests {
     Assert.Contains(
         sqlServerBridge.FallbackCauses,
         cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence);
+  }
+
+  [Fact]
+  public void MySqlAndOracleBridgeReadGatesFailClosedForProviderShapeEvidenceAndMaintenanceFallbacks() {
+    var bridgeRequest = CreateBridgeReadRequest(["customer-hk"]);
+    var unsupportedFeatureRequest = CreateUnsupportedFeatureBridgeReadRequest(["customer-hk"]);
+
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateMySql(KnownProviderNames.SqlServer, bridgeRequest)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateOracle(KnownProviderNames.MySqlOracle, bridgeRequest)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateMySql(KnownProviderNames.MySqlPomelo, unsupportedFeatureRequest)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedBridgeShape);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateOracle(KnownProviderNames.Oracle, unsupportedFeatureRequest)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedBridgeShape);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateMySql(KnownProviderNames.MySqlPomelo, bridgeRequest, hasCompleteReadShapeEvidence: false)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateOracle(KnownProviderNames.Oracle, bridgeRequest, hasCompleteReadShapeEvidence: false)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateMySql(
+                KnownProviderNames.MySqlOracle,
+                bridgeRequest,
+                hasCompleteReadShapeEvidence: true,
+                hasStaleReadModelMaintenanceSignal: true)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateOracle(
+                KnownProviderNames.Oracle,
+                bridgeRequest,
+                hasCompleteReadShapeEvidence: true,
+                hasStaleReadModelMaintenanceSignal: true)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance);
   }
 
   [Fact]
@@ -328,6 +491,29 @@ public sealed class DataVaultProviderReadStrategyTests {
         DataVaultBridgeTraversalEndpoint.Ancestor,
         endpointHashKeys,
         maximumDepth: 3);
+  }
+
+  private static DataVaultBridgeReadRequest CreateUnsupportedFeatureBridgeReadRequest(IEnumerable<string> endpointHashKeys) {
+    var bridge = new DataVaultBridgeMetadata(
+        "CustomerOrder",
+        DataVaultBridgeKind.ManyToMany,
+        DataVaultMetadataReference.Link("CustomerOrder"),
+        [
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.From,
+                DataVaultMetadataReference.Hub("Customer"),
+                "Customer"),
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.To,
+                DataVaultMetadataReference.Hub("Order"),
+                "Order"),
+        ],
+        DataVaultBridgeProjectionFeatures.PathPayload);
+
+    return new DataVaultBridgeReadRequest(
+        bridge,
+        DataVaultBridgeTraversalEndpoint.From,
+        endpointHashKeys);
   }
 
   private sealed class DispatchProbeReadStrategy(

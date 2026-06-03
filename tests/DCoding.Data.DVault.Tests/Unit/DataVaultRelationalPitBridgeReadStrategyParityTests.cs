@@ -9,7 +9,7 @@ namespace DCoding.Data.DVault.Tests.Unit;
 
 public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
   [Fact]
-  public async Task PostgresAndSqlServerPitCandidatesReturnProviderNeutralRowsAndProjections() {
+  public async Task RelationalPitCandidatesReturnProviderNeutralRowsAndProjections() {
     var metadata = CreatePitMetadata();
     using var database = SqliteTestDatabase.CreateTemporaryFile();
     var options = new DbContextOptionsBuilder<PitReadParityContext>()
@@ -21,6 +21,8 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
     var fallbackReadService = fallbackProvider.GetRequiredService<IDataVaultReadService>();
     var postgresReadService = CreatePitCandidateReadService(new PostgresDataVaultReadStrategy());
     var sqlServerReadService = CreatePitCandidateReadService(new SqlServerDataVaultReadStrategy());
+    var mySqlReadService = CreatePitCandidateReadService(new MySqlDataVaultReadStrategy());
+    var oracleReadService = CreatePitCandidateReadService(new OracleDataVaultReadStrategy());
     string customerHashKey;
 
     await using (var context = new PitReadParityContext(options)) {
@@ -74,25 +76,44 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
       Assert.True(DataVaultProviderReadStrategyGateEvaluator
           .EvaluateSqlServer(KnownProviderNames.SqlServer, request)
           .CanRead);
+      Assert.True(DataVaultProviderReadStrategyGateEvaluator
+          .EvaluateMySql(KnownProviderNames.MySqlPomelo, request)
+          .CanRead);
+      Assert.True(DataVaultProviderReadStrategyGateEvaluator
+          .EvaluateMySql(KnownProviderNames.MySqlOracle, request)
+          .CanRead);
+      Assert.True(DataVaultProviderReadStrategyGateEvaluator
+          .EvaluateOracle(KnownProviderNames.Oracle, request)
+          .CanRead);
 
       var fallbackRows = await fallbackReadService.ReadPitRowsAsync(context, request);
       var postgresRows = await new PostgresDataVaultReadStrategy().ReadPitRowsAsync(
           new DataVaultProviderPitReadStrategyContext(context, request));
       var sqlServerRows = await new SqlServerDataVaultReadStrategy().ReadPitRowsAsync(
           new DataVaultProviderPitReadStrategyContext(context, request));
+      var mySqlRows = await new MySqlDataVaultReadStrategy().ReadPitRowsAsync(
+          new DataVaultProviderPitReadStrategyContext(context, request));
+      var oracleRows = await new OracleDataVaultReadStrategy().ReadPitRowsAsync(
+          new DataVaultProviderPitReadStrategyContext(context, request));
       var fallbackProjections = await ProjectPitRowsAsync(fallbackReadService, context, request);
       var postgresProjections = await ProjectPitRowsAsync(postgresReadService, context, request);
       var sqlServerProjections = await ProjectPitRowsAsync(sqlServerReadService, context, request);
+      var mySqlProjections = await ProjectPitRowsAsync(mySqlReadService, context, request);
+      var oracleProjections = await ProjectPitRowsAsync(oracleReadService, context, request);
 
       Assert.Equal(FormatPitRows(fallbackRows), FormatPitRows(postgresRows));
       Assert.Equal(FormatPitRows(fallbackRows), FormatPitRows(sqlServerRows));
+      Assert.Equal(FormatPitRows(fallbackRows), FormatPitRows(mySqlRows));
+      Assert.Equal(FormatPitRows(fallbackRows), FormatPitRows(oracleRows));
       Assert.Equal(fallbackProjections, postgresProjections);
       Assert.Equal(fallbackProjections, sqlServerProjections);
+      Assert.Equal(fallbackProjections, mySqlProjections);
+      Assert.Equal(fallbackProjections, oracleProjections);
     }
   }
 
   [Fact]
-  public async Task PostgresAndSqlServerBridgeCandidatesReturnProviderNeutralRowsAndProjections() {
+  public async Task RelationalBridgeCandidatesReturnProviderNeutralRowsAndProjections() {
     var bridge = ManyToManyMetadataModel.Bridges.Single();
     using var database = SqliteTestDatabase.CreateTemporaryFile();
     var options = new DbContextOptionsBuilder<BridgeReadParityContext>()
@@ -102,6 +123,8 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
     var fallbackReadService = fallbackProvider.GetRequiredService<IDataVaultReadService>();
     var postgresReadService = CreateBridgeCandidateReadService(new PostgresDataVaultReadStrategy());
     var sqlServerReadService = CreateBridgeCandidateReadService(new SqlServerDataVaultReadStrategy());
+    var mySqlReadService = CreateBridgeCandidateReadService(new MySqlDataVaultReadStrategy());
+    var oracleReadService = CreateBridgeCandidateReadService(new OracleDataVaultReadStrategy());
 
     await using (var context = new BridgeReadParityContext(options)) {
       await context.Database.EnsureCreatedAsync();
@@ -122,20 +145,39 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
       Assert.True(DataVaultProviderReadStrategyGateEvaluator
           .EvaluateSqlServer(KnownProviderNames.SqlServer, request)
           .CanRead);
+      Assert.True(DataVaultProviderReadStrategyGateEvaluator
+          .EvaluateMySql(KnownProviderNames.MySqlPomelo, request)
+          .CanRead);
+      Assert.True(DataVaultProviderReadStrategyGateEvaluator
+          .EvaluateMySql(KnownProviderNames.MySqlOracle, request)
+          .CanRead);
+      Assert.True(DataVaultProviderReadStrategyGateEvaluator
+          .EvaluateOracle(KnownProviderNames.Oracle, request)
+          .CanRead);
 
       var fallbackRows = await fallbackReadService.ReadBridgeRowsAsync(context, request);
       var postgresRows = await new PostgresDataVaultReadStrategy().ReadBridgeRowsAsync(
           new DataVaultProviderBridgeReadStrategyContext(context, request));
       var sqlServerRows = await new SqlServerDataVaultReadStrategy().ReadBridgeRowsAsync(
           new DataVaultProviderBridgeReadStrategyContext(context, request));
+      var mySqlRows = await new MySqlDataVaultReadStrategy().ReadBridgeRowsAsync(
+          new DataVaultProviderBridgeReadStrategyContext(context, request));
+      var oracleRows = await new OracleDataVaultReadStrategy().ReadBridgeRowsAsync(
+          new DataVaultProviderBridgeReadStrategyContext(context, request));
       var fallbackProjections = await ProjectBridgeRowsAsync(fallbackReadService, context, request);
       var postgresProjections = await ProjectBridgeRowsAsync(postgresReadService, context, request);
       var sqlServerProjections = await ProjectBridgeRowsAsync(sqlServerReadService, context, request);
+      var mySqlProjections = await ProjectBridgeRowsAsync(mySqlReadService, context, request);
+      var oracleProjections = await ProjectBridgeRowsAsync(oracleReadService, context, request);
 
       Assert.Equal(FormatBridgeRows(fallbackRows), FormatBridgeRows(postgresRows));
       Assert.Equal(FormatBridgeRows(fallbackRows), FormatBridgeRows(sqlServerRows));
+      Assert.Equal(FormatBridgeRows(fallbackRows), FormatBridgeRows(mySqlRows));
+      Assert.Equal(FormatBridgeRows(fallbackRows), FormatBridgeRows(oracleRows));
       Assert.Equal(fallbackProjections, postgresProjections);
       Assert.Equal(fallbackProjections, sqlServerProjections);
+      Assert.Equal(fallbackProjections, mySqlProjections);
+      Assert.Equal(fallbackProjections, oracleProjections);
     }
   }
 
