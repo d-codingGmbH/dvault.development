@@ -3,6 +3,6 @@
   "releaseId": "06F8KYXNNBG8TNDWQ6ZAJHS8AR",
   "name": "v0.27.0 - EF Core Lifecycle Analyzer Guardrails",
   "description": "High-confidence Roslyn analyzer diagnostics for DVault model-cache, compiled-model, and DbContext pooling safety without whole-application inference or runtime platform behavior.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-06-02T20:17:15.1782610Z"
 }
