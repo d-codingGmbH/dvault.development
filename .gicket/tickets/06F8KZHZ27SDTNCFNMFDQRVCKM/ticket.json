@@ -3,24 +3,23 @@
   "ticket-id": "06F8KZHZ27SDTNCFNMFDQRVCKM",
   "ticket-type": "story",
   "title": "Story: Define provider read strategy evidence contract",
-  "revision": "06F8M00SBBR38SMW9HF4C0Y5B0",
-  "status": "todo",
+  "revision": "06F8WQ265P9WK4Y13KCW28VBM0",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
     "area/architecture",
     "area/benchmarks",
     "area/diagnostics",
     "area/ef-core",
     "area/performance",
     "area/provider-support",
-    "area/read-models"
+    "area/read-models",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F8KYXZPX6VE3ZZ5MWY3RXABG",
   "releaseId": "06F8KYXQFNEK9XJV167HVT4RCG",
   "created-at": "2026-06-02T20:20:02.0555382Z",
-  "updated-at": "2026-06-02T20:22:02.8424782Z"
+  "updated-at": "2026-06-03T16:41:12.4937548Z"
 }
