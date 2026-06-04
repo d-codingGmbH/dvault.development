@@ -696,22 +696,22 @@ public static class DataVaultMigrationOperationDiagnostics {
             " '" + entity.ParentReference.Name + "'";
 
     return "Data Vault " + FormatStructureKind(entity.Kind) + " table '" + entity.TableName +
-        "' (metadata name '" + entity.MetadataName + "', produced name '" + entity.TableName + "'" +
+        "' (metadata name '" + entity.MetadataName + "', produced name '" + entity.ProducedName + "'" +
         parentContext + ")";
   }
 
   private static string FormatColumnContext(DataVaultMigrationColumnBaseline column) {
     return "column '" + column.Name + "' (metadata name '" + column.MetadataName +
-        "', produced name '" + column.Name + "', role " + FormatColumnRole(column) + ")";
+        "', produced name '" + column.ProducedName + "', role " + FormatColumnRole(column) + ")";
   }
 
   private static string FormatPrimaryKeyContext(DataVaultMigrationKeyBaseline primaryKey) {
     return "primary-key constraint '" + primaryKey.Name + "' (produced name '" +
-        primaryKey.Name + "', columns [" + string.Join(", ", primaryKey.PropertyNames) + "])";
+        primaryKey.ProducedName + "', columns [" + string.Join(", ", primaryKey.PropertyNames) + "])";
   }
 
   private static string FormatIndexContext(DataVaultMigrationIndexBaseline index) {
-    return "secondary index '" + index.Name + "' (produced name '" + index.Name +
+    return "secondary index '" + index.Name + "' (produced name '" + index.ProducedName +
         "', columns [" + string.Join(", ", index.PropertyNames) + "], unique " +
         index.IsUnique.ToString().ToLowerInvariant() + ")";
   }
@@ -1133,6 +1133,7 @@ public static class DataVaultMigrationOperationDiagnostics {
   private sealed class DataVaultMigrationEntityBaseline {
     private DataVaultMigrationEntityBaseline(
         string tableName,
+        string producedName,
         DataVaultTableKind kind,
         string metadataName,
         DataVaultParentReferenceExplain? parentReference,
@@ -1141,6 +1142,7 @@ public static class DataVaultMigrationOperationDiagnostics {
         DataVaultMigrationKeyBaseline primaryKey,
         IReadOnlyDictionary<string, DataVaultMigrationIndexBaseline> indexes) {
       TableName = tableName;
+      ProducedName = producedName;
       Kind = kind;
       MetadataName = metadataName;
       ParentReference = parentReference;
@@ -1151,6 +1153,8 @@ public static class DataVaultMigrationOperationDiagnostics {
     }
 
     public string TableName { get; }
+
+    public string ProducedName { get; }
 
     public DataVaultTableKind Kind { get; }
 
@@ -1179,6 +1183,7 @@ public static class DataVaultMigrationOperationDiagnostics {
 
       return new DataVaultMigrationEntityBaseline(
           entity.TableName,
+          string.IsNullOrWhiteSpace(entity.ProducedName) ? entity.TableName : entity.ProducedName,
           entity.TableKind,
           entity.MetadataName,
           entity.ParentReference,
@@ -1191,12 +1196,14 @@ public static class DataVaultMigrationOperationDiagnostics {
 
   private sealed record DataVaultMigrationColumnBaseline(
       string Name,
+      string ProducedName,
       DataVaultPropertyRole Role,
       TechnicalMetadataColumnRole? TechnicalRole,
       string MetadataName) {
     public static DataVaultMigrationColumnBaseline Create(DataVaultPropertyExplain property) {
       return new DataVaultMigrationColumnBaseline(
           property.Name,
+          string.IsNullOrWhiteSpace(property.ProducedName) ? property.Name : property.ProducedName,
           property.Role,
           property.TechnicalRole,
           property.MetadataName);
@@ -1205,18 +1212,27 @@ public static class DataVaultMigrationOperationDiagnostics {
 
   private sealed record DataVaultMigrationKeyBaseline(
       string Name,
+      string ProducedName,
       IReadOnlyList<string> PropertyNames) {
     public static DataVaultMigrationKeyBaseline Create(DataVaultKeyExplain key) {
-      return new DataVaultMigrationKeyBaseline(key.Name, key.PropertyNames);
+      return new DataVaultMigrationKeyBaseline(
+          key.Name,
+          string.IsNullOrWhiteSpace(key.ProducedName) ? key.Name : key.ProducedName,
+          key.PropertyNames);
     }
   }
 
   private sealed record DataVaultMigrationIndexBaseline(
       string Name,
+      string ProducedName,
       IReadOnlyList<string> PropertyNames,
       bool IsUnique) {
     public static DataVaultMigrationIndexBaseline Create(DataVaultIndexExplain index) {
-      return new DataVaultMigrationIndexBaseline(index.Name, index.PropertyNames, index.IsUnique);
+      return new DataVaultMigrationIndexBaseline(
+          index.Name,
+          string.IsNullOrWhiteSpace(index.ProducedName) ? index.Name : index.ProducedName,
+          index.PropertyNames,
+          index.IsUnique);
     }
   }
 }

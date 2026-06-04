@@ -11,10 +11,10 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
     var definitions = DataVaultDiagnosticCatalog.MigrationOperationDefinitions;
 
     Assert.Equal(
-        ["DVM2001", "DVM2002", "DVM2003", "DVM2004", "DVM2005", "DVM2006", "DVM2007", "DVM2008"],
+        ["DVM2001", "DVM2002", "DVM2003", "DVM2004", "DVM2005", "DVM2006", "DVM2007", "DVM2008", "DVM2009"],
         definitions.Select(definition => definition.Code));
     Assert.Equal(
-        ["error", "error", "error", "warning", "warning", "error", "error", "warning"],
+        ["error", "error", "error", "warning", "warning", "error", "error", "warning", "error"],
         definitions.Select(definition => definition.Severity));
     Assert.All(definitions, definition => {
       Assert.NotEmpty(definition.Summary);

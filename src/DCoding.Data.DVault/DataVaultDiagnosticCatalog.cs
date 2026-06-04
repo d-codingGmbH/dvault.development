@@ -194,6 +194,13 @@ internal static class DataVaultDiagnosticCatalog {
           "Suspicious Data Vault generated structure replacement",
           "Raised when a migration uses a drop-plus-add sequence that appears to replace a generated Data Vault table, column, index, or constraint without an explicit EF rename operation.",
           "Review the metadata name and produced-name continuity; use an explicit EF rename operation for intentional renames or restore the original generated structure before applying the migration."),
+      new DataVaultDiagnosticDefinition(
+          "DVM2009",
+          ErrorSeverity,
+          "provider-identifier-guardrail",
+          "Unsafe provider identifier generated",
+          "Raised when a Data Vault-produced table, column, index, key, or constraint name cannot be emitted as a safe unquoted identifier for the selected provider profile.",
+          "Rename the source model declaration or role so provider-neutral naming produces a provider-safe logical name, split the model when the provider cannot represent the generated shape, or choose a supported provider/profile that can represent it."),
   ];
 
   private static readonly IReadOnlyDictionary<string, DataVaultDiagnosticDefinition> MigrationOperationSeedDefinitionsByCode =

@@ -72,6 +72,29 @@ public sealed class DataVaultDiagnosticsTests {
   }
 
   [Fact]
+  public void AnalyzeMetadataModelReportsProviderIdentifierPreflightFailures() {
+    using var provider = CreateServiceProvider();
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    var result = diagnostics.Analyze(
+        CreateCustomerMetadataModel(),
+        CreateMySqlProfileWithMaximumIdentifierLength(9));
+
+    Assert.False(result.Validation.IsValid);
+    var issue = Assert.Single(result.Validation.Issues.Where(issue =>
+        string.Equals(issue.Path, "metadata/hub/HubCustomer/table", StringComparison.Ordinal)));
+    Assert.Equal("DVM2009", issue.Code);
+    Assert.Equal("metadata/hub/HubCustomer/table", issue.Path);
+    Assert.Contains("profile 'mysql-pomelo-v1-test'", issue.Message, StringComparison.Ordinal);
+    Assert.Contains("logical produced name 'HubCustomer'", issue.Message, StringComparison.Ordinal);
+    Assert.Contains("object class 'table'", issue.Message, StringComparison.Ordinal);
+    Assert.Contains("failure class 'length-limit'", issue.Message, StringComparison.Ordinal);
+    Assert.All(result.Validation.Issues, issue => Assert.Equal("DVM2009", issue.Code));
+    Assert.Empty(result.Explain.Entities);
+    Assert.NotEmpty(DataVaultDiagnosticCatalog.GetMigrationOperationDefinition(issue.Code).Remediation);
+  }
+
+  [Fact]
   public void ReadDiagnosticsPopulateReadShapeForExplicitRegistryPitAndBridgeRequests() {
     var metadata = CreateReadShapeMetadata();
     var optionsBuilder = new DbContextOptionsBuilder<ReadShapeDiagnosticsContext>()
@@ -1160,6 +1183,17 @@ public sealed class DataVaultDiagnosticsTests {
             [new("PhoneType", "mobile")],
             [new("PhoneNumber", "123")],
             "phone-hd")]);
+  }
+
+  private static DataVaultProviderCapabilityProfile CreateMySqlProfileWithMaximumIdentifierLength(
+      int maximumIdentifierLength) {
+    return new DataVaultProviderCapabilityProfile(
+        "mysql-pomelo-v1-test",
+        DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported,
+        DataVaultProviderConcurrencySupport.NoneInV1Unsupported,
+        DataVaultProviderCapabilityProfiles.MySql.TypeMappings,
+        maximumIdentifierLength,
+        unsupportedIncludedIndexColumnMode: DataVaultUnsupportedIncludedIndexColumnMode.Ignore);
   }
 
   private sealed class Customer {

@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-using System.Text;
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -22,9 +20,26 @@ internal static class DataVaultEfMetadataTranslator {
     ArgumentNullException.ThrowIfNull(providerCapabilities);
 
     var entities = CreateEntities(metadataModel).ToArray();
+    var providerIdentifiers = CreateProviderIdentifierProjectionSet(entities, providerCapabilities);
     foreach (var entity in entities) {
-      ApplyEntity(modelBuilder, entity, providerCapabilities);
+      ApplyEntity(modelBuilder, entity, providerCapabilities, providerIdentifiers);
     }
+  }
+
+  internal static IEnumerable<DataVaultDiagnosticsIssue> ValidateProviderIdentifiers(
+      DataVaultMetadataModel metadataModel,
+      DataVaultProviderCapabilityProfile providerCapabilities,
+      string? providerName = null) {
+    ArgumentNullException.ThrowIfNull(metadataModel);
+    ArgumentNullException.ThrowIfNull(providerCapabilities);
+
+    var entities = CreateEntities(metadataModel).ToArray();
+    var preflight = DataVaultProviderIdentifierPreflight.Analyze(
+        providerCapabilities,
+        CreateIdentifierCandidates(entities));
+
+    return preflight.Issues.Select(issue =>
+        DataVaultProviderIdentifierPreflight.CreateDiagnosticIssue(issue, providerName));
   }
 
   private static IEnumerable<EntityProjection> CreateEntities(DataVaultMetadataModel metadataModel) {
@@ -47,6 +62,82 @@ internal static class DataVaultEfMetadataTranslator {
     foreach (var pit in metadataModel.Pits) {
       yield return CreatePitEntity(pit, metadataModel);
     }
+  }
+
+  private static DataVaultProviderIdentifierProjectionSet CreateProviderIdentifierProjectionSet(
+      IReadOnlyList<EntityProjection> entities,
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    var preflight = DataVaultProviderIdentifierPreflight.Analyze(
+        providerCapabilities,
+        CreateIdentifierCandidates(entities));
+    if (preflight.Issues.Count == 0) {
+      return preflight.ProjectionSet;
+    }
+
+    var issue = preflight.Issues[0];
+    var diagnostic = DataVaultProviderIdentifierPreflight.CreateDiagnosticIssue(issue);
+    throw new InvalidOperationException(diagnostic.Message);
+  }
+
+  private static IEnumerable<DataVaultProviderIdentifierCandidate> CreateIdentifierCandidates(
+      IReadOnlyList<EntityProjection> entities) {
+    foreach (var entity in entities) {
+      yield return new DataVaultProviderIdentifierCandidate(
+          DataVaultProviderIdentifierKind.Table,
+          entity.Name,
+          entity.MetadataName,
+          "<default-schema>",
+          CreateTableIdentifierPath(entity));
+
+      foreach (var property in entity.Properties) {
+        yield return new DataVaultProviderIdentifierCandidate(
+            DataVaultProviderIdentifierKind.Column,
+            property.Name,
+            property.MetadataName,
+            entity.Name,
+            CreateColumnIdentifierPath(entity, property));
+      }
+
+      yield return new DataVaultProviderIdentifierCandidate(
+          DataVaultProviderIdentifierKind.PrimaryKey,
+          entity.PrimaryKey.Name,
+          entity.MetadataName,
+          entity.Name,
+          CreatePrimaryKeyIdentifierPath(entity));
+
+      foreach (var index in entity.Indexes) {
+        yield return new DataVaultProviderIdentifierCandidate(
+            DataVaultProviderIdentifierKind.Index,
+            index.Name,
+            entity.MetadataName,
+            entity.Name,
+            CreateIndexIdentifierPath(entity, index));
+      }
+    }
+  }
+
+  private static string CreateTableIdentifierPath(EntityProjection entity) {
+    return CreateEntityIdentifierPath(entity) + "/table";
+  }
+
+  private static string CreateColumnIdentifierPath(
+      EntityProjection entity,
+      PropertyProjection property) {
+    return CreateEntityIdentifierPath(entity) + "/columns/" + property.Name;
+  }
+
+  private static string CreatePrimaryKeyIdentifierPath(EntityProjection entity) {
+    return CreateEntityIdentifierPath(entity) + "/primary-key/" + entity.PrimaryKey.Name;
+  }
+
+  private static string CreateIndexIdentifierPath(
+      EntityProjection entity,
+      IndexProjection index) {
+    return CreateEntityIdentifierPath(entity) + "/indexes/" + index.Name;
+  }
+
+  private static string CreateEntityIdentifierPath(EntityProjection entity) {
+    return "metadata/" + entity.Kind.ToString().ToLowerInvariant() + "/" + entity.Name;
   }
 
   private static EntityProjection CreateHubEntity(DataVaultHubMetadata hub) {
@@ -679,15 +770,17 @@ internal static class DataVaultEfMetadataTranslator {
   private static void ApplyEntity(
       ModelBuilder modelBuilder,
       EntityProjection entity,
-      DataVaultProviderCapabilityProfile providerCapabilities) {
+      DataVaultProviderCapabilityProfile providerCapabilities,
+      DataVaultProviderIdentifierProjectionSet providerIdentifiers) {
     var defaultSchema = modelBuilder.Model.GetDefaultSchema();
+    var physicalTableName = providerIdentifiers.GetPhysicalName(CreateTableIdentifierPath(entity));
 
     modelBuilder.SharedTypeEntity<Dictionary<string, object>>(entity.Name, entityBuilder => {
       if (defaultSchema is null) {
-        entityBuilder.ToTable(entity.Name);
+        entityBuilder.ToTable(physicalTableName);
       }
       else {
-        entityBuilder.ToTable(entity.Name, defaultSchema);
+        entityBuilder.ToTable(physicalTableName, defaultSchema);
       }
 
       entityBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProducedName, entity.Name);
@@ -700,11 +793,11 @@ internal static class DataVaultEfMetadataTranslator {
       }
 
       for (var ordinal = 0; ordinal < entity.Properties.Count; ordinal++) {
-        ApplyProperty(entityBuilder, entity.Properties[ordinal], ordinal, providerCapabilities);
+        ApplyProperty(entityBuilder, entity, entity.Properties[ordinal], ordinal, providerCapabilities, providerIdentifiers);
       }
 
       var keyBuilder = entityBuilder.HasKey(entity.PrimaryKey.PropertyNames.ToArray());
-      keyBuilder.HasName(GetPhysicalIdentifierName(entity.PrimaryKey.Name, providerCapabilities));
+      keyBuilder.HasName(providerIdentifiers.GetPhysicalName(CreatePrimaryKeyIdentifierPath(entity)));
       keyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProducedName, entity.PrimaryKey.Name);
 
       for (var ordinal = 0; ordinal < entity.Indexes.Count; ordinal++) {
@@ -726,7 +819,7 @@ internal static class DataVaultEfMetadataTranslator {
           ApplyIncludedIndexProperties(indexBuilder, index.IncludedPropertyNames, providerCapabilities);
         }
 
-        indexBuilder.HasDatabaseName(GetPhysicalIdentifierName(index.Name, providerCapabilities));
+        indexBuilder.HasDatabaseName(providerIdentifiers.GetPhysicalName(CreateIndexIdentifierPath(entity, index)));
         indexBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProducedName, index.Name);
         indexBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.Ordinal, ordinal);
       }
@@ -817,27 +910,13 @@ internal static class DataVaultEfMetadataTranslator {
     includePropertiesMethod.Invoke(null, [indexBuilder, includedPropertyNames.ToArray()]);
   }
 
-  private static string GetPhysicalIdentifierName(
-      string producedName,
-      DataVaultProviderCapabilityProfile providerCapabilities) {
-    if (providerCapabilities.MaximumIdentifierLength is not { } maximumIdentifierLength ||
-        producedName.Length <= maximumIdentifierLength) {
-      return producedName;
-    }
-
-    const int hashLength = 8;
-    var prefixLength = Math.Max(1, maximumIdentifierLength - hashLength - 1);
-    var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(producedName)))
-        .ToLowerInvariant()[..hashLength];
-
-    return producedName[..prefixLength] + "_" + hash;
-  }
-
   private static void ApplyProperty(
       EntityTypeBuilder<Dictionary<string, object>> entityBuilder,
+      EntityProjection entity,
       PropertyProjection property,
       int ordinal,
-      DataVaultProviderCapabilityProfile providerCapabilities) {
+      DataVaultProviderCapabilityProfile providerCapabilities,
+      DataVaultProviderIdentifierProjectionSet providerIdentifiers) {
     var logicalPropertyKind = GetLogicalPropertyKind(property);
     var typeMapping = providerCapabilities.GetRequiredTypeMapping(logicalPropertyKind);
     var propertyBuilder = CreateIndexerProperty(entityBuilder, property, providerCapabilities, typeMapping);
@@ -846,7 +925,7 @@ internal static class DataVaultEfMetadataTranslator {
       propertyBuilder.IsRequired(false);
     }
 
-    propertyBuilder.HasColumnName(property.Name);
+    propertyBuilder.HasColumnName(providerIdentifiers.GetPhysicalName(CreateColumnIdentifierPath(entity, property)));
     propertyBuilder.HasColumnType(typeMapping.NativeStoreType);
     propertyBuilder.HasColumnOrder(ordinal);
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProducedName, property.Name);

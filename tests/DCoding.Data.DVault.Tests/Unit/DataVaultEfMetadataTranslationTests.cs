@@ -682,6 +682,63 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataProjectsProviderSafePhysicalIdentifiers() {
+    var hub = new DataVaultHubMetadata(
+        "CustomerAccountWithExtremelyVerboseProviderIdentifierPreflightProjectionName",
+        ["Customer Business Identifier With Extremely Verbose Provider Identifier Preflight Column Name"]);
+    var metadataModel = new DataVaultMetadataModel([hub], [], []);
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.ApplyDataVaultMetadata(metadataModel, DataVaultProviderCapabilityProfiles.MySql);
+
+    var entity = Assert.Single(modelBuilder.Model.GetEntityTypes());
+    var producedTableName = AnnotationValue<string>(entity, DataVaultAnnotationNames.ProducedName);
+    var physicalTableName = entity.GetTableName();
+    var table = StoreObjectIdentifier.Table(physicalTableName!, entity.GetSchema());
+    var businessKeyProperty = entity.GetProperties().Single(property =>
+        string.Equals(
+            AnnotationValue<string>(property, DataVaultAnnotationNames.MetadataName),
+            hub.BusinessKeyColumns[0].ColumnName,
+            StringComparison.Ordinal));
+    var producedColumnName = AnnotationValue<string>(businessKeyProperty, DataVaultAnnotationNames.ProducedName);
+    var physicalColumnName = businessKeyProperty.GetColumnName(table);
+    var primaryKey = entity.FindPrimaryKey()!;
+    var producedPrimaryKeyName = AnnotationValue<string>(primaryKey, DataVaultAnnotationNames.ProducedName);
+    var physicalPrimaryKeyName = primaryKey.GetName();
+    var index = Assert.Single(entity.GetIndexes());
+    var producedIndexName = AnnotationValue<string>(index, DataVaultAnnotationNames.ProducedName);
+    var physicalIndexName = index.GetDatabaseName();
+
+    Assert.NotEqual(producedTableName, physicalTableName);
+    Assert.NotEqual(producedColumnName, physicalColumnName);
+    Assert.NotEqual(producedPrimaryKeyName, physicalPrimaryKeyName);
+    Assert.NotEqual(producedIndexName, physicalIndexName);
+    Assert.True(physicalTableName!.Length <= 64);
+    Assert.True(physicalColumnName!.Length <= 64);
+    Assert.True(physicalPrimaryKeyName!.Length <= 64);
+    Assert.True(physicalIndexName!.Length <= 64);
+    Assert.Equal(producedColumnName, businessKeyProperty.Name);
+    Assert.Contains('_', physicalTableName);
+    Assert.Contains('_', physicalColumnName);
+    Assert.Contains('_', physicalPrimaryKeyName);
+    Assert.Contains('_', physicalIndexName);
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataFailsBeforeDdlWhenProviderIdentifierCannotBeProjected() {
+    var providerCapabilities = CreateMySqlProfileWithMaximumIdentifierLength(9);
+    var modelBuilder = CreateModelBuilder();
+
+    var exception = Assert.Throws<InvalidOperationException>(() =>
+        modelBuilder.ApplyDataVaultMetadata(CreateMetadataModel(), providerCapabilities));
+
+    Assert.Contains("Provider identifier preflight failed", exception.Message, StringComparison.Ordinal);
+    Assert.Contains("profile 'mysql-pomelo-v1-test'", exception.Message, StringComparison.Ordinal);
+    Assert.Contains("failure class 'length-limit'", exception.Message, StringComparison.Ordinal);
+    Assert.Empty(modelBuilder.Model.GetEntityTypes());
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataFailsDeterministicallyWhenBridgeRequestsUnsupportedProjectionFeatures() {
     var metadataModel = new DataVaultMetadataModel(
         [],
@@ -1336,6 +1393,17 @@ public sealed class DataVaultEfMetadataTranslationTests {
                     .Select(index => string.Join(",", index.Properties.Select(property => property.Name)) + ":" + index.IsUnique))))
         .Order(StringComparer.Ordinal)
         .ToArray();
+  }
+
+  private static DataVaultProviderCapabilityProfile CreateMySqlProfileWithMaximumIdentifierLength(
+      int maximumIdentifierLength) {
+    return new DataVaultProviderCapabilityProfile(
+        "mysql-pomelo-v1-test",
+        DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported,
+        DataVaultProviderConcurrencySupport.NoneInV1Unsupported,
+        DataVaultProviderCapabilityProfiles.MySql.TypeMappings,
+        maximumIdentifierLength,
+        unsupportedIncludedIndexColumnMode: DataVaultUnsupportedIncludedIndexColumnMode.Ignore);
   }
 
   private static T AnnotationValue<T>(IMutableEntityType entityType, string name) {

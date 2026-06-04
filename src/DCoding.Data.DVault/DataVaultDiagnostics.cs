@@ -253,6 +253,11 @@ public sealed record DataVaultPropertyExplain(
   /// Gets a value indicating whether EF marks this translated property nullable.
   /// </summary>
   public bool IsNullable { get; init; }
+
+  /// <summary>
+  /// Gets the provider-neutral produced name preserved on the EF metadata item.
+  /// </summary>
+  public string ProducedName { get; init; } = string.Empty;
 }
 
 /// <summary>
@@ -269,7 +274,12 @@ public sealed record DataVaultProviderTypeMappingExplain(
 /// </summary>
 public sealed record DataVaultKeyExplain(
     string Name,
-    IReadOnlyList<string> PropertyNames);
+    IReadOnlyList<string> PropertyNames) {
+  /// <summary>
+  /// Gets the provider-neutral produced name preserved on the EF metadata item.
+  /// </summary>
+  public string ProducedName { get; init; } = string.Empty;
+}
 
 /// <summary>
 /// Machine-readable explanation of one translated Data Vault index.
@@ -279,7 +289,12 @@ public sealed record DataVaultIndexExplain(
     IReadOnlyList<string> PropertyNames,
     bool IsUnique,
     IReadOnlyList<string> DescendingPropertyNames,
-    IReadOnlyList<string> IncludedPropertyNames);
+    IReadOnlyList<string> IncludedPropertyNames) {
+  /// <summary>
+  /// Gets the provider-neutral produced name preserved on the EF metadata item.
+  /// </summary>
+  public string ProducedName { get; init; } = string.Empty;
+}
 
 /// <summary>
 /// Machine-readable explanation of one translated Data Vault constraint.
@@ -287,7 +302,12 @@ public sealed record DataVaultIndexExplain(
 public sealed record DataVaultConstraintExplain(
     string Name,
     DataVaultConstraintKind Kind,
-    IReadOnlyList<string> PropertyNames);
+    IReadOnlyList<string> PropertyNames) {
+  /// <summary>
+  /// Gets the provider-neutral produced name preserved on the EF metadata item.
+  /// </summary>
+  public string ProducedName { get; init; } = string.Empty;
+}
 
 /// <summary>
 /// Machine-readable explanation of one translated Data Vault entity/table.
@@ -300,7 +320,12 @@ public sealed record DataVaultEntityExplain(
     IReadOnlyList<DataVaultPropertyExplain> Properties,
     DataVaultKeyExplain PrimaryKey,
     IReadOnlyList<DataVaultIndexExplain> Indexes,
-    IReadOnlyList<DataVaultConstraintExplain> Constraints);
+    IReadOnlyList<DataVaultConstraintExplain> Constraints) {
+  /// <summary>
+  /// Gets the provider-neutral produced table name preserved on the EF metadata item.
+  /// </summary>
+  public string ProducedName { get; init; } = string.Empty;
+}
 
 /// <summary>
 /// Machine-readable explanation section of a Data Vault diagnostics result.
@@ -1285,6 +1310,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       bool providerBehaviorDefaulted) {
     var validationIssues = ValidateMetadataModel(metadataModel)
         .Concat(ValidateProviderMappings(metadataModel, providerCapabilities))
+        .Concat(DataVaultEfMetadataTranslator.ValidateProviderIdentifiers(metadataModel, providerCapabilities, providerName))
         .ToArray();
     var issues = validationIssues.ToList();
 
@@ -2456,9 +2482,11 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
   }
 
   private static DataVaultEntityExplain CreateEntityExplain(IReadOnlyEntityType entityType) {
-    var tableName = GetStringAnnotation(entityType, DataVaultAnnotationNames.ProducedName) ??
+    var producedName = GetStringAnnotation(entityType, DataVaultAnnotationNames.ProducedName) ??
         entityType.GetTableName() ??
         entityType.Name;
+    var tableName = entityType.GetTableName() ?? producedName;
+    var tableIdentifier = StoreObjectIdentifier.Table(tableName, entityType.GetSchema());
     var tableKind = GetAnnotationValue<DataVaultTableKind>(entityType, DataVaultAnnotationNames.EntityKind);
     var metadataName = GetStringAnnotation(entityType, DataVaultAnnotationNames.MetadataName) ?? tableName;
     var parentKind = GetNullableAnnotationValue<DataVaultMetadataReferenceKind>(
@@ -2470,21 +2498,17 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         : null;
     var properties = entityType
         .GetProperties()
-        .Select(CreatePropertyExplain)
+        .Select(property => CreatePropertyExplain(property, tableIdentifier))
         .OrderBy(property => property.Ordinal)
         .ThenBy(property => property.Name, StringComparer.Ordinal)
         .ToArray();
     var primaryKey = entityType.FindPrimaryKey();
     var primaryKeyExplain = primaryKey is null
         ? new DataVaultKeyExplain("<none>", Array.Empty<string>())
-        : new DataVaultKeyExplain(
-            GetStringAnnotation(primaryKey, DataVaultAnnotationNames.ProducedName) ??
-                primaryKey.GetName() ??
-                "Pk" + tableName,
-            primaryKey.Properties.Select(property => property.Name).ToArray());
+        : CreateKeyExplain(primaryKey, tableIdentifier, producedName);
     var indexes = entityType
         .GetIndexes()
-        .Select(CreateIndexExplain)
+        .Select(index => CreateIndexExplain(index, tableIdentifier))
         .OrderBy(index => index.Name, StringComparer.Ordinal)
         .ToArray();
     var constraints = primaryKey is null
@@ -2492,7 +2516,9 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         : [new DataVaultConstraintExplain(
             primaryKeyExplain.Name,
             DataVaultConstraintKind.PrimaryKey,
-            primaryKeyExplain.PropertyNames)];
+            primaryKeyExplain.PropertyNames) {
+          ProducedName = primaryKeyExplain.ProducedName,
+        }];
 
     return new DataVaultEntityExplain(
         tableName,
@@ -2502,12 +2528,17 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         properties,
         primaryKeyExplain,
         indexes,
-        constraints);
+        constraints) {
+      ProducedName = producedName,
+    };
   }
 
-  private static DataVaultPropertyExplain CreatePropertyExplain(IReadOnlyProperty property) {
+  private static DataVaultPropertyExplain CreatePropertyExplain(
+      IReadOnlyProperty property,
+      StoreObjectIdentifier tableIdentifier) {
+    var producedName = GetStringAnnotation(property, DataVaultAnnotationNames.ProducedName) ?? property.Name;
     return new DataVaultPropertyExplain(
-        GetStringAnnotation(property, DataVaultAnnotationNames.ProducedName) ?? property.Name,
+        property.GetColumnName(tableIdentifier) ?? producedName,
         GetAnnotationValue<DataVaultPropertyRole>(property, DataVaultAnnotationNames.PropertyRole),
         GetNullableAnnotationValue<TechnicalMetadataColumnRole>(property, DataVaultAnnotationNames.TechnicalColumnRole),
         GetStringAnnotation(property, DataVaultAnnotationNames.MetadataName) ?? property.Name,
@@ -2518,49 +2549,97 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         GetAnnotationValue<DataVaultProviderValueFormat>(property, DataVaultAnnotationNames.ProviderValueFormat)) {
       ClrTypeName = property.ClrType.FullName ?? property.ClrType.Name,
       IsNullable = property.IsNullable,
+      ProducedName = producedName,
     };
   }
 
-  private static DataVaultIndexExplain CreateIndexExplain(IReadOnlyIndex index) {
-    var propertyNames = index.Properties.Select(property => property.Name).ToArray();
-    var descendingPropertyNames = GetDescendingPropertyNames(index).ToArray();
-    var includedPropertyNames = GetIncludedPropertyNames(index);
+  private static DataVaultKeyExplain CreateKeyExplain(
+      IReadOnlyKey key,
+      StoreObjectIdentifier tableIdentifier,
+      string producedTableName) {
+    var producedName = GetStringAnnotation(key, DataVaultAnnotationNames.ProducedName) ??
+        key.GetName() ??
+        "Pk" + producedTableName;
+
+    return new DataVaultKeyExplain(
+        key.GetName() ?? producedName,
+        key.Properties.Select(property => GetPhysicalColumnName(property, tableIdentifier)).ToArray()) {
+      ProducedName = producedName,
+    };
+  }
+
+  private static DataVaultIndexExplain CreateIndexExplain(
+      IReadOnlyIndex index,
+      StoreObjectIdentifier tableIdentifier) {
+    var propertyNames = index.Properties
+        .Select(property => GetPhysicalColumnName(property, tableIdentifier))
+        .ToArray();
+    var descendingPropertyNames = GetDescendingPropertyNames(index)
+        .Select(property => GetPhysicalColumnName(property, tableIdentifier))
+        .ToArray();
+    var includedPropertyNames = GetIncludedPropertyNames(index, tableIdentifier);
+    var producedName = GetStringAnnotation(index, DataVaultAnnotationNames.ProducedName) ??
+        index.GetDatabaseName() ??
+        string.Join("_", propertyNames);
 
     return new DataVaultIndexExplain(
-        GetStringAnnotation(index, DataVaultAnnotationNames.ProducedName) ??
-            index.GetDatabaseName() ??
-            string.Join("_", propertyNames),
+        index.GetDatabaseName() ?? producedName,
         propertyNames,
         index.IsUnique,
         descendingPropertyNames,
-        includedPropertyNames);
+        includedPropertyNames) {
+      ProducedName = producedName,
+    };
   }
 
-  private static IEnumerable<string> GetDescendingPropertyNames(IReadOnlyIndex index) {
+  private static IEnumerable<IReadOnlyProperty> GetDescendingPropertyNames(IReadOnlyIndex index) {
     if (index.IsDescending is null) {
       yield break;
     }
 
     for (var ordinal = 0; ordinal < index.Properties.Count && ordinal < index.IsDescending.Count; ordinal++) {
       if (index.IsDescending[ordinal]) {
-        yield return index.Properties[ordinal].Name;
+        yield return index.Properties[ordinal];
       }
     }
   }
 
-  private static IReadOnlyList<string> GetIncludedPropertyNames(IReadOnlyIndex index) {
+  private static IReadOnlyList<string> GetIncludedPropertyNames(
+      IReadOnlyIndex index,
+      StoreObjectIdentifier tableIdentifier) {
     foreach (var annotationName in new[] { "SqlServer:Include", "Npgsql:IndexInclude" }) {
       var value = index.FindAnnotation(annotationName)?.Value;
       if (value is string[] stringArray) {
-        return stringArray;
+        return stringArray
+            .Select(propertyName => GetPhysicalColumnName(index.DeclaringEntityType.FindProperty(propertyName), propertyName, tableIdentifier))
+            .ToArray();
       }
 
       if (value is IEnumerable<string> stringValues) {
-        return stringValues.ToArray();
+        return stringValues
+            .Select(propertyName => GetPhysicalColumnName(index.DeclaringEntityType.FindProperty(propertyName), propertyName, tableIdentifier))
+            .ToArray();
       }
     }
 
     return Array.Empty<string>();
+  }
+
+  private static string GetPhysicalColumnName(
+      IReadOnlyProperty property,
+      StoreObjectIdentifier tableIdentifier) {
+    return property.GetColumnName(tableIdentifier) ??
+        GetStringAnnotation(property, DataVaultAnnotationNames.ProducedName) ??
+        property.Name;
+  }
+
+  private static string GetPhysicalColumnName(
+      IReadOnlyProperty? property,
+      string fallbackName,
+      StoreObjectIdentifier tableIdentifier) {
+    return property is null
+        ? fallbackName
+        : GetPhysicalColumnName(property, tableIdentifier);
   }
 
   private static bool IsDataVaultEntity(IReadOnlyEntityType entityType) {

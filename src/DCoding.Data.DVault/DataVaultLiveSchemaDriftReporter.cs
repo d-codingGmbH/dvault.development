@@ -546,14 +546,16 @@ public static class DataVaultLiveSchemaDriftReporter {
   }
 
   private static ExpectedLiveSchemaTable CreateExpectedTableSnapshot(IReadOnlyEntityType entityType) {
-    var tableName = GetStringAnnotation(entityType, DataVaultAnnotationNames.ProducedName) ??
+    var producedTableName = GetStringAnnotation(entityType, DataVaultAnnotationNames.ProducedName) ??
         entityType.GetTableName() ??
         entityType.Name;
+    var tableName = entityType.GetTableName() ?? producedTableName;
+    var tableIdentifier = StoreObjectIdentifier.Table(tableName, entityType.GetSchema());
     var tableKind = GetAnnotationValue<DataVaultTableKind>(entityType, DataVaultAnnotationNames.EntityKind);
-    var metadataName = GetStringAnnotation(entityType, DataVaultAnnotationNames.MetadataName) ?? tableName;
+    var metadataName = GetStringAnnotation(entityType, DataVaultAnnotationNames.MetadataName) ?? producedTableName;
     var columns = entityType
         .GetProperties()
-        .Select(CreateExpectedColumnSnapshot)
+        .Select(property => CreateExpectedColumnSnapshot(property, tableIdentifier))
         .OrderBy(column => column.Ordinal)
         .ThenBy(column => column.ColumnName, StringComparer.Ordinal)
         .ToArray();
@@ -561,13 +563,13 @@ public static class DataVaultLiveSchemaDriftReporter {
     var primaryKeySnapshot = primaryKey is null
         ? new ExpectedLiveSchemaPrimaryKey("<none>", Array.Empty<string>())
         : new ExpectedLiveSchemaPrimaryKey(
-            GetStringAnnotation(primaryKey, DataVaultAnnotationNames.ProducedName) ??
-                primaryKey.GetName() ??
-                "Pk" + tableName,
-            primaryKey.Properties.Select(CreateColumnReference).ToArray());
+            primaryKey.GetName() ??
+                GetStringAnnotation(primaryKey, DataVaultAnnotationNames.ProducedName) ??
+                "Pk" + producedTableName,
+            primaryKey.Properties.Select(property => CreateColumnReference(property, tableIdentifier)).ToArray());
     var indexes = entityType
         .GetIndexes()
-        .Select(CreateExpectedIndexSnapshot)
+        .Select(index => CreateExpectedIndexSnapshot(index, tableIdentifier))
         .OrderBy(index => index.IndexName, StringComparer.Ordinal)
         .ToArray();
 
@@ -580,26 +582,34 @@ public static class DataVaultLiveSchemaDriftReporter {
         indexes);
   }
 
-  private static ExpectedLiveSchemaColumn CreateExpectedColumnSnapshot(IReadOnlyProperty property) {
+  private static ExpectedLiveSchemaColumn CreateExpectedColumnSnapshot(
+      IReadOnlyProperty property,
+      StoreObjectIdentifier tableIdentifier) {
     return new ExpectedLiveSchemaColumn(
         GetStringAnnotation(property, DataVaultAnnotationNames.MetadataName) ?? property.Name,
-        GetStringAnnotation(property, DataVaultAnnotationNames.ProducedName) ?? property.Name,
+        CreateColumnReference(property, tableIdentifier),
         GetNullableAnnotationValue<int>(property, DataVaultAnnotationNames.Ordinal) ?? property.GetColumnOrder() ?? 0,
         GetStringAnnotation(property, DataVaultAnnotationNames.ProviderStorageType) ?? property.GetColumnType() ?? string.Empty);
   }
 
-  private static ExpectedLiveSchemaIndex CreateExpectedIndexSnapshot(IReadOnlyIndex index) {
-    var columnNames = index.Properties.Select(CreateColumnReference).ToArray();
+  private static ExpectedLiveSchemaIndex CreateExpectedIndexSnapshot(
+      IReadOnlyIndex index,
+      StoreObjectIdentifier tableIdentifier) {
+    var columnNames = index.Properties.Select(property => CreateColumnReference(property, tableIdentifier)).ToArray();
     return new ExpectedLiveSchemaIndex(
-        GetStringAnnotation(index, DataVaultAnnotationNames.ProducedName) ??
-            index.GetDatabaseName() ??
+        index.GetDatabaseName() ??
+            GetStringAnnotation(index, DataVaultAnnotationNames.ProducedName) ??
             string.Join("_", columnNames),
         columnNames,
         index.IsUnique);
   }
 
-  private static string CreateColumnReference(IReadOnlyProperty property) {
-    return GetStringAnnotation(property, DataVaultAnnotationNames.ProducedName) ?? property.Name;
+  private static string CreateColumnReference(
+      IReadOnlyProperty property,
+      StoreObjectIdentifier tableIdentifier) {
+    return property.GetColumnName(tableIdentifier) ??
+        GetStringAnnotation(property, DataVaultAnnotationNames.ProducedName) ??
+        property.Name;
   }
 
   private static DataVaultModelDriftReport CreateLiveSchemaStatusReport(

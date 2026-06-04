@@ -190,6 +190,7 @@ type public sealed class DCoding.Data.DVault.DataVaultConstraintExplain : System
   property public DCoding.Data.DVault.Modeling.DataVaultConstraintKind Kind { get; init; }
   property public System.Collections.Generic.IReadOnlyList<string> PropertyNames { get; init; }
   property public string Name { get; init; }
+  property public string ProducedName { get; init; }
   method public override bool Equals(object? obj)
   method public override int GetHashCode()
   method public override string ToString()
@@ -272,6 +273,7 @@ type public sealed class DCoding.Data.DVault.DataVaultEntityExplain : System.IEq
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultIndexExplain> Indexes { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPropertyExplain> Properties { get; init; }
   property public string MetadataName { get; init; }
+  property public string ProducedName { get; init; }
   property public string TableName { get; init; }
   method public override bool Equals(object? obj)
   method public override int GetHashCode()
@@ -398,6 +400,7 @@ type public sealed class DCoding.Data.DVault.DataVaultIndexExplain : System.IEqu
   property public System.Collections.Generic.IReadOnlyList<string> PropertyNames { get; init; }
   property public bool IsUnique { get; init; }
   property public string Name { get; init; }
+  property public string ProducedName { get; init; }
   method public override bool Equals(object? obj)
   method public override int GetHashCode()
   method public override string ToString()
@@ -410,6 +413,7 @@ type public sealed class DCoding.Data.DVault.DataVaultKeyExplain : System.IEquat
   ctor public DataVaultKeyExplain(string Name, System.Collections.Generic.IReadOnlyList<string> PropertyNames)
   property public System.Collections.Generic.IReadOnlyList<string> PropertyNames { get; init; }
   property public string Name { get; init; }
+  property public string ProducedName { get; init; }
   method public override bool Equals(object? obj)
   method public override int GetHashCode()
   method public override string ToString()
@@ -902,6 +906,7 @@ type public sealed class DCoding.Data.DVault.DataVaultPropertyExplain : System.I
   property public string ClrTypeName { get; init; }
   property public string MetadataName { get; init; }
   property public string Name { get; init; }
+  property public string ProducedName { get; init; }
   property public string ProviderProfileName { get; init; }
   property public string StoreType { get; init; }
   method public override bool Equals(object? obj)
