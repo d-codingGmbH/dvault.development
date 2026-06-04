@@ -1,68 +1,55 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined this as a contract-ratification story: the repository already establishes the support-bundle freshness/fingerprint boundary, request-bound ReadShape dependency, and raw model-first exclusion for typed helper generation.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Current repository evidence already ratifies the baseline in docs/architecture/dvault-v1-typed-pit-bridge-helper-contract.md, docs/model-first-governance.md, src/DCoding.Data.DVault.Analyzers/DataVaultTypedReadModelSourceGenerator.cs, and DataVaultTypedReadModelSourceGeneratorTests.cs; this ticket should document and align that existing contract instead of inventing a new runtime mechanism.
 - Typed helper generation is opt-in through DVaultGenerateTypedReadModels=true and consumes exactly one authoritative dvault.support-bundle.v1 additional file; missing, malformed, incompatible-schema, or ambiguous bundle evidence stays in the metadata-source-unavailable boundary.
 - Freshness is the resolved diagnostics.explain.metadataSourceKind plus non-empty metadataSourceFingerprint; the optional DVaultTypedReadModelMetadataSourceFingerprint build property is the consumer-owned pin that turns fingerprint drift into a build failure.
 - Raw dvault.model.v1 artifacts, source-visible Code-First callbacks, and literal metadata-first declarations are not direct generator inputs; model-first changes matter only after projection into EF/DVault metadata and export into the authoritative support bundle.
 - PIT and bridge helpers additionally require representative request-bound readShape.pit or readShape.bridge facts supplied through consumer-owned CreateSupportBundleDiagnostics; satellite helpers do not.
 
-### Scope In
+Scope In
 - Ratify the authoritative typed-helper input contract around dvault.support-bundle.v1, diagnostics.explain, metadataSourceKind, and metadataSourceFingerprint.
 - Define how optional fingerprint pinning via DVaultTypedReadModelMetadataSourceFingerprint enforces freshness/drift for reviewed generator inputs.
 - Define the boundary between projected support-bundle evidence and raw dvault.model.v1 artifacts for model-first consumers.
 - Define that PIT/bridge helper emission depends on reviewed request-bound ReadShape evidence while satellite helpers rely on translated explain metadata.
 
-### Scope Out
+Scope Out
 - No new runtime freshness tracker, background bundle refresh, or automatic support-bundle routing, publication, or attachment workflow.
 - No direct generator parsing of raw dvault.model.v1 files, source callbacks, or literal metadata objects.
 - No provider-specific SQL generation, dynamic query compilation, unbounded traversal helpers, or runtime query-shape expansion.
 - No new support-bundle schema version or change to the existing IDataVaultReadService runtime boundary.
 
-## Acceptance Criteria
-- The refined contract states that typed helper generation starts only when exactly one authoritative dvault.support-bundle.v1 additional file is resolved from the current EF/DVault metadata projection, and that missing, malformed, incompatible, or ambiguous bundle input is treated as unavailable authoritative evidence.
-- The refined contract states that diagnostics.explain.metadataSourceKind and metadataSourceFingerprint are the authoritative freshness identity, and that a configured DVaultTypedReadModelMetadataSourceFingerprint must fail helper generation when it differs from the resolved support-bundle fingerprint.
-- The refined contract states that raw dvault.model.v1 artifacts do not directly drive helper generation; model-first inputs must first be imported, projected, and represented in the authoritative support bundle.
-- The refined contract states that satellite helpers use translated explain metadata, while PIT and bridge helpers additionally require reviewed request-bound readShape.pit or readShape.bridge facts supplied by the consumer-owned support-bundle diagnostics factory.
-- The refined contract keeps freshness/fingerprint failures inside the existing typed-helper diagnostic family instead of widening runtime semantics or adding dynamic query behavior.
-
-## Definition of Done
-- Repository-facing contract docs, analyzer guidance, and ticket handoff text all describe the same one-bundle freshness/fingerprint boundary and model-first exclusion rule.
-- Tests or documented evidence cover at least: valid dvault.support-bundle.v1 input, missing or ambiguous bundle input, stale configured fingerprint, raw model-first additional-file rejection, and PIT/bridge ReadShape dependency.
-- No acceptance text or implementation guidance reopens provider-specific runtime execution, automatic request invention, or direct raw model parsing.
-
-## Implementation Notes
-- Use the existing DataVaultDesignTimeCommand / DataVaultSupportBundleExporter.ExportJson(...) support-bundle contract as the authoritative artifact lane; the default support-bundle path serializes DataVaultDiagnosticsResult under dvault.support-bundle.v1.
-- The current generator already resolves diagnostics.explain.metadataSourceKind and metadataSourceFingerprint, requires exactly one authoritative bundle, and honors DVaultTypedReadModelMetadataSourceFingerprint for drift enforcement.
-- Representative PIT/bridge request evidence remains consumer-owned through DataVaultDesignTimeCommandHost.CreateSupportBundleDiagnostics; the generic command runner must not invent request-bound reads.
-- The existing analyzer/test baseline already proves raw model-first additional files are rejected as authoritative generator input and stale fingerprint pins stop generation; development should align wording and any missing diagnostics with that baseline instead of redefining the architecture.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After this ticket is accepted, should ticket 06F8KZPN02NWFGMRC2Q1PKYKDR be re-scoped as closure or verification work given that the repository already contains the DMV1960-DMV1969 generator diagnostic baseline and tests?
 - Should the historical incoming blocks relation from done ticket 06F8KZNNS76TD9Z7ESB173FZ68 be cleaned up as ticket-hygiene follow-up even though the current ticket is not marked blocked?
 
-## Risks
+Risks
 - The contract is currently split across architecture docs, model-first guidance, analyzer README text, source-generator code, and tests; if downstream tickets paraphrase it loosely, wording drift can recreate ambiguity about freshness versus shape compatibility.
 - Ticket state may lag repository state: the blocked diagnostics story is still todo even though the current repository already shows a substantial diagnostic implementation baseline.
 
-## Split Recommendations
+Split recommendations
 - No new split is needed; the parent epic already separates contract definition, diagnostics implementation or verification, and documentation refresh.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 3
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Define how support-bundle schema versions, model fingerprints, diagnostics explain metadata, ReadShape facts, and dvault.model.v1 inputs must align for typed read helper generation.
+Run mode
+- apply: planned updates are applied after this comment
