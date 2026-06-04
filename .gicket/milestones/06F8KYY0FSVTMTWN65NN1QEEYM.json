@@ -3,6 +3,6 @@
   "milestoneId": "06F8KYY0FSVTMTWN65NN1QEEYM",
   "name": "v0.28.0 - Provider read strategy implementation",
   "description": "Implement provider-specific read strategy candidates behind diagnostics gates and safe fallback behavior.",
-  "status": "active",
+  "status": "done",
   "createdAt": "2026-06-02T20:17:17.9506747Z"
 }
