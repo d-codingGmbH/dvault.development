@@ -272,6 +272,9 @@ internal static class BenchmarkRunner {
     }
 
     benchmarks.Add(new ProviderNativeBulkIngestionBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage));
+    benchmarks.Add(new LatestSatelliteReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage));
+    benchmarks.Add(new PitAsOfReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage));
+    benchmarks.Add(new BridgeTraversalReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage));
 
     return [.. benchmarks];
   }
@@ -592,6 +595,10 @@ internal static class BenchmarkExecutionDetails {
       return providerNativeBulkIngestionBenchmark.ExecutionPathDetail;
     }
 
+    if (IsReadModelScenario(benchmark.ScenarioName)) {
+      return GetReadExecutionPath(benchmark);
+    }
+
     return benchmark.StrategyFamily switch {
       DataVaultBenchmarkHelpers.ClassicEfStrategyFamily => "classic EF baseline",
       DataVaultBenchmarkHelpers.ProviderNeutralFallbackStrategyFamily =>
@@ -622,6 +629,74 @@ internal static class BenchmarkExecutionDetails {
     return scenarioName is "latest-satellite-read" or "pit-as-of-read" or "bridge-traversal-read"
         ? "SqliteDataVaultReadStrategy"
         : "SqliteDataVaultSaveStrategy";
+  }
+
+  private static bool IsReadModelScenario(string scenarioName) {
+    return scenarioName is "latest-satellite-read" or "pit-as-of-read" or "bridge-traversal-read";
+  }
+
+  private static string GetReadExecutionPath(IScenarioBenchmark benchmark) {
+    if (benchmark.StrategyFamily == DataVaultBenchmarkHelpers.ProviderNeutralFallbackStrategyFamily) {
+      return "DVault provider-neutral fallback path; selectedStrategy=<none>";
+    }
+
+    var readShape = GetReadShapeName(benchmark.ScenarioName);
+    var strategyName = GetReadStrategyName(benchmark.StrategyFamily, benchmark.ScenarioName);
+    var providerName = GetReadProviderDisplayName(benchmark.StrategyFamily);
+    if (strategyName is null) {
+      return "DVault " + providerName + " provider package latest satellite read path; selectedStrategy=<none>; " +
+          "plannedReadStrategy=<none>; providerSpecificReadStrategy=not registered for latest satellite reads; " +
+          "readShape=" + readShape;
+    }
+
+    return "DVault " + providerName + " optimized " + GetReadShapeDisplayName(benchmark.ScenarioName) +
+        " read path; selectedStrategy=" + strategyName +
+        "; plannedReadStrategy=" + strategyName +
+        "; readShape=" + readShape;
+  }
+
+  private static string? GetReadStrategyName(string strategyFamily, string scenarioName) {
+    return strategyFamily switch {
+      DataVaultBenchmarkHelpers.SqliteOptimizedStrategyFamily => "SqliteDataVaultReadStrategy",
+      DataVaultBenchmarkHelpers.PostgresOptimizedStrategyFamily when scenarioName is "pit-as-of-read" or "bridge-traversal-read" =>
+          "PostgresDataVaultReadStrategy",
+      DataVaultBenchmarkHelpers.SqlServerOptimizedStrategyFamily when scenarioName is "pit-as-of-read" or "bridge-traversal-read" =>
+          "SqlServerDataVaultReadStrategy",
+      DataVaultBenchmarkHelpers.MySqlOptimizedStrategyFamily when scenarioName is "pit-as-of-read" or "bridge-traversal-read" =>
+          "MySqlDataVaultReadStrategy",
+      DataVaultBenchmarkHelpers.OracleOptimizedStrategyFamily when scenarioName is "pit-as-of-read" or "bridge-traversal-read" =>
+          "OracleDataVaultReadStrategy",
+      _ => null,
+    };
+  }
+
+  private static string GetReadProviderDisplayName(string strategyFamily) {
+    return strategyFamily switch {
+      DataVaultBenchmarkHelpers.SqliteOptimizedStrategyFamily => "SQLite",
+      DataVaultBenchmarkHelpers.PostgresOptimizedStrategyFamily => "PostgreSQL",
+      DataVaultBenchmarkHelpers.SqlServerOptimizedStrategyFamily => "SQL Server",
+      DataVaultBenchmarkHelpers.MySqlOptimizedStrategyFamily => "MySQL",
+      DataVaultBenchmarkHelpers.OracleOptimizedStrategyFamily => "Oracle",
+      _ => "provider-specific",
+    };
+  }
+
+  private static string GetReadShapeName(string scenarioName) {
+    return scenarioName switch {
+      "latest-satellite-read" => "LatestSatellite",
+      "pit-as-of-read" => "PitAsOf",
+      "bridge-traversal-read" => "Bridge",
+      _ => "Unknown",
+    };
+  }
+
+  private static string GetReadShapeDisplayName(string scenarioName) {
+    return scenarioName switch {
+      "latest-satellite-read" => "latest satellite",
+      "pit-as-of-read" => "PIT",
+      "bridge-traversal-read" => "bridge",
+      _ => "read-model",
+    };
   }
 
   private static string FormatFallbackCauses(IReadOnlyList<DataVaultSaveStrategyFallbackCause> fallbackCauses) {

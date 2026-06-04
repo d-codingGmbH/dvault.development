@@ -68,6 +68,7 @@ internal sealed class LatestSatelliteReadBenchmark : IScenarioBenchmark {
         diagnostics = readDiagnostics.Analyze(diagnosticsContext, request);
         ReadBenchmarkServices.AssertReadStrategySelection(
             _strategy,
+            ScenarioName,
             diagnostics);
       }
 
@@ -193,6 +194,7 @@ internal sealed class PitAsOfReadBenchmark : IScenarioBenchmark {
         diagnostics = readDiagnostics.Analyze(diagnosticsContext, request);
         ReadBenchmarkServices.AssertReadStrategySelection(
             _strategy,
+            ScenarioName,
             diagnostics);
       }
 
@@ -363,6 +365,7 @@ internal sealed class BridgeTraversalReadBenchmark : IScenarioBenchmark {
         diagnostics = readDiagnostics.Analyze(diagnosticsContext, request);
         ReadBenchmarkServices.AssertReadStrategySelection(
             _strategy,
+            ScenarioName,
             diagnostics);
       }
 
@@ -439,8 +442,9 @@ internal static class ReadBenchmarkServices {
 
   public static void AssertReadStrategySelection(
       DataVaultBenchmarkStrategy strategy,
+      string scenarioName,
       DataVaultDiagnosticsResult diagnostics) {
-    var expectedStrategyName = DataVaultBenchmarkHelpers.GetProviderReadStrategyName(strategy);
+    var expectedStrategyName = DataVaultBenchmarkHelpers.GetProviderReadStrategyName(strategy, scenarioName);
     if (expectedStrategyName is not null) {
       DataVaultBenchmarkHelpers.AssertProviderReadStrategySelected(diagnostics, expectedStrategyName);
     }

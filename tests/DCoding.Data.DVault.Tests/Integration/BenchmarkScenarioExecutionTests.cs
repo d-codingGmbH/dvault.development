@@ -270,6 +270,102 @@ public sealed class BenchmarkScenarioExecutionTests {
           "20 order-product pairs, 3 fulfillment satellite operations",
           "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          PostgresProviderName,
+          "latest-satellite-read",
+          "dvault-adddvaultpostgres-optimized",
+          "postgres-optimized-dvault",
+          "100 customers, 10 profile states each",
+          "90% repeat-change history latest read",
+          NotConfiguredSkipReason),
+      SkippedExternal(
+          PostgresProviderName,
+          "pit-as-of-read",
+          "dvault-adddvaultpostgres-optimized",
+          "postgres-optimized-dvault",
+          "100 customers, 100 PIT rows, 2 satellite segments",
+          "as-of read after latest profile/status snapshots",
+          NotConfiguredSkipReason),
+      SkippedExternal(
+          PostgresProviderName,
+          "bridge-traversal-read",
+          "dvault-adddvaultpostgres-optimized",
+          "postgres-optimized-dvault",
+          "1 hierarchy ancestor with 100 descendant bridge rows",
+          "maximum depth 3 of 5",
+          NotConfiguredSkipReason),
+      SkippedExternal(
+          SqlServerProviderName,
+          "latest-satellite-read",
+          "dvault-adddvaultsqlserver-optimized",
+          "sqlserver-optimized-dvault",
+          "100 customers, 10 profile states each",
+          "90% repeat-change history latest read",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          SqlServerProviderName,
+          "pit-as-of-read",
+          "dvault-adddvaultsqlserver-optimized",
+          "sqlserver-optimized-dvault",
+          "100 customers, 100 PIT rows, 2 satellite segments",
+          "as-of read after latest profile/status snapshots",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          SqlServerProviderName,
+          "bridge-traversal-read",
+          "dvault-adddvaultsqlserver-optimized",
+          "sqlserver-optimized-dvault",
+          "1 hierarchy ancestor with 100 descendant bridge rows",
+          "maximum depth 3 of 5",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          MySqlProviderName,
+          "latest-satellite-read",
+          "dvault-adddvaultmysql-optimized",
+          "mysql-optimized-dvault",
+          "100 customers, 10 profile states each",
+          "90% repeat-change history latest read",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          MySqlProviderName,
+          "pit-as-of-read",
+          "dvault-adddvaultmysql-optimized",
+          "mysql-optimized-dvault",
+          "100 customers, 100 PIT rows, 2 satellite segments",
+          "as-of read after latest profile/status snapshots",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          MySqlProviderName,
+          "bridge-traversal-read",
+          "dvault-adddvaultmysql-optimized",
+          "mysql-optimized-dvault",
+          "1 hierarchy ancestor with 100 descendant bridge rows",
+          "maximum depth 3 of 5",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          OracleProviderName,
+          "latest-satellite-read",
+          "dvault-adddvaultoracle-optimized",
+          "oracle-optimized-dvault",
+          "100 customers, 10 profile states each",
+          "90% repeat-change history latest read",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          OracleProviderName,
+          "pit-as-of-read",
+          "dvault-adddvaultoracle-optimized",
+          "oracle-optimized-dvault",
+          "100 customers, 100 PIT rows, 2 satellite segments",
+          "as-of read after latest profile/status snapshots",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          OracleProviderName,
+          "bridge-traversal-read",
+          "dvault-adddvaultoracle-optimized",
+          "oracle-optimized-dvault",
+          "1 hierarchy ancestor with 100 descendant bridge rows",
+          "maximum depth 3 of 5",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable)),
   ];
 
   private static readonly ExpectedPerformanceProfile[] ExpectedPerformanceProfiles =
@@ -308,6 +404,22 @@ public sealed class BenchmarkScenarioExecutionTests {
       new(MySqlProviderName, "dvault-adddvaultmysql-multi-row", ["selectedStrategy=MySqlDataVaultSaveStrategy", "stagedBulkBoundary=below-60-operations"]),
       new(MySqlProviderName, "dvault-adddvaultmysql-optimized", ["selectedStrategy=MySqlStagedDataVaultSaveStrategy", "stagedBulkBoundary=60-plus-operations"]),
       new(OracleProviderName, "dvault-adddvaultoracle-optimized", ["selectedStrategy=OracleDataVaultSaveStrategy", "stagedOracleBulk=not-selected-no-measured-win"]),
+  ];
+
+  private static readonly ExpectedProviderReadRow[] ExpectedProviderReadRows =
+  [
+      new(PostgresProviderName, "latest-satellite-read", "dvault-adddvaultpostgres-optimized", ["readShape=LatestSatellite", "selectedStrategy=<none>", "providerSpecificReadStrategy=not registered for latest satellite reads"]),
+      new(PostgresProviderName, "pit-as-of-read", "dvault-adddvaultpostgres-optimized", ["readShape=PitAsOf", "selectedStrategy=PostgresDataVaultReadStrategy", "plannedReadStrategy=PostgresDataVaultReadStrategy"]),
+      new(PostgresProviderName, "bridge-traversal-read", "dvault-adddvaultpostgres-optimized", ["readShape=Bridge", "selectedStrategy=PostgresDataVaultReadStrategy", "plannedReadStrategy=PostgresDataVaultReadStrategy"]),
+      new(SqlServerProviderName, "latest-satellite-read", "dvault-adddvaultsqlserver-optimized", ["readShape=LatestSatellite", "selectedStrategy=<none>", "providerSpecificReadStrategy=not registered for latest satellite reads"]),
+      new(SqlServerProviderName, "pit-as-of-read", "dvault-adddvaultsqlserver-optimized", ["readShape=PitAsOf", "selectedStrategy=SqlServerDataVaultReadStrategy", "plannedReadStrategy=SqlServerDataVaultReadStrategy"]),
+      new(SqlServerProviderName, "bridge-traversal-read", "dvault-adddvaultsqlserver-optimized", ["readShape=Bridge", "selectedStrategy=SqlServerDataVaultReadStrategy", "plannedReadStrategy=SqlServerDataVaultReadStrategy"]),
+      new(MySqlProviderName, "latest-satellite-read", "dvault-adddvaultmysql-optimized", ["readShape=LatestSatellite", "selectedStrategy=<none>", "providerSpecificReadStrategy=not registered for latest satellite reads"]),
+      new(MySqlProviderName, "pit-as-of-read", "dvault-adddvaultmysql-optimized", ["readShape=PitAsOf", "selectedStrategy=MySqlDataVaultReadStrategy", "plannedReadStrategy=MySqlDataVaultReadStrategy"]),
+      new(MySqlProviderName, "bridge-traversal-read", "dvault-adddvaultmysql-optimized", ["readShape=Bridge", "selectedStrategy=MySqlDataVaultReadStrategy", "plannedReadStrategy=MySqlDataVaultReadStrategy"]),
+      new(OracleProviderName, "latest-satellite-read", "dvault-adddvaultoracle-optimized", ["readShape=LatestSatellite", "selectedStrategy=<none>", "providerSpecificReadStrategy=not registered for latest satellite reads"]),
+      new(OracleProviderName, "pit-as-of-read", "dvault-adddvaultoracle-optimized", ["readShape=PitAsOf", "selectedStrategy=OracleDataVaultReadStrategy", "plannedReadStrategy=OracleDataVaultReadStrategy"]),
+      new(OracleProviderName, "bridge-traversal-read", "dvault-adddvaultoracle-optimized", ["readShape=Bridge", "selectedStrategy=OracleDataVaultReadStrategy", "plannedReadStrategy=OracleDataVaultReadStrategy"]),
   ];
 
   private static readonly string[] RegressionBudgetRules =
@@ -522,6 +634,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.Contains("sourceShape=IAsyncEnumerable<DataVaultSaveChunk>", asyncExecutionDetail);
 
       var sqlServerStagedBulkResult = Assert.Single(results.Where(result =>
+          result.GetProperty("scenarioName").GetString() == "provider-native-bulk-ingestion" &&
           result.GetProperty("provider").GetString() == SqlServerProviderName &&
           result.GetProperty("baselineName").GetString() == "dvault-adddvaultsqlserver-optimized"));
       var sqlServerExecutionDetail = sqlServerStagedBulkResult.GetProperty("executionDetail").GetString();
@@ -532,6 +645,7 @@ public sealed class BenchmarkScenarioExecutionTests {
           sqlServerStagedBulkResult.GetProperty("skipReason").GetString());
 
       var postgresStagedBulkResult = Assert.Single(results.Where(result =>
+          result.GetProperty("scenarioName").GetString() == "provider-native-bulk-ingestion" &&
           result.GetProperty("provider").GetString() == PostgresProviderName &&
           result.GetProperty("baselineName").GetString() == "dvault-adddvaultpostgres-optimized"));
       var postgresExecutionDetail = postgresStagedBulkResult.GetProperty("executionDetail").GetString();
@@ -544,6 +658,7 @@ public sealed class BenchmarkScenarioExecutionTests {
           postgresStagedBulkResult.GetProperty("skipReason").GetString());
 
       var postgresRetainedPathResult = Assert.Single(results.Where(result =>
+          result.GetProperty("scenarioName").GetString() == "provider-native-bulk-ingestion" &&
           result.GetProperty("provider").GetString() == PostgresProviderName &&
           result.GetProperty("baselineName").GetString() == "dvault-adddvaultpostgres-direct-or-unnest"));
       var postgresRetainedPathExecutionDetail = postgresRetainedPathResult.GetProperty("executionDetail").GetString();
@@ -552,6 +667,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.Contains("cleanupBoundary=no-staging-table", postgresRetainedPathExecutionDetail);
 
       var mySqlRetainedPathResult = Assert.Single(results.Where(result =>
+          result.GetProperty("scenarioName").GetString() == "provider-native-bulk-ingestion" &&
           result.GetProperty("provider").GetString() == MySqlProviderName &&
           result.GetProperty("baselineName").GetString() == "dvault-adddvaultmysql-multi-row"));
       var mySqlRetainedPathExecutionDetail = mySqlRetainedPathResult.GetProperty("executionDetail").GetString();
@@ -560,6 +676,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.Contains("stagedBulkBoundary=below-60-operations", mySqlRetainedPathExecutionDetail);
 
       var mySqlStagedBulkResult = Assert.Single(results.Where(result =>
+          result.GetProperty("scenarioName").GetString() == "provider-native-bulk-ingestion" &&
           result.GetProperty("provider").GetString() == MySqlProviderName &&
           result.GetProperty("baselineName").GetString() == "dvault-adddvaultmysql-optimized"));
       var mySqlStagedBulkExecutionDetail = mySqlStagedBulkResult.GetProperty("executionDetail").GetString();
@@ -568,6 +685,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.Contains("stagedBulkBoundary=60-plus-operations", mySqlStagedBulkExecutionDetail);
 
       var oracleDirectBulkResult = Assert.Single(results.Where(result =>
+          result.GetProperty("scenarioName").GetString() == "provider-native-bulk-ingestion" &&
           result.GetProperty("provider").GetString() == OracleProviderName &&
           result.GetProperty("baselineName").GetString() == "dvault-adddvaultoracle-optimized"));
       var oracleDirectBulkExecutionDetail = oracleDirectBulkResult.GetProperty("executionDetail").GetString();
@@ -1043,6 +1161,27 @@ public sealed class BenchmarkScenarioExecutionTests {
           expectedRow.ExecutionStatus == "completed" ? artifacts.Context.Iterations : 0,
           row.Iterations);
     }
+
+    AssertProviderReadRowsStayVisibleAsSkipped(artifacts);
+  }
+
+  private static void AssertProviderReadRowsStayVisibleAsSkipped(VerifiedBenchmarkArtifacts artifacts) {
+    foreach (var expectedRow in ExpectedProviderReadRows) {
+      var row = FindArtifactRow(
+          artifacts,
+          expectedRow.ProviderName,
+          expectedRow.ScenarioName,
+          expectedRow.BaselineName);
+
+      Assert.Equal("skipped", row.ExecutionStatus);
+      Assert.Equal(0, row.Iterations);
+      Assert.Equal("not executed", row.PersistedOutcome);
+      Assert.False(string.IsNullOrWhiteSpace(row.SkipReason), "Provider read row '" + row.Key + "' has no skip reason.");
+      AssertSkippedMetricsBlank(row);
+      foreach (var fragment in expectedRow.RequiredExecutionDetailFragments) {
+        Assert.Contains(fragment, row.ExecutionDetail, StringComparison.Ordinal);
+      }
+    }
   }
 
   private static void AssertPerformanceGuidanceMatchesArtifacts(
@@ -1416,6 +1555,12 @@ public sealed class BenchmarkScenarioExecutionTests {
 
   private sealed record ExpectedProviderGuidanceRow(
       string ProviderName,
+      string BaselineName,
+      string[] RequiredExecutionDetailFragments);
+
+  private sealed record ExpectedProviderReadRow(
+      string ProviderName,
+      string ScenarioName,
       string BaselineName,
       string[] RequiredExecutionDetailFragments);
 

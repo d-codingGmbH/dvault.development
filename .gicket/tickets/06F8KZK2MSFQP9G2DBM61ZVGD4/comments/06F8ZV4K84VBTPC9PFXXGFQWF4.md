@@ -1,67 +1,55 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the task around benchmark-triplet provider-read rows and verifier protection for skipped optional providers without reopening provider implementation scope.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Repository planning evidence already fixes the v1 baseline: latest satellite, PIT as-of, and bridge traversal reads are required scenarios; SQLite local temporary files is the required measured provider; PostgreSQL, SQL Server, MySQL, and Oracle remain optional-provider lanes that must stay visible as skipped when their connection strings are absent.
 - The current release posture is already bounded: SQLite is the only repository-proven optimized read provider path today, and non-SQLite optimized read claims must not be inferred from provider-neutral read support or write-strategy registrations.
 - No human comments or closure-evidence amendments changed scope, and no planning document, attachment, description update, child ticket, or relation mutation was materialized during this refinement.
 - Live relations show this ticket is a child of 06F8KZHNYE6PAGC74BSF70WZ3W, currently blocks 06F8KZKFTCC0YXAPRTXA53DNEC, and is blocked by 06F8KZJNZ999C8NKY0S92VBDN0; no relation cleanup was justified from the current evidence.
 
-### Scope In
+Scope In
 - Extending benchmark artifact generation so provider read optimization rows are present for the existing read-model scenarios covered by the shared benchmark artifact contract.
 - Adding or tightening verifier coverage that keeps provider read rows aligned across benchmark-summary.md, benchmark-summary.csv, and benchmark-summary.json.
 - Preserving optional-provider read rows as visible skipped rows, including normalized execution status, skip reason, zero iterations, blank or null metrics, deterministic execution detail, and persistedOutcome=not executed when provider connection strings are absent.
 - Keeping benchmark-facing evidence summaries bounded to measured results so skipped or unexecuted rows do not become performance claims.
 
-### Scope Out
+Scope Out
 - Implementing new provider-specific read strategies or changing runtime read dispatch behavior.
 - Claiming optimized read performance for PostgreSQL, SQL Server, MySQL, or Oracle without fresh measured benchmark evidence.
 - Adding new benchmark scenario families beyond the existing latest satellite, PIT as-of, and bridge traversal read baseline.
 - Release automation, dashboards, hosted observability, or provider credential or provisioning setup for optional benchmark lanes.
 
-## Acceptance Criteria
-- The benchmark artifact triplet emits provider read optimization rows for the existing latest satellite, PIT as-of, and bridge traversal scenarios, using the shared artifact row-contract fields and a deterministic executionDetail that identifies the exercised or planned provider strategy path.
-- For optional providers whose connection-string environment variables are unset, the markdown, CSV, and JSON artifacts still include the corresponding provider read rows as executionStatus=skipped, iterations=0, blank or null metric cells, an explicit skip reason, and persistedOutcome=not executed.
-- Verifier coverage fails when provider read rows disappear, when the three artifact formats disagree on those rows, or when skipped optional-provider rows stop carrying the required skip metadata.
-- Any benchmark-facing summary or verifier prose touched by this task preserves the measured-evidence boundary by treating SQLite as the only currently repository-proven optimized read provider and by not presenting skipped optional-provider rows as observed performance results.
-
-## Definition of Done
-- The benchmark harness and its automated verifier coverage protect the provider-read row contract across the checked-in artifact triplet.
-- The refined implementation stays within benchmark, test, and evidence-surface documentation work and does not expand into new provider read implementation work.
-- The resulting artifact and verifier behavior remains consistent with docs/plans/performance-evidence-benchmark-artifact-contract.md, docs/performance-profiles.md, and the v0.26.0 release posture.
-
-## Implementation Notes
-- Reuse the existing benchmark artifact contract rather than inventing a ticket-specific schema; the required row fields, run-context fields, and skipped-row semantics are already documented.
-- The visible repository surfaces for this task are the benchmark harness read-model files and the benchmark execution verifier tests; developer choice inside that boundary does not need further PO naming decisions.
-- Treat SQLite local temporary files as the required measured baseline and keep PostgreSQL, SQL Server, MySQL, and Oracle as optional read lanes whose rows remain visible even when unexecuted.
-- Prefer redacted verifier-style summaries for downstream ticket or release references instead of copying raw benchmark tables into planning prose.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - When non-SQLite provider read optimization evidence is actually measured, should a follow-up ticket publish before-and-after artifact bundles under artifacts/benchmarks/<label>/... and update the performance-profile guidance from skipped rows to measured posture?
 - Do we want later release automation or CI validation to exercise optional provider read lanes when secrets are available, rather than keeping them as local or manual evidence only?
 
-## Risks
+Risks
 - Execution sequencing still depends on blocking ticket 06F8KZJNZ999C8NKY0S92VBDN0; refinement is complete, but delivery ordering remains constrained by the live relation state.
 - If skipped optional-provider rows are not verifier-protected, later artifact refreshes can silently drop those rows and make provider coverage look narrower than the documented contract.
 - If row labels or summaries blur the difference between measured SQLite results and skipped optional-provider lanes, downstream docs or release notes may overstate provider-read optimization evidence.
 
-## Split Recommendations
+Split recommendations
 - No split recommended; the repository already fixes the scenario baseline, provider posture, and artifact contract, so benchmark-row extension and verifier coverage remain one bounded task.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 4
+- definition-of-done items: 3
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Extend benchmark artifacts and verifier coverage for provider read optimization rows, preserving skipped optional-provider rows when connection strings are absent and avoiding unmeasured performance claims.
+Run mode
+- apply: planned updates are applied after this comment

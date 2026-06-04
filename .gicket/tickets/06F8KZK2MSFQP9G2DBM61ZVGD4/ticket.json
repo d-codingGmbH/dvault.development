@@ -3,23 +3,22 @@
   "ticket-id": "06F8KZK2MSFQP9G2DBM61ZVGD4",
   "ticket-type": "task",
   "title": "Task: Add provider read benchmark rows and verifier coverage",
-  "revision": "06F8M0156PSJGZXN4JSNXCDS7M",
-  "status": "todo",
+  "revision": "06F90K0PS9MFSAXVCCZMSSEQ6W",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/benchmarks",
     "area/ef-core",
     "area/performance",
     "area/provider-support",
     "area/read-models",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F8KYXZPX6VE3ZZ5MWY3RXABG",
   "releaseId": "06F8KYXQFNEK9XJV167HVT4RCG",
   "created-at": "2026-06-02T20:20:11.3474326Z",
-  "updated-at": "2026-06-02T20:22:05.8772801Z"
+  "updated-at": "2026-06-04T01:42:46.2183917Z"
 }

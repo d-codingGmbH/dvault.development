@@ -87,6 +87,32 @@ internal static class DataVaultBenchmarkHelpers {
     };
   }
 
+  public static string? GetProviderReadStrategyName(
+      DataVaultBenchmarkStrategy strategy,
+      string scenarioName) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(scenarioName);
+
+    if (string.Equals(scenarioName, "latest-satellite-read", StringComparison.Ordinal)) {
+      return strategy == DataVaultBenchmarkStrategy.SqliteOptimized
+          ? "SqliteDataVaultReadStrategy"
+          : null;
+    }
+
+    if (scenarioName is "pit-as-of-read" or "bridge-traversal-read") {
+      return strategy switch {
+        DataVaultBenchmarkStrategy.ProviderNeutralFallback => null,
+        DataVaultBenchmarkStrategy.SqliteOptimized => "SqliteDataVaultReadStrategy",
+        DataVaultBenchmarkStrategy.PostgresOptimized => "PostgresDataVaultReadStrategy",
+        DataVaultBenchmarkStrategy.SqlServerOptimized => "SqlServerDataVaultReadStrategy",
+        DataVaultBenchmarkStrategy.MySqlOptimized => "MySqlDataVaultReadStrategy",
+        DataVaultBenchmarkStrategy.OracleOptimized => "OracleDataVaultReadStrategy",
+        _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Unsupported benchmark strategy."),
+      };
+    }
+
+    return GetProviderReadStrategyName(strategy);
+  }
+
   public static void AssertProviderSaveStrategySelected(
       DataVaultDiagnosticsResult diagnostics,
       string expectedStrategyName) {
