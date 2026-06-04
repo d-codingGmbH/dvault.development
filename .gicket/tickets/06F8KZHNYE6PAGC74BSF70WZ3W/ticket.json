@@ -3,23 +3,22 @@
   "ticket-id": "06F8KZHNYE6PAGC74BSF70WZ3W",
   "ticket-type": "epic",
   "title": "Epic: Provider read optimization evidence and expansion",
-  "revision": "06F8KZXWW2BMQMJMF9MH18TX1R",
-  "status": "todo",
+  "revision": "06F918JKMPQ1G76NS5JGZH8V30",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/epic",
     "area/benchmarks",
     "area/diagnostics",
     "area/ef-core",
     "area/performance",
     "area/provider-support",
-    "area/read-models"
+    "area/read-models",
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F8KYXZPX6VE3ZZ5MWY3RXABG",
   "releaseId": "06F8KYXQFNEK9XJV167HVT4RCG",
   "created-at": "2026-06-02T20:19:59.2879795Z",
-  "updated-at": "2026-06-02T20:21:39.1687526Z"
+  "updated-at": "2026-06-04T03:16:57.8930000Z"
 }
