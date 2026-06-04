@@ -17,6 +17,7 @@ This folder contains durable design contracts and release planning notes that ar
 - `optional-advanced-configuration-hooks.md`
 - `pit-backed-as-of-read-api-contract.md`
 - `pit-maintenance-service-v1-contract.md`
+- `provider-identifier-ddl-guardrail-contract.md`
 - `provider-optimization-closure-alignment-follow-up.md`
 - `shared-implementation-standards.md`
 - `stable-hashing-contract.md`
