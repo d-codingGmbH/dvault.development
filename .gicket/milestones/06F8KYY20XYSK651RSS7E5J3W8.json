@@ -3,6 +3,6 @@
   "milestoneId": "06F8KYY20XYSK651RSS7E5J3W8",
   "name": "v0.29.0 - Provider naming and DDL contract",
   "description": "Define provider-aware identifier, DDL, index, and constraint guardrail contracts.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-06-02T20:17:18.3434027Z"
 }

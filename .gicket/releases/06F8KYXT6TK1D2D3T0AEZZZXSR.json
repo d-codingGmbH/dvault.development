@@ -3,6 +3,6 @@
   "releaseId": "06F8KYXT6TK1D2D3T0AEZZZXSR",
   "name": "v0.29.0 - Provider Naming and DDL Guardrails",
   "description": "Provider-aware identifier, generated-name, index, constraint, and migration guardrails that stay inside EF Core model and migration safety boundaries.",
-  "status": "planned",
+  "status": "active",
   "createdAt": "2026-06-02T20:17:16.3422125Z"
 }
