@@ -201,6 +201,13 @@ internal static class DataVaultDiagnosticCatalog {
           "Unsafe provider identifier generated",
           "Raised when a Data Vault-produced table, column, index, key, or constraint name cannot be emitted as a safe unquoted identifier for the selected provider profile.",
           "Rename the source model declaration or role so provider-neutral naming produces a provider-safe logical name, split the model when the provider cannot represent the generated shape, or choose a supported provider/profile that can represent it."),
+      new DataVaultDiagnosticDefinition(
+          "DVM2010",
+          ErrorSeverity,
+          "provider-ddl-guardrail",
+          "Provider-specific generated key or index shape changed",
+          "Raised when a migration creates or recreates a Data Vault generated secondary index or primary key with columns, uniqueness, sort order, included-column handling, or duplicate-index behavior that does not match the selected provider profile.",
+          "Keep generated primary-key and secondary-index operations aligned with the selected Data Vault provider capability profile, including provider-specific included-column and duplicate-index behavior."),
   ];
 
   private static readonly IReadOnlyDictionary<string, DataVaultDiagnosticDefinition> MigrationOperationSeedDefinitionsByCode =

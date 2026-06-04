@@ -1,0 +1,10 @@
+﻿[gicket-bot] transactional writeback linkage
+
+- ticket-id: `06F8KZNBGB8FPW6TK5A8SAJMVC`
+- transaction-point: `TP3`
+- write-group: `wg-handover-test`
+- source-role: `dev`
+- target-role: `test`
+- branch: `ticket/06F8KZNBGB8FPW6TK5A8SAJMVC-story-strengthen-provider-specific-migration-gua`
+- commit: `df74958be24c`
+- push-mode: `commit-only-on-write`

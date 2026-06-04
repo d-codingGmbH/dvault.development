@@ -693,8 +693,8 @@ public sealed class DataVaultDiagnosticsTests {
             "MI-3"),
         issue => AssertMigrationIssue(
             issue,
-            "DVM2004",
-            DataVaultDiagnosticsIssueSeverity.Warning,
+            "DVM2010",
+            DataVaultDiagnosticsIssueSeverity.Error,
             "migration/CreateIndex/HubCustomer/IxHubCustomerBusinessKeyCustomerId",
             "MI-4"),
         issue => AssertMigrationIssue(
@@ -722,7 +722,7 @@ public sealed class DataVaultDiagnosticsTests {
             "migration/DropTable/HubCustomer",
             "MI-5"));
     Assert.Equal(
-        ["DVM2001", "DVM2002", "DVM2003", "DVM2002", "DVM2003", "DVM2006"],
+        ["DVM2001", "DVM2002", "DVM2003", "DVM2010", "DVM2002", "DVM2003", "DVM2006"],
         findingResult.Validation.Issues.Select(issue => issue.Code));
   }
 

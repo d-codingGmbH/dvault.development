@@ -80,6 +80,11 @@ public static class DataVaultAnnotationNames {
   public const string MetadataSourceFingerprint = "DCoding.Data.DVault:MetadataSourceFingerprint";
 }
 
+internal static class DataVaultInternalAnnotationNames {
+  public const string ProviderIncludedIndexPropertyNames =
+      "DCoding.Data.DVault:ProviderIncludedIndexPropertyNames";
+}
+
 /// <summary>
 /// Identifies the provider-neutral Data Vault role carried by an Entity Framework property.
 /// </summary>

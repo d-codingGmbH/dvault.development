@@ -816,6 +816,9 @@ internal static class DataVaultEfMetadataTranslator {
         }
 
         if (SupportsIncludedIndexProperties(providerCapabilities) && index.IncludedPropertyNames.Count > 0) {
+          indexBuilder.Metadata.SetAnnotation(
+              DataVaultInternalAnnotationNames.ProviderIncludedIndexPropertyNames,
+              index.IncludedPropertyNames.ToArray());
           ApplyIncludedIndexProperties(indexBuilder, index.IncludedPropertyNames, providerCapabilities);
         }
 

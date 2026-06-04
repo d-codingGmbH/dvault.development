@@ -2622,6 +2622,19 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       }
     }
 
+    var dataVaultValue = index.FindAnnotation(DataVaultInternalAnnotationNames.ProviderIncludedIndexPropertyNames)?.Value;
+    if (dataVaultValue is string[] dataVaultStringArray) {
+      return dataVaultStringArray
+          .Select(propertyName => GetPhysicalColumnName(index.DeclaringEntityType.FindProperty(propertyName), propertyName, tableIdentifier))
+          .ToArray();
+    }
+
+    if (dataVaultValue is IEnumerable<string> dataVaultStringValues) {
+      return dataVaultStringValues
+          .Select(propertyName => GetPhysicalColumnName(index.DeclaringEntityType.FindProperty(propertyName), propertyName, tableIdentifier))
+          .ToArray();
+    }
+
     return Array.Empty<string>();
   }
 

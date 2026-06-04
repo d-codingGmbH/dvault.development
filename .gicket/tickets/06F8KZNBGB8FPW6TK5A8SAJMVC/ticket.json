@@ -3,23 +3,22 @@
   "ticket-id": "06F8KZNBGB8FPW6TK5A8SAJMVC",
   "ticket-type": "story",
   "title": "Story: Strengthen provider-specific migration guardrails",
-  "revision": "06F8M01HFAPP25GDP01194TR68",
-  "status": "todo",
+  "revision": "06F97VPMWNVSC3JBFDPYM3YEXM",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
     "area/diagnostics",
     "area/ef-core",
     "area/migrations",
     "area/provider-support",
     "area/schema",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "isBlocked": false,
   "milestoneId": "06F8KYY4H040R5A8KRT3AVH9D4",
   "releaseId": "06F8KYXT6TK1D2D3T0AEZZZXSR",
   "created-at": "2026-06-02T20:20:29.3931652Z",
-  "updated-at": "2026-06-02T20:22:09.0181529Z"
+  "updated-at": "2026-06-04T18:39:23.3653469Z"
 }

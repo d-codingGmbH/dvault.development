@@ -252,7 +252,8 @@ public static class DataVaultMigrationOperationDiagnostics {
             "AlterColumn",
             alterColumn.Table,
             alterColumn.Name,
-            action: "alters");
+            action: "alters",
+            alterColumn);
       case RenameColumnOperation renameColumn:
         return AnalyzeRenameColumn(schema, renameColumn);
       case CreateIndexOperation createIndex:
@@ -282,13 +283,14 @@ public static class DataVaultMigrationOperationDiagnostics {
     }
 
     var issues = new List<DataVaultDiagnosticsIssue>();
-    var operationColumnNames = operation.Columns
-        .Select(column => column.Name)
-        .Where(columnName => !string.IsNullOrWhiteSpace(columnName))
-        .ToHashSet(StringComparer.Ordinal);
+    var operationColumns = operation.Columns
+        .Where(column => !string.IsNullOrWhiteSpace(column.Name))
+        .GroupBy(column => column.Name, StringComparer.Ordinal)
+        .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
 
     foreach (var column in entity.ColumnsInOrder) {
-      if (operationColumnNames.Contains(column.Name)) {
+      if (operationColumns.TryGetValue(column.Name, out var operationColumn)) {
+        issues.AddRange(AnalyzeGeneratedColumnProviderShape(schema, entity, column, "CreateTable", operationColumn));
         continue;
       }
 
@@ -320,9 +322,7 @@ public static class DataVaultMigrationOperationDiagnostics {
       }
     }
 
-    if (operation.PrimaryKey is not null) {
-      issues.AddRange(AnalyzeCreateTablePrimaryKey(entity, operation.PrimaryKey));
-    }
+    issues.AddRange(AnalyzeCreateTablePrimaryKey(schema, entity, operation.PrimaryKey));
 
     return issues;
   }
@@ -350,8 +350,18 @@ public static class DataVaultMigrationOperationDiagnostics {
   }
 
   private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeCreateTablePrimaryKey(
+      DataVaultMigrationSchemaBaseline schema,
       DataVaultMigrationEntityBaseline entity,
-      AddPrimaryKeyOperation primaryKey) {
+      AddPrimaryKeyOperation? primaryKey) {
+    if (primaryKey is null) {
+      return [CreateIssue(
+          "DVM2010",
+          "MI-4 provider-shape violation: migration creates " + FormatEntityContext(entity) +
+          " without inline generated primary key for " + FormatProviderContext(schema) +
+          "; expected " + FormatPrimaryKeyContext(entity.PrimaryKey) + ".",
+          CreatePath("CreateTable", entity.TableName, entity.PrimaryKey.Name))];
+    }
+
     var operationColumns = primaryKey.Columns ?? Array.Empty<string>();
     if (string.Equals(primaryKey.Name, entity.PrimaryKey.Name, StringComparison.Ordinal) &&
         entity.PrimaryKey.PropertyNames.SequenceEqual(operationColumns, StringComparer.Ordinal)) {
@@ -363,19 +373,23 @@ public static class DataVaultMigrationOperationDiagnostics {
         : primaryKey.Name;
 
     return [CreateIssue(
-        "DVM2004",
-        "MI-4 violation: migration creates " + FormatEntityContext(entity) +
+        "DVM2010",
+        "MI-4 provider-shape violation: migration creates " + FormatEntityContext(entity) +
         " with inline primary key '" + operationName +
-        "' with wrong name or columns; expected " + FormatPrimaryKeyContext(entity.PrimaryKey) + ".",
+        "' with wrong name or columns for " + FormatProviderContext(schema) +
+        "; expected " + FormatPrimaryKeyContext(entity.PrimaryKey) + ".",
         CreatePath("CreateTable", entity.TableName, operationName))];
   }
 
   private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeAddColumn(
       DataVaultMigrationSchemaBaseline schema,
       AddColumnOperation operation) {
-    if (!schema.TryGetEntity(operation.Table, out var entity) ||
-        entity.Columns.ContainsKey(operation.Name)) {
+    if (!schema.TryGetEntity(operation.Table, out var entity)) {
       return [];
+    }
+
+    if (entity.Columns.TryGetValue(operation.Name, out var column)) {
+      return AnalyzeGeneratedColumnProviderShape(schema, entity, column, "AddColumn", operation);
     }
 
     if (entity.Kind is DataVaultTableKind.Hub or DataVaultTableKind.Link) {
@@ -432,10 +446,23 @@ public static class DataVaultMigrationOperationDiagnostics {
       string operationName,
       string tableName,
       string columnName,
-      string action) {
+      string action,
+      ColumnOperation? operation = null) {
     if (!schema.TryGetEntity(tableName, out var entity) ||
         !entity.Columns.TryGetValue(columnName, out var column)) {
       return [];
+    }
+
+    if (operation is not null) {
+      var providerShapeIssues = AnalyzeGeneratedColumnProviderShape(
+          schema,
+          entity,
+          column,
+          operationName,
+          operation).ToArray();
+      if (providerShapeIssues.Length > 0) {
+        return providerShapeIssues;
+      }
     }
 
     return AnalyzeGeneratedColumnChange(
@@ -466,6 +493,71 @@ public static class DataVaultMigrationOperationDiagnostics {
         invariant + " violation: migration " + action + " " + shape + " " +
         FormatColumnContext(column) + " on " + FormatEntityContext(entity) + ".",
         CreatePath(operationName, entity.TableName, column.Name))];
+  }
+
+  private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeGeneratedColumnProviderShape(
+      DataVaultMigrationSchemaBaseline schema,
+      DataVaultMigrationEntityBaseline entity,
+      DataVaultMigrationColumnBaseline column,
+      string operationName,
+      ColumnOperation operation) {
+    if (!RequiresProviderColumnShapeGuardrail(column)) {
+      return [];
+    }
+
+    var differences = GetProviderColumnShapeDifferences(column, operation);
+    if (differences.Count == 0) {
+      return [];
+    }
+
+    var code = GetAlterColumnCode(column);
+    if (code is null) {
+      return [];
+    }
+
+    var invariant = code == "DVM2002" ? "MI-2" : "MI-3";
+    return [CreateIssue(
+        code,
+        invariant + " provider-shape violation: migration " + FormatColumnOperationVerb(operationName) +
+        " generated " + FormatColumnContext(column) + " on " + FormatEntityContext(entity) +
+        " with provider-incompatible storage for " + FormatProviderContext(schema) +
+        "; expected " + FormatColumnProviderShape(column) +
+        "; actual " + FormatColumnOperationShape(operation) +
+        "; mismatches " + string.Join(", ", differences) + ".",
+        CreatePath(operationName, entity.TableName, column.Name))];
+  }
+
+  private static bool RequiresProviderColumnShapeGuardrail(DataVaultMigrationColumnBaseline column) {
+    return column.LogicalPropertyKind is
+        DataVaultLogicalPropertyKind.LoadTimestamp or
+        DataVaultLogicalPropertyKind.SatelliteSnapshotReference;
+  }
+
+  private static IReadOnlyList<string> GetProviderColumnShapeDifferences(
+      DataVaultMigrationColumnBaseline column,
+      ColumnOperation operation) {
+    var differences = new List<string>();
+    if (operation.IsNullable != column.IsNullable) {
+      differences.Add("nullability");
+    }
+
+    if (!string.IsNullOrWhiteSpace(operation.ColumnType) &&
+        !string.Equals(operation.ColumnType, column.StoreType, StringComparison.Ordinal)) {
+      differences.Add("store type");
+    }
+
+    if (!string.IsNullOrWhiteSpace(column.ClrTypeName) &&
+        operation.ClrType is not null &&
+        !string.Equals(GetClrTypeName(operation.ClrType), NormalizeClrTypeName(column.ClrTypeName), StringComparison.Ordinal)) {
+      differences.Add("CLR type");
+    }
+
+    var valueFormat = GetAnnotationValue<DataVaultProviderValueFormat>(operation, DataVaultAnnotationNames.ProviderValueFormat);
+    if (valueFormat is not null && valueFormat.Value != column.ValueFormat) {
+      differences.Add("provider value format");
+    }
+
+    return differences;
   }
 
   private static string? GetDropColumnCode(DataVaultMigrationColumnBaseline column) {
@@ -514,19 +606,127 @@ public static class DataVaultMigrationOperationDiagnostics {
   private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeCreateIndex(
       DataVaultMigrationSchemaBaseline schema,
       CreateIndexOperation operation) {
-    if (!schema.TryGetEntity(operation.Table, out var entity) ||
-        !entity.Indexes.TryGetValue(operation.Name, out var index) ||
-        (index.IsUnique == operation.IsUnique &&
-            index.PropertyNames.SequenceEqual(operation.Columns, StringComparer.Ordinal))) {
+    if (!schema.TryGetEntity(operation.Table, out var entity)) {
+      return [];
+    }
+
+    if (!entity.Indexes.TryGetValue(operation.Name, out var index)) {
+      if (IsProviderIncompatibleCoveredPrimaryKeyIndex(schema, entity, operation)) {
+        return [CreateIssue(
+            "DVM2010",
+            "MI-4 provider-shape violation: migration creates secondary index '" + operation.Name +
+            "' on " + FormatEntityContext(entity) + " for " + FormatProviderContext(schema) +
+            ", but the effective generated shape omits secondary indexes covered by " +
+            FormatPrimaryKeyContext(entity.PrimaryKey) + ".",
+            CreatePath("CreateIndex", entity.TableName, operation.Name))];
+      }
+
+      return [];
+    }
+
+    if (IndexShapeMatches(operation, entity, index)) {
       return [];
     }
 
     return [CreateIssue(
-        "DVM2004",
+        "DVM2010",
         "MI-4 violation: migration creates generated index '" + operation.Name +
         "' on " + FormatEntityContext(entity) +
-        " with wrong uniqueness or columns; expected " + FormatIndexContext(index) + ".",
+        " with provider-incompatible columns, uniqueness, sort order, or include handling for " +
+        FormatProviderContext(schema) + "; expected " + FormatIndexContext(index) +
+        "; actual " + FormatIndexOperationShape(operation, entity) + ".",
         CreatePath("CreateIndex", entity.TableName, index.Name))];
+  }
+
+  private static bool IndexShapeMatches(
+      CreateIndexOperation operation,
+      DataVaultMigrationEntityBaseline entity,
+      DataVaultMigrationIndexBaseline index) {
+    return index.IsUnique == operation.IsUnique &&
+        index.PropertyNames.SequenceEqual(GetOperationColumnNames(operation), StringComparer.Ordinal) &&
+        index.DescendingPropertyNames.SequenceEqual(GetOperationDescendingColumnNames(operation), StringComparer.Ordinal) &&
+        index.IncludedPropertyNames.SequenceEqual(GetOperationIncludedColumnNames(operation, entity), StringComparer.Ordinal);
+  }
+
+  private static bool IsProviderIncompatibleCoveredPrimaryKeyIndex(
+      DataVaultMigrationSchemaBaseline schema,
+      DataVaultMigrationEntityBaseline entity,
+      CreateIndexOperation operation) {
+    return !schema.AllowsIndexesCoveredByPrimaryKey &&
+        GetOperationIncludedColumnNames(operation, entity).Count == 0 &&
+        GetOperationDescendingColumnNames(operation).Count == 0 &&
+        entity.PrimaryKey.PropertyNames.SequenceEqual(GetOperationColumnNames(operation), StringComparer.Ordinal);
+  }
+
+  private static IReadOnlyList<string> GetOperationColumnNames(CreateIndexOperation operation) {
+    return operation.Columns ?? Array.Empty<string>();
+  }
+
+  private static IReadOnlyList<string> GetOperationDescendingColumnNames(CreateIndexOperation operation) {
+    var columns = GetOperationColumnNames(operation);
+    if (operation.IsDescending is null || operation.IsDescending.Length == 0 || columns.Count == 0) {
+      return Array.Empty<string>();
+    }
+
+    var descendingColumns = new List<string>();
+    for (var ordinal = 0; ordinal < columns.Count && ordinal < operation.IsDescending.Length; ordinal++) {
+      if (operation.IsDescending[ordinal]) {
+        descendingColumns.Add(columns[ordinal]);
+      }
+    }
+
+    return descendingColumns;
+  }
+
+  private static IReadOnlyList<string> GetOperationIncludedColumnNames(
+      CreateIndexOperation operation,
+      DataVaultMigrationEntityBaseline entity) {
+    foreach (var annotationName in new[] { "SqlServer:Include", "Npgsql:IndexInclude" }) {
+      var providerColumnNames = GetStringAnnotationValues(operation, annotationName);
+      if (providerColumnNames is not null) {
+        return providerColumnNames;
+      }
+    }
+
+    var dataVaultPropertyNames = GetStringAnnotationValues(
+        operation,
+        DataVaultInternalAnnotationNames.ProviderIncludedIndexPropertyNames);
+    if (dataVaultPropertyNames is not null) {
+      return dataVaultPropertyNames
+          .Select(propertyName => ResolveOperationColumnName(entity, propertyName))
+          .ToArray();
+    }
+
+    return Array.Empty<string>();
+  }
+
+  private static IReadOnlyList<string>? GetStringAnnotationValues(
+      MigrationOperation operation,
+      string annotationName) {
+    var value = operation.FindAnnotation(annotationName)?.Value;
+    if (value is string[] stringArray) {
+      return stringArray;
+    }
+
+    if (value is IEnumerable<string> stringValues) {
+      return stringValues.ToArray();
+    }
+
+    return null;
+  }
+
+  private static string ResolveOperationColumnName(
+      DataVaultMigrationEntityBaseline entity,
+      string propertyName) {
+    if (entity.Columns.ContainsKey(propertyName)) {
+      return propertyName;
+    }
+
+    var column = entity.ColumnsInOrder.FirstOrDefault(candidate =>
+        string.Equals(candidate.ProducedName, propertyName, StringComparison.Ordinal) ||
+        string.Equals(candidate.MetadataName, propertyName, StringComparison.Ordinal));
+
+    return column?.Name ?? propertyName;
   }
 
   private static IEnumerable<DataVaultDiagnosticsIssue> AnalyzeDropIndex(
@@ -593,10 +793,10 @@ public static class DataVaultMigrationOperationDiagnostics {
         : operation.Name;
 
     return [CreateIssue(
-        "DVM2004",
+        "DVM2010",
         "MI-4 violation: migration creates Data Vault primary key '" + operationName +
-        "' on " + FormatEntityContext(entity) + " with wrong name or columns; expected " +
-        FormatPrimaryKeyContext(entity.PrimaryKey) + ".",
+        "' on " + FormatEntityContext(entity) + " with wrong name or columns for " +
+        FormatProviderContext(schema) + "; expected " + FormatPrimaryKeyContext(entity.PrimaryKey) + ".",
         CreatePath("AddPrimaryKey", entity.TableName, operationName))];
   }
 
@@ -683,6 +883,13 @@ public static class DataVaultMigrationOperationDiagnostics {
     };
   }
 
+  private static T? GetAnnotationValue<T>(MigrationOperation operation, string annotationName)
+      where T : struct {
+    return operation.FindAnnotation(annotationName)?.Value is T value
+        ? value
+        : null;
+  }
+
   private static string CreatePath(string operationName, string targetName, string? memberName = null) {
     return string.IsNullOrWhiteSpace(memberName)
         ? "migration/" + operationName + "/" + targetName
@@ -713,7 +920,70 @@ public static class DataVaultMigrationOperationDiagnostics {
   private static string FormatIndexContext(DataVaultMigrationIndexBaseline index) {
     return "secondary index '" + index.Name + "' (produced name '" + index.ProducedName +
         "', columns [" + string.Join(", ", index.PropertyNames) + "], unique " +
-        index.IsUnique.ToString().ToLowerInvariant() + ")";
+        index.IsUnique.ToString().ToLowerInvariant() +
+        ", descending [" + string.Join(", ", index.DescendingPropertyNames) +
+        "], included [" + string.Join(", ", index.IncludedPropertyNames) + "])";
+  }
+
+  private static string FormatProviderContext(DataVaultMigrationSchemaBaseline schema) {
+    return "provider '" + schema.ProviderName + "', capability profile '" + schema.CapabilityProfileName + "'";
+  }
+
+  private static string FormatColumnProviderShape(DataVaultMigrationColumnBaseline column) {
+    return "nullable " + column.IsNullable.ToString().ToLowerInvariant() +
+        ", store type '" + column.StoreType +
+        "', value format " + column.ValueFormat +
+        ", CLR type '" + NormalizeClrTypeName(column.ClrTypeName) + "'";
+  }
+
+  private static string FormatColumnOperationShape(ColumnOperation operation) {
+    var valueFormat = GetAnnotationValue<DataVaultProviderValueFormat>(operation, DataVaultAnnotationNames.ProviderValueFormat);
+    return "nullable " + operation.IsNullable.ToString().ToLowerInvariant() +
+        ", store type '" + (string.IsNullOrWhiteSpace(operation.ColumnType) ? "<unspecified>" : operation.ColumnType) +
+        "', value format " + (valueFormat?.ToString() ?? "<unspecified>") +
+        ", CLR type '" + GetClrTypeName(operation.ClrType) + "'";
+  }
+
+  private static string FormatIndexOperationShape(
+      CreateIndexOperation operation,
+      DataVaultMigrationEntityBaseline entity) {
+    return "secondary index '" + operation.Name +
+        "' (columns [" + string.Join(", ", GetOperationColumnNames(operation)) +
+        "], unique " + operation.IsUnique.ToString().ToLowerInvariant() +
+        ", descending [" + string.Join(", ", GetOperationDescendingColumnNames(operation)) +
+        "], included [" + string.Join(", ", GetOperationIncludedColumnNames(operation, entity)) + "])";
+  }
+
+  private static string FormatColumnOperationVerb(string operationName) {
+    return operationName switch {
+      "AddColumn" => "adds",
+      "AlterColumn" => "alters",
+      "CreateTable" => "creates",
+      _ => operationName,
+    };
+  }
+
+  private static string GetClrTypeName(Type? clrType) {
+    if (clrType is null) {
+      return "<unspecified>";
+    }
+
+    return (Nullable.GetUnderlyingType(clrType) ?? clrType).FullName ?? clrType.Name;
+  }
+
+  private static string NormalizeClrTypeName(string clrTypeName) {
+    const string nullablePrefix = "System.Nullable`1[[";
+    if (!clrTypeName.StartsWith(nullablePrefix, StringComparison.Ordinal)) {
+      return clrTypeName;
+    }
+
+    var start = nullablePrefix.Length;
+    var end = clrTypeName.IndexOf(',', start);
+    if (end < 0) {
+      end = clrTypeName.IndexOf("]]", start, StringComparison.Ordinal);
+    }
+
+    return end > start ? clrTypeName[start..end] : clrTypeName;
   }
 
   private static string FormatStructureKind(DataVaultTableKind kind) {
@@ -1101,9 +1371,22 @@ public static class DataVaultMigrationOperationDiagnostics {
   private sealed record AddedPrimaryKeyCandidate(AddPrimaryKeyOperation Operation);
 
   private sealed class DataVaultMigrationSchemaBaseline {
-    private DataVaultMigrationSchemaBaseline(IReadOnlyDictionary<string, DataVaultMigrationEntityBaseline> entities) {
+    private DataVaultMigrationSchemaBaseline(
+        string providerName,
+        string capabilityProfileName,
+        bool allowsIndexesCoveredByPrimaryKey,
+        IReadOnlyDictionary<string, DataVaultMigrationEntityBaseline> entities) {
+      ProviderName = providerName;
+      CapabilityProfileName = capabilityProfileName;
+      AllowsIndexesCoveredByPrimaryKey = allowsIndexesCoveredByPrimaryKey;
       Entities = entities;
     }
+
+    public string ProviderName { get; }
+
+    public string CapabilityProfileName { get; }
+
+    public bool AllowsIndexesCoveredByPrimaryKey { get; }
 
     private IReadOnlyDictionary<string, DataVaultMigrationEntityBaseline> Entities { get; }
 
@@ -1120,7 +1403,11 @@ public static class DataVaultMigrationOperationDiagnostics {
           .Select(DataVaultMigrationEntityBaseline.Create)
           .ToDictionary(entity => entity.TableName, StringComparer.Ordinal);
 
-      return new DataVaultMigrationSchemaBaseline(entities);
+      return new DataVaultMigrationSchemaBaseline(
+          string.IsNullOrWhiteSpace(explain.ProviderName) ? "<none>" : explain.ProviderName,
+          explain.CapabilityProfileName,
+          explain.AllowsIndexesCoveredByPrimaryKey,
+          entities);
     }
 
     public bool TryGetEntity(string tableName, out DataVaultMigrationEntityBaseline entity) {
@@ -1199,14 +1486,24 @@ public static class DataVaultMigrationOperationDiagnostics {
       string ProducedName,
       DataVaultPropertyRole Role,
       TechnicalMetadataColumnRole? TechnicalRole,
-      string MetadataName) {
+      string MetadataName,
+      DataVaultLogicalPropertyKind LogicalPropertyKind,
+      string StoreType,
+      DataVaultProviderValueFormat ValueFormat,
+      bool IsNullable,
+      string ClrTypeName) {
     public static DataVaultMigrationColumnBaseline Create(DataVaultPropertyExplain property) {
       return new DataVaultMigrationColumnBaseline(
           property.Name,
           string.IsNullOrWhiteSpace(property.ProducedName) ? property.Name : property.ProducedName,
           property.Role,
           property.TechnicalRole,
-          property.MetadataName);
+          property.MetadataName,
+          property.LogicalPropertyKind,
+          property.StoreType,
+          property.ValueFormat,
+          property.IsNullable,
+          property.ClrTypeName);
     }
   }
 
@@ -1226,13 +1523,17 @@ public static class DataVaultMigrationOperationDiagnostics {
       string Name,
       string ProducedName,
       IReadOnlyList<string> PropertyNames,
-      bool IsUnique) {
+      bool IsUnique,
+      IReadOnlyList<string> DescendingPropertyNames,
+      IReadOnlyList<string> IncludedPropertyNames) {
     public static DataVaultMigrationIndexBaseline Create(DataVaultIndexExplain index) {
       return new DataVaultMigrationIndexBaseline(
           index.Name,
           string.IsNullOrWhiteSpace(index.ProducedName) ? index.Name : index.ProducedName,
           index.PropertyNames,
-          index.IsUnique);
+          index.IsUnique,
+          index.DescendingPropertyNames,
+          index.IncludedPropertyNames);
     }
   }
 }

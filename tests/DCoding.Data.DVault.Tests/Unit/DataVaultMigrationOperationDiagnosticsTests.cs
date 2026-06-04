@@ -11,10 +11,10 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
     var definitions = DataVaultDiagnosticCatalog.MigrationOperationDefinitions;
 
     Assert.Equal(
-        ["DVM2001", "DVM2002", "DVM2003", "DVM2004", "DVM2005", "DVM2006", "DVM2007", "DVM2008", "DVM2009"],
+        ["DVM2001", "DVM2002", "DVM2003", "DVM2004", "DVM2005", "DVM2006", "DVM2007", "DVM2008", "DVM2009", "DVM2010"],
         definitions.Select(definition => definition.Code));
     Assert.Equal(
-        ["error", "error", "error", "warning", "warning", "error", "error", "warning", "error"],
+        ["error", "error", "error", "warning", "warning", "error", "error", "warning", "error", "error"],
         definitions.Select(definition => definition.Severity));
     Assert.All(definitions, definition => {
       Assert.NotEmpty(definition.Summary);
@@ -63,8 +63,8 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
             },
         ]);
 
+    Assert.Empty(result.Issues.Select(issue => issue.Code + " " + issue.Path + " " + issue.Message));
     Assert.True(result.Validation.IsValid);
-    Assert.Empty(result.Issues);
   }
 
   [Fact]
@@ -86,8 +86,8 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
             CreateMatchingCreateTableOperation(baseline, "BridgeSalesRegionHierarchy"),
         ]);
 
+    Assert.Empty(result.Issues.Select(issue => issue.Code + " " + issue.Path + " " + issue.Message));
     Assert.True(result.Validation.IsValid);
-    Assert.Empty(result.Issues);
   }
 
   [Fact]
@@ -141,27 +141,55 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
         result.Issues,
         issue => AssertIssue(issue, "DVM2002", DataVaultDiagnosticsIssueSeverity.Error, "migration/CreateTable/HubCustomer/LoadTimestamp", "MI-2"),
         issue => AssertIssue(issue, "DVM2001", DataVaultDiagnosticsIssueSeverity.Error, "migration/CreateTable/HubCustomer/CustomerStatus", "MI-1"),
-        issue => AssertIssue(issue, "DVM2004", DataVaultDiagnosticsIssueSeverity.Warning, "migration/CreateTable/HubCustomer/PkHubCustomerWrongName", "MI-4"),
+        issue => AssertIssue(issue, "DVM2010", DataVaultDiagnosticsIssueSeverity.Error, "migration/CreateTable/HubCustomer/PkHubCustomerWrongName", "MI-4"),
         issue => AssertIssue(issue, "DVM2003", DataVaultDiagnosticsIssueSeverity.Error, "migration/CreateTable/LinkCustomerOrder/OrderHashKey", "MI-3"),
         issue => AssertIssue(issue, "DVM2001", DataVaultDiagnosticsIssueSeverity.Error, "migration/CreateTable/LinkCustomerOrder/CampaignCode", "MI-1"),
         issue => AssertIssue(issue, "DVM2003", DataVaultDiagnosticsIssueSeverity.Error, "migration/CreateTable/SatCustomerContactChannel/ContactType", "MI-3"),
         issue => AssertIssue(issue, "DVM2003", DataVaultDiagnosticsIssueSeverity.Error, "migration/CreateTable/PitCustomerContact/ContactLoadTimestamp", "MI-3"),
         issue => AssertIssue(issue, "DVM2003", DataVaultDiagnosticsIssueSeverity.Error, "migration/CreateTable/PitCustomerContact/UnauthorizedSnapshot", "MI-3"),
         issue => AssertIssue(issue, "DVM2003", DataVaultDiagnosticsIssueSeverity.Error, "migration/CreateTable/BridgeSalesRegionHierarchy/TraversalDepth", "MI-3"),
-        issue => AssertIssue(issue, "DVM2004", DataVaultDiagnosticsIssueSeverity.Warning, "migration/CreateIndex/BridgeCustomerOrder/IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey", "MI-4"),
-        issue => AssertIssue(issue, "DVM2004", DataVaultDiagnosticsIssueSeverity.Warning, "migration/AddPrimaryKey/HubCustomer/PkHubCustomerWrongAgain", "MI-4"));
+        issue => AssertIssue(issue, "DVM2010", DataVaultDiagnosticsIssueSeverity.Error, "migration/CreateIndex/BridgeCustomerOrder/IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey", "MI-4"),
+        issue => AssertIssue(issue, "DVM2010", DataVaultDiagnosticsIssueSeverity.Error, "migration/AddPrimaryKey/HubCustomer/PkHubCustomerWrongAgain", "MI-4"));
     Assert.Equal(
         [
             "DVM2002",
             "DVM2001",
+            "DVM2010",
             "DVM2003",
             "DVM2001",
             "DVM2003",
             "DVM2003",
             "DVM2003",
             "DVM2003",
+            "DVM2010",
+            "DVM2010",
         ],
         result.Validation.Issues.Select(issue => issue.Code));
+  }
+
+  [Fact]
+  public void AnalyzeCreateTableOperationBlocksMissingGeneratedPrimaryKey() {
+    using var provider = CreateServiceProvider();
+    var baseline = provider
+        .GetRequiredService<IDataVaultDiagnosticsService>()
+        .Analyze(CreateMigrationGuardrailMetadataModel());
+    var operation = CreateMatchingCreateTableOperation(baseline, "HubCustomer", includePrimaryKey: false);
+    var primaryKey = baseline.Explain.Entities
+        .Single(entity => entity.TableName == "HubCustomer")
+        .PrimaryKey;
+
+    var report = DataVaultMigrationOperationDiagnostics.AnalyzeReport(baseline, [operation]);
+
+    Assert.False(report.IsValid);
+    var issue = Assert.Single(report.Issues);
+    AssertIssue(
+        issue,
+        "DVM2010",
+        DataVaultDiagnosticsIssueSeverity.Error,
+        "migration/CreateTable/HubCustomer/" + primaryKey.Name,
+        "MI-4");
+    Assert.Contains("without inline generated primary key", issue.Message, StringComparison.Ordinal);
+    Assert.Contains(primaryKey.Name, issue.Message, StringComparison.Ordinal);
   }
 
   [Fact]
@@ -263,7 +291,7 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
         issue => AssertIssue(issue, "DVM2002", DataVaultDiagnosticsIssueSeverity.Error, "migration/DropColumn/SatCustomerContact/HashDiff", "MI-2"),
         issue => AssertIssue(issue, "DVM2003", DataVaultDiagnosticsIssueSeverity.Error, "migration/DropColumn/SatCustomerContact/CustomerHashKey", "MI-3"),
         issue => AssertIssue(issue, "DVM2003", DataVaultDiagnosticsIssueSeverity.Error, "migration/DropColumn/SatCustomerContact/EmailAddress", "MI-3"),
-        issue => AssertIssue(issue, "DVM2004", DataVaultDiagnosticsIssueSeverity.Warning, "migration/CreateIndex/HubCustomer/IxHubCustomerBusinessKeyCustomerId", "MI-4"),
+        issue => AssertIssue(issue, "DVM2010", DataVaultDiagnosticsIssueSeverity.Error, "migration/CreateIndex/HubCustomer/IxHubCustomerBusinessKeyCustomerId", "MI-4"),
         issue => AssertIssue(issue, "DVM2005", DataVaultDiagnosticsIssueSeverity.Warning, "migration/RenameColumn/HubCustomer/LoadTimestamp", "MI-5"),
         issue => AssertIssue(issue, "DVM2002", DataVaultDiagnosticsIssueSeverity.Error, "migration/AlterColumn/HubCustomer/RecordSource", "MI-2"),
         issue => AssertIssue(issue, "DVM2003", DataVaultDiagnosticsIssueSeverity.Error, "migration/AlterColumn/LinkCustomerOrder/OrderHashKey", "MI-3"),
@@ -274,7 +302,7 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
         issue => AssertIssue(issue, "DVM2003", DataVaultDiagnosticsIssueSeverity.Error, "migration/DropColumn/BridgeSalesRegionHierarchy/TraversalDepth", "MI-3"),
         issue => AssertIssue(issue, "DVM2007", DataVaultDiagnosticsIssueSeverity.Error, "migration/DropIndex/BridgeCustomerOrder/IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey", "MI-4"),
         issue => AssertIssue(issue, "DVM2004", DataVaultDiagnosticsIssueSeverity.Warning, "migration/RenameIndex/BridgeCustomerOrder/IxBridgeCustomerOrderTraversalOrderHashKeyCustomerHashKey", "MI-4"),
-        issue => AssertIssue(issue, "DVM2004", DataVaultDiagnosticsIssueSeverity.Warning, "migration/AddPrimaryKey/HubCustomer/PkHubCustomerWrongName", "MI-4"),
+        issue => AssertIssue(issue, "DVM2010", DataVaultDiagnosticsIssueSeverity.Error, "migration/AddPrimaryKey/HubCustomer/PkHubCustomerWrongName", "MI-4"),
         issue => AssertIssue(issue, "DVM2007", DataVaultDiagnosticsIssueSeverity.Error, "migration/DropPrimaryKey/PitCustomerContact/PkPitCustomerContactCustomerHashKeyLoadTimestamp", "MI-4"),
         issue => AssertIssue(issue, "DVM2006", DataVaultDiagnosticsIssueSeverity.Error, "migration/DropTable/BridgeCustomerOrder", "MI-5"));
     Assert.Equal(
@@ -283,6 +311,7 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
             "DVM2002",
             "DVM2003",
             "DVM2003",
+            "DVM2010",
             "DVM2002",
             "DVM2003",
             "DVM2006",
@@ -291,6 +320,7 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
             "DVM2003",
             "DVM2003",
             "DVM2007",
+            "DVM2010",
             "DVM2007",
             "DVM2006",
         ],
@@ -402,6 +432,131 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
   }
 
   [Fact]
+  public void AnalyzeMigrationOperationsUsesProviderEffectiveIndexShapeAcrossSupportedProfiles() {
+    using var provider = CreateServiceProvider();
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    var metadataModel = CreateMigrationGuardrailMetadataModel();
+
+    foreach (var providerCapabilities in SupportedProviderCapabilityProfiles()) {
+      var baseline = diagnostics.Analyze(metadataModel, providerCapabilities);
+      var safeIndex = CreateGeneratedIndexOperation(
+          baseline,
+          "SatCustomerContact",
+          FindGeneratedIndex(baseline, "SatCustomerContact").Name);
+
+      var safeReport = DataVaultMigrationOperationDiagnostics.AnalyzeReport(baseline, [safeIndex]);
+
+      Assert.True(safeReport.IsValid);
+      Assert.Empty(safeReport.Issues);
+
+      var incompatibleIndex = CreateProviderIncompatibleSatelliteIndexOperation(baseline);
+      var incompatibleReport = DataVaultMigrationOperationDiagnostics.AnalyzeReport(baseline, [incompatibleIndex]);
+
+      Assert.False(incompatibleReport.IsValid);
+      var issue = Assert.Single(incompatibleReport.Issues);
+      AssertIssue(
+          issue,
+          "DVM2010",
+          DataVaultDiagnosticsIssueSeverity.Error,
+          "migration/CreateIndex/SatCustomerContact/" + incompatibleIndex.Name,
+          "MI-4");
+      Assert.Contains(baseline.Explain.CapabilityProfileName, issue.Message, StringComparison.Ordinal);
+      Assert.Contains("included", issue.Message, StringComparison.Ordinal);
+    }
+
+    var oracleBaseline = diagnostics.Analyze(metadataModel, DataVaultProviderCapabilityProfiles.Oracle);
+    var pit = oracleBaseline.Explain.Entities.Single(entity => entity.TableName == "PitCustomerContact");
+    var redundantOracleIndex = new CreateIndexOperation {
+      Table = pit.TableName,
+      Name = "IxPitCustomerContactRedundantPrimaryKeyCoverage",
+      Columns = pit.PrimaryKey.PropertyNames.ToArray(),
+      IsUnique = false,
+    };
+
+    var oracleReport = DataVaultMigrationOperationDiagnostics.AnalyzeReport(oracleBaseline, [redundantOracleIndex]);
+
+    Assert.False(oracleReport.IsValid);
+    var oracleIssue = Assert.Single(oracleReport.Issues);
+    AssertIssue(
+        oracleIssue,
+        "DVM2010",
+        DataVaultDiagnosticsIssueSeverity.Error,
+        "migration/CreateIndex/PitCustomerContact/IxPitCustomerContactRedundantPrimaryKeyCoverage",
+        "MI-4");
+    Assert.Contains("omits secondary indexes covered by", oracleIssue.Message, StringComparison.Ordinal);
+    Assert.Contains("oracle-v1", oracleIssue.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void AnalyzeCreateIndexOperationResolvesDataVaultIncludedIndexAnnotationThroughPhysicalColumns() {
+    var baseline = CreatePhysicalIncludedIndexBaseline();
+    var entity = baseline.Explain.Entities.Single();
+    var index = entity.Indexes.Single();
+    var operation = new CreateIndexOperation {
+      Table = entity.TableName,
+      Name = index.Name,
+      Columns = index.PropertyNames.ToArray(),
+      IsUnique = index.IsUnique,
+      IsDescending = index.PropertyNames
+          .Select(propertyName => index.DescendingPropertyNames.Contains(propertyName, StringComparer.Ordinal))
+          .ToArray(),
+    };
+    operation.AddAnnotation(
+        DataVaultInternalAnnotationNames.ProviderIncludedIndexPropertyNames,
+        new[] { "HashDiff" });
+
+    var report = DataVaultMigrationOperationDiagnostics.AnalyzeReport(baseline, [operation]);
+
+    Assert.True(report.IsValid);
+    Assert.Empty(report.Issues.Select(issue => issue.Code + " " + issue.Path + " " + issue.Message));
+  }
+
+  [Fact]
+  public void AnalyzeMigrationOperationsBlocksProviderTimestampStorageDriftAcrossLoadTimestampStorageProfiles() {
+    using var provider = CreateServiceProvider();
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    var metadataModel = CreateMigrationGuardrailMetadataModel();
+
+    foreach (var providerCapabilities in SupportedProviderCapabilityProfiles()
+        .SelectMany(CreateLoadTimestampStorageVariants)) {
+      var baseline = diagnostics.Analyze(metadataModel, providerCapabilities);
+      var loadTimestamp = FindGeneratedColumn(baseline, "HubCustomer", "LoadTimestamp");
+      var snapshotReference = FindGeneratedColumn(baseline, "PitCustomerContact", "ContactLoadTimestamp");
+
+      var report = DataVaultMigrationOperationDiagnostics.AnalyzeReport(
+          baseline,
+          [
+              CreateProviderDriftAlterColumnOperation("HubCustomer", loadTimestamp),
+              CreateProviderDriftAlterColumnOperation("PitCustomerContact", snapshotReference),
+          ]);
+
+      Assert.False(report.IsValid);
+      Assert.Collection(
+          report.Issues,
+          issue => {
+            AssertIssue(
+                issue,
+                "DVM2002",
+                DataVaultDiagnosticsIssueSeverity.Error,
+                "migration/AlterColumn/HubCustomer/LoadTimestamp",
+                "MI-2");
+            Assert.Contains(baseline.Explain.CapabilityProfileName, issue.Message, StringComparison.Ordinal);
+            Assert.Contains("provider value format", issue.Message, StringComparison.Ordinal);
+          },
+          issue => {
+            AssertIssue(
+                issue,
+                "DVM2003",
+                DataVaultDiagnosticsIssueSeverity.Error,
+                "migration/AlterColumn/PitCustomerContact/ContactLoadTimestamp",
+                "MI-3");
+            Assert.Contains(baseline.Explain.CapabilityProfileName, issue.Message, StringComparison.Ordinal);
+            Assert.Contains("store type", issue.Message, StringComparison.Ordinal);
+          });
+    }
+  }
+
+  [Fact]
   public void AnalyzeMigrationOperationsReportExposesOrderedOperationOutcomes() {
     using var provider = CreateServiceProvider();
     var baseline = provider
@@ -455,8 +610,8 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
             DataVaultMigrationGuardrailOperationOutcome.Incompatible,
             DataVaultMigrationGuardrailOperationOutcome.Incompatible,
             DataVaultMigrationGuardrailOperationOutcome.Risky,
-            DataVaultMigrationGuardrailOperationOutcome.Risky,
-            DataVaultMigrationGuardrailOperationOutcome.Risky,
+            DataVaultMigrationGuardrailOperationOutcome.Incompatible,
+            DataVaultMigrationGuardrailOperationOutcome.Incompatible,
             DataVaultMigrationGuardrailOperationOutcome.Incompatible,
         ],
         report.OperationSummaries.Select(summary => summary.Outcome));
@@ -476,7 +631,7 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
     Assert.Empty(report.OperationSummaries[0].Issues);
     Assert.Empty(report.OperationSummaries[1].Issues);
     Assert.Equal(
-        ["DVM2002", "DVM2002", "DVM2005", "DVM2004", "DVM2004", "DVM2006"],
+        ["DVM2002", "DVM2002", "DVM2005", "DVM2010", "DVM2010", "DVM2006"],
         report.Issues.Select(issue => issue.Code));
     Assert.Equal(report.Issues, report.OperationSummaries.SelectMany(summary => summary.Issues));
 
@@ -509,9 +664,9 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
     var summary = Assert.Single(report.OperationSummaries);
     Assert.Equal(DataVaultMigrationGuardrailOperationOutcome.Incompatible, summary.Outcome);
     Assert.Equal("migration/CreateTable/HubCustomer", summary.Path);
-    Assert.Equal(["DVM2002", "DVM2004"], summary.Issues.Select(issue => issue.Code));
+    Assert.Equal(["DVM2002", "DVM2010"], summary.Issues.Select(issue => issue.Code));
     Assert.Equal(
-        [DataVaultDiagnosticsIssueSeverity.Error, DataVaultDiagnosticsIssueSeverity.Warning],
+        [DataVaultDiagnosticsIssueSeverity.Error, DataVaultDiagnosticsIssueSeverity.Error],
         summary.Issues.Select(issue => issue.Severity));
   }
 
@@ -600,7 +755,7 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
     };
 
     foreach (var property in entity.Properties) {
-      operation.Columns.Add(CreateColumn(tableName, property.Name, GetColumnClrType(property)));
+      operation.Columns.Add(CreateColumn(tableName, property));
     }
 
     if (includePrimaryKey) {
@@ -617,12 +772,30 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
   private static AddColumnOperation CreateColumn(
       string tableName,
       string columnName,
-      Type? clrType = null) {
+      Type? clrType = null,
+      string? columnType = null,
+      bool isNullable = false) {
     return new AddColumnOperation {
       Table = tableName,
       Name = columnName,
       ClrType = clrType ?? typeof(string),
+      ColumnType = columnType,
+      IsNullable = isNullable,
     };
+  }
+
+  private static AddColumnOperation CreateColumn(
+      string tableName,
+      DataVaultPropertyExplain property) {
+    var operation = CreateColumn(
+        tableName,
+        property.Name,
+        GetColumnClrType(property),
+        property.StoreType,
+        property.IsNullable);
+    operation.AddAnnotation(DataVaultAnnotationNames.ProviderValueFormat, property.ValueFormat);
+
+    return operation;
   }
 
   private static AddColumnOperation CreateGeneratedColumnOperation(
@@ -634,7 +807,7 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
         .Properties
         .Single(property => property.Name == columnName);
 
-    return CreateColumn(tableName, columnName, GetColumnClrType(property));
+    return CreateColumn(tableName, property);
   }
 
   private static CreateIndexOperation CreateGeneratedIndexOperation(
@@ -646,12 +819,18 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
         .Indexes
         .Single(index => index.Name == indexName);
 
-    return new CreateIndexOperation {
+    var operation = new CreateIndexOperation {
       Table = tableName,
       Name = index.Name,
       Columns = index.PropertyNames.ToArray(),
       IsUnique = index.IsUnique,
+      IsDescending = index.PropertyNames
+          .Select(propertyName => index.DescendingPropertyNames.Contains(propertyName, StringComparer.Ordinal))
+          .ToArray(),
     };
+    AddIncludedIndexAnnotation(operation, baseline.Explain.CapabilityProfileName, index.IncludedPropertyNames);
+
+    return operation;
   }
 
   private static AddPrimaryKeyOperation CreateGeneratedPrimaryKeyOperation(
@@ -668,13 +847,242 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
     };
   }
 
-  private static Type GetColumnClrType(DataVaultPropertyExplain property) {
-    return property.LogicalPropertyKind switch {
-      DataVaultLogicalPropertyKind.BridgeDepth => typeof(int),
-      DataVaultLogicalPropertyKind.LoadTimestamp or
-          DataVaultLogicalPropertyKind.SatelliteSnapshotReference => typeof(DateTimeOffset),
-      _ => typeof(string),
+  private static IReadOnlyList<DataVaultProviderCapabilityProfile> SupportedProviderCapabilityProfiles() {
+    return
+    [
+        DataVaultProviderCapabilityProfiles.Sqlite,
+        DataVaultProviderCapabilityProfiles.Oracle,
+        DataVaultProviderCapabilityProfiles.Postgres,
+        DataVaultProviderCapabilityProfiles.SqlServer,
+        DataVaultProviderCapabilityProfiles.MySql,
+    ];
+  }
+
+  private static IReadOnlyList<DataVaultProviderCapabilityProfile> CreateLoadTimestampStorageVariants(
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    return
+    [
+        providerCapabilities,
+        providerCapabilities.WithLoadTimestampStorage(DataVaultLoadTimestampStorage.Iso8601UtcText),
+        providerCapabilities.WithLoadTimestampStorage(DataVaultLoadTimestampStorage.UtcTicks),
+    ];
+  }
+
+  private static DataVaultIndexExplain FindGeneratedIndex(
+      DataVaultDiagnosticsResult baseline,
+      string tableName) {
+    return baseline.Explain.Entities
+        .Single(entity => entity.TableName == tableName)
+        .Indexes
+        .Single();
+  }
+
+  private static DataVaultPropertyExplain FindGeneratedColumn(
+      DataVaultDiagnosticsResult baseline,
+      string tableName,
+      string columnName) {
+    return baseline.Explain.Entities
+        .Single(entity => entity.TableName == tableName)
+        .Properties
+        .Single(property => property.Name == columnName);
+  }
+
+  private static CreateIndexOperation CreateProviderIncompatibleSatelliteIndexOperation(
+      DataVaultDiagnosticsResult baseline) {
+    var index = FindGeneratedIndex(baseline, "SatCustomerContact");
+    var hashDiffColumnName = FindGeneratedColumn(baseline, "SatCustomerContact", "HashDiff").Name;
+    var capabilityProfileName = baseline.Explain.CapabilityProfileName;
+    if (capabilityProfileName.StartsWith("sqlserver-", StringComparison.Ordinal) ||
+        capabilityProfileName.StartsWith("postgres-", StringComparison.Ordinal)) {
+      return CreateIndexOperation(
+          "SatCustomerContact",
+          index,
+          index.PropertyNames.Concat(index.IncludedPropertyNames).Distinct(StringComparer.Ordinal).ToArray(),
+          includedColumnNames: []);
+    }
+
+    if (capabilityProfileName.StartsWith("mysql-", StringComparison.Ordinal)) {
+      return CreateIndexOperation(
+          "SatCustomerContact",
+          index,
+          index.PropertyNames,
+          [hashDiffColumnName]);
+    }
+
+    return CreateIndexOperation(
+        "SatCustomerContact",
+        index,
+        index.PropertyNames.Where(propertyName => !string.Equals(propertyName, hashDiffColumnName, StringComparison.Ordinal)).ToArray(),
+        [hashDiffColumnName]);
+  }
+
+  private static CreateIndexOperation CreateIndexOperation(
+      string tableName,
+      DataVaultIndexExplain index,
+      IReadOnlyList<string> columnNames,
+      IReadOnlyList<string> includedColumnNames) {
+    var operation = new CreateIndexOperation {
+      Table = tableName,
+      Name = index.Name,
+      Columns = columnNames.ToArray(),
+      IsUnique = index.IsUnique,
+      IsDescending = columnNames
+          .Select(propertyName => index.DescendingPropertyNames.Contains(propertyName, StringComparer.Ordinal))
+          .ToArray(),
     };
+    if (includedColumnNames.Count > 0) {
+      operation.AddAnnotation("SqlServer:Include", includedColumnNames.ToArray());
+    }
+
+    return operation;
+  }
+
+  private static AlterColumnOperation CreateProviderDriftAlterColumnOperation(
+      string tableName,
+      DataVaultPropertyExplain column) {
+    var driftValueFormat = column.ValueFormat == DataVaultProviderValueFormat.UtcTicks
+        ? DataVaultProviderValueFormat.Iso8601UtcText
+        : DataVaultProviderValueFormat.UtcTicks;
+    var operation = new AlterColumnOperation {
+      Table = tableName,
+      Name = column.Name,
+      ClrType = driftValueFormat == DataVaultProviderValueFormat.UtcTicks ? typeof(long) : typeof(string),
+      ColumnType = driftValueFormat == DataVaultProviderValueFormat.UtcTicks ? "bigint" : "varchar(33)",
+      IsNullable = !column.IsNullable,
+    };
+    operation.AddAnnotation(DataVaultAnnotationNames.ProviderValueFormat, driftValueFormat);
+
+    return operation;
+  }
+
+  private static Type GetColumnClrType(DataVaultPropertyExplain property) {
+    return property.ClrTypeName switch {
+      "System.DateTimeOffset" => typeof(DateTimeOffset),
+      "System.Int32" => typeof(int),
+      "System.Int64" => typeof(long),
+      "System.String" => typeof(string),
+      _ => property.LogicalPropertyKind switch {
+        DataVaultLogicalPropertyKind.BridgeDepth => typeof(int),
+        DataVaultLogicalPropertyKind.LoadTimestamp or
+            DataVaultLogicalPropertyKind.SatelliteSnapshotReference => typeof(DateTimeOffset),
+        _ => typeof(string),
+      },
+    };
+  }
+
+  private static void AddIncludedIndexAnnotation(
+      CreateIndexOperation operation,
+      string capabilityProfileName,
+      IReadOnlyList<string> includedColumnNames) {
+    if (includedColumnNames.Count == 0) {
+      return;
+    }
+
+    if (capabilityProfileName.StartsWith("sqlserver-", StringComparison.Ordinal)) {
+      operation.AddAnnotation("SqlServer:Include", includedColumnNames.ToArray());
+      return;
+    }
+
+    if (capabilityProfileName.StartsWith("postgres-", StringComparison.Ordinal)) {
+      operation.AddAnnotation("Npgsql:IndexInclude", includedColumnNames.ToArray());
+    }
+  }
+
+  private static DataVaultDiagnosticsResult CreatePhysicalIncludedIndexBaseline() {
+    var properties = new DataVaultPropertyExplain[]
+    {
+        new(
+            "CustomerHashKeyDb",
+            DataVaultPropertyRole.Technical,
+            TechnicalMetadataColumnRole.HashKey,
+            "Customer",
+            0,
+            DataVaultLogicalPropertyKind.HashKey,
+            "sqlserver-v1",
+            "nvarchar(64)",
+            DataVaultProviderValueFormat.Text) {
+          ClrTypeName = typeof(string).FullName!,
+          ProducedName = "CustomerHashKey",
+        },
+        new(
+            "LoadTimestampDb",
+            DataVaultPropertyRole.Technical,
+            TechnicalMetadataColumnRole.LoadTimestamp,
+            "LoadTimestamp",
+            1,
+            DataVaultLogicalPropertyKind.LoadTimestamp,
+            "sqlserver-v1",
+            "datetimeoffset",
+            DataVaultProviderValueFormat.NativeDateTimeOffset) {
+          ClrTypeName = typeof(DateTimeOffset).FullName!,
+          ProducedName = "LoadTimestamp",
+        },
+        new(
+            "HashDiffDb",
+            DataVaultPropertyRole.Technical,
+            TechnicalMetadataColumnRole.HashDiff,
+            "HashDiff",
+            2,
+            DataVaultLogicalPropertyKind.HashDiff,
+            "sqlserver-v1",
+            "nvarchar(64)",
+            DataVaultProviderValueFormat.Text) {
+          ClrTypeName = typeof(string).FullName!,
+          ProducedName = "HashDiff",
+        },
+    };
+    var primaryKey = new DataVaultKeyExplain(
+        "PkSatCustomerContactPhysical",
+        ["CustomerHashKeyDb", "LoadTimestampDb"]) {
+      ProducedName = "PkSatCustomerContact",
+    };
+    var index = new DataVaultIndexExplain(
+        "IxSatCustomerContactPhysicalParent",
+        ["CustomerHashKeyDb", "LoadTimestampDb"],
+        false,
+        ["LoadTimestampDb"],
+        ["HashDiffDb"]) {
+      ProducedName = "IxSatCustomerContactParentCustomerHashKeyLoadTimestamp",
+    };
+    var entity = new DataVaultEntityExplain(
+        "SatCustomerContactPhysical",
+        DataVaultTableKind.Satellite,
+        "Contact",
+        new DataVaultParentReferenceExplain(DataVaultMetadataReferenceKind.Hub, "Customer"),
+        properties,
+        primaryKey,
+        [index],
+        [new DataVaultConstraintExplain(
+            primaryKey.Name,
+            DataVaultConstraintKind.PrimaryKey,
+            primaryKey.PropertyNames) {
+          ProducedName = primaryKey.ProducedName,
+        }]) {
+      ProducedName = "SatCustomerContact",
+    };
+    var explain = new DataVaultExplainDiagnostics(
+        "metadata",
+        null,
+        "Microsoft.EntityFrameworkCore.SqlServer",
+        "sqlserver-v1",
+        false,
+        DataVaultProviderValueFormat.NativeDateTimeOffset,
+        "datetimeoffset",
+        "sqlserver-v1",
+        false,
+        [entity]);
+
+    return new DataVaultDiagnosticsResult(
+        new DataVaultValidationDiagnostics(true, []),
+        explain,
+        new DataVaultSaveStrategyDiagnostics(
+            DataVaultSaveStrategyDiagnosticsStatus.NotEvaluated,
+            null,
+            null,
+            null,
+            [],
+            []),
+        []);
   }
 
   private static void RemoveCreateTableColumn(CreateTableOperation operation, string columnName) {
