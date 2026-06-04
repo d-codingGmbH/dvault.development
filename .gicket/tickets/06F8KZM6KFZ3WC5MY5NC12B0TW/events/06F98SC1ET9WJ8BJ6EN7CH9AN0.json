@@ -1,0 +1,17 @@
+{
+  "event-id": "06F98SC1ET9WJ8BJ6EN7CH9AN0",
+  "occurred-at": "2026-06-04T20:49:00.7907182Z",
+  "event-type": "TicketEdited",
+  "actor": {
+    "name": "system",
+    "email": "system@example.invalid"
+  },
+  "payload": {
+    "changes": [
+      {
+        "field": "labels",
+        "op": "set"
+      }
+    ]
+  }
+}
