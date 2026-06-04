@@ -877,7 +877,7 @@ SQLite remains the default local live-schema proof because it does not require e
 
 ## v0.28.0 Release Notes
 
-The v0.28.0 release record is the current coordinated seven-package documentation baseline for provider read optimization guidance. See `docs/releases/v0.28.0.md` for package scope, boundary shift from v0.27.0, provider read optimization boundaries, evidence posture, validation surfaces, and non-goals.
+The v0.28.0 release record is the current coordinated seven-package evidence baseline for provider read optimization guidance. See `docs/releases/v0.28.0.md` for package scope, boundary shift from v0.27.0, provider read optimization boundaries, evidence posture, validation surfaces, and non-goals.
 
 It carries forward the v0.27.0 EF lifecycle analyzer guardrails, v0.26.0 provider-tuning diagnostics and benchmark verifier evidence, v0.25.0 ReadShape and typed helper boundary, v0.24.0 async streaming and EF safety boundary, and v0.21.0 PIT/bridge maintenance boundary from earlier releases.
 
@@ -887,7 +887,7 @@ Notable user-facing changes:
 - `AddDVaultSqlite()`, `AddDVaultPostgres()`, `AddDVaultSqlServer()`, `AddDVaultMySql()`, and `AddDVaultOracle()` are documented as diagnostics-gated PIT/bridge read strategy candidate registrations for supported maintained PIT and bridge shapes.
 - The checked-in benchmark evidence distinguishes completed SQLite latest-satellite, PIT, and bridge timing rows from optional PostgreSQL, SQL Server, MySQL, and Oracle read guidance rows that remain skipped when their connection-string environment variables are unset.
 - `IDataVaultReadDiagnosticsService` remains the bounded explain surface for `ReadStrategy`, selected strategy name, finite fallback causes, and `ReadShape` facts without raw SQL, provider query plans, automatic index advice, or provider-specific physical-design promises.
-- No implicit PIT/bridge maintenance, scheduling, raw SQL disclosure, query-plan disclosure, automatic physical tuning, new external-provider latest-satellite strategy, benchmark rerun, package publication, runtime behavior change, or release automation is introduced by the v0.28.0 release baseline.
+- Outside the explicitly registered diagnostics-gated PIT/bridge provider strategy candidates and the read diagnostics fallback-cause expansion, no implicit PIT/bridge maintenance, scheduling, raw SQL disclosure, query-plan disclosure, automatic physical tuning, new external-provider latest-satellite strategy, benchmark rerun, package publication, or release automation is introduced by the v0.28.0 release baseline.
 
 Primary v0.28.0 validation surfaces are [BenchmarkScenarioExecutionTests.cs](tests/DCoding.Data.DVault.Tests/Integration/BenchmarkScenarioExecutionTests.cs), [DataVaultProviderReadStrategyTests.cs](tests/DCoding.Data.DVault.Tests/Unit/DataVaultProviderReadStrategyTests.cs), [DataVaultRelationalPitBridgeReadStrategyParityTests.cs](tests/DCoding.Data.DVault.Tests/Unit/DataVaultRelationalPitBridgeReadStrategyParityTests.cs), [ExplicitDataVaultSaveServiceTests.cs](tests/DCoding.Data.DVault.Tests/Unit/ExplicitDataVaultSaveServiceTests.cs), [DataVaultDiagnostics.cs](src/DCoding.Data.DVault/DataVaultDiagnostics.cs), the provider package service-collection extensions under `src/DCoding.Data.DVault.*`, and the root [benchmark-summary.md](benchmark-summary.md), [benchmark-summary.csv](benchmark-summary.csv), and [benchmark-summary.json](benchmark-summary.json) triplet.
 
