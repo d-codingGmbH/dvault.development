@@ -1,8 +1,8 @@
 # Performance Profiles
 
-Status: v0.26.0 adopter guidance
+Status: v0.28.0 adopter guidance
 
-This guide is the detailed performance-profile reference for the current v0.26.0 DVault documentation baseline. It translates the checked-in benchmark evidence into starting profiles, stop conditions, and rerun triggers. It also records the decision gate for future stored-procedure or provider-specific SQL artifact proposals. It does not create absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, credential-management guidance, or provider-specific SQL artifact generation. The coordinated release record is [DVault v0.26.0 Release Notes](releases/v0.26.0.md). Earlier release notes remain historical feature-introduction records.
+This guide is the detailed performance-profile reference for the current v0.28.0 DVault documentation baseline. It translates the checked-in benchmark evidence into starting profiles, stop conditions, and rerun triggers. It also records the decision gate for future stored-procedure or provider-specific SQL artifact proposals. It does not create absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, credential-management guidance, or provider-specific SQL artifact generation. The coordinated release record is [DVault v0.28.0 Release Notes](releases/v0.28.0.md). Earlier release notes remain historical feature-introduction records.
 
 ## Evidence Baseline
 
@@ -33,6 +33,7 @@ The repository evidence is the artifact triplet plus verifier coverage, not copi
 - `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` are emitted from one run and contain the same result rows.
 - The checked-in run keeps the four profile categories visible: `SmallAppLocalVault`, `MediumChunkedIngestion`, `StagedProviderIngestion`, and `ReadModelHeavy`.
 - Provider guidance rows stay visible for PostgreSQL, SQL Server, MySQL, and Oracle even when their external provider lanes are skipped, including provider-native ingestion rows and read-model rows.
+- Provider-read evidence separates completed SQLite latest-satellite, PIT, and bridge timing rows from optional PostgreSQL, SQL Server, MySQL, and Oracle read guidance rows that may remain skipped when connection strings are unset.
 - Regression-budget guidance stays attached to the shared artifact contract instead of being inferred from one timing row.
 
 Use redacted verifier summaries when referencing this evidence in tickets or release notes:

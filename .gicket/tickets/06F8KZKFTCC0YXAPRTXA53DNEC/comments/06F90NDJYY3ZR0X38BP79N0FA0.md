@@ -1,72 +1,56 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the v0.28.0 provider read optimization docs ticket into a coordinated documentation-baseline rollover: current repository evidence supports a consistent v0.28.0 story across README, performance guidance, read-plan architecture notes, checklist, and release notes without additional PO clarification.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Repository evidence already bounds the provider matrix: SQLite is the only optimized latest-satellite read path with completed root benchmark timings, while PIT/bridge optimized read strategies exist for SQLite, PostgreSQL, SQL Server, MySQL, and Oracle through provider registrations, diagnostics coverage, benchmark guidance rows, and strategy-parity tests.
 - Current active docs are inconsistent today: README, the production checklist, and the PIT/bridge boundary note still narrow optimized PIT/bridge read wording to SQLite/PostgreSQL/SQL Server, while performance profiles, provider packages, benchmark artifacts, and tests already include MySQL and Oracle PIT/bridge strategy paths.
 - The root benchmark triplet preserves external-provider read rows as optional evidence that can remain skipped when provider connection strings are unset; v0.28.0 documentation must distinguish those skipped rows from completed SQLite timing rows instead of presenting them as unconditional live benchmark measurements.
 - No child tickets, relation writes, description updates, attachments, or planning documents were materialized during this refinement run; existing ticket relations were only verified.
 
-### Scope In
+Scope In
 - Create the v0.28.0 coordinated documentation baseline in docs/releases/v0.28.0.md and move current-baseline README/checklist guidance from v0.27.0 to v0.28.0 for provider read optimization topics.
 - Align current adopter-facing and architecture docs on the supported provider matrix: SQLite-only optimized latest-satellite reads, plus diagnostics-gated PIT/bridge optimized read paths for SQLite, PostgreSQL, SQL Server, MySQL, and Oracle.
 - Document the bounded evidence posture using the root benchmark triplet, benchmark scenario guidance rows, provider read strategy registrations, and existing diagnostics/parity tests.
 - Explain provider-neutral fallback guidance for unsupported providers, unsupported request shapes, incomplete read-shape evidence, and stale PIT/bridge maintenance evidence through IDataVaultReadService and IDataVaultReadDiagnosticsService.
 - Carry forward explicit non-goals around implicit maintenance, scheduling, raw SQL/query-plan disclosure, auto-index advice, and new provider-specific latest-satellite claims outside SQLite.
 
-### Scope Out
+Scope Out
 - Changing provider read implementation code, telemetry behavior, benchmark harness logic, or EF/runtime behavior.
 - Adding new provider-specific latest-satellite read strategies for PostgreSQL, SQL Server, MySQL, or Oracle.
 - Producing new external-provider benchmark executions or treating currently skipped optional-provider rows as completed performance measurements.
 - Rewriting historical release records except where the new v0.28.0 baseline links back to them as historical context.
 
-## Acceptance Criteria
-- README, docs/performance-profiles.md, docs/production-adoption-checklist.md, and the active read-plan architecture note(s) tell one consistent v0.28.0 story and point to docs/releases/v0.28.0.md as the current coordinated documentation baseline for provider read optimization guidance.
-- The provider matrix is explicit and consistent everywhere: SQLite keeps the only optimized latest-satellite claim, PIT/bridge optimized read strategy candidates are documented for SQLite/PostgreSQL/SQL Server/MySQL/Oracle, and unsupported or ungated requests fall back to provider-neutral reads.
-- Evidence wording clearly distinguishes completed SQLite benchmark timings from optional external-provider PIT/bridge guidance rows that may be skipped when provider connection strings are unset, while still citing repository-visible strategy and test coverage as the bounded basis for those provider paths.
-- Fallback guidance tells adopters to inspect IDataVaultReadDiagnosticsService ReadStrategy and ReadShape output, selected strategy name, and finite fallback causes before claiming provider-specific read optimization.
-- The docs restate non-goals and maintenance boundaries: no implicit PIT/bridge maintenance or scheduling, no latest-satellite optimization claims outside SQLite, and no raw SQL, query-plan, or automatic physical-tuning promises.
-
-## Definition of Done
-- A new docs/releases/v0.28.0.md release note exists and records package scope, boundary shift from v0.27.0, provider read optimization boundaries, evidence posture, validation surfaces, and non-goals.
-- Current-baseline references in README and the production checklist no longer send adopters to v0.27.0 for the provider-read-optimization story.
-- Performance profile and architecture guidance no longer contradict README/checklist about MySQL and Oracle PIT/bridge optimized strategy coverage or SQLite-only latest-satellite optimization.
-- Referenced evidence links resolve to existing repository artifacts, tests, and architecture notes rather than placeholder or speculative sources.
-- No documentation statement implies new runtime behavior beyond the existing provider read strategies, diagnostics surfaces, benchmark artifacts, and explicit PIT/bridge maintenance APIs.
-
-## Implementation Notes
-- Use the root benchmark triplet plus BenchmarkScenarioExecutionTests as the authoritative provider-read evidence inventory; those sources already enumerate SQLite completed read rows and PostgreSQL/SQL Server/MySQL/Oracle PIT/bridge guidance rows.
-- Use provider service-collection extensions and read strategy classes under src/DCoding.Data.DVault.* to anchor provider-matrix wording: SQLite registers latest-satellite/PIT/bridge read strategy, while PostgreSQL, SQL Server, MySQL, and Oracle register PIT/bridge strategies only.
-- Keep IDataVaultReadDiagnosticsService and the DVault V2 redacted read-plan explain contract as the bounded explainability surface; do not expand the docs into SQL text, query-plan, or physical-index promises.
-- When describing fallback, reuse the finite DataVaultReadStrategyFallbackCauseKind posture already documented by the read-plan contract and tests instead of inventing new prose-only compatibility categories.
-- If docs/architecture/dvault-v1-pit-bridge-boundary.md is needed to remove provider-matrix contradictions in current active guidance, update it as part of this ticket even though the title only names read-plan notes.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After v0.28.0 docs land, should a later release rerun external-provider PIT/bridge benchmarks with configured PostgreSQL, SQL Server, MySQL, and Oracle connections so public docs can cite completed non-SQLite timings instead of skipped optional-provider rows?
 - Should a later documentation-cleanup pass normalize older historical README sections so past embedded summaries do not reintroduce the pre-v0.28 provider matrix into current reader guidance?
 
-## Risks
+Risks
 - If the v0.28.0 docs overstate skipped optional-provider rows as measured live benchmarks, the release note will misrepresent current repository evidence.
 - If only README and performance profiles are updated while active architecture/checklist guidance remains unchanged, adopters will continue to receive conflicting provider-matrix instructions.
 - External-provider read behavior still depends on consumer-managed provider configuration and explicit PIT/bridge maintenance; the docs must avoid suggesting turnkey runtime enablement where the repository only documents diagnostics-gated and maintenance-dependent paths.
 
-## Split Recommendations
+Split recommendations
 - No split recommended; current evidence supports one coordinated documentation-baseline update across the existing current-baseline surfaces.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 5
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Update README, performance profiles, read-plan architecture notes, production checklist, and release notes with provider read optimization boundaries, evidence, fallback guidance, and non-goals.
+Run mode
+- apply: planned updates are applied after this comment
