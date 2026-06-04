@@ -899,7 +899,7 @@ SQLite remains the default local live-schema proof because it does not require e
 
 ## v0.29.0 Release Notes
 
-The v0.29.0 release record is the current coordinated seven-package documentation baseline for provider schema guardrail guidance. See `docs/releases/v0.29.0.md` for package scope, boundary shift from v0.28.0, finite supported-provider baseline, logical-to-physical name guidance, DDL caveats, adopter workflow, examples, validation surfaces, and non-goals.
+The v0.29.0 release record is the current coordinated seven-package schema guardrail baseline for provider naming and DDL review. See `docs/releases/v0.29.0.md` for package scope, boundary shift from v0.28.0, finite supported-provider baseline, logical-to-physical name guidance, DDL caveats, adopter workflow, examples, validation surfaces, and non-goals.
 
 It carries forward the v0.28.0 provider read optimization evidence boundary, v0.27.0 EF lifecycle analyzer guardrails, v0.26.0 provider-tuning diagnostics and benchmark verifier evidence, v0.25.0 ReadShape and typed helper boundary, v0.24.0 async streaming and EF safety boundary, and v0.21.0 PIT/bridge maintenance boundary from earlier releases.
 
