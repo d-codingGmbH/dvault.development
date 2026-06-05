@@ -1,8 +1,8 @@
 {
   "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
-  "milestoneId": "06F8KYYCJCVNZGCP0NC1T5EPRW",
+  "milestone-id": "06F8KYYCJCVNZGCP0NC1T5EPRW",
   "name": "v0.31.0 - Observability and EF examples",
   "description": "Add OpenTelemetry setup examples and realistic EF Core examples inside the existing example boundary.",
-  "status": "planned",
-  "createdAt": "2026-06-02T20:17:21.0433217Z"
+  "status": "active",
+  "created-at": "2026-06-02T20:17:21.0433217Z"
 }
