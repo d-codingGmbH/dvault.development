@@ -3,7 +3,7 @@
   "ticket-id": "06F8KZRSTHAGSP6GPGFBFQGY08",
   "ticket-type": "task",
   "title": "Task: Add bounded performance decision tree documentation",
-  "revision": "06F8M02AMC43FN761H794XJSX0",
+  "revision": "06F9JFCJJNZD6479NX7DA0F6JM",
   "status": "todo",
   "labels": [
     "needs-po",
@@ -16,9 +16,9 @@
     "area/read-models"
   ],
   "assignees": [],
-  "isBlocked": false,
-  "milestoneId": "06F8KYYBS9CX4C5SN76K0GK1S0",
-  "releaseId": "06F8KYXVRYYTMC82QKPWRXC8HR",
+  "is-blocked": false,
+  "milestone-id": "06F8KYYBS9CX4C5SN76K0GK1S0",
+  "release-id": "06F8KYXVRYYTMC82QKPWRXC8HR",
   "created-at": "2026-06-02T20:20:58.0482765Z",
-  "updated-at": "2026-06-02T20:22:15.4599472Z"
+  "updated-at": "2026-06-05T19:23:29.8130279Z"
 }

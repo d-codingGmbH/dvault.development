@@ -3,7 +3,7 @@
   "ticket-id": "06F8KZSCGZBKAC4YZH5SY3NX68",
   "ticket-type": "task",
   "title": "Task: Add OpenTelemetry examples for DVault Activity and Metrics",
-  "revision": "06F8M02DB5TJ3M0FT1969Q67QC",
+  "revision": "06F9JF7W9Q59WGS1X3QT2YCHA8",
   "status": "todo",
   "labels": [
     "needs-po",
@@ -15,9 +15,9 @@
     "area/observability"
   ],
   "assignees": [],
-  "isBlocked": false,
-  "milestoneId": "06F8KYYCJCVNZGCP0NC1T5EPRW",
-  "releaseId": "06F8KYXVRYYTMC82QKPWRXC8HR",
+  "is-blocked": false,
+  "milestone-id": "06F8KYYCJCVNZGCP0NC1T5EPRW",
+  "release-id": "06F8KYXVRYYTMC82QKPWRXC8HR",
   "created-at": "2026-06-02T20:21:02.4088629Z",
-  "updated-at": "2026-06-02T20:22:16.1536626Z"
+  "updated-at": "2026-06-05T19:22:51.3419033Z"
 }

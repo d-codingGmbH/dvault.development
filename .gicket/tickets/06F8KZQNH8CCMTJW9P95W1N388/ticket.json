@@ -3,7 +3,7 @@
   "ticket-id": "06F8KZQNH8CCMTJW9P95W1N388",
   "ticket-type": "epic",
   "title": "Epic: Performance decision guidance and observability examples",
-  "revision": "06F8KZZBD8D1X2W39DS4Z5HZ7M",
+  "revision": "06F9JF83QP3ZE76RHVJNP0B2QW",
   "status": "todo",
   "labels": [
     "needs-po",
@@ -16,9 +16,9 @@
     "area/performance"
   ],
   "assignees": [],
-  "isBlocked": false,
-  "milestoneId": "06F8KYYBS9CX4C5SN76K0GK1S0",
-  "releaseId": "06F8KYXVRYYTMC82QKPWRXC8HR",
+  "is-blocked": false,
+  "milestone-id": "06F8KYYBS9CX4C5SN76K0GK1S0",
+  "release-id": "06F8KYXVRYYTMC82QKPWRXC8HR",
   "created-at": "2026-06-02T20:20:48.6417677Z",
-  "updated-at": "2026-06-02T20:21:51.0824919Z"
+  "updated-at": "2026-06-05T19:22:53.2456144Z"
 }

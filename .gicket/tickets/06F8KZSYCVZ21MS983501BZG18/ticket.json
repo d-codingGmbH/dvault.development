@@ -3,7 +3,7 @@
   "ticket-id": "06F8KZSYCVZ21MS983501BZG18",
   "ticket-type": "task",
   "title": "Task: Update v0.31.0 performance guidance release documentation",
-  "revision": "06F8M03Q68T58SWN2ZD06M7DDM",
+  "revision": "06F9JF7Y7ZJFSXXJBEENNXVR4C",
   "status": "todo",
   "labels": [
     "needs-po",
@@ -16,9 +16,9 @@
     "area/performance"
   ],
   "assignees": [],
-  "isBlocked": false,
-  "milestoneId": "06F8KYYF0RFMACDGBAXJXS3T1M",
-  "releaseId": "06F8KYXVRYYTMC82QKPWRXC8HR",
+  "is-blocked": false,
+  "milestone-id": "06F8KYYF0RFMACDGBAXJXS3T1M",
+  "release-id": "06F8KYXVRYYTMC82QKPWRXC8HR",
   "created-at": "2026-06-02T20:21:07.7099885Z",
-  "updated-at": "2026-06-02T20:22:26.8660264Z"
+  "updated-at": "2026-06-05T19:22:51.8397957Z"
 }
