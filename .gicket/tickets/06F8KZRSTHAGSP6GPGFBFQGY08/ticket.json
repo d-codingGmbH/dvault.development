@@ -3,22 +3,22 @@
   "ticket-id": "06F8KZRSTHAGSP6GPGFBFQGY08",
   "ticket-type": "task",
   "title": "Task: Add bounded performance decision tree documentation",
-  "revision": "06F9JFCJJNZD6479NX7DA0F6JM",
-  "status": "todo",
+  "revision": "06F9M74SXRRBVYXVWR28XMCY4W",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/developer-experience",
     "area/documentation",
     "area/ef-core",
     "area/performance",
-    "area/read-models"
+    "area/read-models",
+    "automation/bot-ready",
+    "type/task",
+    "closure/no-work-required"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06F8KYYBS9CX4C5SN76K0GK1S0",
   "release-id": "06F8KYXVRYYTMC82QKPWRXC8HR",
   "created-at": "2026-06-02T20:20:58.0482765Z",
-  "updated-at": "2026-06-05T19:23:29.8130279Z"
+  "updated-at": "2026-06-05T23:27:06.2220000Z"
 }
