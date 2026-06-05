@@ -492,6 +492,97 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
   }
 
   [Fact]
+  public void ReportsUnavailableSourceWhenRawModelFirstFileAccompaniesProjectedSupportBundle() {
+    var result = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJson(
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerProfile",
+                    "Profile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("EmailAddress", "EmailAddress", false),
+                    ]))),
+            new TestAdditionalText("sales.dvault.model.json", """
+                {
+                  "schemaVersion": "dvault.model.v1",
+                  "satellites": []
+                }
+                """),
+        ]);
+
+    var diagnostic = Assert.Single(result.GeneratorDiagnostics);
+    Assert.Equal("DMV1960", diagnostic.Id);
+    Assert.Contains("Raw or residual Data Vault model", diagnostic.GetMessage(), StringComparison.Ordinal);
+    Assert.Empty(result.GeneratedSources);
+  }
+
+  [Fact]
+  public void ReportsUnavailableSourceForIncompatibleSupportBundleVersion() {
+    var result = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", """
+                {
+                  "schemaVersion": "dvault.support-bundle.v2",
+                  "diagnostics": {}
+                }
+                """),
+        ]);
+
+    var diagnostic = Assert.Single(result.GeneratorDiagnostics);
+    Assert.Equal("DMV1960", diagnostic.Id);
+    Assert.Contains("unsupported schemaVersion 'dvault.support-bundle.v2'", diagnostic.GetMessage(), StringComparison.Ordinal);
+    Assert.Contains("dvault.support-bundle.v1", diagnostic.GetMessage(), StringComparison.Ordinal);
+    Assert.Empty(result.GeneratedSources);
+  }
+
+  [Fact]
+  public void ReportsUnavailableSourceForAmbiguousProjectedSupportBundles() {
+    var result = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales-a.dvault.support-bundle.json", CreateSupportBundleJson(
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerProfile",
+                    "Profile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("EmailAddress", "EmailAddress", false),
+                    ]))),
+            new TestAdditionalText("sales-b.dvault.support-bundle.json", CreateSupportBundleJson(
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerStatus",
+                    "Status",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("StatusCode", "StatusCode", false),
+                    ]))),
+        ]);
+
+    var diagnostic = Assert.Single(result.GeneratorDiagnostics);
+    Assert.Equal("DMV1960", diagnostic.Id);
+    Assert.Contains("more than one authoritative Data Vault support-bundle", diagnostic.GetMessage(), StringComparison.Ordinal);
+    Assert.Empty(result.GeneratedSources);
+  }
+
+  [Fact]
   public void ReportsStaleConfiguredFingerprintAndSkipsGeneration() {
     var result = RunGenerator(
         RuntimeStubs,
@@ -589,6 +680,45 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
   }
 
   [Fact]
+  public void ReportsUnsupportedPitShapeAndKeepsUnrelatedSatelliteGeneration() {
+    var result = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJson(
+                CreateSupportBundleEntityJson(
+                    "PitCustomerTimeline",
+                    "Pit",
+                    "CustomerTimeline",
+                    "Hub",
+                    "Customer",
+                    [
+                        Technical("CustomerHashKey", "HashKey", "Customer", "HashKey", "Text", "System.String", false),
+                        Technical("LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "Iso8601UtcText", "System.DateTimeOffset", false),
+                    ]),
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerProfile",
+                    "Profile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("EmailAddress", "EmailAddress", false),
+                    ]))),
+        ]);
+
+    var diagnostic = Assert.Single(result.GeneratorDiagnostics);
+    Assert.Equal("DMV1963", diagnostic.Id);
+    Assert.Contains("CustomerTimeline", diagnostic.GetMessage(), StringComparison.Ordinal);
+    AssertGeneratedSource(result, "DVault.GeneratedReadModels.SatCustomerProfile.g.cs");
+    Assert.DoesNotContain(
+        result.GeneratedSources.Keys,
+        hintName => hintName.Contains("PitCustomerTimeline", StringComparison.Ordinal));
+  }
+
+  [Fact]
   public void ReportsUnsupportedBridgeShapeFromProjectedSupportBundleAndSkipsHelper() {
     var result = RunGenerator(
         RuntimeStubs,
@@ -609,6 +739,43 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
     Assert.Equal("DMV1964", diagnostic.Id);
     Assert.Contains("BridgeCustomerOrder", diagnostic.GetMessage(), StringComparison.Ordinal);
     Assert.Empty(result.GeneratedSources);
+  }
+
+  [Fact]
+  public void ReportsUnsupportedBridgeShapeAndKeepsUnrelatedSatelliteGeneration() {
+    var result = RunGenerator(
+        RuntimeStubs,
+        additionalTexts:
+        [
+            new TestAdditionalText("sales.dvault.support-bundle.json", CreateSupportBundleJson(
+                CreateSupportBundleEntityJson(
+                    "BridgeCustomerOrder",
+                    "Bridge",
+                    "CustomerOrder",
+                    fields:
+                    [
+                        ParticipantReference("CustomerHashKey", "Customer"),
+                    ]),
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerProfile",
+                    "Profile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("EmailAddress", "EmailAddress", false),
+                    ]))),
+        ]);
+
+    var diagnostic = Assert.Single(result.GeneratorDiagnostics);
+    Assert.Equal("DMV1964", diagnostic.Id);
+    Assert.Contains("BridgeCustomerOrder", diagnostic.GetMessage(), StringComparison.Ordinal);
+    AssertGeneratedSource(result, "DVault.GeneratedReadModels.SatCustomerProfile.g.cs");
+    Assert.DoesNotContain(
+        result.GeneratedSources.Keys,
+        hintName => hintName.Contains("BridgeCustomerOrder", StringComparison.Ordinal));
   }
 
   [Fact]

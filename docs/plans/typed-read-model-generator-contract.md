@@ -2,7 +2,8 @@
 
 Status: superseded historical planning context
 Ticket: 06F5Q922T5B21GJN49FYN6DJH0
-Current boundary: v0.22.0 satellite-only typed read helpers
+Historical boundary: v0.22.0 satellite-only typed read helpers
+Current generator contract: ../architecture/dvault-v1-typed-pit-bridge-helper-contract.md
 
 ## Supersession
 
@@ -18,7 +19,9 @@ The authoritative v0.22.0 contract is the coordinated satellite-only generator a
 
 The earlier version of this planning document described generated PIT and bridge helper emission. Epic 06F5Q91V0YGSA6SH9WDS02GH0M explicitly supersedes that design for the shipped v0.22.0 boundary. PIT and bridge reads remain runtime `IDataVaultReadService` and diagnostics surfaces until a separate additive ticket changes that public contract.
 
-## Current Generated-Helper Boundary
+The current implemented branch baseline has since changed through additive support-bundle-driven work. For current analyzer behavior, use [DVault V1 Typed PIT And Bridge Helper Contract](../architecture/dvault-v1-typed-pit-bridge-helper-contract.md) and the analyzer package README. That v1 contract emits supported satellite, PIT, and bounded bridge helpers from exactly one authoritative `dvault.support-bundle.v1` additional file, rejects raw or residual `dvault.model.v1` inputs at the `DMV1960` source boundary, and keeps `DMV1968` reserved for future model-first-specific typed helper outcomes.
+
+## Historical v0.22 Generated-Helper Boundary
 
 Typed read-model generation is opt-in with `DVaultGenerateTypedReadModels=true`. The generator consumes exactly one authoritative `dvault.support-bundle.v1` additional file exported after Code-First, metadata-first, or model-first declarations have been projected into EF and DVault metadata. A consuming project may pin `DVaultTypedReadModelMetadataSourceFingerprint` when reviewed generator input must fail on metadata-source drift.
 
@@ -34,7 +37,7 @@ For each supported satellite, the generated surface includes `{SatelliteProduced
 
 Because that generated surface delegates to the existing read-service metadata request path, the shipped v0.22.0 helper contract targets the v1 default or read-service-compatible produced table and column shape represented by the support bundle. Custom produced-name read binding remains a future additive contract; projects that intentionally override produced names should use dynamic `IDataVaultReadService` requests or consumer-owned compiled EF queries until that contract lands.
 
-## Explicit Non-Goals
+## Historical v0.22 Explicit Non-Goals
 
 The v0.22.0 generator does not emit:
 
@@ -46,7 +49,7 @@ The v0.22.0 generator does not emit:
 - raw `dvault.model.v1` parser behavior inside the generator.
 - automatic satellite hashDiff generation or changes to `sha256-v1` hash semantics.
 
-PIT and bridge shapes must use existing runtime read surfaces or surface as `DMV196x` diagnostics when they appear in generator input. Consumer-owned compiled EF queries remain the documented direct-query alternative for fixed shapes; generated helper emission does not expand that runtime boundary.
+In the historical v0.22 boundary, PIT and bridge shapes had to use existing runtime read surfaces or surface as `DMV196x` diagnostics when they appeared in generator input. The current v1 contract is different: PIT and bridge helpers are generated only when matching request-bound `diagnostics.readShape.pit` or `diagnostics.readShape.bridge` support-bundle evidence is present and compatible. Missing, mismatched, or out-of-contract PIT evidence reports `DMV1963`; bridge evidence reports `DMV1964` or `DMV1967` depending on whether the failure is an unsupported bounded bridge shape or a dynamic/unbounded runtime-query requirement. Entity-specific PIT or bridge failures skip only the affected helper while unrelated supported helpers remain eligible.
 
 ## Descriptor And Naming Requirements
 
@@ -106,17 +109,19 @@ Task<IReadOnlyList<SatCustomerProfileReadModel>> ReadSatCustomerProfileAsOfAsync
 
 The typed read-model generator reserves the `DMV1960` through `DMV1969` diagnostic range in the analyzer package `SourceGeneration` category.
 
+The current shipped mapping is:
+
 | Diagnostic | Outcome |
 | --- | --- |
-| `DMV1960` | Missing, invalid, non-authoritative, or ambiguous `dvault.support-bundle.v1` metadata source. |
+| `DMV1960` | Missing, invalid, incompatible-version, non-authoritative, or ambiguous `dvault.support-bundle.v1` metadata source, including raw or residual `dvault.model.v1` additional files outside the projected support-bundle contract. |
 | `DMV1961` | Configured `DVaultTypedReadModelMetadataSourceFingerprint` does not match the resolved support-bundle metadata-source fingerprint. |
 | `DMV1962` | Satellite shape cannot be generated, including missing bindings, non-string driving-key or payload members, and reserved generated projection-name collisions. |
-| `DMV1963` | PIT metadata appears in the support bundle; the generator reports it as unsupported for helper emission. |
-| `DMV1964` | Bridge metadata appears in the support bundle; the generator reports it as unsupported for helper emission. |
+| `DMV1963` | PIT metadata lacks matching request-bound `diagnostics.readShape.pit` evidence or declares a PIT shape outside the bounded helper contract. |
+| `DMV1964` | Bridge metadata lacks matching request-bound `diagnostics.readShape.bridge` evidence or declares a bridge shape outside the bounded helper contract. |
 | `DMV1965` | Deterministic generated type, method, property, or helper name collision. |
 | `DMV1966` | Payload nullability cannot be proven from the support-bundle descriptor, so the generated payload property falls back to nullable. |
 | `DMV1967` | The shape would require dynamic runtime query construction, provider SQL, runtime projection selection, or unbounded traversal. |
-| `DMV1968` | A model-first source appears in the projected support-bundle evidence but is outside the generator's helper contract. |
+| `DMV1968` | Reserved for future model-first-specific typed helper outcomes; current raw or residual model-first additional files are source-boundary failures reported as `DMV1960`. |
 | `DMV1969` | A valid runtime metadata shape is skipped because it is outside the v1 generated-helper boundary. |
 
 Diagnostics must identify the metadata source kind, metadata source fingerprint when available, logical metadata name, produced entity name, produced property name when relevant, and the unsupported shape family. Diagnostics must not include raw hash-key values, as-of timestamps, generated SQL, provider query plans, or connection details.

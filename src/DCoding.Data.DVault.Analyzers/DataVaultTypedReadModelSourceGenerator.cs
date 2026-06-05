@@ -39,6 +39,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     var declarations = new List<IReadModelDeclaration>();
     var authoritativeMetadataSourceCount = 0;
     var authoritativeSourceKeys = new HashSet<string>(StringComparer.Ordinal);
+    var metadataSourceResolutionFailed = false;
 
     foreach (var additionalText in additionalTexts) {
       context.CancellationToken.ThrowIfCancellationRequested();
@@ -46,7 +47,12 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
           additionalText,
           context,
           out var wasSupportBundle,
-          out var sourceKey));
+          out var sourceKey,
+          out var sourceResolutionFailed));
+      if (sourceResolutionFailed) {
+        metadataSourceResolutionFailed = true;
+      }
+
       if (!wasSupportBundle) {
         continue;
       }
@@ -55,6 +61,10 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       if (!string.IsNullOrWhiteSpace(sourceKey)) {
         authoritativeSourceKeys.Add(sourceKey);
       }
+    }
+
+    if (metadataSourceResolutionFailed) {
+      return;
     }
 
     if (authoritativeMetadataSourceCount == 0) {
@@ -141,9 +151,11 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       AdditionalText additionalText,
       SourceProductionContext context,
       out bool wasSupportBundle,
-      out string sourceKey) {
+      out string sourceKey,
+      out bool sourceResolutionFailed) {
     wasSupportBundle = false;
     sourceKey = string.Empty;
+    sourceResolutionFailed = false;
 
     var sourceText = additionalText.GetText(context.CancellationToken);
     if (sourceText is null) {
@@ -151,33 +163,60 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     }
 
     var text = sourceText.ToString();
-    if (!text.Contains("\"schemaVersion\"", StringComparison.Ordinal) ||
-        !text.Contains(SupportBundleSchemaVersion, StringComparison.Ordinal)) {
+    if (!text.Contains("\"schemaVersion\"", StringComparison.Ordinal)) {
       return [];
     }
 
-    wasSupportBundle = true;
     JsonDocument document;
     try {
       document = JsonDocument.Parse(text);
     }
     catch (JsonException exception) {
-      Report(
-          context,
-          DataVaultTypedReadModelDiagnosticCatalog.MetadataSourceUnavailable,
-          Location.None,
-          "Data Vault support-bundle additional file '" + additionalText.Path + "' is not valid JSON: " + exception.Message);
+      if (IsPotentialDataVaultAdditionalFile(text)) {
+        sourceResolutionFailed = true;
+        Report(
+            context,
+            DataVaultTypedReadModelDiagnosticCatalog.MetadataSourceUnavailable,
+            Location.None,
+            "Data Vault metadata-source additional file '" + additionalText.Path + "' is not valid JSON: " + exception.Message);
+      }
+
       return [];
     }
 
     using var parsedDocument = document;
     var root = parsedDocument.RootElement;
-    if (!root.TryGetProperty("schemaVersion", out var schemaVersion) ||
-        schemaVersion.ValueKind != JsonValueKind.String ||
-        !string.Equals(schemaVersion.GetString(), SupportBundleSchemaVersion, StringComparison.Ordinal)) {
+    if (root.ValueKind != JsonValueKind.Object ||
+        !TryGetJsonString(root, "schemaVersion", out var schemaVersion)) {
       return [];
     }
 
+    if (!string.Equals(schemaVersion, SupportBundleSchemaVersion, StringComparison.Ordinal)) {
+      if (IsDataVaultSupportBundleSchemaVersion(schemaVersion)) {
+        sourceResolutionFailed = true;
+        Report(
+            context,
+            DataVaultTypedReadModelDiagnosticCatalog.MetadataSourceUnavailable,
+            Location.None,
+            "Data Vault support-bundle additional file '" + additionalText.Path +
+            "' has unsupported schemaVersion '" + schemaVersion +
+            "'. Typed read-model generation requires exactly one authoritative dvault.support-bundle.v1 additional file.");
+      }
+      else if (IsDataVaultModelSchemaVersion(schemaVersion)) {
+        sourceResolutionFailed = true;
+        Report(
+            context,
+            DataVaultTypedReadModelDiagnosticCatalog.MetadataSourceUnavailable,
+            Location.None,
+            "Raw or residual Data Vault model additional file '" + additionalText.Path +
+            "' with schemaVersion '" + schemaVersion +
+            "' is outside the projected support-bundle helper contract. Typed read-model generation requires exactly one authoritative dvault.support-bundle.v1 additional file.");
+      }
+
+      return [];
+    }
+
+    wasSupportBundle = true;
     if (!root.TryGetProperty("diagnostics", out var diagnostics) ||
         diagnostics.ValueKind != JsonValueKind.Object ||
         !diagnostics.TryGetProperty("explain", out var explain) ||
@@ -271,6 +310,19 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     }
 
     return declarations;
+  }
+
+  private static bool IsPotentialDataVaultAdditionalFile(string text) {
+    return text.Contains("dvault.support-bundle", StringComparison.Ordinal) ||
+        text.Contains("dvault.model", StringComparison.Ordinal);
+  }
+
+  private static bool IsDataVaultSupportBundleSchemaVersion(string schemaVersion) {
+    return schemaVersion.StartsWith("dvault.support-bundle", StringComparison.Ordinal);
+  }
+
+  private static bool IsDataVaultModelSchemaVersion(string schemaVersion) {
+    return schemaVersion.StartsWith("dvault.model", StringComparison.Ordinal);
   }
 
   private static void ReportUnsupportedSupportBundleReadModelShape(

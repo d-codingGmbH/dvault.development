@@ -80,7 +80,7 @@ The support-bundle-driven satellite, PIT, and bridge helper contract is document
 
 | Code | Outcome |
 | --- | --- |
-| `DMV1960` | Missing, invalid, non-authoritative, or ambiguous `dvault.support-bundle.v1` metadata source. |
+| `DMV1960` | Missing, invalid, incompatible-version, non-authoritative, or ambiguous `dvault.support-bundle.v1` metadata source, including raw or residual `dvault.model.v1` additional files outside the projected support-bundle contract. |
 | `DMV1961` | Configured `DVaultTypedReadModelMetadataSourceFingerprint` does not match the resolved support-bundle metadata-source fingerprint. |
 | `DMV1962` | Satellite shape cannot be generated, including non-string driving-key or payload members and reserved generated projection-name collisions. |
 | `DMV1963` | PIT metadata or request-bound PIT read-shape evidence is incomplete or outside the bounded generated-helper baseline. |
@@ -88,7 +88,7 @@ The support-bundle-driven satellite, PIT, and bridge helper contract is document
 | `DMV1965` | Deterministic generated type, method, property, or helper name collision. |
 | `DMV1966` | Payload nullability cannot be proven from the support-bundle descriptor, so the generated payload property falls back to nullable. |
 | `DMV1967` | The shape would require dynamic runtime query construction, provider SQL, runtime projection selection, or unbounded traversal. |
-| `DMV1968` | A raw or residual model-first source appears outside the projected support-bundle helper contract. Complete model-first support bundles with request-bound `ReadShape` evidence can still emit supported helpers. |
+| `DMV1968` | Reserved for future model-first-specific typed helper outcomes; current raw or residual model-first additional files are source-boundary failures reported as `DMV1960`. Complete model-first support bundles with request-bound `ReadShape` evidence can still emit supported helpers. |
 | `DMV1969` | A valid runtime metadata shape is skipped because it is outside the v1 generated-helper boundary. |
 
 ## Suppression

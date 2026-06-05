@@ -84,7 +84,7 @@ internal static class DataVaultTypedReadModelDiagnosticCatalog {
       Category,
       DiagnosticSeverity.Error,
       isEnabledByDefault: true,
-      description: "Typed DVault read-model generation rejects raw or residual model-first inputs outside the projected support-bundle helper contract.");
+      description: "Reserved for future model-first-specific typed read-model outcomes; current raw or residual model-first inputs are rejected by DMV1960 at the support-bundle source boundary.");
 
   public static readonly DiagnosticDescriptor HelperSkipped = new(
       "DMV1969",

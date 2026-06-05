@@ -15,7 +15,7 @@ Generated helpers are ergonomic extension methods over the existing provider-neu
 
 ## Input And Fingerprint Boundary
 
-Helper generation starts only when the project opts in through `DVaultGenerateTypedReadModels=true` and exactly one authoritative `dvault.support-bundle.v1` source is resolved. Missing, malformed, non-authoritative, or ambiguous support-bundle input remains `DMV1960`. A configured `DVaultTypedReadModelMetadataSourceFingerprint` that differs from the support-bundle metadata-source fingerprint remains `DMV1961`.
+Helper generation starts only when the project opts in through `DVaultGenerateTypedReadModels=true` and exactly one authoritative `dvault.support-bundle.v1` source is resolved. Missing, malformed, incompatible-version, non-authoritative, or ambiguous support-bundle input remains `DMV1960`. Raw or residual `dvault.model.v1` additional files are also `DMV1960` source-boundary failures until they have been imported, projected, and represented in the authoritative support bundle. A configured `DVaultTypedReadModelMetadataSourceFingerprint` that differs from the support-bundle metadata-source fingerprint remains `DMV1961`.
 
 PIT and bridge helper emission uses support-bundle explain facts because `readShape` is request-bound. The support bundle must prove the translated table name, produced or mapped column names, parent reference, endpoint vocabulary, traversal depth requirement, deterministic ordering, and projected column groups needed for the generated helper. A support bundle that only proves a runtime metadata declaration but omits the request-bound read-shape facts is insufficient for typed PIT or bridge helper emission. Application code supplies representative request-bound diagnostics to the support-bundle verb through `DataVaultDesignTimeCommandHost.CreateSupportBundleDiagnostics`; the reusable command runner does not invent representative PIT or bridge requests.
 
@@ -131,12 +131,13 @@ Constant values come from the authoritative support-bundle produced or mapped na
 
 Diagnostics must name the affected metadata item and the bounded reason:
 
-- `DMV1960` for missing, invalid, non-authoritative, or ambiguous support-bundle input.
+- `DMV1960` for missing, invalid, incompatible-version, non-authoritative, or ambiguous support-bundle input, and for raw or residual `dvault.model.v1` additional files outside the projected support-bundle contract.
 - `DMV1961` for metadata-source fingerprint drift.
 - `DMV1963` for PIT metadata that lacks the bounded helper evidence or declares an unsupported PIT shape.
 - `DMV1964` for bridge metadata that lacks the bounded helper evidence or declares an unsupported bridge shape.
 - `DMV1965` for deterministic generated name collisions.
 - `DMV1967` for shapes that require dynamic runtime query construction, provider SQL, runtime projection selection, unbounded traversal, tuple expansion, or payload joins outside this contract.
+- `DMV1968` remains reserved for future model-first-specific typed helper outcomes; current raw or residual model-first source-boundary failures use `DMV1960`.
 - `DMV1969` for valid runtime metadata shapes intentionally skipped because they remain outside the generated helper boundary.
 
 PIT or bridge diagnostics skip only the affected helper. They must not suppress unrelated satellite helpers or unrelated valid PIT/bridge helpers in the same support bundle.
