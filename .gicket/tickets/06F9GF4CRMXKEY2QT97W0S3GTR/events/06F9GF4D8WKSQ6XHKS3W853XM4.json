@@ -1,0 +1,14 @@
+{
+  "event-id": "06F9GF4D8WKSQ6XHKS3W853XM4",
+  "occurred-at": "2026-06-05T14:42:45.7032212Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Document hash algorithm selection guidance",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

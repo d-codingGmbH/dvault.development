@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9GF60BKEW0CC9FCZRPVX0SR",
+  "ticket-type": "task",
+  "title": "Task: Add schema save and read tests for hash storage profiles",
+  "revision": "06F9GF77EKNG8WBY6B1ZPGKEE4",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/testing",
+    "area/ef-core",
+    "area/hashing",
+    "area/schema",
+    "area/provider-support"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9GF58FTFVFQB3W0TEKTESVR",
+  "release-id": "06F9GF56ZVW18EP8HX6YBWQS44",
+  "created-at": "2026-06-05T14:42:58.9056221Z",
+  "updated-at": "2026-06-05T14:43:08.7885969Z"
+}

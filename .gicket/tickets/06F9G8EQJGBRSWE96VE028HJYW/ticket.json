@@ -3,7 +3,7 @@
   "ticket-id": "06F9G8EQJGBRSWE96VE028HJYW",
   "ticket-type": "story",
   "title": "Story: Define net8.0 and net10.0 compatibility contract",
-  "revision": "06F9G8G2K6V91XMMH5A4NRVTAW",
+  "revision": "06F9GF2PHCBCGHKCVK33TWZ8X4",
   "status": "todo",
   "labels": [
     "needs-po",
@@ -19,5 +19,5 @@
   "milestone-id": "06F9G8EAJ666X83YVDCKSBZD14",
   "release-id": "06F9G8E96BGQSNH0HA3MS79TE0",
   "created-at": "2026-06-05T14:13:35.5513315Z",
-  "updated-at": "2026-06-05T14:13:46.2654631Z"
+  "updated-at": "2026-06-05T14:42:31.6917308Z"
 }

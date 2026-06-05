@@ -1,0 +1,1 @@
+﻿Add a focused registration/options surface for selecting supported stable hash algorithms. Keep sha256-v1 as the default. Add opt-in shorter algorithms only after the contract ticket defines their names and lengths, with deterministic test vectors, clear AlgorithmId propagation, and no automatic migration or parallel-key storage behavior.

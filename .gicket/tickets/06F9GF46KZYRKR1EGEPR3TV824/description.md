@@ -1,0 +1,1 @@
+﻿Expose selected hash algorithm id, digest length, and canonical encoding in diagnostics, explain output, and support-bundle metadata where hash-key compatibility matters. Add tests proving the default and opt-in algorithms are reported without leaking business key values.

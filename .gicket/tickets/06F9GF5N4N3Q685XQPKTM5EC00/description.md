@@ -1,0 +1,1 @@
+﻿Implement provider-neutral EF conversion/comparison support so canonical hash values can be stored as fixed-length bytes where enabled. Preserve existing public string/canonical hex workflows unless the contract intentionally introduces a value object, and add tests for round-tripping, equality, null handling, and invalid digest sizes.

@@ -3,7 +3,7 @@
   "ticket-id": "06F9G8FJMZ3AY43YG06W2V4T8G",
   "ticket-type": "task",
   "title": "Task: Update v0.33.0 compatibility documentation",
-  "revision": "06F9G8GBFQBSAAN798C9ZCFYWG",
+  "revision": "06F9GF2Y3NKBQ3G96SBJ99HTCM",
   "status": "todo",
   "labels": [
     "needs-po",
@@ -19,5 +19,5 @@
   "milestone-id": "06F9G8ECYMR844CC84QA8P7H7W",
   "release-id": "06F9G8E96BGQSNH0HA3MS79TE0",
   "created-at": "2026-06-05T14:13:42.3234088Z",
-  "updated-at": "2026-06-05T14:13:48.5410424Z"
+  "updated-at": "2026-06-05T14:42:33.6296019Z"
 }

@@ -1,0 +1,1 @@
+﻿Define logical hash-key representation versus physical database storage. Cover HexString default behavior, Binary opt-in behavior, fixed digest byte lengths, EF model annotations, provider capabilities, diagnostics, unsupported migrations, and compatibility with variable hash algorithms from v0.35.0.

@@ -1,0 +1,1 @@
+﻿Add provider-aware binary hash-key column mappings for supported providers: SQL Server binary(n), PostgreSQL bytea, SQLite BLOB, MySQL binary(n) or varbinary(n), Oracle RAW(n), and DB2 binary/bit-data type after DB2 capability verification. Preserve provider-neutral fallback and add capability diagnostics when binary storage is unsupported or ambiguous.

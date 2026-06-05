@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9GF3MZHKQQ6D4SAQ0AMTKJR",
+  "ticket-type": "story",
+  "title": "Story: Define variable hash algorithm and digest contract",
+  "revision": "06F9GF4XQ68EM3DZPF337J1EFM",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/architecture",
+    "area/ef-core",
+    "area/hashing",
+    "area/modeling"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9GF3BQ4QSK8T6K81VB6SGB8",
+  "release-id": "06F9GF3AZRVN9E007NGW7XN3ZW",
+  "created-at": "2026-06-05T14:42:39.7830939Z",
+  "updated-at": "2026-06-05T14:42:49.9133336Z"
+}

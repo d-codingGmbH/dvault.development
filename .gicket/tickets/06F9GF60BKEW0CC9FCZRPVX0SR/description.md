@@ -1,0 +1,1 @@
+﻿Add tests proving HexString remains compatible and Binary storage works across schema generation, save paths, latest/as-of/PIT/bridge read paths where hash keys participate, and provider capability fallbacks. Include negative tests for mismatched algorithm length and storage profile configuration.

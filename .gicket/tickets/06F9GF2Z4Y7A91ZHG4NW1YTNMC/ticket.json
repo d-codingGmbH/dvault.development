@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9GF2Z4Y7A91ZHG4NW1YTNMC",
+  "ticket-type": "task",
+  "title": "Task: Define 8.x and 10.x package version line policy",
+  "revision": "06F9GF39DMV0SQBQ5ZHJXP2XWC",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/architecture",
+    "area/ef-core",
+    "area/packaging",
+    "area/developer-experience"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9G8EAJ666X83YVDCKSBZD14",
+  "release-id": "06F9G8E96BGQSNH0HA3MS79TE0",
+  "created-at": "2026-06-05T14:42:34.1725509Z",
+  "updated-at": "2026-06-05T14:42:36.5256608Z"
+}

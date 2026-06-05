@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9GF3TRG65G8MTMG7DH4PREC",
+  "ticket-type": "task",
+  "title": "Task: Relax StableHashDigest fixed SHA-256 hex assumptions",
+  "revision": "06F9GF4ZRPZS3Q8ZJW8QR15NXC",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/ef-core",
+    "area/hashing",
+    "area/modeling",
+    "area/api-compatibility"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9GF3CEDX9G92X00GGNQ4S9C",
+  "release-id": "06F9GF3AZRVN9E007NGW7XN3ZW",
+  "created-at": "2026-06-05T14:42:41.1572389Z",
+  "updated-at": "2026-06-05T14:42:50.4377107Z"
+}

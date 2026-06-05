@@ -1,0 +1,1 @@
+﻿Add benchmark evidence comparing SHA-256 hex, SHA-256 binary, shorter opt-in algorithm hex, and shorter opt-in algorithm binary storage for index footprint, insert cost, lookup, and join/read workloads where feasible. Keep benchmarks repository-local and avoid production telemetry or platform dashboards.

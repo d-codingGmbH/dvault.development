@@ -3,7 +3,7 @@
   "ticket-id": "06F9G8F4RQ0T7RV82M3H2H3FVG",
   "ticket-type": "story",
   "title": "Story: Add EF Core provider version matrix tests",
-  "revision": "06F9G8G6VCNKPX7HZE6DXWNESG",
+  "revision": "06F9GF2T7G31XVPSG733N5MSG0",
   "status": "todo",
   "labels": [
     "needs-po",
@@ -19,5 +19,5 @@
   "milestone-id": "06F9G8EBZDYAA04A5N7XARR5TR",
   "release-id": "06F9G8E96BGQSNH0HA3MS79TE0",
   "created-at": "2026-06-05T14:13:38.8533672Z",
-  "updated-at": "2026-06-05T14:13:47.3555499Z"
+  "updated-at": "2026-06-05T14:42:32.6369821Z"
 }

@@ -1,0 +1,1 @@
+﻿Add efficient physical storage profiles for DVault hash keys without turning DVault into a migration tool. Keep canonical hash semantics stable, preserve current hex string behavior as a compatible default, add opt-in binary storage for supported providers, and document consumer-owned migration responsibilities.

@@ -1,0 +1,14 @@
+{
+  "event-id": "06F9GF5VF9M6FGYWJKR9FHD408",
+  "occurred-at": "2026-06-05T14:42:57.5302310Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add provider-specific binary hash column mappings",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

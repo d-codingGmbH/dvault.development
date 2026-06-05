@@ -1,0 +1,1 @@
+﻿Make DVault stable hash algorithms first-class without changing the library focus. Keep sha256-v1 as the default, add explicit opt-in alternatives for smaller hash keys where appropriate, preserve deterministic EF Core behavior, and avoid automatic migration, key rotation, platform orchestration, or database-side hashing as a default path.

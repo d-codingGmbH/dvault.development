@@ -3,7 +3,7 @@
   "ticket-id": "06F9G8HRZ72XP5Z7FNWM6MBMQC",
   "ticket-type": "task",
   "title": "Task: Update v0.34.0 DB2 provider documentation",
-  "revision": "06F9G8JVM6SCVP57RHTEJTMC04",
+  "revision": "06F9GFH1R1FBTBFTAFWMRHSR8W",
   "status": "todo",
   "labels": [
     "needs-po",
@@ -20,5 +20,5 @@
   "milestone-id": "06F9G8GG4BPF68W5P4731DFMY4",
   "release-id": "06F9G8GDA12CS8Y4RHG4EDKS7W",
   "created-at": "2026-06-05T14:14:00.3156743Z",
-  "updated-at": "2026-06-05T14:14:09.0578583Z"
+  "updated-at": "2026-06-05T14:44:29.2481099Z"
 }

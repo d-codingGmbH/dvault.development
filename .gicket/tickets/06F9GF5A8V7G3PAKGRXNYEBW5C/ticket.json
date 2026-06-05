@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9GF5A8V7G3PAKGRXNYEBW5C",
+  "ticket-type": "epic",
+  "title": "Epic: Efficient hash key storage profiles",
+  "revision": "06F9GF6Y0NCNBRGFRT2D1K6RB4",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/epic",
+    "area/ef-core",
+    "area/hashing",
+    "area/schema",
+    "area/performance",
+    "area/provider-support"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9GF57QPDS97DSKK9YRF7A58",
+  "release-id": "06F9GF56ZVW18EP8HX6YBWQS44",
+  "created-at": "2026-06-05T14:42:53.2542772Z",
+  "updated-at": "2026-06-05T14:43:06.3735247Z"
+}

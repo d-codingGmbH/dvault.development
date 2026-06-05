@@ -3,7 +3,7 @@
   "ticket-id": "06F9G8EXXFJJ1SWWQXC2N9P2X8",
   "ticket-type": "story",
   "title": "Story: Multi-target DVault projects for net8.0 and net10.0",
-  "revision": "06F9G8G4X4D9PQKW2B0W483C3W",
+  "revision": "06F9GF2RK5J39CAXTZ9A3NH6X0",
   "status": "todo",
   "labels": [
     "needs-po",
@@ -19,5 +19,5 @@
   "milestone-id": "06F9G8EBZDYAA04A5N7XARR5TR",
   "release-id": "06F9G8E96BGQSNH0HA3MS79TE0",
   "created-at": "2026-06-05T14:13:37.0970503Z",
-  "updated-at": "2026-06-05T14:13:46.8571325Z"
+  "updated-at": "2026-06-05T14:42:32.2171169Z"
 }

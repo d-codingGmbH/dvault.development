@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9GF5N4N3Q685XQPKTM5EC00",
+  "ticket-type": "story",
+  "title": "Story: Implement provider-neutral binary hash conversion",
+  "revision": "06F9GF73W0MXZPTCX5V5DG92HM",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/ef-core",
+    "area/hashing",
+    "area/modeling",
+    "area/schema"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9GF58FTFVFQB3W0TEKTESVR",
+  "release-id": "06F9GF56ZVW18EP8HX6YBWQS44",
+  "created-at": "2026-06-05T14:42:56.0340996Z",
+  "updated-at": "2026-06-05T14:43:07.8726449Z"
+}

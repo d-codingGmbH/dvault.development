@@ -3,7 +3,7 @@
   "ticket-id": "06F9G8EE7ZA666MW8YEB2QP8BW",
   "ticket-type": "epic",
   "title": "Epic: .NET 8 and EF Core compatibility matrix",
-  "revision": "06F9G8JCPEN99J0XAJ7H3GP70R",
+  "revision": "06F9GF35JYK22WHBB8SXQ853N4",
   "status": "todo",
   "labels": [
     "needs-po",
@@ -19,5 +19,5 @@
   "milestone-id": "06F9G8EAJ666X83YVDCKSBZD14",
   "release-id": "06F9G8E96BGQSNH0HA3MS79TE0",
   "created-at": "2026-06-05T14:13:33.2770225Z",
-  "updated-at": "2026-06-05T14:14:05.2353652Z"
+  "updated-at": "2026-06-05T14:42:35.5436858Z"
 }

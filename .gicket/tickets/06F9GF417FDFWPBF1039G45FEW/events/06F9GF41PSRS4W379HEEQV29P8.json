@@ -1,0 +1,14 @@
+{
+  "event-id": "06F9GF41PSRS4W379HEEQV29P8",
+  "occurred-at": "2026-06-05T14:42:42.7424139Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add opt-in hash algorithm registration",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

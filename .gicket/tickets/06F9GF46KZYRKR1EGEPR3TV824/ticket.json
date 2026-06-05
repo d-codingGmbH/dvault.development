@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9GF46KZYRKR1EGEPR3TV824",
+  "ticket-type": "task",
+  "title": "Task: Surface hash algorithm choices in diagnostics and support bundles",
+  "revision": "06F9GF53B3H94S8288GGMR8X7R",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/diagnostics",
+    "area/hashing",
+    "area/supportability",
+    "area/testing"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9GF3D5XM0QHWTMCDFXQQCXG",
+  "release-id": "06F9GF3AZRVN9E007NGW7XN3ZW",
+  "created-at": "2026-06-05T14:42:44.2134337Z",
+  "updated-at": "2026-06-05T14:42:51.3529217Z"
+}

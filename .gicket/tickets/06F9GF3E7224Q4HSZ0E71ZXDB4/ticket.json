@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9GF3E7224Q4HSZ0E71ZXDB4",
+  "ticket-type": "epic",
+  "title": "Epic: First-class stable hash algorithm support",
+  "revision": "06F9GF708KX0D2YQ9Y52TB567G",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/epic",
+    "area/ef-core",
+    "area/hashing",
+    "area/modeling",
+    "area/diagnostics"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9GF3BQ4QSK8T6K81VB6SGB8",
+  "release-id": "06F9GF3AZRVN9E007NGW7XN3ZW",
+  "created-at": "2026-06-05T14:42:37.9766114Z",
+  "updated-at": "2026-06-05T14:43:06.9483844Z"
+}

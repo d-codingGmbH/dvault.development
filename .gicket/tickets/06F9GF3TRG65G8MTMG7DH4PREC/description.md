@@ -1,0 +1,1 @@
+﻿Update the StableHashDigest and related validation surface so supported digests are not hard-coded to 64 lowercase hex characters. Preserve existing sha256-v1 behavior and public compatibility where possible, expose enough metadata for digest length and bytes, and add regression tests for canonical lowercase hex, invalid lengths, and existing SHA-256 test vectors.

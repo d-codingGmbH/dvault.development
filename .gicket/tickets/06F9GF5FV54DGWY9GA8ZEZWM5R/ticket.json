@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9GF5FV54DGWY9GA8ZEZWM5R",
+  "ticket-type": "story",
+  "title": "Story: Define hash key storage profile contract",
+  "revision": "06F9GF724YKP6PMRMJ25FVWABG",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/architecture",
+    "area/ef-core",
+    "area/hashing",
+    "area/schema"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9GF57QPDS97DSKK9YRF7A58",
+  "release-id": "06F9GF56ZVW18EP8HX6YBWQS44",
+  "created-at": "2026-06-05T14:42:54.6740475Z",
+  "updated-at": "2026-06-05T14:43:07.4313720Z"
+}

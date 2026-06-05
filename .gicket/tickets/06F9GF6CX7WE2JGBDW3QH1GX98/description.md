@@ -1,0 +1,1 @@
+﻿Update README, provider docs, production adoption guidance, package verification notes, and release notes for planning release v0.36.0 and package outputs 8.36.0/10.36.0. Document default hex compatibility, binary storage opt-in, provider column types, storage savings, no automatic migration support, benchmark evidence, and how diagnostics expose algorithm/storage choices.

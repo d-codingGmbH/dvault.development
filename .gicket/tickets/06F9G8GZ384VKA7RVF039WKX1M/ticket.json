@@ -3,7 +3,7 @@
   "ticket-id": "06F9G8GZ384VKA7RVF039WKX1M",
   "ticket-type": "story",
   "title": "Story: Add DCoding.Data.DVault.Db2 provider package",
-  "revision": "06F9G8JHPSQFS1PDVA7MVKQGEM",
+  "revision": "06F9GFH01FPE43AT3TZNKW4KRM",
   "status": "todo",
   "labels": [
     "needs-po",
@@ -19,5 +19,5 @@
   "milestone-id": "06F9G8GF7GTV6JT6SBZEW5J3Z0",
   "release-id": "06F9G8GDA12CS8Y4RHG4EDKS7W",
   "created-at": "2026-06-05T14:13:53.7032826Z",
-  "updated-at": "2026-06-05T14:14:06.5180838Z"
+  "updated-at": "2026-06-05T14:44:28.8112717Z"
 }

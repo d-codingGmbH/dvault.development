@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestone-id": "06F9GF597F30HRK2J6A2REVN2C",
+  "name": "v0.36.0 - Hash storage benchmarks and docs",
+  "description": "Measure footprint/performance impact and document adoption guidance, provider caveats, and release evidence.",
+  "status": "planned",
+  "created-at": "2026-06-05T14:42:52.8591869Z"
+}

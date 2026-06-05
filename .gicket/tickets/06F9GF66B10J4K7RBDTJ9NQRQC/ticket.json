@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9GF66B10J4K7RBDTJ9NQRQC",
+  "ticket-type": "task",
+  "title": "Task: Benchmark hash key storage footprint and lookup performance",
+  "revision": "06F9GF791AH0H6GM4EAD4A2YDR",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/performance",
+    "area/benchmarking",
+    "area/hashing",
+    "area/schema"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9GF597F30HRK2J6A2REVN2C",
+  "release-id": "06F9GF56ZVW18EP8HX6YBWQS44",
+  "created-at": "2026-06-05T14:43:00.5263665Z",
+  "updated-at": "2026-06-05T14:43:09.1943744Z"
+}
