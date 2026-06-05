@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "release-id": "06F9G8GDA12CS8Y4RHG4EDKS7W",
+  "name": "v0.34.0 - DB2 Provider Support",
+  "description": "Focused IBM DB2 provider package and tests using IBM.EntityFrameworkCore for net8.0 and net10.0, preserving provider-neutral fallback and consumer-owned database/container setup.",
+  "status": "planned",
+  "created-at": "2026-06-05T14:13:49.0081525Z"
+}

@@ -1,0 +1,1 @@
+﻿Add DB2-aware schema/naming/DDL guardrail coverage within the existing provider safety model. Include generated identifier behavior, migration operation diagnostics where applicable, live-schema reader or documented unsupported live-schema boundary, and tests that do not leak credentials or require DB2 by default.

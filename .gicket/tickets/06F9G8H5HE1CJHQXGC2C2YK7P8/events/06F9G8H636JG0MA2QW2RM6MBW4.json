@@ -1,0 +1,14 @@
+{
+  "event-id": "06F9G8H636JG0MA2QW2RM6MBW4",
+  "occurred-at": "2026-06-05T14:13:55.3538313Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add DB2 schema, naming, and live-schema guardrails",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

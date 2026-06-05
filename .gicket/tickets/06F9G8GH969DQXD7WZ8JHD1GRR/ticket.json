@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9G8GH969DQXD7WZ8JHD1GRR",
+  "ticket-type": "epic",
+  "title": "Epic: DB2 provider support",
+  "revision": "06F9G8JAH7JDR0VD67Y6CKMN64",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/epic",
+    "area/ef-core",
+    "area/provider-support",
+    "area/schema",
+    "area/testing",
+    "area/packaging"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9G8GE66M1JGY1AQSGV4FP5C",
+  "release-id": "06F9G8GDA12CS8Y4RHG4EDKS7W",
+  "created-at": "2026-06-05T14:13:50.6376923Z",
+  "updated-at": "2026-06-05T14:14:04.6815118Z"
+}

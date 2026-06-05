@@ -1,0 +1,1 @@
+﻿Update package verification, package counts, dependency checks, README/XML documentation checks, and symbol expectations for the new DB2 provider package. Verify IBM.EntityFrameworkCore dependencies are correct per target framework and that existing provider package checks remain unchanged.

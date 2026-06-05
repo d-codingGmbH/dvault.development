@@ -1,0 +1,1 @@
+﻿Add DB2 provider smoke and integration coverage for explicit hub/link/satellite saves plus current/as-of/PIT/bridge read paths where the existing provider-neutral or diagnostics-gated provider strategy supports DB2. Use the installed Podman/container path only for external opt-in tests, and preserve provider-neutral fallback for unsupported optimized shapes.

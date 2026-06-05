@@ -1,0 +1,1 @@
+﻿Add focused DB2 support as another EF Core provider package for DVault. Keep scope to provider registration, capabilities, schema/read/save compatibility, tests, docs, and package verification. Do not add DB2 provisioning, deployment orchestration, platform tooling, or default provider-specific runtime behavior beyond supported DVault provider patterns.

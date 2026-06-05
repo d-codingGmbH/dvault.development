@@ -1,0 +1,14 @@
+{
+  "event-id": "06F9G8HCSQMS6YCYYQYG1E8CPW",
+  "occurred-at": "2026-06-05T14:13:57.0698383Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add DB2 save and read integration coverage",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

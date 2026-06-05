@@ -1,0 +1,14 @@
+{
+  "event-id": "06F9G8GZMZDNJV46NFWS4MXDJ8",
+  "occurred-at": "2026-06-05T14:13:53.7032826Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Add DCoding.Data.DVault.Db2 provider package",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

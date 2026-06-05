@@ -1,0 +1,1 @@
+﻿Update README, provider compatibility docs, external DB2 test instructions, production-adoption notes, and release notes for DB2. Document the IBM.EntityFrameworkCore net8.0/net10.0 versions, Podman/container opt-in assumptions, supported DVault provider behavior, caveats, and non-goals.

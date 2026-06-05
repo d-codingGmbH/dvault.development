@@ -1,0 +1,14 @@
+{
+  "event-id": "06F9G8EYS664A52M88JQAY9TQM",
+  "occurred-at": "2026-06-05T14:13:37.0970503Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Multi-target DVault projects for net8.0 and net10.0",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

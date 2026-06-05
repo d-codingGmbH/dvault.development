@@ -1,0 +1,1 @@
+﻿Add parallel net8.0 support alongside the existing net10.0 baseline. Keep the feature scoped to package targeting, EF provider dependency compatibility, tests, documentation, and package verification. Do not add new runtime behavior or platform/tool-suite responsibilities.

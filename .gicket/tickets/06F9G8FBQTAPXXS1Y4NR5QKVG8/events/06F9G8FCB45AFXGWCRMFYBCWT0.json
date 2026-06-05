@@ -1,0 +1,14 @@
+{
+  "event-id": "06F9G8FCB45AFXGWCRMFYBCWT0",
+  "occurred-at": "2026-06-05T14:13:40.5691948Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Update package verifier and CI guidance for dual targets",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

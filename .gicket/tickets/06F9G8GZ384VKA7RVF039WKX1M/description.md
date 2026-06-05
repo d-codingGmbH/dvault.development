@@ -1,0 +1,1 @@
+﻿Create the DB2 provider package and startup registration, including AddDVaultDb2-style service registration, provider profile/capability wiring, conditional IBM.EntityFrameworkCore package references for net8.0 and net10.0, package metadata, solution inclusion, and package verifier expectations.

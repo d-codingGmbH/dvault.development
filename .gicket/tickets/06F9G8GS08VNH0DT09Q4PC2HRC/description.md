@@ -1,0 +1,1 @@
+﻿Define the DB2 provider contract before implementation. Include IBM.EntityFrameworkCore 8.0.0.400 for net8.0 and 10.0.0.100 for net10.0, provider name detection, capability profile, identifier/DDL caveats, live-schema and migration guardrail expectations, external Podman/container test posture, and explicit non-goals around provisioning or platform responsibilities.

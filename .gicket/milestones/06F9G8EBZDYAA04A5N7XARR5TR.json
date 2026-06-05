@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestone-id": "06F9G8EBZDYAA04A5N7XARR5TR",
+  "name": "v0.33.0 - Multi-target implementation and tests",
+  "description": "Implement net8.0/net10.0 project targeting, conditional provider references, and dual-framework validation coverage.",
+  "status": "planned",
+  "created-at": "2026-06-05T14:13:32.2838642Z"
+}

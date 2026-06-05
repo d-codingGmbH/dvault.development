@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9G8HJJDJH4KF9VK6TZ8B1Z0",
+  "ticket-type": "task",
+  "title": "Task: Update package verification for DB2 provider artifacts",
+  "revision": "06F9G8JSV1W36DFC54EQ8AG1CW",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/ef-core",
+    "area/provider-support",
+    "area/packaging",
+    "area/testing"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9G8GG4BPF68W5P4731DFMY4",
+  "release-id": "06F9G8GDA12CS8Y4RHG4EDKS7W",
+  "created-at": "2026-06-05T14:13:58.7214759Z",
+  "updated-at": "2026-06-05T14:14:08.6005200Z"
+}

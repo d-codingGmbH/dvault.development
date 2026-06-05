@@ -1,0 +1,1 @@
+﻿Update README, provider/version compatibility guidance, release notes, and limitations for the v0.33.0 dual-target baseline. Document supported .NET/EF combinations, what is package-tested versus external-provider opt-in, and non-goals such as no new runtime behavior, no provider provisioning, and no platform tooling.

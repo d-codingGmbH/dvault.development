@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9G8FBQTAPXXS1Y4NR5QKVG8",
+  "ticket-type": "task",
+  "title": "Task: Update package verifier and CI guidance for dual targets",
+  "revision": "06F9G8G92QY9CHAYN4MY2NH22G",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/ef-core",
+    "area/packaging",
+    "area/testing",
+    "area/documentation"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9G8ECYMR844CC84QA8P7H7W",
+  "release-id": "06F9G8E96BGQSNH0HA3MS79TE0",
+  "created-at": "2026-06-05T14:13:40.5691948Z",
+  "updated-at": "2026-06-05T14:13:47.9257032Z"
+}

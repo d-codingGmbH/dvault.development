@@ -1,0 +1,1 @@
+﻿Retarget the packable DVault runtime/provider projects and relevant test projects to support net8.0 and net10.0 in parallel. Add conditional PackageReference or central-package-version handling so each target framework resolves the intended EF provider versions without mixing incompatible assemblies. Preserve current net10.0 behavior and package metadata.

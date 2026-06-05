@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9G8GS08VNH0DT09Q4PC2HRC",
+  "ticket-type": "story",
+  "title": "Story: Define DB2 provider capability and dependency contract",
+  "revision": "06F9G8JF7490PAD877G70BHSNM",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/architecture",
+    "area/ef-core",
+    "area/provider-support",
+    "area/schema",
+    "area/packaging"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9G8GE66M1JGY1AQSGV4FP5C",
+  "release-id": "06F9G8GDA12CS8Y4RHG4EDKS7W",
+  "created-at": "2026-06-05T14:13:52.1348637Z",
+  "updated-at": "2026-06-05T14:14:05.8818604Z"
+}

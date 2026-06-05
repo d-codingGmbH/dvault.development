@@ -1,0 +1,1 @@
+﻿Extend package verification, local validation guidance, and CI documentation so dual-target packages are checked for both target frameworks, expected dependencies, XML docs, analyzer assets, symbols, and provider package dependency consistency. Preserve manual publication separation.

@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9G8F4RQ0T7RV82M3H2H3FVG",
+  "ticket-type": "story",
+  "title": "Story: Add EF Core provider version matrix tests",
+  "revision": "06F9G8G6VCNKPX7HZE6DXWNESG",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/ef-core",
+    "area/provider-support",
+    "area/testing",
+    "area/diagnostics"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9G8EBZDYAA04A5N7XARR5TR",
+  "release-id": "06F9G8E96BGQSNH0HA3MS79TE0",
+  "created-at": "2026-06-05T14:13:38.8533672Z",
+  "updated-at": "2026-06-05T14:13:47.3555499Z"
+}

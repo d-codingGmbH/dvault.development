@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9G8HRZ72XP5Z7FNWM6MBMQC",
+  "ticket-type": "task",
+  "title": "Task: Update v0.34.0 DB2 provider documentation",
+  "revision": "06F9G8JVM6SCVP57RHTEJTMC04",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/documentation",
+    "area/ef-core",
+    "area/provider-support",
+    "area/schema",
+    "area/testing"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9G8GG4BPF68W5P4731DFMY4",
+  "release-id": "06F9G8GDA12CS8Y4RHG4EDKS7W",
+  "created-at": "2026-06-05T14:14:00.3156743Z",
+  "updated-at": "2026-06-05T14:14:09.0578583Z"
+}

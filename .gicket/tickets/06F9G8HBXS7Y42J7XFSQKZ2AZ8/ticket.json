@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9G8HBXS7Y42J7XFSQKZ2AZ8",
+  "ticket-type": "story",
+  "title": "Story: Add DB2 save and read integration coverage",
+  "revision": "06F9G8JPGGCCW05MG02T65XCGC",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/ef-core",
+    "area/provider-support",
+    "area/read-models",
+    "area/testing",
+    "area/diagnostics"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9G8GF7GTV6JT6SBZEW5J3Z0",
+  "release-id": "06F9G8GDA12CS8Y4RHG4EDKS7W",
+  "created-at": "2026-06-05T14:13:57.0698383Z",
+  "updated-at": "2026-06-05T14:14:07.7489653Z"
+}

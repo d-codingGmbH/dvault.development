@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestone-id": "06F9G8GG4BPF68W5P4731DFMY4",
+  "name": "v0.34.0 - DB2 docs and release evidence",
+  "description": "Update README, package verifier, release notes, provider compatibility guidance, and external DB2 test instructions.",
+  "status": "planned",
+  "created-at": "2026-06-05T14:13:49.7304719Z"
+}

@@ -1,0 +1,14 @@
+{
+  "event-id": "06F9G8FK6D7AXVR5J5XBDYES8R",
+  "occurred-at": "2026-06-05T14:13:42.3234088Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Update v0.33.0 compatibility documentation",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}
