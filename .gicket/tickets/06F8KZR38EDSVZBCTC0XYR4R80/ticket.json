@@ -3,22 +3,21 @@
   "ticket-id": "06F8KZR38EDSVZBCTC0XYR4R80",
   "ticket-type": "story",
   "title": "Story: Define performance decision tree contract",
-  "revision": "06F9JF85NPAYE22V0K0T5ESNN0",
-  "status": "todo",
+  "revision": "06F9KWDK803D32W5G905XS9HE0",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
     "area/architecture",
     "area/developer-experience",
     "area/documentation",
     "area/ef-core",
-    "area/performance"
+    "area/performance",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06F8KYYBS9CX4C5SN76K0GK1S0",
   "release-id": "06F8KYXVRYYTMC82QKPWRXC8HR",
   "created-at": "2026-06-02T20:20:52.1955621Z",
-  "updated-at": "2026-06-05T19:22:53.7418307Z"
+  "updated-at": "2026-06-05T22:40:14.6561946Z"
 }

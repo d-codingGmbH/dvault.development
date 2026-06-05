@@ -1,8 +1,8 @@
 # Performance Profiles
 
-Status: v0.28.0 adopter guidance
+Status: v0.31.0 decision-tree contract and adopter guidance
 
-This guide is the detailed performance-profile reference for the current v0.28.0 DVault documentation baseline. It translates the checked-in benchmark evidence into starting profiles, stop conditions, and rerun triggers. It also records the decision gate for future stored-procedure or provider-specific SQL artifact proposals. It does not create absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, credential-management guidance, or provider-specific SQL artifact generation. The coordinated release record is [DVault v0.28.0 Release Notes](releases/v0.28.0.md). Earlier release notes remain historical feature-introduction records.
+This guide is the detailed performance-profile reference for the v0.31.0 DVault performance-guidance baseline. It translates the checked-in benchmark evidence into an adopter decision tree, starting profiles, stop conditions, and rerun triggers. It also records the decision gate for future stored-procedure or provider-specific SQL artifact proposals. It does not create automatic routing, absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, credential-management guidance, automatic PIT or bridge maintenance, raw SQL or physical-plan promises, or provider-specific SQL artifact generation. The coordinated release record that introduced the current provider-read evidence posture is [DVault v0.28.0 Release Notes](releases/v0.28.0.md). Earlier release notes remain historical feature-introduction records.
 
 ## Evidence Baseline
 
@@ -47,7 +47,101 @@ optional provider rows: preserved as skipped when connection-string environment 
 raw timings: see checked-in artifact triplet
 ```
 
-## Profile Selection
+## v0.31.0 Performance Decision-Tree Contract
+
+This section is the authoritative choice order for adopter performance decisions. The runtime profile sections below preserve the four existing profile families and benchmark observations; they are supporting detail, not a second decision model. The contract is request-bound and evidence-bound: DVault keeps explicit save/read service boundaries, deterministic diagnostics, opt-in metrics, listener-driven tracing, and caller-owned PIT or bridge maintenance instead of adding automatic strategy routing.
+
+Use the existing detail surfaces when a branch needs more than choice order:
+
+- Benchmark evidence: [benchmark-summary.md](../benchmark-summary.md), [benchmark-summary.csv](../benchmark-summary.csv), [benchmark-summary.json](../benchmark-summary.json), [DVault Benchmarks](../benchmarks/DCoding.Data.DVault.Benchmarks/README.md), and [Performance Evidence And Benchmark Artifact Contract](plans/performance-evidence-benchmark-artifact-contract.md).
+- Write boundary: [DVault V1 Explicit Save Service](architecture/dvault-v1-explicit-save-service.md).
+- Read diagnostics and `ReadShape`: [DVault V2 Redacted Read-Plan Explain Contract](architecture/dvault-v2-redacted-read-plan-explain-contract.md).
+- PIT and bridge maintenance and read boundary: [DVault V1 PIT And Bridge Boundary](architecture/dvault-v1-pit-bridge-boundary.md).
+- Typed helper generation: [DVault V1 Typed PIT And Bridge Helper Contract](architecture/dvault-v1-typed-pit-bridge-helper-contract.md).
+- Activity tracing and metrics relationship: [DVault V1 Activity Tracing Contract](architecture/dvault-v1-activity-tracing-contract.md).
+
+### Ordered Write Path
+
+Answer these questions in order before selecting a write profile:
+
+1. Is the workload using the public DVault write boundary?
+
+   Use `IDataVaultSaveService` for ordinary single, ordered bulk, bounded chunked, and async chunk-source saves. Stop if the proposal requires `SaveChanges` interception, provider dispatch outside the service, automatic strategy routing, stored-procedure invocation, background ingestion, CDC ingestion, scheduler behavior, or provider-specific SQL generation. Those are outside this decision tree.
+
+2. Is the complete ordered request set already materialized?
+
+   Choose `DataVaultBulkSaveRequest` as the baseline when the loader naturally owns the complete ordered batch and memory pressure does not require chunking. This remains the compatibility starting point for ordinary materialized explicit saves.
+
+3. Does the loader need bounded memory while already owning materialized bounded chunks?
+
+   Choose `DataVaultChunkedSaveRequest` when the loader can preserve explicit load timestamps, record sources, chunk order, request order inside each chunk, and caller-owned transaction behavior. Keep empty chunks as no-ops. Fall back to the materialized bulk branch when memory is acceptable, chunk overhead dominates, or telemetry shows excessive chunk count, retained-state fallback, unsupported shapes, cancellation pressure, or transaction boundaries that do not match the loader.
+
+4. Are the bounded chunks or source rows already asynchronous?
+
+   Choose `IDataVaultSaveService.SaveAsync(DbContext, IAsyncEnumerable<DataVaultSaveChunk>, ...)` only when the caller already has an async chunk source that should be enumerated once in yielded order. Use the async helper methods only when they map an async source into the same bounded explicit save boundary. Do not claim provider-native async writes, provider-native chunk execution, background continuation, or alternate ordering semantics from this branch.
+
+5. Is the workload an eligible clean-context provider-specific ordered bulk batch?
+
+   Keep the same `IDataVaultSaveService` boundary, register the matching provider extension, and require `IDataVaultDiagnosticsService` evidence for the exact request before claiming provider-native behavior. PostgreSQL staged COPY and MySQL staged bulk are the documented staged-provider lanes; SQL Server remains native-bulk wording, and Oracle remains direct optimized batching until measured evidence selects a staged Oracle lane. Treat skipped optional-provider rows, missing connection strings, provider-name mismatch, dirty contexts, unsupported multi-active satellite batches, declined strategy gates, threshold failures, or missing local benchmark evidence as finite stop conditions for measured provider-specific performance claims. The fallback path is the provider-neutral writer under the same explicit service.
+
+### Ordered Read Path
+
+Answer these questions in order before selecting a read profile:
+
+1. Is the workload using the public DVault read boundary?
+
+   Use `IDataVaultReadService` for latest/current/as-of satellite, PIT as-of, and bridge traversal reads. Stop if the proposal requires raw SQL inspection, provider physical-plan promises, automatic index creation, automatic PIT or bridge maintenance, graph API inference, background refresh, or provider-specific physical tuning from DVault.
+
+2. Is the request a latest/current or as-of satellite read?
+
+   Start with the provider-neutral read pipeline and inspect `IDataVaultReadDiagnosticsService` output for request-bound `ReadShape` and read-strategy evidence. SQLite is the only repository-proven optimized latest-satellite read provider path. Non-SQLite latest-satellite reads, unsupported satellite parents, multi-active unsupported shapes, incomplete `ReadShape` evidence, unknown providers, unregistered providers, and declined strategies must remain provider-neutral fallback unless a later ticket adds new benchmark-backed evidence.
+
+3. Is the request a PIT as-of read?
+
+   Confirm the PIT table is explicitly maintained before the read path depends on it. PIT-backed reads consume already-maintained rows; they do not run `IDataVaultPitMaintenanceService`, schedule refresh, or correct stale rows implicitly. Use request-bound `ReadShape` evidence and provider diagnostics before claiming an optimized strategy. Unsupported PIT shapes, unsupported providers, incomplete `ReadShape` evidence, or stale PIT maintenance evidence are explicit fallback or stop conditions.
+
+4. Is the request a bridge traversal read?
+
+   Confirm the bridge table is explicitly maintained before the read path depends on it. Bridge reads consume already-maintained rows; they do not run `IDataVaultBridgeMaintenanceService`, shrink deleted hierarchy paths, schedule refresh, or infer traversal APIs implicitly. Use request-bound `ReadShape` evidence and provider diagnostics before claiming an optimized strategy. Unsupported bridge shapes, unsupported providers, incomplete `ReadShape` evidence, stale bridge maintenance evidence, or destructive hierarchy changes that require full rebuild behavior are explicit fallback or stop conditions.
+
+5. Is the provider claim PIT or bridge optimization?
+
+   SQLite, PostgreSQL, SQL Server, MySQL, and Oracle are repository-proven diagnostics-gated PIT/bridge read-strategy candidate paths. They are not raw timing claims for external providers when optional provider rows are skipped. Unsupported providers, provider-name mismatch, missing provider registration, strategy decline, unsupported shapes, incomplete `ReadShape` evidence, and stale read-model maintenance keep the provider-neutral read pipelines.
+
+### Design-Time Typed Helper Branch
+
+Typed read-model helpers are a separate design-time branch after the runtime read shape is understood. They are not a fifth runtime performance profile and they do not choose providers, dispatch reads, generate SQL, perform PIT or bridge maintenance, schedule refresh, compile dynamic read requests, or widen `IDataVaultReadService` semantics.
+
+Use generated helpers only when all of these are true:
+
+1. The consuming project opts in with `DVaultGenerateTypedReadModels=true`.
+2. The analyzer receives exactly one authoritative `dvault.support-bundle.v1` additional file.
+3. Reviewed request-bound `ReadShape` evidence is present for any PIT or bridge helper the project wants to emit.
+4. Representative diagnostics were supplied by application code through `DataVaultDesignTimeCommandHost.CreateSupportBundleDiagnostics`; the reusable command runner did not invent representative PIT or bridge requests.
+
+Missing, malformed, incompatible-version, non-authoritative, ambiguous, raw `dvault.model.v1`, or residual model-first input is a support-bundle boundary failure. A stale `DVaultTypedReadModelMetadataSourceFingerprint` is a fingerprint failure. Unsupported PIT or bridge evidence skips only the affected helper while other supported satellite, PIT, or bridge helpers can still generate from the same reviewed bundle.
+
+### Diagnostics Evidence And Observability Gate
+
+Choose or promote a branch only after the corresponding evidence surface is reviewed:
+
+- Write selection uses `IDataVaultDiagnosticsService` for request-bound save-strategy status, provider name, selected strategy name, candidate facts, operation counts, gate requirements, and finite fallback causes.
+- Read selection uses `IDataVaultReadDiagnosticsService` plus request-bound `ReadShape` for read-strategy status, selected strategy name, fallback causes, read-shape kind, provider facts, translated table identity, filter columns, and deterministic row-selection rules.
+- Measured performance claims use the benchmark artifact triplet and rerun context, not copied timing values without provenance.
+- Metrics are opt-in through `AddDVaultTelemetry()` and bounded `DataVaultSaveTelemetrySummary`/`DataVaultReadTelemetrySummary` values.
+- Activity tracing is listener-driven through the `DCoding.Data.DVault` ActivitySource and remains a sibling observability surface, not a telemetry prerequisite.
+- PIT and bridge read decisions include explicit maintenance freshness evidence before optimized read claims are made.
+- Typed-helper decisions include the reviewed support bundle and request-bound `ReadShape` evidence, not runtime metadata inference.
+
+Diagnostics, telemetry, tracing, support bundles, and adopter records must preserve the documented redaction boundaries. Do not include raw business keys, hash-key values, payload values, record sources, SQL text, query plans, provider messages, exception messages, stack traces, connection strings, credentials, support-bundle content, or full diagnostic text in performance guidance.
+
+### Stop And Fallback Handling
+
+Stop before documenting a branch as selected when the required evidence is missing, stale, skipped, unsupported, or outside the current public boundary. Use provider-neutral save or read behavior as the bounded fallback when diagnostics do not select an optimized strategy. Rerun local benchmarks and preserve the artifact triplet when provider, hardware, runtime, load-timestamp storage, iteration count, warmup count, dataset size, request shape, provider configuration, indexes, maintenance cadence, or transaction policy changes.
+
+## Runtime Profile Summary
+
+Use this table as a compact summary after applying the v0.31.0 decision-tree contract above.
 
 | Profile | Start here when | Main starting point | Primary stop condition |
 | --- | --- | --- | --- |
