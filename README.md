@@ -22,7 +22,7 @@ Applications still need their normal Entity Framework Core database provider pac
 
 Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
 
-The current coordinated release baseline is [DVault v0.30.0 Release Notes](docs/releases/v0.30.0.md), which documents typed helper support-bundle freshness, stale fingerprint recovery, and request-bound `ReadShape` troubleshooting while carrying forward provider schema guardrails, provider read optimization, analyzer-only EF lifecycle guardrails, provider-tuning diagnostics, benchmark artifact verifier evidence, migration and idempotency guardrails, and stored-procedure artifact boundaries without recording package publication. Earlier release notes remain historical feature-introduction records. For detailed performance guidance, see [Performance Profiles](docs/performance-profiles.md). For a short adopter readiness pass before production use, see the [Production Adoption Checklist](docs/production-adoption-checklist.md).
+The current coordinated release baseline is [DVault v0.30.0 Release Notes](docs/releases/v0.30.0.md), which documents typed helper support-bundle freshness, stale fingerprint recovery, generator source-boundary diagnostics, and request-bound `ReadShape` troubleshooting while carrying forward provider schema guardrails, provider read optimization, analyzer-only EF lifecycle guardrails, provider-tuning diagnostics, benchmark artifact verifier evidence, migration and idempotency guardrails, and stored-procedure artifact boundaries without recording package publication. Earlier release notes remain historical feature-introduction records. For detailed performance guidance, see [Performance Profiles](docs/performance-profiles.md). For a short adopter readiness pass before production use, see the [Production Adoption Checklist](docs/production-adoption-checklist.md).
 
 ## Quickstart
 
@@ -909,7 +909,7 @@ SQLite remains the default local live-schema proof because it does not require e
 
 ## v0.30.0 Release Notes
 
-The v0.30.0 release record is the current coordinated seven-package documentation baseline for support-bundle freshness, stale `DVaultTypedReadModelMetadataSourceFingerprint` recovery, and request-bound `ReadShape` troubleshooting for typed satellite, PIT, and bridge helper generation. See `docs/releases/v0.30.0.md` for package scope, boundary shift from v0.29.0, the authoritative support-bundle refresh path, stale input recovery checklist, validation surfaces, and non-goals.
+The v0.30.0 release record is the current coordinated seven-package baseline for support-bundle freshness, stale `DVaultTypedReadModelMetadataSourceFingerprint` recovery, generator source-boundary diagnostics, and request-bound `ReadShape` troubleshooting for typed satellite, PIT, and bridge helper generation. See `docs/releases/v0.30.0.md` for package scope, boundary shift from v0.29.0, the authoritative support-bundle refresh path, stale input recovery checklist, validation surfaces, and non-goals.
 
 It carries forward the v0.29.0 provider schema guardrail baseline, v0.28.0 provider read optimization evidence boundary, v0.27.0 EF lifecycle analyzer guardrails, v0.26.0 provider-tuning diagnostics and benchmark verifier evidence, v0.25.0 ReadShape and typed helper boundary, v0.24.0 async streaming and EF safety boundary, and v0.21.0 PIT/bridge maintenance boundary from earlier releases.
 
