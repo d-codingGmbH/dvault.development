@@ -3,22 +3,22 @@
   "ticket-id": "06F8KZQAWZ7QRGB68KB21C9B0R",
   "ticket-type": "task",
   "title": "Task: Update v0.30.0 typed helper freshness documentation",
-  "revision": "06F8M03JGBE4AWR46DP1C9E9J0",
-  "status": "todo",
+  "revision": "06F9BPP3DNY82EP50N0VHS6KAR",
+  "status": "done",
   "labels": [
-    "needs-po",
+    "area/analyzers",
+    "area/diagnostics",
+    "area/documentation",
+    "area/ef-core",
+    "area/read-models",
     "automation/bot-ready",
     "type/task",
-    "area/analyzers",
-    "area/documentation",
-    "area/diagnostics",
-    "area/ef-core",
-    "area/read-models"
+    "closure/no-work-required"
   ],
   "assignees": [],
-  "isBlocked": false,
-  "milestoneId": "06F8KYY99T9H9G5QX1PAZT46M4",
-  "releaseId": "06F8KYXV0CX15E5H1JSDVF3EBC",
+  "is-blocked": false,
+  "milestone-id": "06F8KYY99T9H9G5QX1PAZT46M4",
+  "release-id": "06F8KYXV0CX15E5H1JSDVF3EBC",
   "created-at": "2026-06-02T20:20:46.0526246Z",
-  "updated-at": "2026-06-02T20:22:25.6661473Z"
+  "updated-at": "2026-06-05T03:36:42.6050000Z"
 }
