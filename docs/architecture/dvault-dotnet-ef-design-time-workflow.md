@@ -181,6 +181,49 @@ design-time model. `--live-schema` adds a `DataVaultLiveSchemaReadResult`; with 
 classified live-schema read result. Provider exception text and connection-string fragments are redacted from the exported JSON
 while provider names, profile names, diagnostic codes, and metadata identifiers remain available for troubleshooting.
 
+## Support Bundle Freshness Troubleshooting
+
+Regenerate the support bundle whenever the configured Code-First metadata, metadata registry, reviewed `dvault.model.v1`
+artifact, provider profile, load-timestamp storage, or representative PIT/bridge read request changes. A typed read-model
+generator project should see exactly one reviewed `dvault.support-bundle.v1` file through `AdditionalFiles`; stale copies,
+raw `dvault.model.v1` files, incompatible bundle versions, or multiple authoritative bundles are `DMV1960` source-boundary
+failures.
+
+Use this recovery checklist when generated typed helpers disappear or stale diagnostics remain after a metadata change:
+
+1. Rebuild the factory-backed design-time model and run `dotnet run --project <consumer-project> -- validate`.
+2. Re-export the reviewed metadata artifact if the consumer workflow uses `dvault.model.v1`, then re-run `drift --artifact`.
+3. Re-run the `support-bundle` command and replace the analyzer's single `AdditionalFiles` input with the refreshed bundle.
+4. Update `DVaultTypedReadModelMetadataSourceFingerprint` to the refreshed bundle's `metadataSourceFingerprint`, or remove the
+   property while the new bundle is under review. A remaining `DMV1961` means the resolved bundle and the pinned fingerprint
+   still do not match.
+5. Rebuild the consumer project and treat any remaining `DMV1960` as unresolved bundle selection, version, authority, or
+   raw-model-file cleanup work.
+
+PIT and bridge helpers need request-bound `ReadShape` evidence. If `DMV1963`, `DMV1964`, `DMV1967`, or `DMV1969` says that a
+PIT or bridge helper is unsupported, skipped, dynamic, or missing read-shape facts, refresh the support-bundle diagnostics with
+the representative read request that proves that helper:
+
+```csharp
+var readDiagnostics = services.GetRequiredService<IDataVaultReadDiagnosticsService>();
+
+var host = new DataVaultDesignTimeCommandHost(
+    diagnostics,
+    () => new SalesVaultDesignTimeFactory().CreateDbContext(args),
+    DataVaultDesignTimeExportSource.FromMetadataModel(SalesVaultMetadata.CreateModel()),
+    ResolveMigrationOperations) {
+  CreateSupportBundleDiagnostics = context => readDiagnostics.Analyze(
+      context,
+      SalesVaultRepresentativeRequests.CreateCustomerPitAsOfRead()),
+};
+```
+
+Use a representative `DataVaultPitAsOfReadRequest` for PIT helpers and a representative `DataVaultBridgeReadRequest` for bridge
+helpers. The command runner does not choose these requests automatically. After changing `CreateSupportBundleDiagnostics`,
+re-export the support bundle, verify that `diagnostics.readShape` now describes the intended PIT or bridge request, replace the
+analyzer input, and rebuild. Helper-specific diagnostics skip only the affected helper; unrelated valid satellite, PIT, or
+bridge helpers in the same valid support bundle can still generate.
+
 ## Preflight Validation
 
 Run DVault validation explicitly before deciding whether to apply a generated migration. The validation step constructs the configured `DbContext` through the same factory and analyzes the in-memory EF design-time model. It does not require opening a live database connection.

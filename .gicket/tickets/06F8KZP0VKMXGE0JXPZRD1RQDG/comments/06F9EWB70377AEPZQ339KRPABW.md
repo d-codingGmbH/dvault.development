@@ -1,71 +1,65 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - The queued replacement documentation carrier `mutation-d16ba25963e2af83` is the authoritative follow-up for the missing README, workflow, and v0.30.0 release-note work; child `06F8KZQAWZ7QRGB68KB21C9B0R` is historical only, and epic closure stays blocked until the docs land and the stale incoming `blocks` relation is reconciled.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarification resolution
+- resolution-decision: `resolved`
+- critic-item-1: `answered` - Do not reopen done child `06F8KZQAWZ7QRGB68KB21C9B0R`. The missing documentation work is already covered by the queued replacement ticket create replay `mutation-d16ba25963e2af83` on `develop`; that queued replay is the authoritative carrier unless it later fails, so a second duplicate documentation ticket is out of scope.
+- critic-item-2: `answered` - For epic tracking, treat the queued replacement carrier as the active follow-up now. The epic must not use the current all-done child set as closure evidence, and once the replayed ticket exposes its ULID it must receive the active `parentOf` link from epic `06F8KZP0VKMXGE0JXPZRD1RQDG`.
+- critic-item-3: `answered` - Do not resubmit this epic for closure-style review yet. First land the README freshness and recovery wording, the design-time workflow troubleshooting guidance, and `docs/releases/v0.30.0.md`; after that, remove or explicitly supersede the live incoming `blocks` relation from done child `06F8KZQAWZ7QRGB68KB21C9B0R` before closure.
+- critic-item-4: `answered` - Confirmed. The epic Definition of Done is still open on documentation surfaces because `docs/releases/v0.30.0.md` is missing, `README.md` still names the v0.29.0 baseline, and `docs/architecture/dvault-dotnet-ef-design-time-workflow.md` still lacks the explicit stale-input troubleshooting checklist or example. These are implementation gaps, not open architecture questions.
+- critic-item-5: `answered` - Treat child `06F8KZQAWZ7QRGB68KB21C9B0R` as historical mis-tracking only. Remaining work is carried by the queued replacement documentation ticket, so the epic may continue without reopening completed analyzer or generator tickets, but the done child must not be used as closure evidence for the missing documentation.
+
+Clarifications
 - The queued create-ticket replay `mutation-d16ba25963e2af83` is the authoritative bounded replacement documentation carrier; do not create a second replacement ticket unless that replay is later confirmed failed.
 - Child `06F8KZQAWZ7QRGB68KB21C9B0R` remains `done` as historical delivery history only and must not be treated as the live implementation carrier for the missing docs.
 - The missing repository evidence remains bounded to three documentation surfaces: `README.md` freshness and recovery wording, `docs/architecture/dvault-dotnet-ef-design-time-workflow.md` stale-input troubleshooting guidance, and a new `docs/releases/v0.30.0.md`.
 - The live incoming `blocks` relation from `06F8KZQAWZ7QRGB68KB21C9B0R` to the epic is closure-stage housekeeping: keep the contract consistent with that live state now, then remove or explicitly supersede it after the replacement documentation carrier lands.
 
-### Scope In
+Scope In
 - Treat the queued replacement ticket as the one active carrier for the remaining documentation work and link it back to the epic when its ULID is visible.
 - Land the README refresh and recovery wording for authoritative support-bundle regeneration and stale `DVaultTypedReadModelMetadataSourceFingerprint` recovery.
 - Add explicit stale-input troubleshooting guidance to `docs/architecture/dvault-dotnet-ef-design-time-workflow.md` for re-exporting support bundles and re-supplying representative `CreateSupportBundleDiagnostics` requests.
 - Add `docs/releases/v0.30.0.md` as the current typed-helper freshness and stale-input recovery documentation baseline.
 - Require closure-stage reconciliation or explicit supersession of the stale incoming `blocks` relation from `06F8KZQAWZ7QRGB68KB21C9B0R`.
 
-### Scope Out
+Scope Out
 - Creating a second duplicate documentation carrier while queued replay `mutation-d16ba25963e2af83` remains authoritative pending replay.
 - Reopening completed analyzer, generator, or test implementation tickets without new behavioral regression evidence.
 - Any new runtime behavior, source-generator redesign, or diagnostics expansion beyond the bounded documentation pass.
 - Rewriting historical release notes such as `docs/releases/v0.29.0.md` as if earlier shipped behavior changed.
 - Treating closure housekeeping as product-code work.
 
-## Acceptance Criteria
-- The queued replacement carrier recorded as outbox `mutation-d16ba25963e2af83` is treated as the active documentation follow-up now and is linked back to epic `06F8KZP0VKMXGE0JXPZRD1RQDG` once replay exposes its ULID.
-- `README.md` explicitly documents the authoritative support-bundle refresh path after metadata changes, including updating or removing stale pinned fingerprint values and recognizing `DMV1960` or `DMV1961` outcomes.
-- `docs/architecture/dvault-dotnet-ef-design-time-workflow.md` includes an explicit troubleshooting example or checklist for re-exporting support bundles and re-running representative `CreateSupportBundleDiagnostics` requests when stale or missing request-bound `ReadShape` evidence blocks PIT or bridge helper generation.
-- `docs/releases/v0.30.0.md` exists and becomes the current documentation baseline for typed-helper freshness and stale-input recovery wording without rewriting historical release-note claims.
-- Before epic closure review, repository evidence shows the documentation carrier landed and the incoming `blocks` relation from `06F8KZQAWZ7QRGB68KB21C9B0R` is removed or explicitly superseded.
-
-## Definition of Done
-- The replacement documentation carrier is visible and linked from the epic, or the already queued replay has become visible as the active carrier by the time closure is attempted.
-- The repository contains the README, workflow, and v0.30.0 release-note updates that match the existing support-bundle and request-bound `ReadShape` contract.
-- Epic closure is not attempted until the documentation evidence is landed and the stale incoming `blocks` relation is reconciled or explicitly superseded.
-- No new runtime or architecture scope is introduced by this documentation pass.
-
-## Implementation Notes
-- No additional child-ticket, relation, attachment, or planning-document writes were materialized in this clarification pass; the already queued create replay `mutation-d16ba25963e2af83` remains the authoritative planning artifact until its ULID is visible.
-- Once replay exposes the replacement ticket ULID, add or verify the active `parentOf` link from epic `06F8KZP0VKMXGE0JXPZRD1RQDG` to that ticket; keep that as downstream follow-up rather than an open PO clarification question.
-- Use `docs/architecture/dvault-v1-typed-pit-bridge-helper-contract.md` and `src/DCoding.Data.DVault.Analyzers/README.md` as the authoritative wording source for `DMV1960`, `DMV1961`, `DMV1963`, `DMV1964`, `DMV1967`, `DMV1969`, and skip-only-the-affected-helper behavior.
-- Handle the incoming `blocks` relation from `06F8KZQAWZ7QRGB68KB21C9B0R` only when the replacement carrier lands and the epic is actually being prepared for closure review.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After replay exposes the replacement ticket ULID, has the epic been back-linked with the active `parentOf` relation to that carrier?
 - When the documentation carrier lands, should closure remove the stale incoming `blocks` relation outright or supersede it with explicit historical audit wording?
 
-## Risks
+Risks
 - If the queued replay is mistaken for a failed create and another documentation carrier is created, the epic may fork the same bounded documentation scope into duplicate tickets.
 - Any closure-style review before the README, workflow, and v0.30.0 documentation updates land will fail the same documentation Definition of Done again.
 - Leaving the stale incoming `blocks` relation unresolved after the replacement carrier lands can confuse closure automation or audit trails.
 
-## Split Recommendations
+Split recommendations
 - No further split beyond the single queued bounded replacement documentation carrier recorded as outbox `mutation-d16ba25963e2af83`.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Plan and deliver stronger stale support-bundle, fingerprint, ReadShape, and typed read helper diagnostics without runtime reflection or dynamic query expansion.
+Run mode
+- apply: planned updates are applied after this comment
