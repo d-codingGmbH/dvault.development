@@ -3,6 +3,6 @@
   "release-id": "06F8KYXV0CX15E5H1JSDVF3EBC",
   "name": "v0.30.0 - Support Bundle Freshness and Generator Diagnostics",
   "description": "Stronger support-bundle, model fingerprint, ReadShape, and source-generator stale-artifact diagnostics for typed read helper adoption.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-02T20:17:16.5471156Z"
 }

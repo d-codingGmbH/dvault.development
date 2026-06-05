@@ -3,6 +3,6 @@
   "milestone-id": "06F8KYY6TPZ9DRFXCRCPKGXFQ8",
   "name": "v0.30.0 - Generator freshness diagnostics implementation",
   "description": "Implement source-generator diagnostics and tests for stale or incompatible support-bundle inputs.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-02T20:17:19.5737755Z"
 }
