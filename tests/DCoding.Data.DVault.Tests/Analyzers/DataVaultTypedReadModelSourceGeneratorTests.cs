@@ -246,6 +246,478 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
   }
 
   [Fact]
+  public void RefreshesGeneratedSatellitePitAndBridgeHelpersAcrossSuccessiveSupportBundles() {
+    var satelliteRuns = RunGeneratorTransitions(
+        RuntimeStubs,
+        [
+          [
+            SupportBundleText(CreateSupportBundleJson(
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerProfile",
+                    "Profile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("EmailAddress", "EmailAddress", false),
+                    ]))),
+          ],
+          [
+            SupportBundleText(CreateSupportBundleJson(
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerStatus",
+                    "Status",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("StatusCode", "StatusCode", false),
+                    ]))),
+          ],
+        ]);
+
+    Assert.Empty(satelliteRuns[0].GeneratorDiagnostics);
+    AssertGeneratedSource(satelliteRuns[0], "DVault.GeneratedReadModels.SatCustomerProfile.g.cs");
+    var refreshedSatelliteSource = AssertGeneratedSource(satelliteRuns[1], "DVault.GeneratedReadModels.SatCustomerStatus.g.cs");
+    Assert.Empty(satelliteRuns[1].GeneratorDiagnostics);
+    Assert.DoesNotContain("DVault.GeneratedReadModels.SatCustomerProfile.g.cs", satelliteRuns[1].GeneratedSources.Keys);
+    Assert.Contains("string StatusCode", refreshedSatelliteSource, StringComparison.Ordinal);
+    Assert.DoesNotContain("EmailAddress", refreshedSatelliteSource, StringComparison.Ordinal);
+
+    var pitRuns = RunGeneratorTransitions(
+        RuntimeStubs,
+        [
+          [
+            SupportBundleText(CreateSupportBundleJsonWithReadShape(
+                CreatePitReadShapeJson(
+                    "PitCustomerProfile",
+                    "CustomerProfile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "LoadTimestamp",
+                    [],
+                    [
+                        new PitReadShapeSatellite("Profile", "ProfileLoadTimestamp", []),
+                    ]),
+                CreateSupportBundleEntityJson(
+                    "PitCustomerProfile",
+                    "Pit",
+                    "CustomerProfile",
+                    "Hub",
+                    "Customer",
+                    [
+                        Technical("CustomerHashKey", "HashKey", "Customer", "HashKey", "Text", "System.String", false),
+                        Technical("LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "Iso8601UtcText", "System.DateTimeOffset", false),
+                        SnapshotReference("ProfileLoadTimestamp", "Profile"),
+                    ]))),
+          ],
+          [
+            SupportBundleText(CreateSupportBundleJsonWithReadShape(
+                CreatePitReadShapeJson(
+                    "PitCustomerStatus",
+                    "CustomerStatus",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "LoadTimestamp",
+                    [],
+                    [
+                        new PitReadShapeSatellite("Status", "StatusLoadTimestamp", []),
+                    ]),
+                CreateSupportBundleEntityJson(
+                    "PitCustomerStatus",
+                    "Pit",
+                    "CustomerStatus",
+                    "Hub",
+                    "Customer",
+                    [
+                        Technical("CustomerHashKey", "HashKey", "Customer", "HashKey", "Text", "System.String", false),
+                        Technical("LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "Iso8601UtcText", "System.DateTimeOffset", false),
+                        SnapshotReference("StatusLoadTimestamp", "Status"),
+                    ]))),
+          ],
+        ]);
+
+    Assert.Empty(pitRuns[0].GeneratorDiagnostics);
+    AssertGeneratedSource(pitRuns[0], "DVault.GeneratedReadModels.PitCustomerProfile.g.cs");
+    var refreshedPitSource = AssertGeneratedSource(pitRuns[1], "DVault.GeneratedReadModels.PitCustomerStatus.g.cs");
+    Assert.Empty(pitRuns[1].GeneratorDiagnostics);
+    Assert.DoesNotContain("DVault.GeneratedReadModels.PitCustomerProfile.g.cs", pitRuns[1].GeneratedSources.Keys);
+    Assert.Contains("StatusLoadTimestamp", refreshedPitSource, StringComparison.Ordinal);
+    Assert.DoesNotContain("ProfileLoadTimestamp", refreshedPitSource, StringComparison.Ordinal);
+
+    var bridgeRuns = RunGeneratorTransitions(
+        RuntimeStubs,
+        [
+          [
+            SupportBundleText(CreateSupportBundleJsonWithReadShape(
+                CreateBridgeReadShapeJson(
+                    "ManyToMany",
+                    "BridgeCustomerOrder",
+                    "CustomerOrder",
+                    [
+                        new("From", "Customer", "CustomerHashKey"),
+                        new("To", "Order", "OrderHashKey"),
+                    ]),
+                CreateSupportBundleEntityJson(
+                    "BridgeCustomerOrder",
+                    "Bridge",
+                    "CustomerOrder",
+                    fields:
+                    [
+                        ParticipantReference("CustomerHashKey", "Customer"),
+                        ParticipantReference("OrderHashKey", "Order"),
+                    ]))),
+          ],
+          [
+            SupportBundleText(CreateSupportBundleJsonWithReadShape(
+                CreateBridgeReadShapeJson(
+                    "ManyToMany",
+                    "BridgeCustomerInvoice",
+                    "CustomerInvoice",
+                    [
+                        new("From", "Customer", "CustomerHashKey"),
+                        new("To", "Invoice", "InvoiceHashKey"),
+                    ]),
+                CreateSupportBundleEntityJson(
+                    "BridgeCustomerInvoice",
+                    "Bridge",
+                    "CustomerInvoice",
+                    fields:
+                    [
+                        ParticipantReference("CustomerHashKey", "Customer"),
+                        ParticipantReference("InvoiceHashKey", "Invoice"),
+                    ]))),
+          ],
+        ]);
+
+    Assert.Empty(bridgeRuns[0].GeneratorDiagnostics);
+    AssertGeneratedSource(bridgeRuns[0], "DVault.GeneratedReadModels.BridgeCustomerOrder.g.cs");
+    var refreshedBridgeSource = AssertGeneratedSource(bridgeRuns[1], "DVault.GeneratedReadModels.BridgeCustomerInvoice.g.cs");
+    Assert.Empty(bridgeRuns[1].GeneratorDiagnostics);
+    Assert.DoesNotContain("DVault.GeneratedReadModels.BridgeCustomerOrder.g.cs", bridgeRuns[1].GeneratedSources.Keys);
+    Assert.Contains("string InvoiceHashKey", refreshedBridgeSource, StringComparison.Ordinal);
+    Assert.DoesNotContain("OrderHashKey", refreshedBridgeSource, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void SuppressesPreviouslyGeneratedHelpersWhenSupportBundleBecomesFingerprintMismatchedOrIncompatible() {
+    var fingerprintRuns = RunGeneratorTransitions(
+        RuntimeStubs,
+        [
+          [
+            SupportBundleText(CreateSupportBundleJsonForSource(
+                "model-metadata",
+                "fingerprint-1",
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerProfile",
+                    "Profile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("EmailAddress", "EmailAddress", false),
+                    ]))),
+          ],
+          [
+            SupportBundleText(CreateSupportBundleJsonForSource(
+                "model-metadata",
+                "fingerprint-2",
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerProfile",
+                    "Profile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("EmailAddress", "EmailAddress", false),
+                    ]))),
+          ],
+        ],
+        options: new Dictionary<string, string>(StringComparer.Ordinal) {
+          ["build_property.DVaultTypedReadModelMetadataSourceFingerprint"] = "fingerprint-1",
+        });
+
+    Assert.Empty(fingerprintRuns[0].GeneratorDiagnostics);
+    AssertGeneratedSource(fingerprintRuns[0], "DVault.GeneratedReadModels.SatCustomerProfile.g.cs");
+    var fingerprintDiagnostic = Assert.Single(fingerprintRuns[1].GeneratorDiagnostics);
+    Assert.Equal("DMV1961", fingerprintDiagnostic.Id);
+    Assert.Empty(fingerprintRuns[1].GeneratedSources);
+
+    var incompatibleRuns = RunGeneratorTransitions(
+        RuntimeStubs,
+        [
+          [
+            SupportBundleText(CreateSupportBundleJson(
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerProfile",
+                    "Profile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("EmailAddress", "EmailAddress", false),
+                    ]))),
+          ],
+          [
+            SupportBundleText("""
+                {
+                  "schemaVersion": "dvault.support-bundle.v2",
+                  "diagnostics": {}
+                }
+                """),
+          ],
+        ]);
+
+    Assert.Empty(incompatibleRuns[0].GeneratorDiagnostics);
+    AssertGeneratedSource(incompatibleRuns[0], "DVault.GeneratedReadModels.SatCustomerProfile.g.cs");
+    var incompatibleDiagnostic = Assert.Single(incompatibleRuns[1].GeneratorDiagnostics);
+    Assert.Equal("DMV1960", incompatibleDiagnostic.Id);
+    Assert.Empty(incompatibleRuns[1].GeneratedSources);
+  }
+
+  [Fact]
+  public void RecoversGeneratedHelpersAfterPriorFingerprintMismatchOrIncompatibleSupportBundle() {
+    var fingerprintRuns = RunGeneratorTransitions(
+        RuntimeStubs,
+        [
+          [
+            SupportBundleText(CreateSupportBundleJsonForSource(
+                "model-metadata",
+                "fingerprint-2",
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerProfile",
+                    "Profile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("EmailAddress", "EmailAddress", false),
+                    ]))),
+          ],
+          [
+            SupportBundleText(CreateSupportBundleJsonForSource(
+                "model-metadata",
+                "fingerprint-1",
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerProfile",
+                    "Profile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("EmailAddress", "EmailAddress", false),
+                    ]))),
+          ],
+        ],
+        options: new Dictionary<string, string>(StringComparer.Ordinal) {
+          ["build_property.DVaultTypedReadModelMetadataSourceFingerprint"] = "fingerprint-1",
+        });
+
+    var fingerprintDiagnostic = Assert.Single(fingerprintRuns[0].GeneratorDiagnostics);
+    Assert.Equal("DMV1961", fingerprintDiagnostic.Id);
+    Assert.Empty(fingerprintRuns[0].GeneratedSources);
+    Assert.Empty(fingerprintRuns[1].GeneratorDiagnostics);
+    AssertGeneratedSource(fingerprintRuns[1], "DVault.GeneratedReadModels.SatCustomerProfile.g.cs");
+
+    var incompatibleRuns = RunGeneratorTransitions(
+        RuntimeStubs,
+        [
+          [
+            SupportBundleText("""
+                {
+                  "schemaVersion": "dvault.support-bundle.v2",
+                  "diagnostics": {}
+                }
+                """),
+          ],
+          [
+            SupportBundleText(CreateSupportBundleJsonWithReadShape(
+                CreateBridgeReadShapeJson(
+                    "ManyToMany",
+                    "BridgeCustomerOrder",
+                    "CustomerOrder",
+                    [
+                        new("From", "Customer", "CustomerHashKey"),
+                        new("To", "Order", "OrderHashKey"),
+                    ]),
+                CreateSupportBundleEntityJson(
+                    "BridgeCustomerOrder",
+                    "Bridge",
+                    "CustomerOrder",
+                    fields:
+                    [
+                        ParticipantReference("CustomerHashKey", "Customer"),
+                        ParticipantReference("OrderHashKey", "Order"),
+                    ]))),
+          ],
+        ]);
+
+    var incompatibleDiagnostic = Assert.Single(incompatibleRuns[0].GeneratorDiagnostics);
+    Assert.Equal("DMV1960", incompatibleDiagnostic.Id);
+    Assert.Empty(incompatibleRuns[0].GeneratedSources);
+    Assert.Empty(incompatibleRuns[1].GeneratorDiagnostics);
+    AssertGeneratedSource(incompatibleRuns[1], "DVault.GeneratedReadModels.BridgeCustomerOrder.g.cs");
+  }
+
+  [Fact]
+  public void KeepsSupportedHelpersWhenPitOrBridgeBecomesUnsupportedAcrossSuccessiveSupportBundles() {
+    var pitRuns = RunGeneratorTransitions(
+        RuntimeStubs,
+        [
+          [
+            SupportBundleText(CreateSupportBundleJsonWithReadShape(
+                CreatePitReadShapeJson(
+                    "PitCustomerProfile",
+                    "CustomerProfile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "LoadTimestamp",
+                    [],
+                    [
+                        new PitReadShapeSatellite("Profile", "ProfileLoadTimestamp", []),
+                    ]),
+                CreateSupportBundleEntityJson(
+                    "PitCustomerProfile",
+                    "Pit",
+                    "CustomerProfile",
+                    "Hub",
+                    "Customer",
+                    [
+                        Technical("CustomerHashKey", "HashKey", "Customer", "HashKey", "Text", "System.String", false),
+                        Technical("LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "Iso8601UtcText", "System.DateTimeOffset", false),
+                        SnapshotReference("ProfileLoadTimestamp", "Profile"),
+                    ]),
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerProfile",
+                    "Profile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("EmailAddress", "EmailAddress", false),
+                    ]))),
+          ],
+          [
+            SupportBundleText(CreateSupportBundleJson(
+                CreateSupportBundleEntityJson(
+                    "PitCustomerProfile",
+                    "Pit",
+                    "CustomerProfile",
+                    "Hub",
+                    "Customer",
+                    [
+                        Technical("CustomerHashKey", "HashKey", "Customer", "HashKey", "Text", "System.String", false),
+                        Technical("LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "LoadTimestamp", "Iso8601UtcText", "System.DateTimeOffset", false),
+                    ]),
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerProfile",
+                    "Profile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("EmailAddress", "EmailAddress", false),
+                    ]))),
+          ],
+        ]);
+
+    Assert.Empty(pitRuns[0].GeneratorDiagnostics);
+    AssertGeneratedSource(pitRuns[0], "DVault.GeneratedReadModels.PitCustomerProfile.g.cs");
+    AssertGeneratedSource(pitRuns[0], "DVault.GeneratedReadModels.SatCustomerProfile.g.cs");
+    var pitDiagnostic = Assert.Single(pitRuns[1].GeneratorDiagnostics);
+    Assert.Equal("DMV1963", pitDiagnostic.Id);
+    Assert.DoesNotContain("DVault.GeneratedReadModels.PitCustomerProfile.g.cs", pitRuns[1].GeneratedSources.Keys);
+    AssertGeneratedSource(pitRuns[1], "DVault.GeneratedReadModels.SatCustomerProfile.g.cs");
+
+    var bridgeRuns = RunGeneratorTransitions(
+        RuntimeStubs,
+        [
+          [
+            SupportBundleText(CreateSupportBundleJsonWithReadShape(
+                CreateBridgeReadShapeJson(
+                    "ManyToMany",
+                    "BridgeCustomerOrder",
+                    "CustomerOrder",
+                    [
+                        new("From", "Customer", "CustomerHashKey"),
+                        new("To", "Order", "OrderHashKey"),
+                    ]),
+                CreateSupportBundleEntityJson(
+                    "BridgeCustomerOrder",
+                    "Bridge",
+                    "CustomerOrder",
+                    fields:
+                    [
+                        ParticipantReference("CustomerHashKey", "Customer"),
+                        ParticipantReference("OrderHashKey", "Order"),
+                    ]),
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerProfile",
+                    "Profile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("EmailAddress", "EmailAddress", false),
+                    ]))),
+          ],
+          [
+            SupportBundleText(CreateSupportBundleJson(
+                CreateSupportBundleEntityJson(
+                    "BridgeCustomerOrder",
+                    "Bridge",
+                    "CustomerOrder",
+                    fields:
+                    [
+                        ParticipantReference("CustomerHashKey", "Customer"),
+                    ]),
+                CreateSupportBundleSatelliteEntityJson(
+                    "SatCustomerProfile",
+                    "Profile",
+                    "Hub",
+                    "Customer",
+                    "CustomerHashKey",
+                    "Customer",
+                    [],
+                    [
+                        Payload("EmailAddress", "EmailAddress", false),
+                    ]))),
+          ],
+        ]);
+
+    Assert.Empty(bridgeRuns[0].GeneratorDiagnostics);
+    AssertGeneratedSource(bridgeRuns[0], "DVault.GeneratedReadModels.BridgeCustomerOrder.g.cs");
+    AssertGeneratedSource(bridgeRuns[0], "DVault.GeneratedReadModels.SatCustomerProfile.g.cs");
+    var bridgeDiagnostic = Assert.Single(bridgeRuns[1].GeneratorDiagnostics);
+    Assert.Equal("DMV1964", bridgeDiagnostic.Id);
+    Assert.DoesNotContain("DVault.GeneratedReadModels.BridgeCustomerOrder.g.cs", bridgeRuns[1].GeneratedSources.Keys);
+    AssertGeneratedSource(bridgeRuns[1], "DVault.GeneratedReadModels.SatCustomerProfile.g.cs");
+  }
+
+  [Fact]
   public async Task GeneratedBridgeHelpersDelegateThroughRuntimeReadBoundaryWithEquivalentRequestsAndProjection() {
     var manyToManyResult = RunGenerator(
         RuntimeStubs,
@@ -1098,6 +1570,10 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
     return source;
   }
 
+  private static AdditionalText SupportBundleText(string text) {
+    return new TestAdditionalText("sales.dvault.support-bundle.json", text);
+  }
+
   private static GeneratorRunResult RunGenerator(
       string source,
       IReadOnlyList<AdditionalText>? additionalTexts = null,
@@ -1127,6 +1603,63 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
         additionalTexts: additionalTexts,
         parseOptions: parseOptions,
         optionsProvider: optionsProvider);
+
+    return RunGeneratorDriver(driver, compilation).Result;
+  }
+
+  private static IReadOnlyList<GeneratorRunResult> RunGeneratorTransitions(
+      string source,
+      IReadOnlyList<IReadOnlyList<AdditionalText>> additionalTextVersions,
+      IReadOnlyDictionary<string, string>? options = null) {
+    Assert.NotEmpty(additionalTextVersions);
+
+    var parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
+    var syntaxTree = CSharpSyntaxTree.ParseText(source, parseOptions);
+    var compilation = CSharpCompilation.Create(
+        "DVaultTypedReadModelSample",
+        [syntaxTree],
+        CreateReferences(),
+        new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary)
+            .WithNullableContextOptions(NullableContextOptions.Enable));
+
+    var optionValues = new Dictionary<string, string>(StringComparer.Ordinal) {
+      ["build_property.RootNamespace"] = "ConsumerApp",
+      ["build_property.DVaultGenerateTypedReadModels"] = "true",
+    };
+    if (options is not null) {
+      foreach (var option in options) {
+        optionValues[option.Key] = option.Value;
+      }
+    }
+
+    var optionsProvider = new TestAnalyzerConfigOptionsProvider(optionValues);
+    var currentAdditionalTexts = additionalTextVersions[0].ToImmutableArray();
+    GeneratorDriver driver = CSharpGeneratorDriver.Create(
+        [new DataVaultTypedReadModelSourceGenerator().AsSourceGenerator()],
+        additionalTexts: currentAdditionalTexts,
+        parseOptions: parseOptions,
+        optionsProvider: optionsProvider);
+
+    var results = new List<GeneratorRunResult>();
+    foreach (var additionalTexts in additionalTextVersions) {
+      var nextAdditionalTexts = additionalTexts.ToImmutableArray();
+      if (!nextAdditionalTexts.SequenceEqual(currentAdditionalTexts)) {
+        driver = driver.RemoveAdditionalTexts(currentAdditionalTexts);
+        driver = driver.AddAdditionalTexts(nextAdditionalTexts);
+        currentAdditionalTexts = nextAdditionalTexts;
+      }
+
+      var run = RunGeneratorDriver(driver, compilation);
+      driver = run.Driver;
+      results.Add(run.Result);
+    }
+
+    return results;
+  }
+
+  private static (GeneratorDriver Driver, GeneratorRunResult Result) RunGeneratorDriver(
+      GeneratorDriver driver,
+      Compilation compilation) {
     driver = driver.RunGeneratorsAndUpdateCompilation(
         compilation,
         out var outputCompilation,
@@ -1141,11 +1674,11 @@ public sealed class DataVaultTypedReadModelSourceGeneratorTests {
         .Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
         .ToArray();
 
-    return new GeneratorRunResult(
+    return (driver, new GeneratorRunResult(
         generatorDiagnostics.ToArray(),
         compilationErrors,
         generatedSources,
-        outputCompilation);
+        outputCompilation));
   }
 
   private static Assembly EmitAssembly(Compilation compilation) {
