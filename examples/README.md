@@ -5,9 +5,22 @@ These examples run the same bounded customer-profile history flow through the pu
 - `DCoding.Data.DVault.SqliteQuickstart` uses SQLite through `AddDVaultSqlite()` and needs no external infrastructure.
 - `DCoding.Data.DVault.PostgresQuickstart` uses PostgreSQL through `AddDVaultPostgres()` and a developer-managed connection string.
 
-Both projects register one shared `DataVaultMetadataModel` with `AddDVault(options => options.UseMetadataModel(...))`, opt the DbContext into that registry with `UseDataVaultMetadata()`, create the sample schema with EF Core for the quickstart run, write through `IDataVaultSaveService`, and read typed latest/as-of satellite projections through `IDataVaultReadService`.
+Both projects register one shared `DataVaultMetadataModel` with `AddDVault(options => options.UseMetadataModel(...))`, opt the DbContext into that registry with `UseDataVaultMetadata()`, create the sample schema with EF Core for the quickstart run, write through `IDataVaultSaveService`, read typed latest/as-of satellite projections through `IDataVaultReadService`, and print bounded request-level diagnostics from the current DVault diagnostics services.
 
 The checked-in examples use project references so they can build against the current repository checkout. Published consumer applications should install the same coordinated NuGet package family described in the root [README installation guidance](../README.md#installation).
+
+## Customer Profile Scenario
+
+Both runnable projects execute the same compact EF Core plus DVault scenario:
+
+- one `Customer` hub identified by a synthetic customer business key;
+- one `CustomerProfile` satellite with `Profile Name` and `Customer Status` payload fields;
+- an initial CRM import at `2026-04-29T10:15:00Z` with record source `crm-import`;
+- a later CRM change at `2026-04-29T11:30:00Z` with record source `crm-change`;
+- explicit hub and satellite writes through `IDataVaultSaveService`; and
+- typed latest and as-of reads through `IDataVaultReadService`.
+
+The console output keeps diagnostics sanitized. Diagnostic lines report request-level strategy status, selected strategy name when one is selected, fallback presence, and latest/as-of read-shape category. They do not print raw SQL, connection strings, business keys, hash keys, payload values, provider message text, exception text, support-bundle content, exporter endpoints, or deployment instructions.
 
 ## Package And Provider Setup
 
@@ -85,7 +98,7 @@ applicationObservability.Configure(options => {
 });
 ```
 
-The authoritative ActivitySource, span, event, tag, sampling, omission, and redaction rules live in [DVault V1 Activity Tracing Contract](../docs/architecture/dvault-v1-activity-tracing-contract.md). Example output and telemetry sinks must stay sanitized: no raw business keys or hash keys, payload values, SQL text, connection strings, provider messages, exception text, stack traces, support-bundle content, exporter endpoints, or deployment instructions.
+The authoritative ActivitySource, span, event, tag, sampling, omission, and redaction rules live in [DVault V1 Activity Tracing Contract](../docs/architecture/dvault-v1-activity-tracing-contract.md). For v0.31 performance and observability posture, keep the quickstarts aligned with [Performance Profiles](../docs/performance-profiles.md): they show request-level DVault diagnostics and opt-in telemetry/tracing hooks, not a hosted observability stack, dashboard, exporter, collector, database-provisioning flow, automatic PIT or bridge maintenance job, orchestration sample, provider-specific SQL artifact, physical-plan contract, or new runtime routing promise. Example output and telemetry sinks must stay sanitized: no raw business keys or hash keys, payload values, SQL text, connection strings, provider messages, exception text, stack traces, support-bundle content, exporter endpoints, or deployment instructions.
 
 ## Build
 
@@ -101,7 +114,7 @@ dotnet build DVault.slnx --nologo
 dotnet run --project examples/DCoding.Data.DVault.SqliteQuickstart/DCoding.Data.DVault.SqliteQuickstart.csproj
 ```
 
-The SQLite quickstart creates a temporary SQLite database file, creates the DVault schema, writes one customer profile twice with distinct load timestamps, then prints the latest profile and the as-of profile from the first timestamp.
+The SQLite quickstart creates a temporary SQLite database file, creates the DVault schema, writes one customer profile twice with distinct load timestamps and record sources, then prints sanitized typed latest/as-of read summaries and bounded DVault diagnostics. This is the default proof path and requires no external database, container runtime, hosted worker, scheduler, dashboard, exporter, collector, or telemetry backend.
 
 ## Run PostgreSQL
 
@@ -111,7 +124,7 @@ Set `DVAULT_TEST_POSTGRES_CONNECTION_STRING` to a developer-managed PostgreSQL c
 dotnet run --project examples/DCoding.Data.DVault.PostgresQuickstart/DCoding.Data.DVault.PostgresQuickstart.csproj
 ```
 
-The PostgreSQL quickstart uses `AddDVaultPostgres()` plus the same `UseDataVaultMetadata()` registry-backed DbContext path as SQLite. It creates the DVault schema in the database named by the connection string and runs the same typed save/read flow.
+The PostgreSQL quickstart uses `AddDVaultPostgres()` plus the same `UseDataVaultMetadata()` registry-backed DbContext path as SQLite. It creates the DVault schema in the database named by the connection string and runs the same explicit save, typed read, and bounded diagnostics flow.
 
 For a local Podman or Docker fixture that can supply this connection string, see `examples/DCoding.Data.DVault.PostgresQuickstart/README.md`. The fixture remains opt-in; default `dotnet test` execution does not require PostgreSQL, Docker, or Podman.
 
@@ -136,8 +149,9 @@ Choose one authoritative declaration path for each model boundary. Do not mix mu
 
 The shared quickstart flow writes through `IDataVaultSaveService` with registry-backed requests:
 
-- the first request saves the `Customer` hub with an explicit UTC load timestamp and `quickstart` record source;
-- the second and third requests save two `CustomerProfile` satellite versions for the same customer hash key;
+- the first request saves the `Customer` hub with the CRM import UTC load timestamp and `crm-import` record source;
+- the second request saves the imported `CustomerProfile` satellite version for the same customer hub;
+- the third request saves the changed `CustomerProfile` satellite version with the later UTC load timestamp and `crm-change` record source;
 - the read step uses `IDataVaultReadService.ReadLatestSatelliteAsync(...)` for both latest and as-of typed projections.
 
 This keeps the write boundary explicit. The examples do not rely on ordinary EF entity tracking to create DVault rows, and they do not hide Data Vault persistence behind `SaveChanges`.

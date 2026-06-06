@@ -3,22 +3,21 @@
   "ticket-id": "06F8KZSNDXXEEHF53HN14QFK14",
   "ticket-type": "task",
   "title": "Task: Add realistic EF Core sample scenarios within existing examples boundary",
-  "revision": "06F9JFCE1J3EPD0GPRMVJJQ9KW",
-  "status": "todo",
+  "revision": "06F9S3JKEN57F71JP3X3T230Z4",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/developer-experience",
     "area/documentation",
     "area/ef-core",
     "area/examples",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06F8KYYCJCVNZGCP0NC1T5EPRW",
   "release-id": "06F8KYXVRYYTMC82QKPWRXC8HR",
   "created-at": "2026-06-02T20:21:04.6916030Z",
-  "updated-at": "2026-06-05T19:23:28.6526406Z"
+  "updated-at": "2026-06-06T10:50:33.7171716Z"
 }

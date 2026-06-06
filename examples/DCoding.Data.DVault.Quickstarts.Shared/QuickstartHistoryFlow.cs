@@ -15,7 +15,16 @@ public static class QuickstartHistoryFlow {
   public const string ProfileNamePayloadName = "Profile Name";
   public const string CustomerStatusPayloadName = "Customer Status";
 
-  private const string RecordSource = "quickstart";
+  private const string CustomerId = "C-100";
+  private const string InitialRecordSource = "crm-import";
+  private const string ChangedRecordSource = "crm-change";
+  private const string InitialProfileName = "Alice Adams";
+  private const string ChangedProfileName = "Alice Baker";
+  private const string InitialCustomerStatus = "prospect";
+  private const string ChangedCustomerStatus = "active";
+
+  private static readonly DateTimeOffset InitialLoadTimestamp = new(2026, 4, 29, 10, 15, 0, TimeSpan.Zero);
+  private static readonly DateTimeOffset ChangedLoadTimestamp = new(2026, 4, 29, 11, 30, 0, TimeSpan.Zero);
 
   private static readonly DataVaultHubMetadata CustomerHub = new(CustomerHubName, [CustomerIdBusinessKeyName]);
   private static readonly DataVaultSatelliteMetadata CustomerProfile = new(
@@ -39,80 +48,87 @@ public static class QuickstartHistoryFlow {
     var context = scope.ServiceProvider.GetRequiredService<QuickstartVaultContext>();
     var saveService = scope.ServiceProvider.GetRequiredService<IDataVaultSaveService>();
     var readService = scope.ServiceProvider.GetRequiredService<IDataVaultReadService>();
+    var diagnosticsService = scope.ServiceProvider.GetRequiredService<IDataVaultDiagnosticsService>();
+    var readDiagnosticsService = scope.ServiceProvider.GetRequiredService<IDataVaultReadDiagnosticsService>();
 
     await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
 
-    var firstLoadTimestamp = DateTimeOffset.UtcNow;
-    var secondLoadTimestamp = firstLoadTimestamp.AddMinutes(5);
-    var customerId = "C-" + firstLoadTimestamp.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture);
-
+    var hubSaveRequest = new DataVaultRegistrySaveRequest(
+        InitialLoadTimestamp,
+        InitialRecordSource,
+        [
+            new(CustomerHubName, [new(CustomerIdBusinessKeyName, CustomerId)]),
+        ],
+        []);
     var hubResult = await saveService.SaveAsync(
         context,
-        new DataVaultRegistrySaveRequest(
-            firstLoadTimestamp,
-            RecordSource,
-            [
-                new(CustomerHubName, [new(CustomerIdBusinessKeyName, customerId)]),
-            ],
-            []),
+        hubSaveRequest,
         cancellationToken).ConfigureAwait(false);
     var customerHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, CustomerHubName);
 
+    var firstProfileSaveRequest = new DataVaultRegistrySaveRequest(
+        InitialLoadTimestamp,
+        InitialRecordSource,
+        [],
+        [],
+        [
+            new(
+                DataVaultMetadataReference.Hub(CustomerHubName),
+                CustomerProfileSatelliteName,
+                customerHashKey,
+                [
+                    new(ProfileNamePayloadName, InitialProfileName),
+                    new(CustomerStatusPayloadName, InitialCustomerStatus),
+                ],
+                "customer-profile-import"),
+        ]);
     var firstProfileResult = await saveService.SaveAsync(
         context,
-        new DataVaultRegistrySaveRequest(
-            firstLoadTimestamp,
-            RecordSource,
-            [],
-            [],
-            [
-                new(
-                    DataVaultMetadataReference.Hub(CustomerHubName),
-                    CustomerProfileSatelliteName,
-                    customerHashKey,
-                    [
-                        new(ProfileNamePayloadName, "Alice Adams"),
-                        new(CustomerStatusPayloadName, "Prospect"),
-                    ],
-                    "customer-profile-prospect"),
-            ]),
+        firstProfileSaveRequest,
         cancellationToken).ConfigureAwait(false);
 
+    var secondProfileSaveRequest = new DataVaultRegistrySaveRequest(
+        ChangedLoadTimestamp,
+        ChangedRecordSource,
+        [],
+        [],
+        [
+            new(
+                DataVaultMetadataReference.Hub(CustomerHubName),
+                CustomerProfileSatelliteName,
+                customerHashKey,
+                [
+                    new(ProfileNamePayloadName, ChangedProfileName),
+                    new(CustomerStatusPayloadName, ChangedCustomerStatus),
+                ],
+                "customer-profile-change"),
+        ]);
+    var saveDiagnostics = diagnosticsService.Analyze(context, secondProfileSaveRequest);
     var secondProfileResult = await saveService.SaveAsync(
         context,
-        new DataVaultRegistrySaveRequest(
-            secondLoadTimestamp,
-            RecordSource,
-            [],
-            [],
-            [
-                new(
-                    DataVaultMetadataReference.Hub(CustomerHubName),
-                    CustomerProfileSatelliteName,
-                    customerHashKey,
-                    [
-                        new(ProfileNamePayloadName, "Alice Baker"),
-                        new(CustomerStatusPayloadName, "Active"),
-                    ],
-                    "customer-profile-active"),
-            ]),
+        secondProfileSaveRequest,
         cancellationToken).ConfigureAwait(false);
+
+    var latestReadRequest = new DataVaultRegistryLatestSatelliteReadRequest(
+        DataVaultMetadataReference.Hub(CustomerHubName),
+        CustomerProfileSatelliteName,
+        [customerHashKey]);
+    var asOfReadRequest = new DataVaultRegistryLatestSatelliteReadRequest(
+        DataVaultMetadataReference.Hub(CustomerHubName),
+        CustomerProfileSatelliteName,
+        [customerHashKey],
+        InitialLoadTimestamp);
+    var latestReadDiagnostics = readDiagnosticsService.Analyze(context, latestReadRequest);
+    var asOfReadDiagnostics = readDiagnosticsService.Analyze(context, asOfReadRequest);
 
     var latestRows = await readService.ReadLatestSatelliteAsync(
         context,
-        new DataVaultRegistryLatestSatelliteReadRequest(
-            DataVaultMetadataReference.Hub(CustomerHubName),
-            CustomerProfileSatelliteName,
-            [customerHashKey]),
+        latestReadRequest,
         ProjectProfile,
         cancellationToken).ConfigureAwait(false);
     var asOfRows = await readService.ReadLatestSatelliteAsync(
         context,
-        new DataVaultRegistryLatestSatelliteReadRequest(
-            DataVaultMetadataReference.Hub(CustomerHubName),
-            CustomerProfileSatelliteName,
-            [customerHashKey],
-            firstLoadTimestamp),
+        asOfReadRequest,
         ProjectProfile,
         cancellationToken).ConfigureAwait(false);
 
@@ -120,8 +136,13 @@ public static class QuickstartHistoryFlow {
     var asOf = asOfRows.Single();
 
     Console.WriteLine("DVault " + providerName + " quickstart completed.");
-    Console.WriteLine("Customer Id: " + customerId);
-    Console.WriteLine("Customer hash key: " + customerHashKey);
+    Console.WriteLine("Scenario: one Customer hub and one CustomerProfile satellite with two ordered profile-state saves.");
+    Console.WriteLine(
+        "Load timestamps: " +
+        InitialLoadTimestamp.ToString("O", CultureInfo.InvariantCulture) +
+        " -> " +
+        ChangedLoadTimestamp.ToString("O", CultureInfo.InvariantCulture));
+    Console.WriteLine("Record sources: " + InitialRecordSource + " -> " + ChangedRecordSource);
     Console.WriteLine(
         "Rows written: hub=" +
         hubResult.RowsWritten.ToString(CultureInfo.InvariantCulture) +
@@ -130,21 +151,42 @@ public static class QuickstartHistoryFlow {
         ", second profile=" +
         secondProfileResult.RowsWritten.ToString(CultureInfo.InvariantCulture));
     Console.WriteLine(
-        "Latest profile: " +
-        latest.ProfileName +
-        " / " +
-        latest.CustomerStatus +
-        " at " +
+        "Latest typed read: payload fields=" +
+        FormatPayloadPresence(latest) +
+        ", load timestamp=" +
         latest.LoadTimestamp.ToString("O", CultureInfo.InvariantCulture));
     Console.WriteLine(
-        "As-of profile at " +
-        firstLoadTimestamp.ToString("O", CultureInfo.InvariantCulture) +
-        ": " +
-        asOf.ProfileName +
-        " / " +
-        asOf.CustomerStatus +
-        " at " +
+        "As-of typed read at " +
+        InitialLoadTimestamp.ToString("O", CultureInfo.InvariantCulture) +
+        ": payload fields=" +
+        FormatPayloadPresence(asOf) +
+        ", load timestamp=" +
         asOf.LoadTimestamp.ToString("O", CultureInfo.InvariantCulture));
+    Console.WriteLine(
+        "Save diagnostics: status=" +
+        saveDiagnostics.SaveStrategy.Status +
+        ", selected=" +
+        FormatSelectedStrategy(saveDiagnostics.SaveStrategy.SelectedStrategyName) +
+        ", fallback=" +
+        FormatFallbackPresence(saveDiagnostics.SaveStrategy.FallbackCauses.Count));
+    Console.WriteLine(
+        "Latest read diagnostics: status=" +
+        latestReadDiagnostics.ReadStrategy.Status +
+        ", selected=" +
+        FormatSelectedStrategy(latestReadDiagnostics.ReadStrategy.SelectedStrategyName) +
+        ", shape=" +
+        FormatReadShape(latestReadDiagnostics) +
+        ", fallback=" +
+        FormatFallbackPresence(latestReadDiagnostics.ReadStrategy.FallbackCauses.Count));
+    Console.WriteLine(
+        "As-of read diagnostics: status=" +
+        asOfReadDiagnostics.ReadStrategy.Status +
+        ", selected=" +
+        FormatSelectedStrategy(asOfReadDiagnostics.ReadStrategy.SelectedStrategyName) +
+        ", shape=" +
+        FormatReadShape(asOfReadDiagnostics) +
+        ", fallback=" +
+        FormatFallbackPresence(asOfReadDiagnostics.ReadStrategy.FallbackCauses.Count));
   }
 
   private static CustomerProfileRead ProjectProfile(DataVaultSatelliteProjectionRow row) {
@@ -164,6 +206,32 @@ public static class QuickstartHistoryFlow {
     return result.SavedRecords.Single(record =>
         record.Kind == kind &&
         string.Equals(record.MetadataName, metadataName, StringComparison.Ordinal)).HashKey;
+  }
+
+  private static string FormatPayloadPresence(CustomerProfileRead row) {
+    return string.IsNullOrWhiteSpace(row.ProfileName) || string.IsNullOrWhiteSpace(row.CustomerStatus)
+        ? "missing"
+        : "profile name and customer status projected";
+  }
+
+  private static string FormatSelectedStrategy(string? selectedStrategyName) {
+    return string.IsNullOrWhiteSpace(selectedStrategyName) ? "none" : selectedStrategyName;
+  }
+
+  private static string FormatFallbackPresence(int fallbackCauseCount) {
+    return fallbackCauseCount == 0 ? "none" : "present";
+  }
+
+  private static string FormatReadShape(DataVaultDiagnosticsResult diagnostics) {
+    if (diagnostics.ReadShape is not { } readShape) {
+      return "none";
+    }
+
+    if (readShape.Satellite is null) {
+      return readShape.Kind.ToString();
+    }
+
+    return readShape.Kind + "/" + readShape.Satellite.Semantics;
   }
 
   private sealed record CustomerProfileRead(
