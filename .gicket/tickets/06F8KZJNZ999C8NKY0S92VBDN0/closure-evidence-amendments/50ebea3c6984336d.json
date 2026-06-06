@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "amendedTicketId": "06F8KZJNZ999C8NKY0S92VBDN0",
+  "amendmentType": "terminal-relation-follow-up-evidence",
+  "supersededClaims": [
+    "Historical relation follow-up targeted owner branch \u0027develop\u0027 after base branch \u0027develop\u0027 already recorded terminal status \u0027done\u0027.",
+    "The original follow-up evidence is preserved append-only instead of reopening the terminal ticket or recreating its owner branch."
+  ],
+  "landedEvidence": [
+    "Relation follow-up from ticket \u002706F8KZK2MSFQP9G2DBM61ZVGD4\u0027 via flow \u0027blocked-by-follow-up-comment\u0027 and action \u0027blocked-by-follow-up-target\u0027 became available after the target ticket was terminal.",
+    "Base branch \u0027develop\u0027 records target status \u0027done\u0027.",
+    "Original follow-up comment: [gicket-bot] relation follow-up\n\nSummary\n- Source ticket \u006006F8KZK2MSFQP9G2DBM61ZVGD4\u0060 completed a bot run for role \u0060test\u0060 with outcome \u0060test-workflow-awaiting-integrator\u0060.\n- Source run summary: Tester workflow verified branch \u0027ticket/06F8KZK2MSFQP9G2DBM61ZVGD4-task-add-provider-read-benchmark-rows-and-verifi\u0027 for ticket \u002706F8KZK2MSFQP9G2DBM61ZVGD4\u0027.\n- Selected flow \u0060blocked-by-follow-up-comment\u0060 reached this ticket via \u0060blocks\u0060 path \u006006F8KZK2MSFQP9G2DBM61ZVGD4 -\u003E 06F8KZJNZ999C8NKY0S92VBDN0\u0060.\n\nRu..."
+  ],
+  "baseBranch": "develop",
+  "sourceTicketId": "06F8KZK2MSFQP9G2DBM61ZVGD4",
+  "sourceRunId": "16e6010e238b442f89e4e7d807e14a19",
+  "sourceRoleToken": "test",
+  "sourceKind": "relation-follow-up",
+  "createdAtUtc": "2026-06-06T04:41:18.3955852+00:00",
+  "semanticIdempotencyKey": "closure-evidence-amendment-ledger:06f8kzjnz999c8nky0s92vbdn0:terminal-relation-follow-up-evidence:develop:06f8kzk2msfqp9g2dbm61zvgd4:relation-follow-up:dc0b1141ad4a8b39"
+}
