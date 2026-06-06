@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "amendedTicketId": "06F8KZQAWZ7QRGB68KB21C9B0R",
+  "amendmentType": "terminal-relation-follow-up-evidence",
+  "supersededClaims": [
+    "Historical relation follow-up targeted owner branch \u0027develop\u0027 after base branch \u0027develop\u0027 already recorded terminal status \u0027done\u0027.",
+    "The original follow-up evidence is preserved append-only instead of reopening the terminal ticket or recreating its owner branch."
+  ],
+  "landedEvidence": [
+    "Relation follow-up from ticket \u002706F8KZR38EDSVZBCTC0XYR4R80\u0027 via flow \u0027blocked-by-follow-up-comment\u0027 and action \u0027blocked-by-follow-up-target\u0027 became available after the target ticket was terminal.",
+    "Base branch \u0027develop\u0027 records target status \u0027done\u0027.",
+    "Original follow-up comment: [gicket-bot] relation follow-up\n\nSummary\n- Source ticket \u006006F8KZR38EDSVZBCTC0XYR4R80\u0060 completed a bot run for role \u0060test\u0060 with outcome \u0060test-workflow-awaiting-integrator\u0060.\n- Source run summary: Tester workflow verified branch \u0027ticket/06F8KZR38EDSVZBCTC0XYR4R80-story-define-performance-decision-tree-contract\u0027 for ticket \u002706F8KZR38EDSVZBCTC0XYR4R80\u0027.\n- Selected flow \u0060blocked-by-follow-up-comment\u0060 reached this ticket via \u0060blocks\u0060 path \u006006F8KZR38EDSVZBCTC0XYR4R80 -\u003E 06F8KZQAWZ7QRGB68KB21C9B0R\u0060.\n\nRun..."
+  ],
+  "baseBranch": "develop",
+  "sourceTicketId": "06F8KZR38EDSVZBCTC0XYR4R80",
+  "sourceRunId": "6ec285cbe7c7459b8e3a522397188ab0",
+  "sourceRoleToken": "test",
+  "sourceKind": "relation-follow-up",
+  "createdAtUtc": "2026-06-06T04:41:28.5314963+00:00",
+  "semanticIdempotencyKey": "closure-evidence-amendment-ledger:06f8kzqawz7qrgb68kb21c9b0r:terminal-relation-follow-up-evidence:develop:06f8kzr38edsvzbctc0xyr4r80:relation-follow-up:9f446e3264ff8360"
+}

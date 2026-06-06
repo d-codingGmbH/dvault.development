@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "amendedTicketId": "06F8KZQAWZ7QRGB68KB21C9B0R",
+  "amendmentType": "terminal-relation-follow-up-evidence",
+  "supersededClaims": [
+    "Historical relation follow-up targeted owner branch \u0027develop\u0027 after base branch \u0027develop\u0027 already recorded terminal status \u0027done\u0027.",
+    "The original follow-up evidence is preserved append-only instead of reopening the terminal ticket or recreating its owner branch."
+  ],
+  "landedEvidence": [
+    "Relation follow-up from ticket \u002706F8KZP0VKMXGE0JXPZRD1RQDG\u0027 via flow \u0027blocked-by-follow-up-comment\u0027 and action \u0027blocked-by-follow-up-target\u0027 became available after the target ticket was terminal.",
+    "Base branch \u0027develop\u0027 records target status \u0027done\u0027.",
+    "Original follow-up comment: [gicket-bot] relation follow-up\n\nSummary\n- Source ticket \u006006F8KZP0VKMXGE0JXPZRD1RQDG\u0060 completed a bot run for role \u0060test\u0060 with outcome \u0060test-workflow-awaiting-integrator\u0060.\n- Source run summary: Tester workflow verified branch \u0027ticket/06F8KZP0VKMXGE0JXPZRD1RQDG-epic-support-bundle-freshness-and-generator-diag\u0027 for ticket \u002706F8KZP0VKMXGE0JXPZRD1RQDG\u0027.\n- Selected flow \u0060blocked-by-follow-up-comment\u0060 reached this ticket via \u0060blocks\u0060 path \u006006F8KZP0VKMXGE0JXPZRD1RQDG -\u003E 06F8KZQAWZ7QRGB68KB21C9B0R\u0060.\n\nRu..."
+  ],
+  "baseBranch": "develop",
+  "sourceTicketId": "06F8KZP0VKMXGE0JXPZRD1RQDG",
+  "sourceRunId": "d2fd7a4a49434fda9b7303014fc2f53f",
+  "sourceRoleToken": "test",
+  "sourceKind": "relation-follow-up",
+  "createdAtUtc": "2026-06-06T04:41:28.5198746+00:00",
+  "semanticIdempotencyKey": "closure-evidence-amendment-ledger:06f8kzqawz7qrgb68kb21c9b0r:terminal-relation-follow-up-evidence:develop:06f8kzp0vkmxge0jxpzrd1rqdg:relation-follow-up:7ab70f0f83dde789"
+}
