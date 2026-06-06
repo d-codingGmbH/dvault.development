@@ -1,0 +1,12 @@
+{
+  "event-id": "06F9SG94V2TNXEMG3DQQ19KTXW",
+  "occurred-at": "2026-06-06T11:46:04.1200000Z",
+  "event-type": "TicketCommentAdded",
+  "actor": {
+    "name": "system",
+    "email": "system@example.invalid"
+  },
+  "payload": {
+    "comment-id": "06F9SG94V0XN5DDTK6152HNXMM"
+  }
+}

@@ -1,0 +1,5 @@
+﻿﻿[gicket-bot] manual route correction to tester
+
+The previous manual recovery moved the ticket to `ready-for-integration`, but the installed `gicket-bot` only accepts `po`, `po-critic`, `dev`, and `test` as schedulable roles. The integrator gate is therefore not claimable as a standalone role in this runtime.
+
+Route the ticket back to the tester gate so the supported `test` role can re-run verification and, on success, trigger the normal internal integrator automation. The tester should treat the earlier `docs/README.md` finding as non-blocking because the ticket delivery contract explicitly says that file is not a required edit surface for this ticket. The previous tester evidence already recorded successful `dotnet test DVault.slnx --nologo` and `bash tools/check-format.sh` execution for commit `4b9b9e12ba2f`.
