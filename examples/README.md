@@ -14,13 +14,13 @@ The checked-in examples use project references so they can build against the cur
 Consumer applications install the provider-neutral package and exactly one provider package for the database they use. Keep every DVault package on one aligned version:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.16.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.16.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.16.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.16.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.16.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.16.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.16.0
+dotnet add package DCoding.Data.DVault --version 0.30.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.30.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.30.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.30.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.30.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.30.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.30.0
 ```
 
 Applications also need the normal Entity Framework Core provider package for their database, such as `Microsoft.EntityFrameworkCore.Sqlite`, `Npgsql.EntityFrameworkCore.PostgreSQL`, `Microsoft.EntityFrameworkCore.SqlServer`, `Oracle.EntityFrameworkCore`, or a MySQL EF Core provider.
@@ -39,6 +39,53 @@ services.AddDbContext<QuickstartVaultContext>(
 ```
 
 The PostgreSQL quickstart uses the same shape with `AddDVaultPostgres()` and `UseNpgsql(connectionString)`. Other provider packages expose the matching `AddDVaultSqlServer()`, `AddDVaultOracle()`, and `AddDVaultMySql()` startup extensions, but these examples only provide runnable SQLite and PostgreSQL projects.
+
+## Observability Examples
+
+`AddDVault()` is telemetry-free by default. It does not add counters, `ActivityListener` instances, exporters, dashboards, collectors, hosting, or OpenTelemetry package requirements. Applications opt into each observability surface they want to own.
+
+Built-in save/read metrics use the `System.Diagnostics.Metrics` observer path. Register the provider-neutral services first, then add `AddDVaultTelemetry()`:
+
+```csharp
+using DCoding.Data.DVault;
+using Microsoft.Extensions.DependencyInjection;
+
+services.AddDVault(options => options.UseMetadataModel(QuickstartHistoryFlow.MetadataModel));
+services.AddDVaultTelemetry();
+```
+
+The built-in meter name is `DCoding.Data.DVault`. Applications that need custom bounded summaries can also register `IDataVaultTelemetryObserver` implementations; those observers are a sibling opt-in surface, not a tracing prerequisite.
+
+Activity tracing is listener-driven and does not require `AddDVaultTelemetry()`. Register an `ActivityListener`, OpenTelemetry tracing provider, or equivalent application-owned listener for the `DCoding.Data.DVault` ActivitySource:
+
+```csharp
+using DCoding.Data.DVault;
+using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics;
+
+using var listener = new ActivityListener {
+  ShouldListenTo = source => source.Name == "DCoding.Data.DVault",
+  Sample = (ref ActivityCreationOptions<ActivityContext> options) =>
+      ActivitySamplingResult.AllDataAndRecorded,
+  ActivityStopped = activity => Console.WriteLine(activity.DisplayName),
+};
+
+ActivitySource.AddActivityListener(listener);
+
+services.AddDVault(options => options.UseMetadataModel(QuickstartHistoryFlow.MetadataModel));
+```
+
+For OpenTelemetry-style application wiring, keep DVault to the source and meter names while the application chooses packages, exporters, sampling, hosting, and backends:
+
+```csharp
+// Pseudo-code only: use the observability package owned by the application.
+applicationObservability.Configure(options => {
+  options.TraceSources.Add("DCoding.Data.DVault");
+  options.Meters.Add("DCoding.Data.DVault");
+});
+```
+
+The authoritative ActivitySource, span, event, tag, sampling, omission, and redaction rules live in [DVault V1 Activity Tracing Contract](../docs/architecture/dvault-v1-activity-tracing-contract.md). Example output and telemetry sinks must stay sanitized: no raw business keys or hash keys, payload values, SQL text, connection strings, provider messages, exception text, stack traces, support-bundle content, exporter endpoints, or deployment instructions.
 
 ## Build
 
