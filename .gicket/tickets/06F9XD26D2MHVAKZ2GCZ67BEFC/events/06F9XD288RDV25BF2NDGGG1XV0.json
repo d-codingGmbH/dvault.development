@@ -1,0 +1,14 @@
+{
+  "event-id": "06F9XD288RDV25BF2NDGGG1XV0",
+  "occurred-at": "2026-06-06T20:51:15.6547487Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Capture v0.32.0 all-provider Podman benchmark baseline",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

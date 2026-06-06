@@ -1,0 +1,14 @@
+{
+  "event-id": "06F9XD2VYKJSR7KDXRH6RCN74G",
+  "occurred-at": "2026-06-06T20:51:20.6928816Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Evaluate Oracle high-volume satellite save threshold",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

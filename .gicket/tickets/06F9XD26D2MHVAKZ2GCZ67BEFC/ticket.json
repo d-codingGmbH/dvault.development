@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9XD26D2MHVAKZ2GCZ67BEFC",
+  "ticket-type": "task",
+  "title": "Task: Capture v0.32.0 all-provider Podman benchmark baseline",
+  "revision": "06F9XD3WH589HVK3HVSM5E2Q1R",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "area/ef-core",
+    "area/performance",
+    "area/provider-support",
+    "type/task",
+    "area/benchmarks",
+    "area/testing"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9XD1R3N8KSA43A1WZVTG8GM",
+  "release-id": "06F8KYXWH4YTM5WXQZHR41EPQG",
+  "created-at": "2026-06-06T20:51:15.6547487Z",
+  "updated-at": "2026-06-06T20:51:29.0331210Z"
+}

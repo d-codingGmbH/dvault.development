@@ -1,0 +1,25 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06F9XD2M71D1XFT7FJX62KD8HM",
+  "ticket-type": "task",
+  "title": "Task: Tune SQL Server save threshold diagnostics and large-batch eligibility",
+  "revision": "06F9XD3YC4JDGSGC686YPDXRWW",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "area/ef-core",
+    "area/performance",
+    "area/provider-support",
+    "type/task",
+    "area/diagnostics",
+    "area/sql-server",
+    "area/testing"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06F9XD1R3N8KSA43A1WZVTG8GM",
+  "release-id": "06F8KYXWH4YTM5WXQZHR41EPQG",
+  "created-at": "2026-06-06T20:51:18.9813761Z",
+  "updated-at": "2026-06-06T20:51:29.5052372Z"
+}
