@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "amendedTicketId": "06F7Y0HJ1ZPY7ND9N8RVS92H4C",
+  "amendmentType": "terminal-relation-follow-up-evidence",
+  "supersededClaims": [
+    "Historical relation follow-up targeted owner branch \u0027develop\u0027 after base branch \u0027develop\u0027 already recorded terminal status \u0027done\u0027.",
+    "The original follow-up evidence is preserved append-only instead of reopening the terminal ticket or recreating its owner branch."
+  ],
+  "landedEvidence": [
+    "Relation follow-up from ticket \u002706F7Y0FR4JS1V9WHFBP70GX1SM\u0027 via flow \u0027child-follow-up-comment\u0027 and action \u0027child-follow-up-target\u0027 became available after the target ticket was terminal.",
+    "Base branch \u0027develop\u0027 records target status \u0027done\u0027.",
+    "Original follow-up comment: [gicket-bot] relation follow-up\n\nSummary\n- Source ticket \u006006F7Y0FR4JS1V9WHFBP70GX1SM\u0060 completed a bot run for role \u0060test\u0060 with outcome \u0060test-workflow-awaiting-integrator\u0060.\n- Source run summary: Tester workflow verified branch \u0027ticket/06F7Y0FR4JS1V9WHFBP70GX1SM-epic-read-plan-explainability-and-typed-read-hel\u0027 for ticket \u002706F7Y0FR4JS1V9WHFBP70GX1SM\u0027.\n- Selected flow \u0060child-follow-up-comment\u0060 reached this ticket via \u0060parentOf\u0060 path \u006006F7Y0FR4JS1V9WHFBP70GX1SM -\u003E 06F7Y0HJ1ZPY7ND9N8RVS92H4C\u0060.\n\nRun m..."
+  ],
+  "baseBranch": "develop",
+  "sourceTicketId": "06F7Y0FR4JS1V9WHFBP70GX1SM",
+  "sourceRunId": "6a9bb33a6b74438fa9e033855fcb6d80",
+  "sourceRoleToken": "test",
+  "sourceKind": "relation-follow-up",
+  "createdAtUtc": "2026-06-06T04:41:09.0954323+00:00",
+  "semanticIdempotencyKey": "closure-evidence-amendment-ledger:06f7y0hj1zpy7nd9n8rvs92h4c:terminal-relation-follow-up-evidence:develop:06f7y0fr4js1v9whfbp70gx1sm:relation-follow-up:ba01de74dd00bc87"
+}
