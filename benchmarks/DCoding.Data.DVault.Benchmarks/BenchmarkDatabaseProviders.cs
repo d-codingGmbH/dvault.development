@@ -158,6 +158,7 @@ internal abstract class SharedExternalBenchmarkDatabase : IBenchmarkDatabase {
       "PitCustomerProfileStatus",
       "SatOrderProductFulfillment",
       "SatCustomerStatus",
+      "SatCustomerStatu",
       "SatCustomerProfile",
       "LinkSalesRegionParentChild",
       "LinkOrderProduct",
