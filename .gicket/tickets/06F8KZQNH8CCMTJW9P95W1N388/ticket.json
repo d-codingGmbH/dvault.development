@@ -3,22 +3,21 @@
   "ticket-id": "06F8KZQNH8CCMTJW9P95W1N388",
   "ticket-type": "epic",
   "title": "Epic: Performance decision guidance and observability examples",
-  "revision": "06F9JF83QP3ZE76RHVJNP0B2QW",
-  "status": "todo",
+  "revision": "06F9WNB6XREC6W6H5AVD4F3WN0",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/epic",
     "area/developer-experience",
     "area/documentation",
     "area/ef-core",
     "area/observability",
-    "area/performance"
+    "area/performance",
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06F8KYYBS9CX4C5SN76K0GK1S0",
   "release-id": "06F8KYXVRYYTMC82QKPWRXC8HR",
   "created-at": "2026-06-02T20:20:48.6417677Z",
-  "updated-at": "2026-06-05T19:22:53.2456144Z"
+  "updated-at": "2026-06-06T19:07:37.5820000Z"
 }
