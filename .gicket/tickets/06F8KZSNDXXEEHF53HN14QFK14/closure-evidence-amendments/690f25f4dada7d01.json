@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "amendedTicketId": "06F8KZSNDXXEEHF53HN14QFK14",
+  "amendmentType": "terminal-relation-follow-up-evidence",
+  "supersededClaims": [
+    "Historical relation follow-up targeted owner branch \u0027develop\u0027 after base branch \u0027develop\u0027 already recorded terminal status \u0027done\u0027.",
+    "The original follow-up evidence is preserved append-only instead of reopening the terminal ticket or recreating its owner branch."
+  ],
+  "landedEvidence": [
+    "Relation follow-up from ticket \u002706F8KZSYCVZ21MS983501BZG18\u0027 via flow \u0027blocked-by-follow-up-comment\u0027 and action \u0027blocked-by-follow-up-target\u0027 became available after the target ticket was terminal.",
+    "Base branch \u0027develop\u0027 records target status \u0027done\u0027.",
+    "Original follow-up comment: [gicket-bot] relation follow-up\n\nSummary\n- Source ticket \u006006F8KZSYCVZ21MS983501BZG18\u0060 completed a bot run for role \u0060test\u0060 with outcome \u0060test-workflow-returned\u0060.\n- Source run summary: Tester verification detected blocking repository findings on branch \u0027ticket/06F8KZSYCVZ21MS983501BZG18-task-update-v0-31-0-performance-guidance-release\u0027.\n- Selected flow \u0060blocked-by-follow-up-comment\u0060 reached this ticket via \u0060blocks\u0060 path \u006006F8KZSYCVZ21MS983501BZG18 -\u003E 06F8KZSNDXXEEHF53HN14QFK14\u0060.\n\nRun metadata\n- ru..."
+  ],
+  "baseBranch": "develop",
+  "sourceTicketId": "06F8KZSYCVZ21MS983501BZG18",
+  "sourceRunId": "cf1f8e0f23954c959ae467880f8a8550",
+  "sourceRoleToken": "test",
+  "sourceKind": "relation-follow-up",
+  "createdAtUtc": "2026-06-06T17:39:13.7686574+00:00",
+  "semanticIdempotencyKey": "closure-evidence-amendment-ledger:06f8kzsndxxeehf53hn14qfk14:terminal-relation-follow-up-evidence:develop:06f8kzsycvz21ms983501bzg18:relation-follow-up:5dab873f8f6a8217"
+}
