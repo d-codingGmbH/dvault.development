@@ -3,6 +3,6 @@
   "release-id": "06F8KYXVRYYTMC82QKPWRXC8HR",
   "name": "v0.31.0 - Performance Guidance and Observability Examples",
   "description": "Decision-tree guidance, OpenTelemetry examples, and realistic EF Core examples without adding dashboards, hosting, ingestion orchestration, or platform responsibilities.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-02T20:17:16.7439697Z"
 }

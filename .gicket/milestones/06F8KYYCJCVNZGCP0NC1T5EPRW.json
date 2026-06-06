@@ -3,6 +3,6 @@
   "milestone-id": "06F8KYYCJCVNZGCP0NC1T5EPRW",
   "name": "v0.31.0 - Observability and EF examples",
   "description": "Add OpenTelemetry setup examples and realistic EF Core examples inside the existing example boundary.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-02T20:17:21.0433217Z"
 }
