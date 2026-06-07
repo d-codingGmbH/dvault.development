@@ -65,6 +65,11 @@ public static class DataVaultDesignTimeCommand {
             options.ArtifactPath,
             options.UseLiveSchema,
             cancellationToken).ConfigureAwait(false),
+        "sql-artifact" => RunSqlArtifact(
+            output,
+            host,
+            options.OutputPath,
+            options.WorkloadLabel!),
         "drift" => await RunDriftAsync(
             output,
             error,
@@ -88,6 +93,36 @@ public static class DataVaultDesignTimeCommand {
 
     output.WriteLine(result.ToDisplayString());
     return result.Validation.IsValid ? 0 : 1;
+  }
+
+  private static int RunSqlArtifact(
+      TextWriter output,
+      DataVaultDesignTimeCommandHost host,
+      string? outputPath,
+      string workloadLabel) {
+    if (string.IsNullOrWhiteSpace(outputPath)) {
+      throw new InvalidOperationException("The SQL artifact dry-run command requires a caller-supplied output path.");
+    }
+
+    DataVaultSqlArtifactManifestExporter.ValidateSupportedWorkload(workloadLabel);
+
+    using var dbContext = CreateRequiredDbContext(host);
+    var diagnosticsSourceKind = host.CreateSupportBundleDiagnostics is null
+        ? "diagnostics-service"
+        : "create-support-bundle-diagnostics";
+    var diagnostics = host.CreateSupportBundleDiagnostics is null
+        ? host.Diagnostics.Analyze(dbContext)
+        : host.CreateSupportBundleDiagnostics(dbContext);
+    if (diagnostics is null) {
+      throw new InvalidOperationException("The configured support-bundle diagnostics factory returned null.");
+    }
+
+    var json = DataVaultSqlArtifactManifestExporter.ExportSqlServerProviderNativeBulkIngestionDryRunJson(
+        diagnostics,
+        diagnosticsSourceKind);
+    File.WriteAllText(outputPath, json);
+    output.WriteLine("Exported DVault SQL artifact dry-run manifest to '" + outputPath + "'.");
+    return 0;
   }
 
   private static int RunExport(
@@ -247,6 +282,7 @@ public static class DataVaultDesignTimeCommand {
       "validate" => ParseValidate(args, error),
       "export" => ParseExport(args, error),
       "support-bundle" => ParseSupportBundle(args, error),
+      "sql-artifact" => ParseSqlArtifact(args, error),
       "drift" => ParseDrift(args, error),
       "guardrail" => ParseGuardrail(args, error),
       _ => UnknownCommand(verb, error),
@@ -329,6 +365,59 @@ public static class DataVaultDesignTimeCommand {
         OutputPath: outputPath,
         ArtifactPath: artifactPath,
         UseLiveSchema: useLiveSchema);
+  }
+
+  private static CommandOptions? ParseSqlArtifact(string[] args, TextWriter error) {
+    string? outputPath = null;
+    var workloadLabel = DataVaultSqlArtifactManifestExporter.SupportedWorkloadLabel;
+    for (var index = 1; index < args.Length; index++) {
+      var arg = args[index];
+      if (IsHelpOption(arg)) {
+        return CommandOptions.Help;
+      }
+
+      if (string.Equals(arg, "-o", StringComparison.Ordinal) ||
+          string.Equals(arg, "--output", StringComparison.Ordinal)) {
+        if (!TryReadOptionValue(args, ref index, arg, error, out outputPath)) {
+          return null;
+        }
+      }
+      else if (string.Equals(arg, "--workload", StringComparison.Ordinal)) {
+        if (!TryReadOptionValue(args, ref index, arg, error, out workloadLabel)) {
+          return null;
+        }
+
+        if (!string.Equals(
+            workloadLabel,
+            DataVaultSqlArtifactManifestExporter.SupportedWorkloadLabel,
+            StringComparison.Ordinal)) {
+          error.WriteLine(
+              "Unsupported SQL artifact workload '" +
+              workloadLabel +
+              "'. Only '" +
+              DataVaultSqlArtifactManifestExporter.SupportedWorkloadLabel +
+              "' is supported.");
+          WriteUsage(error);
+          return null;
+        }
+      }
+      else {
+        error.WriteLine("Unexpected argument '" + arg + "'.");
+        WriteUsage(error);
+        return null;
+      }
+    }
+
+    if (string.IsNullOrWhiteSpace(outputPath)) {
+      error.WriteLine("Missing output path for sql-artifact command.");
+      WriteUsage(error);
+      return null;
+    }
+
+    return new CommandOptions(
+        "sql-artifact",
+        OutputPath: outputPath,
+        WorkloadLabel: workloadLabel);
   }
 
   private static CommandOptions? ParseDrift(string[] args, TextWriter error) {
@@ -445,6 +534,7 @@ public static class DataVaultDesignTimeCommand {
     writer.WriteLine("Usage: dvault validate");
     writer.WriteLine("       dvault export [--output <path>]");
     writer.WriteLine("       dvault support-bundle [--output <path>] [--artifact <path>] [--live-schema]");
+    writer.WriteLine("       dvault sql-artifact --output <path> [--workload provider-native-bulk-ingestion]");
     writer.WriteLine("       dvault drift [--live-schema] (--artifact <path>|<path>)");
     writer.WriteLine("       dvault guardrail (--migration <name>|<name>)");
   }
@@ -468,7 +558,8 @@ public static class DataVaultDesignTimeCommand {
       string? OutputPath = null,
       string? ArtifactPath = null,
       bool UseLiveSchema = false,
-      string? MigrationName = null) {
+      string? MigrationName = null,
+      string? WorkloadLabel = null) {
     public static CommandOptions Help { get; } = new("help", ShowHelp: true);
   }
 }

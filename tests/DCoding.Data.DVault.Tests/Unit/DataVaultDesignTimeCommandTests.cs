@@ -2,6 +2,7 @@ using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 using Xunit;
 
 namespace DCoding.Data.DVault.Tests.Unit;
@@ -18,6 +19,7 @@ public sealed class DataVaultDesignTimeCommandTests {
     Assert.Equal(0, help.ExitCode);
     Assert.Contains("Usage: dvault validate", help.Output, StringComparison.Ordinal);
     Assert.Contains("dvault support-bundle", help.Output, StringComparison.Ordinal);
+    Assert.Contains("dvault sql-artifact", help.Output, StringComparison.Ordinal);
     Assert.Empty(help.Error);
 
     Assert.Equal(2, unknown.ExitCode);
@@ -138,6 +140,130 @@ public sealed class DataVaultDesignTimeCommandTests {
     finally {
       File.Delete(artifactPath);
       File.Delete(bundlePath);
+    }
+  }
+
+  [Fact]
+  public void SqlArtifactWritesDeterministicDryRunManifestForSqlServerWorkload() {
+    var diagnostics = CreateSqlServerSqlArtifactDiagnosticsResult();
+    var host = CreateHost(createSupportBundleDiagnostics: _ => diagnostics);
+    var firstPath = WriteSqlArtifactManifestFilePath();
+    var secondPath = WriteSqlArtifactManifestFilePath();
+
+    try {
+      var first = Run(host, "sql-artifact", "--output", firstPath);
+      var second = Run(
+          host,
+          "sql-artifact",
+          "--workload",
+          "provider-native-bulk-ingestion",
+          "--output",
+          secondPath);
+      var firstJson = File.ReadAllText(firstPath);
+      var secondJson = File.ReadAllText(secondPath);
+
+      Assert.Equal(0, first.ExitCode);
+      Assert.Equal(0, second.ExitCode);
+      Assert.Empty(first.Error);
+      Assert.Empty(second.Error);
+      Assert.Contains("Exported DVault SQL artifact dry-run manifest", first.Output, StringComparison.Ordinal);
+      Assert.Equal(firstJson, secondJson);
+
+      using var document = JsonDocument.Parse(firstJson);
+      var root = document.RootElement;
+      Assert.Equal("dvault.sql-artifact.v1", root.GetProperty("schemaVersion").GetString());
+      Assert.True(root.GetProperty("dryRun").GetProperty("enabled").GetBoolean());
+      Assert.Equal("review-only", root.GetProperty("dryRun").GetProperty("status").GetString());
+      Assert.Equal("not-generated", root.GetProperty("dryRun").GetProperty("runtimeDispatch").GetString());
+      Assert.Equal("Microsoft.EntityFrameworkCore.SqlServer", root.GetProperty("provider").GetProperty("name").GetString());
+      Assert.Equal("SQL Server external provider", root.GetProperty("provider").GetProperty("externalProviderLabel").GetString());
+      Assert.Equal("sqlserver-v1", root.GetProperty("provider").GetProperty("capabilityProfile").GetString());
+      Assert.Equal("SqlServerDataVaultSaveStrategy", root.GetProperty("provider").GetProperty("selectedStrategy").GetString());
+      Assert.Equal("command-test", root.GetProperty("metadataSource").GetProperty("kind").GetString());
+      Assert.Equal("fingerprint-1", root.GetProperty("metadataSource").GetProperty("fingerprint").GetString());
+
+      var workload = root.GetProperty("workload");
+      Assert.Equal("provider-native-bulk-ingestion", workload.GetProperty("label").GetString());
+      Assert.Equal(20, workload.GetProperty("orderProductPairCount").GetInt32());
+      Assert.Equal(40, workload.GetProperty("hubOperationCount").GetInt32());
+      Assert.Equal(20, workload.GetProperty("orderProductLinkCount").GetInt32());
+      Assert.Equal(20, workload.GetProperty("linkOperationCount").GetInt32());
+      Assert.Equal(3, workload.GetProperty("fulfillmentSatelliteOperationCount").GetInt32());
+      Assert.Equal(3, workload.GetProperty("satelliteOperationCount").GetInt32());
+      Assert.Equal(1, workload.GetProperty("unchangedReplayCount").GetInt32());
+      Assert.Equal(63, workload.GetProperty("totalOperationCount").GetInt32());
+      Assert.Equal("SqlBulkCopy", workload.GetProperty("transfer").GetString());
+      Assert.Equal("50-plus-operations", workload.GetProperty("nativeBulkBoundary").GetString());
+      Assert.Equal("temporary-staging-table", workload.GetProperty("cleanupBoundary").GetString());
+
+      var evidence = root.GetProperty("evidence");
+      var artifactTriplet = evidence
+          .GetProperty("benchmarkArtifactTriplet")
+          .EnumerateArray()
+          .Select(item => item.GetString() ?? string.Empty)
+          .ToArray();
+      Assert.Equal(["benchmark-summary.md", "benchmark-summary.csv", "benchmark-summary.json"], artifactTriplet);
+      var benchmarkRows = evidence.GetProperty("benchmarkRows").EnumerateArray().ToArray();
+      Assert.Equal(2, benchmarkRows.Length);
+      Assert.Contains(
+          benchmarkRows,
+          row => row.GetProperty("baseline").GetString() == "dvault-adddvault-fallback" &&
+              row.GetProperty("role").GetString() == "provider-neutral-fallback");
+      Assert.Contains(
+          benchmarkRows,
+          row => row.GetProperty("baseline").GetString() == "dvault-adddvaultsqlserver-optimized" &&
+              row.GetProperty("role").GetString() == "sqlserver-optimized-dry-run-reference");
+
+      Assert.Equal("create-support-bundle-diagnostics", root.GetProperty("requestDiagnostics").GetProperty("sourceKind").GetString());
+      Assert.Equal("ProviderStrategySelected", root.GetProperty("requestDiagnostics").GetProperty("saveStrategyStatus").GetString());
+      Assert.Empty(root.GetProperty("sidecarPayloads").EnumerateArray());
+      Assert.Empty(root.GetProperty("entries")[0].GetProperty("payloadFiles").EnumerateArray());
+      Assert.DoesNotContain("hunter2", firstJson, StringComparison.Ordinal);
+      Assert.DoesNotContain("DVAULT_TEST_SQLSERVER_CONNECTION_STRING", firstJson, StringComparison.Ordinal);
+    }
+    finally {
+      File.Delete(firstPath);
+      File.Delete(secondPath);
+    }
+  }
+
+  [Fact]
+  public void SqlArtifactRejectsMissingOutputUnsupportedWorkloadAndNonSqlServerDiagnostics() {
+    var host = CreateHost(createSupportBundleDiagnostics: _ => CreateSqlServerSqlArtifactDiagnosticsResult());
+    var missingOutput = Run(host, "sql-artifact");
+
+    Assert.Equal(2, missingOutput.ExitCode);
+    Assert.Contains("Missing output path for sql-artifact command.", missingOutput.Error, StringComparison.Ordinal);
+
+    var unsupportedWorkload = Run(
+        host,
+        "sql-artifact",
+        "--workload",
+        "customer-profile-history",
+        "--output",
+        WriteSqlArtifactManifestFilePath());
+    Assert.Equal(2, unsupportedWorkload.ExitCode);
+    Assert.Contains("Unsupported SQL artifact workload 'customer-profile-history'.", unsupportedWorkload.Error, StringComparison.Ordinal);
+
+    var wrongProviderPath = WriteSqlArtifactManifestFilePath();
+    var wrongProviderHost = CreateHost(createSupportBundleDiagnostics: _ => CreateSqlServerSqlArtifactDiagnosticsResult(
+        providerName: "Microsoft.EntityFrameworkCore.Sqlite",
+        capabilityProfileName: DataVaultProviderCapabilityProfiles.Sqlite.ProfileName,
+        selectedStrategyName: "SqliteDataVaultSaveStrategy"));
+
+    try {
+      var wrongProvider = Run(wrongProviderHost, "sql-artifact", "--output", wrongProviderPath);
+
+      Assert.Equal(1, wrongProvider.ExitCode);
+      Assert.Contains("DVault sql-artifact failed:", wrongProvider.Error, StringComparison.Ordinal);
+      Assert.Contains(
+          "requires explain diagnostics for provider 'Microsoft.EntityFrameworkCore.SqlServer'",
+          wrongProvider.Error,
+          StringComparison.Ordinal);
+      Assert.False(File.Exists(wrongProviderPath));
+    }
+    finally {
+      File.Delete(wrongProviderPath);
     }
   }
 
@@ -268,6 +394,12 @@ public sealed class DataVaultDesignTimeCommandTests {
     File.WriteAllText(path, json);
 
     return path;
+  }
+
+  private static string WriteSqlArtifactManifestFilePath() {
+    return Path.Combine(
+        Path.GetTempPath(),
+        "dvault-command-" + Guid.NewGuid().ToString("N") + ".sql-artifact.json");
   }
 
   private static DataVaultMetadataModel CreateCustomerMetadataModel() {
@@ -408,6 +540,50 @@ public sealed class DataVaultDesignTimeCommandTests {
           ],
           FallbackCauses: Array.Empty<DataVaultReadStrategyFallbackCause>()),
     };
+  }
+
+  private static DataVaultDiagnosticsResult CreateSqlServerSqlArtifactDiagnosticsResult(
+      string providerName = "Microsoft.EntityFrameworkCore.SqlServer",
+      string capabilityProfileName = "sqlserver-v1",
+      string selectedStrategyName = "SqlServerDataVaultSaveStrategy") {
+    return new DataVaultDiagnosticsResult(
+        new DataVaultValidationDiagnostics(true, Array.Empty<DataVaultDiagnosticsIssue>()),
+        new DataVaultExplainDiagnostics(
+            "command-test",
+            "fingerprint-1",
+            providerName,
+            capabilityProfileName,
+            false,
+            DataVaultProviderValueFormat.NativeDateTimeOffset,
+            "datetimeoffset",
+            DataVaultProviderBehaviorProfiles.ProviderNeutral.ProfileName,
+            false,
+            Array.Empty<DataVaultEntityExplain>()),
+        new DataVaultSaveStrategyDiagnostics(
+            DataVaultSaveStrategyDiagnosticsStatus.ProviderStrategySelected,
+            ProviderName: providerName,
+            SelectedStrategyName: selectedStrategyName,
+            SelectedStrategyPriority: 100,
+            Candidates: [
+                new DataVaultSaveStrategyCandidateDiagnostics(
+                    0,
+                    selectedStrategyName,
+                    100,
+                    true,
+                    Array.Empty<DataVaultSaveStrategyFallbackCause>()) {
+                  SupportedProviderNames = [providerName],
+                  GateRequirements = [
+                      new DataVaultSaveStrategyGateRequirement(
+                          DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
+                          MinimumTotalOperationCount: 50),
+                      new DataVaultSaveStrategyGateRequirement(
+                          DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold,
+                          MaximumSatelliteOperationCount: 500),
+                  ],
+                },
+            ],
+            FallbackCauses: Array.Empty<DataVaultSaveStrategyFallbackCause>()),
+        Array.Empty<DataVaultDiagnosticsIssue>());
   }
 
   private sealed class DesignTimeCommandContext(DbContextOptions<DesignTimeCommandContext> options) : DbContext(options) {
