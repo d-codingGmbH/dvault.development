@@ -3,23 +3,22 @@
   "ticket-id": "06F8KZVCVRPS3NAGQA7J55EAA4",
   "ticket-type": "task",
   "title": "Task: Define artifact benchmark and semantic parity evidence requirements",
-  "revision": "06F9XD3P4741N0CRNV9CQZHB0G",
-  "status": "todo",
+  "revision": "06FA36REJ9A2MDZVFH9W5QEZS0",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/benchmarks",
     "area/diagnostics",
     "area/ef-core",
     "area/performance",
     "area/provider-support",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06F8KYYGJVV6ET45XT2HS8T9YC",
   "release-id": "06F8KYXWH4YTM5WXQZHR41EPQG",
   "created-at": "2026-06-02T20:21:19.5095127Z",
-  "updated-at": "2026-06-06T20:51:27.3932655Z"
+  "updated-at": "2026-06-07T10:22:34.1303045Z"
 }
