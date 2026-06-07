@@ -19,6 +19,7 @@ This folder contains durable design contracts and release planning notes that ar
 - `pit-maintenance-service-v1-contract.md`
 - `provider-identifier-ddl-guardrail-contract.md`
 - `provider-optimization-closure-alignment-follow-up.md`
+- `provider-specific-sql-artifact-contract.md`
 - `shared-implementation-standards.md`
 - `stable-hashing-contract.md`
 

@@ -1,0 +1,1 @@
+﻿Manual recovery: restored missing integrator-gate/pending label on the integration-ready ticket branch so the test-role-owned integration path can pick up the branch. The ticket remains ready-for-integration; no implementation content was changed.

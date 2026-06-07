@@ -1,14 +1,20 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Delivery contract refined and ready for PO-critic review.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarification resolution
+- resolution-decision: `resolved`
+- critic-item-1: `answered` - Resolved. The current branch evidence shows docs/plans/README.md already durably lists provider-specific-sql-artifact-contract.md, so the contract does not need a fallback removal of that claim.
+- critic-item-2: `answered` - Resolved. The Delivery Contract and Implementation Notes now match the verified state: the planning contract exists, the README index is durable, and the ticket description update is the authoritative narrative reconciliation for this ticket.
+- critic-item-3: `answered` - Satisfied. Repository state and persisted ticket narrative now agree, so the clarification blocker is cleared and the ticket can continue to PO-critic review without additional PO-side refinement.
+- critic-item-4: `answered` - Superseded by current branch evidence. The earlier blocking finding described a prior scratch-only mismatch, but the current branch snapshot now shows the README index entry in branch content, so the durability gap is closed.
+
+Clarifications
 - docs/plans/provider-specific-sql-artifact-contract.md remains the authoritative planning contract surface for this lane.
 - docs/plans/README.md now durably lists provider-specific-sql-artifact-contract.md in the current branch state; the earlier scratch-only mismatch is historical and superseded.
 - The persisted ticket description was already reconciled in ticket revision 06F9XQPD2K1SWSAFQ22S0PDG8M, which is the authoritative ticket narrative for the next PO-critic pass.
@@ -16,60 +22,46 @@
 - The existing child split remains sufficient: 06F8KZVCVRPS3NAGQA7J55EAA4 for evidence, 06F8KZV18BQ0GN3CE4G02ATVA0 for the dry-run manifest prototype, and 06F8KZVRARQPG482YKCQ686PNM for documentation alignment.
 - No new child-ticket creation, relation cleanup, attachment binding, or planning-document write was required in this clarification pass.
 
-### Scope In
+Scope In
 - Define the v1 contract for reviewed design-time provider-specific SQL or stored-procedure artifacts as explicit consumer-owned outputs.
 - Fix the authoritative boundaries for single-project design-time generation, deterministic manifest-first review, and prerequisite validation, diagnostics, and benchmark evidence.
 - Keep the first implementation lane dry-run only and aligned with the existing evidence, prototype, and documentation child split.
 - Ratify the current supported-provider baseline of SQLite, PostgreSQL, SQL Server, MySQL, and Oracle for this contract lane.
 
-### Scope Out
+Scope Out
 - Runtime dispatch, automatic stored-procedure invocation, interceptors, background workers, schedulers, or a second default DVault runtime path.
 - Automatic deployment, automatic cleanup, EF migration synchronization, live-schema mutation, or support-bundle refresh synchronization.
 - A standalone DVault CLI, multi-project design-time orchestration, or providers beyond SQLite, PostgreSQL, SQL Server, MySQL, and Oracle.
 - Benchmark-threshold tuning or production-ready provider-specific execution in this ticket.
 
-## Acceptance Criteria
-- The repository contains the authoritative planning contract at docs/plans/provider-specific-sql-artifact-contract.md, and docs/plans/README.md durably indexes it in branch history.
-- The contract states that provider-specific SQL artifacts are explicit consumer-owned design-time outputs only and are not a default runtime save or read path.
-- The contract binds the workflow to the existing single-project design-time host boundary and requires reviewed validation, drift or guardrail review when applicable, request-bound diagnostics, and benchmark evidence before artifact approval.
-- The contract fixes a deterministic manifest-first format with schemaVersion dvault.sql-artifact.v1, exact provider and workload binding, metadata-source traceability, semantic-parity references, and dry-run status for prototype output.
-- The contract makes deployment, invocation, versioning, rollback, cleanup, credentials, environment selection, migration synchronization, and observability explicitly consumer-owned responsibilities.
-- The contract ratifies the existing supported-provider baseline and keeps the current child-ticket split aligned to evidence, dry-run prototype, and documentation work.
-
-## Definition of Done
-- The authoritative contract document stays consistent with docs/performance-profiles.md, docs/architecture/dvault-dotnet-ef-design-time-workflow.md, docs/architecture/dvault-v1-explicit-save-service.md, and the historical release-note boundaries.
-- docs/plans/README.md durably lists provider-specific-sql-artifact-contract.md in branch history.
-- The ticket description accurately reflects the verified owner-branch state and does not overstate repository or ticket-surface writes.
-- No product code, runtime dispatcher, EF migration automation, or arbitrary repository edits are introduced by this ticket beyond approved planning-surface materialization.
-
-## Implementation Notes
-- The current repository branch state snapshot shows both docs/plans/provider-specific-sql-artifact-contract.md and the README index entry present, so the earlier PO-critic durability finding is now historical rather than current.
-- The only PO-side materialized change needed for closure was the ticket-description reconciliation already reflected in the persisted ticket revision; no additional planning-document write is required from this pass.
-- The architecture baseline remains unchanged: design-time-only, consumer-owned, single-project, dry-run first, no runtime dispatch, and no automatic migration synchronization.
-- No relation changes, child-ticket creation, or attachment writes were verified as necessary in this pass.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Which of the already-supported providers should be used for the first dry-run manifest prototype in 06F8KZV18BQ0GN3CE4G02ATVA0?
 - What consumer repository path convention should the later implementation adopt for reviewed manifests and any sidecar SQL payload files?
 - After the dry-run prototype and evidence tickets land, should a later ticket permit deployable SQL payload emission, or should the lane remain review-only until more provider evidence exists?
 - How should the v0.32 documentation rollout summarize this lane once the prototype and evidence tickets complete?
 
-## Risks
+Risks
 - If later edits desynchronize the ticket narrative from the durable planning surfaces again, PO-critic should reopen the ticket.
 - Future implementation work could widen this lane into runtime dispatch or automatic migration behavior unless it stays anchored to the explicit non-goals in the contract.
 - A prototype that skips benchmark or semantic-parity evidence could create unmeasured provider-specific claims that conflict with the repository's performance-evidence posture.
 
-## Split Recommendations
+Split recommendations
 - No new split is justified now; the current parent and child tickets still separate architecture contract, evidence rules, dry-run prototype, and v0.32 documentation alignment.
 - If a later phase wants deployable SQL payload emission, runtime invocation helpers, or provider-specific validators, create separate follow-up tickets instead of widening this contract or the dry-run prototype ticket.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 4
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Define the contract for reviewed design-time provider-specific SQL or stored-procedure artifacts, including opt-in workflow, artifact format, review rules, consumer-owned deployment, and explicit non-goals.
+Run mode
+- apply: planned updates are applied after this comment
