@@ -719,6 +719,76 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
+  public void OracleHighVolumeThresholdArtifactRecordsNoChangeDecision() {
+    var artifactDirectory = Path.Combine(
+        "artifacts",
+        "benchmarks",
+        "v0.32.0-06F9XD2TGEYEG6S0AK86YF295M-oracle-high-volume-threshold-20260607");
+    var markdown = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.md"));
+    var csv = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.csv"));
+    var json = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.json"));
+
+    var artifacts = VerifyBenchmarkArtifactTriplet(markdown, csv, json);
+
+    Assert.Equal(10, artifacts.RowsByKey.Count);
+    Assert.Contains(
+        "- Oracle threshold decision: keep OracleMaximumSatelliteOperationThreshold at 10000 satellite operations.",
+        markdown,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "- Decision: keep the Oracle direct optimized batching safety cap at 10000 satellite operations",
+        markdown,
+        StringComparison.Ordinal);
+    Assert.Contains("stagedOracleBulk=not-selected-no-measured-win", markdown, StringComparison.Ordinal);
+
+    var belowMinimum = FindArtifactRow(
+        artifacts,
+        OracleProviderName,
+        "customer-profile-scale-10x1",
+        "dvault-adddvaultoracle-optimized");
+    Assert.Contains("OracleMinimumOperationThreshold", belowMinimum.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("saveStrategyStatus=ProviderNeutralFallback", belowMinimum.ExecutionDetail, StringComparison.Ordinal);
+
+    var zeroChangeBoundary = FindArtifactRow(
+        artifacts,
+        OracleProviderName,
+        "customer-profile-scale-10000x1",
+        "dvault-adddvaultoracle-optimized");
+    Assert.Equal("1176.560", zeroChangeBoundary.MeanMilliseconds);
+    Assert.Contains("saveStrategyStatus=ProviderStrategySelected", zeroChangeBoundary.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("selectedStrategy=OracleDataVaultSaveStrategy", zeroChangeBoundary.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("satelliteOperations=10000", zeroChangeBoundary.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("fallbackCauses=none", zeroChangeBoundary.ExecutionDetail, StringComparison.Ordinal);
+
+    var historyBoundary = FindArtifactRow(
+        artifacts,
+        OracleProviderName,
+        "customer-profile-scale-1000x10",
+        "dvault-adddvaultoracle-optimized");
+    Assert.Equal("849.163", historyBoundary.MeanMilliseconds);
+    Assert.Contains("saveStrategyStatus=ProviderStrategySelected", historyBoundary.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("satelliteOperations=10000", historyBoundary.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("fallbackCauses=none", historyBoundary.ExecutionDetail, StringComparison.Ordinal);
+
+    var highVolumeFallback = FindArtifactRow(
+        artifacts,
+        OracleProviderName,
+        "customer-profile-scale-10000x10",
+        "dvault-adddvaultoracle-optimized");
+    Assert.Equal("10689.765", highVolumeFallback.MeanMilliseconds);
+    Assert.Contains("saveStrategyStatus=ProviderNeutralFallback", highVolumeFallback.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("OracleMaximumSatelliteOperationThreshold", highVolumeFallback.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("satelliteOperations=100000", highVolumeFallback.ExecutionDetail, StringComparison.Ordinal);
+
+    var highVolumeConventional = FindArtifactRow(
+        artifacts,
+        OracleProviderName,
+        "customer-profile-scale-10000x10",
+        "conventional-ef-bulk");
+    Assert.Equal("5500.134", highVolumeConventional.MeanMilliseconds);
+  }
+
+  [Fact]
   public async Task ProviderNativeBulkBenchmarkProvesSelectedProviderStrategyBeforeTimingNativeRow() {
     var benchmark = new ProviderNativeBulkIngestionBenchmark(
         BenchmarkDatabaseProviders.Sqlite,

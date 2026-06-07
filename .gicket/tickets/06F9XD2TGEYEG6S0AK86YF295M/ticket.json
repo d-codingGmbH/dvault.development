@@ -3,23 +3,22 @@
   "ticket-id": "06F9XD2TGEYEG6S0AK86YF295M",
   "ticket-type": "task",
   "title": "Task: Evaluate Oracle high-volume satellite save threshold",
-  "revision": "06F9XD40GFAR013CS0T4HEHEMC",
-  "status": "todo",
+  "revision": "06FA66SJYGBETS33W1XCDZVCZG",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
+    "area/diagnostics",
     "area/ef-core",
+    "area/oracle",
     "area/performance",
     "area/provider-support",
-    "type/task",
-    "area/diagnostics",
-    "area/oracle",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06F9XD1R3N8KSA43A1WZVTG8GM",
   "release-id": "06F8KYXWH4YTM5WXQZHR41EPQG",
   "created-at": "2026-06-06T20:51:20.6928816Z",
-  "updated-at": "2026-06-06T20:51:30.0513443Z"
+  "updated-at": "2026-06-07T17:22:09.2684057Z"
 }
