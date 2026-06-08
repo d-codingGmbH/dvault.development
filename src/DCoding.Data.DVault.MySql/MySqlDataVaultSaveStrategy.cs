@@ -17,6 +17,8 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   private const int MySqlMaxRowsPerCommand = 1000;
   private const int MySqlLatestHashDiffBatchSize = 1000;
   private const int MinimumOptimizedBatchOperationCount = 50;
+  private const int TinySatelliteHistoryProviderNeutralFallbackSingleRequestMaximumOperationCount = 10;
+  private const int TinySatelliteHistoryProviderNeutralFallbackMaximumOperationCount = 100;
   internal const int MinimumStagedBulkOperationCount = 60;
   private const string LatestRowsTableAlias = "__dvault_latest";
   private const string RowNumberColumnName = "__dvault_row_number";
@@ -121,7 +123,8 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
       operationCount += request.HubOperations.Count + request.LinkOperations.Count + request.SatelliteOperations.Count;
     }
 
-    return operationCount >= MinimumOptimizedBatchOperationCount;
+    return operationCount >= MinimumOptimizedBatchOperationCount &&
+        !IsTinySatelliteHistoryProviderNeutralFallbackBatch(requests);
   }
 
   internal static bool IsStagedBatchShape(IReadOnlyList<DataVaultSaveRequest> requests) {
@@ -133,6 +136,25 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     }
 
     return operationCount >= MinimumStagedBulkOperationCount;
+  }
+
+  internal static bool IsTinySatelliteHistoryProviderNeutralFallbackBatch(
+      IReadOnlyList<DataVaultSaveRequest> requests) {
+    ArgumentNullException.ThrowIfNull(requests);
+
+    var satelliteOperationCount = 0;
+    foreach (var request in requests) {
+      if (request.HubOperations.Count > 0 || request.LinkOperations.Count > 0) {
+        return false;
+      }
+
+      satelliteOperationCount += request.SatelliteOperations.Count;
+    }
+
+    return satelliteOperationCount > 0 &&
+        satelliteOperationCount <= TinySatelliteHistoryProviderNeutralFallbackMaximumOperationCount &&
+        (requests.Count > 1 ||
+            satelliteOperationCount <= TinySatelliteHistoryProviderNeutralFallbackSingleRequestMaximumOperationCount);
   }
 
   internal static async Task<DataVaultSaveResult> ExecuteStagedSaveAsync(
@@ -1097,6 +1119,17 @@ internal sealed class MySqlStagedDataVaultSaveStrategy : IDataVaultProviderSaveS
           counts.LinkOperationCount,
           counts.SatelliteOperationCount,
           [DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape]);
+    }
+
+    if (MySqlDataVaultSaveStrategy.IsTinySatelliteHistoryProviderNeutralFallbackBatch(requests)) {
+      return new DataVaultStagedProviderBulkDiagnostics(
+          DataVaultStagedProviderBulkLifecyclePhase.Declined,
+          DataVaultStagedProviderBulkProviderCaveatKind.ProviderLimitation,
+          counts.RequestCount,
+          counts.HubOperationCount,
+          counts.LinkOperationCount,
+          counts.SatelliteOperationCount,
+          [DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkProviderLimitation]);
     }
 
     return new DataVaultStagedProviderBulkDiagnostics(

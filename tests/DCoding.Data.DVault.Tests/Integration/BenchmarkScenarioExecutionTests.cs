@@ -700,6 +700,142 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
+  public void SaveStrategyExecutionDetailsUseSelectedProviderPathFromDiagnostics() {
+    var postgresBenchmark = new BenchmarkExecutionDetailTestBenchmark(
+        "customer-profile-scale-10x1",
+        PostgresProviderName,
+        "dvault-adddvaultpostgres-optimized",
+        "postgres-optimized-dvault");
+    var postgresDiagnostics = CreateDiagnosticsResult(new DataVaultSaveStrategyDiagnostics(
+        DataVaultSaveStrategyDiagnosticsStatus.ProviderStrategySelected,
+        KnownProviderNames.Postgres,
+        "PostgresDataVaultSaveStrategy",
+        100,
+        [
+            new DataVaultSaveStrategyCandidateDiagnostics(
+                0,
+                "PostgresDataVaultSaveStrategy",
+                100,
+                true,
+                []),
+        ],
+        []) {
+      StagedProviderBulk = new DataVaultStagedProviderBulkDiagnostics(
+          DataVaultStagedProviderBulkLifecyclePhase.Declined,
+          DataVaultStagedProviderBulkProviderCaveatKind.UnsupportedShape,
+          requestCount: 1,
+          hubOperationCount: 0,
+          linkOperationCount: 0,
+          satelliteOperationCount: 10,
+          [DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape]),
+    });
+
+    var postgresDetail = BenchmarkExecutionDetails.CreateSaveStrategyDetail(
+        postgresBenchmark,
+        postgresDiagnostics,
+        requestCount: 1,
+        hubOperationCount: 0,
+        linkOperationCount: 0,
+        satelliteOperationCount: 10);
+
+    Assert.Contains("executionPath=DVault PostgreSQL retained direct or UNNEST save path", postgresDetail);
+    Assert.Contains("selectedStrategy=PostgresDataVaultSaveStrategy", postgresDetail);
+    Assert.Contains("stagedProviderBulkPhase=Declined", postgresDetail);
+    Assert.Contains("stagedProviderBulkFallbackCauses=StagedProviderBulkUnsupportedShape", postgresDetail);
+    Assert.DoesNotContain("executionPath=DVault PostgreSQL staged bulk save path", postgresDetail);
+    Assert.DoesNotContain("transfer=COPY", postgresDetail);
+
+    var mySqlBenchmark = new BenchmarkExecutionDetailTestBenchmark(
+        "customer-profile-scale-10x10",
+        MySqlProviderName,
+        "dvault-adddvaultmysql-optimized",
+        "mysql-optimized-dvault");
+    var mySqlDiagnostics = CreateDiagnosticsResult(new DataVaultSaveStrategyDiagnostics(
+        DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback,
+        KnownProviderNames.MySqlPomelo,
+        SelectedStrategyName: null,
+        SelectedStrategyPriority: null,
+        [
+            new DataVaultSaveStrategyCandidateDiagnostics(
+                0,
+                "MySqlStagedDataVaultSaveStrategy",
+                110,
+                false,
+                [
+                    new DataVaultSaveStrategyFallbackCause(
+                        DataVaultSaveStrategyFallbackCauseKind.MySqlTinySatelliteHistoryProviderNeutralFallback,
+                        "tiny satellite history batch"),
+                ]),
+        ],
+        [
+            new DataVaultSaveStrategyFallbackCause(
+                DataVaultSaveStrategyFallbackCauseKind.MySqlTinySatelliteHistoryProviderNeutralFallback,
+                "tiny satellite history batch"),
+        ]));
+
+    var mySqlDetail = BenchmarkExecutionDetails.CreateSaveStrategyDetail(
+        mySqlBenchmark,
+        mySqlDiagnostics,
+        requestCount: 10,
+        hubOperationCount: 0,
+        linkOperationCount: 0,
+        satelliteOperationCount: 100);
+
+    Assert.Contains("executionPath=DVault provider-neutral fallback path", mySqlDetail);
+    Assert.Contains("saveStrategyStatus=ProviderNeutralFallback", mySqlDetail);
+    Assert.Contains("selectedStrategy=<none>", mySqlDetail);
+    Assert.Contains("fallbackCauses=MySqlTinySatelliteHistoryProviderNeutralFallback", mySqlDetail);
+    Assert.DoesNotContain("executionPath=DVault MySQL staged bulk save path", mySqlDetail);
+
+    var mySqlSingleRequestTinyBenchmark = new BenchmarkExecutionDetailTestBenchmark(
+        "customer-profile-scale-10x1",
+        MySqlProviderName,
+        "dvault-adddvaultmysql-optimized",
+        "mysql-optimized-dvault");
+    var mySqlSingleRequestTinyDiagnostics = CreateDiagnosticsResult(new DataVaultSaveStrategyDiagnostics(
+        DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback,
+        KnownProviderNames.MySqlPomelo,
+        SelectedStrategyName: null,
+        SelectedStrategyPriority: null,
+        [
+            new DataVaultSaveStrategyCandidateDiagnostics(
+                0,
+                "MySqlDataVaultSaveStrategy",
+                100,
+                false,
+                [
+                    new DataVaultSaveStrategyFallbackCause(
+                        DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold,
+                        "minimum threshold"),
+                    new DataVaultSaveStrategyFallbackCause(
+                        DataVaultSaveStrategyFallbackCauseKind.MySqlTinySatelliteHistoryProviderNeutralFallback,
+                        "single-request tiny satellite batch"),
+                ]),
+        ],
+        [
+            new DataVaultSaveStrategyFallbackCause(
+                DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold,
+                "minimum threshold"),
+            new DataVaultSaveStrategyFallbackCause(
+                DataVaultSaveStrategyFallbackCauseKind.MySqlTinySatelliteHistoryProviderNeutralFallback,
+                "single-request tiny satellite batch"),
+        ]));
+
+    var mySqlSingleRequestTinyDetail = BenchmarkExecutionDetails.CreateSaveStrategyDetail(
+        mySqlSingleRequestTinyBenchmark,
+        mySqlSingleRequestTinyDiagnostics,
+        requestCount: 1,
+        hubOperationCount: 0,
+        linkOperationCount: 0,
+        satelliteOperationCount: 10);
+
+    Assert.Contains("executionPath=DVault provider-neutral fallback path", mySqlSingleRequestTinyDetail);
+    Assert.Contains(
+        "fallbackCauses=MySqlMinimumOperationThreshold|MySqlTinySatelliteHistoryProviderNeutralFallback",
+        mySqlSingleRequestTinyDetail);
+  }
+
+  [Fact]
   public void CheckedInBenchmarkArtifactsAndPerformanceGuidanceStayInSync() {
     var markdown = ReadRepositoryText("benchmark-summary.md");
     var csv = ReadRepositoryText("benchmark-summary.csv");
@@ -1668,17 +1804,22 @@ public sealed class BenchmarkScenarioExecutionTests {
 
   private static DataVaultDiagnosticsResult CreateSaveStrategyDiagnostics(
       DataVaultSaveStrategyDiagnostics saveStrategy) {
+    return CreateDiagnosticsResult(saveStrategy);
+  }
+
+  private static DataVaultDiagnosticsResult CreateDiagnosticsResult(
+      DataVaultSaveStrategyDiagnostics saveStrategy) {
     return new DataVaultDiagnosticsResult(
         new DataVaultValidationDiagnostics(true, []),
         new DataVaultExplainDiagnostics(
-            "test",
+            "unit-test",
             null,
-            KnownProviderNames.SqlServer,
-            "SQL Server",
+            saveStrategy.ProviderName,
+            "unit-test-profile",
             false,
             DataVaultProviderValueFormat.NativeDateTimeOffset,
-            "datetimeoffset",
-            "sqlserver",
+            "datetime",
+            "unit-test-behavior",
             false,
             []),
         saveStrategy,
@@ -1694,6 +1835,35 @@ public sealed class BenchmarkScenarioExecutionTests {
       string ChangeRatio) : IScenarioBenchmark {
     public Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
       throw new NotSupportedException("This benchmark double is only used for execution detail formatting.");
+    }
+  }
+
+  private sealed class BenchmarkExecutionDetailTestBenchmark : IScenarioBenchmark {
+    public BenchmarkExecutionDetailTestBenchmark(
+        string scenarioName,
+        string providerName,
+        string baselineName,
+        string strategyFamily) {
+      ScenarioName = scenarioName;
+      ProviderName = providerName;
+      BaselineName = baselineName;
+      StrategyFamily = strategyFamily;
+    }
+
+    public string ScenarioName { get; }
+
+    public string ProviderName { get; }
+
+    public string BaselineName { get; }
+
+    public string StrategyFamily { get; }
+
+    public string DatasetSize => "unit-test dataset";
+
+    public string ChangeRatio => "unit-test change ratio";
+
+    public Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
+      throw new NotSupportedException("The diagnostics detail test never executes the benchmark.");
     }
   }
 

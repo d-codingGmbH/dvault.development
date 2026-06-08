@@ -1563,6 +1563,7 @@ type public enum DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind
   value StagedProviderBulkTransactionParticipationUnsupported = 13
   value StagedProviderBulkCleanupFailed = 14
   value StagedProviderBulkProviderLimitation = 15
+  value MySqlTinySatelliteHistoryProviderNeutralFallback = 16
 
 type public sealed class DCoding.Data.DVault.DataVaultSaveStrategyFallbackExplanation : System.IEquatable<DCoding.Data.DVault.DataVaultSaveStrategyFallbackExplanation>
   ctor public DataVaultSaveStrategyFallbackExplanation(DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind Kind, string Explanation, string Remediation)

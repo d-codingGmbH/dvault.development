@@ -847,6 +847,14 @@ public sealed class DataVaultDiagnosticsTests {
         KnownProviderNames.MySqlPomelo,
         hasPendingTrackedChanges: false,
         CreateRequests(totalOperationCount: 50, satelliteOperationCount: 0));
+    var mySqlSingleRequestTinySatelliteHistory = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySql(
+        KnownProviderNames.MySqlPomelo,
+        hasPendingTrackedChanges: false,
+        CreateSatelliteHistoryRequests(requestCount: 1, satelliteOperationsPerRequest: 10));
+    var mySqlTinySatelliteHistory = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySqlStaged(
+        KnownProviderNames.MySqlPomelo,
+        hasPendingTrackedChanges: false,
+        CreateSatelliteHistoryRequests(requestCount: 10, satelliteOperationsPerRequest: 10));
     var oracleTooSmall = DataVaultProviderSaveStrategyGateEvaluator.EvaluateOracle(
         KnownProviderNames.Oracle,
         hasPendingTrackedChanges: false,
@@ -882,6 +890,15 @@ public sealed class DataVaultDiagnosticsTests {
         mySqlStagedTooSmall.FallbackCauses,
         cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold &&
             cause.Message.Contains("MySQL staged bulk", StringComparison.Ordinal));
+    Assert.Contains(
+        mySqlSingleRequestTinySatelliteHistory.FallbackCauses,
+        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold);
+    Assert.Contains(
+        mySqlSingleRequestTinySatelliteHistory.FallbackCauses,
+        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlTinySatelliteHistoryProviderNeutralFallback);
+    Assert.Contains(
+        mySqlTinySatelliteHistory.FallbackCauses,
+        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlTinySatelliteHistoryProviderNeutralFallback);
     Assert.Contains(
         oracleTooSmall.FallbackCauses,
         cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.OracleMinimumOperationThreshold);
@@ -920,6 +937,9 @@ public sealed class DataVaultDiagnosticsTests {
         DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(mySqlStagedSaveStrategy),
         requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold &&
             requirement.MinimumTotalOperationCount == 60);
+    Assert.Contains(
+        DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(mySqlStagedSaveStrategy),
+        requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlTinySatelliteHistoryProviderNeutralFallback);
 
     using var oracleProvider = CreateOracleServiceProvider();
     var oracleSaveStrategy = oracleProvider
@@ -1183,6 +1203,30 @@ public sealed class DataVaultDiagnosticsTests {
             [new("PhoneType", "mobile")],
             [new("PhoneNumber", "123")],
             "phone-hd")]);
+  }
+
+  private static IReadOnlyList<DataVaultSaveRequest> CreateSatelliteHistoryRequests(
+      int requestCount,
+      int satelliteOperationsPerRequest) {
+    var satellite = new DataVaultSatelliteMetadata(
+        "Profile",
+        DataVaultMetadataReference.Hub("Customer"),
+        ["Name"]);
+
+    return Enumerable.Range(0, requestCount)
+        .Select(requestIndex => new DataVaultSaveRequest(
+            new DateTimeOffset(2026, 5, 10, 0, requestIndex, 0, TimeSpan.Zero),
+            "unit-test",
+            [],
+            [],
+            Enumerable.Range(0, satelliteOperationsPerRequest)
+                .Select(satelliteIndex => new DataVaultSatelliteSaveOperation(
+                    satellite,
+                    "hk-" + satelliteIndex,
+                    [new("Name", "Name " + satelliteIndex)],
+                    "hd-" + requestIndex + "-" + satelliteIndex))
+                .ToArray()))
+        .ToArray();
   }
 
   private static DataVaultProviderCapabilityProfile CreateMySqlProfileWithMaximumIdentifierLength(

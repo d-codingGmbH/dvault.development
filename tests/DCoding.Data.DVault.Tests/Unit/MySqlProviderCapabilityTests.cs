@@ -72,6 +72,68 @@ public sealed class MySqlProviderCapabilityTests {
   }
 
   [Fact]
+  public void MySqlGateDeliberatelyFallsBackForTinySatelliteHistoryBatches() {
+    var singleRequestTinyBatch = CreateSatelliteHistoryRequests(requestCount: 1, satelliteOperationsPerRequest: 10);
+    var tinyHistoryBatch = CreateSatelliteHistoryRequests(requestCount: 10, satelliteOperationsPerRequest: 10);
+    var retainedMultiRowBatch = CreateSatelliteHistoryRequests(requestCount: 1, satelliteOperationsPerRequest: 50);
+
+    var singleRequestTinyGate = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySql(
+        KnownProviderNames.MySqlOracle,
+        hasPendingTrackedChanges: false,
+        singleRequestTinyBatch);
+    var singleRequestStagedGate = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySqlStaged(
+        KnownProviderNames.MySqlOracle,
+        hasPendingTrackedChanges: false,
+        singleRequestTinyBatch);
+    var multiRowGate = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySql(
+        KnownProviderNames.MySqlOracle,
+        hasPendingTrackedChanges: false,
+        tinyHistoryBatch);
+    var stagedGate = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySqlStaged(
+        KnownProviderNames.MySqlOracle,
+        hasPendingTrackedChanges: false,
+        tinyHistoryBatch);
+    var stagedDiagnostics = MySqlStagedDataVaultSaveStrategy.CreateStagedProviderBulkDiagnostics(
+        hasPendingTrackedChanges: false,
+        tinyHistoryBatch);
+    var retainedMultiRowGate = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySql(
+        KnownProviderNames.MySqlOracle,
+        hasPendingTrackedChanges: false,
+        retainedMultiRowBatch);
+
+    Assert.False(singleRequestTinyGate.CanSave);
+    Assert.Contains(
+        singleRequestTinyGate.FallbackCauses,
+        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold);
+    Assert.Contains(
+        singleRequestTinyGate.FallbackCauses,
+        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlTinySatelliteHistoryProviderNeutralFallback);
+    Assert.False(singleRequestStagedGate.CanSave);
+    Assert.Contains(
+        singleRequestStagedGate.FallbackCauses,
+        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlTinySatelliteHistoryProviderNeutralFallback);
+    Assert.False(multiRowGate.CanSave);
+    Assert.Contains(
+        multiRowGate.FallbackCauses,
+        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlTinySatelliteHistoryProviderNeutralFallback);
+    Assert.False(stagedGate.CanSave);
+    Assert.Contains(
+        stagedGate.FallbackCauses,
+        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlTinySatelliteHistoryProviderNeutralFallback);
+    Assert.False(MySqlDataVaultSaveStrategy.IsOptimizedBatchShape(singleRequestTinyBatch));
+    Assert.False(MySqlDataVaultSaveStrategy.IsOptimizedBatchShape(tinyHistoryBatch));
+    Assert.True(retainedMultiRowGate.CanSave);
+    Assert.True(MySqlDataVaultSaveStrategy.IsOptimizedBatchShape(retainedMultiRowBatch));
+
+    Assert.Equal(DataVaultStagedProviderBulkLifecyclePhase.Declined, stagedDiagnostics.LifecyclePhase);
+    Assert.Equal(DataVaultStagedProviderBulkProviderCaveatKind.ProviderLimitation, stagedDiagnostics.ProviderCaveatKind);
+    Assert.Equal(100, stagedDiagnostics.OperationCount);
+    Assert.Contains(
+        stagedDiagnostics.FallbackCauseKinds,
+        cause => cause == DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkProviderLimitation);
+  }
+
+  [Fact]
   public void MySqlStagedDiagnosticsDistinguishStagedSelectionFromRetainedMultiRowBoundary() {
     var midSizedBatch = CreateHubRequest(totalOperationCount: 50);
     var stagedBatch = CreateHubRequest(totalOperationCount: MySqlDataVaultSaveStrategy.MinimumStagedBulkOperationCount);
@@ -253,6 +315,32 @@ public sealed class MySqlProviderCapabilityTests {
                 .ToArray(),
             []),
     ];
+  }
+
+  private static IReadOnlyList<DataVaultSaveRequest> CreateSatelliteHistoryRequests(
+      int requestCount,
+      int satelliteOperationsPerRequest) {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["Profile Status"]);
+
+    return Enumerable.Range(0, requestCount)
+        .Select(requestIndex => new DataVaultSaveRequest(
+            new DateTimeOffset(2026, 5, 26, 0, requestIndex, 0, TimeSpan.Zero),
+            "mysql-history-gate-test",
+            [],
+            [],
+            Enumerable.Range(0, satelliteOperationsPerRequest)
+                .Select(satelliteIndex => new DataVaultSatelliteSaveOperation(
+                    profile,
+                    "customer-hash-" + satelliteIndex.ToString("000", CultureInfo.InvariantCulture),
+                    [new("Profile Status", "active")],
+                    "profile-hash-" + requestIndex.ToString("000", CultureInfo.InvariantCulture) + "-" +
+                    satelliteIndex.ToString("000", CultureInfo.InvariantCulture)))
+                .ToArray()))
+        .ToArray();
   }
 
   private static IMutableProperty FindProperty(IMutableModel model, string entityName, string propertyName) {

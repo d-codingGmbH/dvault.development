@@ -110,6 +110,10 @@ internal static class DataVaultSaveTelemetryExplanationCatalog {
           kind,
           "Staged-provider bulk execution declined because a bounded provider limitation prevented the staged path.",
           "Review the provider's staged bulk limits and adjust batch size, schema shape, or provider configuration; otherwise rely on provider-neutral fallback."),
+      DataVaultSaveStrategyFallbackCauseKind.MySqlTinySatelliteHistoryProviderNeutralFallback => new(
+          kind,
+          "MySQL provider-native save dispatch deliberately uses provider-neutral fallback for a tiny satellite-only batch or small satellite history batch.",
+          "Keep this shape on the provider-neutral lane, or increase the batch size enough to justify remeasuring MySQL provider-native dispatch."),
       _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown save strategy fallback cause kind."),
     };
   }

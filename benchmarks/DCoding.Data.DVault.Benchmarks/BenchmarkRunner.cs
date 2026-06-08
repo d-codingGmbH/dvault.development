@@ -541,11 +541,7 @@ internal static class BenchmarkExecutionDetails {
   public static string CreatePlanned(IScenarioBenchmark benchmark) {
     ArgumentNullException.ThrowIfNull(benchmark);
 
-    return "scenario=" + benchmark.ScenarioName +
-        "; provider=" + benchmark.ProviderName +
-        "; baseline=" + benchmark.BaselineName +
-        "; strategyFamily=" + benchmark.StrategyFamily +
-        "; executionPath=" + GetExecutionPath(benchmark);
+    return CreateDetail(benchmark, GetExecutionPath(benchmark));
   }
 
   public static string CreateSaveStrategyDetail(
@@ -558,7 +554,7 @@ internal static class BenchmarkExecutionDetails {
     ArgumentNullException.ThrowIfNull(benchmark);
     ArgumentNullException.ThrowIfNull(diagnostics);
 
-    return CreateObservedSaveStrategyDetailPrefix(benchmark, diagnostics) +
+    return CreateDetail(benchmark, GetSaveExecutionPath(benchmark, diagnostics)) +
         "; saveStrategyStatus=" + diagnostics.SaveStrategy.Status +
         "; provider=" + (diagnostics.SaveStrategy.ProviderName ?? "<none>") +
         "; selectedStrategy=" + (diagnostics.SaveStrategy.SelectedStrategyName ?? "<none>") +
@@ -571,16 +567,6 @@ internal static class BenchmarkExecutionDetails {
         "; satelliteOperations=" + satelliteOperationCount.ToString(CultureInfo.InvariantCulture) +
         "; nativeBulkGate=clean-context,no-multi-active-satellites,provider-eligible-bulk-request" +
         FormatStagedProviderBulk(diagnostics.SaveStrategy.StagedProviderBulk);
-  }
-
-  private static string CreateObservedSaveStrategyDetailPrefix(
-      IScenarioBenchmark benchmark,
-      DataVaultDiagnosticsResult diagnostics) {
-    return "scenario=" + benchmark.ScenarioName +
-        "; provider=" + benchmark.ProviderName +
-        "; baseline=" + benchmark.BaselineName +
-        "; strategyFamily=" + benchmark.StrategyFamily +
-        "; executionPath=" + GetObservedSaveExecutionPath(benchmark, diagnostics);
   }
 
   public static string CreateReadStrategyDetail(
@@ -636,14 +622,47 @@ internal static class BenchmarkExecutionDetails {
     };
   }
 
-  private static string GetObservedSaveExecutionPath(
+  private static string CreateDetail(IScenarioBenchmark benchmark, string executionPath) {
+    return "scenario=" + benchmark.ScenarioName +
+        "; provider=" + benchmark.ProviderName +
+        "; baseline=" + benchmark.BaselineName +
+        "; strategyFamily=" + benchmark.StrategyFamily +
+        "; executionPath=" + executionPath;
+  }
+
+  private static string GetSaveExecutionPath(
       IScenarioBenchmark benchmark,
       DataVaultDiagnosticsResult diagnostics) {
     if (diagnostics.SaveStrategy.Status == DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback) {
-      return "DVault provider-neutral fallback path";
+      return "DVault provider-neutral fallback path; selectedStrategy=<none>; providerSpecificSaveStrategy=fallback";
     }
 
-    return GetExecutionPath(benchmark);
+    return diagnostics.SaveStrategy.SelectedStrategyName switch {
+      "PostgresDataVaultSaveStrategy" => IsNativeStagedProviderBulk(diagnostics.SaveStrategy.StagedProviderBulk)
+          ? "DVault PostgreSQL staged bulk save path; transfer=COPY; selectedStrategy=PostgresDataVaultSaveStrategy; " +
+              "stagedBulkBoundary=60-plus-operations; smallBatchBoundary=direct-or-UNNEST; cleanupBoundary=temporary-staging-table"
+          : "DVault PostgreSQL retained direct or UNNEST save path; transfer=direct-or-UNNEST; " +
+              "selectedStrategy=PostgresDataVaultSaveStrategy; stagedBulkBoundary=below-60-operations; cleanupBoundary=no-staging-table",
+      "MySqlStagedDataVaultSaveStrategy" =>
+          "DVault MySQL staged bulk save path; selectedStrategy=MySqlStagedDataVaultSaveStrategy; " +
+          "nativeBulkBoundary=50-plus-operations; stagedBulkBoundary=60-plus-operations; cleanupBoundary=temporary-staging-tables",
+      "MySqlDataVaultSaveStrategy" =>
+          "DVault MySQL retained multi-row save path; selectedStrategy=MySqlDataVaultSaveStrategy; " +
+          "nativeBulkBoundary=50-plus-operations; stagedBulkBoundary=below-60-operations; cleanupBoundary=no-staging-table",
+      "SqlServerDataVaultSaveStrategy" =>
+          "DVault SQL Server staged native bulk save path; transfer=SqlBulkCopy; selectedStrategy=SqlServerDataVaultSaveStrategy; " +
+          "nativeBulkBoundary=50-plus-operations; cleanupBoundary=temporary-staging-table",
+      "OracleDataVaultSaveStrategy" =>
+          "DVault Oracle direct optimized save path; selectedStrategy=OracleDataVaultSaveStrategy; " +
+          "oracleBulkBoundary=direct-oracle-batching; stagedOracleBulk=not-selected-no-measured-win; cleanupBoundary=direct-provider-transaction",
+      "SqliteDataVaultSaveStrategy" =>
+          "DVault SQLite optimized path; selectedStrategy=SqliteDataVaultSaveStrategy",
+      _ => GetExecutionPath(benchmark),
+    };
+  }
+
+  private static bool IsNativeStagedProviderBulk(DataVaultStagedProviderBulkDiagnostics? stagedProviderBulk) {
+    return stagedProviderBulk?.LifecyclePhase == DataVaultStagedProviderBulkLifecyclePhase.NativeBulkApplication;
   }
 
   private static string GetSqliteStrategyName(string scenarioName) {
@@ -754,7 +773,17 @@ internal static class BenchmarkExecutionDetails {
 
     return "; stagedProviderBulkPhase=" + stagedProviderBulk.LifecyclePhase +
         "; stagedProviderBulkCaveat=" + stagedProviderBulk.ProviderCaveatKind +
-        "; stagedProviderBulkOperations=" + stagedProviderBulk.OperationCount.ToString(CultureInfo.InvariantCulture);
+        "; stagedProviderBulkOperations=" + stagedProviderBulk.OperationCount.ToString(CultureInfo.InvariantCulture) +
+        "; stagedProviderBulkFallbackCauses=" + FormatStagedProviderBulkFallbackCauses(stagedProviderBulk);
+  }
+
+  private static string FormatStagedProviderBulkFallbackCauses(
+      DataVaultStagedProviderBulkDiagnostics stagedProviderBulk) {
+    if (stagedProviderBulk.FallbackCauseKinds.Count == 0) {
+      return "none";
+    }
+
+    return string.Join("|", stagedProviderBulk.FallbackCauseKinds.Select(cause => cause.ToString()));
   }
 }
 

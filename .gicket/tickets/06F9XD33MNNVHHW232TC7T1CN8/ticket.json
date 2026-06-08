@@ -3,24 +3,23 @@
   "ticket-id": "06F9XD33MNNVHHW232TC7T1CN8",
   "ticket-type": "task",
   "title": "Task: Tune PostgreSQL and MySQL small-batch save eligibility",
-  "revision": "06F9XD4250RA6RGNR9GSR9NVZW",
-  "status": "todo",
+  "revision": "06FAJN7QM61SF30EC7GPZ4XKGR",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "area/ef-core",
-    "area/performance",
-    "area/provider-support",
-    "type/task",
     "area/diagnostics",
-    "area/postgres",
+    "area/ef-core",
     "area/mysql",
-    "area/testing"
+    "area/performance",
+    "area/postgres",
+    "area/provider-support",
+    "area/testing",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06F9XD1R3N8KSA43A1WZVTG8GM",
   "release-id": "06F8KYXWH4YTM5WXQZHR41EPQG",
   "created-at": "2026-06-06T20:51:22.8945791Z",
-  "updated-at": "2026-06-06T20:51:30.4727600Z"
+  "updated-at": "2026-06-08T22:22:58.4652306Z"
 }
