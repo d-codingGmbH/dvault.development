@@ -5,7 +5,7 @@ Ticket: 06F1XPVPKVGYKCV04PY98TSS78
 
 ## Decision
 
-DVault v1 supports one `dotnet ef` composition boundary: the application that owns the configured `DbContext` also owns an Entity Framework Core `IDesignTimeDbContextFactory<TContext>` and a small preflight entrypoint. The factory builds the same configured `DbContext` that normal EF design-time commands use. The preflight entrypoint constructs that context through the factory, runs DVault diagnostics against the configured model, can compare caller-supplied live-schema evidence for idempotency-critical structures, and optionally analyzes the scaffolded migration operations before the migration is applied.
+DVault v1 supports one `dotnet ef` composition boundary: the application that owns the configured `DbContext` also owns an Entity Framework Core `IDesignTimeDbContextFactory<TContext>` and a small preflight entrypoint. The factory builds the same configured `DbContext` that normal EF design-time commands use. The preflight entrypoint constructs that context through the factory, runs DVault diagnostics against the configured model, can compare caller-supplied live-schema evidence for idempotency-critical structures, can emit reviewed design-time artifacts, and optionally analyzes the scaffolded migration operations before the migration is applied.
 
 The DVault package does not provide `IDesignTimeServices`, does not provide a custom `dotnet ef` shim, does not intercept EF CLI commands, and does not reference `Microsoft.EntityFrameworkCore.Design`. Any EF design package reference belongs in the consumer project that owns the factory and invokes `dotnet ef`.
 
@@ -144,6 +144,25 @@ dotnet run --project src/SalesVault/SalesVault.csproj -- export --output src/Sal
 ```
 
 Do not make `export` the default blocking CI gate. A blocking pre-integration gate should validate the configured design-time model and compare it against an already reviewed artifact when that artifact exists.
+
+## SQL Artifact Dry-Run Export
+
+The `sql-artifact` verb is the v0.32 provider-specific artifact lane inside the same consumer-owned design-time command host. It uses the application-owned `DbContext`, `IDesignTimeDbContextFactory<TContext>`, metadata source, command-host composition, and request-bound diagnostics already described above. It is not a standalone DVault CLI, an EF command interceptor, or a provider-package runtime registration hook.
+
+The current command surface is:
+
+```sh
+dotnet run --project src/SalesVault/SalesVault.csproj -- sql-artifact --output src/SalesVault/artifacts/sql/sqlserver-provider-native-bulk-ingestion.sql-artifact.json
+dotnet run --project src/SalesVault/SalesVault.csproj -- sql-artifact --output src/SalesVault/artifacts/sql/sqlserver-provider-native-bulk-ingestion.sql-artifact.json --workload provider-native-bulk-ingestion
+```
+
+The manifest schema version is `dvault.sql-artifact.v1`. The default and currently supported workload label is `provider-native-bulk-ingestion`. The visible v0.32 exporter is narrower than the repository-wide supported-provider baseline: it emits a SQL Server dry-run manifest only when the consumer supplies request-bound save diagnostics for `Microsoft.EntityFrameworkCore.SqlServer` that select `SqlServerDataVaultSaveStrategy`. SQLite, PostgreSQL, MySQL, and Oracle remain part of the finite supported-provider baseline, but this command does not claim implemented artifact exporters for them.
+
+The output is a deterministic review-only manifest. Its `dryRun` section records `status=review-only`, `deployment=not-generated`, `runtimeDispatch=not-generated`, and `payloadPolicy=manifest-only-no-sidecar-sql`. The command does not auto-discover manifests, auto-deploy SQL, auto-invoke stored procedures, auto-register runtime dispatch, generate sidecar SQL payload files, or replace `IDataVaultSaveService` or `IDataVaultReadService`.
+
+Consumers own the reviewed output path and all operational decisions after generation: review, storage, deployment, invocation, versioning, rollback, cleanup, credentials, environment selection, transaction policy, observability, and migration compatibility. DVault supplies the bounded design-time manifest contract and evidence references; the adopting application remains responsible for deployment and runtime behavior.
+
+Before treating a manifest as release evidence, keep the gate tied to the same exact provider and representative workload: request-bound diagnostics, the shared benchmark artifact triplet, semantic-parity review, and a consumer-owned migration-compatibility plan. Optional external-provider benchmark rows that are skipped because connection strings are unset remain skipped evidence rows, not completed provider measurements.
 
 ## Support Bundle Export
 

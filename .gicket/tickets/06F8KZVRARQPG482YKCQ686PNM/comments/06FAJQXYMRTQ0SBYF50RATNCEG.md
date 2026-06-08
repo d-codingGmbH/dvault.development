@@ -1,70 +1,56 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the ticket to document the bounded v0.32 artifact-lane story around the existing consumer-owned design-time dry-run contract; no ticket writes, attachments, or planning documents were applied during this pass.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Current repository evidence already fixes the design-time boundary to a single consumer-owned project with the configured DbContext, IDesignTimeDbContextFactory<TContext>, and command host; that baseline is not reopened here.
 - Current source already exposes `dvault sql-artifact --output <path> [--workload provider-native-bulk-ingestion]` and exports schema `dvault.sql-artifact.v1` as a review-only dry-run manifest; documentation must describe that bounded surface rather than a deployable runtime lane.
 - The current branch does not contain `docs/releases/v0.32.0.md`, so adding the v0.32 release note is part of this ticket's scope rather than an open question.
 - Persisted relations already place this ticket under parent `06F8KZTCEMNNFBFTVMFXEN268M`; no relation cleanup or additional child-ticket materialization was needed during refinement.
 
-### Scope In
+Scope In
 - Document the artifact lane as explicit opt-in, design-time-only, and consumer-owned within the existing EF/DVault single-project workflow.
 - Describe consumer-owned responsibilities for artifact review, storage, deployment, invocation, versioning, rollback, cleanup, credentials, environment selection, transaction policy, observability, and migration compatibility.
 - Document the evidence gate using request-bound diagnostics, the shared benchmark artifact triplet and contract, and semantic-parity expectations for the exact provider and workload.
 - Add or update v0.32 release documentation and non-goal wording so the repository no longer treats the artifact lane only as future scope.
 
-### Scope Out
+Scope Out
 - Implementing runtime dispatch, interceptors, schedulers, background workers, or automatic invocation of provider-specific artifacts.
 - Automatic deployment, automatic cleanup, automatic EF migration synchronization, automatic live-schema repair, or DBA workflow automation.
 - Expanding the supported-provider baseline beyond SQLite, PostgreSQL, SQL Server, MySQL, and Oracle.
 - Changing benchmark artifact schemas, inventing new evidence formats, or claiming completed external-provider measurements that are not already evidenced.
 
-## Acceptance Criteria
-- The updated docs state that the artifact lane stays inside the existing consumer-owned design-time boundary and explicitly identify the current command surface as `sql-artifact` with schema `dvault.sql-artifact.v1`.
-- The docs explain that the current lane is review-only dry-run output and does not auto-discover, auto-deploy, auto-invoke, auto-register, or replace the existing `IDataVaultSaveService` and `IDataVaultReadService` runtime boundaries.
-- The docs record the evidence gate: exact provider plus representative workload, request-bound diagnostics for that provider and workload, benchmark evidence under the shared triplet contract, semantic-parity review, and a consumer-owned migration-compatibility plan.
-- The docs distinguish the repository-wide supported-provider baseline from the currently visible SQL Server `provider-native-bulk-ingestion` dry-run exporter so they do not overstate current implementation coverage.
-- A new or updated `docs/releases/v0.32.0.md` summarizes the bounded artifact-lane story, limitations, and non-goals, and aligns with the architecture and planning documents instead of reopening the contract.
-
-## Definition of Done
-- Relevant architecture and release docs are updated and tell one consistent story with `docs/plans/provider-specific-sql-artifact-contract.md`, `docs/performance-profiles.md`, and the current source behavior.
-- The v0.32 release note exists under the repository's versioned release-note convention and points readers to the authoritative contract and evidence surfaces.
-- No updated doc claims deployable SQL payload generation, runtime artifact dispatch, automatic migration synchronization, or provider support broader than the bounded reviewed evidence.
-- Any documented example command or terminology matches the current branch surface, including the `sql-artifact` verb and `provider-native-bulk-ingestion` workload label.
-
-## Implementation Notes
-- Update `docs/architecture/dvault-dotnet-ef-design-time-workflow.md` to add the `sql-artifact` verb and explain that it uses the same consumer-owned `DbContext`, factory, and command-host composition boundary as the existing design-time commands.
-- Update the provider-specific artifact section in `docs/architecture/dvault-v1-explicit-save-service.md` so it describes the current v0.32 review-only dry-run lane instead of a purely future placeholder, while preserving the same consumer-owned deployment and invocation boundaries.
-- Create `docs/releases/v0.32.0.md` and summarize the design-time artifact lane, the evidence gate, the current SQL Server dry-run prototype boundary, and the explicit non-goals.
-- Keep `docs/plans/provider-specific-sql-artifact-contract.md` as the authoritative contract and use the release and architecture docs to summarize it rather than duplicating a second competing contract.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the evidence and prototype child work lands, should a later ticket broaden the documented implementation beyond the current SQL Server dry-run exporter to additional supported providers?
 - Should a later ticket standardize a consumer-facing repository path convention for reviewed manifests and any future sidecar SQL payload files?
 - After the dry-run lane is proven, should a later release define a separate contract for deployable sidecar SQL payloads, or keep v1 permanently review-only?
 
-## Risks
+Risks
 - The current source exporter is narrower than the high-level provider baseline; docs must avoid implying that all five supported providers already have implemented artifact exporters.
 - The evidence gate depends on shared benchmark artifacts and request-bound diagnostics; release prose that collapses skipped optional-provider rows into completed claims would overstate the repository evidence.
 - If the evidence or prototype child tickets change manifest fields, workload naming, or prototype scope before merge, the v0.32 docs will need a final consistency pass.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended for this ticket; the existing parent artifact-lane contract already separates documentation scope from evidence and dry-run prototype work.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Document the design-time artifact lane, consumer-owned deployment and invocation responsibilities, evidence gate, limitations, release notes, and explicit non-goals.
+Run mode
+- apply: planned updates are applied after this comment

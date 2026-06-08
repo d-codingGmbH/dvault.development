@@ -3,22 +3,21 @@
   "ticket-id": "06F8KZVRARQPG482YKCQ686PNM",
   "ticket-type": "task",
   "title": "Task: Update v0.32.0 artifact lane documentation and non-goals",
-  "revision": "06F9GF37GC8EAW302HPDQP186C",
-  "status": "todo",
+  "revision": "06FAK85791R7BYZJWYQQZ8SSB4",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/architecture",
     "area/documentation",
     "area/ef-core",
     "area/performance",
-    "area/provider-support"
+    "area/provider-support",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06F8KYYHBXR7BZ5NRKAC1PQCZ4",
   "release-id": "06F8KYXWH4YTM5WXQZHR41EPQG",
   "created-at": "2026-06-02T20:21:22.2617689Z",
-  "updated-at": "2026-06-05T14:42:36.0358298Z"
+  "updated-at": "2026-06-08T23:45:38.6325555Z"
 }

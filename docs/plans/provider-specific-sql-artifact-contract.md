@@ -18,6 +18,7 @@ Use these repository surfaces as the authoritative anchors for implementation:
 | Consumer-owned design-time host, single-project ownership, and no standalone DVault CLI | `docs/architecture/dvault-dotnet-ef-design-time-workflow.md`, `src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs` |
 | Current provider-specific artifact gate and required prerequisite categories | `docs/performance-profiles.md` |
 | Default explicit save-service boundary and no automatic stored-procedure dispatch | `docs/architecture/dvault-v1-explicit-save-service.md` |
+| Current v0.32 review-only dry-run release summary | `docs/releases/v0.32.0.md` |
 | Historical stored-procedure escape-hatch and non-goal wording | `docs/releases/v0.20.0.md`, `docs/releases/v0.26.0.md`, `docs/releases/v0.31.0.md` |
 | Finite supported-provider baseline and provider profile facts | `docs/plans/provider-identifier-ddl-guardrail-contract.md`, `src/DCoding.Data.DVault/DataVaultAnnotationNames.cs` |
 | Shared benchmark artifact and before/after evidence rules | `docs/plans/performance-evidence-benchmark-artifact-contract.md` |
@@ -42,7 +43,7 @@ The v1 workflow is consumer-owned and design-time only:
 1. The application project that already owns the configured `DbContext`, `IDesignTimeDbContextFactory<TContext>`, migrations, and DVault design-time command host explicitly opts into artifact generation.
 2. The consumer runs the normal reviewed design-time checks first: validation, artifact drift when a reviewed model artifact exists, migration guardrail review when schema changes are involved, and representative request-bound diagnostics for the exact provider and workload.
 3. The consumer captures the required benchmark and semantic parity evidence for the same provider and representative workload.
-4. A consumer-owned design-time command emits a deterministic dry-run artifact manifest for review. The first implementation ticket in this lane stays dry-run only and must not deploy, invoke, or auto-register runtime dispatch.
+4. A consumer-owned design-time command emits a deterministic dry-run artifact manifest for review. The current v0.32 lane stays dry-run only and must not deploy, invoke, or auto-register runtime dispatch.
 5. The consumer reviews the manifest and any referenced SQL payload files in source control, then owns deployment, invocation, versioning, rollback, cleanup, environment selection, credentials, transaction policy, and operational observability outside DVault.
 
 Artifact generation stays inside the existing single-project design-time boundary. It must not require a separate runtime service, a package-owned migration hook, or a standalone `dvault` executable.
@@ -118,7 +119,7 @@ Tickets that do not have that evidence should remain contract, prototype, docume
 This contract is the parent refinement boundary for the current artifact-lane child tickets:
 
 - `06F8KZVCVRPS3NAGQA7J55EAA4` defines the concrete benchmark and semantic parity evidence requirements.
-- `06F8KZV18BQ0GN3CE4G02ATVA0` prototypes one dry-run artifact manifest for one provider and one representative workload.
+- `06F8KZV18BQ0GN3CE4G02ATVA0` prototypes one SQL Server dry-run artifact manifest for one representative workload.
 - `06F8KZVRARQPG482YKCQ686PNM` updates the v0.32 documentation and non-goal wording around the artifact lane.
 
 Those tickets should refine implementation detail and evidence collection inside this contract instead of reopening the architecture boundary.
@@ -136,11 +137,11 @@ This contract does not:
 - replace the shared benchmark artifact contract, support-bundle contract, or existing provider-neutral save and read services;
 - promise raw SQL capture, physical-plan capture, provider service-level objectives, or DBA automation as part of the artifact lane itself.
 
-## Follow-Up Decisions
+## V0.32 Documentation Decisions And Follow-Up
 
-These decisions are intentionally deferred to the child work and do not block this contract:
+The v0.32 release and architecture docs summarize this contract as a current review-only dry-run manifest lane inside the existing consumer-owned design-time boundary. The first visible dry-run exporter is SQL Server for the `provider-native-bulk-ingestion` representative workload. That scope does not broaden the implemented exporter baseline to SQLite, PostgreSQL, MySQL, or Oracle.
 
-- which supported provider should be used for the first dry-run prototype;
+These decisions remain intentionally deferred to later work and do not block this contract:
+
 - the exact consumer repository path convention for storing reviewed manifests and sidecar SQL payloads;
-- whether a future non-dry-run lane should emit deployable SQL payload files after the prototype and evidence tickets land;
-- how the v0.32 release and architecture docs should summarize this lane once the child tickets complete.
+- whether a future non-dry-run lane should emit deployable SQL payload files after the prototype and evidence tickets land.
