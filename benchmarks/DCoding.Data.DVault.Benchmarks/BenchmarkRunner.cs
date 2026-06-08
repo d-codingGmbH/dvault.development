@@ -558,10 +558,11 @@ internal static class BenchmarkExecutionDetails {
     ArgumentNullException.ThrowIfNull(benchmark);
     ArgumentNullException.ThrowIfNull(diagnostics);
 
-    return CreatePlanned(benchmark) +
+    return CreateObservedSaveStrategyDetailPrefix(benchmark, diagnostics) +
         "; saveStrategyStatus=" + diagnostics.SaveStrategy.Status +
         "; provider=" + (diagnostics.SaveStrategy.ProviderName ?? "<none>") +
         "; selectedStrategy=" + (diagnostics.SaveStrategy.SelectedStrategyName ?? "<none>") +
+        "; candidateStrategies=" + FormatSaveStrategyCandidates(diagnostics.SaveStrategy.Candidates) +
         "; candidates=" + diagnostics.SaveStrategy.Candidates.Count.ToString(CultureInfo.InvariantCulture) +
         "; fallbackCauses=" + FormatFallbackCauses(diagnostics.SaveStrategy.FallbackCauses) +
         "; requestCount=" + requestCount.ToString(CultureInfo.InvariantCulture) +
@@ -570,6 +571,16 @@ internal static class BenchmarkExecutionDetails {
         "; satelliteOperations=" + satelliteOperationCount.ToString(CultureInfo.InvariantCulture) +
         "; nativeBulkGate=clean-context,no-multi-active-satellites,provider-eligible-bulk-request" +
         FormatStagedProviderBulk(diagnostics.SaveStrategy.StagedProviderBulk);
+  }
+
+  private static string CreateObservedSaveStrategyDetailPrefix(
+      IScenarioBenchmark benchmark,
+      DataVaultDiagnosticsResult diagnostics) {
+    return "scenario=" + benchmark.ScenarioName +
+        "; provider=" + benchmark.ProviderName +
+        "; baseline=" + benchmark.BaselineName +
+        "; strategyFamily=" + benchmark.StrategyFamily +
+        "; executionPath=" + GetObservedSaveExecutionPath(benchmark, diagnostics);
   }
 
   public static string CreateReadStrategyDetail(
@@ -623,6 +634,16 @@ internal static class BenchmarkExecutionDetails {
       "pooled-dvault-context" => "AddDbContextPool DVault context path",
       _ => "benchmark-defined path",
     };
+  }
+
+  private static string GetObservedSaveExecutionPath(
+      IScenarioBenchmark benchmark,
+      DataVaultDiagnosticsResult diagnostics) {
+    if (diagnostics.SaveStrategy.Status == DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback) {
+      return "DVault provider-neutral fallback path";
+    }
+
+    return GetExecutionPath(benchmark);
   }
 
   private static string GetSqliteStrategyName(string scenarioName) {
@@ -713,6 +734,17 @@ internal static class BenchmarkExecutionDetails {
     }
 
     return string.Join("|", fallbackCauses.Select(cause => cause.Kind.ToString()));
+  }
+
+  private static string FormatSaveStrategyCandidates(
+      IReadOnlyList<DataVaultSaveStrategyCandidateDiagnostics> candidates) {
+    if (candidates.Count == 0) {
+      return "none";
+    }
+
+    return string.Join("|", candidates
+        .OrderBy(candidate => candidate.Ordinal)
+        .Select(candidate => candidate.StrategyName));
   }
 
   private static string FormatStagedProviderBulk(DataVaultStagedProviderBulkDiagnostics? stagedProviderBulk) {

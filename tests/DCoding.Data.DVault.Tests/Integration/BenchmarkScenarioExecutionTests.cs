@@ -808,6 +808,67 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
+  public void SaveStrategyExecutionDetailUsesFallbackPathWhenSqlServerCandidateDeclines() {
+    var fallbackCauses = new[]
+    {
+        new DataVaultSaveStrategyFallbackCause(
+            DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold,
+            "SQL Server optimized dispatch accepts at most 500 satellite operations; the request batch contains 1000."),
+    };
+    var diagnostics = CreateSaveStrategyDiagnostics(
+        new DataVaultSaveStrategyDiagnostics(
+            DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback,
+            KnownProviderNames.SqlServer,
+            SelectedStrategyName: null,
+            SelectedStrategyPriority: null,
+            Candidates:
+            [
+                new DataVaultSaveStrategyCandidateDiagnostics(
+                    0,
+                    "SqlServerDataVaultSaveStrategy",
+                    100,
+                    CanSave: false,
+                    fallbackCauses) {
+                  SupportedProviderNames = [KnownProviderNames.SqlServer],
+                  GateRequirements =
+                  [
+                      new DataVaultSaveStrategyGateRequirement(
+                          DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
+                          MinimumTotalOperationCount: 50),
+                      new DataVaultSaveStrategyGateRequirement(
+                          DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold,
+                          MaximumSatelliteOperationCount: 500),
+                  ],
+                },
+            ],
+            fallbackCauses));
+    var benchmark = new DiagnosticExecutionDetailBenchmark(
+        "customer-profile-scale-1000x1",
+        SqlServerProviderName,
+        "dvault-adddvaultsqlserver-optimized",
+        DataVaultBenchmarkHelpers.SqlServerOptimizedStrategyFamily,
+        "1000 customers, 1 profile state each",
+        "0% repeat-change history");
+
+    var executionDetail = BenchmarkExecutionDetails.CreateSaveStrategyDetail(
+        benchmark,
+        diagnostics,
+        requestCount: 1,
+        hubOperationCount: 0,
+        linkOperationCount: 0,
+        satelliteOperationCount: 1000);
+
+    Assert.Contains("strategyFamily=sqlserver-optimized-dvault", executionDetail);
+    Assert.Contains("executionPath=DVault provider-neutral fallback path", executionDetail);
+    Assert.DoesNotContain("DVault SQL Server staged native bulk save path", executionDetail);
+    Assert.Contains("saveStrategyStatus=ProviderNeutralFallback", executionDetail);
+    Assert.Contains("selectedStrategy=<none>", executionDetail);
+    Assert.Contains("candidateStrategies=SqlServerDataVaultSaveStrategy", executionDetail);
+    Assert.Contains("fallbackCauses=SqlServerMaximumSatelliteOperationThreshold", executionDetail);
+    Assert.Contains("satelliteOperations=1000", executionDetail);
+  }
+
+  [Fact]
   public async Task LocalBenchmarkRunnerCanRunLatestSatelliteIndexMatrixForSqlite() {
     var text = await RunBenchmarkAndCaptureOutputAsync(new BenchmarkOptions(
         1,
@@ -1603,6 +1664,37 @@ public sealed class BenchmarkScenarioExecutionTests {
     }
 
     return "\"" + value.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+  }
+
+  private static DataVaultDiagnosticsResult CreateSaveStrategyDiagnostics(
+      DataVaultSaveStrategyDiagnostics saveStrategy) {
+    return new DataVaultDiagnosticsResult(
+        new DataVaultValidationDiagnostics(true, []),
+        new DataVaultExplainDiagnostics(
+            "test",
+            null,
+            KnownProviderNames.SqlServer,
+            "SQL Server",
+            false,
+            DataVaultProviderValueFormat.NativeDateTimeOffset,
+            "datetimeoffset",
+            "sqlserver",
+            false,
+            []),
+        saveStrategy,
+        []);
+  }
+
+  private sealed record DiagnosticExecutionDetailBenchmark(
+      string ScenarioName,
+      string ProviderName,
+      string BaselineName,
+      string StrategyFamily,
+      string DatasetSize,
+      string ChangeRatio) : IScenarioBenchmark {
+    public Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
+      throw new NotSupportedException("This benchmark double is only used for execution detail formatting.");
+    }
   }
 
   private sealed record ExpectedBenchmarkRow(
