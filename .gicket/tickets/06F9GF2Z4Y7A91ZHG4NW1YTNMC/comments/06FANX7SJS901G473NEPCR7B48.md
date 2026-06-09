@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined this ticket as the bounded version-line policy gate for v0.33.0: keep v0.32.0-and-earlier packages on 0.x, introduce same-ID 8.33.0 and 10.33.0 lines at v0.33.0, preserve coordinated pack and verification behavior, and rely on the already-existing sibling tickets for multitargeting, verifier, and documentation implementation; no additional split or attachment work was needed.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Repository evidence already fixes the current consumer baseline to seven coordinated package IDs, README installation examples at 0.32.0, solution-level dotnet pack DVault.slnx --configuration Release --nologo, and MinVer v-prefixed planning tags; this ticket defines how that baseline branches into 8.x and 10.x package lines without changing package IDs.
 - Planning release v0.33.0 is the first dual-line release: it maps to NuGet package versions 8.33.0 for the net8.0 and EF Core 8 line and 10.33.0 for the net10.0 and EF Core 10 line, while v0.32.0 and earlier stay on the historical 0.x line.
 - Later planning releases follow the same rule: planning release v0.N.0 maps to package versions 8.N.0 and 10.N.0; documentation must distinguish planning release numbers from consumer-facing NuGet package versions.
@@ -16,7 +15,7 @@
 - No human clarification comments or attachments were present on the ticket; the only live non-parent relation anomaly is an incoming blocks edge from done ticket 06F8KZVRARQPG482YKCQ686PNM, which should be treated as historical stale workflow state rather than an active product dependency.
 - No new child tickets, attachments, or planning documents were materialized in this pass because the epic already carries the necessary implementation split.
 
-### Scope In
+Scope In
 - Define the authoritative mapping from planning releases to historical 0.x, 8.x, and 10.x NuGet package versions.
 - Define same-package-ID policy and reject line-specific package-ID splits.
 - Define expected NuGet update behavior for consumers staying within a line versus moving between 0.x, 8.x, and 10.x.
@@ -24,51 +23,37 @@
 - Define package-verification expectations that reject mixed compatibility lines and mismatched provider and core package dependencies.
 - Define documentation wording that separates planning release numbers from published package versions and preserves the current manual publication boundary.
 
-### Scope Out
+Scope Out
 - Implementing net8.0 and net10.0 multitargeting, conditional package references, or provider and version pinning changes already covered by sibling implementation tickets.
 - Rewriting CI, package-verifier code, or documentation files in this ticket; this ticket only fixes the policy those tickets must follow.
 - Introducing new runtime behavior, provider provisioning, or platform and tooling responsibilities.
 - Backporting pre-v0.33.0 releases onto new package majors or republishing historical 0.x packages under different IDs.
 
-## Acceptance Criteria
-- The refined contract states that v0.32.0 and earlier remain on the existing 0.x NuGet line, v0.33.0 maps to 8.33.0 and 10.33.0, and later planning releases v0.N.0 map to 8.N.0 and 10.N.0.
-- The policy keeps the existing seven package IDs unchanged across all lines and explicitly rejects line-specific or duplicate artifact IDs as the compatibility mechanism.
-- The policy defines consumer update behavior: a project must stay on one coordinated line at a time, provider packages must match the core package line, upgrades within a line are ordinary NuGet updates, and moving between 0.x, 8.x, and 10.x is an explicit major-version migration.
-- The policy preserves the solution-level pack surface dotnet pack DVault.slnx --configuration Release --nologo as the canonical packaging command shape, with separate line-selection context or runs used to emit one aligned seven-package family for 8.x and one for 10.x rather than per-package pack flows or mixed-line artifacts.
-- The policy requires package verification to fail any artifact set that mixes 8.x and 10.x, any provider package whose DCoding.Data.DVault dependency points at the wrong line or version, or any coordinated package family that breaks existing README, XML, symbols, or analyzer asset expectations.
-- The policy defines documentation wording that distinguishes planning release v0.33.0 from NuGet package versions 8.33.0 and 10.33.0, and warns consumers not to rely on broad floating ranges that can cross compatibility lines.
-
-## Definition of Done
-- The ticket carries an authoritative refinement contract for the version-line policy and no blocking PO questions remain.
-- The contract stays consistent with current repository evidence: seven coordinated package IDs, historical 0.32.0 installation guidance, MinVer v-prefixed planning tags, solution-level pack flow, and current verifier and manual-publication expectations.
-- The contract cleanly unblocks the already-related compatibility, multitargeting, verifier, and documentation tickets without reopening their implementation-level choices.
-- No acceptance text implies a v0.33.0 NuGet package version, silent cross-line dependency mixing, or automatic publication and process automation beyond the existing manual release boundary.
-
-## Implementation Notes
-- Use this ticket as the policy input for story 06F9G8EQJGBRSWE96VE028HJYW, which it already blocks, plus sibling tickets 06F9G8EXXFJJ1SWWQXC2N9P2X8, 06F9G8FBQTAPXXS1Y4NR5QKVG8, and 06F9G8FJMZ3AY43YG06W2V4T8G.
-- Implementation may choose the exact MSBuild or property mechanism for line selection, but the policy assumption is two coordinated artifact families per planning release, not a package-ID split and not a single mixed-version output.
-- Package verification and consumer docs should keep treating the analyzer package as part of the coordinated seven-package family even though its dependency shape differs from runtime and provider packages.
-- Manual publication guidance should continue to review and approve each coordinated artifact family explicitly; the new line policy changes version mapping, not the manual-publication ownership boundary.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After 8.x and 10.x are established, should a later release define how future 11.x or other compatibility lines are introduced without repeating a full policy rewrite?
 - Should release automation later standardize a named line-selection property or artifact-directory convention for the separate 8.x and 10.x pack runs, or keep that as implementation-owned build detail?
 
-## Risks
+Risks
 - Keeping the same package IDs across multiple major lines is the least disruptive continuation of the current repository baseline, but it increases the chance of consumer confusion if docs or examples blur planning release numbers and NuGet package versions.
 - The current repository versioning baseline is single-line MinVer from v tags; sibling implementation work must add a line-selection mechanism carefully so pack outputs and approval evidence cannot accidentally mix 8.x and 10.x artifacts.
 - The live relation graph still contains a historical incoming blocks edge from a done v0.32 ticket; until relation cleanup is replayed, workflow views may overstate active blocking state.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended. The broader work is already adequately decomposed under epic 06F9G8EE7ZA666MW8YEB2QP8BW into this policy ticket, the compatibility-contract story, the multitargeting story, the verifier and CI task, and the documentation task.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 4
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Define the package-version policy introduced with planning release v0.33.0. Acceptance must state that v0.32.0 and earlier stay on the existing 0.x package line, v0.33.0 maps to package versions 8.33.0 and 10.33.0, later planning releases map to 8.N.0 and 10.N.0, and package verification protects consumers from accidentally resolving an incompatible major dependency line. Cover NuGet update behavior, same package ID versus split artifact constraints, pack command shape, SemVer caveats, and documentation wording.
+Run mode
+- apply: planned updates are applied after this comment

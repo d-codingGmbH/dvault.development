@@ -3,21 +3,20 @@
   "ticket-id": "06F9GF2Z4Y7A91ZHG4NW1YTNMC",
   "ticket-type": "task",
   "title": "Task: Define 8.x and 10.x package version line policy",
-  "revision": "06F9GF39DMV0SQBQ5ZHJXP2XWC",
-  "status": "todo",
+  "revision": "06FAP41DK5MQG9R17C1QSMXTY8",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/architecture",
+    "area/developer-experience",
     "area/ef-core",
     "area/packaging",
-    "area/developer-experience"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06F9G8EAJ666X83YVDCKSBZD14",
   "release-id": "06F9G8E96BGQSNH0HA3MS79TE0",
   "created-at": "2026-06-05T14:42:34.1725509Z",
-  "updated-at": "2026-06-05T14:42:36.5256608Z"
+  "updated-at": "2026-06-09T06:27:04.7293773Z"
 }
