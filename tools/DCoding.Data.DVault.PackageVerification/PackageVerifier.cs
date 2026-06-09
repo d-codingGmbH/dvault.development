@@ -15,6 +15,17 @@ public sealed class PackageVerifier {
   private const string ExpectedReadmeFile = "README.md";
 
   private static readonly string[] DependencyTargetFrameworks = [Net8TargetFramework, Net10TargetFramework];
+  private static readonly ExpectedPackageLine[] ExpectedPackageLines = [
+      new("8.33.0", Net8TargetFramework, "EF Core 8"),
+      new("10.33.0", Net10TargetFramework, "EF Core 10"),
+  ];
+
+  private static readonly string[] DisallowedInstallVersionFragments = [
+      "--version 0.32.0",
+      "--version 0.33.0",
+      "Version=\"0.32.0\"",
+      "Version=\"0.33.0\"",
+  ];
 
   private static readonly IReadOnlyList<ExpectedPackage> ExpectedPackages = [
       new(
@@ -279,7 +290,7 @@ public sealed class PackageVerifier {
     ValidateTags(archive, metadata, expectedPackage, issues);
     ValidateLicense(archive, metadata, issues);
     ValidateRepository(archive, metadata, issues);
-    ValidateReadme(archive, coreVersion, issues);
+    ValidateReadme(archive, issues);
     ValidateXmlDocumentation(archive, expectedPackage, issues);
     ValidateAnalyzerAssets(archive, expectedPackage, issues);
     ValidateDependencyGroups(archive, expectedPackage, coreVersion, issues);
@@ -374,7 +385,6 @@ public sealed class PackageVerifier {
 
   private static void ValidateReadme(
       PackageArchive archive,
-      string expectedInstallVersion,
       List<PackageVerificationIssue> issues) {
     if (!archive.Entries.Contains(ExpectedReadmeFile)) {
       issues.Add(new PackageVerificationIssue(
@@ -390,26 +400,65 @@ public sealed class PackageVerifier {
       return;
     }
 
+    ValidateReadmeDoesNotUseDisallowedInstallVersions(archive, issues);
+
     if (ExpectedPackageById.TryGetValue(archive.Id, out var currentPackage) && currentPackage.IsAnalyzer) {
-      var expectedAnalyzerReference =
-          "<PackageReference Include=\"" + currentPackage.Id + "\" Version=\"" + expectedInstallVersion + "\" PrivateAssets=\"all\" />";
-      if (!archive.ReadmeText.Contains(expectedAnalyzerReference, StringComparison.Ordinal)) {
-        issues.Add(new PackageVerificationIssue(
-            archive.Id,
-            "Packaged analyzer README.md does not contain the current PrivateAssets installation guidance."));
+      foreach (var packageLine in ExpectedPackageLines) {
+        if (!archive.ReadmeText.Contains(packageLine.TargetFramework, StringComparison.Ordinal) ||
+            !archive.ReadmeText.Contains(packageLine.EfCoreLine, StringComparison.Ordinal)) {
+          issues.Add(new PackageVerificationIssue(
+              archive.Id,
+              "Packaged analyzer README.md does not label the " + packageLine.TargetFramework + " / " + packageLine.EfCoreLine + " PrivateAssets installation guidance for version " + packageLine.Version + "."));
+        }
+
+        var expectedAnalyzerReference =
+            "<PackageReference Include=\"" + currentPackage.Id + "\" Version=\"" + packageLine.Version + "\" PrivateAssets=\"all\" />";
+        if (!archive.ReadmeText.Contains(expectedAnalyzerReference, StringComparison.Ordinal)) {
+          issues.Add(new PackageVerificationIssue(
+              archive.Id,
+              "Packaged analyzer README.md does not contain the " + packageLine.TargetFramework + " / " + packageLine.EfCoreLine + " PrivateAssets installation guidance for version " + packageLine.Version + "."));
+        }
       }
 
       return;
     }
 
-    foreach (var expectedPackage in ExpectedPackages) {
-      var expectedInstallCommand =
-          "dotnet add package " + expectedPackage.Id + " --version " + expectedInstallVersion;
-      if (!archive.ReadmeText.Contains(expectedInstallCommand, StringComparison.Ordinal)) {
+    foreach (var packageLine in ExpectedPackageLines) {
+      if (!archive.ReadmeText.Contains(packageLine.TargetFramework, StringComparison.Ordinal) ||
+          !archive.ReadmeText.Contains(packageLine.EfCoreLine, StringComparison.Ordinal)) {
         issues.Add(new PackageVerificationIssue(
             archive.Id,
-            "Packaged README.md does not contain the current NuGet installation guidance."));
-        return;
+            "Packaged README.md does not label the " + packageLine.TargetFramework + " / " + packageLine.EfCoreLine + " NuGet installation guidance for version " + packageLine.Version + "."));
+      }
+
+      foreach (var expectedPackage in ExpectedPackages.Where(package => !package.IsAnalyzer)) {
+        var expectedInstallCommand =
+            "dotnet add package " + expectedPackage.Id + " --version " + packageLine.Version;
+        if (!archive.ReadmeText.Contains(expectedInstallCommand, StringComparison.Ordinal)) {
+          issues.Add(new PackageVerificationIssue(
+              archive.Id,
+              "Packaged README.md does not contain the " + packageLine.TargetFramework + " / " + packageLine.EfCoreLine + " NuGet installation guidance for package " + expectedPackage.Id + " version " + packageLine.Version + "."));
+        }
+      }
+
+      var expectedAnalyzerReference =
+          "<PackageReference Include=\"DCoding.Data.DVault.Analyzers\" Version=\"" + packageLine.Version + "\" PrivateAssets=\"all\" />";
+      if (!archive.ReadmeText.Contains(expectedAnalyzerReference, StringComparison.Ordinal)) {
+        issues.Add(new PackageVerificationIssue(
+            archive.Id,
+            "Packaged README.md does not contain the " + packageLine.TargetFramework + " / " + packageLine.EfCoreLine + " analyzer PrivateAssets guidance for version " + packageLine.Version + "."));
+      }
+    }
+  }
+
+  private static void ValidateReadmeDoesNotUseDisallowedInstallVersions(
+      PackageArchive archive,
+      List<PackageVerificationIssue> issues) {
+    foreach (var disallowedFragment in DisallowedInstallVersionFragments) {
+      if (archive.ReadmeText?.Contains(disallowedFragment, StringComparison.Ordinal) == true) {
+        issues.Add(new PackageVerificationIssue(
+            archive.Id,
+            "Packaged README.md must not document stale or planning-release install version fragment '" + disallowedFragment + "'; use separate 8.33.0 and 10.33.0 package-line guidance."));
       }
     }
   }
@@ -672,6 +721,8 @@ public sealed class PackageVerifier {
       bool IsProvider,
       bool IsAnalyzer,
       bool UsesEfRelationalDependency = false);
+
+  private sealed record ExpectedPackageLine(string Version, string TargetFramework, string EfCoreLine);
 
   private sealed record ExpectedDependency(string Id, string Version);
 

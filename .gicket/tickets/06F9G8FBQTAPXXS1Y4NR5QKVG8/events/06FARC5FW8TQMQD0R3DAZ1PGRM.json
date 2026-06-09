@@ -1,0 +1,12 @@
+{
+  "event-id": "06FARC5FW8TQMQD0R3DAZ1PGRM",
+  "occurred-at": "2026-06-09T11:42:12.4500000Z",
+  "event-type": "TicketCommentAdded",
+  "actor": {
+    "name": "system",
+    "email": "system@example.invalid"
+  },
+  "payload": {
+    "comment-id": "06FARC5FW8HMTMC9T6GMTFQQ9C"
+  }
+}

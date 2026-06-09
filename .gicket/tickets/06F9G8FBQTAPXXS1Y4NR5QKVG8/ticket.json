@@ -3,21 +3,20 @@
   "ticket-id": "06F9G8FBQTAPXXS1Y4NR5QKVG8",
   "ticket-type": "task",
   "title": "Task: Update package verifier and CI guidance for dual targets",
-  "revision": "06F9GF2W5YQ6HS34VT5XHVH984",
-  "status": "todo",
+  "revision": "06FARX4FQR0S6PFSQ5Y3ZH6G5R",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
+    "area/documentation",
     "area/ef-core",
     "area/packaging",
     "area/testing",
-    "area/documentation"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06F9G8ECYMR844CC84QA8P7H7W",
   "release-id": "06F9G8E96BGQSNH0HA3MS79TE0",
   "created-at": "2026-06-05T14:13:40.5691948Z",
-  "updated-at": "2026-06-05T14:42:33.1355914Z"
+  "updated-at": "2026-06-09T12:56:20.6704714Z"
 }

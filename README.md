@@ -4,16 +4,42 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 
 ## Installation
 
-Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family is version-aligned; use one version that has already been published for every selected package id. This documentation baseline does not by itself confirm package publication.
+Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family keeps the same package ids across both supported package-version lines. Use exactly one line for a consumer project: `8.33.0` for `net8.0` and EF Core 8, or `10.33.0` for `net10.0` and EF Core 10. Do not mix package versions from both lines in one project, and do not use a consumer-facing `0.33.0` package version. This documentation baseline does not by itself confirm package publication.
+
+For `net8.0` projects on EF Core 8, use the `8.33.0` package line:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.32.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.32.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.32.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.32.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.32.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.32.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.32.0
+dotnet add package DCoding.Data.DVault --version 8.33.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 8.33.0
+dotnet add package DCoding.Data.DVault.Postgres --version 8.33.0
+dotnet add package DCoding.Data.DVault.MySql --version 8.33.0
+dotnet add package DCoding.Data.DVault.Oracle --version 8.33.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 8.33.0
+```
+
+For `net10.0` projects on EF Core 10, use the `10.33.0` package line:
+
+```sh
+dotnet add package DCoding.Data.DVault --version 10.33.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 10.33.0
+dotnet add package DCoding.Data.DVault.Postgres --version 10.33.0
+dotnet add package DCoding.Data.DVault.MySql --version 10.33.0
+dotnet add package DCoding.Data.DVault.Oracle --version 10.33.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 10.33.0
+```
+
+Add the analyzer package only to projects that own DVault declarations or generated read helpers, and keep it local with `PrivateAssets="all"`. Use the analyzer version that matches the selected package line:
+
+```xml
+<ItemGroup>
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="8.33.0" PrivateAssets="all" />
+</ItemGroup>
+```
+
+```xml
+<ItemGroup>
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="10.33.0" PrivateAssets="all" />
+</ItemGroup>
 ```
 
 Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
@@ -1209,6 +1235,8 @@ All current .NET projects are included in `DVault.slnx`. Empty future-use folder
 
 ## Local Validation
 
+Run the repository validation lane from a .NET 10 SDK checkout. The helper projects stay `net10.0`, while the pack and package-verification steps prove the `net8.0` and `net10.0` package dependency groups.
+
 ```sh
 dotnet build DVault.slnx --nologo
 dotnet test DVault.slnx --nologo
@@ -1219,7 +1247,7 @@ bash tools/check-format.sh
 
 The normal test run includes package-specific public API snapshot checks for `DCoding.Data.DVault` and the five provider packages. See `docs/quality/api-surface-snapshots.md` for the approved baseline location and the explicit update workflow for intentional API changes.
 
-`bash tools/verify-packages.sh` inspects the artifacts created under `artifacts/packages/` by the solution-level pack command. It expects exactly the seven DVault packages plus six matching symbol packages for the runtime/provider packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider package depends on the packed `DCoding.Data.DVault` version. The verifier intentionally fails when stale, unexpected, or non-packable package artifacts remain in `artifacts/packages/`.
+`bash tools/verify-packages.sh` inspects the artifacts created under `artifacts/packages/` by the solution-level pack command. It expects exactly the seven DVault packages plus six matching symbol packages for the runtime/provider packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider package depends on the packed `DCoding.Data.DVault` version. It also verifies the `net8.0` and `net10.0` nuspec dependency groups, expected EF Core and `Microsoft.Extensions.DependencyInjection.Abstractions` lines, dual `8.33.0` / `10.33.0` README install guidance, and analyzer `PrivateAssets="all"` guidance. The verifier intentionally fails when stale, unexpected, mixed-line, or non-packable package artifacts remain in `artifacts/packages/`.
 
 Provider integration tests use stable xUnit trait categories so required local coverage and opt-in external database coverage can be selected explicitly:
 

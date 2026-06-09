@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Bounded this ticket as the reusable dual-line package-verifier and manual/CI-guidance task behind epic 06F9G8EE7ZA666MW8YEB2QP8BW: the matrix-test story is already done, this task still blocks broader v0.33.0 compatibility docs, and no additional PO blocker remains.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - docs/plans/shared-implementation-standards.md already fixes the v0.33 package-line contract: keep the existing seven package IDs, publish 8.33.0 for net8.0 and EF Core 8 and 10.33.0 for net10.0 and EF Core 10, do not introduce a consumer-facing 0.33.0 package line, and do not use mixed-line examples.
 - Current repository evidence already shows the runtime and provider packages multitarget net8.0 and net10.0, while DCoding.Data.DVault.Analyzers and tools/DCoding.Data.DVault.PackageVerification remain net10-only helper projects; this ticket owns broader verifier and guidance behavior, not helper-project retargeting.
 - tools/DCoding.Data.DVault.PackageVerification/PackageVerifier.cs already owns the reusable package-artifact gate for nuspec metadata, README presence and content, XML docs, analyzer assets, symbols, and dependency groups; this ticket should make that gate authoritative for both target-framework dependency groups and mixed-line rejection.
@@ -16,61 +15,44 @@
 - Relation context is coherent: epic 06F9G8EE7ZA666MW8YEB2QP8BW is the parent, done story 06F9G8F4RQ0T7RV82M3H2H3FVG is historical prerequisite evidence for exact matrix assertions, and this ticket still blocks task 06F9G8FJMZ3AY43YG06W2V4T8G so broader compatibility docs consume the finalized verifier and guidance contract.
 - No child tickets, relation writes, description updates, attachments, or planning documents were materialized during this refinement pass because the existing ticket and repository evidence already bounded the work.
 
-### Scope In
+Scope In
 - Extend the reusable package-verifier path so each produced package validates the expected net8.0 and net10.0 nuspec dependency groups, including provider-to-core version alignment and rejection of mixed EF Core lines inside one target group.
 - Update local validation and manual release guidance for the dual package lines, including the required build, test, pack, verify, and check-format evidence and artifact inspection expectations for package metadata, README content, XML docs, analyzer assets, and symbols.
 - Update CI guidance so the blocking repository validation path explicitly includes pack plus bash tools/verify-packages.sh for the dual-line package family while preserving manual publication separation and avoiding any publish automation.
 - Update packaged install-guidance expectations so README.md and src/DCoding.Data.DVault.Analyzers/README.md distinguish 8.33.0 and net8.0 and EF Core 8 from 10.33.0 and net10.0 and EF Core 10 and keep analyzer guidance local with PrivateAssets=all.
 
-### Scope Out
+Scope Out
 - Automatic NuGet publishing, release credentials, package push tooling, or any CI step that publishes artifacts.
 - Reopening the already-selected dual-target project baseline or retargeting tools/DCoding.Data.DVault.PackageVerification or analyzer projects to net8.0 as part of this ticket.
 - New runtime or provider behavior, new supported providers, or new mandatory live external-provider database execution in the default validation lane.
 - Broader release-note or adopter-documentation ownership beyond the verifier and manual-guidance boundary already blocked downstream in 06F9G8FJMZ3AY43YG06W2V4T8G.
 
-## Acceptance Criteria
-- Package verification fails if any coordinated package is missing either the net8.0 or net10.0 nuspec dependency group, if the core package does not expose Microsoft.EntityFrameworkCore 8.0.27 plus Microsoft.EntityFrameworkCore.Relational 8.0.27 and Microsoft.Extensions.DependencyInjection.Abstractions 8.0.2 for net8.0, or the matching 10.0.8 dependency line for net10.0.
-- Package verification fails if any provider package does not depend on the packed DCoding.Data.DVault version for both target groups, if it uses the wrong Microsoft.EntityFrameworkCore.Relational or Microsoft.Extensions.DependencyInjection.Abstractions version for a target group, or if one target group mixes EF Core 8.x and 10.x dependencies.
-- The coordinated package-artifact gate continues to prove the exact seven .nupkg outputs, six .snupkg outputs, nuspec metadata, packaged README content, XML docs, analyzer assets, and symbols for the current family, and it does not treat the analyzer package as a transitive runtime dependency.
-- README and analyzer installation guidance clearly separate 8.33.0 and net8.0 and EF Core 8 from 10.33.0 and net10.0 and EF Core 10, keep unchanged package IDs, keep analyzer PrivateAssets=all guidance, and do not document a consumer-facing 0.33.0 package line or a mixed-line install example.
-- Manual local validation guidance continues to require dotnet build DVault.slnx --nologo, dotnet test DVault.slnx --nologo, dotnet pack DVault.slnx --configuration Release --nologo, bash tools/verify-packages.sh, and bash tools/check-format.sh before publish approval.
-- CI guidance and workflow documentation continue to use restore, format, build, the filtered default-provider test lane, pack, and bash tools/verify-packages.sh with no publish step or automatic push behavior.
-- Default local and CI validation remains runnable without mandatory live external-provider databases, and any PostgreSQL, SQL Server, Oracle, or MySQL execution remains behind the existing opt-in connection-string gates.
-
-## Definition of Done
-- The ticket contract leaves no remaining PO ambiguity about the two package-version lines, the seven-package family, the manual publication boundary, or the verifier and documentation responsibilities for this task.
-- Repository verifier behavior and supporting guidance fail or direct users deterministically when dual-line package metadata, dependency groups, README content, symbols, XML docs, or analyzer assets drift.
-- CI and manual validation guidance point to one bounded blocking path that packs and verifies artifacts but does not publish them automatically.
-- Downstream documentation task 06F9G8FJMZ3AY43YG06W2V4T8G can consume this finalized verifier and guidance contract without reopening package-line policy or helper-project scope.
-
-## Implementation Notes
-- Use docs/plans/shared-implementation-standards.md as the authoritative policy input for unchanged package IDs plus the 8.33.0 and net8.0 and EF Core 8 and 10.33.0 and net10.0 and EF Core 10 package lines; do not re-open versions or invent line-specific package IDs.
-- Extend the existing reusable verifier in tools/DCoding.Data.DVault.PackageVerification/PackageVerifier.cs and its tests rather than creating a second package-check path; current source already contains the seven-package inventory, README, XML, analyzer, symbol checks, and dual dependency-group error model.
-- README.md and src/DCoding.Data.DVault.Analyzers/README.md still show single-line 0.32.0 install examples in current repository evidence, so dual-line README guidance must be updated together with verifier expectations to keep packaged README validation coherent.
-- .github/workflows/ci.yml already demonstrates that a .NET 10 SDK lane can restore, build, test, pack, and verify the multitarget solution without any publish step; guidance changes should ratify that blocking shape rather than introduce release automation.
-- docs/manual-nuget-publication.md already defines the required pre-publish evidence and manual push ordering; dual-line guidance must preserve that document's manual-release boundary instead of replacing it with CI publishing claims.
-- Done story 06F9G8F4RQ0T7RV82M3H2H3FVG already locked the exact provider and version matrix proof for project references, so this ticket should absorb broader verifier, README, manual, and CI work without re-expanding into provider-version selection or net8 helper-project compile-path changes.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After this ticket lands, should 06F9G8FJMZ3AY43YG06W2V4T8G fold the same dual-line examples into broader v0.33.0 compatibility and adopter documentation, or is a narrower consumer-doc slice still needed?
 - If later guidance wants explicit Pomelo.EntityFrameworkCore.MySql or multi-SDK-lane consumer advice, should that be scheduled as post-v0.33 follow-up rather than broaden this verifier and manual-guidance task?
 
-## Risks
+Risks
 - Current root and analyzer README examples are still single-line 0.32.0 guidance, so verifier and documentation updates can drift apart unless this ticket treats packaged README content as part of the same dual-line contract.
 - Because tools/DCoding.Data.DVault.PackageVerification stays net10-only, guidance must be explicit that the .NET 10 SDK validation lane still proves both net8.0 and net10.0 package outputs; otherwise maintainers may incorrectly narrow validation to one package line.
 - Broader consumer-facing compatibility documentation remains blocked by 06F9G8FJMZ3AY43YG06W2V4T8G, so stale public install examples can persist even after matrix tests and verifier checks are in place unless the downstream docs task is completed promptly.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended: done story 06F9G8F4RQ0T7RV82M3H2H3FVG already carved out exact provider and version matrix proof, while this ticket remains the bounded home for reusable package verification, README and manual guidance, and CI documentation.
 - Keep broader release-note and compatibility-prose updates in blocked task 06F9G8FJMZ3AY43YG06W2V4T8G rather than expanding this ticket into full v0.33.0 documentation ownership.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 7
+- definition-of-done items: 4
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Extend package verification, local validation guidance, and CI documentation so both package lines are checked: 8.33.0 for net8.0/EF Core 8 and 10.33.0 for net10.0/EF Core 10. Verify expected dependencies, XML docs, analyzer assets, symbols, package metadata, and provider package dependency consistency. Preserve manual publication separation and avoid automatic publishing.
+Run mode
+- apply: planned updates are applied after this comment

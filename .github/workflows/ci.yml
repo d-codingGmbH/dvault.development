@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Build, test, format, and package
+    name: Build, test, format, pack, and verify packages
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -66,5 +66,5 @@ jobs:
       - name: Pack packages (dotnet pack DVault.slnx --configuration Release --nologo)
         run: dotnet pack DVault.slnx --configuration Release --nologo
 
-      - name: Verify packages (bash tools/verify-packages.sh)
+      - name: Verify dual-target packages (bash tools/verify-packages.sh)
         run: bash tools/verify-packages.sh

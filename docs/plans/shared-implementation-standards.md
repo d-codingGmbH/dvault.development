@@ -213,7 +213,7 @@ These categories remain deferred until separate tickets explicitly own them:
 - Changing stable hashing algorithms, canonical normalization, or security-specific hashing behavior.
 - Changing default table or column naming semantics.
 - Adding language-specific formatters beyond the current shell gate.
-- Implementing the v0.33 multitarget project-file changes, provider matrix tests, verifier and CI guidance, README changes, release notes, or package publication automation.
+- Expanding v0.33 release notes, broader adopter documentation, or package publication automation beyond the dedicated multitarget project, provider matrix, verifier, README, manual release, and CI guidance tickets.
 
 ## Acceptance Baseline
 
