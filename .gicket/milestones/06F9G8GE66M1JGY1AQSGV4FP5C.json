@@ -3,6 +3,6 @@
   "milestone-id": "06F9G8GE66M1JGY1AQSGV4FP5C",
   "name": "v0.34.0 - DB2 provider contract",
   "description": "Define DB2 provider capabilities, package dependency matrix, naming/DDL boundaries, and non-goals.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-05T14:13:49.2331831Z"
 }
