@@ -3,6 +3,6 @@
   "milestone-id": "06F8KYYHBXR7BZ5NRKAC1PQCZ4",
   "name": "v0.32.0 - Artifact lane docs",
   "description": "Document consumer-owned deployment, invocation, rollback, cleanup, and benchmark parity requirements.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-02T20:17:22.2716735Z"
 }

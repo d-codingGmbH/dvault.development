@@ -27,13 +27,13 @@ The console output keeps diagnostics sanitized. Diagnostic lines report request-
 Consumer applications install the provider-neutral package and exactly one provider package for the database they use. Keep every DVault package on one aligned version:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.31.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.31.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.31.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.31.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.31.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.31.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.31.0
+dotnet add package DCoding.Data.DVault --version 0.32.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 0.32.0
+dotnet add package DCoding.Data.DVault.Postgres --version 0.32.0
+dotnet add package DCoding.Data.DVault.MySql --version 0.32.0
+dotnet add package DCoding.Data.DVault.Oracle --version 0.32.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 0.32.0
+dotnet add package DCoding.Data.DVault.Analyzers --version 0.32.0
 ```
 
 Applications also need the normal Entity Framework Core provider package for their database, such as `Microsoft.EntityFrameworkCore.Sqlite`, `Npgsql.EntityFrameworkCore.PostgreSQL`, `Microsoft.EntityFrameworkCore.SqlServer`, `Oracle.EntityFrameworkCore`, or a MySQL EF Core provider.

@@ -19,7 +19,7 @@ The `after/postgres` artifact set was captured with PostgreSQL through the Podma
 - warmup iterations: `1`
 - image: `mcr.microsoft.com/dotnet/sdk:10.0`
 - container: `postgres`
-- connection: `Host=10.88.0.2;Port=5432;Database=dvault_tests;Username=dvault;Password=local-secret;Include Error Detail=true;SSL Mode=Disable;Timeout=10;Command Timeout=60`
+- connection: redacted local Podman PostgreSQL connection string; provider, database, user, password, host, and port stay consumer-owned local test configuration and are not release evidence.
 
 The `after/mysql` artifact set was captured from the host against the published local MySQL port:
 
@@ -27,7 +27,7 @@ The `after/mysql` artifact set was captured from the host against the published 
 - iterations: `5`
 - warmup iterations: `1`
 - container: `mysql`
-- connection: `Server=127.0.0.1;Port=3306;Database=dvault_tests;User=dvault;Password=local-secret;SslMode=Disabled;AllowPublicKeyRetrieval=True`
+- connection: redacted local MySQL connection string; provider, database, user, password, host, and port stay consumer-owned local test configuration and are not release evidence.
 
 ## Interpretation
 

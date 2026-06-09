@@ -3,6 +3,6 @@
   "milestone-id": "06F9XD1R3N8KSA43A1WZVTG8GM",
   "name": "v0.32.0 - Benchmark-driven provider tuning",
   "description": "Use the full Podman external-provider benchmark evidence to tune provider strategy thresholds and document measured outcomes without broadening DVault beyond EF Core library concerns.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-06T20:51:11.5171457Z"
 }

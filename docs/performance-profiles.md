@@ -1,20 +1,28 @@
 # Performance Profiles
 
-Status: v0.31.0 decision-tree contract with v0.32 artifact-lane gate
+Status: v0.32.0 provider-threshold evidence with carried-forward v0.31.0 decision-tree contract
 
-This guide is the detailed performance-profile reference for the v0.31.0 DVault performance-guidance baseline. It translates the checked-in benchmark evidence into an adopter decision tree, starting profiles, stop conditions, and rerun triggers. It also records the decision gate for the v0.32 review-only stored-procedure or provider-specific SQL artifact lane and any later artifact proposals. It does not create automatic routing, absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, credential-management guidance, automatic PIT or bridge maintenance, raw SQL or physical-plan promises, deployable provider-specific SQL payload generation, or runtime artifact dispatch. The coordinated release record that introduced the current provider-read evidence posture is [DVault v0.28.0 Release Notes](releases/v0.28.0.md). Earlier release notes remain historical feature-introduction records.
+This guide is the detailed performance-profile reference for the current DVault performance-guidance baseline. It carries forward the v0.31.0 adopter decision tree and adds the v0.32.0 provider-threshold evidence bundles for PostgreSQL, SQL Server, MySQL, and Oracle plus the review-only provider-specific SQL artifact gate. It does not create automatic routing, absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, credential-management guidance, automatic PIT or bridge maintenance, raw SQL or physical-plan promises, deployable provider-specific SQL payload generation, or runtime artifact dispatch. The coordinated release record for the current provider-threshold evidence is [DVault v0.32.0 Release Notes](releases/v0.32.0.md). Earlier release notes remain historical feature-introduction records.
 
 ## Evidence Baseline
 
-Use the root benchmark artifact triplet as the source for the row names and timing values in this guide:
+Use the root benchmark artifact triplet as the quick local SQLite and skipped-provider baseline for the row names and timing values in this guide:
 
 - [benchmark-summary.md](../benchmark-summary.md)
 - [benchmark-summary.csv](../benchmark-summary.csv)
 - [benchmark-summary.json](../benchmark-summary.json)
 
+The v0.32.0 provider-threshold evidence extends that root triplet with checked-in benchmark bundles under `artifacts/benchmarks/...`:
+
+- [v0.32.0 all-provider scale baseline](../artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-scale-5-all-providers-20260607/benchmark-summary.md)
+- [SQL Server threshold decision](../artifacts/benchmarks/06F9XD2M71D1XFT7FJX62KD8HM-sqlserver-save-threshold-diagnostics/sqlserver-threshold-decision.md)
+- [Oracle high-volume threshold evidence](../artifacts/benchmarks/v0.32.0-06F9XD2TGEYEG6S0AK86YF295M-oracle-high-volume-threshold-20260607/benchmark-summary.md)
+- [PostgreSQL and MySQL small-batch evidence](../artifacts/benchmarks/v0.32.0-06F9XD33MNNVHHW232TC7T1CN8-scale-evidence-20260608/README.md)
+- [v0.32.0 smoke read baseline](../artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.md)
+
 The benchmark runner and artifact rules are documented in [DVault Benchmarks](../benchmarks/DCoding.Data.DVault.Benchmarks/README.md) and [Performance Evidence And Benchmark Artifact Contract](plans/performance-evidence-benchmark-artifact-contract.md). Keep those linked artifacts with any copied result so the timing numbers stay attached to the run context.
 
-The current checked-in root run used:
+The checked-in root quick baseline used:
 
 - 3 iterations and 1 warmup iteration.
 - Load timestamp storage `ProviderDefault`.
@@ -24,7 +32,7 @@ The current checked-in root run used:
 - Required provider `SQLite local temporary files`.
 - Optional PostgreSQL, SQL Server, MySQL, and Oracle rows emitted as `executionStatus=skipped` because `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_MYSQL_CONNECTION_STRING`, and `DVAULT_TEST_ORACLE_CONNECTION_STRING` were unset.
 
-Treat all millisecond values below as observations from that run only. Rerun the benchmarks when provider, hardware, runtime, load-timestamp storage, iteration count, warmup count, dataset size, request shape, or provider configuration changes.
+Treat all millisecond values below as observations from their linked run only. The v0.32 bundles record local Podman evidence where their rows are completed, but they are not universal timing promises. Rerun the benchmarks when provider, hardware, runtime, load-timestamp storage, iteration count, warmup count, dataset size, request shape, or provider configuration changes.
 
 ## Benchmark Verifier And Redaction Boundary
 
@@ -147,7 +155,7 @@ Use this table as a compact summary after applying the v0.31.0 decision-tree con
 | --- | --- | --- | --- |
 | Small app-local vault | The application writes ordinary hub, link, and satellite rows and needs a local SQLite or app-local proof first. | Register `AddDVault()` first, then add `AddDVaultSqlite()` only for SQLite deployments that want the provider package path. | Save/read diagnostics show provider fallback, a non-SQLite provider is selected, or the workload grows beyond the root customer-profile rows. |
 | Medium chunked ingestion | The loader has an ordered source stream and must bound memory without changing load timestamps, record sources, or request order. | Keep `DataVaultBulkSaveRequest` for materialized batches; use `DataVaultChunkedSaveRequest` for already-bounded ordered loaders, starting around chunk size 10. Use the `IAsyncEnumerable<DataVaultSaveChunk>` overload or async helper methods only when the producer is already asynchronous. | Materializing the batch is acceptable, chunk overhead dominates, or chunk count/retained-state telemetry no longer matches the local workload. |
-| Staged provider ingestion | The application has clean provider-specific contexts and larger eligible ordered bulk batches for PostgreSQL, SQL Server, MySQL, or Oracle. | Register `AddDVault()` plus the matching provider extension and verify save-strategy diagnostics before claiming provider-native behavior. | Optional-provider benchmark rows are skipped, the context is dirty, native gates decline, or the provider-local run has not been collected. |
+| Staged provider ingestion | The application has clean provider-specific contexts and larger eligible ordered bulk batches for PostgreSQL, SQL Server, MySQL, or Oracle. | Register `AddDVault()` plus the matching provider extension and verify save-strategy diagnostics before claiming provider-native behavior. | The linked provider evidence bundle is missing or skipped for the claim, the context is dirty, native gates decline, or the provider-local run has not been collected. |
 | Read-model heavy | The application repeatedly reads latest satellites, maintained PIT rows, or maintained bridge rows. | Use `IDataVaultReadService`; add `AddDVaultSqlite()` for optimized SQLite latest-satellite and PIT/bridge reads, or the matching non-SQLite provider package for diagnostics-gated PIT/bridge candidates. | PIT or bridge maintenance is stale, latest-satellite reads target a non-SQLite provider, PIT/bridge reads target an unsupported provider, or read-shape diagnostics report fallback, unsupported shape, or incomplete evidence. |
 
 ## Small App-Local Vault
@@ -251,10 +259,10 @@ Use these provider boundaries as starting gates, not timing claims from the chec
 
 | Provider | Starting gate | Evidence posture |
 | --- | --- | --- |
-| PostgreSQL | Retain direct or UNNEST below 60 operations; use staged COPY at 60-plus operations. | Rows are present but skipped because `DVAULT_TEST_POSTGRES_CONNECTION_STRING` was unset. |
-| SQL Server | Native bulk starts at 50-plus total operations and no more than 500 satellite operations. | Rows are present but skipped because `DVAULT_TEST_SQLSERVER_CONNECTION_STRING` was unset. |
-| MySQL | Native gate starts at 50-plus operations; retained multi-row path is visible below the 60-operation staged boundary; staged bulk starts at 60-plus operations. | Rows are present but skipped because `DVAULT_TEST_MYSQL_CONNECTION_STRING` was unset. |
-| Oracle | Direct optimized batching starts at 50-plus total operations and no more than 10000 satellite operations. | Rows are present but skipped because `DVAULT_TEST_ORACLE_CONNECTION_STRING` was unset; `stagedOracleBulk=not-selected-no-measured-win`. |
+| PostgreSQL | Retain direct or UNNEST below 60 operations; use staged COPY at 60-plus operations. | v0.32 local Podman evidence preserves the direct/UNNEST below-threshold path and staged COPY at 60-plus operations. |
+| SQL Server | Native bulk starts at 50-plus total operations and no more than 500 satellite operations. | v0.32 threshold evidence keeps the 50 minimum-operation and 500 maximum-satellite-operation gates. |
+| MySQL | Tiny satellite-history batches fall back to provider-neutral behavior; larger eligible ordered batches use the retained multi-row or staged bulk provider paths. | v0.32 local evidence records the tiny satellite-history fallback decision and keeps staged bulk for larger eligible rows. |
+| Oracle | Direct optimized batching starts at 50-plus total operations and no more than 10000 satellite operations. | v0.32 local evidence retains the direct optimized path and records `stagedOracleBulk=not-selected-no-measured-win`. |
 
 ### Diagnostics And Telemetry
 
@@ -275,14 +283,14 @@ connection string: omitted
 
 ### Supporting Rows
 
-The checked-in provider-native bulk rows are evidence for visibility and boundaries, not measured wins. `benchmark-summary.csv` and `benchmark-summary.json` keep the skipped rows visible with `iterations=0`, the skip reason, planned execution detail, selected strategy names, staged/direct boundary text, and `persistedOutcome=not executed`.
+The v0.32 provider benchmark bundles are the current threshold evidence for this profile. The root `benchmark-summary.csv` and `benchmark-summary.json` still keep skipped optional-provider rows visible for the quick baseline, but completed provider timing claims should cite the linked v0.32 artifact bundle that produced them.
 
 Rows to cite:
 
 - PostgreSQL: `dvault-adddvaultpostgres-direct-or-unnest` for the below-60 retained direct/UNNEST boundary and `dvault-adddvaultpostgres-optimized` for the 60-plus staged COPY boundary.
-- SQL Server: `dvault-adddvaultsqlserver-optimized` for the native bulk boundary.
-- MySQL: `dvault-adddvaultmysql-multi-row` for the retained multi-row boundary and `dvault-adddvaultmysql-optimized` for the 60-plus staged bulk boundary.
-- Oracle: `dvault-adddvaultoracle-optimized` for the retained direct optimized batching boundary and the current no-measured-win staged posture.
+- SQL Server: `dvault-adddvaultsqlserver-optimized` for the native bulk boundary, fallback wording, and 50/500 gates.
+- MySQL: `dvault-adddvaultmysql-multi-row` for retained provider paths where selected, `dvault-adddvaultmysql-optimized` for staged bulk, and the tiny satellite-history provider-neutral fallback row for the deliberate small-batch exception.
+- Oracle: `dvault-adddvaultoracle-optimized` for retained direct optimized batching and the current no-measured-win staged posture.
 
 ### Stop Conditions And Rerun Triggers
 

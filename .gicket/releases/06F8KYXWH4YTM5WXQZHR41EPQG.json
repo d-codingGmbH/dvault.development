@@ -3,6 +3,6 @@
   "release-id": "06F8KYXWH4YTM5WXQZHR41EPQG",
   "name": "v0.32.0 - High-Performance Artifact Evidence Lane",
   "description": "Design-time, explicitly opted-in provider-specific SQL or stored-procedure artifact exploration plus benchmark-driven provider tuning evidence with consumer-owned deployment and no default runtime dispatch.",
-  "status": "planned",
+  "status": "done",
   "created-at": "2026-06-02T20:17:16.9376838Z"
 }
