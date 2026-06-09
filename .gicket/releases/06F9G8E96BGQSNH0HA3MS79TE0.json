@@ -3,6 +3,6 @@
   "release-id": "06F9G8E96BGQSNH0HA3MS79TE0",
   "name": "v0.33.0 - .NET 8 and EF Core Compatibility Matrix",
   "description": "Planning release v0.33.0 for the first parallel DVault package version lines: 8.33.0 for net8.0/EF Core 8 and 10.33.0 for net10.0/EF Core 10. Includes explicit EF provider-version matrices, tests, docs, and package verification while keeping v0.32.0 and earlier on the existing 0.x package line.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-05T14:13:31.5702245Z"
 }
