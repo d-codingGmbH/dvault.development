@@ -44,7 +44,7 @@ Before final publish approval, the maintainer performing the release must confir
 - the selected package-version line is intentional for the coordinated release and is not being applied to only a provider-specific subset
 - release notes or changelog content has been prepared and reviewed for the coordinated release
 - all required pre-publish validation commands have passed against the same checkout and selected package version
-- package verification confirms each provider package depends on the packed `DCoding.Data.DVault` package version for both `net8.0` and `net10.0` dependency groups
+- package verification confirms each provider package depends on the packed `DCoding.Data.DVault` package version from the same package-version line and carries only that line's target-framework dependency group
 - package verification confirms the packaged README guidance separates `8.33.0` for `net8.0` and EF Core 8 from `10.33.0` for `net10.0` and EF Core 10
 - final publish approval has been recorded before the first package push
 
@@ -70,7 +70,7 @@ Run the current repository validation baseline from the repository root before a
 ```sh
 dotnet build DVault.slnx --nologo
 dotnet test DVault.slnx --nologo
-dotnet pack DVault.slnx --configuration Release --nologo
+bash tools/pack-release-packages.sh
 bash tools/verify-packages.sh
 bash tools/check-format.sh
 ```
@@ -79,13 +79,13 @@ Do not replace these commands with an undocumented automation path. Later releas
 
 ## Version And Dependency Alignment
 
-Use one aligned package version across all seven packages in the selected package-version line. For the v0.33 compatibility release, validate `8.33.0` and `10.33.0` as separate publish approvals; do not publish `0.33.0` and do not mix packages from both lines in one consumer example or approval record. Package versions are derived from Git tags with the `v` prefix by MinVer. Before final approval, inspect the package outputs produced by `dotnet pack DVault.slnx --configuration Release --nologo` through the package verification gate:
+Use one aligned package version across all seven packages in the selected package-version line. For the v0.33 compatibility release, validate `8.33.0` and `10.33.0` as separate publish approvals; do not publish `0.33.0` and do not mix packages from both lines in one consumer example or approval record. The `v0.33.0` Git tag is the release-note and planning tag. Package versions for the consumer lines are set explicitly by `bash tools/pack-release-packages.sh` through MinVer version overrides. Before final approval, inspect the package outputs produced by the release pack script through the package verification gate:
 
 ```sh
 bash tools/verify-packages.sh
 ```
 
-Package verification is the manual dependency-alignment gate. It must confirm the exact seven package set, six matching symbol packages for the runtime/provider packages, package README and XML metadata, analyzer assets, provider dependency alignment, and the `net8.0` / `net10.0` nuspec dependency groups. The core package must expose the expected EF Core, EF Core Relational, and `Microsoft.Extensions.DependencyInjection.Abstractions` versions for each target group. Each provider package must depend on the packed `DCoding.Data.DVault` version for both target groups and use the correct target-specific `Microsoft.EntityFrameworkCore.Relational` and `Microsoft.Extensions.DependencyInjection.Abstractions` versions when those direct dependencies are present.
+Package verification is the manual dependency-alignment gate. It must confirm the exact fourteen package artifacts across the two package lines, twelve matching symbol packages for the runtime/provider packages, package README and XML metadata, analyzer assets, provider dependency alignment, and the line-specific `net8.0` or `net10.0` nuspec dependency group for each package version. The core package must expose the expected EF Core, EF Core Relational, and `Microsoft.Extensions.DependencyInjection.Abstractions` versions for its selected target group. Each provider package must depend on the packed `DCoding.Data.DVault` version from the same package line and use the correct target-specific `Microsoft.EntityFrameworkCore.Relational` and `Microsoft.Extensions.DependencyInjection.Abstractions` versions when those direct dependencies are present.
 
 If verification reports that a package is missing a target-framework dependency group, a provider package is missing a `DCoding.Data.DVault` dependency or depends on a different core version, one target group mixes EF Core lines, packaged README guidance is stale or mixed-line, XML docs or analyzer assets are missing, or symbols drift, stop the release. Correct the package inputs, rebuild, repack, and rerun the full required pre-publish evidence before requesting approval again.
 
@@ -99,7 +99,7 @@ Follow this sequence exactly for the coordinated manual release:
 4. Prepare and review release notes or changelog content for the coordinated release.
 5. Run `dotnet build DVault.slnx --nologo`.
 6. Run `dotnet test DVault.slnx --nologo`.
-7. Run `dotnet pack DVault.slnx --configuration Release --nologo`.
+7. Run `bash tools/pack-release-packages.sh`.
 8. Run `bash tools/verify-packages.sh`.
 9. Run `bash tools/check-format.sh`.
 10. Review the validation evidence, target-framework dependency groups, packaged README guidance, symbols, analyzer assets, XML docs, and provider dependency alignment.
@@ -132,7 +132,7 @@ Before the first package push, the final approval record must include:
 - confirmation that all seven packages are in scope
 - location of the reviewed release notes or changelog content
 - validation evidence for the five required commands
-- confirmation that `bash tools/verify-packages.sh` passed dual-target dependency-group checks, packaged README guidance checks, metadata, XML docs, analyzer assets, symbols, and provider dependency alignment against the packed core version
+- confirmation that `bash tools/verify-packages.sh` passed line-specific dependency-group checks, packaged README guidance checks, metadata, XML docs, analyzer assets, symbols, and provider dependency alignment against the packed core version
 - approval to publish the core package first and then providers in the documented order
 
 After publication completes, update the release record with the final outcome for each package id.

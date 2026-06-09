@@ -1258,14 +1258,14 @@ Run the repository validation lane from a .NET 10 SDK checkout. The helper proje
 ```sh
 dotnet build DVault.slnx --nologo
 dotnet test DVault.slnx --nologo
-dotnet pack DVault.slnx --configuration Release --nologo
+bash tools/pack-release-packages.sh
 bash tools/verify-packages.sh
 bash tools/check-format.sh
 ```
 
 The normal test run includes package-specific public API snapshot checks for `DCoding.Data.DVault` and the five provider packages. See `docs/quality/api-surface-snapshots.md` for the approved baseline location and the explicit update workflow for intentional API changes.
 
-`bash tools/verify-packages.sh` inspects the artifacts created under `artifacts/packages/` by the solution-level pack command. It expects exactly the seven DVault packages plus six matching symbol packages for the runtime/provider packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider package depends on the packed `DCoding.Data.DVault` version. It also verifies the `net8.0` and `net10.0` nuspec dependency groups, expected EF Core and `Microsoft.Extensions.DependencyInjection.Abstractions` lines, dual `8.33.0` / `10.33.0` README install guidance, and analyzer `PrivateAssets="all"` guidance. The verifier intentionally fails when stale, unexpected, mixed-line, or non-packable package artifacts remain in `artifacts/packages/`.
+`bash tools/pack-release-packages.sh` creates the two coordinated package lines under `artifacts/packages/`: seven `8.33.0` packages with `net8.0` assets and EF Core 8 dependency groups, and seven `10.33.0` packages with `net10.0` assets and EF Core 10 dependency groups. `bash tools/verify-packages.sh` inspects those artifacts, expects exactly fourteen DVault `.nupkg` files plus twelve matching symbol packages for the runtime/provider packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider package depends on the packed `DCoding.Data.DVault` version from the same package line. It also verifies line-specific nuspec dependency groups, expected EF Core and `Microsoft.Extensions.DependencyInjection.Abstractions` lines, dual `8.33.0` / `10.33.0` README install guidance, and analyzer `PrivateAssets="all"` guidance. The verifier intentionally fails when stale, unexpected, mixed-line, multi-target-combined, or non-packable package artifacts remain in `artifacts/packages/`.
 
 Provider integration tests use stable xUnit trait categories so required local coverage and opt-in external database coverage can be selected explicitly:
 

@@ -5,7 +5,6 @@ namespace DCoding.Data.DVault.PackageVerification;
 
 public sealed class PackageVerifier {
   private const string CorePackageId = "DCoding.Data.DVault";
-  private const string PackageAssetTargetFramework = "net10.0";
   private const string Net8TargetFramework = "net8.0";
   private const string Net10TargetFramework = "net10.0";
   private const string ExpectedAuthors = "d-coding GmbH";
@@ -14,7 +13,6 @@ public sealed class PackageVerifier {
   private const string ExpectedRepositoryUrl = "https://github.com/d-codingGmbH/dvault.development.git";
   private const string ExpectedReadmeFile = "README.md";
 
-  private static readonly string[] DependencyTargetFrameworks = [Net8TargetFramework, Net10TargetFramework];
   private static readonly ExpectedPackageLine[] ExpectedPackageLines = [
       new("8.33.0", Net8TargetFramework, "EF Core 8"),
       new("10.33.0", Net10TargetFramework, "EF Core 10"),
@@ -94,7 +92,7 @@ public sealed class PackageVerifier {
     if (!Directory.Exists(packageDirectory)) {
       issues.Add(new PackageVerificationIssue(
           PackageVerificationOptions.DefaultPackageDirectory,
-          "Package directory does not exist at '" + options.PackageDirectory + "'. Run 'dotnet pack DVault.slnx --configuration Release --nologo' from the repository root first."));
+          "Package directory does not exist at '" + options.PackageDirectory + "'. Run 'bash tools/pack-release-packages.sh' from the repository root first."));
       return new PackageVerificationResult(issues);
     }
 
@@ -106,12 +104,12 @@ public sealed class PackageVerifier {
         .Order(StringComparer.Ordinal)
         .ToArray();
 
-    var expectedPackageArtifactCount = ExpectedPackages.Count;
-    var expectedSymbolsArtifactCount = ExpectedPackages.Count(package => !package.IsAnalyzer);
+    var expectedPackageArtifactCount = ExpectedPackages.Count * ExpectedPackageLines.Length;
+    var expectedSymbolsArtifactCount = ExpectedPackages.Count(package => !package.IsAnalyzer) * ExpectedPackageLines.Length;
     foreach (var unexpectedFile in unexpectedFiles) {
       issues.Add(new PackageVerificationIssue(
           Path.GetFileName(unexpectedFile),
-          "Unexpected file artifact in package directory. Expected only the " + expectedPackageArtifactCount + " .nupkg files and " + expectedSymbolsArtifactCount + " .snupkg files produced from DVault.slnx."));
+          "Unexpected file artifact in package directory. Expected only the " + expectedPackageArtifactCount + " .nupkg files and " + expectedSymbolsArtifactCount + " .snupkg files produced by tools/pack-release-packages.sh."));
     }
 
     var packageArchives = ReadArchives(packageDirectory, PackageArtifactKind.Package, issues);
@@ -120,19 +118,27 @@ public sealed class PackageVerifier {
     ValidateArtifactSet(packageArchives, PackageArtifactKind.Package, issues);
     ValidateArtifactSet(symbolArchives, PackageArtifactKind.Symbols, issues);
 
-    var packageById = GetSingleArchiveById(packageArchives);
-    var symbolsById = GetSingleArchiveById(symbolArchives);
-    var coreVersion = packageById.TryGetValue(CorePackageId, out var corePackage)
-        ? corePackage.Version
-        : string.Empty;
+    var packageByIdentity = GetSingleArchiveByIdentity(packageArchives);
+    var symbolsByIdentity = GetSingleArchiveByIdentity(symbolArchives);
 
     foreach (var expectedPackage in ExpectedPackages) {
-      if (packageById.TryGetValue(expectedPackage.Id, out var packageArchive)) {
-        ValidatePackageArchive(packageArchive, expectedPackage, coreVersion, issues);
-      }
+      foreach (var packageLine in ExpectedPackageLines) {
+        var packageIdentity = new PackageIdentity(expectedPackage.Id, packageLine.Version);
+        var packageArchive = packageByIdentity.TryGetValue(packageIdentity, out var matchingPackageArchive)
+            ? matchingPackageArchive
+            : null;
 
-      if (!expectedPackage.IsAnalyzer && symbolsById.TryGetValue(expectedPackage.Id, out var symbolsArchive)) {
-        ValidateSymbolsArchive(symbolsArchive, expectedPackage, packageArchive?.Version, issues);
+        if (packageArchive is not null) {
+          var coreVersion = packageByIdentity.TryGetValue(new PackageIdentity(CorePackageId, packageLine.Version), out var corePackage)
+              ? corePackage.Version
+              : string.Empty;
+          ValidatePackageArchive(packageArchive, expectedPackage, packageLine, coreVersion, issues);
+        }
+
+        if (!expectedPackage.IsAnalyzer &&
+            symbolsByIdentity.TryGetValue(packageIdentity, out var symbolsArchive)) {
+          ValidateSymbolsArchive(symbolsArchive, expectedPackage, packageLine, packageArchive?.Version, issues);
+        }
       }
     }
 
@@ -222,7 +228,7 @@ public sealed class PackageVerifier {
       List<PackageVerificationIssue> issues) {
     var extension = artifactKind == PackageArtifactKind.Package ? ".nupkg" : ".snupkg";
     IReadOnlyList<ExpectedPackage> expectedPackages = GetExpectedPackagesForArtifactKind(artifactKind);
-    var expectedFileCount = expectedPackages.Count;
+    var expectedFileCount = expectedPackages.Count * ExpectedPackageLines.Length;
 
     if (archives.Count != expectedFileCount) {
       issues.Add(new PackageVerificationIssue(
@@ -237,6 +243,12 @@ public sealed class PackageVerifier {
             "Unexpected " + extension + " artifact '" + archive.FileName + "'. Expected only: " + string.Join(", ", expectedPackages.Select(package => package.Id)) + "."));
       }
 
+      if (!ExpectedPackageLines.Any(packageLine => string.Equals(packageLine.Version, archive.Version, StringComparison.Ordinal))) {
+        issues.Add(new PackageVerificationIssue(
+            archive.Id,
+            "Unexpected package version '" + archive.Version + "' in artifact '" + archive.FileName + "'. Expected only package lines: " + string.Join(", ", ExpectedPackageLines.Select(packageLine => packageLine.Version)) + "."));
+      }
+
       var expectedFileName = archive.Id + "." + archive.Version + extension;
       if (!string.Equals(archive.FileName, expectedFileName, StringComparison.Ordinal)) {
         issues.Add(new PackageVerificationIssue(
@@ -246,19 +258,23 @@ public sealed class PackageVerifier {
     }
 
     foreach (var expectedPackage in expectedPackages) {
-      var matchingArchives = archives
-          .Where(archive => string.Equals(archive.Id, expectedPackage.Id, StringComparison.Ordinal))
-          .ToArray();
+      foreach (var packageLine in ExpectedPackageLines) {
+        var matchingArchives = archives
+            .Where(archive =>
+                string.Equals(archive.Id, expectedPackage.Id, StringComparison.Ordinal) &&
+                string.Equals(archive.Version, packageLine.Version, StringComparison.Ordinal))
+            .ToArray();
 
-      if (matchingArchives.Length == 0) {
-        issues.Add(new PackageVerificationIssue(
-            expectedPackage.Id,
-            "Missing expected " + extension + " artifact in the package directory."));
-      }
-      else if (matchingArchives.Length > 1) {
-        issues.Add(new PackageVerificationIssue(
-            expectedPackage.Id,
-            "Expected exactly one " + extension + " artifact but found " + matchingArchives.Length + ": " + string.Join(", ", matchingArchives.Select(archive => archive.FileName)) + "."));
+        if (matchingArchives.Length == 0) {
+          issues.Add(new PackageVerificationIssue(
+              expectedPackage.Id,
+              "Missing expected " + extension + " artifact for package line '" + packageLine.Version + "' in the package directory."));
+        }
+        else if (matchingArchives.Length > 1) {
+          issues.Add(new PackageVerificationIssue(
+              expectedPackage.Id,
+              "Expected exactly one " + extension + " artifact for package line '" + packageLine.Version + "' but found " + matchingArchives.Length + ": " + string.Join(", ", matchingArchives.Select(archive => archive.FileName)) + "."));
+        }
       }
     }
   }
@@ -269,20 +285,22 @@ public sealed class PackageVerifier {
         : [.. ExpectedPackages.Where(package => !package.IsAnalyzer)];
   }
 
-  private static IReadOnlyDictionary<string, PackageArchive> GetSingleArchiveById(IReadOnlyList<PackageArchive> archives) {
+  private static IReadOnlyDictionary<PackageIdentity, PackageArchive> GetSingleArchiveByIdentity(IReadOnlyList<PackageArchive> archives) {
     return archives
-        .GroupBy(archive => archive.Id, StringComparer.Ordinal)
+        .GroupBy(archive => new PackageIdentity(archive.Id, archive.Version))
         .Where(group => group.Count() == 1)
-        .ToDictionary(group => group.Key, group => group.Single(), StringComparer.Ordinal);
+        .ToDictionary(group => group.Key, group => group.Single());
   }
 
   private static void ValidatePackageArchive(
       PackageArchive archive,
       ExpectedPackage expectedPackage,
+      ExpectedPackageLine packageLine,
       string coreVersion,
       List<PackageVerificationIssue> issues) {
     var metadata = GetRequiredMetadataElement(archive);
     AssertMetadataValue(archive, metadata, "id", expectedPackage.Id, issues);
+    AssertMetadataValue(archive, metadata, "version", packageLine.Version, issues);
     AssertMetadataValue(archive, metadata, "title", expectedPackage.Title, issues);
     AssertMetadataValue(archive, metadata, "authors", ExpectedAuthors, issues);
     AssertMetadataValue(archive, metadata, "description", expectedPackage.Description, issues);
@@ -291,14 +309,15 @@ public sealed class PackageVerifier {
     ValidateLicense(archive, metadata, issues);
     ValidateRepository(archive, metadata, issues);
     ValidateReadme(archive, issues);
-    ValidateXmlDocumentation(archive, expectedPackage, issues);
+    ValidateXmlDocumentation(archive, expectedPackage, packageLine, issues);
     ValidateAnalyzerAssets(archive, expectedPackage, issues);
-    ValidateDependencyGroups(archive, expectedPackage, coreVersion, issues);
+    ValidateDependencyGroups(archive, expectedPackage, packageLine, coreVersion, issues);
   }
 
   private static void ValidateSymbolsArchive(
       PackageArchive archive,
       ExpectedPackage expectedPackage,
+      ExpectedPackageLine packageLine,
       string? packageVersion,
       List<PackageVerificationIssue> issues) {
     if (!string.IsNullOrWhiteSpace(packageVersion) &&
@@ -310,7 +329,7 @@ public sealed class PackageVerifier {
 
     var expectedPdbPath = expectedPackage.IsAnalyzer
         ? "analyzers/dotnet/cs/" + expectedPackage.Id + ".pdb"
-        : "lib/" + PackageAssetTargetFramework + "/" + expectedPackage.Id + ".pdb";
+        : "lib/" + packageLine.TargetFramework + "/" + expectedPackage.Id + ".pdb";
     if (!archive.Entries.Contains(expectedPdbPath)) {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
@@ -466,10 +485,11 @@ public sealed class PackageVerifier {
   private static void ValidateXmlDocumentation(
       PackageArchive archive,
       ExpectedPackage expectedPackage,
+      ExpectedPackageLine packageLine,
       List<PackageVerificationIssue> issues) {
     var expectedXmlPath = expectedPackage.IsAnalyzer
         ? "analyzers/dotnet/cs/" + expectedPackage.Id + ".xml"
-        : "lib/" + PackageAssetTargetFramework + "/" + expectedPackage.Id + ".xml";
+        : "lib/" + packageLine.TargetFramework + "/" + expectedPackage.Id + ".xml";
     if (!archive.Entries.Contains(expectedXmlPath)) {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
@@ -496,6 +516,7 @@ public sealed class PackageVerifier {
   private static void ValidateDependencyGroups(
       PackageArchive archive,
       ExpectedPackage expectedPackage,
+      ExpectedPackageLine packageLine,
       string coreVersion,
       List<PackageVerificationIssue> issues) {
     if (!expectedPackage.IsProvider && !string.Equals(expectedPackage.Id, CorePackageId, StringComparison.Ordinal)) {
@@ -514,7 +535,7 @@ public sealed class PackageVerifier {
     if (dependencies is null) {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
-          "Nuspec dependencies metadata is missing; expected dependency groups for net8.0 and net10.0."));
+          "Nuspec dependencies metadata is missing; expected the '" + packageLine.TargetFramework + "' dependency group for package line '" + packageLine.Version + "'."));
       return;
     }
 
@@ -523,31 +544,36 @@ public sealed class PackageVerifier {
         .Where(element => string.Equals(element.Name.LocalName, "group", StringComparison.Ordinal))
         .ToArray();
 
-    foreach (var targetFramework in DependencyTargetFrameworks) {
-      var matchingGroups = dependencyGroups
-          .Where(group => string.Equals(group.Attribute("targetFramework")?.Value, targetFramework, StringComparison.Ordinal))
-          .ToArray();
-      if (matchingGroups.Length == 0) {
-        issues.Add(new PackageVerificationIssue(
-            archive.Id,
-            "Nuspec dependencies metadata is missing the '" + targetFramework + "' dependency group."));
-        continue;
-      }
-
-      if (matchingGroups.Length > 1) {
-        issues.Add(new PackageVerificationIssue(
-            archive.Id,
-            "Nuspec dependencies metadata contains " + matchingGroups.Length + " '" + targetFramework + "' dependency groups; expected exactly one."));
-        continue;
-      }
-
-      ValidateDependencyGroup(
-          archive,
-          targetFramework,
-          GetExpectedDependencies(expectedPackage, targetFramework, coreVersion),
-          matchingGroups[0],
-          issues);
+    foreach (var unexpectedGroup in dependencyGroups.Where(group =>
+        !string.Equals(group.Attribute("targetFramework")?.Value, packageLine.TargetFramework, StringComparison.Ordinal))) {
+      issues.Add(new PackageVerificationIssue(
+          archive.Id,
+          "Nuspec dependencies metadata contains unexpected dependency group '" + (unexpectedGroup.Attribute("targetFramework")?.Value ?? string.Empty) + "' for package line '" + packageLine.Version + "'."));
     }
+
+    var matchingGroups = dependencyGroups
+        .Where(group => string.Equals(group.Attribute("targetFramework")?.Value, packageLine.TargetFramework, StringComparison.Ordinal))
+        .ToArray();
+    if (matchingGroups.Length == 0) {
+      issues.Add(new PackageVerificationIssue(
+          archive.Id,
+          "Nuspec dependencies metadata is missing the '" + packageLine.TargetFramework + "' dependency group for package line '" + packageLine.Version + "'."));
+      return;
+    }
+
+    if (matchingGroups.Length > 1) {
+      issues.Add(new PackageVerificationIssue(
+          archive.Id,
+          "Nuspec dependencies metadata contains " + matchingGroups.Length + " '" + packageLine.TargetFramework + "' dependency groups for package line '" + packageLine.Version + "'; expected exactly one."));
+      return;
+    }
+
+    ValidateDependencyGroup(
+        archive,
+        packageLine.TargetFramework,
+        GetExpectedDependencies(expectedPackage, packageLine.TargetFramework, coreVersion),
+        matchingGroups[0],
+        issues);
   }
 
   private static void ValidateDependencyGroup(
@@ -725,6 +751,8 @@ public sealed class PackageVerifier {
   private sealed record ExpectedPackageLine(string Version, string TargetFramework, string EfCoreLine);
 
   private sealed record ExpectedDependency(string Id, string Version);
+
+  private sealed record PackageIdentity(string Id, string Version);
 
   private sealed record PackageArchive(
       string FilePath,

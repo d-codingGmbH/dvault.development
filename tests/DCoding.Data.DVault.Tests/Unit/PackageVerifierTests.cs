@@ -8,16 +8,17 @@ namespace DCoding.Data.DVault.Tests.Unit;
 
 public sealed class PackageVerifierTests {
   private const string CorePackageId = "DCoding.Data.DVault";
-  private const string PackageVersion = "1.2.3";
   private const string Net8PackageLineVersion = "8.33.0";
   private const string Net10PackageLineVersion = "10.33.0";
-  private const string PackageAssetTargetFramework = "net10.0";
   private const string Net8TargetFramework = "net8.0";
   private const string Net10TargetFramework = "net10.0";
   private const string Authors = "d-coding GmbH";
   private const string RepositoryUrl = "https://github.com/d-codingGmbH/dvault.development.git";
   private static readonly XNamespace NuspecNamespace = "http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd";
-  private static readonly string[] DependencyTargetFrameworks = [Net8TargetFramework, Net10TargetFramework];
+  private static readonly PackageLine[] PackageLines = [
+      new(Net8PackageLineVersion, Net8TargetFramework, "EF Core 8"),
+      new(Net10PackageLineVersion, Net10TargetFramework, "EF Core 10"),
+  ];
 
   private static readonly IReadOnlyList<TestPackageDefinition> PackageDefinitions = [
       new(
@@ -112,7 +113,8 @@ public sealed class PackageVerifierTests {
           ["dvault"],
           false,
           false),
-        new PackageArchiveOptions());
+        new PackageArchiveOptions(),
+        PackageLines[0]);
 
     var result = Verify(packageDirectory.Path);
 
@@ -123,20 +125,21 @@ public sealed class PackageVerifierTests {
   }
 
   [Fact]
-  public void StaleExpectedPackageVersionFailsAsDuplicateArtifact() {
+  public void StaleExpectedPackageVersionFailsAsUnexpectedArtifact() {
     using var packageDirectory = PackageDirectory.Create();
     WritePackageMatrix(packageDirectory.Path);
     WritePackage(
         packageDirectory.Path,
         PackageDefinitions.Single(package => package.Id == CorePackageId),
-        new PackageArchiveOptions { Version = "1.2.2" });
+        new PackageArchiveOptions(),
+        new PackageLine("1.2.2", Net8TargetFramework, "EF Core 8"));
 
     var result = Verify(packageDirectory.Path);
 
     Assert.Contains(
         result.Issues,
         issue => issue.PackageId == CorePackageId &&
-            issue.Message.Contains("Expected exactly one .nupkg artifact", StringComparison.Ordinal));
+            issue.Message.Contains("Unexpected package version '1.2.2'", StringComparison.Ordinal));
   }
 
   [Fact]
@@ -269,7 +272,7 @@ public sealed class PackageVerifierTests {
         issue => issue.PackageId == "DCoding.Data.DVault.MySql" &&
             issue.Message.Contains("Dependency group 'net8.0'", StringComparison.Ordinal) &&
             issue.Message.Contains("uses version '9.9.9'", StringComparison.Ordinal) &&
-            issue.Message.Contains("expected '" + PackageVersion + "'", StringComparison.Ordinal));
+            issue.Message.Contains("expected '" + Net8PackageLineVersion + "'", StringComparison.Ordinal));
   }
 
   [Fact]
@@ -335,6 +338,22 @@ public sealed class PackageVerifierTests {
   }
 
   [Fact]
+  public void PackageLineMustNotCarryOtherTargetFrameworkDependencyGroups() {
+    using var packageDirectory = PackageDirectory.Create();
+    var options = CreatePackageOptions();
+    options[CorePackageId].AdditionalDependencyGroups.Add(Net10TargetFramework);
+    WritePackageMatrix(packageDirectory.Path, options);
+
+    var result = Verify(packageDirectory.Path);
+
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == CorePackageId &&
+            issue.Message.Contains("unexpected dependency group 'net10.0'", StringComparison.Ordinal) &&
+            issue.Message.Contains(Net8PackageLineVersion, StringComparison.Ordinal));
+  }
+
+  [Fact]
   public void OracleProjectDoesNotReferenceNonOracleProviderPackages() {
     var projectPath = GetRepositoryPath(
         "src/DCoding.Data.DVault.Oracle/DCoding.Data.DVault.Oracle.csproj");
@@ -393,14 +412,16 @@ public sealed class PackageVerifierTests {
       IReadOnlyDictionary<string, PackageArchiveOptions>? options = null) {
     options ??= CreatePackageOptions();
 
-    foreach (var package in PackageDefinitions) {
-      var packageOptions = options[package.Id];
-      if (packageOptions.WritePackage) {
-        WritePackage(packageDirectory, package, packageOptions);
-      }
+    foreach (var packageLine in PackageLines) {
+      foreach (var package in PackageDefinitions) {
+        var packageOptions = options[package.Id];
+        if (packageOptions.WritePackage) {
+          WritePackage(packageDirectory, package, packageOptions, packageLine);
+        }
 
-      if (!package.IsAnalyzer && packageOptions.WriteSymbols) {
-        WriteSymbolsPackage(packageDirectory, package, packageOptions);
+        if (!package.IsAnalyzer && packageOptions.WriteSymbols) {
+          WriteSymbolsPackage(packageDirectory, package, packageOptions, packageLine);
+        }
       }
     }
   }
@@ -412,10 +433,7 @@ public sealed class PackageVerifierTests {
   }
 
   private static string CreateRuntimePackageReadme() {
-    return CreateRuntimePackageReadme([
-        new PackageLine(Net8PackageLineVersion, Net8TargetFramework, "EF Core 8"),
-        new PackageLine(Net10PackageLineVersion, Net10TargetFramework, "EF Core 10"),
-    ]);
+    return CreateRuntimePackageReadme(PackageLines);
   }
 
   private static string CreateRuntimePackageReadme(IReadOnlyList<PackageLine> packageLines) {
@@ -449,8 +467,7 @@ public sealed class PackageVerifierTests {
       string packageId,
       IReadOnlyList<PackageLine>? packageLines = null) {
     packageLines ??= [
-        new PackageLine(Net8PackageLineVersion, Net8TargetFramework, "EF Core 8"),
-        new PackageLine(Net10PackageLineVersion, Net10TargetFramework, "EF Core 10"),
+        .. PackageLines,
     ];
 
     var builder = new StringBuilder();
@@ -474,11 +491,12 @@ public sealed class PackageVerifierTests {
   private static void WritePackage(
       string packageDirectory,
       TestPackageDefinition package,
-      PackageArchiveOptions options) {
-    var filePath = Path.Combine(packageDirectory, package.Id + "." + options.Version + ".nupkg");
+      PackageArchiveOptions options,
+      PackageLine packageLine) {
+    var filePath = Path.Combine(packageDirectory, package.Id + "." + packageLine.Version + ".nupkg");
     using var archive = ZipFile.Open(filePath, ZipArchiveMode.Create);
 
-    WriteTextEntry(archive, package.Id + ".nuspec", CreateNuspec(package, options));
+    WriteTextEntry(archive, package.Id + ".nuspec", CreateNuspec(package, options, packageLine));
     if (options.IncludeReadme) {
       WriteTextEntry(
           archive,
@@ -489,7 +507,7 @@ public sealed class PackageVerifierTests {
     if (options.IncludeXmlDocumentation) {
       var xmlPath = package.IsAnalyzer
           ? "analyzers/dotnet/cs/" + package.Id + ".xml"
-          : "lib/" + PackageAssetTargetFramework + "/" + package.Id + ".xml";
+          : "lib/" + packageLine.TargetFramework + "/" + package.Id + ".xml";
       WriteTextEntry(archive, xmlPath, "<doc />\n");
     }
 
@@ -501,33 +519,42 @@ public sealed class PackageVerifierTests {
   private static void WriteSymbolsPackage(
       string packageDirectory,
       TestPackageDefinition package,
-      PackageArchiveOptions options) {
-    var filePath = Path.Combine(packageDirectory, package.Id + "." + options.Version + ".snupkg");
+      PackageArchiveOptions options,
+      PackageLine packageLine) {
+    var filePath = Path.Combine(packageDirectory, package.Id + "." + packageLine.Version + ".snupkg");
     using var archive = ZipFile.Open(filePath, ZipArchiveMode.Create);
 
-    WriteTextEntry(archive, package.Id + ".nuspec", CreateNuspec(package, options));
+    WriteTextEntry(archive, package.Id + ".nuspec", CreateNuspec(package, options, packageLine));
     if (options.IncludeSymbolPdb) {
       var pdbPath = package.IsAnalyzer
           ? "analyzers/dotnet/cs/" + package.Id + ".pdb"
-          : "lib/" + PackageAssetTargetFramework + "/" + package.Id + ".pdb";
+          : "lib/" + packageLine.TargetFramework + "/" + package.Id + ".pdb";
       WriteBinaryEntry(archive, pdbPath, [1, 2, 3]);
     }
   }
 
-  private static string CreateNuspec(TestPackageDefinition package, PackageArchiveOptions options) {
+  private static string CreateNuspec(
+      TestPackageDefinition package,
+      PackageArchiveOptions options,
+      PackageLine packageLine) {
     var dependencies = new XElement(NuspecNamespace + "dependencies");
     if (!package.IsAnalyzer) {
-      foreach (var targetFramework in DependencyTargetFrameworks) {
-        if (!options.OmittedDependencyGroups.Contains(targetFramework)) {
-          dependencies.Add(CreateDependencyGroup(package, options, targetFramework));
-        }
+      if (!options.OmittedDependencyGroups.Contains(packageLine.TargetFramework)) {
+        dependencies.Add(CreateDependencyGroup(package, options, packageLine));
+      }
+
+      foreach (var targetFramework in options.AdditionalDependencyGroups) {
+        dependencies.Add(CreateDependencyGroup(
+            package,
+            options,
+            new PackageLine(packageLine.Version, targetFramework, GetEfCoreLine(targetFramework))));
       }
     }
 
     var metadata = new XElement(
         NuspecNamespace + "metadata",
         new XElement(NuspecNamespace + "id", package.Id),
-        new XElement(NuspecNamespace + "version", options.Version),
+        new XElement(NuspecNamespace + "version", packageLine.Version),
         new XElement(NuspecNamespace + "title", package.Title),
         new XElement(NuspecNamespace + "authors", options.Authors),
         new XElement(
@@ -553,12 +580,12 @@ public sealed class PackageVerifierTests {
   private static XElement CreateDependencyGroup(
       TestPackageDefinition package,
       PackageArchiveOptions options,
-      string targetFramework) {
+      PackageLine packageLine) {
     var group = new XElement(
         NuspecNamespace + "group",
-        new XAttribute("targetFramework", targetFramework));
+        new XAttribute("targetFramework", packageLine.TargetFramework));
 
-    foreach (var dependency in GetDependencies(package, options, targetFramework)) {
+    foreach (var dependency in GetDependencies(package, options, packageLine)) {
       group.Add(new XElement(
           NuspecNamespace + "dependency",
           new XAttribute("id", dependency.Id),
@@ -571,31 +598,31 @@ public sealed class PackageVerifierTests {
   private static IReadOnlyList<TestDependency> GetDependencies(
       TestPackageDefinition package,
       PackageArchiveOptions options,
-      string targetFramework) {
+      PackageLine packageLine) {
     var dependencies = new List<TestDependency>();
 
     if (string.Equals(package.Id, CorePackageId, StringComparison.Ordinal)) {
-      dependencies.Add(new TestDependency("Microsoft.EntityFrameworkCore", GetEfCoreVersion(targetFramework)));
+      dependencies.Add(new TestDependency("Microsoft.EntityFrameworkCore", GetEfCoreVersion(packageLine.TargetFramework)));
     }
     else if (package.IsProvider) {
-      dependencies.Add(new TestDependency(CorePackageId, options.CoreDependencyVersion ?? options.Version));
+      dependencies.Add(new TestDependency(CorePackageId, options.CoreDependencyVersion ?? packageLine.Version));
     }
 
     if (string.Equals(package.Id, CorePackageId, StringComparison.Ordinal) ||
         package.UsesEfRelationalDependency) {
-      dependencies.Add(new TestDependency("Microsoft.EntityFrameworkCore.Relational", GetEfCoreVersion(targetFramework)));
+      dependencies.Add(new TestDependency("Microsoft.EntityFrameworkCore.Relational", GetEfCoreVersion(packageLine.TargetFramework)));
     }
 
     if (string.Equals(package.Id, CorePackageId, StringComparison.Ordinal) ||
         package.IsProvider) {
       dependencies.Add(new TestDependency(
           "Microsoft.Extensions.DependencyInjection.Abstractions",
-          GetDependencyInjectionAbstractionsVersion(targetFramework)));
+          GetDependencyInjectionAbstractionsVersion(packageLine.TargetFramework)));
     }
 
     return dependencies
         .Select(dependency => dependency with {
-          Version = options.GetDependencyVersion(targetFramework, dependency.Id, dependency.Version),
+          Version = options.GetDependencyVersion(packageLine.TargetFramework, dependency.Id, dependency.Version),
         })
         .ToArray();
   }
@@ -604,6 +631,14 @@ public sealed class PackageVerifierTests {
     return targetFramework switch {
       Net8TargetFramework => "8.0.27",
       Net10TargetFramework => "10.0.8",
+      _ => throw new InvalidOperationException("Unsupported dependency target framework '" + targetFramework + "'."),
+    };
+  }
+
+  private static string GetEfCoreLine(string targetFramework) {
+    return targetFramework switch {
+      Net8TargetFramework => "EF Core 8",
+      Net10TargetFramework => "EF Core 10",
       _ => throw new InvalidOperationException("Unsupported dependency target framework '" + targetFramework + "'."),
     };
   }
@@ -679,8 +714,6 @@ public sealed class PackageVerifierTests {
 
     public bool IncludeSymbolPdb { get; set; } = true;
 
-    public string Version { get; set; } = PackageVersion;
-
     public string? ReadmeText { get; set; }
 
     public string Authors { get; set; } = PackageVerifierTests.Authors;
@@ -688,6 +721,8 @@ public sealed class PackageVerifierTests {
     public string? CoreDependencyVersion { get; set; }
 
     public HashSet<string> OmittedDependencyGroups { get; } = new(StringComparer.Ordinal);
+
+    public HashSet<string> AdditionalDependencyGroups { get; } = new(StringComparer.Ordinal);
 
     public void OverrideDependencyVersion(string targetFramework, string packageId, string version) {
       if (!dependencyVersionOverrides.TryGetValue(targetFramework, out var overrides)) {

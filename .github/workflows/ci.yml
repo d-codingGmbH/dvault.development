@@ -63,8 +63,8 @@ jobs:
       - name: Test default provider boundary (dotnet test DVault.slnx --nologo)
         run: dotnet test DVault.slnx --nologo --filter "Category!=ProviderIntegration.ExternalOptIn"
 
-      - name: Pack packages (dotnet pack DVault.slnx --configuration Release --nologo)
-        run: dotnet pack DVault.slnx --configuration Release --nologo
+      - name: Pack release package lines (bash tools/pack-release-packages.sh)
+        run: bash tools/pack-release-packages.sh
 
-      - name: Verify dual-target packages (bash tools/verify-packages.sh)
+      - name: Verify release package lines (bash tools/verify-packages.sh)
         run: bash tools/verify-packages.sh

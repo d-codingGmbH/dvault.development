@@ -3,6 +3,6 @@
   "milestone-id": "06F9G8ECYMR844CC84QA8P7H7W",
   "name": "v0.33.0 - Compatibility docs and packaging evidence",
   "description": "Update package verification, README, release notes, versioning guidance, and compatibility evidence for the parallel 8.x/10.x package baseline.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-05T14:13:32.5336502Z"
 }

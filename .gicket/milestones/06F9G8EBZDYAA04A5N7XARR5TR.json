@@ -3,6 +3,6 @@
   "milestone-id": "06F9G8EBZDYAA04A5N7XARR5TR",
   "name": "v0.33.0 - Multi-target implementation and tests",
   "description": "Implement net8.0/net10.0 source targeting, conditional provider references, parallel 8.x/10.x package outputs, and dual-framework validation coverage.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-05T14:13:32.2838642Z"
 }
