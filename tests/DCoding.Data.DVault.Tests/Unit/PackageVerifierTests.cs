@@ -217,6 +217,7 @@ public sealed class PackageVerifierTests {
     var packageReferences = project
         .Descendants("PackageReference")
         .Select(reference => Assert.IsType<string>(reference.Attribute("Include")?.Value))
+        .Distinct(StringComparer.Ordinal)
         .Order(StringComparer.Ordinal)
         .ToArray();
     var projectReferences = project

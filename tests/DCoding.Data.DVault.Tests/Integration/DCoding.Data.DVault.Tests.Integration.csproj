@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -12,10 +12,23 @@
     <NuGetAudit>false</NuGetAudit>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <Compile Remove="BenchmarkScenarioExecutionTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.27" />
+    <PackageReference Include="MySql.EntityFrameworkCore" Version="10.0.7" Condition="'$(DVAULT_TEST_MYSQL_CONNECTION_STRING)' != ''" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" Condition="'$(DVAULT_TEST_POSTGRES_CONNECTION_STRING)' != ''" />
+    <PackageReference Include="Oracle.EntityFrameworkCore" Version="8.23.26200" Condition="'$(DVAULT_TEST_ORACLE_CONNECTION_STRING)' != ''" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.27" Condition="'$(DVAULT_TEST_SQLSERVER_CONNECTION_STRING)' != ''" />
+    <PackageReference Include="xunit.v3.mtp-v1" Version="3.2.2" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.8" />
     <PackageReference Include="MySql.EntityFrameworkCore" Version="10.0.7" Condition="'$(DVAULT_TEST_MYSQL_CONNECTION_STRING)' != ''" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.1" Condition="'$(DVAULT_TEST_POSTGRES_CONNECTION_STRING)' != ''" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" Condition="'$(DVAULT_TEST_POSTGRES_CONNECTION_STRING)' != ''" />
     <PackageReference Include="Oracle.EntityFrameworkCore" Version="10.23.26200" Condition="'$(DVAULT_TEST_ORACLE_CONNECTION_STRING)' != ''" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.8" Condition="'$(DVAULT_TEST_SQLSERVER_CONNECTION_STRING)' != ''" />
     <PackageReference Include="xunit.v3.mtp-v1" Version="3.2.2" />
@@ -26,9 +39,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../../benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj" />
+    <ProjectReference Include="../../../benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj" Condition="'$(TargetFramework)' == 'net10.0'" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
-    <ProjectReference Include="../../../src/DCoding.Data.DVault.Analyzers/DCoding.Data.DVault.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <ProjectReference Include="../../../src/DCoding.Data.DVault.Analyzers/DCoding.Data.DVault.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" SetTargetFramework="TargetFramework=net10.0" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.MySql/DCoding.Data.DVault.MySql.csproj" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.Oracle/DCoding.Data.DVault.Oracle.csproj" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.Postgres/DCoding.Data.DVault.Postgres.csproj" />
