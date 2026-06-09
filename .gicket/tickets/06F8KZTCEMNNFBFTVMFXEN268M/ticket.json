@@ -3,22 +3,21 @@
   "ticket-id": "06F8KZTCEMNNFBFTVMFXEN268M",
   "ticket-type": "epic",
   "title": "Epic: High-performance artifact evidence lane",
-  "revision": "06F9XD3BV5C46X4KHYY9GX8HJW",
-  "status": "todo",
+  "revision": "06FAKER21DX890YHFZ0AFJ2W8M",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/epic",
     "area/architecture",
     "area/benchmarks",
     "area/ef-core",
     "area/performance",
-    "area/provider-support"
+    "area/provider-support",
+    "automation/bot-ready",
+    "type/epic"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06F8KYYFT0JVPVVWC38D43D4VW",
   "release-id": "06F8KYXWH4YTM5WXQZHR41EPQG",
   "created-at": "2026-06-02T20:21:10.5893244Z",
-  "updated-at": "2026-06-06T20:51:24.7610383Z"
+  "updated-at": "2026-06-09T00:14:25.8030000Z"
 }

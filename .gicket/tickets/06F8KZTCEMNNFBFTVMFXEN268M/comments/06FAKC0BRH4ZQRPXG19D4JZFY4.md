@@ -1,72 +1,57 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Verified the epic against repository and persisted .gicket state: the contract, evidence rules, SQL Server dry-run prototype, v0.32 documentation, and follow-on threshold-calibration child story are already landed, all five child tickets are done, and no additional planning write is needed before PO-critic.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Repository evidence already lands the authoritative contract at `docs/plans/provider-specific-sql-artifact-contract.md`, the coordinated release note at `docs/releases/v0.32.0.md`, and source/test support for `dvault sql-artifact` with schema `dvault.sql-artifact.v1`.
 - The current implemented prototype boundary remains review-only dry-run output for SQL Server `provider-native-bulk-ingestion`; the supported-provider baseline stays SQLite, PostgreSQL, SQL Server, MySQL, and Oracle, but implemented artifact-export coverage is not broadened beyond the verified SQL Server slice.
 - A done documentation child still retains a historical `blocks` relation back to the epic, but the epic itself is not currently blocked and no new relation mutation was required for this refinement pass.
 - No child-ticket creation, relation cleanup, description update, attachment binding, or planning-document write was applied in this pass.
 
-### Scope In
+Scope In
 - Keep this epic as the tracking parent for the existing explicit opt-in, design-time-only provider-specific SQL artifact lane and its completed child split.
 - Ratify the landed architecture contract, evidence gate, dry-run prototype, v0.32 documentation posture, and follow-on provider-threshold evidence as the bounded scope already delivered under this epic.
 - Preserve the one-provider/one-workload evidence gate using request-bound diagnostics, the shared benchmark artifact triplet, semantic-parity review, and consumer-owned migration compatibility.
 - Preserve the repository-wide supported-provider baseline of SQLite, PostgreSQL, SQL Server, MySQL, and Oracle while documenting the narrower currently implemented exporter boundary.
 
-### Scope Out
+Scope Out
 - Runtime dispatch, automatic stored-procedure invocation, interceptors, schedulers, background workers, or any second default DVault runtime path.
 - Automatic deployment, automatic cleanup, automatic EF migration synchronization, automatic live-schema mutation, or automatic support-bundle refresh synchronization.
 - Claiming implemented artifact exporters for every supported provider or widening support beyond the current repository-visible provider baseline.
 - Widening this epic into deployable sidecar SQL payloads, repository storage conventions, or broader operational rollout decisions that belong in separate follow-up tickets.
 
-## Acceptance Criteria
-- The epic remains the verified parent of the completed child set 06F8KZTNG44XDPMVTVCV4WJSHG, 06F8KZVCVRPS3NAGQA7J55EAA4, 06F8KZV18BQ0GN3CE4G02ATVA0, 06F8KZVRARQPG482YKCQ686PNM, and 06F9XD1T3TJK7NEBYNVT2JEPZW, with no additional split required for current scope.
-- Repository planning and documentation surfaces consistently state that the artifact lane is explicit opt-in, design-time-only, consumer-owned, and not a default runtime save or read path.
-- Current source exposes `dvault sql-artifact --output <path> [--workload provider-native-bulk-ingestion]` and emits review-only `dvault.sql-artifact.v1` manifests with `deployment=not-generated`, `runtimeDispatch=not-generated`, and no sidecar SQL payload files.
-- The evidence gate stays anchored to exact provider/workload diagnostics, the shared benchmark-summary triplet contract, semantic-parity review, and a consumer-owned migration-compatibility plan.
-- The refined epic keeps the supported-provider baseline separate from the implemented exporter boundary, so current documentation and planning do not imply non-SQL Server artifact-export coverage that is not evidenced on the branch.
-- No unresolved PO-level architecture, scope, or dependency question remains that would block PO-critic review.
-
-## Definition of Done
-- All verified child tickets under the epic remain `done`, and the epic is a clean tracking parent with no PO-blocking open questions.
-- `docs/plans/provider-specific-sql-artifact-contract.md`, `docs/performance-profiles.md`, `docs/architecture/dvault-dotnet-ef-design-time-workflow.md`, `docs/architecture/dvault-v1-explicit-save-service.md`, `docs/releases/v0.32.0.md`, and the source/test prototype surfaces tell one consistent bounded story.
-- The epic-level refinement does not overstate provider coverage, reopen runtime or operations non-goals, or collapse the completed child split back into one unbounded ticket.
-- No additional persistent planning mutation is required from this PO pass before the ticket moves to PO-critic review.
-
-## Implementation Notes
-- Verified persisted ticket facts locally from `.gicket`: the epic is `todo`, carries the required PO labels, is not blocked, and has no human comments that add unresolved scope.
-- Use `docs/plans/provider-specific-sql-artifact-contract.md` as the authoritative architecture contract; use `src/DCoding.Data.DVault/DataVaultDesignTimeCommand.cs`, `src/DCoding.Data.DVault/DataVaultSqlArtifactManifestExporter.cs`, and `tests/DCoding.Data.DVault.Tests/Unit/DataVaultDesignTimeCommandTests.cs` as the concrete dry-run prototype evidence; use `docs/releases/v0.32.0.md` as the coordinated documentation surface.
-- Treat 06F9XD1T3TJK7NEBYNVT2JEPZW as completed follow-on evidence within this epic rather than a new blocker that requires another PO self-loop.
-- No persistent ticket or planning mutation was applied in this pass; the refinement is based on verified repository and persisted relation state only.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - If the lane expands beyond the current dry-run example, which supported provider should be the next explicit exporter after the current SQL Server `provider-native-bulk-ingestion` slice?
 - Should a later ticket standardize a consumer-facing repository path convention for reviewed manifests and any future sidecar SQL payload files?
 - If deployable SQL payload emission is ever allowed, should it land under a separate follow-up contract instead of widening this epic's current review-only lane?
 
-## Risks
+Risks
 - Future readers may overread the supported-provider baseline as implemented artifact-export coverage unless follow-up work keeps the SQL Server-only prototype boundary explicit.
 - The live historical `blocks` relation from 06F8KZVRARQPG482YKCQ686PNM back to the epic can confuse relation-only readers even though the epic itself is not currently blocked.
 - Later work could incorrectly widen this review-only design-time lane into runtime dispatch or automatic migration behavior unless it stays anchored to the existing non-goals and exact-provider evidence gate.
 
-## Split Recommendations
+Split recommendations
 - No new split is justified; the live child set already separates architecture contract, evidence rules, dry-run prototype, documentation alignment, and follow-on threshold evidence.
 - Create separate follow-up tickets instead of reopening this epic if the team wants additional provider exporters, deployable sidecar SQL payloads, runtime invocation helpers, repository storage conventions, or provider-specific validators.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 4
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Plan an explicitly opted-in design-time artifact lane for provider-specific SQL or stored-procedure exploration without default runtime dispatch, automatic deployment, or migration ownership.
+Run mode
+- apply: planned updates are applied after this comment
