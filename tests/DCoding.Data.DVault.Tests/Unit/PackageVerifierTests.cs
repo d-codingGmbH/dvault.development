@@ -10,10 +10,13 @@ public sealed class PackageVerifierTests {
   private const string CorePackageId = "DCoding.Data.DVault";
   private const string PackageVersion = "1.2.3";
   private const string ReadmeInstallVersion = PackageVersion;
-  private const string TargetFramework = "net10.0";
+  private const string PackageAssetTargetFramework = "net10.0";
+  private const string Net8TargetFramework = "net8.0";
+  private const string Net10TargetFramework = "net10.0";
   private const string Authors = "d-coding GmbH";
   private const string RepositoryUrl = "https://github.com/d-codingGmbH/dvault.development.git";
   private static readonly XNamespace NuspecNamespace = "http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd";
+  private static readonly string[] DependencyTargetFrameworks = [Net8TargetFramework, Net10TargetFramework];
 
   private static readonly IReadOnlyList<TestPackageDefinition> PackageDefinitions = [
       new(
@@ -50,21 +53,24 @@ public sealed class PackageVerifierTests {
           "PostgreSQL provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "postgresql", "postgres", "ef-core", "persistence"],
           true,
-          false),
+          false,
+          true),
       new(
           "DCoding.Data.DVault.Sqlite",
           "DVault SQLite Provider Extensions",
           "SQLite provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "sqlite", "ef-core", "persistence"],
           true,
-          false),
+          false,
+          true),
       new(
           "DCoding.Data.DVault.SqlServer",
           "DVault SQL Server Provider Extensions",
           "SQL Server provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "sql-server", "ef-core", "persistence"],
           true,
-          false),
+          false,
+          true),
   ];
 
   [Fact]
@@ -205,8 +211,50 @@ public sealed class PackageVerifierTests {
     Assert.Contains(
         result.Issues,
         issue => issue.PackageId == "DCoding.Data.DVault.MySql" &&
+            issue.Message.Contains("Dependency group 'net8.0'", StringComparison.Ordinal) &&
             issue.Message.Contains("uses version '9.9.9'", StringComparison.Ordinal) &&
-            issue.Message.Contains("expected packed core version '" + PackageVersion + "'", StringComparison.Ordinal));
+            issue.Message.Contains("expected '" + PackageVersion + "'", StringComparison.Ordinal));
+  }
+
+  [Fact]
+  public void ProviderDependencyGroupMustMatchEfCoreLineForTargetFramework() {
+    using var packageDirectory = PackageDirectory.Create();
+    var options = CreatePackageOptions();
+    options["DCoding.Data.DVault.Postgres"].OverrideDependencyVersion(
+        Net8TargetFramework,
+        "Microsoft.EntityFrameworkCore.Relational",
+        "10.0.8");
+    WritePackageMatrix(packageDirectory.Path, options);
+
+    var result = Verify(packageDirectory.Path);
+
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == "DCoding.Data.DVault.Postgres" &&
+            issue.Message.Contains("Dependency group 'net8.0'", StringComparison.Ordinal) &&
+            issue.Message.Contains("Microsoft.EntityFrameworkCore.Relational", StringComparison.Ordinal) &&
+            issue.Message.Contains("uses version '10.0.8'", StringComparison.Ordinal) &&
+            issue.Message.Contains("expected '8.0.27'", StringComparison.Ordinal));
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == "DCoding.Data.DVault.Postgres" &&
+            issue.Message.Contains("mixes EF Core lines", StringComparison.Ordinal) &&
+            issue.Message.Contains("Microsoft.EntityFrameworkCore.Relational", StringComparison.Ordinal));
+  }
+
+  [Fact]
+  public void MissingDependencyGroupFailsWithTargetFrameworkName() {
+    using var packageDirectory = PackageDirectory.Create();
+    var options = CreatePackageOptions();
+    options[CorePackageId].OmittedDependencyGroups.Add(Net10TargetFramework);
+    WritePackageMatrix(packageDirectory.Path, options);
+
+    var result = Verify(packageDirectory.Path);
+
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == CorePackageId &&
+            issue.Message.Contains("missing the 'net10.0' dependency group", StringComparison.Ordinal));
   }
 
   [Fact]
@@ -303,7 +351,7 @@ public sealed class PackageVerifierTests {
     if (options.IncludeXmlDocumentation) {
       var xmlPath = package.IsAnalyzer
           ? "analyzers/dotnet/cs/" + package.Id + ".xml"
-          : "lib/" + TargetFramework + "/" + package.Id + ".xml";
+          : "lib/" + PackageAssetTargetFramework + "/" + package.Id + ".xml";
       WriteTextEntry(archive, xmlPath, "<doc />\n");
     }
 
@@ -323,12 +371,21 @@ public sealed class PackageVerifierTests {
     if (options.IncludeSymbolPdb) {
       var pdbPath = package.IsAnalyzer
           ? "analyzers/dotnet/cs/" + package.Id + ".pdb"
-          : "lib/" + TargetFramework + "/" + package.Id + ".pdb";
+          : "lib/" + PackageAssetTargetFramework + "/" + package.Id + ".pdb";
       WriteBinaryEntry(archive, pdbPath, [1, 2, 3]);
     }
   }
 
   private static string CreateNuspec(TestPackageDefinition package, PackageArchiveOptions options) {
+    var dependencies = new XElement(NuspecNamespace + "dependencies");
+    if (!package.IsAnalyzer) {
+      foreach (var targetFramework in DependencyTargetFrameworks) {
+        if (!options.OmittedDependencyGroups.Contains(targetFramework)) {
+          dependencies.Add(CreateDependencyGroup(package, options, targetFramework));
+        }
+      }
+    }
+
     var metadata = new XElement(
         NuspecNamespace + "metadata",
         new XElement(NuspecNamespace + "id", package.Id),
@@ -346,27 +403,79 @@ public sealed class PackageVerifierTests {
             NuspecNamespace + "repository",
             new XAttribute("type", "git"),
             new XAttribute("url", RepositoryUrl)),
-        new XElement(
-            NuspecNamespace + "dependencies",
-            new XElement(
-                NuspecNamespace + "group",
-                new XAttribute("targetFramework", TargetFramework))));
-
-    if (package.IsProvider) {
-      metadata
-          .Element(NuspecNamespace + "dependencies")!
-          .Element(NuspecNamespace + "group")!
-          .Add(new XElement(
-              NuspecNamespace + "dependency",
-              new XAttribute("id", CorePackageId),
-              new XAttribute("version", options.CoreDependencyVersion ?? options.Version)));
-    }
+        dependencies);
 
     var document = new XDocument(
         new XDeclaration("1.0", "utf-8", null),
         new XElement(NuspecNamespace + "package", metadata));
 
     return document.ToString(SaveOptions.DisableFormatting);
+  }
+
+  private static XElement CreateDependencyGroup(
+      TestPackageDefinition package,
+      PackageArchiveOptions options,
+      string targetFramework) {
+    var group = new XElement(
+        NuspecNamespace + "group",
+        new XAttribute("targetFramework", targetFramework));
+
+    foreach (var dependency in GetDependencies(package, options, targetFramework)) {
+      group.Add(new XElement(
+          NuspecNamespace + "dependency",
+          new XAttribute("id", dependency.Id),
+          new XAttribute("version", dependency.Version)));
+    }
+
+    return group;
+  }
+
+  private static IReadOnlyList<TestDependency> GetDependencies(
+      TestPackageDefinition package,
+      PackageArchiveOptions options,
+      string targetFramework) {
+    var dependencies = new List<TestDependency>();
+
+    if (string.Equals(package.Id, CorePackageId, StringComparison.Ordinal)) {
+      dependencies.Add(new TestDependency("Microsoft.EntityFrameworkCore", GetEfCoreVersion(targetFramework)));
+    }
+    else if (package.IsProvider) {
+      dependencies.Add(new TestDependency(CorePackageId, options.CoreDependencyVersion ?? options.Version));
+    }
+
+    if (string.Equals(package.Id, CorePackageId, StringComparison.Ordinal) ||
+        package.UsesEfRelationalDependency) {
+      dependencies.Add(new TestDependency("Microsoft.EntityFrameworkCore.Relational", GetEfCoreVersion(targetFramework)));
+    }
+
+    if (string.Equals(package.Id, CorePackageId, StringComparison.Ordinal) ||
+        package.IsProvider) {
+      dependencies.Add(new TestDependency(
+          "Microsoft.Extensions.DependencyInjection.Abstractions",
+          GetDependencyInjectionAbstractionsVersion(targetFramework)));
+    }
+
+    return dependencies
+        .Select(dependency => dependency with {
+          Version = options.GetDependencyVersion(targetFramework, dependency.Id, dependency.Version),
+        })
+        .ToArray();
+  }
+
+  private static string GetEfCoreVersion(string targetFramework) {
+    return targetFramework switch {
+      Net8TargetFramework => "8.0.27",
+      Net10TargetFramework => "10.0.8",
+      _ => throw new InvalidOperationException("Unsupported dependency target framework '" + targetFramework + "'."),
+    };
+  }
+
+  private static string GetDependencyInjectionAbstractionsVersion(string targetFramework) {
+    return targetFramework switch {
+      Net8TargetFramework => "8.0.2",
+      Net10TargetFramework => "10.0.8",
+      _ => throw new InvalidOperationException("Unsupported dependency target framework '" + targetFramework + "'."),
+    };
   }
 
   private static void WriteTextEntry(ZipArchive archive, string entryName, string content) {
@@ -412,9 +521,14 @@ public sealed class PackageVerifierTests {
       string Description,
       string[] Tags,
       bool IsProvider,
-      bool IsAnalyzer);
+      bool IsAnalyzer,
+      bool UsesEfRelationalDependency = false);
+
+  private sealed record TestDependency(string Id, string Version);
 
   private sealed class PackageArchiveOptions {
+    private readonly Dictionary<string, Dictionary<string, string>> dependencyVersionOverrides = new(StringComparer.Ordinal);
+
     public bool WritePackage { get; set; } = true;
 
     public bool WriteSymbols { get; set; } = true;
@@ -430,5 +544,23 @@ public sealed class PackageVerifierTests {
     public string Authors { get; set; } = PackageVerifierTests.Authors;
 
     public string? CoreDependencyVersion { get; set; }
+
+    public HashSet<string> OmittedDependencyGroups { get; } = new(StringComparer.Ordinal);
+
+    public void OverrideDependencyVersion(string targetFramework, string packageId, string version) {
+      if (!dependencyVersionOverrides.TryGetValue(targetFramework, out var overrides)) {
+        overrides = new Dictionary<string, string>(StringComparer.Ordinal);
+        dependencyVersionOverrides.Add(targetFramework, overrides);
+      }
+
+      overrides[packageId] = version;
+    }
+
+    public string GetDependencyVersion(string targetFramework, string packageId, string defaultVersion) {
+      return dependencyVersionOverrides.TryGetValue(targetFramework, out var overrides) &&
+          overrides.TryGetValue(packageId, out var version)
+          ? version
+          : defaultVersion;
+    }
   }
 }

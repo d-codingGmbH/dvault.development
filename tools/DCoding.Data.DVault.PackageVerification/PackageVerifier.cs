@@ -5,12 +5,16 @@ namespace DCoding.Data.DVault.PackageVerification;
 
 public sealed class PackageVerifier {
   private const string CorePackageId = "DCoding.Data.DVault";
-  private const string TargetFramework = "net10.0";
+  private const string PackageAssetTargetFramework = "net10.0";
+  private const string Net8TargetFramework = "net8.0";
+  private const string Net10TargetFramework = "net10.0";
   private const string ExpectedAuthors = "d-coding GmbH";
   private const string ExpectedLicenseExpression = "Apache-2.0";
   private const string ExpectedRepositoryType = "git";
   private const string ExpectedRepositoryUrl = "https://github.com/d-codingGmbH/dvault.development.git";
   private const string ExpectedReadmeFile = "README.md";
+
+  private static readonly string[] DependencyTargetFrameworks = [Net8TargetFramework, Net10TargetFramework];
 
   private static readonly IReadOnlyList<ExpectedPackage> ExpectedPackages = [
       new(
@@ -47,21 +51,24 @@ public sealed class PackageVerifier {
           "PostgreSQL provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "postgresql", "postgres", "ef-core", "persistence"],
           true,
-          false),
+          false,
+          true),
       new(
           "DCoding.Data.DVault.Sqlite",
           "DVault SQLite Provider Extensions",
           "SQLite provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "sqlite", "ef-core", "persistence"],
           true,
-          false),
+          false,
+          true),
       new(
           "DCoding.Data.DVault.SqlServer",
           "DVault SQL Server Provider Extensions",
           "SQL Server provider extensions and optimized write strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "sql-server", "ef-core", "persistence"],
           true,
-          false),
+          false,
+          true),
   ];
 
   private static readonly IReadOnlyDictionary<string, ExpectedPackage> ExpectedPackageById =
@@ -275,10 +282,7 @@ public sealed class PackageVerifier {
     ValidateReadme(archive, coreVersion, issues);
     ValidateXmlDocumentation(archive, expectedPackage, issues);
     ValidateAnalyzerAssets(archive, expectedPackage, issues);
-
-    if (expectedPackage.IsProvider) {
-      ValidateProviderDependency(archive, coreVersion, issues);
-    }
+    ValidateDependencyGroups(archive, expectedPackage, coreVersion, issues);
   }
 
   private static void ValidateSymbolsArchive(
@@ -295,7 +299,7 @@ public sealed class PackageVerifier {
 
     var expectedPdbPath = expectedPackage.IsAnalyzer
         ? "analyzers/dotnet/cs/" + expectedPackage.Id + ".pdb"
-        : "lib/" + TargetFramework + "/" + expectedPackage.Id + ".pdb";
+        : "lib/" + PackageAssetTargetFramework + "/" + expectedPackage.Id + ".pdb";
     if (!archive.Entries.Contains(expectedPdbPath)) {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
@@ -416,7 +420,7 @@ public sealed class PackageVerifier {
       List<PackageVerificationIssue> issues) {
     var expectedXmlPath = expectedPackage.IsAnalyzer
         ? "analyzers/dotnet/cs/" + expectedPackage.Id + ".xml"
-        : "lib/" + TargetFramework + "/" + expectedPackage.Id + ".xml";
+        : "lib/" + PackageAssetTargetFramework + "/" + expectedPackage.Id + ".xml";
     if (!archive.Entries.Contains(expectedXmlPath)) {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
@@ -440,38 +444,184 @@ public sealed class PackageVerifier {
     }
   }
 
-  private static void ValidateProviderDependency(
+  private static void ValidateDependencyGroups(
       PackageArchive archive,
+      ExpectedPackage expectedPackage,
       string coreVersion,
       List<PackageVerificationIssue> issues) {
-    if (string.IsNullOrWhiteSpace(coreVersion)) {
+    if (!expectedPackage.IsProvider && !string.Equals(expectedPackage.Id, CorePackageId, StringComparison.Ordinal)) {
+      return;
+    }
+
+    if (expectedPackage.IsProvider && string.IsNullOrWhiteSpace(coreVersion)) {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
-          "Cannot verify provider dependency version because the core package version is unavailable."));
+          "Cannot verify provider dependency groups because the core package version is unavailable."));
       return;
     }
 
     var metadata = GetRequiredMetadataElement(archive);
     var dependencies = GetChild(metadata, "dependencies");
-    var dependency = dependencies?
-        .Descendants()
-        .FirstOrDefault(element =>
-            string.Equals(element.Name.LocalName, "dependency", StringComparison.Ordinal) &&
-            string.Equals(element.Attribute("id")?.Value, CorePackageId, StringComparison.Ordinal));
-
-    if (dependency is null) {
+    if (dependencies is null) {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
-          "Provider package does not declare a dependency on " + CorePackageId + "."));
+          "Nuspec dependencies metadata is missing; expected dependency groups for net8.0 and net10.0."));
       return;
     }
 
-    var dependencyVersion = dependency.Attribute("version")?.Value ?? string.Empty;
-    if (!string.Equals(dependencyVersion, coreVersion, StringComparison.Ordinal)) {
-      issues.Add(new PackageVerificationIssue(
-          archive.Id,
-          "Provider dependency on " + CorePackageId + " uses version '" + dependencyVersion + "' but expected packed core version '" + coreVersion + "'."));
+    var dependencyGroups = dependencies
+        .Elements()
+        .Where(element => string.Equals(element.Name.LocalName, "group", StringComparison.Ordinal))
+        .ToArray();
+
+    foreach (var targetFramework in DependencyTargetFrameworks) {
+      var matchingGroups = dependencyGroups
+          .Where(group => string.Equals(group.Attribute("targetFramework")?.Value, targetFramework, StringComparison.Ordinal))
+          .ToArray();
+      if (matchingGroups.Length == 0) {
+        issues.Add(new PackageVerificationIssue(
+            archive.Id,
+            "Nuspec dependencies metadata is missing the '" + targetFramework + "' dependency group."));
+        continue;
+      }
+
+      if (matchingGroups.Length > 1) {
+        issues.Add(new PackageVerificationIssue(
+            archive.Id,
+            "Nuspec dependencies metadata contains " + matchingGroups.Length + " '" + targetFramework + "' dependency groups; expected exactly one."));
+        continue;
+      }
+
+      ValidateDependencyGroup(
+          archive,
+          targetFramework,
+          GetExpectedDependencies(expectedPackage, targetFramework, coreVersion),
+          matchingGroups[0],
+          issues);
     }
+  }
+
+  private static void ValidateDependencyGroup(
+      PackageArchive archive,
+      string targetFramework,
+      IReadOnlyList<ExpectedDependency> expectedDependencies,
+      XElement dependencyGroup,
+      List<PackageVerificationIssue> issues) {
+    var actualDependencies = dependencyGroup
+        .Elements()
+        .Where(element => string.Equals(element.Name.LocalName, "dependency", StringComparison.Ordinal))
+        .Select(element => new PackageDependency(
+            element.Attribute("id")?.Value ?? string.Empty,
+            element.Attribute("version")?.Value ?? string.Empty))
+        .ToArray();
+
+    foreach (var expectedDependency in expectedDependencies) {
+      var matchingDependencies = actualDependencies
+          .Where(dependency => string.Equals(dependency.Id, expectedDependency.Id, StringComparison.Ordinal))
+          .ToArray();
+      if (matchingDependencies.Length == 0) {
+        issues.Add(new PackageVerificationIssue(
+            archive.Id,
+            "Dependency group '" + targetFramework + "' is missing dependency '" + expectedDependency.Id + "' version '" + expectedDependency.Version + "'."));
+        continue;
+      }
+
+      if (matchingDependencies.Length > 1) {
+        issues.Add(new PackageVerificationIssue(
+            archive.Id,
+            "Dependency group '" + targetFramework + "' contains " + matchingDependencies.Length + " entries for dependency '" + expectedDependency.Id + "'; expected exactly one."));
+        continue;
+      }
+
+      var actualDependency = matchingDependencies[0];
+      if (!string.Equals(actualDependency.Version, expectedDependency.Version, StringComparison.Ordinal)) {
+        issues.Add(new PackageVerificationIssue(
+            archive.Id,
+            "Dependency group '" + targetFramework + "' dependency '" + expectedDependency.Id + "' uses version '" + actualDependency.Version + "' but expected '" + expectedDependency.Version + "'."));
+      }
+    }
+
+    foreach (var actualDependency in actualDependencies) {
+      if (!expectedDependencies.Any(expected => string.Equals(expected.Id, actualDependency.Id, StringComparison.Ordinal))) {
+        issues.Add(new PackageVerificationIssue(
+            archive.Id,
+            "Dependency group '" + targetFramework + "' contains unexpected dependency '" + actualDependency.Id + "' version '" + actualDependency.Version + "'."));
+      }
+    }
+
+    ValidateEfCoreDependencyLine(archive, targetFramework, actualDependencies, issues);
+  }
+
+  private static void ValidateEfCoreDependencyLine(
+      PackageArchive archive,
+      string targetFramework,
+      IReadOnlyList<PackageDependency> dependencies,
+      List<PackageVerificationIssue> issues) {
+    var expectedVersionPrefix = targetFramework switch {
+      Net8TargetFramework => "8.",
+      Net10TargetFramework => "10.",
+      _ => string.Empty,
+    };
+
+    if (expectedVersionPrefix.Length == 0) {
+      return;
+    }
+
+    foreach (var dependency in dependencies.Where(dependency => IsMicrosoftEfCoreDependency(dependency.Id))) {
+      if (!dependency.Version.StartsWith(expectedVersionPrefix, StringComparison.Ordinal)) {
+        issues.Add(new PackageVerificationIssue(
+            archive.Id,
+            "Dependency group '" + targetFramework + "' mixes EF Core lines: dependency '" + dependency.Id + "' uses version '" + dependency.Version + "' but expected an " + expectedVersionPrefix.TrimEnd('.') + ".x dependency."));
+      }
+    }
+  }
+
+  private static IReadOnlyList<ExpectedDependency> GetExpectedDependencies(
+      ExpectedPackage expectedPackage,
+      string targetFramework,
+      string coreVersion) {
+    var expectedDependencies = new List<ExpectedDependency>();
+
+    if (string.Equals(expectedPackage.Id, CorePackageId, StringComparison.Ordinal)) {
+      expectedDependencies.Add(new ExpectedDependency("Microsoft.EntityFrameworkCore", GetEfCoreVersion(targetFramework)));
+    }
+    else if (expectedPackage.IsProvider) {
+      expectedDependencies.Add(new ExpectedDependency(CorePackageId, coreVersion));
+    }
+
+    if (string.Equals(expectedPackage.Id, CorePackageId, StringComparison.Ordinal) ||
+        expectedPackage.UsesEfRelationalDependency) {
+      expectedDependencies.Add(new ExpectedDependency("Microsoft.EntityFrameworkCore.Relational", GetEfCoreVersion(targetFramework)));
+    }
+
+    if (string.Equals(expectedPackage.Id, CorePackageId, StringComparison.Ordinal) ||
+        expectedPackage.IsProvider) {
+      expectedDependencies.Add(new ExpectedDependency(
+          "Microsoft.Extensions.DependencyInjection.Abstractions",
+          GetDependencyInjectionAbstractionsVersion(targetFramework)));
+    }
+
+    return expectedDependencies;
+  }
+
+  private static string GetEfCoreVersion(string targetFramework) {
+    return targetFramework switch {
+      Net8TargetFramework => "8.0.27",
+      Net10TargetFramework => "10.0.8",
+      _ => throw new InvalidOperationException("Unsupported dependency target framework '" + targetFramework + "'."),
+    };
+  }
+
+  private static string GetDependencyInjectionAbstractionsVersion(string targetFramework) {
+    return targetFramework switch {
+      Net8TargetFramework => "8.0.2",
+      Net10TargetFramework => "10.0.8",
+      _ => throw new InvalidOperationException("Unsupported dependency target framework '" + targetFramework + "'."),
+    };
+  }
+
+  private static bool IsMicrosoftEfCoreDependency(string packageId) {
+    return packageId.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal);
   }
 
   private static XElement GetRequiredMetadataElement(PackageArchive archive) {
@@ -520,7 +670,10 @@ public sealed class PackageVerifier {
       string Description,
       string[] Tags,
       bool IsProvider,
-      bool IsAnalyzer);
+      bool IsAnalyzer,
+      bool UsesEfRelationalDependency = false);
+
+  private sealed record ExpectedDependency(string Id, string Version);
 
   private sealed record PackageArchive(
       string FilePath,
@@ -531,6 +684,8 @@ public sealed class PackageVerifier {
       XDocument Nuspec,
       IReadOnlySet<string> Entries,
       string? ReadmeText);
+
+  private sealed record PackageDependency(string Id, string Version);
 
   private enum PackageArtifactKind {
     Package,
