@@ -3,22 +3,21 @@
   "ticket-id": "06F9G8HRZ72XP5Z7FNWM6MBMQC",
   "ticket-type": "task",
   "title": "Task: Update v0.34.0 DB2 provider documentation",
-  "revision": "06F9GFH1R1FBTBFTAFWMRHSR8W",
-  "status": "todo",
+  "revision": "06FB1CFP8W1EZ720RVTH219BB0",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/documentation",
     "area/ef-core",
     "area/provider-support",
     "area/schema",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06F9G8GG4BPF68W5P4731DFMY4",
   "release-id": "06F9G8GDA12CS8Y4RHG4EDKS7W",
   "created-at": "2026-06-05T14:14:00.3156743Z",
-  "updated-at": "2026-06-05T14:44:29.2481099Z"
+  "updated-at": "2026-06-10T08:41:53.4799942Z"
 }

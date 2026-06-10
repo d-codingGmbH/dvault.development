@@ -24,21 +24,35 @@ The console output keeps diagnostics sanitized. Diagnostic lines report request-
 
 ## Package And Provider Setup
 
-Consumer applications install the provider-neutral package and exactly one provider package for the database they use. Keep every DVault package on one aligned version:
+Consumer applications install the provider-neutral package and exactly one provider package for the database they use. Keep every DVault package on one aligned version. Use `8.34.0` for `net8.0` and EF Core 8 projects, or `10.34.0` for `net10.0` and EF Core 10 projects; do not use a consumer-facing `0.34.0` package version.
+
+For `net8.0` projects on EF Core 8, use the `8.34.0` package line:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 0.32.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 0.32.0
-dotnet add package DCoding.Data.DVault.Postgres --version 0.32.0
-dotnet add package DCoding.Data.DVault.MySql --version 0.32.0
-dotnet add package DCoding.Data.DVault.Oracle --version 0.32.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 0.32.0
-dotnet add package DCoding.Data.DVault.Analyzers --version 0.32.0
+dotnet add package DCoding.Data.DVault --version 8.34.0
+dotnet add package DCoding.Data.DVault.Db2 --version 8.34.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 8.34.0
+dotnet add package DCoding.Data.DVault.Postgres --version 8.34.0
+dotnet add package DCoding.Data.DVault.MySql --version 8.34.0
+dotnet add package DCoding.Data.DVault.Oracle --version 8.34.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 8.34.0
 ```
 
-Applications also need the normal Entity Framework Core provider package for their database, such as `Microsoft.EntityFrameworkCore.Sqlite`, `Npgsql.EntityFrameworkCore.PostgreSQL`, `Microsoft.EntityFrameworkCore.SqlServer`, `Oracle.EntityFrameworkCore`, or a MySQL EF Core provider.
+For `net10.0` projects on EF Core 10, use the `10.34.0` package line:
 
-The analyzer package is optional and should usually be referenced with `PrivateAssets="all"` in consumer projects that own DVault Code-First declarations or compile-time generated row mapping declarations.
+```sh
+dotnet add package DCoding.Data.DVault --version 10.34.0
+dotnet add package DCoding.Data.DVault.Db2 --version 10.34.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 10.34.0
+dotnet add package DCoding.Data.DVault.Postgres --version 10.34.0
+dotnet add package DCoding.Data.DVault.MySql --version 10.34.0
+dotnet add package DCoding.Data.DVault.Oracle --version 10.34.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 10.34.0
+```
+
+Applications also need the normal Entity Framework Core provider package for their database, such as `IBM.EntityFrameworkCore`, `Microsoft.EntityFrameworkCore.Sqlite`, `Npgsql.EntityFrameworkCore.PostgreSQL`, `Microsoft.EntityFrameworkCore.SqlServer`, `Oracle.EntityFrameworkCore`, or a MySQL EF Core provider.
+
+The analyzer package is optional and should usually be referenced with `PrivateAssets="all"` in consumer projects that own DVault Code-First declarations or compile-time generated row mapping declarations. Use `8.34.0` or `10.34.0` to match the runtime and provider package line.
 
 Provider startup is explicit. Register `AddDVault()` for the provider-neutral services, then register the matching provider extension when a provider package is installed:
 
@@ -51,7 +65,7 @@ services.AddDbContext<QuickstartVaultContext>(
         .UseDataVaultMetadata());
 ```
 
-The PostgreSQL quickstart uses the same shape with `AddDVaultPostgres()` and `UseNpgsql(connectionString)`. Other provider packages expose the matching `AddDVaultSqlServer()`, `AddDVaultOracle()`, and `AddDVaultMySql()` startup extensions, but these examples only provide runnable SQLite and PostgreSQL projects.
+The PostgreSQL quickstart uses the same shape with `AddDVaultPostgres()` and `UseNpgsql(connectionString)`. Other provider packages expose the matching `AddDVaultDb2()`, `AddDVaultSqlServer()`, `AddDVaultOracle()`, and `AddDVaultMySql()` startup extensions, but these examples only provide runnable SQLite and PostgreSQL projects.
 
 ## Observability Examples
 
@@ -179,6 +193,6 @@ The drift command uses a committed reviewed artifact when one exists. `export` i
 
 For model-first or metadata-first review evidence, compare the reviewed artifact or metadata model against generated EF metadata with `DataVaultModelDriftReporter.Compare(...)`.
 
-Live-schema drift evidence is intentionally bounded. `DataVaultLiveSchemaReader.ReadAsync(context)` and `DataVaultLiveSchemaDriftReporter.Compare(...)` provide built-in reader coverage for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL. Both `MySql.EntityFrameworkCore` and `Pomelo.EntityFrameworkCore.MySql` map to the MySQL reader. Keep PostgreSQL, SQL Server, Oracle, and MySQL live checks as external opt-in evidence because the consumer application still owns reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation.
+Live-schema drift evidence is intentionally bounded. `DataVaultLiveSchemaReader.ReadAsync(context)` and `DataVaultLiveSchemaDriftReporter.Compare(...)` provide built-in successful catalog-reader coverage for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL. Both `MySql.EntityFrameworkCore` and `Pomelo.EntityFrameworkCore.MySql` map to the MySQL reader. DB2 is recognized through `IBM.EntityFrameworkCore` but returns `UnsupportedProvider` until a DB2 live-schema reader exists. Keep PostgreSQL, SQL Server, Oracle, and MySQL live checks as external opt-in evidence because the consumer application still owns reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation.
 
 See [DVault Dotnet EF Design-Time Workflow](../docs/architecture/dvault-dotnet-ef-design-time-workflow.md), [Model-First Governance Workflow](../docs/model-first-governance.md), and the [Production Adoption Checklist](../docs/production-adoption-checklist.md) before promoting a quickstart shape into a production application.
