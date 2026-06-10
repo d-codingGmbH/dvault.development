@@ -39,6 +39,8 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
     var expectedTypes = RequiredLocalSqliteCoverageTypes
         .Concat(
             [
+                typeof(Db2DataVaultSmokeTests),
+                typeof(Db2IntegrationTestConfigurationTests),
                 typeof(MySqlExplicitDataVaultSaveServiceTests),
                 typeof(MySqlIntegrationTestConfigurationTests),
                 typeof(MySqlLiveSchemaFixtureContractTests),
@@ -163,6 +165,23 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
 
   [Fact]
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  public void LiveDb2IntegrationTestsAreExternalProviderOptInCoverage() {
+    foreach (var coverageType in new[] {
+        typeof(Db2DataVaultSmokeTests),
+    }) {
+      AssertTrait(
+          coverageType,
+          ProviderTestCategories.CategoryTraitName,
+          ProviderTestCategories.ExternalProviderIntegration);
+      AssertTrait(
+          coverageType,
+          ProviderTestCategories.ProviderTraitName,
+          ProviderTestCategories.Db2Provider);
+    }
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
   public void PostgresConfigurationContractTestsRemainDefaultProviderSmokeCoverage() {
     AssertTrait(
         typeof(PostgresIntegrationTestConfigurationTests),
@@ -216,6 +235,19 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
           ProviderTestCategories.ProviderTraitName,
           ProviderTestCategories.SqlServerProvider);
     }
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  public void Db2ConfigurationContractTestsRemainDefaultProviderSmokeCoverage() {
+    AssertTrait(
+        typeof(Db2IntegrationTestConfigurationTests),
+        ProviderTestCategories.CategoryTraitName,
+        ProviderTestCategories.DefaultProviderSmoke);
+    AssertTrait(
+        typeof(Db2IntegrationTestConfigurationTests),
+        ProviderTestCategories.ProviderTraitName,
+        ProviderTestCategories.Db2Provider);
   }
 
   [Fact]

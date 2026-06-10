@@ -37,6 +37,7 @@ public sealed class EfCoreProviderVersionMatrixTests {
         "net8.0",
         [
             new("Microsoft.EntityFrameworkCore.Sqlite", "8.0.27"),
+            new("IBM.EntityFrameworkCore", "8.0.0.400", "'$(DVAULT_TEST_DB2_CONNECTION_STRING)' != ''"),
             new("MySql.EntityFrameworkCore", "10.0.7", "'$(DVAULT_TEST_MYSQL_CONNECTION_STRING)' != ''"),
             new("Npgsql.EntityFrameworkCore.PostgreSQL", "8.0.11", "'$(DVAULT_TEST_POSTGRES_CONNECTION_STRING)' != ''"),
             new("Oracle.EntityFrameworkCore", "8.23.26200", "'$(DVAULT_TEST_ORACLE_CONNECTION_STRING)' != ''"),
@@ -47,6 +48,7 @@ public sealed class EfCoreProviderVersionMatrixTests {
         "net10.0",
         [
             new("Microsoft.EntityFrameworkCore.Sqlite", "10.0.8"),
+            new("IBM.EntityFrameworkCore", "10.0.0.100", "'$(DVAULT_TEST_DB2_CONNECTION_STRING)' != ''"),
             new("MySql.EntityFrameworkCore", "10.0.7", "'$(DVAULT_TEST_MYSQL_CONNECTION_STRING)' != ''"),
             new("Npgsql.EntityFrameworkCore.PostgreSQL", "10.0.2", "'$(DVAULT_TEST_POSTGRES_CONNECTION_STRING)' != ''"),
             new("Oracle.EntityFrameworkCore", "10.23.26200", "'$(DVAULT_TEST_ORACLE_CONNECTION_STRING)' != ''"),
@@ -57,6 +59,10 @@ public sealed class EfCoreProviderVersionMatrixTests {
         project,
         "../../../benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj",
         "'$(TargetFramework)' == 'net10.0'");
+    AssertProjectReferenceCondition(
+        project,
+        "../../../src/DCoding.Data.DVault.Db2/DCoding.Data.DVault.Db2.csproj",
+        "'$(DVAULT_TEST_DB2_CONNECTION_STRING)' != ''");
   }
 
   [Fact]
@@ -202,6 +208,7 @@ public sealed class EfCoreProviderVersionMatrixTests {
 
   private static bool IsProviderMatrixReference(string packageId) {
     return string.Equals(packageId, "Microsoft.EntityFrameworkCore.Sqlite", StringComparison.Ordinal) ||
+        string.Equals(packageId, "IBM.EntityFrameworkCore", StringComparison.Ordinal) ||
         string.Equals(packageId, "MySql.EntityFrameworkCore", StringComparison.Ordinal) ||
         string.Equals(packageId, "Npgsql.EntityFrameworkCore.PostgreSQL", StringComparison.Ordinal) ||
         string.Equals(packageId, "Oracle.EntityFrameworkCore", StringComparison.Ordinal) ||

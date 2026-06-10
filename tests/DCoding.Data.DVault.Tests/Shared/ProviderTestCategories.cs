@@ -13,4 +13,5 @@ public static class ProviderTestCategories {
   public const string SqlServerProvider = "SQL Server";
   public const string OracleProvider = "Oracle";
   public const string MySqlProvider = "MySQL";
+  public const string Db2Provider = "DB2";
 }
