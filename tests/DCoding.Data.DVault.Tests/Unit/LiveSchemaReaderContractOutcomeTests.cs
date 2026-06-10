@@ -69,6 +69,20 @@ public sealed class LiveSchemaReaderContractOutcomeTests {
   }
 
   [Fact]
+  public async Task Db2LiveSchemaBoundaryIsExplicitlyUnsupportedUntilAReaderExists() {
+    await using var context = new ContractContext(new DbContextOptionsBuilder<ContractContext>().Options);
+    var reader = new UnsupportedDataVaultLiveSchemaReader(DataVaultLiveSchemaReader.Db2ProviderName);
+
+    var readResult = await reader.ReadAsync(context);
+
+    Assert.True(DataVaultLiveSchemaReader.IsExplicitlyUnsupportedProviderName(DataVaultLiveSchemaReader.Db2ProviderName));
+    Assert.Equal(DataVaultLiveSchemaReadStatus.UnsupportedProvider, readResult.Status);
+    Assert.Equal("IBM.EntityFrameworkCore", readResult.ProviderName);
+    Assert.Null(readResult.Snapshot);
+    Assert.Contains("IBM.EntityFrameworkCore", readResult.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
   public async Task CompareAsyncClassifiesUnavailableReaderResultWithoutThrowing() {
     await using var context = new ContractContext(new DbContextOptionsBuilder<ContractContext>().Options);
     var reader = new StubLiveSchemaReader(

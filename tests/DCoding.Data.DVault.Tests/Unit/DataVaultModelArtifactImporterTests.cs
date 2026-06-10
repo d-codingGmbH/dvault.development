@@ -616,6 +616,7 @@ public sealed class DataVaultModelArtifactImporterTests {
         DataVaultProviderCapabilityProfiles.Oracle,
         DataVaultProviderCapabilityProfiles.Postgres,
         DataVaultProviderCapabilityProfiles.SqlServer,
+        DataVaultProviderCapabilityProfiles.Db2,
         DataVaultProviderCapabilityProfiles.MySql,
     ];
   }

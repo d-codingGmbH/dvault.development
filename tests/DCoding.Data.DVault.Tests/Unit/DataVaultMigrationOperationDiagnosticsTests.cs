@@ -464,27 +464,32 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
       Assert.Contains("included", issue.Message, StringComparison.Ordinal);
     }
 
-    var oracleBaseline = diagnostics.Analyze(metadataModel, DataVaultProviderCapabilityProfiles.Oracle);
-    var pit = oracleBaseline.Explain.Entities.Single(entity => entity.TableName == "PitCustomerContact");
-    var redundantOracleIndex = new CreateIndexOperation {
-      Table = pit.TableName,
-      Name = "IxPitCustomerContactRedundantPrimaryKeyCoverage",
-      Columns = pit.PrimaryKey.PropertyNames.ToArray(),
-      IsUnique = false,
-    };
+    foreach (var providerCapabilities in new[] {
+      DataVaultProviderCapabilityProfiles.Oracle,
+      DataVaultProviderCapabilityProfiles.Db2,
+    }) {
+      var providerBaseline = diagnostics.Analyze(metadataModel, providerCapabilities);
+      var pit = providerBaseline.Explain.Entities.Single(entity => entity.TableName == "PitCustomerContact");
+      var redundantIndex = new CreateIndexOperation {
+        Table = pit.TableName,
+        Name = "IxPitCustomerContactRedundantPrimaryKeyCoverage",
+        Columns = pit.PrimaryKey.PropertyNames.ToArray(),
+        IsUnique = false,
+      };
 
-    var oracleReport = DataVaultMigrationOperationDiagnostics.AnalyzeReport(oracleBaseline, [redundantOracleIndex]);
+      var report = DataVaultMigrationOperationDiagnostics.AnalyzeReport(providerBaseline, [redundantIndex]);
 
-    Assert.False(oracleReport.IsValid);
-    var oracleIssue = Assert.Single(oracleReport.Issues);
-    AssertIssue(
-        oracleIssue,
-        "DVM2010",
-        DataVaultDiagnosticsIssueSeverity.Error,
-        "migration/CreateIndex/PitCustomerContact/IxPitCustomerContactRedundantPrimaryKeyCoverage",
-        "MI-4");
-    Assert.Contains("omits secondary indexes covered by", oracleIssue.Message, StringComparison.Ordinal);
-    Assert.Contains("oracle-v1", oracleIssue.Message, StringComparison.Ordinal);
+      Assert.False(report.IsValid);
+      var providerIssue = Assert.Single(report.Issues);
+      AssertIssue(
+          providerIssue,
+          "DVM2010",
+          DataVaultDiagnosticsIssueSeverity.Error,
+          "migration/CreateIndex/PitCustomerContact/IxPitCustomerContactRedundantPrimaryKeyCoverage",
+          "MI-4");
+      Assert.Contains("omits secondary indexes covered by", providerIssue.Message, StringComparison.Ordinal);
+      Assert.Contains(providerCapabilities.ProfileName, providerIssue.Message, StringComparison.Ordinal);
+    }
   }
 
   [Fact]
@@ -854,6 +859,7 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
         DataVaultProviderCapabilityProfiles.Oracle,
         DataVaultProviderCapabilityProfiles.Postgres,
         DataVaultProviderCapabilityProfiles.SqlServer,
+        DataVaultProviderCapabilityProfiles.Db2,
         DataVaultProviderCapabilityProfiles.MySql,
     ];
   }

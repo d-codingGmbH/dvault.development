@@ -11,11 +11,12 @@ public sealed class DataVaultProviderIdentifierPreflightTests {
         DataVaultProviderCapabilityProfiles.Oracle,
         DataVaultProviderCapabilityProfiles.Postgres,
         DataVaultProviderCapabilityProfiles.SqlServer,
+        DataVaultProviderCapabilityProfiles.Db2,
         DataVaultProviderCapabilityProfiles.MySql,
     };
 
     Assert.Equal(
-        ["sqlite-v1", "oracle-v1", "postgres-v1", "sqlserver-v1", "mysql-pomelo-v1"],
+        ["sqlite-v1", "oracle-v1", "postgres-v1", "sqlserver-v1", "db2-v1", "mysql-pomelo-v1"],
         profiles.Select(profile => profile.ProfileName).ToArray());
 
     foreach (var profile in profiles) {
@@ -33,6 +34,7 @@ public sealed class DataVaultProviderIdentifierPreflightTests {
     Assert.Null(DataVaultProviderIdentifierPreflight.GetRules(DataVaultProviderCapabilityProfiles.Oracle).MaximumIdentifierLength);
     Assert.Null(DataVaultProviderIdentifierPreflight.GetRules(DataVaultProviderCapabilityProfiles.Postgres).MaximumIdentifierLength);
     Assert.Null(DataVaultProviderIdentifierPreflight.GetRules(DataVaultProviderCapabilityProfiles.SqlServer).MaximumIdentifierLength);
+    Assert.Equal(128, DataVaultProviderIdentifierPreflight.GetRules(DataVaultProviderCapabilityProfiles.Db2).MaximumIdentifierLength);
     Assert.Equal(64, DataVaultProviderIdentifierPreflight.GetRules(DataVaultProviderCapabilityProfiles.MySql).MaximumIdentifierLength);
   }
 
@@ -65,6 +67,26 @@ public sealed class DataVaultProviderIdentifierPreflightTests {
     Assert.Equal(logicalName, projection.Candidate.LogicalName);
     Assert.Equal(64, projection.PhysicalName.Length);
     Assert.StartsWith(logicalName[..55], projection.PhysicalName, StringComparison.Ordinal);
+    Assert.Equal(8, projection.PhysicalName.Split('_').Last().Length);
+    Assert.All(projection.PhysicalName.Split('_').Last(), character => Assert.True(IsLowerHex(character)));
+  }
+
+  [Fact]
+  public void Db2IdentifiersOverContractLimitUseDeterministicHashProjection() {
+    var logicalName = "IxSatCustomerContactDb2ProviderIdentifierPreflightProjectionNameWithExtremelyVerbose" +
+        "BusinessContextAndPayloadColumnNameLoadTimestampRecordSourceHashDiff";
+
+    var result = DataVaultProviderIdentifierPreflight.Analyze(
+        DataVaultProviderCapabilityProfiles.Db2,
+        [Candidate(DataVaultProviderIdentifierKind.Index, logicalName, "metadata/satellite/Contact/indexes/" + logicalName)]);
+
+    Assert.Empty(result.Issues);
+    var projection = Assert.Single(result.ProjectionSet.Projections);
+
+    Assert.True(projection.IsDerived);
+    Assert.Equal(logicalName, projection.Candidate.LogicalName);
+    Assert.Equal(128, projection.PhysicalName.Length);
+    Assert.StartsWith(logicalName[..119], projection.PhysicalName, StringComparison.Ordinal);
     Assert.Equal(8, projection.PhysicalName.Split('_').Last().Length);
     Assert.All(projection.PhysicalName.Split('_').Last(), character => Assert.True(IsLowerHex(character)));
   }

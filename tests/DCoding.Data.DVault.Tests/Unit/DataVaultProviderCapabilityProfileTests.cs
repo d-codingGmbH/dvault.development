@@ -285,6 +285,11 @@ public sealed class DataVaultProviderCapabilityProfileTests {
     Assert.Equal("db2-v1", profile.ProfileName);
     Assert.Equal(DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported, profile.SqlFunctionSupport);
     Assert.Equal(DataVaultProviderConcurrencySupport.NoneInV1Unsupported, profile.ConcurrencySupport);
+    Assert.Equal(128, profile.MaximumIdentifierLength);
+    Assert.False(profile.AllowsIndexesCoveredByPrimaryKey);
+    Assert.Equal(
+        DataVaultUnsupportedIncludedIndexColumnMode.AppendToKey,
+        profile.UnsupportedIncludedIndexColumnMode);
     AssertMapping(
         profile,
         DataVaultLogicalPropertyKind.HashKey,
@@ -376,6 +381,27 @@ public sealed class DataVaultProviderCapabilityProfileTests {
         typeof(string),
         "VARCHAR2(64 CHAR)",
         DataVaultProviderValueFormat.Text);
+  }
+
+  [Fact]
+  public void Db2LoadTimestampStorageCanBeProjectedToUtcTicks() {
+    var profile = DataVaultProviderCapabilityProfiles.Db2.WithLoadTimestampStorage(DataVaultLoadTimestampStorage.UtcTicks);
+
+    Assert.Equal("db2-v1-loadts-utc-ticks", profile.ProfileName);
+    Assert.Equal(128, profile.MaximumIdentifierLength);
+    Assert.False(profile.AllowsIndexesCoveredByPrimaryKey);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.LoadTimestamp,
+        typeof(long),
+        "BIGINT",
+        DataVaultProviderValueFormat.UtcTicks);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+        typeof(long),
+        "BIGINT",
+        DataVaultProviderValueFormat.UtcTicks);
   }
 
   [Fact]

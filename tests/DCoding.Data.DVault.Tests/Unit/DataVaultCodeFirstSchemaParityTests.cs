@@ -60,6 +60,7 @@ public sealed class DataVaultCodeFirstSchemaParityTests {
             "oracle-v1|load=String:VARCHAR2(33 CHAR):Iso8601UtcText|payload=String:CLOB:Text|driving=String:VARCHAR2(255 CHAR):Text|multi-index=CustomerHashKey,ContactType,RegionCode,LoadTimestamp,HashDiff",
             "postgres-v1|load=DateTimeOffset:timestamp with time zone:NativeDateTimeOffset|payload=String:text:Text|driving=String:varchar(255):Text|multi-index=CustomerHashKey,ContactType,RegionCode,LoadTimestamp",
             "sqlserver-v1|load=DateTimeOffset:datetimeoffset:NativeDateTimeOffset|payload=String:nvarchar(max):Text|driving=String:nvarchar(255):Text|multi-index=CustomerHashKey,ContactType,RegionCode,LoadTimestamp",
+            "db2-v1|load=String:VARCHAR(33):Iso8601UtcText|payload=String:CLOB:Text|driving=String:VARCHAR(255):Text|multi-index=CustomerHashKey,ContactType,RegionCode,LoadTimestamp,HashDiff",
             "mysql-pomelo-v1|load=DateTimeOffset:varchar(33):Iso8601UtcText|payload=String:longtext:Text|driving=String:varchar(255):Text|multi-index=CustomerHashKey,ContactType,RegionCode,LoadTimestamp",
         ],
         BuiltInProfiles().Select(profile => ProviderProfileSummary(TranslateCodeFirst(ConfigureCoveredCodeFirstModel, profile))));
@@ -67,19 +68,12 @@ public sealed class DataVaultCodeFirstSchemaParityTests {
 
   [Fact]
   public void ApplyDataVaultMetadataCodeFirstMatchesMetadataFirstWhenMySqlTruncatesLongIdentifiers() {
-    var metadataFirstModel = TranslateMetadata(CreateLongIdentifierMetadataModel(), DataVaultProviderCapabilityProfiles.MySql);
-    var codeFirstModel = TranslateCodeFirst(ConfigureLongIdentifierCodeFirstModel, DataVaultProviderCapabilityProfiles.MySql);
-    var identifierPairs = PhysicalIdentifierPairs(codeFirstModel).ToArray();
+    AssertLongIdentifierProjectionParity(DataVaultProviderCapabilityProfiles.MySql, maximumIdentifierLength: 64);
+  }
 
-    Assert.Equal(RelationalProviderShape(metadataFirstModel), RelationalProviderShape(codeFirstModel));
-    Assert.All(identifierPairs, pair => Assert.True(
-        pair.PhysicalName.Length <= 64,
-        pair.PhysicalName + " exceeds the MySQL identifier limit."));
-    Assert.Contains(
-        identifierPairs,
-        pair => pair.ProducedName.Length > 64 &&
-            pair.PhysicalName.Length == 64 &&
-            !string.Equals(pair.ProducedName, pair.PhysicalName, StringComparison.Ordinal));
+  [Fact]
+  public void ApplyDataVaultMetadataCodeFirstMatchesMetadataFirstWhenDb2TruncatesLongIdentifiers() {
+    AssertLongIdentifierProjectionParity(DataVaultProviderCapabilityProfiles.Db2, maximumIdentifierLength: 128);
   }
 
   private static DataVaultProviderCapabilityProfile[] BuiltInProfiles() {
@@ -89,8 +83,27 @@ public sealed class DataVaultCodeFirstSchemaParityTests {
         DataVaultProviderCapabilityProfiles.Oracle,
         DataVaultProviderCapabilityProfiles.Postgres,
         DataVaultProviderCapabilityProfiles.SqlServer,
+        DataVaultProviderCapabilityProfiles.Db2,
         DataVaultProviderCapabilityProfiles.MySql,
     ];
+  }
+
+  private static void AssertLongIdentifierProjectionParity(
+      DataVaultProviderCapabilityProfile providerCapabilities,
+      int maximumIdentifierLength) {
+    var metadataFirstModel = TranslateMetadata(CreateLongIdentifierMetadataModel(), providerCapabilities);
+    var codeFirstModel = TranslateCodeFirst(ConfigureLongIdentifierCodeFirstModel, providerCapabilities);
+    var identifierPairs = PhysicalIdentifierPairs(codeFirstModel).ToArray();
+
+    Assert.Equal(RelationalProviderShape(metadataFirstModel), RelationalProviderShape(codeFirstModel));
+    Assert.All(identifierPairs, pair => Assert.True(
+        pair.PhysicalName.Length <= maximumIdentifierLength,
+        pair.PhysicalName + " exceeds the provider identifier limit."));
+    Assert.Contains(
+        identifierPairs,
+        pair => pair.ProducedName.Length > maximumIdentifierLength &&
+            pair.PhysicalName.Length == maximumIdentifierLength &&
+            !string.Equals(pair.ProducedName, pair.PhysicalName, StringComparison.Ordinal));
   }
 
   private static DataVaultMetadataModel CreateCoveredMetadataModel() {

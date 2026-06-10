@@ -556,6 +556,7 @@ public sealed class DataVaultDiagnosticsTests {
         DataVaultProviderCapabilityProfiles.Postgres,
         DataVaultProviderCapabilityProfiles.SqlServer,
         DataVaultProviderCapabilityProfiles.Oracle,
+        DataVaultProviderCapabilityProfiles.Db2,
         DataVaultProviderCapabilityProfiles.MySql,
     };
 
@@ -588,6 +589,11 @@ public sealed class DataVaultDiagnosticsTests {
 
     var oracleResult = diagnostics.Analyze(metadataModel, DataVaultProviderCapabilityProfiles.Oracle);
     Assert.False(oracleResult.Explain.AllowsIndexesCoveredByPrimaryKey);
+
+    var db2Result = diagnostics.Analyze(metadataModel, DataVaultProviderCapabilityProfiles.Db2);
+    Assert.Equal(128, db2Result.Explain.MaximumIdentifierLength);
+    Assert.False(db2Result.Explain.AllowsIndexesCoveredByPrimaryKey);
+    Assert.Equal(DataVaultUnsupportedIncludedIndexColumnMode.AppendToKey, db2Result.Explain.UnsupportedIncludedIndexColumnMode);
   }
 
   [Fact]

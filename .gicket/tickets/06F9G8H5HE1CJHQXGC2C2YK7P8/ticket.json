@@ -3,22 +3,21 @@
   "ticket-id": "06F9G8H5HE1CJHQXGC2C2YK7P8",
   "ticket-type": "story",
   "title": "Story: Add DB2 schema, naming, and live-schema guardrails",
-  "revision": "06F9G8JKWS1JY2N8EMV4VC0B7W",
-  "status": "todo",
+  "revision": "06FAZK1J7J5A6W087JS2FSD51M",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
     "area/ef-core",
+    "area/migrations",
     "area/provider-support",
     "area/schema",
-    "area/migrations",
-    "area/testing"
+    "area/testing",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06F9G8GF7GTV6JT6SBZEW5J3Z0",
   "release-id": "06F9G8GDA12CS8Y4RHG4EDKS7W",
   "created-at": "2026-06-05T14:13:55.3538313Z",
-  "updated-at": "2026-06-05T14:14:07.0786819Z"
+  "updated-at": "2026-06-10T04:30:55.5485884Z"
 }

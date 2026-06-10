@@ -15,12 +15,14 @@ public static class DataVaultLiveSchemaReader {
   internal const string PostgresProviderName = "Npgsql.EntityFrameworkCore.PostgreSQL";
   internal const string SqlServerProviderName = "Microsoft.EntityFrameworkCore.SqlServer";
   internal const string OracleProviderName = "Oracle.EntityFrameworkCore";
+  internal const string Db2ProviderName = "IBM.EntityFrameworkCore";
   internal const string MySqlProviderName = "MySql.EntityFrameworkCore";
   internal const string PomeloMySqlProviderName = "Pomelo.EntityFrameworkCore.MySql";
   private static readonly IDataVaultLiveSchemaReader SqliteReader = new SqliteDataVaultLiveSchemaReader();
   private static readonly IDataVaultLiveSchemaReader PostgresReader = new PostgresDataVaultLiveSchemaReader();
   private static readonly IDataVaultLiveSchemaReader SqlServerReader = new SqlServerDataVaultLiveSchemaReader();
   private static readonly IDataVaultLiveSchemaReader OracleReader = new OracleDataVaultLiveSchemaReader();
+  private static readonly IDataVaultLiveSchemaReader Db2UnsupportedReader = new UnsupportedDataVaultLiveSchemaReader(Db2ProviderName);
   private static readonly IDataVaultLiveSchemaReader MySqlReader = new MySqlDataVaultLiveSchemaReader();
   private static readonly IReadOnlyDictionary<string, IDataVaultLiveSchemaReader> BuiltInReadersByProviderName =
       new Dictionary<string, IDataVaultLiveSchemaReader>(StringComparer.Ordinal) {
@@ -28,6 +30,7 @@ public static class DataVaultLiveSchemaReader {
         [PostgresProviderName] = PostgresReader,
         [SqlServerProviderName] = SqlServerReader,
         [OracleProviderName] = OracleReader,
+        [Db2ProviderName] = Db2UnsupportedReader,
         [MySqlProviderName] = MySqlReader,
         [PomeloMySqlProviderName] = MySqlReader,
       };
@@ -53,6 +56,13 @@ public static class DataVaultLiveSchemaReader {
         : Task.FromResult(DataVaultLiveSchemaReadResult.UnsupportedProvider(providerName));
   }
 
+  internal static bool IsExplicitlyUnsupportedProviderName(string providerName) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(providerName);
+
+    return BuiltInReadersByProviderName.TryGetValue(providerName, out var reader) &&
+        reader is UnsupportedDataVaultLiveSchemaReader;
+  }
+
   private static string? TryGetProviderName(DbContext dbContext) {
     try {
       return dbContext.Database.ProviderName;
@@ -63,11 +73,15 @@ public static class DataVaultLiveSchemaReader {
   }
 }
 
-internal sealed class UnsupportedDataVaultLiveSchemaReader : IDataVaultLiveSchemaReader {
+internal sealed class UnsupportedDataVaultLiveSchemaReader(string? explicitProviderName = null) : IDataVaultLiveSchemaReader {
   public Task<DataVaultLiveSchemaReadResult> ReadAsync(
       DbContext dbContext,
       CancellationToken cancellationToken = default) {
     ArgumentNullException.ThrowIfNull(dbContext);
+
+    if (!string.IsNullOrWhiteSpace(explicitProviderName)) {
+      return Task.FromResult(DataVaultLiveSchemaReadResult.UnsupportedProvider(explicitProviderName));
+    }
 
     try {
       return Task.FromResult(DataVaultLiveSchemaReadResult.UnsupportedProvider(dbContext.Database.ProviderName));

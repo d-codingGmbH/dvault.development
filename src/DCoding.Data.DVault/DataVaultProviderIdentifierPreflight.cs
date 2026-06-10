@@ -558,6 +558,7 @@ internal static class DataVaultProviderIdentifierPreflight {
           profileName.StartsWith("oracle-", StringComparison.Ordinal) ||
           profileName.StartsWith("postgres-", StringComparison.Ordinal) ||
           profileName.StartsWith("sqlserver-", StringComparison.Ordinal) ||
+          profileName.StartsWith("db2-", StringComparison.Ordinal) ||
           profileName.StartsWith("mysql-", StringComparison.Ordinal);
     }
 

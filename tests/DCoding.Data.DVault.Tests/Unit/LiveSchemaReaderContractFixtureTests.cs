@@ -67,6 +67,9 @@ public sealed class LiveSchemaReaderContractFixtureTests {
     var oracle = FindTable(
         LiveSchemaReaderContractFixture.CreateExpectedSnapshot(DataVaultProviderCapabilityProfiles.Oracle),
         "HubCustomer");
+    var db2 = FindTable(
+        LiveSchemaReaderContractFixture.CreateExpectedSnapshot(DataVaultProviderCapabilityProfiles.Db2),
+        "HubCustomer");
     var mySql = FindTable(
         LiveSchemaReaderContractFixture.CreateExpectedSnapshot(DataVaultProviderCapabilityProfiles.MySql),
         "HubCustomer");
@@ -76,6 +79,7 @@ public sealed class LiveSchemaReaderContractFixtureTests {
     Assert.Equal(["varchar(64)", "timestamp with time zone", "varchar(255)", "varchar(255)"], postgres.Columns.Select(column => column.ProviderStorageType));
     Assert.Equal(["nvarchar(64)", "datetimeoffset", "nvarchar(255)", "nvarchar(255)"], sqlServer.Columns.Select(column => column.ProviderStorageType));
     Assert.Equal(["VARCHAR2(64 CHAR)", "VARCHAR2(33 CHAR)", "VARCHAR2(255 CHAR)", "VARCHAR2(255 CHAR)"], oracle.Columns.Select(column => column.ProviderStorageType));
+    Assert.Equal(["VARCHAR(64)", "VARCHAR(33)", "VARCHAR(255)", "VARCHAR(255)"], db2.Columns.Select(column => column.ProviderStorageType));
     Assert.Equal(["varchar(64)", "varchar(33)", "varchar(255)", "varchar(255)"], mySql.Columns.Select(column => column.ProviderStorageType));
   }
 
@@ -96,6 +100,9 @@ public sealed class LiveSchemaReaderContractFixtureTests {
     Assert.Equal(
         ["CustomerHashKey", "LoadTimestamp", "HashDiff"],
         FindIndex(DataVaultProviderCapabilityProfiles.Oracle, "SatCustomerContact").ColumnNames);
+    Assert.Equal(
+        ["CustomerHashKey", "LoadTimestamp", "HashDiff"],
+        FindIndex(DataVaultProviderCapabilityProfiles.Db2, "SatCustomerContact").ColumnNames);
   }
 
   [Fact]
@@ -119,6 +126,20 @@ public sealed class LiveSchemaReaderContractFixtureTests {
         LiveSchemaReaderContractFixture.ResolvePhysicalIdentifierName(
             producedName,
             DataVaultProviderCapabilityProfiles.Sqlite));
+
+    var db2ProducedName = producedName +
+        "WithAdditionalDb2SpecificBusinessQualifierThatExceedsTheOneHundredTwentyEightCharacterIdentifierLimit";
+    var db2PhysicalName = LiveSchemaReaderContractFixture.ResolvePhysicalIdentifierName(
+        db2ProducedName,
+        DataVaultProviderCapabilityProfiles.Db2);
+
+    Assert.Equal(128, db2PhysicalName.Length);
+    Assert.NotEqual(db2ProducedName, db2PhysicalName);
+    Assert.Equal(
+        db2PhysicalName,
+        LiveSchemaReaderContractFixture.ResolvePhysicalIdentifierName(
+            db2ProducedName,
+            DataVaultProviderCapabilityProfiles.Db2));
   }
 
   private static DataVaultLiveSchemaTable FindTable(DataVaultLiveSchemaSnapshot snapshot, string tableName) {

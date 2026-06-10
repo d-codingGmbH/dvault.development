@@ -402,6 +402,10 @@ public sealed class DataVaultProviderCapabilityProfile {
       return "INTEGER";
     }
 
+    if (ProfileName.StartsWith("db2-", StringComparison.Ordinal)) {
+      return "BIGINT";
+    }
+
     return "bigint";
   }
 
@@ -529,7 +533,10 @@ public static class DataVaultProviderCapabilityProfiles {
               DataVaultProviderValueFormat.Iso8601UtcText),
           Integer(DataVaultLogicalPropertyKind.BridgeDepth, "INTEGER"),
           Text(DataVaultLogicalPropertyKind.DrivingKey, "VARCHAR(255)"),
-      ]);
+      ],
+      maximumIdentifierLength: 128,
+      allowsIndexesCoveredByPrimaryKey: false,
+      unsupportedIncludedIndexColumnMode: DataVaultUnsupportedIncludedIndexColumnMode.AppendToKey);
 
   /// <summary>
   /// Gets the SQL Server v1 provider capability profile.
