@@ -11,6 +11,7 @@
     <Project Path="src/DCoding.Data/DCoding.Data.csproj" />
     <Project Path="src/DCoding.Data.DVault.Analyzers/DCoding.Data.DVault.Analyzers.csproj" />
     <Project Path="src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
+    <Project Path="src/DCoding.Data.DVault.Db2/DCoding.Data.DVault.Db2.csproj" />
     <Project Path="src/DCoding.Data.DVault.MySql/DCoding.Data.DVault.MySql.csproj" />
     <Project Path="src/DCoding.Data.DVault.Oracle/DCoding.Data.DVault.Oracle.csproj" />
     <Project Path="src/DCoding.Data.DVault.Postgres/DCoding.Data.DVault.Postgres.csproj" />

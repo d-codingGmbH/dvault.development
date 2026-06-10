@@ -30,6 +30,7 @@ public static class DataVaultModelArtifactExporter {
       DataVaultProviderCapabilityProfiles.Oracle.ProfileName,
       DataVaultProviderCapabilityProfiles.Postgres.ProfileName,
       DataVaultProviderCapabilityProfiles.SqlServer.ProfileName,
+      DataVaultProviderCapabilityProfiles.Db2.ProfileName,
       DataVaultProviderCapabilityProfiles.MySql.ProfileName,
   };
 

@@ -8,8 +8,10 @@ namespace DCoding.Data.DVault.Tests.Unit;
 
 public sealed class PackageVerifierTests {
   private const string CorePackageId = "DCoding.Data.DVault";
-  private const string Net8PackageLineVersion = "8.33.0";
-  private const string Net10PackageLineVersion = "10.33.0";
+  private const string Db2PackageId = "DCoding.Data.DVault.Db2";
+  private const string IbmEntityFrameworkCorePackageId = "IBM.EntityFrameworkCore";
+  private const string Net8PackageLineVersion = "8.34.0";
+  private const string Net10PackageLineVersion = "10.34.0";
   private const string Net8TargetFramework = "net8.0";
   private const string Net10TargetFramework = "net10.0";
   private const string Authors = "d-coding GmbH";
@@ -33,6 +35,15 @@ public sealed class PackageVerifierTests {
           "DVault Roslyn Analyzers",
           "Roslyn analyzers and source generators for high-confidence DVault compile-time metadata declarations.",
           ["dvault", "data-vault", "roslyn", "analyzer", "source-generator", "diagnostics", "ef-core"],
+          false,
+          true),
+      new(
+          Db2PackageId,
+          "DVault DB2 Provider Extensions",
+          "DB2 provider extensions and registration support for DCoding.Data.DVault.",
+          ["dvault", "data-vault", "db2", "ibm", "ef-core", "persistence"],
+          true,
+          false,
           false,
           true),
       new(
@@ -302,6 +313,32 @@ public sealed class PackageVerifierTests {
   }
 
   [Fact]
+  public void Db2ProviderDependencyMustMatchTargetFrameworkProviderLine() {
+    using var packageDirectory = PackageDirectory.Create();
+    var options = CreatePackageOptions();
+    options[Db2PackageId].OverrideDependencyVersion(
+        Net8TargetFramework,
+        IbmEntityFrameworkCorePackageId,
+        "10.0.0.100");
+    WritePackageMatrix(packageDirectory.Path, options);
+
+    var result = Verify(packageDirectory.Path);
+
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == Db2PackageId &&
+            issue.Message.Contains("Dependency group 'net8.0'", StringComparison.Ordinal) &&
+            issue.Message.Contains(IbmEntityFrameworkCorePackageId, StringComparison.Ordinal) &&
+            issue.Message.Contains("uses version '10.0.0.100'", StringComparison.Ordinal) &&
+            issue.Message.Contains("expected '8.0.0.400'", StringComparison.Ordinal));
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == Db2PackageId &&
+            issue.Message.Contains("mixes EF Core lines", StringComparison.Ordinal) &&
+            issue.Message.Contains(IbmEntityFrameworkCorePackageId, StringComparison.Ordinal));
+  }
+
+  [Fact]
   public void ProviderDependencyGroupMustMatchDependencyInjectionLineForTargetFramework() {
     using var packageDirectory = PackageDirectory.Create();
     var options = CreatePackageOptions();
@@ -394,6 +431,8 @@ public sealed class PackageVerifierTests {
 
   private static bool IsNonOracleDatabaseProviderReference(string packageId) {
     return packageId.Contains("Sqlite", StringComparison.OrdinalIgnoreCase) ||
+        packageId.Contains("Db2", StringComparison.OrdinalIgnoreCase) ||
+        packageId.Contains("IBM.EntityFrameworkCore", StringComparison.OrdinalIgnoreCase) ||
         packageId.Contains("Npgsql", StringComparison.OrdinalIgnoreCase) ||
         packageId.Contains("PostgreSQL", StringComparison.OrdinalIgnoreCase) ||
         packageId.Contains("SqlServer", StringComparison.OrdinalIgnoreCase) ||
@@ -608,6 +647,10 @@ public sealed class PackageVerifierTests {
       dependencies.Add(new TestDependency(CorePackageId, options.CoreDependencyVersion ?? packageLine.Version));
     }
 
+    if (package.UsesDb2ProviderDependency) {
+      dependencies.Add(new TestDependency(IbmEntityFrameworkCorePackageId, GetDb2ProviderVersion(packageLine.TargetFramework)));
+    }
+
     if (string.Equals(package.Id, CorePackageId, StringComparison.Ordinal) ||
         package.UsesEfRelationalDependency) {
       dependencies.Add(new TestDependency("Microsoft.EntityFrameworkCore.Relational", GetEfCoreVersion(packageLine.TargetFramework)));
@@ -648,6 +691,14 @@ public sealed class PackageVerifierTests {
       Net8TargetFramework => "8.0.2",
       Net10TargetFramework => "10.0.8",
       _ => throw new InvalidOperationException("Unsupported dependency target framework '" + targetFramework + "'."),
+    };
+  }
+
+  private static string GetDb2ProviderVersion(string targetFramework) {
+    return targetFramework switch {
+      Net8TargetFramework => "8.0.0.400",
+      Net10TargetFramework => "10.0.0.100",
+      _ => throw new InvalidOperationException("Unsupported DB2 provider target framework '" + targetFramework + "'."),
     };
   }
 
@@ -695,7 +746,8 @@ public sealed class PackageVerifierTests {
       string[] Tags,
       bool IsProvider,
       bool IsAnalyzer,
-      bool UsesEfRelationalDependency = false);
+      bool UsesEfRelationalDependency = false,
+      bool UsesDb2ProviderDependency = false);
 
   private sealed record PackageLine(string Version, string TargetFramework, string EfCoreLine);
 

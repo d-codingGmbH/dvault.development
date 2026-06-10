@@ -13,7 +13,7 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);$(MSBuildProjectDirectory)/bin/**;$(MSBuildProjectDirectory)/obj/**</DefaultItemExcludes>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'DCoding.Data.DVault' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Analyzers' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.MySql' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Oracle' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Postgres' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Sqlite' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.SqlServer'">
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'DCoding.Data.DVault' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Analyzers' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Db2' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.MySql' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Oracle' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Postgres' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Sqlite' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.SqlServer'">
     <DVaultPackablePackage>true</DVaultPackablePackage>
     <MinVerTagPrefix>v</MinVerTagPrefix>
   </PropertyGroup>

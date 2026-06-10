@@ -370,6 +370,10 @@ public sealed class DataVaultProviderCapabilityProfile {
   }
 
   private string GetIso8601UtcTextStoreType() {
+    if (ProfileName.StartsWith("db2-", StringComparison.Ordinal)) {
+      return "VARCHAR(33)";
+    }
+
     if (ProfileName.StartsWith("oracle-", StringComparison.Ordinal)) {
       return "VARCHAR2(33 CHAR)";
     }
@@ -497,6 +501,34 @@ public static class DataVaultProviderCapabilityProfiles {
               DataVaultProviderValueFormat.NativeDateTimeOffset),
           Integer(DataVaultLogicalPropertyKind.BridgeDepth, "integer"),
           Text(DataVaultLogicalPropertyKind.DrivingKey, "varchar(255)"),
+      ]);
+
+  /// <summary>
+  /// Gets the DB2 v1 provider capability profile.
+  /// </summary>
+  public static DataVaultProviderCapabilityProfile Db2 { get; } = new(
+      "db2-v1",
+      DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported,
+      DataVaultProviderConcurrencySupport.NoneInV1Unsupported,
+      [
+          Text(DataVaultLogicalPropertyKind.HashKey, "VARCHAR(64)"),
+          Text(DataVaultLogicalPropertyKind.HashDiff, "VARCHAR(64)"),
+          new(
+              DataVaultLogicalPropertyKind.LoadTimestamp,
+              typeof(string),
+              "VARCHAR(33)",
+              DataVaultProviderValueFormat.Iso8601UtcText),
+          Text(DataVaultLogicalPropertyKind.RecordSource, "VARCHAR(255)"),
+          Text(DataVaultLogicalPropertyKind.ParticipantReference, "VARCHAR(64)"),
+          Text(DataVaultLogicalPropertyKind.BusinessKey, "VARCHAR(255)"),
+          Text(DataVaultLogicalPropertyKind.PayloadText, "CLOB"),
+          new(
+              DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+              typeof(string),
+              "VARCHAR(33)",
+              DataVaultProviderValueFormat.Iso8601UtcText),
+          Integer(DataVaultLogicalPropertyKind.BridgeDepth, "INTEGER"),
+          Text(DataVaultLogicalPropertyKind.DrivingKey, "VARCHAR(255)"),
       ]);
 
   /// <summary>

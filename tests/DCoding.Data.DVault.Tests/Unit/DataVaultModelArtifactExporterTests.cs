@@ -267,6 +267,7 @@ public sealed class DataVaultModelArtifactExporterTests {
         DataVaultProviderCapabilityProfiles.Oracle.WithLoadTimestampStorage(loadTimestampStorage),
         DataVaultProviderCapabilityProfiles.Postgres.WithLoadTimestampStorage(loadTimestampStorage),
         DataVaultProviderCapabilityProfiles.SqlServer.WithLoadTimestampStorage(loadTimestampStorage),
+        DataVaultProviderCapabilityProfiles.Db2.WithLoadTimestampStorage(loadTimestampStorage),
         DataVaultProviderCapabilityProfiles.MySql.WithLoadTimestampStorage(loadTimestampStorage),
     ];
   }

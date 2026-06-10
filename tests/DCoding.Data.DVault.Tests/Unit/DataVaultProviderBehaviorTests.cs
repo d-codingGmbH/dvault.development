@@ -10,6 +10,7 @@ public sealed class DataVaultProviderBehaviorTests {
   private const string PostgresProviderName = "Npgsql.EntityFrameworkCore.PostgreSQL";
   private const string SqlServerProviderName = "Microsoft.EntityFrameworkCore.SqlServer";
   private const string OracleProviderName = "Oracle.EntityFrameworkCore";
+  private const string Db2ProviderName = "IBM.EntityFrameworkCore";
 
   [Fact]
   public void AddDVaultRegistersDefaultInheritingProviderBehaviorSelector() {
@@ -98,6 +99,10 @@ public sealed class DataVaultProviderBehaviorTests {
         services => services.AddDVaultOracle(),
         OracleProviderName,
         "oracle-provider-v1");
+    AssertProviderPackageBehavior(
+        services => services.AddDVaultDb2(),
+        Db2ProviderName,
+        "db2-provider-v1");
   }
 
   private static void AssertProviderPackageBehavior(

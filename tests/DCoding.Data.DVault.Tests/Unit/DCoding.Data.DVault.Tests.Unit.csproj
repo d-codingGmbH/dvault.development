@@ -36,6 +36,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
+    <ProjectReference Include="../../../src/DCoding.Data.DVault.Db2/DCoding.Data.DVault.Db2.csproj" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.MySql/DCoding.Data.DVault.MySql.csproj" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.Oracle/DCoding.Data.DVault.Oracle.csproj" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.Postgres/DCoding.Data.DVault.Postgres.csproj" />

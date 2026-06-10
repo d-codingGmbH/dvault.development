@@ -114,6 +114,7 @@ public sealed class DataVaultModelArtifactImporterTests {
     Assert.Equal("models/customer.json", result.LogicalSourcePath);
     Assert.Equal(DataVaultLoadTimestampStorage.UtcTicks, result.LoadTimestampStorage);
     Assert.True(result.MetadataRegistry!.TryGetProviderCapabilityProfile("postgres-v1-loadts-utc-ticks", out var profile));
+    Assert.True(result.MetadataRegistry.TryGetProviderCapabilityProfile("db2-v1-loadts-utc-ticks", out _));
 
     var mapping = profile!.GetRequiredTypeMapping(DataVaultLogicalPropertyKind.LoadTimestamp);
 

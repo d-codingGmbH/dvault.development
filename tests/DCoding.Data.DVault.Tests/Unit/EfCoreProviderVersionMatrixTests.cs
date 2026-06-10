@@ -75,6 +75,27 @@ public sealed class EfCoreProviderVersionMatrixTests {
         "'$(TargetFramework)' == 'net10.0'");
   }
 
+  [Fact]
+  public void Db2ProviderProjectPinsIbmProviderPackageLineForEachSupportedTargetFramework() {
+    var project = LoadProject("src/DCoding.Data.DVault.Db2/DCoding.Data.DVault.Db2.csproj");
+
+    AssertTargetFrameworks(project, ["net8.0", "net10.0"]);
+    AssertPackageReferences(
+        project,
+        "net8.0",
+        [
+            new("IBM.EntityFrameworkCore", "8.0.0.400"),
+            new("Microsoft.Extensions.DependencyInjection.Abstractions", "8.0.2"),
+        ]);
+    AssertPackageReferences(
+        project,
+        "net10.0",
+        [
+            new("IBM.EntityFrameworkCore", "10.0.0.100"),
+            new("Microsoft.Extensions.DependencyInjection.Abstractions", "10.0.8"),
+        ]);
+  }
+
   private static XDocument LoadProject(string repositoryRelativePath) {
     return XDocument.Load(GetRepositoryPath(repositoryRelativePath));
   }

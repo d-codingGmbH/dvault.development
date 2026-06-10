@@ -5,6 +5,8 @@ namespace DCoding.Data.DVault.PackageVerification;
 
 public sealed class PackageVerifier {
   private const string CorePackageId = "DCoding.Data.DVault";
+  private const string Db2PackageId = "DCoding.Data.DVault.Db2";
+  private const string IbmEntityFrameworkCorePackageId = "IBM.EntityFrameworkCore";
   private const string Net8TargetFramework = "net8.0";
   private const string Net10TargetFramework = "net10.0";
   private const string ExpectedAuthors = "d-coding GmbH";
@@ -14,15 +16,17 @@ public sealed class PackageVerifier {
   private const string ExpectedReadmeFile = "README.md";
 
   private static readonly ExpectedPackageLine[] ExpectedPackageLines = [
-      new("8.33.0", Net8TargetFramework, "EF Core 8"),
-      new("10.33.0", Net10TargetFramework, "EF Core 10"),
+      new("8.34.0", Net8TargetFramework, "EF Core 8"),
+      new("10.34.0", Net10TargetFramework, "EF Core 10"),
   ];
 
   private static readonly string[] DisallowedInstallVersionFragments = [
       "--version 0.32.0",
       "--version 0.33.0",
+      "--version 0.34.0",
       "Version=\"0.32.0\"",
       "Version=\"0.33.0\"",
+      "Version=\"0.34.0\"",
   ];
 
   private static readonly IReadOnlyList<ExpectedPackage> ExpectedPackages = [
@@ -38,6 +42,15 @@ public sealed class PackageVerifier {
           "DVault Roslyn Analyzers",
           "Roslyn analyzers and source generators for high-confidence DVault compile-time metadata declarations.",
           ["dvault", "data-vault", "roslyn", "analyzer", "source-generator", "diagnostics", "ef-core"],
+          false,
+          true),
+      new(
+          Db2PackageId,
+          "DVault DB2 Provider Extensions",
+          "DB2 provider extensions and registration support for DCoding.Data.DVault.",
+          ["dvault", "data-vault", "db2", "ibm", "ef-core", "persistence"],
+          true,
+          false,
           false,
           true),
       new(
@@ -477,7 +490,7 @@ public sealed class PackageVerifier {
       if (archive.ReadmeText?.Contains(disallowedFragment, StringComparison.Ordinal) == true) {
         issues.Add(new PackageVerificationIssue(
             archive.Id,
-            "Packaged README.md must not document stale or planning-release install version fragment '" + disallowedFragment + "'; use separate 8.33.0 and 10.33.0 package-line guidance."));
+            "Packaged README.md must not document stale or planning-release install version fragment '" + disallowedFragment + "'; use separate 8.34.0 and 10.34.0 package-line guidance."));
       }
     }
   }
@@ -642,7 +655,7 @@ public sealed class PackageVerifier {
       return;
     }
 
-    foreach (var dependency in dependencies.Where(dependency => IsMicrosoftEfCoreDependency(dependency.Id))) {
+    foreach (var dependency in dependencies.Where(dependency => IsEfCoreLineDependency(dependency.Id))) {
       if (!dependency.Version.StartsWith(expectedVersionPrefix, StringComparison.Ordinal)) {
         issues.Add(new PackageVerificationIssue(
             archive.Id,
@@ -662,6 +675,10 @@ public sealed class PackageVerifier {
     }
     else if (expectedPackage.IsProvider) {
       expectedDependencies.Add(new ExpectedDependency(CorePackageId, coreVersion));
+    }
+
+    if (expectedPackage.UsesDb2ProviderDependency) {
+      expectedDependencies.Add(new ExpectedDependency(IbmEntityFrameworkCorePackageId, GetDb2ProviderVersion(targetFramework)));
     }
 
     if (string.Equals(expectedPackage.Id, CorePackageId, StringComparison.Ordinal) ||
@@ -695,8 +712,17 @@ public sealed class PackageVerifier {
     };
   }
 
-  private static bool IsMicrosoftEfCoreDependency(string packageId) {
-    return packageId.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal);
+  private static string GetDb2ProviderVersion(string targetFramework) {
+    return targetFramework switch {
+      Net8TargetFramework => "8.0.0.400",
+      Net10TargetFramework => "10.0.0.100",
+      _ => throw new InvalidOperationException("Unsupported DB2 provider target framework '" + targetFramework + "'."),
+    };
+  }
+
+  private static bool IsEfCoreLineDependency(string packageId) {
+    return packageId.StartsWith("Microsoft.EntityFrameworkCore", StringComparison.Ordinal) ||
+        string.Equals(packageId, IbmEntityFrameworkCorePackageId, StringComparison.Ordinal);
   }
 
   private static XElement GetRequiredMetadataElement(PackageArchive archive) {
@@ -746,7 +772,8 @@ public sealed class PackageVerifier {
       string[] Tags,
       bool IsProvider,
       bool IsAnalyzer,
-      bool UsesEfRelationalDependency = false);
+      bool UsesEfRelationalDependency = false,
+      bool UsesDb2ProviderDependency = false);
 
   private sealed record ExpectedPackageLine(string Version, string TargetFramework, string EfCoreLine);
 

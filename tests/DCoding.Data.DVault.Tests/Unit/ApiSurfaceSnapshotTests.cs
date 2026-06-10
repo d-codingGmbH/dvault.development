@@ -57,6 +57,14 @@ public sealed class ApiSurfaceSnapshotTests {
         "DCoding.Data.DVault.MySql.approved.txt");
   }
 
+  [Fact]
+  public void Db2PublicApiMatchesApprovedSnapshot() {
+    AssertPublicApiMatchesApprovedSnapshot(
+        "DCoding.Data.DVault.Db2",
+        typeof(DVaultDb2ServiceCollectionExtensions).Assembly,
+        "DCoding.Data.DVault.Db2.approved.txt");
+  }
+
   private static void AssertPublicApiMatchesApprovedSnapshot(
       string packageId,
       Assembly assembly,

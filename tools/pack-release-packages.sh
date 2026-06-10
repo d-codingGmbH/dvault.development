@@ -7,6 +7,7 @@ package_dir="$repo_root/artifacts/packages"
 
 runtime_projects=(
   "src/DCoding.Data.DVault/DCoding.Data.DVault.csproj"
+  "src/DCoding.Data.DVault.Db2/DCoding.Data.DVault.Db2.csproj"
   "src/DCoding.Data.DVault.MySql/DCoding.Data.DVault.MySql.csproj"
   "src/DCoding.Data.DVault.Oracle/DCoding.Data.DVault.Oracle.csproj"
   "src/DCoding.Data.DVault.Postgres/DCoding.Data.DVault.Postgres.csproj"
@@ -53,5 +54,5 @@ pack_line() {
   pack_analyzer_line "$version"
 }
 
-pack_line "8.33.0" "net8.0"
-pack_line "10.33.0" "net10.0"
+pack_line "8.34.0" "net8.0"
+pack_line "10.34.0" "net10.0"

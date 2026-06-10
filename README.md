@@ -4,51 +4,53 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 
 ## Installation
 
-Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family keeps the same package ids across both supported package-version lines. Use exactly one line for a consumer project: `8.33.0` for `net8.0` and EF Core 8, or `10.33.0` for `net10.0` and EF Core 10. Do not mix package versions from both lines in one project, and do not use a consumer-facing `0.33.0` package version. This documentation baseline does not by itself confirm package publication.
+Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family keeps the same package ids across both supported package-version lines. Use exactly one line for a consumer project: `8.34.0` for `net8.0` and EF Core 8, or `10.34.0` for `net10.0` and EF Core 10. Do not mix package versions from both lines in one project, and do not use a consumer-facing `0.34.0` package version. This documentation baseline does not by itself confirm package publication.
 
-For `net8.0` projects on EF Core 8, use the `8.33.0` package line:
+For `net8.0` projects on EF Core 8, use the `8.34.0` package line:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 8.33.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 8.33.0
-dotnet add package DCoding.Data.DVault.Postgres --version 8.33.0
-dotnet add package DCoding.Data.DVault.MySql --version 8.33.0
-dotnet add package DCoding.Data.DVault.Oracle --version 8.33.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 8.33.0
+dotnet add package DCoding.Data.DVault --version 8.34.0
+dotnet add package DCoding.Data.DVault.Db2 --version 8.34.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 8.34.0
+dotnet add package DCoding.Data.DVault.Postgres --version 8.34.0
+dotnet add package DCoding.Data.DVault.MySql --version 8.34.0
+dotnet add package DCoding.Data.DVault.Oracle --version 8.34.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 8.34.0
 ```
 
-For `net10.0` projects on EF Core 10, use the `10.33.0` package line:
+For `net10.0` projects on EF Core 10, use the `10.34.0` package line:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 10.33.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 10.33.0
-dotnet add package DCoding.Data.DVault.Postgres --version 10.33.0
-dotnet add package DCoding.Data.DVault.MySql --version 10.33.0
-dotnet add package DCoding.Data.DVault.Oracle --version 10.33.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 10.33.0
+dotnet add package DCoding.Data.DVault --version 10.34.0
+dotnet add package DCoding.Data.DVault.Db2 --version 10.34.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 10.34.0
+dotnet add package DCoding.Data.DVault.Postgres --version 10.34.0
+dotnet add package DCoding.Data.DVault.MySql --version 10.34.0
+dotnet add package DCoding.Data.DVault.Oracle --version 10.34.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 10.34.0
 ```
 
 Add the analyzer package only to projects that own DVault declarations or generated read helpers, and keep it local with `PrivateAssets="all"`. Use the analyzer version that matches the selected package line:
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="8.33.0" PrivateAssets="all" />
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="8.34.0" PrivateAssets="all" />
 </ItemGroup>
 ```
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="10.33.0" PrivateAssets="all" />
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="10.34.0" PrivateAssets="all" />
 </ItemGroup>
 ```
 
-Applications still need their normal Entity Framework Core database provider package, such as `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
+Applications still need their normal Entity Framework Core database provider package, such as `IBM.EntityFrameworkCore` for DB2, `Microsoft.EntityFrameworkCore.Sqlite` for SQLite, `Npgsql.EntityFrameworkCore.PostgreSQL` for PostgreSQL, `Microsoft.EntityFrameworkCore.SqlServer` for SQL Server, `Oracle.EntityFrameworkCore` for Oracle, or `Pomelo.EntityFrameworkCore.MySql` / `MySql.EntityFrameworkCore` for MySQL.
 
 `DCoding.Data.DVault.Analyzers` is optional developer tooling. Prefer `PrivateAssets="all"` for that package so analyzer and source-generator assets stay local to the project that declares DVault Code-First metadata, compile-time mapping declarations, or generated typed satellite, PIT, and bridge read helpers. The current analyzer surface includes `DMV1910` and `DMV1911` for high-confidence EF Core misuse patterns around generated shared-type tables, `DMV1912` through `DMV1914` for source-visible DVault EF lifecycle misuse around caller-owned model-cache discriminators, compiled-model selection, and `DbContext` pooling, plus opt-in support-bundle-driven typed read-model generation (`DVaultGenerateTypedReadModels=true`) with `DMV1960` through `DMV1969` metadata and shape outcomes. See `src/DCoding.Data.DVault.Analyzers/README.md` for the package-local diagnostic, code-fix, source-generator, suppression, and configuration guidance.
 
 Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
 
-The current coordinated documentation baseline is [DVault v0.33.0 Release Notes](docs/releases/v0.33.0.md), which documents the two supported consumer package-version lines, the finite .NET and EF Core provider matrix, manual publication separation, validation evidence, compatibility caveats, and explicit non-goals without recording package publication. Earlier release notes remain historical feature-introduction records. For detailed performance guidance, see [Performance Profiles](docs/performance-profiles.md). For a short adopter readiness pass before production use, see the [Production Adoption Checklist](docs/production-adoption-checklist.md).
+The latest persisted release-note baseline is [DVault v0.33.0 Release Notes](docs/releases/v0.33.0.md), while the installation guidance above records the current planned DB2 package line. Earlier release notes remain historical feature-introduction records. For detailed performance guidance, see [Performance Profiles](docs/performance-profiles.md). For a short adopter readiness pass before production use, see the [Production Adoption Checklist](docs/production-adoption-checklist.md).
 
 ## Quickstart
 
@@ -933,16 +935,16 @@ Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadS
 
 SQLite remains the default local live-schema proof because it does not require external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks require consumer-managed reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation. Keep those external provider checks opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. Default local test execution does not require those external databases.
 
-## v0.33.0 Release Notes
+## Previous v0.33.0 Release Notes
 
-The v0.33.0 release record is the current coordinated seven-package documentation baseline for the dual consumer package-version lines. See `docs/releases/v0.33.0.md` for package scope, the `8.33.0` / `net8.0` / EF Core 8 line, the `10.33.0` / `net10.0` / EF Core 10 line, the finite provider/version matrix, manual publication separation, validation evidence, compatibility caveats, and non-goals.
+The v0.33.0 release record is the previous coordinated seven-package documentation baseline for the dual consumer package-version lines. See `docs/releases/v0.33.0.md` for package scope, the `8.33.0` / `net8.0` / EF Core 8 line, the `10.33.0` / `net10.0` / EF Core 10 line, the finite provider/version matrix, manual publication separation, validation evidence, compatibility caveats, and non-goals.
 
 It carries forward the v0.32.0 benchmark-driven provider threshold evidence and review-only provider-specific SQL artifact manifest lane, v0.31.0 performance decision-tree and observability baseline, v0.30.0 typed helper support-bundle freshness baseline, v0.29.0 provider schema guardrail baseline, v0.28.0 provider read optimization evidence boundary, v0.27.0 EF lifecycle analyzer guardrails, v0.26.0 provider-tuning diagnostics and benchmark verifier evidence, v0.25.0 ReadShape and typed helper boundary, v0.24.0 async streaming and EF safety boundary, and v0.21.0 PIT/bridge maintenance boundary from earlier releases.
 
 Notable user-facing documentation changes:
 
-- The coordinated seven-package family keeps the same package ids across both compatibility lines.
-- Consumer projects choose exactly one package-version line: `8.33.0` for `net8.0` and EF Core 8, or `10.33.0` for `net10.0` and EF Core 10.
+- The coordinated seven-package family kept the same package ids across both compatibility lines.
+- At that boundary, consumer projects chose exactly one package-version line: `8.33.0` for `net8.0` and EF Core 8, or `10.33.0` for `net10.0` and EF Core 10.
 - `v0.33.0` is the release-note and planning label, not a consumer-facing `0.33.0` package version.
 - Runtime, provider, and analyzer packages must stay aligned to the selected line; analyzer references remain local with `PrivateAssets="all"`.
 - The finite provider/version matrix is grounded in shared standards and `EfCoreProviderVersionMatrixTests.cs`, including `MySql.EntityFrameworkCore` `10.0.7` as the documented evidence exception for both targets.
@@ -1242,7 +1244,7 @@ Dependent child key modeling is not part of the current public claim set. Repeat
 - `DVault.slnx`: Canonical root solution file for build and test automation.
 - `src/DCoding.Data/`: Non-packable build anchor for the `DCoding.Data` source-root namespace family.
 - `src/DCoding.Data.DVault/`: Main library project. The NuGet package id and root namespace are `DCoding.Data.DVault`.
-- `src/DCoding.Data.DVault.*`: Provider extension packages for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL.
+- `src/DCoding.Data.DVault.*`: Provider extension packages for DB2, SQLite, PostgreSQL, SQL Server, Oracle, and MySQL.
 - `src/DCoding.Data.DVault.Analyzers/`: Roslyn analyzer and source-generator package for DVault Code-First diagnostics, bounded code fixes, and compile-time mapping declarations.
 - `tests/DCoding.Data.DVault.Tests/`: Unit, integration, and shared test projects for DVault.
 - `examples/`: Runnable SQLite and PostgreSQL quickstart projects.
@@ -1263,9 +1265,9 @@ bash tools/verify-packages.sh
 bash tools/check-format.sh
 ```
 
-The normal test run includes package-specific public API snapshot checks for `DCoding.Data.DVault` and the five provider packages. See `docs/quality/api-surface-snapshots.md` for the approved baseline location and the explicit update workflow for intentional API changes.
+The normal test run includes package-specific public API snapshot checks for `DCoding.Data.DVault` and the six provider packages. See `docs/quality/api-surface-snapshots.md` for the approved baseline location and the explicit update workflow for intentional API changes.
 
-`bash tools/pack-release-packages.sh` creates the two coordinated package lines under `artifacts/packages/`: seven `8.33.0` packages with `net8.0` assets and EF Core 8 dependency groups, and seven `10.33.0` packages with `net10.0` assets and EF Core 10 dependency groups. `bash tools/verify-packages.sh` inspects those artifacts, expects exactly fourteen DVault `.nupkg` files plus twelve matching symbol packages for the runtime/provider packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider package depends on the packed `DCoding.Data.DVault` version from the same package line. It also verifies line-specific nuspec dependency groups, expected EF Core and `Microsoft.Extensions.DependencyInjection.Abstractions` lines, dual `8.33.0` / `10.33.0` README install guidance, and analyzer `PrivateAssets="all"` guidance. The verifier intentionally fails when stale, unexpected, mixed-line, multi-target-combined, or non-packable package artifacts remain in `artifacts/packages/`.
+`bash tools/pack-release-packages.sh` creates the two coordinated package lines under `artifacts/packages/`: eight `8.34.0` packages with `net8.0` assets and EF Core 8 dependency groups, and eight `10.34.0` packages with `net10.0` assets and EF Core 10 dependency groups. `bash tools/verify-packages.sh` inspects those artifacts, expects exactly sixteen DVault `.nupkg` files plus fourteen matching symbol packages for the runtime/provider packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider package depends on the packed `DCoding.Data.DVault` version from the same package line. It also verifies line-specific nuspec dependency groups, expected EF Core, IBM Entity Framework Core, and `Microsoft.Extensions.DependencyInjection.Abstractions` lines, dual `8.34.0` / `10.34.0` README install guidance, and analyzer `PrivateAssets="all"` guidance. The verifier intentionally fails when stale, unexpected, mixed-line, multi-target-combined, or non-packable package artifacts remain in `artifacts/packages/`.
 
 Provider integration tests use stable xUnit trait categories so required local coverage and opt-in external database coverage can be selected explicitly:
 

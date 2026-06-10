@@ -14,6 +14,7 @@ internal static class DataVaultProviderCapabilityProfileSelection {
         ["Microsoft.EntityFrameworkCore.SqlServer"] = DataVaultProviderCapabilityProfiles.SqlServer,
         ["Npgsql.EntityFrameworkCore.PostgreSQL"] = DataVaultProviderCapabilityProfiles.Postgres,
         ["Oracle.EntityFrameworkCore"] = DataVaultProviderCapabilityProfiles.Oracle,
+        ["IBM.EntityFrameworkCore"] = DataVaultProviderCapabilityProfiles.Db2,
         ["MySql.EntityFrameworkCore"] = DataVaultProviderCapabilityProfiles.MySql,
         ["Pomelo.EntityFrameworkCore.MySql"] = DataVaultProviderCapabilityProfiles.MySql,
       };

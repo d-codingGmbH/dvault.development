@@ -279,6 +279,75 @@ public sealed class DataVaultProviderCapabilityProfileTests {
   }
 
   [Fact]
+  public void Db2ProfileDeclaresIsoTextTimestampMappings() {
+    var profile = DataVaultProviderCapabilityProfiles.Db2;
+
+    Assert.Equal("db2-v1", profile.ProfileName);
+    Assert.Equal(DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported, profile.SqlFunctionSupport);
+    Assert.Equal(DataVaultProviderConcurrencySupport.NoneInV1Unsupported, profile.ConcurrencySupport);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.HashKey,
+        typeof(string),
+        "VARCHAR(64)",
+        DataVaultProviderValueFormat.Text);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.HashDiff,
+        typeof(string),
+        "VARCHAR(64)",
+        DataVaultProviderValueFormat.Text);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.LoadTimestamp,
+        typeof(string),
+        "VARCHAR(33)",
+        DataVaultProviderValueFormat.Iso8601UtcText);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.RecordSource,
+        typeof(string),
+        "VARCHAR(255)",
+        DataVaultProviderValueFormat.Text);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.ParticipantReference,
+        typeof(string),
+        "VARCHAR(64)",
+        DataVaultProviderValueFormat.Text);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.BusinessKey,
+        typeof(string),
+        "VARCHAR(255)",
+        DataVaultProviderValueFormat.Text);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.DrivingKey,
+        typeof(string),
+        "VARCHAR(255)",
+        DataVaultProviderValueFormat.Text);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.PayloadText,
+        typeof(string),
+        "CLOB",
+        DataVaultProviderValueFormat.Text);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
+        typeof(string),
+        "VARCHAR(33)",
+        DataVaultProviderValueFormat.Iso8601UtcText);
+    AssertMapping(
+        profile,
+        DataVaultLogicalPropertyKind.BridgeDepth,
+        typeof(int),
+        "INTEGER",
+        DataVaultProviderValueFormat.NativeInteger);
+  }
+
+  [Fact]
   public void LoadTimestampStorageCanBeProjectedToUtcTicksWithoutChangingProviderDefault() {
     var profile = DataVaultProviderCapabilityProfiles.Oracle;
     var providerDefault = profile.WithLoadTimestampStorage(DataVaultLoadTimestampStorage.ProviderDefault);
