@@ -24,7 +24,7 @@ Use these documents as the authoritative sources for their covered decisions:
 | --- | --- |
 | Formatting and encoding | `docs/formatting.md`, `.editorconfig`, `.gitattributes`, `tools/check-format.sh` |
 | Repository layout | `README.md` |
-| Current .NET baseline and v0.33 compatibility contract | `DVault.slnx`, `src/DCoding.Data.DVault/DCoding.Data.DVault.csproj`, this document's `.NET Project Baseline` and `V0.33 Compatibility Contract` sections |
+| Current .NET baseline and v0.34 compatibility contract | `DVault.slnx`, `src/DCoding.Data.DVault/DCoding.Data.DVault.csproj`, this document's `.NET Project Baseline` and `V0.34 Compatibility Contract` sections |
 | Data Vault MVP concepts | `docs/architecture/mvp-data-vault-concepts.md` |
 | Default table and column naming | `docs/naming/default-naming-policy.md` |
 | Stable hashing | `docs/plans/stable-hashing-contract.md` |
@@ -74,11 +74,12 @@ The active v1 repository layout uses `src/DCoding.Data.DVault/` and `tests/DCodi
 
 ## .NET Project Baseline
 
-The current pre-v0.33 .NET implementation baseline is visible in `DVault.slnx` and `src/DCoding.Data.DVault/DCoding.Data.DVault.csproj`.
+The current .NET implementation baseline is visible in `DVault.slnx` and `src/DCoding.Data.DVault/DCoding.Data.DVault.csproj`.
 
-Outside the v0.33 compatibility contract below, new DVault .NET projects should use these defaults unless a later ticket documents a specific exception:
+Outside the v0.34 compatibility contract below, new DVault .NET projects should use these defaults unless a later ticket documents a specific exception:
 
-- `TargetFramework` set to `net10.0`
+- packable runtime/provider projects that ship to consumers target `net8.0;net10.0`
+- analyzer, tooling, benchmark, or repository helper projects may stay on `net10.0` when they are not consumer runtime packages
 - `Nullable` set to `enable`
 - `ImplicitUsings` set to `enable`
 - `GenerateDocumentationFile` set to `true`
@@ -86,9 +87,52 @@ Outside the v0.33 compatibility contract below, new DVault .NET projects should 
 
 Public API source should include generated XML documentation coverage where the project enables documentation generation. Compiler or analyzer warnings introduced by this baseline should be addressed in the owning feature ticket rather than avoided by disabling the shared settings.
 
+## V0.34 Compatibility Contract
+
+Planning release `v0.34.0` defines the current dual consumer package-line contract and adds the DB2 provider package baseline. It does not by itself publish packages, provision external databases, add DB2 live-schema reading, create release automation, or split the DVault library into a platform/tool-suite surface. DB2 execution claims stay limited to the registered clean-context save strategy, diagnostics-gated PIT/bridge read strategy, and opt-in live smoke evidence documented for this release.
+
+The coordinated package family contains these eight package IDs across all compatibility lines:
+
+- `DCoding.Data.DVault`
+- `DCoding.Data.DVault.Analyzers`
+- `DCoding.Data.DVault.Db2`
+- `DCoding.Data.DVault.MySql`
+- `DCoding.Data.DVault.Oracle`
+- `DCoding.Data.DVault.Postgres`
+- `DCoding.Data.DVault.Sqlite`
+- `DCoding.Data.DVault.SqlServer`
+
+Do not introduce line-specific package IDs, duplicate artifact names, or split package families for the `net8.0` and `net10.0` lines.
+
+The planning release number is not the consumer-facing NuGet package version. `v0.34.0` produces exactly two aligned package-version lines:
+
+| Package version line | Target framework | EF Core line |
+| --- | --- | --- |
+| `8.34.0` | `net8.0` | EF Core 8 |
+| `10.34.0` | `net10.0` | EF Core 10 |
+
+Do not publish or document a consumer-facing `0.34.0` DVault package version for this planning release. Do not combine `8.34.0` and `10.34.0` packages in one published artifact family or consumer example.
+
+Each resolved target must use exactly one compatible EF/provider dependency line. Runtime, provider, integration-test, and verifier project files may use conditional `PackageReference` entries only for target-framework selection and for the existing opt-in external-provider test switches. A single resolved target must not restore both the 8.x and 10.x dependency lines together.
+
+The required provider package evidence for the compatibility lines is:
+
+| Target framework | DB2 | SQLite | MySQL | PostgreSQL | Oracle | SQL Server |
+| --- | --- | --- | --- | --- | --- | --- |
+| `net8.0` | `IBM.EntityFrameworkCore` `8.0.0.400` | `Microsoft.EntityFrameworkCore.Sqlite` `8.0.27` | `MySql.EntityFrameworkCore` `10.0.7` | `Npgsql.EntityFrameworkCore.PostgreSQL` `8.0.11` | `Oracle.EntityFrameworkCore` `8.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `8.0.27` |
+| `net10.0` | `IBM.EntityFrameworkCore` `10.0.0.100` | `Microsoft.EntityFrameworkCore.Sqlite` `10.0.8` | `MySql.EntityFrameworkCore` `10.0.7` | `Npgsql.EntityFrameworkCore.PostgreSQL` `10.0.2` | `Oracle.EntityFrameworkCore` `10.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `10.0.8` |
+
+Provider-neutral EF Core references must follow the target's EF Core line. The `MySql.EntityFrameworkCore` `10.0.7` pin is the required evidence exception for both targets and must be called out explicitly in tests and documentation instead of treated as permission for arbitrary mixed-line resolution.
+
+`DCoding.Data.DVault.Db2` registers `AddDVaultDb2()`, DB2 provider behavior for `IBM.EntityFrameworkCore`, the `db2-v1` provider capability profile, a diagnostics-gated optimized clean-context save strategy for ordinary hub, link, and satellite rows, and diagnostics-gated PIT/bridge read dispatch. DB2 still does not add optimized latest-satellite read dispatch, a staged bulk path, provider-native chunk execution, a live-schema reader, container provisioning, or a default CI database requirement.
+
+`DCoding.Data.DVault.Analyzers` remains coordinated family tooling, not a runtime dependency. Consuming projects should keep analyzer/source-generator references local with `PrivateAssets="all"`. Package verification for the analyzer line must prove analyzer assets are present, while runtime package verification must not treat the analyzer as a transitive runtime dependency.
+
+Downstream package verification, matrix tests, release notes, README guidance, and CI documentation are incomplete if they blur planning release `v0.34.0` with package versions `8.34.0` and `10.34.0`, omit one of the required provider pins above, omit the DB2 package from the eight-package family, allow a mixed 8.x/10.x restored target, overstate DB2 beyond the registered save and PIT/bridge read strategies, or export analyzer assets as runtime dependencies.
+
 ## V0.33 Compatibility Contract
 
-Planning release `v0.33.0` defines a dual consumer package-line contract over the existing DVault package family. It does not by itself edit project files, add provider behavior, provision external databases, publish packages, or create release automation.
+This historical section records the previous v0.33 compatibility contract for release-note links and audit context. Planning release `v0.33.0` defined a dual consumer package-line contract over the then-existing DVault package family. It did not by itself edit project files, add provider behavior, provision external databases, publish packages, or create release automation.
 
 The coordinated package family remains these seven package IDs across all compatibility lines:
 
@@ -194,8 +238,8 @@ These decisions are current v1 defaults:
 - Repository text formatting and encoding follow `docs/formatting.md`.
 - Local formatting validation runs with `bash tools/check-format.sh`.
 - Layout follows the README baseline for `DVault.slnx`, `src/DCoding.Data.DVault/`, `tests/DCoding.Data.DVault.Tests/`, `docs/`, `examples/`, `benchmarks/`, and tracked placeholder folders.
-- Current pre-v0.33 .NET projects target `net10.0` with nullable enabled, implicit usings enabled, and generated XML documentation enabled.
-- Planning release `v0.33.0` uses the dual package-line compatibility contract in this document: `8.33.0` for `net8.0` and EF Core 8, `10.33.0` for `net10.0` and EF Core 10, unchanged package IDs, no consumer-facing `0.33.0` package line, and no mixed-line restored targets.
+- Current packable runtime/provider projects target `net8.0;net10.0`; analyzer, tooling, benchmark, and repository helper projects may stay on `net10.0` when they are not consumer runtime packages.
+- Planning release `v0.34.0` uses the dual package-line compatibility contract in this document: `8.34.0` for `net8.0` and EF Core 8, `10.34.0` for `net10.0` and EF Core 10, eight coordinated package IDs including `DCoding.Data.DVault.Db2`, no consumer-facing `0.34.0` package line, no mixed-line restored targets, and DB2 execution documented as optimized save plus PIT/bridge read dispatch without latest-satellite optimization or live-schema reading.
 - C# and other brace-based source files use same-line opening braces.
 - Current modeling namespace evidence is `DCoding.Data.DVault.Modeling`.
 - Model table and column naming follows `docs/naming/default-naming-policy.md`.
@@ -213,8 +257,8 @@ These categories remain deferred until separate tickets explicitly own them:
 - Changing stable hashing algorithms, canonical normalization, or security-specific hashing behavior.
 - Changing default table or column naming semantics.
 - Adding language-specific formatters beyond the current shell gate.
-- Expanding v0.33 release notes, broader adopter documentation, or package publication automation beyond the dedicated multitarget project, provider matrix, verifier, README, manual release, and CI guidance tickets.
+- Expanding future release notes, broader adopter documentation, or package publication automation beyond the dedicated multitarget project, provider matrix, verifier, README, manual release, and CI guidance tickets.
 
 ## Acceptance Baseline
 
-A downstream ticket satisfies this shared-standards dependency when it references this document and follows the relevant source-of-truth document for the area it modifies. No unresolved PO-level architecture questions remain here for formatting, encoding, repository layout, documentation baseline, current .NET baseline, the v0.33 net8.0/net10.0 compatibility contract, v1 naming defaults, v1 hashing defaults, or v1 persistence defaults.
+A downstream ticket satisfies this shared-standards dependency when it references this document and follows the relevant source-of-truth document for the area it modifies. No unresolved PO-level architecture questions remain here for formatting, encoding, repository layout, documentation baseline, current .NET baseline, the v0.34 net8.0/net10.0 compatibility contract, v1 naming defaults, v1 hashing defaults, or v1 persistence defaults.

@@ -46,7 +46,7 @@ public sealed class Db2DataVaultSmokeTests {
         ],
         []);
 
-    AssertProviderNeutralSaveDiagnostics(diagnostics.Analyze(context, hubRequest));
+    AssertDb2SaveStrategyDiagnostics(diagnostics.Analyze(context, hubRequest));
 
     var hubResult = await saveService.SaveAsync(context, hubRequest);
 
@@ -62,7 +62,7 @@ public sealed class Db2DataVaultSmokeTests {
             new(metadata.CustomerOrder, [new("Customer", customerHashKey), new("Order", orderHashKey)]),
         ]);
 
-    AssertProviderNeutralSaveDiagnostics(diagnostics.Analyze(context, linkRequest));
+    AssertDb2SaveStrategyDiagnostics(diagnostics.Analyze(context, linkRequest));
 
     var linkResult = await saveService.SaveAsync(context, linkRequest);
 
@@ -87,7 +87,7 @@ public sealed class Db2DataVaultSmokeTests {
                 "db2-state-hash-1"),
         ]);
 
-    AssertProviderNeutralSaveDiagnostics(diagnostics.Analyze(context, satelliteRequest));
+    AssertDb2SaveStrategyDiagnostics(diagnostics.Analyze(context, satelliteRequest));
 
     var satelliteResult = await saveService.SaveAsync(context, satelliteRequest);
 
@@ -127,7 +127,7 @@ public sealed class Db2DataVaultSmokeTests {
   }
 
   [Fact]
-  public async Task AddDVaultDb2ReadsLatestPitAndBridgeRowsThroughProviderNeutralFallbackWhenConfigured() {
+  public async Task AddDVaultDb2ReadsLatestThroughFallbackAndPitBridgeThroughProviderStrategiesWhenConfigured() {
     await using var database = await Db2SmokeDatabase.CreateAsync();
     using var provider = CreateServiceProvider();
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
@@ -222,10 +222,10 @@ public sealed class Db2DataVaultSmokeTests {
     AssertProviderNeutralReadDiagnostics(
         readDiagnostics.Analyze(context, latestRequest),
         DataVaultReadShapeKind.LatestSatellite);
-    AssertProviderNeutralReadDiagnostics(
+    AssertDb2ReadStrategyDiagnostics(
         readDiagnostics.Analyze(context, pitRequest),
         DataVaultReadShapeKind.PitAsOf);
-    AssertProviderNeutralReadDiagnostics(
+    AssertDb2ReadStrategyDiagnostics(
         readDiagnostics.Analyze(context, bridgeRequest),
         DataVaultReadShapeKind.Bridge);
 
@@ -301,14 +301,15 @@ public sealed class Db2DataVaultSmokeTests {
     };
   }
 
-  private static void AssertProviderNeutralSaveDiagnostics(DataVaultDiagnosticsResult diagnostics) {
-    Assert.Equal(DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback, diagnostics.SaveStrategy.Status);
+  private static void AssertDb2SaveStrategyDiagnostics(DataVaultDiagnosticsResult diagnostics) {
+    Assert.Equal(DataVaultSaveStrategyDiagnosticsStatus.ProviderStrategySelected, diagnostics.SaveStrategy.Status);
     Assert.Equal(Db2ProviderName, diagnostics.SaveStrategy.ProviderName);
-    Assert.Null(diagnostics.SaveStrategy.SelectedStrategyName);
-    Assert.Empty(diagnostics.SaveStrategy.Candidates);
+    Assert.Equal("Db2DataVaultSaveStrategy", diagnostics.SaveStrategy.SelectedStrategyName);
     Assert.Contains(
-        diagnostics.SaveStrategy.FallbackCauses,
-        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered);
+        diagnostics.SaveStrategy.Candidates,
+        candidate => string.Equals(candidate.StrategyName, "Db2DataVaultSaveStrategy", StringComparison.Ordinal) &&
+            candidate.CanSave);
+    Assert.Empty(diagnostics.SaveStrategy.FallbackCauses);
   }
 
   private static void AssertProviderNeutralReadDiagnostics(
@@ -326,6 +327,25 @@ public sealed class Db2DataVaultSmokeTests {
     Assert.Equal(
         DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback,
         diagnostics.ReadShape.Provider.ReadStrategyStatus);
+  }
+
+  private static void AssertDb2ReadStrategyDiagnostics(
+      DataVaultDiagnosticsResult diagnostics,
+      DataVaultReadShapeKind expectedShapeKind) {
+    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected, diagnostics.ReadStrategy.Status);
+    Assert.Equal(Db2ProviderName, diagnostics.ReadStrategy.ProviderName);
+    Assert.Equal("Db2DataVaultReadStrategy", diagnostics.ReadStrategy.SelectedStrategyName);
+    Assert.Contains(
+        diagnostics.ReadStrategy.Candidates,
+        candidate => string.Equals(candidate.StrategyName, "Db2DataVaultReadStrategy", StringComparison.Ordinal) &&
+            candidate.CanRead);
+    Assert.Empty(diagnostics.ReadStrategy.FallbackCauses);
+    Assert.NotNull(diagnostics.ReadShape);
+    Assert.Equal(expectedShapeKind, diagnostics.ReadShape!.Kind);
+    Assert.Equal(
+        DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected,
+        diagnostics.ReadShape.Provider.ReadStrategyStatus);
+    Assert.Equal("Db2DataVaultReadStrategy", diagnostics.ReadShape.Provider.SelectedStrategyName);
   }
 
   private static ContactRead ProjectContact(DataVaultSatelliteProjectionRow row) {

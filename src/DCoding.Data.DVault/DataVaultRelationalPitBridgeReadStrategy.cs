@@ -102,6 +102,12 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
 
   protected abstract string QuoteIdentifier(string identifier);
 
+  protected virtual string QuoteTableIdentifier(DbContext dbContext, string tableName) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    return QuoteIdentifier(tableName);
+  }
+
   private async Task<IReadOnlyDictionary<DataVaultPitReadPipeline.PitRowIdentityKey, DataVaultPitReadPipeline.MatchedPitRow>> ReadMatchedPitRowsAsync(
       DataVaultProviderPitReadStrategyContext context,
       DataVaultPitReadPipeline.PitReadProjection projection,
@@ -156,6 +162,7 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
     await using var command = connection.CreateCommand();
     command.Transaction = context.DbContext.Database.CurrentTransaction?.GetDbTransaction();
     command.CommandText = CreatePitRowsCommandText(
+        context.DbContext,
         projection,
         selectedColumns,
         parentHashKeyBatch.Count);
@@ -216,6 +223,7 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
     await using var command = connection.CreateCommand();
     command.Transaction = context.DbContext.Database.CurrentTransaction?.GetDbTransaction();
     command.CommandText = CreateBridgeRowsCommandText(
+        context.DbContext,
         projection,
         selectedColumns,
         endpointHashKeyBatch.Count,
@@ -275,6 +283,7 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
   }
 
   private string CreatePitRowsCommandText(
+      DbContext dbContext,
       DataVaultPitReadPipeline.PitReadProjection projection,
       IReadOnlyList<string> selectedColumns,
       int parentHashKeyCount) {
@@ -288,7 +297,7 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
     builder.Append("SELECT ");
     AppendColumnList(builder, selectedColumns);
     builder.Append(" FROM ")
-        .Append(QuoteIdentifier(projection.TableName))
+        .Append(QuoteTableIdentifier(dbContext, projection.TableName))
         .Append(" WHERE ")
         .Append(QuoteIdentifier(projection.ParentHashKeyColumnName))
         .Append(" IN (");
@@ -321,6 +330,7 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
   }
 
   private string CreateBridgeRowsCommandText(
+      DbContext dbContext,
       DataVaultBridgeReadPipeline.BridgeReadProjection projection,
       IReadOnlyList<string> selectedColumns,
       int endpointHashKeyCount,
@@ -335,7 +345,7 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
     builder.Append("SELECT ");
     AppendColumnList(builder, selectedColumns);
     builder.Append(" FROM ")
-        .Append(QuoteIdentifier(projection.TableName))
+        .Append(QuoteTableIdentifier(dbContext, projection.TableName))
         .Append(" WHERE ")
         .Append(QuoteIdentifier(projection.FilterColumnName))
         .Append(" IN (");

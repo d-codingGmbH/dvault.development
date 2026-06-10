@@ -2956,6 +2956,7 @@ internal enum DataVaultKnownProviderSaveStrategy {
   MySql,
   MySqlStaged,
   Oracle,
+  Db2,
 }
 
 internal sealed record DataVaultProviderSaveStrategyGateEvaluation(
@@ -3108,6 +3109,28 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
         maximumSatelliteOperationCount: MaximumOracleOptimizedSatelliteOperationCount);
   }
 
+  public static DataVaultProviderSaveStrategyGateEvaluation EvaluateDb2(
+      DbContext dbContext,
+      IReadOnlyList<DataVaultSaveRequest> requests) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    return EvaluateDb2(dbContext.Database.ProviderName, HasPendingTrackedChanges(dbContext), requests);
+  }
+
+  public static DataVaultProviderSaveStrategyGateEvaluation EvaluateDb2(
+      string? providerName,
+      bool hasPendingTrackedChanges,
+      IReadOnlyList<DataVaultSaveRequest> requests) {
+    return Evaluate(
+        DataVaultKnownProviderSaveStrategy.Db2,
+        providerName,
+        hasPendingTrackedChanges,
+        requests,
+        supportedProviderNames: [KnownProviderNames.Db2],
+        minimumOperationCount: null,
+        maximumSatelliteOperationCount: null);
+  }
+
   public static bool TryEvaluateKnownStrategy(
       IDataVaultProviderSaveStrategy strategy,
       DbContext dbContext,
@@ -3120,6 +3143,7 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
       "MySqlStagedDataVaultSaveStrategy" => EvaluateMySqlStaged(dbContext, requests),
       "MySqlDataVaultSaveStrategy" => EvaluateMySql(dbContext, requests),
       "OracleDataVaultSaveStrategy" => EvaluateOracle(dbContext, requests),
+      "Db2DataVaultSaveStrategy" => EvaluateDb2(dbContext, requests),
       _ => new DataVaultProviderSaveStrategyGateEvaluation(false, Array.Empty<DataVaultSaveStrategyFallbackCause>()),
     };
 
@@ -3136,6 +3160,7 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
       "MySqlStagedDataVaultSaveStrategy" => [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
       "MySqlDataVaultSaveStrategy" => [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
       "OracleDataVaultSaveStrategy" => [KnownProviderNames.Oracle],
+      "Db2DataVaultSaveStrategy" => [KnownProviderNames.Db2],
       _ => Array.Empty<string>(),
     };
   }
@@ -3154,6 +3179,7 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
     return strategy.GetType().Name switch {
       "SqliteDataVaultSaveStrategy" => commonRequirements,
       "PostgresDataVaultSaveStrategy" => commonRequirements,
+      "Db2DataVaultSaveStrategy" => commonRequirements,
       "SqlServerDataVaultSaveStrategy" => commonRequirements
           .Concat([
               new DataVaultSaveStrategyGateRequirement(
@@ -3369,6 +3395,7 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
       DataVaultKnownProviderSaveStrategy.MySql => "MySQL",
       DataVaultKnownProviderSaveStrategy.MySqlStaged => "MySQL staged bulk",
       DataVaultKnownProviderSaveStrategy.Oracle => "Oracle",
+      DataVaultKnownProviderSaveStrategy.Db2 => "DB2",
       _ => strategy.ToString(),
     };
   }
@@ -3380,6 +3407,7 @@ internal enum DataVaultKnownProviderReadStrategy {
   SqlServer,
   MySql,
   Oracle,
+  Db2,
 }
 
 internal sealed record DataVaultProviderReadStrategyGateEvaluation(
@@ -3509,6 +3537,30 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
     ArgumentNullException.ThrowIfNull(dbContext);
 
     return EvaluateOracle(
+        dbContext.Database.ProviderName,
+        request,
+        HasCompleteBridgeReadShapeEvidence(dbContext, request),
+        HasStaleReadModelMaintenanceSignal(dbContext));
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateDb2(
+      DbContext dbContext,
+      DataVaultPitAsOfReadRequest request) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    return EvaluateDb2(
+        dbContext.Database.ProviderName,
+        request,
+        HasCompletePitReadShapeEvidence(dbContext, request),
+        HasStaleReadModelMaintenanceSignal(dbContext));
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateDb2(
+      DbContext dbContext,
+      DataVaultBridgeReadRequest request) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    return EvaluateDb2(
         dbContext.Database.ProviderName,
         request,
         HasCompleteBridgeReadShapeEvidence(dbContext, request),
@@ -3843,6 +3895,70 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
         hasStaleReadModelMaintenanceSignal: hasStaleReadModelMaintenanceSignal);
   }
 
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateDb2(
+      string? providerName,
+      DataVaultPitAsOfReadRequest request) {
+    return EvaluateDb2(providerName, request, hasCompleteReadShapeEvidence: true);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateDb2(
+      string? providerName,
+      DataVaultPitAsOfReadRequest request,
+      bool hasCompleteReadShapeEvidence) {
+    return EvaluateDb2(
+        providerName,
+        request,
+        hasCompleteReadShapeEvidence,
+        hasStaleReadModelMaintenanceSignal: false);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateDb2(
+      string? providerName,
+      DataVaultPitAsOfReadRequest request,
+      bool hasCompleteReadShapeEvidence,
+      bool hasStaleReadModelMaintenanceSignal) {
+    return EvaluatePit(
+        DataVaultKnownProviderReadStrategy.Db2,
+        providerName,
+        request,
+        supportedProviderNames: [KnownProviderNames.Db2],
+        supportsLinkParent: true,
+        supportsMultiActive: true,
+        hasCompleteReadShapeEvidence: hasCompleteReadShapeEvidence,
+        hasStaleReadModelMaintenanceSignal: hasStaleReadModelMaintenanceSignal);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateDb2(
+      string? providerName,
+      DataVaultBridgeReadRequest request) {
+    return EvaluateDb2(providerName, request, hasCompleteReadShapeEvidence: true);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateDb2(
+      string? providerName,
+      DataVaultBridgeReadRequest request,
+      bool hasCompleteReadShapeEvidence) {
+    return EvaluateDb2(
+        providerName,
+        request,
+        hasCompleteReadShapeEvidence,
+        hasStaleReadModelMaintenanceSignal: false);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateDb2(
+      string? providerName,
+      DataVaultBridgeReadRequest request,
+      bool hasCompleteReadShapeEvidence,
+      bool hasStaleReadModelMaintenanceSignal) {
+    return EvaluateBridge(
+        DataVaultKnownProviderReadStrategy.Db2,
+        providerName,
+        request,
+        supportedProviderNames: [KnownProviderNames.Db2],
+        hasCompleteReadShapeEvidence: hasCompleteReadShapeEvidence,
+        hasStaleReadModelMaintenanceSignal: hasStaleReadModelMaintenanceSignal);
+  }
+
   public static bool TryEvaluateKnownStrategy(
       IDataVaultProviderReadStrategy strategy,
       DbContext dbContext,
@@ -3867,6 +3983,7 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
       "SqlServerDataVaultReadStrategy" => EvaluateSqlServer(dbContext, request),
       "MySqlDataVaultReadStrategy" => EvaluateMySql(dbContext, request),
       "OracleDataVaultReadStrategy" => EvaluateOracle(dbContext, request),
+      "Db2DataVaultReadStrategy" => EvaluateDb2(dbContext, request),
       _ => new DataVaultProviderReadStrategyGateEvaluation(false, Array.Empty<DataVaultReadStrategyFallbackCause>()),
     };
 
@@ -3884,6 +4001,7 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
       "SqlServerDataVaultReadStrategy" => EvaluateSqlServer(dbContext, request),
       "MySqlDataVaultReadStrategy" => EvaluateMySql(dbContext, request),
       "OracleDataVaultReadStrategy" => EvaluateOracle(dbContext, request),
+      "Db2DataVaultReadStrategy" => EvaluateDb2(dbContext, request),
       _ => new DataVaultProviderReadStrategyGateEvaluation(false, Array.Empty<DataVaultReadStrategyFallbackCause>()),
     };
 
@@ -3957,6 +4075,12 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence),
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance),
       ],
+      "Db2DataVaultReadStrategy" => [
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance),
+      ],
       _ => Array.Empty<DataVaultReadStrategyGateRequirement>(),
     };
   }
@@ -3991,6 +4115,12 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance),
       ],
       "OracleDataVaultReadStrategy" => [
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedBridgeShape),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance),
+      ],
+      "Db2DataVaultReadStrategy" => [
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedBridgeShape),
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence),
@@ -4193,6 +4323,7 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
       "SqlServerDataVaultReadStrategy" => [KnownProviderNames.SqlServer],
       "MySqlDataVaultReadStrategy" => [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
       "OracleDataVaultReadStrategy" => [KnownProviderNames.Oracle],
+      "Db2DataVaultReadStrategy" => [KnownProviderNames.Db2],
       _ => Array.Empty<string>(),
     };
   }
@@ -4204,6 +4335,7 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
       DataVaultKnownProviderReadStrategy.SqlServer => "SQL Server",
       DataVaultKnownProviderReadStrategy.MySql => "MySQL",
       DataVaultKnownProviderReadStrategy.Oracle => "Oracle",
+      DataVaultKnownProviderReadStrategy.Db2 => "DB2",
       _ => strategy.ToString(),
     };
   }

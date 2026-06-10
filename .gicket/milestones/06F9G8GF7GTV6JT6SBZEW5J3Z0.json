@@ -2,7 +2,7 @@
   "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
   "milestone-id": "06F9G8GF7GTV6JT6SBZEW5J3Z0",
   "name": "v0.34.0 - DB2 provider implementation and tests",
-  "description": "Implement DB2 provider package, registration, schema/save/read tests, and opt-in container-backed integration coverage.",
-  "status": "active",
+  "description": "Implement DB2 provider package, registration, optimized save/PIT/bridge read strategies, schema/save/read tests, and opt-in container-backed integration coverage.",
+  "status": "done",
   "created-at": "2026-06-05T14:13:49.5004952Z"
 }

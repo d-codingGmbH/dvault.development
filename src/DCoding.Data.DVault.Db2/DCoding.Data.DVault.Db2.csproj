@@ -8,7 +8,7 @@
     <PackageId>DCoding.Data.DVault.Db2</PackageId>
     <Title>DVault DB2 Provider Extensions</Title>
     <Authors>d-coding GmbH</Authors>
-    <Description>DB2 provider extensions and registration support for DCoding.Data.DVault.</Description>
+    <Description>DB2 provider extensions and optimized save/read strategies for DCoding.Data.DVault.</Description>
     <PackageTags>dvault;data-vault;db2;ibm;ef-core;persistence</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

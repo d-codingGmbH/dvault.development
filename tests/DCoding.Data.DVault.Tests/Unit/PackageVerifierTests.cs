@@ -26,7 +26,7 @@ public sealed class PackageVerifierTests {
       new(
           CorePackageId,
           "DVault",
-          "Convention-first .NET 10 library extending Entity Framework for Data Vault 2.x-oriented persistence.",
+          "Convention-first .NET library extending Entity Framework Core for Data Vault 2.x-oriented persistence.",
           ["dvault", "data-vault", "data-modeling", "dotnet", "entity-framework", "ef-core", "data-vault-2", "persistence"],
           false,
           false),
@@ -40,7 +40,7 @@ public sealed class PackageVerifierTests {
       new(
           Db2PackageId,
           "DVault DB2 Provider Extensions",
-          "DB2 provider extensions and registration support for DCoding.Data.DVault.",
+          "DB2 provider extensions and optimized save/read strategies for DCoding.Data.DVault.",
           ["dvault", "data-vault", "db2", "ibm", "ef-core", "persistence"],
           true,
           false,

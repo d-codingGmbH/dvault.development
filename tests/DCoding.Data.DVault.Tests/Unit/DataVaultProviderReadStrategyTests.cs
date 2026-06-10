@@ -205,6 +205,32 @@ public sealed class DataVaultProviderReadStrategyTests {
   }
 
   [Fact]
+  public void Db2PitReadGateAcceptsPublishedMaintainedPitShapes() {
+    var hubPit = new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["Profile"]);
+    var hubMultiActivePit = new DataVaultPitMetadata(
+        DataVaultMetadataReference.Hub("Customer"),
+        [new DataVaultPitSatelliteReferenceMetadata("Contact", isMultiActive: true)]);
+    var linkPit = new DataVaultPitMetadata(DataVaultMetadataReference.Link("CustomerOrder"), ["State"]);
+
+    var db2Hub = DataVaultProviderReadStrategyGateEvaluator.EvaluateDb2(
+        KnownProviderNames.Db2,
+        CreatePitReadRequest(hubPit, ["customer-hk"]));
+    var db2Link = DataVaultProviderReadStrategyGateEvaluator.EvaluateDb2(
+        KnownProviderNames.Db2,
+        CreatePitReadRequest(linkPit, ["customer-order-hk"]));
+    var db2MultiActive = DataVaultProviderReadStrategyGateEvaluator.EvaluateDb2(
+        KnownProviderNames.Db2,
+        CreatePitReadRequest(hubMultiActivePit, ["customer-hk"]));
+
+    Assert.True(db2Hub.CanRead);
+    Assert.Empty(db2Hub.FallbackCauses);
+    Assert.True(db2Link.CanRead);
+    Assert.Empty(db2Link.FallbackCauses);
+    Assert.True(db2MultiActive.CanRead);
+    Assert.Empty(db2MultiActive.FallbackCauses);
+  }
+
+  [Fact]
   public void PostgresAndSqlServerPitReadGatesFailClosedForMismatchedProviderOrUnsupportedLinkMultiActiveShape() {
     var hubPit = new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["Profile"]);
     var linkMultiActivePit = new DataVaultPitMetadata(
@@ -288,6 +314,41 @@ public sealed class DataVaultProviderReadStrategyTests {
   }
 
   [Fact]
+  public void Db2PitReadGateFailsClosedForProviderShapeEvidenceAndMaintenanceFallbacks() {
+    var hubPit = new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["Profile"]);
+    var linkMultiActivePit = new DataVaultPitMetadata(
+        DataVaultMetadataReference.Link("CustomerOrder"),
+        [new DataVaultPitSatelliteReferenceMetadata("State", isMultiActive: true)]);
+    var supportedRequest = CreatePitReadRequest(hubPit, ["customer-hk"]);
+    var unsupportedShapeRequest = CreatePitReadRequest(linkMultiActivePit, ["customer-order-hk"]);
+
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateDb2(KnownProviderNames.Postgres, supportedRequest)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateDb2(KnownProviderNames.Db2, unsupportedShapeRequest)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateDb2(KnownProviderNames.Db2, supportedRequest, hasCompleteReadShapeEvidence: false)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateDb2(
+                KnownProviderNames.Db2,
+                supportedRequest,
+                hasCompleteReadShapeEvidence: true,
+                hasStaleReadModelMaintenanceSignal: true)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance);
+  }
+
+  [Fact]
   public void PostgresAndSqlServerBridgeReadGatesAcceptManyToManyAndHierarchyShapes() {
     var manyToManyRequest = CreateBridgeReadRequest(["customer-hk"]);
     var hierarchyRequest = CreateHierarchyBridgeReadRequest(["ancestor-hk"]);
@@ -326,6 +387,24 @@ public sealed class DataVaultProviderReadStrategyTests {
     Assert.Empty(mySqlOracleHierarchy.FallbackCauses);
     Assert.True(oracleHierarchy.CanRead);
     Assert.Empty(oracleHierarchy.FallbackCauses);
+  }
+
+  [Fact]
+  public void Db2BridgeReadGateAcceptsManyToManyAndHierarchyShapes() {
+    var manyToManyRequest = CreateBridgeReadRequest(["customer-hk"]);
+    var hierarchyRequest = CreateHierarchyBridgeReadRequest(["ancestor-hk"]);
+
+    var db2ManyToMany = DataVaultProviderReadStrategyGateEvaluator.EvaluateDb2(
+        KnownProviderNames.Db2,
+        manyToManyRequest);
+    var db2Hierarchy = DataVaultProviderReadStrategyGateEvaluator.EvaluateDb2(
+        KnownProviderNames.Db2,
+        hierarchyRequest);
+
+    Assert.True(db2ManyToMany.CanRead);
+    Assert.Empty(db2ManyToMany.FallbackCauses);
+    Assert.True(db2Hierarchy.CanRead);
+    Assert.Empty(db2Hierarchy.FallbackCauses);
   }
 
   [Fact]
@@ -400,6 +479,37 @@ public sealed class DataVaultProviderReadStrategyTests {
         DataVaultProviderReadStrategyGateEvaluator
             .EvaluateOracle(
                 KnownProviderNames.Oracle,
+                bridgeRequest,
+                hasCompleteReadShapeEvidence: true,
+                hasStaleReadModelMaintenanceSignal: true)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance);
+  }
+
+  [Fact]
+  public void Db2BridgeReadGateFailsClosedForProviderShapeEvidenceAndMaintenanceFallbacks() {
+    var bridgeRequest = CreateBridgeReadRequest(["customer-hk"]);
+    var unsupportedFeatureRequest = CreateUnsupportedFeatureBridgeReadRequest(["customer-hk"]);
+
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateDb2(KnownProviderNames.SqlServer, bridgeRequest)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateDb2(KnownProviderNames.Db2, unsupportedFeatureRequest)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedBridgeShape);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateDb2(KnownProviderNames.Db2, bridgeRequest, hasCompleteReadShapeEvidence: false)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateDb2(
+                KnownProviderNames.Db2,
                 bridgeRequest,
                 hasCompleteReadShapeEvidence: true,
                 hasStaleReadModelMaintenanceSignal: true)

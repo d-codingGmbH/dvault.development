@@ -67,8 +67,7 @@ internal static class Db2ProviderReflection {
   }
 
   private static MethodInfo? FindUseDb2Method(Assembly providerAssembly) {
-    return providerAssembly
-        .GetTypes()
+    return GetLoadableTypes(providerAssembly)
         .SelectMany(type => type.GetMethods(BindingFlags.Public | BindingFlags.Static))
         .Where(method => {
           if (!string.Equals(method.Name, "UseDb2", StringComparison.Ordinal) &&
@@ -84,6 +83,15 @@ internal static class Db2ProviderReflection {
         })
         .OrderBy(method => method.GetParameters().Length)
         .FirstOrDefault();
+  }
+
+  private static IEnumerable<Type> GetLoadableTypes(Assembly assembly) {
+    try {
+      return assembly.GetTypes();
+    }
+    catch (ReflectionTypeLoadException exception) {
+      return exception.Types.OfType<Type>();
+    }
   }
 
   private static object?[] CreateArguments(

@@ -49,6 +49,9 @@ public sealed class TestDiscoverySmokeTests {
         nameof(ExplicitDataVaultSaveServiceTests.PostgresProviderPackageRegistersOptimizedSaveStrategy),
         [ProviderTestCategories.PostgresProvider]);
     AssertMethodTraits(
+        nameof(ExplicitDataVaultSaveServiceTests.Db2ProviderPackageRegistersOptimizedSaveStrategy),
+        [ProviderTestCategories.Db2Provider]);
+    AssertMethodTraits(
         nameof(ExplicitDataVaultSaveServiceTests.SqliteProviderPackageRegistersOptimizedSaveStrategy),
         [ProviderTestCategories.SqliteProvider]);
     AssertMethodTraits(

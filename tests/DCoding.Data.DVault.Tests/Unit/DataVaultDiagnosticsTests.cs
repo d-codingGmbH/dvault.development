@@ -788,6 +788,18 @@ public sealed class DataVaultDiagnosticsTests {
             bridge,
             DataVaultBridgeTraversalEndpoint.From,
             ["customer-hk"]));
+    var supportedDb2Pit = DataVaultProviderReadStrategyGateEvaluator.EvaluateDb2(
+        KnownProviderNames.Db2,
+        new DataVaultPitAsOfReadRequest(
+            pit,
+            ["customer-hk"],
+            new DateTimeOffset(2026, 5, 11, 12, 0, 0, TimeSpan.Zero)));
+    var supportedDb2Bridge = DataVaultProviderReadStrategyGateEvaluator.EvaluateDb2(
+        KnownProviderNames.Db2,
+        new DataVaultBridgeReadRequest(
+            bridge,
+            DataVaultBridgeTraversalEndpoint.From,
+            ["customer-hk"]));
 
     Assert.True(supported.CanRead);
     Assert.Empty(supported.FallbackCauses);
@@ -795,6 +807,10 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Empty(supportedPit.FallbackCauses);
     Assert.True(supportedBridge.CanRead);
     Assert.Empty(supportedBridge.FallbackCauses);
+    Assert.True(supportedDb2Pit.CanRead);
+    Assert.Empty(supportedDb2Pit.FallbackCauses);
+    Assert.True(supportedDb2Bridge.CanRead);
+    Assert.Empty(supportedDb2Bridge.FallbackCauses);
     Assert.Contains(
         unknownProvider.FallbackCauses,
         cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch);
@@ -818,6 +834,8 @@ public sealed class DataVaultDiagnosticsTests {
     IDataVaultProviderBridgeReadStrategy mySqlBridgeReadStrategy = new MySqlDataVaultReadStrategy();
     IDataVaultProviderPitReadStrategy oraclePitReadStrategy = new OracleDataVaultReadStrategy();
     IDataVaultProviderBridgeReadStrategy oracleBridgeReadStrategy = new OracleDataVaultReadStrategy();
+    IDataVaultProviderPitReadStrategy db2PitReadStrategy = new Db2DataVaultReadStrategy();
+    IDataVaultProviderBridgeReadStrategy db2BridgeReadStrategy = new Db2DataVaultReadStrategy();
     Assert.Equal(
         [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
         DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(mySqlPitReadStrategy));
@@ -830,11 +848,23 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal(
         [KnownProviderNames.Oracle],
         DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(oracleBridgeReadStrategy));
+    Assert.Equal(
+        [KnownProviderNames.Db2],
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(db2PitReadStrategy));
+    Assert.Equal(
+        [KnownProviderNames.Db2],
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(db2BridgeReadStrategy));
     Assert.Contains(
         DataVaultProviderReadStrategyGateEvaluator.GetKnownPitGateRequirements(mySqlPitReadStrategy),
         requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence);
     Assert.Contains(
         DataVaultProviderReadStrategyGateEvaluator.GetKnownBridgeGateRequirements(oracleBridgeReadStrategy),
+        requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownPitGateRequirements(db2PitReadStrategy),
+        requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownBridgeGateRequirements(db2BridgeReadStrategy),
         requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance);
   }
 
@@ -885,6 +915,10 @@ public sealed class DataVaultDiagnosticsTests {
         "Contoso.UnknownProvider",
         hasPendingTrackedChanges: false,
         smallBatch);
+    var db2Supported = DataVaultProviderSaveStrategyGateEvaluator.EvaluateDb2(
+        KnownProviderNames.Db2,
+        hasPendingTrackedChanges: false,
+        smallBatch);
 
     Assert.Contains(
         sqlServerTooSmall.FallbackCauses,
@@ -923,6 +957,8 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains(
         unknownProvider.FallbackCauses,
         cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.ProviderNameMismatch);
+    Assert.True(db2Supported.CanSave);
+    Assert.Empty(db2Supported.FallbackCauses);
 
     var saveStrategy = new SqlServerDataVaultSaveStrategy();
     Assert.Equal([KnownProviderNames.SqlServer], DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(saveStrategy));
@@ -960,6 +996,19 @@ public sealed class DataVaultDiagnosticsTests {
         DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(oracleSaveStrategy),
         requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.OracleMaximumSatelliteOperationThreshold &&
             requirement.MaximumSatelliteOperationCount == 10000);
+
+    var db2SaveStrategy = new Db2DataVaultSaveStrategy();
+    var db2Requirements = DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(db2SaveStrategy);
+    Assert.Equal([KnownProviderNames.Db2], DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(db2SaveStrategy));
+    Assert.Contains(
+        db2Requirements,
+        requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.DirtyDbContext);
+    Assert.DoesNotContain(
+        db2Requirements,
+        requirement => requirement.Kind is
+            DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold or
+            DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold or
+            DataVaultSaveStrategyFallbackCauseKind.OracleMinimumOperationThreshold);
   }
 
   private static ServiceProvider CreateServiceProvider() {

@@ -200,6 +200,13 @@ public sealed class ExplicitDataVaultSaveServiceTests {
 
   [Fact]
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.Db2Provider)]
+  public void Db2ProviderPackageRegistersOptimizedSaveStrategy() {
+    AssertProviderRegistration(services => services.AddDVaultDb2(), expectProviderStrategy: true);
+  }
+
+  [Fact]
+  [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqliteProvider)]
   public void SqliteProviderPackageRegistersOptimizedSaveStrategy() {
     AssertProviderRegistration(services => services.AddDVaultSqlite(), expectProviderStrategy: true);
@@ -232,6 +239,7 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqlServerProvider)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.MySqlProvider)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.OracleProvider)]
+  [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.Db2Provider)]
   public void RelationalProviderPackagesRegisterOptimizedPitAndBridgeReadStrategies() {
     AssertProviderPitBridgeReadRegistration(
         services => services.AddDVaultPostgres(),
@@ -245,6 +253,9 @@ public sealed class ExplicitDataVaultSaveServiceTests {
     AssertProviderPitBridgeReadRegistration(
         services => services.AddDVaultOracle(),
         "OracleDataVaultReadStrategy");
+    AssertProviderPitBridgeReadRegistration(
+        services => services.AddDVaultDb2(),
+        "Db2DataVaultReadStrategy");
   }
 
   [Fact]
