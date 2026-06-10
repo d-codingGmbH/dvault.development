@@ -3,7 +3,7 @@
   "ticket-id": "06F9G8HBXS7Y42J7XFSQKZ2AZ8",
   "ticket-type": "story",
   "title": "Story: Add DB2 save and read integration coverage",
-  "revision": "06FB0FDXXF9RP26EPWYZAD089C",
+  "revision": "06FB0JVNRBQBSTMY236Z5Z3MWR",
   "status": "done",
   "labels": [
     "area/diagnostics",
@@ -19,5 +19,5 @@
   "milestone-id": "06F9G8GF7GTV6JT6SBZEW5J3Z0",
   "release-id": "06F9G8GDA12CS8Y4RHG4EDKS7W",
   "created-at": "2026-06-05T14:13:57.0698383Z",
-  "updated-at": "2026-06-10T06:34:56.8755430Z"
+  "updated-at": "2026-06-10T06:49:55.9060912Z"
 }
