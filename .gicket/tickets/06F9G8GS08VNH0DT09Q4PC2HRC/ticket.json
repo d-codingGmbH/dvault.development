@@ -3,7 +3,7 @@
   "ticket-id": "06F9G8GS08VNH0DT09Q4PC2HRC",
   "ticket-type": "story",
   "title": "Story: Define DB2 provider capability and dependency contract",
-  "revision": "06FAY74E55R6CJNX58MB7AXTZR",
+  "revision": "06FAYC97R1538TWYRA06M4W5HC",
   "status": "done",
   "labels": [
     "area/architecture",
@@ -19,5 +19,5 @@
   "milestone-id": "06F9G8GE66M1JGY1AQSGV4FP5C",
   "release-id": "06F9G8GDA12CS8Y4RHG4EDKS7W",
   "created-at": "2026-06-05T14:13:52.1348637Z",
-  "updated-at": "2026-06-10T01:19:04.7455264Z"
+  "updated-at": "2026-06-10T01:41:34.7848188Z"
 }
