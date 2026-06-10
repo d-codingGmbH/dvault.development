@@ -3,6 +3,6 @@
   "milestone-id": "06F9GF3CEDX9G92X00GGNQ4S9C",
   "name": "v0.35.0 - Hash algorithm implementation and tests",
   "description": "Implement variable digest support, opt-in algorithm registration, deterministic test vectors, and compatibility coverage.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-05T14:42:37.2998498Z"
 }

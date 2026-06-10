@@ -3,6 +3,6 @@
   "milestone-id": "06F9GF3D5XM0QHWTMCDFXQQCXG",
   "name": "v0.35.0 - Hash diagnostics and release docs",
   "description": "Expose algorithm choices in diagnostics/support bundles and document selection guidance, non-goals, and release evidence.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-05T14:42:37.4876600Z"
 }
