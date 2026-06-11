@@ -14,10 +14,15 @@ This contract is not a password hashing policy, encryption design, message authe
 
 The public boundary is a small hash service abstraction plus a replaceable registration point. When source roots are introduced, the .NET-facing shape should stay equivalent to:
 
-- `IStableHashService.AlgorithmId`: stable, non-empty identifier for the implementation and algorithm version.
+- `IStableHashService.AlgorithmId`: stable, non-empty, versioned identifier for the implementation, digest algorithm, truncation policy, and compatibility version.
 - `IStableHashService.ComputeHash(string normalizedInput)`: hashes a normalized text payload and returns the algorithm identifier plus the digest value.
 - `StableHashDigest.AlgorithmId`: copied from the service that produced the digest.
-- `StableHashDigest.Value`: lowercase hexadecimal digest text.
+- `StableHashDigest.Value`: canonical lowercase hexadecimal digest text without a prefix.
+- `StableHashDigest.DigestByteLength`: the byte length represented by the canonical hexadecimal value.
+
+`AlgorithmId` is authoritative for digest semantics. Equal `AlgorithmId` values and equal normalized input bytes must produce equal digest bytes and equal canonical hexadecimal text. Different algorithms, truncation lengths, or compatibility versions must use different `AlgorithmId` values and must not masquerade as `sha256-v1`.
+
+Digest text is serialized as lowercase hexadecimal without a `0x` prefix. Validation is algorithm-aware: `sha256-v1` remains exactly 32 digest bytes and 64 hexadecimal characters, while approved non-default ids may use shorter digest lengths. Unknown caller-supplied algorithm ids are accepted only when the digest is whole-byte lowercase hexadecimal text; the caller owns the stability and collision profile for that custom id.
 
 The hash service consumes already-normalized text. Model-specific code is responsible for turning domain values into the canonical text described below before calling the service. This keeps domain field choices out of the shared hashing service while still making the digest algorithm replaceable.
 
@@ -37,10 +42,25 @@ Default algorithm:
 - `AlgorithmId`: `sha256-v1`
 - Digest algorithm: SHA-256
 - Input bytes: UTF-8 encoding of `normalizedInput`, without a byte order mark
-- Output: 64 lowercase hexadecimal characters
+- Output: 32 digest bytes serialized as 64 lowercase hexadecimal characters
 - Determinism: identical normalized input bytes always produce identical `AlgorithmId` and `Value`
 
 The implementation must not use process-local salts, random values, timestamps, culture-specific formatting, machine identifiers, current directory values, serializer defaults, dictionary iteration order, or any other platform-specific side effects.
+
+## Non-Default Algorithm Id Candidates
+
+The following ids define the bounded v1 candidate set for callers that deliberately replace the default service. They are not registered by `AddDVault()` and are not enabled automatically by model configuration.
+
+| AlgorithmId | Digest algorithm and truncation | Digest bytes | Hex characters | Status |
+| --- | --- | ---: | ---: | --- |
+| `sha256-v1` | SHA-256, full digest | 32 | 64 | Default registered compatibility baseline |
+| `sha1-v1` | SHA-1, full digest | 20 | 40 | Non-default opt-in candidate |
+| `sha256-128-v1` | SHA-256 truncated to the first 128 bits | 16 | 32 | Non-default opt-in candidate |
+| `sha256-160-v1` | SHA-256 truncated to the first 160 bits | 20 | 40 | Non-default opt-in candidate |
+
+SHA-1 and truncated SHA-256 ids are deterministic identity trade-offs for non-adversarial Data Vault key hashing only. They are not password hashing, message authentication, signature, encryption, or adversarial collision-defense policies. A caller that has regulatory, cryptographic, or adversarial-collision requirements must use a separate security-specific component and must not cite these ids as a compliance control.
+
+The truncated SHA-256 candidates use the leading bytes of the `sha256-v1` digest for the same normalized input, then serialize those bytes as canonical lowercase hexadecimal text. They must use their own `AlgorithmId` values and must never be stored, compared, or advertised as `sha256-v1`.
 
 ## Normalization Rules
 
@@ -98,7 +118,7 @@ Replacement rules:
 - A replacement implementation must expose a stable `AlgorithmId`.
 - If it is compatible with the default implementation, it must produce the same lowercase SHA-256 digest for the same normalized input and use `sha256-v1`.
 - If it intentionally produces different digest values, it must use a different `AlgorithmId`.
-- It must preserve deterministic behavior across repeated runs and must return lowercase hexadecimal digest text.
+- It must preserve deterministic behavior across repeated runs and must return canonical lowercase hexadecimal digest text whose byte length matches the selected `AlgorithmId`.
 - Model code must depend only on the abstraction and must not branch on the concrete implementation type.
 
 ## Test Vectors
@@ -125,11 +145,15 @@ Implementation tests derived from these vectors should assert:
 Alternate implementation substitution example:
 
 - Configure a test implementation through options or dependency injection with `AlgorithmId` `test-double-v1`.
-- For normalized input `s:21:dvault:stable-hash:v1`, the test implementation returns digest `0000000000000000000000000000000000000000000000000000000000000001`.
+- For normalized input `s:21:dvault:stable-hash:v1`, the test implementation returns digest `00000000000000000000000000000001`.
 - A consuming model test must observe `AlgorithmId` `test-double-v1` and the configured digest without changing model code.
 
 ## Compatibility Notes
 
 Persisted hashes should store or otherwise retain the algorithm identifier once storage is introduced. This ticket does not define a migration framework, but changing the default algorithm, scalar encodings, field ordering, or culture formatting after hashes are persisted will require compatibility work.
+
+Adopting a different algorithm id or truncation policy after hub keys, link keys, hash diffs, or other stable-hash values are persisted is caller-owned compatibility work. DVault does not automatically rehash, backfill, migrate, or reconcile existing stored values when callers replace the stable hash service.
+
+Stable model and key hashing remain separate from the persistence content hash tuple contract. `DataVaultConventions.PersistenceContentHashAlgorithm` continues to describe the storage-integrity policy value `sha-256`, and the persistence `content_hash` value remains fixed to the storage policy's lowercase SHA-256 shape. The non-default stable-hash ids above do not weaken or broaden `content_hash` storage semantics.
 
 Domain-specific entity hashing remains out of scope for this contract. Future entity tickets should reference this document, select their participating fields explicitly, and add focused vectors for those entity-specific canonical inputs.

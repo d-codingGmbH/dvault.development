@@ -25,6 +25,7 @@ public sealed class StableHashServiceTests {
     Assert.Equal("sha256-v1", service.AlgorithmId);
     Assert.Equal(service.AlgorithmId, digest.AlgorithmId);
     Assert.Equal(expectedDigest, digest.Value);
+    Assert.Equal(32, digest.DigestByteLength);
     Assert.Matches("^[0-9a-f]{64}$", digest.Value);
   }
 
@@ -96,14 +97,62 @@ public sealed class StableHashServiceTests {
 
     Assert.Same(replacement, resolved);
     Assert.Equal("test-double-v1", digest.AlgorithmId);
-    Assert.Equal("0000000000000000000000000000000000000000000000000000000000000001", digest.Value);
+    Assert.Equal("00000000000000000000000000000001", digest.Value);
+    Assert.Equal(16, digest.DigestByteLength);
   }
 
   [Theory]
+  [InlineData("sha1-v1", 40, 20)]
+  [InlineData("sha256-128-v1", 32, 16)]
+  [InlineData("sha256-160-v1", 40, 20)]
+  public void StableHashDigestAcceptsKnownAlgorithmDigestLengths(
+      string algorithmId,
+      int hexLength,
+      int byteLength) {
+    var value = new string('0', hexLength);
+
+    var digest = new StableHashDigest(algorithmId, value);
+
+    Assert.Equal(algorithmId, digest.AlgorithmId);
+    Assert.Equal(value, digest.Value);
+    Assert.Equal(byteLength, digest.DigestByteLength);
+  }
+
+  [Theory]
+  [InlineData("test-double-v1", "0123456789abcdef", 8)]
+  [InlineData("custom-truncated-v1", "abcdef012345", 6)]
+  public void StableHashDigestAcceptsCustomAlgorithmWholeByteLowerHex(
+      string algorithmId,
+      string value,
+      int byteLength) {
+    var digest = new StableHashDigest(algorithmId, value);
+
+    Assert.Equal(algorithmId, digest.AlgorithmId);
+    Assert.Equal(value, digest.Value);
+    Assert.Equal(byteLength, digest.DigestByteLength);
+  }
+
+  [Theory]
+  [InlineData("sha256-v1", 40)]
+  [InlineData("sha1-v1", 64)]
+  [InlineData("sha256-128-v1", 40)]
+  [InlineData("sha256-160-v1", 64)]
+  public void StableHashDigestRejectsKnownAlgorithmsWithWrongDigestLengths(
+      string algorithmId,
+      int hexLength) {
+    var value = new string('0', hexLength);
+
+    var exception = Assert.Throws<ArgumentException>(() => new StableHashDigest(algorithmId, value));
+
+    Assert.Equal("value", exception.ParamName);
+  }
+
+  [Theory]
+  [InlineData("")]
   [InlineData("abc")]
-  [InlineData("000000000000000000000000000000000000000000000000000000000000000")]
   [InlineData("000000000000000000000000000000000000000000000000000000000000000G")]
-  public void StableHashDigestRejectsValuesOutsideLowercaseSha256Shape(string value) {
+  [InlineData("000000000000000000000000000000000000000000000000000000000000000A")]
+  public void StableHashDigestRejectsValuesOutsideCanonicalLowerHexByteShape(string value) {
     var exception = Assert.Throws<ArgumentException>(() => new StableHashDigest("sha256-v1", value));
 
     Assert.Equal("value", exception.ParamName);
@@ -128,7 +177,7 @@ public sealed class StableHashServiceTests {
 
       return new StableHashDigest(
           AlgorithmId,
-          "0000000000000000000000000000000000000000000000000000000000000001");
+          "00000000000000000000000000000001");
     }
   }
 }

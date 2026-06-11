@@ -2267,6 +2267,7 @@ type public interface DCoding.Data.DVault.Modeling.IDataVaultNamingPolicy
 
 type public sealed class DCoding.Data.DVault.StableHashDigest : System.IEquatable<DCoding.Data.DVault.StableHashDigest>
   ctor public StableHashDigest(string algorithmId, string value)
+  property public int DigestByteLength { get; }
   property public string AlgorithmId { get; }
   property public string Value { get; }
   method public override bool Equals(object? obj)
