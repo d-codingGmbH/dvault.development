@@ -3,7 +3,7 @@
   "ticket-id": "06F9GF4CRMXKEY2QT97W0S3GTR",
   "ticket-type": "task",
   "title": "Task: Document hash algorithm selection guidance",
-  "revision": "06FBBHC8KY9K747JXAPDZXJ6RR",
+  "revision": "06FBBPT2B2M93XYJ9NA9F9NMM0",
   "status": "done",
   "labels": [
     "area/documentation",
@@ -18,5 +18,5 @@
   "milestone-id": "06F9GF3D5XM0QHWTMCDFXQQCXG",
   "release-id": "06F9GF3AZRVN9E007NGW7XN3ZW",
   "created-at": "2026-06-05T14:42:45.7032212Z",
-  "updated-at": "2026-06-11T08:21:22.2074794Z"
+  "updated-at": "2026-06-11T08:45:06.0088531Z"
 }
