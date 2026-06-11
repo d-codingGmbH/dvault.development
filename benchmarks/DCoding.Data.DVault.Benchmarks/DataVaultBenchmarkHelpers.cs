@@ -219,12 +219,3 @@ internal static class DataVaultBenchmarkHelpers {
     };
   }
 }
-
-internal enum DataVaultBenchmarkStrategy {
-  ProviderNeutralFallback,
-  SqliteOptimized,
-  PostgresOptimized,
-  SqlServerOptimized,
-  MySqlOptimized,
-  OracleOptimized,
-}

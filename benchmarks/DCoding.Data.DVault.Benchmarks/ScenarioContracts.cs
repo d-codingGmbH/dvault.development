@@ -80,25 +80,3 @@ internal static class ScenarioContracts {
     return new DataVaultMetadataModel([OrderHub, ProductHub], [OrderProductLink], [OrderFulfillmentSatellite]);
   }
 }
-
-internal sealed record CustomerProfileEvent(
-    string CustomerBusinessKey,
-    string CustomerName,
-    string CustomerStatus,
-    DateTimeOffset ChangedAtUtc,
-    string RecordSource,
-    string HashDiff);
-
-internal sealed record OrderRelationshipEvent(
-    string OrderBusinessKey,
-    string ProductBusinessKey,
-    string ProductName,
-    DateTimeOffset CreatedAtUtc,
-    string RecordSource);
-
-internal sealed record OrderFulfillmentEvent(
-    string AllocationStatus,
-    string WarehouseCode,
-    DateTimeOffset ChangedAtUtc,
-    string RecordSource,
-    string HashDiff);

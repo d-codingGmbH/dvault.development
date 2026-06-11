@@ -146,11 +146,11 @@ public sealed class StreamingExplicitSaveContractSnapshotTests {
         "tests",
         "DCoding.Data.DVault.Tests",
         "Shared",
-        "ProviderSqlExecutionContract.cs")));
+        "ProviderSqlExecutionContractOfTContext.cs")));
     var providerStrategy = NormalizeLineEndings(File.ReadAllText(GetRepositoryPath(
         "src",
         "DCoding.Data.DVault",
-        "DataVaultProviderSaveStrategy.cs")));
+        "DataVaultProviderSaveStrategyContext.cs")));
 
     Assert.Contains("DefaultSaveServiceCarriesSatelliteHashDiffsAcrossBulkRequests", integrationTests, StringComparison.Ordinal);
     Assert.Contains("DefaultSaveServiceKeepsBulkSatelliteLatestHashDiffChronological", integrationTests, StringComparison.Ordinal);

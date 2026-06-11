@@ -5,9 +5,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DCoding.Data.DVault.Quickstarts.Shared;
 
-public sealed class QuickstartVaultContext(DbContextOptions<QuickstartVaultContext> options) : DbContext(options) {
-}
-
 public static class QuickstartHistoryFlow {
   public const string CustomerHubName = "Customer";
   public const string CustomerIdBusinessKeyName = "Customer Id";

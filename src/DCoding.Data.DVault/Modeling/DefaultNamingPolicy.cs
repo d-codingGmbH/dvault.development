@@ -402,9 +402,3 @@ public sealed class DefaultNamingPolicy {
     return value is >= '0' and <= '9';
   }
 }
-
-file static class InvariantStringExtensions {
-  public static string ToStringInvariant(this int value) {
-    return value.ToString(System.Globalization.CultureInfo.InvariantCulture);
-  }
-}
