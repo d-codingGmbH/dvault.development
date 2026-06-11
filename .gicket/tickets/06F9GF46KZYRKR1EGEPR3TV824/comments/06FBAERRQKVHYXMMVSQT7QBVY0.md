@@ -1,73 +1,58 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined this diagnostics task against the completed stable-hash contract, the done registration story, and the live ticket relations; the ticket is ready for PO-critic with no split or persisted planning changes needed.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The approved v1 algorithm set is already fixed by repository contract and completed registration work: default sha256-v1 plus opt-in sha1-v1, sha256-128-v1, and sha256-160-v1.
 - This ticket should expose only stable-hash compatibility metadata in diagnostics and support bundles: selected algorithm id, digest byte length, and canonical lowercase hexadecimal encoding without a prefix.
 - The ticket remains a child of epic 06F9GF3E7224Q4HSZ0E71ZXDB4, blocks documentation task 06F9GF4CRMXKEY2QT97W0S3GTR, and has an incoming blocks relation from done story 06F9GF417FDFWPBF1039G45FEW that should be treated as historical routing context rather than a live blocker.
 - Repository HEAD still matches scratch source 1d9bd42b837c3a450297e45979a0d74d48ca1b3d, so there is no in-branch implementation to ratify yet.
 - No child tickets, relation edits, description updates, attachments, or planning documents were materialized in this refinement pass.
 
-### Scope In
+Scope In
 - Add additive stable-hash metadata under DataVaultDiagnosticsResult.Explain and into the exported dvault.support-bundle.v1 payload for the active selected hash service.
 - Report the selected hash algorithmId, digestByteLength, and canonical digest encoding needed for hash-key compatibility decisions.
 - Update human-readable diagnostics or explain output so it summarizes the selected algorithm and digest shape without printing digest values or key material.
 - Add automated coverage for default and approved opt-in built-in algorithm selections across diagnostics results and support-bundle serialization, including no-leak assertions.
 
-### Scope Out
+Scope Out
 - README, release-note, adoption-guidance, and broader hashing documentation work tracked by 06F9GF4CRMXKEY2QT97W0S3GTR.
 - Hash-key storage-profile, schema-width, migration, backfill, or compatibility-gating work tracked by 06F9GF5FV54DGWY9GA8ZEZWM5R.
 - Reopening the already completed built-in registration and digest-contract work from 06F9GF417FDFWPBF1039G45FEW, 06F9GF3MZHKQQ6D4SAQ0AMTKJR, and 06F9GF3TRG65G8MTMG7DH4PREC.
 - Serializing digest values, business key values, raw hash-key values, or example computed hashes into diagnostics or support bundles.
 - Automatic rehashing, dual-write compatibility, provider-side hashing changes, or support-bundle transport and publication behavior.
 
-## Acceptance Criteria
-- DataVaultDiagnosticsResult.Explain exposes additive stable-hash metadata for the active selected hash service, and the same metadata is present under diagnostics.explain in exported dvault.support-bundle.v1 camelCase JSON.
-- Reported metadata includes algorithmId, digestByteLength, and canonical lowercase hexadecimal encoding without a 0x prefix; built-in selections reflect the repository contract lengths of 32 bytes for sha256-v1, 20 for sha1-v1, 16 for sha256-128-v1, and 20 for sha256-160-v1.
-- Optionless AddDVault() diagnostics report sha256-v1, and explicit built-in selection reports the selected opt-in algorithm instead of a hard-coded default.
-- Human-readable diagnostics or explain output includes the selected algorithm id and digest shape while omitting digest text, business keys, and raw hash-key values.
-- Automated coverage proves default and approved opt-in algorithms are reported consistently in diagnostics and support bundles and proves the new surface does not leak business key inputs or hash-key values.
-- Public API and approval artifacts are updated for the additive diagnostics surface change.
-
-## Definition of Done
-- The ticket-level contract clearly limits this work to diagnostics, explain output, support-bundle metadata, and tests, with documentation and storage-profile follow-up kept on their existing tickets.
-- Source changes produce one consistent stable-hash metadata story across DataVaultDiagnosticsResult, explain output, and DataVaultSupportBundleExporter JSON.
-- Tests cover default and opt-in algorithm reporting, redaction and no-leak behavior, and public API snapshot updates for the new diagnostics surface.
-
-## Implementation Notes
-- Use the resolved IStableHashService as the source of truth for reported algorithm metadata so direct dependency-injection overrides stay visible; relying only on DataVaultConventions.StableHashAlgorithmId can misreport caller replacements because optionless AddDVault() preserves raw service overrides.
-- Keep the new contract additive on the diagnostics explain surface, with support-bundle JSON inheriting the same data through existing camelCase serialization instead of creating a separate ad hoc export path.
-- Model canonical encoding as the current stable-hash v1 lower-hex contract without a prefix and keep digest-shape reporting metadata-only; do not emit sample digests or derived request values.
-- Update DataVaultDiagnosticsResult.ToDisplayString() or the equivalent explain summary path to mention algorithm id and digest byte length in a redacted form.
-- Mirror the existing diagnostics test style by asserting both positive reporting for default and opt-in algorithms and negative assertions that forbidden request values, business keys, or raw hash-key values never appear in exported JSON.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Once ticket 06F9GF4CRMXKEY2QT97W0S3GTR resumes, should product examples show only algorithm metadata in support-bundle snippets and avoid publishing any digest samples?
 - After storage-profile contract ticket 06F9GF5FV54DGWY9GA8ZEZWM5R lands, should diagnostics add non-blocking compatibility warnings when a selected digest length no longer matches the persisted schema profile?
 
-## Risks
+Risks
 - If the implementation reads conventions instead of the active hash service, diagnostics can drift from real runtime behavior for caller-supplied IStableHashService overrides.
 - Adding new public diagnostics fields changes both public API snapshot and support-bundle JSON expectations, so additive compatibility needs explicit approval-test coverage.
 - The human-readable diagnostics summary is a redaction-sensitive surface; weak negative tests could let digest text or hash-key-related values leak into display output.
 - Documentation task 06F9GF4CRMXKEY2QT97W0S3GTR stays blocked until this metadata surface lands.
 
-## Split Recommendations
+Split recommendations
 - No further split is recommended. Documentation and storage-profile follow-up are already decomposed into existing sibling tickets, and the current task is a bounded diagnostics and support-bundle slice.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 3
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Expose selected hash algorithm id, digest length, and canonical encoding in diagnostics, explain output, and support-bundle metadata where hash-key compatibility matters. Add tests proving the default and opt-in algorithms are reported without leaking business key values.
+Run mode
+- apply: planned updates are applied after this comment
