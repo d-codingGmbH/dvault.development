@@ -717,6 +717,7 @@ type public sealed class DCoding.Data.DVault.DataVaultOptions
   method public DCoding.Data.DVault.DataVaultOptions UseProviderBehavior<TProviderBehavior>() where TProviderBehavior : class, DCoding.Data.DVault.IDataVaultProviderBehavior
   method public DCoding.Data.DVault.DataVaultOptions UseRecordSourceResolver(DCoding.Data.DVault.IDataVaultRecordSourceResolver resolver)
   method public DCoding.Data.DVault.DataVaultOptions UseRecordSourceResolver<TResolver>() where TResolver : class, DCoding.Data.DVault.IDataVaultRecordSourceResolver
+  method public DCoding.Data.DVault.DataVaultOptions UseStableHashAlgorithm(string algorithmId)
 
 type public sealed class DCoding.Data.DVault.DataVaultParentReferenceExplain : System.IEquatable<DCoding.Data.DVault.DataVaultParentReferenceExplain>
   ctor public DataVaultParentReferenceExplain(DCoding.Data.DVault.Modeling.DataVaultMetadataReferenceKind Kind, string Name)

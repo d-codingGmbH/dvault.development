@@ -55,6 +55,22 @@ public sealed class DataVaultConventions {
       DefaultPersistenceConventionVersion,
       new ReadOnlyCollection<string>(DefaultLogicalObjectNames));
 
+  internal static DataVaultConventions CreateWithStableHashAlgorithm(string stableHashAlgorithmId) {
+    ArgumentNullException.ThrowIfNull(stableHashAlgorithmId);
+
+    if (stableHashAlgorithmId == DefaultStableHashAlgorithmId) {
+      return Default;
+    }
+
+    return new DataVaultConventions(
+        Default.NamingPolicy,
+        Default.ModelConcepts,
+        stableHashAlgorithmId,
+        Default.PersistenceContentHashAlgorithm,
+        Default.PersistenceConventionVersion,
+        Default.LogicalObjectNames);
+  }
+
   /// <summary>
   /// Gets the default table and column naming policy for hubs, links, satellites, and technical columns.
   /// </summary>

@@ -10,6 +10,8 @@ public sealed class DataVaultOptions {
   private ServiceDescriptor? _loadTimestampResolverDescriptor;
   private ServiceDescriptor? _recordSourceResolverDescriptor;
   private ServiceDescriptor? _metadataRegistryDescriptor;
+  private ServiceDescriptor? _stableHashServiceDescriptor;
+  private ServiceDescriptor? _conventionsDescriptor;
   private readonly List<ServiceDescriptor> _providerBehaviorDescriptors = [];
 
   /// <summary>
@@ -55,6 +57,20 @@ public sealed class DataVaultOptions {
   public DataVaultOptions UseRecordSourceResolver<TResolver>()
       where TResolver : class, IDataVaultRecordSourceResolver {
     _recordSourceResolverDescriptor = ServiceDescriptor.Singleton<IDataVaultRecordSourceResolver, TResolver>();
+    return this;
+  }
+
+  /// <summary>
+  /// Selects one of DVault's built-in stable hash algorithms for model and key hashing.
+  /// </summary>
+  /// <param name="algorithmId">The exact built-in algorithm id to register.</param>
+  /// <returns>The current options instance.</returns>
+  public DataVaultOptions UseStableHashAlgorithm(string algorithmId) {
+    var stableHashService = BuiltInStableHashService.Create(algorithmId);
+
+    _stableHashServiceDescriptor = ServiceDescriptor.Singleton(stableHashService);
+    _conventionsDescriptor = ServiceDescriptor.Singleton(
+        DataVaultConventions.CreateWithStableHashAlgorithm(stableHashService.AlgorithmId));
     return this;
   }
 
@@ -121,6 +137,8 @@ public sealed class DataVaultOptions {
     ReplaceDescriptor(services, _loadTimestampResolverDescriptor);
     ReplaceDescriptor(services, _recordSourceResolverDescriptor);
     ReplaceDescriptor(services, _metadataRegistryDescriptor);
+    ReplaceDescriptor(services, _stableHashServiceDescriptor);
+    ReplaceDescriptor(services, _conventionsDescriptor);
     foreach (var providerBehaviorDescriptor in _providerBehaviorDescriptors) {
       services.Add(providerBehaviorDescriptor);
     }

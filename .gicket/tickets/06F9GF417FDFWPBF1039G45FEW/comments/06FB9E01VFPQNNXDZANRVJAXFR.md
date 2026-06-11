@@ -1,21 +1,20 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Delivery contract refined and ready for PO-critic review.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Repository evidence shows AddDVault(options => ...) is the established advanced-configuration surface, but DataVaultOptions currently has no hashing-specific option; this story should extend that existing surface instead of introducing a parallel configuration entrypoint.
 - docs/plans/stable-hashing-contract.md and src/DCoding.Data.DVault/StableHashDigest.cs already ratify the bounded built-in algorithm vocabulary and digest shapes: sha256-v1, sha1-v1, sha256-128-v1, and sha256-160-v1. The selector should stay limited to that finite set.
 - Optionless AddDVault() and DefaultStableHashService already preserve sha256-v1 as the zero-configuration baseline; this story adds explicit opt-in built-in registrations and must not change the default path.
 - DataVaultConventions.StableHashAlgorithmId is the existing public conventions surface that reports the stable-hash algorithm id, so an explicit built-in selection must align that value with the resolved IStableHashService and produced StableHashDigest values.
 - The ticket description already contains the authoritative refinement contract; no child tickets, attachments, or planning documents were materialized in this pass.
 
-### Scope In
+Scope In
 - Add a focused DataVaultOptions hashing-selection surface on AddDVault(options => ...) for the approved built-in stable-hash ids sha256-v1, sha1-v1, sha256-128-v1, and sha256-160-v1.
 - Register deterministic built-in IStableHashService implementations for the approved ids while preserving sha256-v1 as the optionless default registration.
 - Propagate the selected built-in algorithm id through the resolved IStableHashService, produced StableHashDigest values, and the public DataVaultConventions.StableHashAlgorithmId surface.
@@ -23,7 +22,7 @@
 - Add deterministic tests for the default path and each approved opt-in algorithm, including digest length, canonical lowercase hex, truncation behavior, and no-auto-enable registration behavior.
 - Preserve the existing separation between stable model/key hashing and the persistence content_hash policy value sha-256.
 
-### Scope Out
+Scope Out
 - Reopening the already-completed algorithm-aware StableHashDigest validation contract from done task 06F9GF3TRG65G8MTMG7DH4PREC.
 - Diagnostics, explain output, and support-bundle exposure of the selected algorithm, which remain follow-up work on ticket 06F9GF46KZYRKR1EGEPR3TV824.
 - Release-note, README, and adoption-guidance work tracked separately by ticket 06F9GF4CRMXKEY2QT97W0S3GTR.
@@ -31,48 +30,32 @@
 - Automatic rehashing, backfill, parallel-key storage, dual-write compatibility lanes, or automatic migration of persisted hub keys, link keys, or hash diffs when callers opt into a different algorithm.
 - An open-ended built-in selector for arbitrary caller-supplied algorithm ids; unsupported or custom algorithms remain caller-owned through direct IStableHashService registration.
 
-## Acceptance Criteria
-- AddDVault() with no hashing option still resolves the default IStableHashService with AlgorithmId sha256-v1, and the published sha256-v1 vectors remain unchanged.
-- AddDVault(options => options.UseStableHashAlgorithm("<id>")) accepts exactly sha256-v1, sha1-v1, sha256-128-v1, and sha256-160-v1; any other algorithm id fails fast with clear argument validation.
-- Selecting one of the approved built-in ids produces StableHashDigest values whose AlgorithmId and canonical hex length match the stable-hashing contract: 64 hex for sha256-v1, 40 for sha1-v1, 32 for sha256-128-v1, and 40 for sha256-160-v1.
-- The sha256-128-v1 and sha256-160-v1 built-in algorithms use the leading bytes of the same SHA-256 digest that would back sha256-v1 for the same normalized input.
-- The selected built-in algorithm also updates the resolved DataVaultConventions.StableHashAlgorithmId or equivalent public conventions instance so downstream callers observe the same algorithm id as the registered hash service.
-- Automated coverage proves default registration, each approved opt-in algorithm, invalid selector input, deterministic vectors, and that non-default built-in algorithms are not enabled unless the caller explicitly selects them.
-- Existing persistence content-hash expectations remain unchanged: DataVaultConventions.PersistenceContentHashAlgorithm stays sha-256, and this ticket does not claim storage-profile or migration compatibility for shorter digests.
-
-## Definition of Done
-- The authoritative ticket description reflects the bounded registration surface, preserved default behavior, and explicit out-of-scope storage, diagnostics, and migration boundaries.
-- Source and API approval artifacts add the new bounded hashing-selection surface without regressing the existing optionless AddDVault() path.
-- Tests prove deterministic built-in registration behavior, correct AlgorithmId propagation, correct digest shapes for every approved opt-in algorithm, and continued sha256-v1 default compatibility.
-
-## Implementation Notes
-- Follow the existing DataVaultOptions Use... pattern so AddDVault(options => ...) remains the single advanced-configuration surface for built-in hashing choices.
-- Treat the selector as a bounded built-in registration lane. Unsupported ids should fail fast; callers that need a non-approved or legacy custom algorithm should continue to provide their own IStableHashService through direct dependency injection.
-- Reuse the current SHA-256 implementation and published vectors as the compatibility baseline. For truncated SHA-256 ids, derive the registered value from the leading bytes of the same SHA-256 digest instead of introducing separate canonicalization rules.
-- Keep IStableHashNormalizer unchanged and do not couple algorithm selection to provider behavior, metadata-registry registration, or persistence content_hash semantics.
-- Ensure the explicit selection path can replace or clone the default DataVaultConventions singleton with an otherwise-equivalent conventions instance whose StableHashAlgorithmId matches the chosen built-in algorithm, while PersistenceContentHashAlgorithm remains sha-256.
-- Pin registration precedence in tests: optionless AddDVault() must keep the existing caller override behavior, while the explicit built-in selector inside AddDVault(options => ...) is the authoritative path for choosing one of the supported built-in algorithms.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the bounded built-in selector lands, does product want a first-class DataVaultOptions surface for caller-supplied custom IStableHashService registrations, or is direct dependency-injection override sufficient outside the approved built-in ids?
 - Once the separate hash-key storage-profile contract lands, should non-default algorithm selection gain storage-compatibility diagnostics or gates before callers use shorter digests with persisted hub or link keys?
 
-## Risks
+Risks
 - Adding a public DataVaultOptions hashing selector and conventions alignment changes registration precedence behavior, so tests must explicitly lock down how the new selector interacts with the existing raw-DI override path.
 - Opting into shorter digests before the separate storage-profile and diagnostics tickets land could create adopter confusion if ticket and API text do not keep those boundaries explicit.
 - sha1-v1 and truncated SHA-256 remain bounded non-adversarial identity trade-offs and must not be framed as security, password-hashing, or compliance defaults.
 - The stale incoming blocks relation is queued for owner-branch replay rather than already applied on this branch, so relation visibility may lag until replay completes even though the refinement contract is settled.
 
-## Split Recommendations
+Split recommendations
 - No child-ticket split is needed. Diagnostics/support-bundle exposure, documentation guidance, and storage-profile compatibility already exist as separate follow-up tickets.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 7
+- definition-of-done items: 3
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Add a focused registration/options surface for selecting supported stable hash algorithms. Keep sha256-v1 as the default. Add opt-in shorter algorithms only after the contract ticket defines their names and lengths, with deterministic test vectors, clear AlgorithmId propagation, and no automatic migration or parallel-key storage behavior.
+Run mode
+- apply: planned updates are applied after this comment

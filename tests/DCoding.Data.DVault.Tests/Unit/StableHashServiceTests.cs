@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using DCoding.Data.DVault.Modeling;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -78,9 +79,88 @@ public sealed class StableHashServiceTests {
     using var provider = services.BuildServiceProvider(validateScopes: true);
     var hashService = provider.GetRequiredService<IStableHashService>();
     var normalizer = provider.GetRequiredService<IStableHashNormalizer>();
+    var conventions = provider.GetRequiredService<DataVaultConventions>();
 
     Assert.Equal("sha256-v1", hashService.AlgorithmId);
+    Assert.Equal("sha256-v1", conventions.StableHashAlgorithmId);
+    Assert.Equal("sha-256", conventions.PersistenceContentHashAlgorithm);
     Assert.Equal("n:", normalizer.NormalizeValue(null));
+  }
+
+  [Theory]
+  [InlineData(
+      "sha256-v1",
+      64,
+      32,
+      "eb99c3da5f4b0e5f6137357a0134b1d8d92133d1137ebe0606daae281a6a4281")]
+  [InlineData(
+      "sha1-v1",
+      40,
+      20,
+      "1fae773f805277eaf33fc5f96d6fc4a7f7e1d84d")]
+  [InlineData(
+      "sha256-128-v1",
+      32,
+      16,
+      "eb99c3da5f4b0e5f6137357a0134b1d8")]
+  [InlineData(
+      "sha256-160-v1",
+      40,
+      20,
+      "eb99c3da5f4b0e5f6137357a0134b1d8d92133d1")]
+  public void AddDVaultCanSelectBuiltInStableHashAlgorithm(
+      string algorithmId,
+      int hexLength,
+      int byteLength,
+      string expectedDigest) {
+    var services = new ServiceCollection();
+
+    services.AddDVault(options => options.UseStableHashAlgorithm(algorithmId));
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var hashService = provider.GetRequiredService<IStableHashService>();
+    var conventions = provider.GetRequiredService<DataVaultConventions>();
+    var digest = hashService.ComputeHash("s:21:dvault:stable-hash:v1");
+
+    Assert.Equal(algorithmId, hashService.AlgorithmId);
+    Assert.Equal(algorithmId, digest.AlgorithmId);
+    Assert.Equal(expectedDigest, digest.Value);
+    Assert.Equal(byteLength, digest.DigestByteLength);
+    Assert.Matches("^[0-9a-f]{" + hexLength + "}$", digest.Value);
+    Assert.Equal(algorithmId, conventions.StableHashAlgorithmId);
+    Assert.Equal("sha-256", conventions.PersistenceContentHashAlgorithm);
+  }
+
+  [Theory]
+  [InlineData("sha256-128-v1", 32)]
+  [InlineData("sha256-160-v1", 40)]
+  public void TruncatedSha256BuiltInsUseLeadingSha256DigestCharacters(string algorithmId, int hexLength) {
+    var sha256Service = CreateSelectedService("sha256-v1");
+    var truncatedService = CreateSelectedService(algorithmId);
+
+    var sha256Digest = sha256Service.ComputeHash("s:21:dvault:stable-hash:v1");
+    var truncatedDigest = truncatedService.ComputeHash("s:21:dvault:stable-hash:v1");
+
+    Assert.Equal(sha256Digest.Value[..hexLength], truncatedDigest.Value);
+  }
+
+  [Theory]
+  [InlineData("sha1-v1")]
+  [InlineData("sha256-128-v1")]
+  [InlineData("sha256-160-v1")]
+  public void AddDVaultDoesNotEnableNonDefaultBuiltInAlgorithmsWithoutSelection(string algorithmId) {
+    var services = new ServiceCollection();
+
+    services.AddDVault();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var hashServices = provider.GetServices<IStableHashService>().ToArray();
+    var conventions = provider.GetRequiredService<DataVaultConventions>();
+
+    var hashService = Assert.Single(hashServices);
+    Assert.Equal("sha256-v1", hashService.AlgorithmId);
+    Assert.NotEqual(algorithmId, hashService.AlgorithmId);
+    Assert.Equal("sha256-v1", conventions.StableHashAlgorithmId);
   }
 
   [Fact]
@@ -99,6 +179,51 @@ public sealed class StableHashServiceTests {
     Assert.Equal("test-double-v1", digest.AlgorithmId);
     Assert.Equal("00000000000000000000000000000001", digest.Value);
     Assert.Equal(16, digest.DigestByteLength);
+  }
+
+  [Fact]
+  public void ExplicitBuiltInSelectionReplacesCallerStableHashServiceOverride() {
+    var replacement = new ReplacementStableHashService();
+    var services = new ServiceCollection();
+    services.AddSingleton<IStableHashService>(replacement);
+
+    services.AddDVault(options => options.UseStableHashAlgorithm("sha1-v1"));
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var resolved = provider.GetRequiredService<IStableHashService>();
+    var conventions = provider.GetRequiredService<DataVaultConventions>();
+    var digest = resolved.ComputeHash("s:21:dvault:stable-hash:v1");
+
+    Assert.NotSame(replacement, resolved);
+    Assert.Equal("sha1-v1", resolved.AlgorithmId);
+    Assert.Equal("sha1-v1", digest.AlgorithmId);
+    Assert.Equal("1fae773f805277eaf33fc5f96d6fc4a7f7e1d84d", digest.Value);
+    Assert.Equal("sha1-v1", conventions.StableHashAlgorithmId);
+  }
+
+  [Theory]
+  [InlineData("")]
+  [InlineData(" ")]
+  [InlineData("SHA256-V1")]
+  [InlineData("sha256")]
+  [InlineData("sha256-v1 ")]
+  [InlineData(" sha256-v1")]
+  [InlineData("test-double-v1")]
+  public void UseStableHashAlgorithmRejectsUnsupportedAlgorithmIds(string algorithmId) {
+    var options = new DataVaultOptions();
+
+    var exception = Assert.Throws<ArgumentException>(() => options.UseStableHashAlgorithm(algorithmId));
+
+    Assert.Equal("algorithmId", exception.ParamName);
+  }
+
+  [Fact]
+  public void UseStableHashAlgorithmRejectsNullAlgorithmId() {
+    var options = new DataVaultOptions();
+
+    var exception = Assert.Throws<ArgumentNullException>(() => options.UseStableHashAlgorithm(null!));
+
+    Assert.Equal("algorithmId", exception.ParamName);
   }
 
   [Theory]
@@ -161,6 +286,13 @@ public sealed class StableHashServiceTests {
   private static IStableHashService CreateDefaultService() {
     var services = new ServiceCollection();
     services.AddDVault();
+
+    return services.BuildServiceProvider(validateScopes: true).GetRequiredService<IStableHashService>();
+  }
+
+  private static IStableHashService CreateSelectedService(string algorithmId) {
+    var services = new ServiceCollection();
+    services.AddDVault(options => options.UseStableHashAlgorithm(algorithmId));
 
     return services.BuildServiceProvider(validateScopes: true).GetRequiredService<IStableHashService>();
   }
