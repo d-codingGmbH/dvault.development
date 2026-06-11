@@ -3,6 +3,6 @@
   "milestone-id": "06F9GF57QPDS97DSKK9YRF7A58",
   "name": "v0.36.0 - Hash storage profile contract",
   "description": "Define logical versus physical hash-key storage profiles, provider type mappings, diagnostics, compatibility rules, and migration non-goals.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-05T14:42:52.4778077Z"
 }

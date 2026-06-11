@@ -3,6 +3,6 @@
   "milestone-id": "06F9GF58FTFVFQB3W0TEKTESVR",
   "name": "v0.36.0 - Binary hash storage implementation and tests",
   "description": "Implement provider-neutral conversion/comparison plus provider-specific binary column mappings with schema/save/read tests.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-05T14:42:52.6700136Z"
 }

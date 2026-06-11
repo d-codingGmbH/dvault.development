@@ -3,6 +3,6 @@
   "release-id": "06F9GF56ZVW18EP8HX6YBWQS44",
   "name": "v0.36.0 - Efficient Hash Key Storage",
   "description": "Provider-aware efficient hash key storage profiles for DVault EF Core mappings, adding opt-in binary storage while preserving the canonical hash contract, provider-neutral fallback, and consumer-owned migration decisions. Planning release v0.36.0 maps to package versions 8.36.0 and 10.36.0.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-05T14:42:52.2860666Z"
 }
