@@ -3,21 +3,22 @@
   "ticket-id": "06F9GF3E7224Q4HSZ0E71ZXDB4",
   "ticket-type": "epic",
   "title": "Epic: First-class stable hash algorithm support",
-  "revision": "06F9GF708KX0D2YQ9Y52TB567G",
+  "revision": "06FBBTD286YGEY4MCVC2JTQTC4",
   "status": "todo",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/epic",
+    "area/diagnostics",
     "area/ef-core",
     "area/hashing",
     "area/modeling",
-    "area/diagnostics"
+    "automation/bot-ready",
+    "critic-needed",
+    "type/epic",
+    "tracking/epic"
   ],
   "assignees": [],
   "is-blocked": false,
-  "milestone-id": "06F9GF3BQ4QSK8T6K81VB6SGB8",
-  "release-id": "06F9GF3AZRVN9E007NGW7XN3ZW",
+  "milestone-id": "06F9GF57QPDS97DSKK9YRF7A58",
+  "release-id": "06F9GF56ZVW18EP8HX6YBWQS44",
   "created-at": "2026-06-05T14:42:37.9766114Z",
-  "updated-at": "2026-06-05T14:43:06.9483844Z"
+  "updated-at": "2026-06-11T09:00:48.0650000Z"
 }
