@@ -16,17 +16,19 @@ public sealed class PackageVerifier {
   private const string ExpectedReadmeFile = "README.md";
 
   private static readonly ExpectedPackageLine[] ExpectedPackageLines = [
-      new("8.34.0", Net8TargetFramework, "EF Core 8"),
-      new("10.34.0", Net10TargetFramework, "EF Core 10"),
+      new("8.35.0", Net8TargetFramework, "EF Core 8"),
+      new("10.35.0", Net10TargetFramework, "EF Core 10"),
   ];
 
   private static readonly string[] DisallowedInstallVersionFragments = [
       "--version 0.32.0",
       "--version 0.33.0",
       "--version 0.34.0",
+      "--version 0.35.0",
       "Version=\"0.32.0\"",
       "Version=\"0.33.0\"",
       "Version=\"0.34.0\"",
+      "Version=\"0.35.0\"",
   ];
 
   private static readonly IReadOnlyList<ExpectedPackage> ExpectedPackages = [
@@ -490,7 +492,7 @@ public sealed class PackageVerifier {
       if (archive.ReadmeText?.Contains(disallowedFragment, StringComparison.Ordinal) == true) {
         issues.Add(new PackageVerificationIssue(
             archive.Id,
-            "Packaged README.md must not document stale or planning-release install version fragment '" + disallowedFragment + "'; use separate 8.34.0 and 10.34.0 package-line guidance."));
+            "Packaged README.md must not document stale or planning-release install version fragment '" + disallowedFragment + "'; use separate 8.35.0 and 10.35.0 package-line guidance."));
       }
     }
   }

@@ -19,20 +19,20 @@ The v1 coordinated release family contains exactly these eight packable packages
 
 Manual publication must not proceed for only a subset of this family. Each package-version line is approved, validated, and published as one synchronized eight-package family.
 
-The v0.34 compatibility release uses two consumer package-version lines over these package ids:
+The v0.35 compatibility release uses two consumer package-version lines over these package ids:
 
 | Package version line | Target framework | EF Core line |
 | --- | --- | --- |
-| `8.34.0` | `net8.0` | EF Core 8 |
-| `10.34.0` | `net10.0` | EF Core 10 |
+| `8.35.0` | `net8.0` | EF Core 8 |
+| `10.35.0` | `net10.0` | EF Core 10 |
 
-Do not publish or document a consumer-facing `0.34.0` package version. Do not combine `8.34.0` and `10.34.0` packages in one consumer install example or one publish approval.
+Do not publish or document a consumer-facing `0.35.0` package version. Do not combine `8.35.0` and `10.35.0` packages in one consumer install example or one publish approval.
 
 The `src/DCoding.Data` project is a non-packable source-root build anchor for the namespace family. It is not a NuGet publication artifact and is outside the coordinated publication scope.
 
 ## Current Consumer Guidance
 
-Developer and consumer setup is NuGet-based for published releases. The README installation guidance is the current baseline and should show separate `8.34.0` / `net8.0` / EF Core 8 and `10.34.0` / `net10.0` / EF Core 10 `dotnet add package` commands for `DCoding.Data.DVault` plus the optional provider package family, including `DCoding.Data.DVault.Db2`. Analyzer examples must stay local with `PrivateAssets="all"` and use the same package-version line selected for the runtime and provider packages.
+Developer and consumer setup is NuGet-based for published releases. The README installation guidance is the current baseline and should show separate `8.35.0` / `net8.0` / EF Core 8 and `10.35.0` / `net10.0` / EF Core 10 `dotnet add package` commands for `DCoding.Data.DVault` plus the optional provider package family, including `DCoding.Data.DVault.Db2`. Analyzer examples must stay local with `PrivateAssets="all"` and use the same package-version line selected for the runtime and provider packages.
 
 Source or project-reference consumption remains useful for repository development, debugging, and unpublished local changes, but it is no longer the primary consumer installation path for released packages.
 
@@ -46,7 +46,7 @@ Before final publish approval, the maintainer performing the release must confir
 - release notes or changelog content has been prepared and reviewed for the coordinated release
 - all required pre-publish validation commands have passed against the same checkout and selected package version
 - package verification confirms each provider package depends on the packed `DCoding.Data.DVault` package version from the same package-version line and carries only that line's target-framework dependency group
-- package verification confirms the packaged README guidance separates `8.34.0` for `net8.0` and EF Core 8 from `10.34.0` for `net10.0` and EF Core 10
+- package verification confirms the packaged README guidance separates `8.35.0` for `net8.0` and EF Core 8 from `10.35.0` for `net10.0` and EF Core 10
 - final publish approval has been recorded before the first package push
 
 ## Release Notes Evidence
@@ -80,7 +80,7 @@ Do not replace these commands with an undocumented automation path. Later releas
 
 ## Version And Dependency Alignment
 
-Use one aligned package version across all eight packages in the selected package-version line. For the v0.34 compatibility release, validate `8.34.0` and `10.34.0` as separate publish approvals; do not publish `0.34.0` and do not mix packages from both lines in one consumer example or approval record. The `v0.34.0` Git tag is the release-note and planning tag. Package versions for the consumer lines are set explicitly by `bash tools/pack-release-packages.sh` through MinVer version overrides. Before final approval, inspect the package outputs produced by the release pack script through the package verification gate:
+Use one aligned package version across all eight packages in the selected package-version line. For the v0.35 compatibility release, validate `8.35.0` and `10.35.0` as separate publish approvals; do not publish `0.35.0` and do not mix packages from both lines in one consumer example or approval record. The `v0.35.0` Git tag is the release-note and planning tag. Package versions for the consumer lines are set explicitly by `bash tools/pack-release-packages.sh` through MinVer version overrides. Before final approval, inspect the package outputs produced by the release pack script through the package verification gate:
 
 ```sh
 bash tools/verify-packages.sh
@@ -95,7 +95,7 @@ If verification reports that a package is missing a target-framework dependency 
 Follow this sequence exactly for the coordinated manual release:
 
 1. Confirm the release scope is the full eight-package family.
-2. Select one package-version line for this approval: `8.34.0` for `net8.0` and EF Core 8, or `10.34.0` for `net10.0` and EF Core 10.
+2. Select one package-version line for this approval: `8.35.0` for `net8.0` and EF Core 8, or `10.35.0` for `net10.0` and EF Core 10.
 3. Set or confirm that selected aligned package version for all eight packages.
 4. Prepare and review release notes or changelog content for the coordinated release.
 5. Run `dotnet build DVault.slnx --nologo`.

@@ -10,8 +10,8 @@ public sealed class PackageVerifierTests {
   private const string CorePackageId = "DCoding.Data.DVault";
   private const string Db2PackageId = "DCoding.Data.DVault.Db2";
   private const string IbmEntityFrameworkCorePackageId = "IBM.EntityFrameworkCore";
-  private const string Net8PackageLineVersion = "8.34.0";
-  private const string Net10PackageLineVersion = "10.34.0";
+  private const string Net8PackageLineVersion = "8.35.0";
+  private const string Net10PackageLineVersion = "10.35.0";
   private const string Net8TargetFramework = "net8.0";
   private const string Net10TargetFramework = "net10.0";
   private const string Authors = "d-coding GmbH";

@@ -3,21 +3,20 @@
   "ticket-id": "06F9GF4CRMXKEY2QT97W0S3GTR",
   "ticket-type": "task",
   "title": "Task: Document hash algorithm selection guidance",
-  "revision": "06F9GFH4AX5Y6XKN1GEVYV3104",
-  "status": "todo",
+  "revision": "06FBBHC8KY9K747JXAPDZXJ6RR",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/documentation",
-    "area/hashing",
     "area/ef-core",
-    "area/testing"
+    "area/hashing",
+    "area/testing",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06F9GF3D5XM0QHWTMCDFXQQCXG",
   "release-id": "06F9GF3AZRVN9E007NGW7XN3ZW",
   "created-at": "2026-06-05T14:42:45.7032212Z",
-  "updated-at": "2026-06-05T14:44:29.9118024Z"
+  "updated-at": "2026-06-11T08:21:22.2074794Z"
 }
