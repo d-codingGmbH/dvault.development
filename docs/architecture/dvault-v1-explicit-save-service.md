@@ -65,7 +65,7 @@ Provider-specific artifact proposals and dry-run manifests must be compared agai
 
 ## Hashing Compatibility Boundary
 
-The current save-service compatibility contract keeps canonical normalization and digest computation on the .NET side for hub and link hash-key generation. The provider-neutral writer uses the registered `IStableHashNormalizer` and `IStableHashService`, and provider-specific save strategies receive the same services through `DataVaultProviderSaveStrategyContext`. Provider packages may optimize batching, staging, existence checks, and insert shapes, but today's SQLite, PostgreSQL, SQL Server, Oracle, and MySQL save strategies must preserve the same .NET-side `sha256-v1` normalization and stable hash values instead of substituting provider SQL hash functions.
+The current save-service compatibility contract keeps canonical normalization and digest computation on the .NET side for hub and link hash-key generation. The provider-neutral writer uses the registered `IStableHashNormalizer` and `IStableHashService`, and provider-specific save strategies receive the same services through `DataVaultProviderSaveStrategyContext`. Provider packages may optimize batching, staging, existence checks, and insert shapes, but today's SQLite, PostgreSQL, SQL Server, Oracle, MySQL, and DB2 save strategies must preserve the same .NET-side stable-hash normalization and registered stable hash values instead of substituting provider SQL hash functions.
 
 Database-side hashing is not part of the current runtime behavior and is not a default path. Any future provider-side hashing proposal must be introduced by a separate versioned provider contract that preserves the existing semantics and references the shared source-of-truth documents:
 

@@ -38,6 +38,9 @@ public sealed class DataVaultDiagnosticsTests {
             mapping.StoreType == "TEXT");
     Assert.Equal(DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported, result.Explain.SqlFunctionSupport);
     Assert.Equal(DataVaultProviderConcurrencySupport.NoneInV1Unsupported, result.Explain.ConcurrencySupport);
+    Assert.Equal("sha256-v1", result.Explain.StableHash.AlgorithmId);
+    Assert.Equal(32, result.Explain.StableHash.DigestByteLength);
+    Assert.Equal("lowercase-hex-no-prefix", result.Explain.StableHash.DigestEncoding);
 
     var json = JsonSerializer.Serialize(result);
     Assert.Contains("HubCustomer", json, StringComparison.Ordinal);
@@ -46,6 +49,67 @@ public sealed class DataVaultDiagnosticsTests {
 
     var bundleJson = DataVaultSupportBundleExporter.ExportJson(result);
     Assert.DoesNotContain("\"providerTuning\"", bundleJson, StringComparison.Ordinal);
+  }
+
+  [Theory]
+  [InlineData("sha256-v1", 32)]
+  [InlineData("sha1-v1", 20)]
+  [InlineData("sha256-128-v1", 16)]
+  [InlineData("sha256-160-v1", 20)]
+  public void AnalyzeReportsSelectedStableHashMetadataInExplainDisplayAndSupportBundle(
+      string algorithmId,
+      int digestByteLength) {
+    using var provider = CreateServiceProvider(algorithmId);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    var result = diagnostics.Analyze(CreateCustomerMetadataModel());
+
+    Assert.Equal(algorithmId, result.Explain.StableHash.AlgorithmId);
+    Assert.Equal(digestByteLength, result.Explain.StableHash.DigestByteLength);
+    Assert.Equal("lowercase-hex-no-prefix", result.Explain.StableHash.DigestEncoding);
+
+    var display = result.ToDisplayString();
+    Assert.Contains(
+        "stable hash " + algorithmId + "/" + digestByteLength + " bytes/lowercase-hex-no-prefix",
+        display,
+        StringComparison.Ordinal);
+
+    var supportBundleJson = DataVaultSupportBundleExporter.ExportJson(result);
+    using var document = JsonDocument.Parse(supportBundleJson);
+    var stableHash = document
+        .RootElement
+        .GetProperty("diagnostics")
+        .GetProperty("explain")
+        .GetProperty("stableHash");
+
+    Assert.Equal(algorithmId, stableHash.GetProperty("algorithmId").GetString());
+    Assert.Equal(digestByteLength, stableHash.GetProperty("digestByteLength").GetInt32());
+    Assert.Equal("lowercase-hex-no-prefix", stableHash.GetProperty("digestEncoding").GetString());
+
+    var forbiddenDigest = provider
+        .GetRequiredService<IStableHashService>()
+        .ComputeHash("diagnostics-secret-business-key")
+        .Value;
+    Assert.DoesNotContain("diagnostics-secret-business-key", display, StringComparison.Ordinal);
+    Assert.DoesNotContain("diagnostics-secret-business-key", supportBundleJson, StringComparison.Ordinal);
+    Assert.DoesNotContain(forbiddenDigest, display, StringComparison.Ordinal);
+    Assert.DoesNotContain(forbiddenDigest, supportBundleJson, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void AnalyzeReportsCallerStableHashServiceOverrideInDiagnostics() {
+    var services = new ServiceCollection();
+    services.AddSingleton<IStableHashService>(new DiagnosticsReplacementStableHashService());
+    services.AddDVault();
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    var result = diagnostics.Analyze(CreateCustomerMetadataModel());
+
+    Assert.Equal("test-double-v1", result.Explain.StableHash.AlgorithmId);
+    Assert.Equal(16, result.Explain.StableHash.DigestByteLength);
+    Assert.Equal("lowercase-hex-no-prefix", result.Explain.StableHash.DigestEncoding);
+    Assert.Equal("sha256-v1", provider.GetRequiredService<DataVaultConventions>().StableHashAlgorithmId);
   }
 
   [Fact]
@@ -1011,9 +1075,14 @@ public sealed class DataVaultDiagnosticsTests {
             DataVaultSaveStrategyFallbackCauseKind.OracleMinimumOperationThreshold);
   }
 
-  private static ServiceProvider CreateServiceProvider() {
+  private static ServiceProvider CreateServiceProvider(string? stableHashAlgorithmId = null) {
     var services = new ServiceCollection();
-    services.AddDVault();
+    if (stableHashAlgorithmId is null) {
+      services.AddDVault();
+    }
+    else {
+      services.AddDVault(options => options.UseStableHashAlgorithm(stableHashAlgorithmId));
+    }
 
     return services.BuildServiceProvider(validateScopes: true);
   }
@@ -1299,6 +1368,18 @@ public sealed class DataVaultDiagnosticsTests {
     public string CustomerNumber { get; set; } = string.Empty;
 
     public string Name { get; set; } = string.Empty;
+  }
+
+  private sealed class DiagnosticsReplacementStableHashService : IStableHashService {
+    public string AlgorithmId => "test-double-v1";
+
+    public StableHashDigest ComputeHash(string normalizedInput) {
+      ArgumentNullException.ThrowIfNull(normalizedInput);
+
+      return new StableHashDigest(
+          AlgorithmId,
+          "00000000000000000000000000000001");
+    }
   }
 
   private sealed record ReadShapeMetadata(

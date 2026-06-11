@@ -275,6 +275,14 @@ public sealed record DataVaultProviderTypeMappingExplain(
     DataVaultProviderValueFormat ValueFormat);
 
 /// <summary>
+/// Machine-readable stable-hash compatibility metadata for the active hash service.
+/// </summary>
+public sealed record DataVaultStableHashExplain(
+    string AlgorithmId,
+    int DigestByteLength,
+    string DigestEncoding);
+
+/// <summary>
 /// Machine-readable explanation of one translated Data Vault key.
 /// </summary>
 public sealed record DataVaultKeyExplain(
@@ -390,6 +398,12 @@ public sealed record DataVaultExplainDiagnostics(
   /// </summary>
   public DataVaultProviderConcurrencySupport ConcurrencySupport { get; init; } =
       DataVaultProviderConcurrencySupport.NoneInV1Unsupported;
+
+  /// <summary>
+  /// Gets the active stable-hash algorithm metadata used for Data Vault hash-key compatibility decisions.
+  /// </summary>
+  public DataVaultStableHashExplain StableHash { get; init; } =
+      new("sha256-v1", 32, "lowercase-hex-no-prefix");
 }
 
 /// <summary>
@@ -830,6 +844,12 @@ public sealed record DataVaultDiagnosticsResult(
       builder.Append(" (defaulted)");
     }
 
+    builder.Append(", stable hash ");
+    builder.Append(Explain.StableHash.AlgorithmId);
+    builder.Append('/');
+    builder.Append(Explain.StableHash.DigestByteLength.ToString(CultureInfo.InvariantCulture));
+    builder.Append(" bytes/");
+    builder.Append(Explain.StableHash.DigestEncoding);
     builder.Append(", entities ");
     builder.Append(Explain.Entities.Count.ToString(CultureInfo.InvariantCulture));
     builder.Append(", save strategy ");
@@ -1093,24 +1113,28 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
   private readonly IReadOnlyList<IDataVaultProviderPitReadStrategy> _providerPitReadStrategies;
   private readonly IReadOnlyList<IDataVaultProviderReadStrategy> _providerReadStrategies;
   private readonly IReadOnlyList<IDataVaultProviderSaveStrategy> _providerSaveStrategies;
+  private readonly IStableHashService _stableHashService;
 
   public DefaultDataVaultDiagnosticsService(
       IEnumerable<IDataVaultProviderSaveStrategy> providerSaveStrategies,
       IEnumerable<IDataVaultProviderReadStrategy> providerReadStrategies,
       IEnumerable<IDataVaultProviderPitReadStrategy> providerPitReadStrategies,
       IEnumerable<IDataVaultProviderBridgeReadStrategy> providerBridgeReadStrategies,
-      IDataVaultProviderBehaviorSelector providerBehaviorSelector) {
+      IDataVaultProviderBehaviorSelector providerBehaviorSelector,
+      IStableHashService stableHashService) {
     ArgumentNullException.ThrowIfNull(providerSaveStrategies);
     ArgumentNullException.ThrowIfNull(providerReadStrategies);
     ArgumentNullException.ThrowIfNull(providerPitReadStrategies);
     ArgumentNullException.ThrowIfNull(providerBridgeReadStrategies);
     ArgumentNullException.ThrowIfNull(providerBehaviorSelector);
+    ArgumentNullException.ThrowIfNull(stableHashService);
 
     _providerSaveStrategies = providerSaveStrategies.ToArray();
     _providerReadStrategies = providerReadStrategies.ToArray();
     _providerPitReadStrategies = providerPitReadStrategies.ToArray();
     _providerBridgeReadStrategies = providerBridgeReadStrategies.ToArray();
     _providerBehaviorSelector = providerBehaviorSelector;
+    _stableHashService = stableHashService;
   }
 
   public DataVaultDiagnosticsResult Analyze(DataVaultMetadataModel metadataModel) {
@@ -2394,7 +2418,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     };
   }
 
-  private static DataVaultDiagnosticsResult CreateFailureResult(
+  private DataVaultDiagnosticsResult CreateFailureResult(
       string sourceKind,
       DataVaultProviderCapabilityProfile providerCapabilities,
       DataVaultDiagnosticsIssue issue) {
@@ -2412,7 +2436,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         [issue]);
   }
 
-  private static DataVaultExplainDiagnostics CreateExplain(
+  private DataVaultExplainDiagnostics CreateExplain(
       IReadOnlyModel model,
       string sourceKind,
       string? sourceFingerprint,
@@ -2451,10 +2475,11 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       UnsupportedIncludedIndexColumnMode = providerCapabilities.UnsupportedIncludedIndexColumnMode,
       SqlFunctionSupport = providerCapabilities.SqlFunctionSupport,
       ConcurrencySupport = providerCapabilities.ConcurrencySupport,
+      StableHash = CreateStableHashExplain(),
     };
   }
 
-  private static DataVaultExplainDiagnostics CreateEmptyExplain(
+  private DataVaultExplainDiagnostics CreateEmptyExplain(
       string sourceKind,
       string? sourceFingerprint,
       string? providerName,
@@ -2483,7 +2508,16 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       UnsupportedIncludedIndexColumnMode = providerCapabilities.UnsupportedIncludedIndexColumnMode,
       SqlFunctionSupport = providerCapabilities.SqlFunctionSupport,
       ConcurrencySupport = providerCapabilities.ConcurrencySupport,
+      StableHash = CreateStableHashExplain(),
     };
+  }
+
+  private DataVaultStableHashExplain CreateStableHashExplain() {
+    var digest = _stableHashService.ComputeHash(string.Empty);
+    return new DataVaultStableHashExplain(
+        _stableHashService.AlgorithmId,
+        digest.DigestByteLength,
+        "lowercase-hex-no-prefix");
   }
 
   private static DataVaultEntityExplain CreateEntityExplain(IReadOnlyEntityType entityType) {

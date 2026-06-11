@@ -953,7 +953,8 @@ Notable stable-hash documentation points:
 - `sha1-v1`, `sha256-128-v1`, and `sha256-160-v1` are built-in explicit opt-in ids only; they are not enabled automatically by `AddDVault()`.
 - Shorter digests are non-adversarial Data Vault identity tradeoffs, not security or compliance controls.
 - Post-persistence algorithm or truncation changes are caller-owned compatibility work; DVault does not automatically rehash, backfill, migrate, repair, or reconcile stored values.
-- Proof surfaces remain `docs/plans/stable-hashing-contract.md`, `src/DCoding.Data.DVault/BuiltInStableHashService.cs`, `src/DCoding.Data.DVault/StableHashDigest.cs`, and `tests/DCoding.Data.DVault.Tests/Unit/StableHashServiceTests.cs`.
+- Diagnostics and support bundles expose the active stable-hash `algorithmId`, `digestByteLength`, and lowercase-hex encoding metadata without printing digest values or key material.
+- Proof surfaces remain `docs/plans/stable-hashing-contract.md`, `src/DCoding.Data.DVault/BuiltInStableHashService.cs`, `src/DCoding.Data.DVault/StableHashDigest.cs`, `src/DCoding.Data.DVault/DataVaultDiagnostics.cs`, `tests/DCoding.Data.DVault.Tests/Unit/StableHashServiceTests.cs`, and `tests/DCoding.Data.DVault.Tests/Unit/DataVaultDiagnosticsTests.cs`.
 
 ## Previous v0.34.0 DB2 Documentation Baseline
 

@@ -110,7 +110,7 @@ Expected registration shape when application source exists:
 
 - Register `IStableHashService` as the public service dependency.
 - Register the default `sha256-v1` implementation when no caller override is supplied.
-- Allow options to provide an alternate `IStableHashService` instance or factory.
+- Allow options to select approved built-in algorithm ids and allow dependency injection to provide a caller-owned replacement `IStableHashService`.
 - Keep normalization rules independent from the concrete hash service so a replacement receives the same canonical text.
 
 Replacement rules:
@@ -120,6 +120,14 @@ Replacement rules:
 - If it intentionally produces different digest values, it must use a different `AlgorithmId`.
 - It must preserve deterministic behavior across repeated runs and must return canonical lowercase hexadecimal digest text whose byte length matches the selected `AlgorithmId`.
 - Model code must depend only on the abstraction and must not branch on the concrete implementation type.
+
+Diagnostics and support bundles expose only metadata for the active stable hash service:
+
+- selected `algorithmId`
+- `digestByteLength`
+- digest encoding `lowercase-hex-no-prefix`
+
+They must not serialize sample digests, business-key values, raw hash-key values, or derived request values.
 
 ## Test Vectors
 

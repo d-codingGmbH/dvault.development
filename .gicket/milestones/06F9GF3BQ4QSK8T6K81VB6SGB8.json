@@ -3,6 +3,6 @@
   "milestone-id": "06F9GF3BQ4QSK8T6K81VB6SGB8",
   "name": "v0.35.0 - Hash contract and compatibility policy",
   "description": "Define algorithm identifiers, digest lengths, canonical encodings, collision-risk guidance, and compatibility rules before implementation.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-05T14:42:37.1135928Z"
 }

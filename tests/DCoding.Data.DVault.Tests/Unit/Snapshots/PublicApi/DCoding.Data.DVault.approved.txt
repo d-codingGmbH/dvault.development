@@ -289,6 +289,7 @@ type public sealed class DCoding.Data.DVault.DataVaultExplainDiagnostics : Syste
   property public DCoding.Data.DVault.DataVaultProviderSqlFunctionSupport SqlFunctionSupport { get; init; }
   property public DCoding.Data.DVault.DataVaultProviderValueFormat LoadTimestampValueFormat { get; init; }
   property public DCoding.Data.DVault.DataVaultProviderValueFormat SatelliteSnapshotReferenceValueFormat { get; init; }
+  property public DCoding.Data.DVault.DataVaultStableHashExplain StableHash { get; init; }
   property public DCoding.Data.DVault.DataVaultUnsupportedIncludedIndexColumnMode UnsupportedIncludedIndexColumnMode { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultEntityExplain> Entities { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultProviderTypeMappingExplain> TypeMappings { get; init; }
@@ -1637,6 +1638,19 @@ type public sealed class DCoding.Data.DVault.DataVaultSavedRecord
   property public string HashKey { get; }
   property public string MetadataName { get; }
   property public string TableName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultStableHashExplain : System.IEquatable<DCoding.Data.DVault.DataVaultStableHashExplain>
+  ctor public DataVaultStableHashExplain(string AlgorithmId, int DigestByteLength, string DigestEncoding)
+  property public int DigestByteLength { get; init; }
+  property public string AlgorithmId { get; init; }
+  property public string DigestEncoding { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultStableHashExplain? left, DCoding.Data.DVault.DataVaultStableHashExplain? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultStableHashExplain? left, DCoding.Data.DVault.DataVaultStableHashExplain? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultStableHashExplain? other)
+  method public void Deconstruct(out string AlgorithmId, out int DigestByteLength, out string DigestEncoding)
 
 type public sealed class DCoding.Data.DVault.DataVaultStagedProviderBulkDiagnostics
   ctor public DataVaultStagedProviderBulkDiagnostics(DCoding.Data.DVault.DataVaultStagedProviderBulkLifecyclePhase lifecyclePhase, DCoding.Data.DVault.DataVaultStagedProviderBulkProviderCaveatKind providerCaveatKind, int requestCount, int hubOperationCount, int linkOperationCount, int satelliteOperationCount, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultSaveStrategyFallbackCauseKind> fallbackCauseKinds)
