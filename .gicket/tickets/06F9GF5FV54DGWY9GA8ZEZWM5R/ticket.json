@@ -3,7 +3,7 @@
   "ticket-id": "06F9GF5FV54DGWY9GA8ZEZWM5R",
   "ticket-type": "story",
   "title": "Story: Define hash key storage profile contract",
-  "revision": "06FBGSZTQYCCAQ6066TP1JTWCR",
+  "revision": "06FBH2F8W4X3G4S8EN0QMV48X4",
   "status": "done",
   "labels": [
     "area/architecture",
@@ -18,5 +18,5 @@
   "milestone-id": "06F9GF57QPDS97DSKK9YRF7A58",
   "release-id": "06F9GF56ZVW18EP8HX6YBWQS44",
   "created-at": "2026-06-05T14:42:54.6740475Z",
-  "updated-at": "2026-06-11T20:38:02.6879633Z"
+  "updated-at": "2026-06-11T21:15:06.3372946Z"
 }
