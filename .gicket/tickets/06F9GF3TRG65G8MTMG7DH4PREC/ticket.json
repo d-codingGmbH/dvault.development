@@ -3,7 +3,7 @@
   "ticket-id": "06F9GF3TRG65G8MTMG7DH4PREC",
   "ticket-type": "task",
   "title": "Task: Relax StableHashDigest fixed SHA-256 hex assumptions",
-  "revision": "06FB97SH8R9PT4C55AKVNMMXCM",
+  "revision": "06FBCKHGN4T4JYT8Y5E10FKXZM",
   "status": "done",
   "labels": [
     "area/api-compatibility",
@@ -18,5 +18,5 @@
   "milestone-id": "06F9GF3CEDX9G92X00GGNQ4S9C",
   "release-id": "06F9GF3AZRVN9E007NGW7XN3ZW",
   "created-at": "2026-06-05T14:42:41.1572389Z",
-  "updated-at": "2026-06-11T02:59:52.2623306Z"
+  "updated-at": "2026-06-11T10:50:38.1218499Z"
 }
