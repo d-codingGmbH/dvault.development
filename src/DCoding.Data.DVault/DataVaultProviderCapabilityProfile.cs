@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 
 namespace DCoding.Data.DVault;
 
@@ -133,6 +134,53 @@ public sealed class DataVaultProviderCapabilityProfile {
   }
 
   /// <summary>
+  /// Creates a copy of this profile with hash-key storage mappings sized for the selected stable-hash algorithm.
+  /// </summary>
+  /// <param name="algorithmId">The stable-hash algorithm id used by the model.</param>
+  /// <param name="digestByteLength">The digest byte length produced by the stable-hash algorithm.</param>
+  /// <returns>A transformed profile whose hash-key mappings carry the selected algorithm facts.</returns>
+  public DataVaultProviderCapabilityProfile WithStableHashAlgorithm(
+      string algorithmId,
+      int digestByteLength) {
+    return WithHashKeyStorageProfile(
+        DataVaultHashKeyStorageProfile.HexString,
+        algorithmId,
+        digestByteLength);
+  }
+
+  /// <summary>
+  /// Creates a copy of this profile with hash-key storage mappings projected to the requested physical profile.
+  /// </summary>
+  /// <param name="storageProfile">The physical hash-key storage profile to project.</param>
+  /// <param name="algorithmId">The stable-hash algorithm id used by the model.</param>
+  /// <param name="digestByteLength">The digest byte length produced by the stable-hash algorithm.</param>
+  /// <returns>A transformed profile whose hash-key mappings carry the selected storage and algorithm facts.</returns>
+  public DataVaultProviderCapabilityProfile WithHashKeyStorageProfile(
+      DataVaultHashKeyStorageProfile storageProfile,
+      string algorithmId,
+      int digestByteLength) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(algorithmId);
+    if (digestByteLength <= 0) {
+      throw new ArgumentOutOfRangeException(nameof(digestByteLength));
+    }
+
+    if (!Enum.IsDefined(storageProfile)) {
+      throw new ArgumentOutOfRangeException(nameof(storageProfile));
+    }
+
+    return new DataVaultProviderCapabilityProfile(
+        ProfileName,
+        SqlFunctionSupport,
+        ConcurrencySupport,
+        TypeMappings.Select(mapping => IsHashKeyMapping(mapping.LogicalPropertyKind)
+            ? CreateHashKeyMapping(mapping.LogicalPropertyKind, storageProfile, algorithmId, digestByteLength)
+            : mapping),
+        MaximumIdentifierLength,
+        AllowsIndexesCoveredByPrimaryKey,
+        UnsupportedIncludedIndexColumnMode);
+  }
+
+  /// <summary>
   /// Fails deterministically when a caller requires a SQL function that the profile does not support.
   /// </summary>
   /// <param name="functionName">The SQL function capability required by the caller.</param>
@@ -163,6 +211,42 @@ public sealed class DataVaultProviderCapabilityProfile {
     return logicalPropertyKind is
         DataVaultLogicalPropertyKind.LoadTimestamp or
         DataVaultLogicalPropertyKind.SatelliteSnapshotReference;
+  }
+
+  private static bool IsHashKeyMapping(DataVaultLogicalPropertyKind logicalPropertyKind) {
+    return logicalPropertyKind is
+        DataVaultLogicalPropertyKind.HashKey or
+        DataVaultLogicalPropertyKind.ParticipantReference;
+  }
+
+  private DataVaultProviderTypeMapping CreateHashKeyMapping(
+      DataVaultLogicalPropertyKind logicalPropertyKind,
+      DataVaultHashKeyStorageProfile storageProfile,
+      string algorithmId,
+      int digestByteLength) {
+    return storageProfile switch {
+      DataVaultHashKeyStorageProfile.HexString => new DataVaultProviderTypeMapping(
+          logicalPropertyKind,
+          typeof(string),
+          GetHashKeyHexStringStoreType(digestByteLength),
+          DataVaultProviderValueFormat.LowercaseHexText,
+          storageProfile,
+          algorithmId,
+          digestByteLength,
+          "lowercase-hex-no-prefix",
+          "none-string-model"),
+      DataVaultHashKeyStorageProfile.Binary => new DataVaultProviderTypeMapping(
+          logicalPropertyKind,
+          typeof(string),
+          GetHashKeyBinaryStoreType(digestByteLength),
+          DataVaultProviderValueFormat.LowercaseHexBinary,
+          storageProfile,
+          algorithmId,
+          digestByteLength,
+          "lowercase-hex-no-prefix",
+          "lowercase-hex-string-to-bytes"),
+      _ => throw new ArgumentOutOfRangeException(nameof(storageProfile), storageProfile, "Unsupported hash-key storage profile."),
+    };
   }
 
   private DataVaultProviderTypeMapping CreateLoadTimestampMapping(
@@ -221,6 +305,52 @@ public sealed class DataVaultProviderCapabilityProfile {
     }
 
     return "bigint";
+  }
+
+  private string GetHashKeyHexStringStoreType(int digestByteLength) {
+    var hexLength = digestByteLength * 2;
+    if (ProfileName.StartsWith("oracle-", StringComparison.Ordinal)) {
+      return "VARCHAR2(" + hexLength.ToString(CultureInfo.InvariantCulture) + " CHAR)";
+    }
+
+    if (ProfileName.StartsWith("db2-", StringComparison.Ordinal)) {
+      return "VARCHAR(" + hexLength.ToString(CultureInfo.InvariantCulture) + ")";
+    }
+
+    if (ProfileName.StartsWith("sqlserver-", StringComparison.Ordinal)) {
+      return "nvarchar(" + hexLength.ToString(CultureInfo.InvariantCulture) + ")";
+    }
+
+    if (ProfileName.StartsWith("postgres-", StringComparison.Ordinal) ||
+        ProfileName.StartsWith("mysql-", StringComparison.Ordinal)) {
+      return "varchar(" + hexLength.ToString(CultureInfo.InvariantCulture) + ")";
+    }
+
+    return "TEXT";
+  }
+
+  private string GetHashKeyBinaryStoreType(int digestByteLength) {
+    if (ProfileName.StartsWith("oracle-", StringComparison.Ordinal)) {
+      return "RAW(" + digestByteLength.ToString(CultureInfo.InvariantCulture) + ")";
+    }
+
+    if (ProfileName.StartsWith("db2-", StringComparison.Ordinal)) {
+      return "VARBINARY(" + digestByteLength.ToString(CultureInfo.InvariantCulture) + ")";
+    }
+
+    if (ProfileName.StartsWith("sqlserver-", StringComparison.Ordinal)) {
+      return "varbinary(" + digestByteLength.ToString(CultureInfo.InvariantCulture) + ")";
+    }
+
+    if (ProfileName.StartsWith("postgres-", StringComparison.Ordinal)) {
+      return "bytea";
+    }
+
+    if (ProfileName.StartsWith("mysql-", StringComparison.Ordinal)) {
+      return "varbinary(" + digestByteLength.ToString(CultureInfo.InvariantCulture) + ")";
+    }
+
+    return "BLOB";
   }
 
   private static string GetLoadTimestampStorageProfileSuffix(DataVaultLoadTimestampStorage storage) {

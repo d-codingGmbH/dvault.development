@@ -11,6 +11,8 @@ type public static class DCoding.Data.DVault.DVaultServiceCollectionExtensions
 type public static class DCoding.Data.DVault.DataVaultAnnotationNames
   field public const string Conventions = "DCoding.Data.DVault:Conventions"
   field public const string EntityKind = "DCoding.Data.DVault:EntityKind"
+  field public const string HashKeyConversionBehavior = "DCoding.Data.DVault:HashKeyConversionBehavior"
+  field public const string HashKeyStorageProfile = "DCoding.Data.DVault:HashKeyStorageProfile"
   field public const string MetadataName = "DCoding.Data.DVault:MetadataName"
   field public const string MetadataSourceFingerprint = "DCoding.Data.DVault:MetadataSourceFingerprint"
   field public const string MetadataSourceKind = "DCoding.Data.DVault:MetadataSourceKind"
@@ -23,6 +25,9 @@ type public static class DCoding.Data.DVault.DataVaultAnnotationNames
   field public const string ProviderProfile = "DCoding.Data.DVault:ProviderProfile"
   field public const string ProviderStorageType = "DCoding.Data.DVault:ProviderStorageType"
   field public const string ProviderValueFormat = "DCoding.Data.DVault:ProviderValueFormat"
+  field public const string StableHashAlgorithmId = "DCoding.Data.DVault:StableHashAlgorithmId"
+  field public const string StableHashDigestByteLength = "DCoding.Data.DVault:StableHashDigestByteLength"
+  field public const string StableHashDigestEncoding = "DCoding.Data.DVault:StableHashDigestEncoding"
   field public const string TechnicalColumnRole = "DCoding.Data.DVault:TechnicalColumnRole"
 
 type public sealed class DCoding.Data.DVault.DataVaultBridgeEndpointReadShapeDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultBridgeEndpointReadShapeDiagnostics>
@@ -311,6 +316,10 @@ type public sealed class DCoding.Data.DVault.DataVaultExplainDiagnostics : Syste
   method public static bool op_Inequality(DCoding.Data.DVault.DataVaultExplainDiagnostics? left, DCoding.Data.DVault.DataVaultExplainDiagnostics? right)
   method public virtual bool Equals(DCoding.Data.DVault.DataVaultExplainDiagnostics? other)
   method public void Deconstruct(out string MetadataSourceKind, out string? MetadataSourceFingerprint, out string? ProviderName, out string CapabilityProfileName, out bool CapabilityProfileDefaulted, out DCoding.Data.DVault.DataVaultProviderValueFormat LoadTimestampValueFormat, out string LoadTimestampStoreType, out string ProviderBehaviorProfileName, out bool ProviderBehaviorDefaulted, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultEntityExplain> Entities)
+
+type public enum DCoding.Data.DVault.DataVaultHashKeyStorageProfile
+  value HexString = 0
+  value Binary = 1
 
 type public sealed class DCoding.Data.DVault.DataVaultHubMappingAttribute : System.Attribute
   ctor public DataVaultHubMappingAttribute(string hubName)
@@ -899,18 +908,23 @@ type public enum DCoding.Data.DVault.DataVaultPreflightStatus
 
 type public sealed class DCoding.Data.DVault.DataVaultPropertyExplain : System.IEquatable<DCoding.Data.DVault.DataVaultPropertyExplain>
   ctor public DataVaultPropertyExplain(string Name, DCoding.Data.DVault.DataVaultPropertyRole Role, DCoding.Data.DVault.TechnicalMetadataColumnRole? TechnicalRole, string MetadataName, int Ordinal, DCoding.Data.DVault.DataVaultLogicalPropertyKind LogicalPropertyKind, string ProviderProfileName, string StoreType, DCoding.Data.DVault.DataVaultProviderValueFormat ValueFormat)
+  property public DCoding.Data.DVault.DataVaultHashKeyStorageProfile? HashKeyStorageProfile { get; init; }
   property public DCoding.Data.DVault.DataVaultLogicalPropertyKind LogicalPropertyKind { get; init; }
   property public DCoding.Data.DVault.DataVaultPropertyRole Role { get; init; }
   property public DCoding.Data.DVault.DataVaultProviderValueFormat ValueFormat { get; init; }
   property public DCoding.Data.DVault.TechnicalMetadataColumnRole? TechnicalRole { get; init; }
   property public bool IsNullable { get; init; }
   property public int Ordinal { get; init; }
+  property public int? DigestByteLength { get; init; }
   property public string ClrTypeName { get; init; }
   property public string MetadataName { get; init; }
   property public string Name { get; init; }
   property public string ProducedName { get; init; }
   property public string ProviderProfileName { get; init; }
   property public string StoreType { get; init; }
+  property public string? ConversionBehavior { get; init; }
+  property public string? DigestEncoding { get; init; }
+  property public string? StableHashAlgorithmId { get; init; }
   method public override bool Equals(object? obj)
   method public override int GetHashCode()
   method public override string ToString()
@@ -950,7 +964,9 @@ type public sealed class DCoding.Data.DVault.DataVaultProviderCapabilityProfile
   property public bool AllowsIndexesCoveredByPrimaryKey { get; }
   property public int? MaximumIdentifierLength { get; }
   property public string ProfileName { get; }
+  method public DCoding.Data.DVault.DataVaultProviderCapabilityProfile WithHashKeyStorageProfile(DCoding.Data.DVault.DataVaultHashKeyStorageProfile storageProfile, string algorithmId, int digestByteLength)
   method public DCoding.Data.DVault.DataVaultProviderCapabilityProfile WithLoadTimestampStorage(DCoding.Data.DVault.DataVaultLoadTimestampStorage storage)
+  method public DCoding.Data.DVault.DataVaultProviderCapabilityProfile WithStableHashAlgorithm(string algorithmId, int digestByteLength)
   method public DCoding.Data.DVault.DataVaultProviderTypeMapping GetRequiredTypeMapping(DCoding.Data.DVault.DataVaultLogicalPropertyKind logicalPropertyKind)
   method public void RequireConcurrencySignal(string signalName)
   method public void RequireSqlFunction(string functionName)
@@ -1029,11 +1045,16 @@ type public sealed class DCoding.Data.DVault.DataVaultProviderTuningRecommendati
   method public void Deconstruct(out DCoding.Data.DVault.DataVaultPerformanceProfileCategory Category, out string ProfileName, out string Message)
 
 type public sealed class DCoding.Data.DVault.DataVaultProviderTypeMapping : System.IEquatable<DCoding.Data.DVault.DataVaultProviderTypeMapping>
-  ctor public DataVaultProviderTypeMapping(DCoding.Data.DVault.DataVaultLogicalPropertyKind logicalPropertyKind, System.Type modelClrType, string nativeStoreType, DCoding.Data.DVault.DataVaultProviderValueFormat valueFormat)
+  ctor public DataVaultProviderTypeMapping(DCoding.Data.DVault.DataVaultLogicalPropertyKind logicalPropertyKind, System.Type modelClrType, string nativeStoreType, DCoding.Data.DVault.DataVaultProviderValueFormat valueFormat, DCoding.Data.DVault.DataVaultHashKeyStorageProfile? hashKeyStorageProfile = null, string? stableHashAlgorithmId = null, int? digestByteLength = null, string? digestEncoding = null, string? conversionBehavior = null)
+  property public DCoding.Data.DVault.DataVaultHashKeyStorageProfile? HashKeyStorageProfile { get; }
   property public DCoding.Data.DVault.DataVaultLogicalPropertyKind LogicalPropertyKind { get; }
   property public DCoding.Data.DVault.DataVaultProviderValueFormat ValueFormat { get; }
   property public System.Type ModelClrType { get; }
+  property public int? DigestByteLength { get; }
   property public string NativeStoreType { get; }
+  property public string? ConversionBehavior { get; }
+  property public string? DigestEncoding { get; }
+  property public string? StableHashAlgorithmId { get; }
   method public override bool Equals(object? obj)
   method public override int GetHashCode()
   method public override string ToString()
@@ -1043,10 +1064,15 @@ type public sealed class DCoding.Data.DVault.DataVaultProviderTypeMapping : Syst
 
 type public sealed class DCoding.Data.DVault.DataVaultProviderTypeMappingExplain : System.IEquatable<DCoding.Data.DVault.DataVaultProviderTypeMappingExplain>
   ctor public DataVaultProviderTypeMappingExplain(DCoding.Data.DVault.DataVaultLogicalPropertyKind LogicalPropertyKind, string ModelClrTypeName, string StoreType, DCoding.Data.DVault.DataVaultProviderValueFormat ValueFormat)
+  property public DCoding.Data.DVault.DataVaultHashKeyStorageProfile? HashKeyStorageProfile { get; init; }
   property public DCoding.Data.DVault.DataVaultLogicalPropertyKind LogicalPropertyKind { get; init; }
   property public DCoding.Data.DVault.DataVaultProviderValueFormat ValueFormat { get; init; }
+  property public int? DigestByteLength { get; init; }
   property public string ModelClrTypeName { get; init; }
   property public string StoreType { get; init; }
+  property public string? ConversionBehavior { get; init; }
+  property public string? DigestEncoding { get; init; }
+  property public string? StableHashAlgorithmId { get; init; }
   method public override bool Equals(object? obj)
   method public override int GetHashCode()
   method public override string ToString()
@@ -1061,6 +1087,8 @@ type public enum DCoding.Data.DVault.DataVaultProviderValueFormat
   value NativeDateTimeOffset = 2
   value NativeInteger = 3
   value UtcTicks = 4
+  value LowercaseHexText = 5
+  value LowercaseHexBinary = 6
 
 type public sealed class DCoding.Data.DVault.DataVaultReadProviderTuningDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultReadProviderTuningDiagnostics>
   ctor public DataVaultReadProviderTuningDiagnostics(DCoding.Data.DVault.DataVaultProviderTuningRecommendation? Recommendation = null)
@@ -1880,9 +1908,11 @@ type public sealed class DCoding.Data.DVault.Modeling.DataVaultConstraintNameCon
   method public void Deconstruct(out DCoding.Data.DVault.Modeling.DataVaultConstraintKind Kind, out string TableName, out System.Collections.Generic.IReadOnlyList<string> ColumnNames)
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultConventions
+  property public DCoding.Data.DVault.DataVaultHashKeyStorageProfile HashKeyStorageProfile { get; }
   property public DCoding.Data.DVault.Modeling.DefaultNamingPolicy NamingPolicy { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultModelConcept> ModelConcepts { get; }
   property public System.Collections.Generic.IReadOnlyList<string> LogicalObjectNames { get; }
+  property public int StableHashDigestByteLength { get; }
   property public static DCoding.Data.DVault.Modeling.DataVaultConventions Default { get; }
   property public string PersistenceContentHashAlgorithm { get; }
   property public string PersistenceConventionVersion { get; }

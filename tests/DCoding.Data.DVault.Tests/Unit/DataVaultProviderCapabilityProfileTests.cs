@@ -1,3 +1,4 @@
+using System.Globalization;
 using Xunit;
 
 namespace DCoding.Data.DVault.Tests.Unit;
@@ -39,11 +40,11 @@ public sealed class DataVaultProviderCapabilityProfileTests {
         ],
         profile.TypeMappings.Select(mapping => mapping.LogicalPropertyKind));
 
-    AssertMapping(profile, DataVaultLogicalPropertyKind.HashKey, typeof(string), DataVaultProviderValueFormat.Text);
+    AssertMapping(profile, DataVaultLogicalPropertyKind.HashKey, typeof(string), DataVaultProviderValueFormat.LowercaseHexText);
     AssertMapping(profile, DataVaultLogicalPropertyKind.HashDiff, typeof(string), DataVaultProviderValueFormat.Text);
     AssertMapping(profile, DataVaultLogicalPropertyKind.LoadTimestamp, typeof(DateTimeOffset), DataVaultProviderValueFormat.Iso8601UtcText);
     AssertMapping(profile, DataVaultLogicalPropertyKind.RecordSource, typeof(string), DataVaultProviderValueFormat.Text);
-    AssertMapping(profile, DataVaultLogicalPropertyKind.ParticipantReference, typeof(string), DataVaultProviderValueFormat.Text);
+    AssertMapping(profile, DataVaultLogicalPropertyKind.ParticipantReference, typeof(string), DataVaultProviderValueFormat.LowercaseHexText);
     AssertMapping(profile, DataVaultLogicalPropertyKind.BusinessKey, typeof(string), DataVaultProviderValueFormat.Text);
     AssertMapping(profile, DataVaultLogicalPropertyKind.DrivingKey, typeof(string), DataVaultProviderValueFormat.Text);
     AssertMapping(profile, DataVaultLogicalPropertyKind.PayloadText, typeof(string), DataVaultProviderValueFormat.Text);
@@ -95,7 +96,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
         DataVaultLogicalPropertyKind.HashKey,
         typeof(string),
         "VARCHAR2(64 CHAR)",
-        DataVaultProviderValueFormat.Text);
+        DataVaultProviderValueFormat.LowercaseHexText);
     AssertMapping(
         profile,
         DataVaultLogicalPropertyKind.HashDiff,
@@ -119,7 +120,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
         DataVaultLogicalPropertyKind.ParticipantReference,
         typeof(string),
         "VARCHAR2(64 CHAR)",
-        DataVaultProviderValueFormat.Text);
+        DataVaultProviderValueFormat.LowercaseHexText);
     AssertMapping(
         profile,
         DataVaultLogicalPropertyKind.BusinessKey,
@@ -183,7 +184,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
         DataVaultLogicalPropertyKind.HashKey,
         typeof(string),
         "varchar(64)",
-        DataVaultProviderValueFormat.Text);
+        DataVaultProviderValueFormat.LowercaseHexText);
     AssertMapping(
         profile,
         DataVaultLogicalPropertyKind.HashDiff,
@@ -207,7 +208,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
         DataVaultLogicalPropertyKind.ParticipantReference,
         typeof(string),
         "varchar(64)",
-        DataVaultProviderValueFormat.Text);
+        DataVaultProviderValueFormat.LowercaseHexText);
     AssertMapping(
         profile,
         DataVaultLogicalPropertyKind.BusinessKey,
@@ -295,7 +296,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
         DataVaultLogicalPropertyKind.HashKey,
         typeof(string),
         "VARCHAR(64)",
-        DataVaultProviderValueFormat.Text);
+        DataVaultProviderValueFormat.LowercaseHexText);
     AssertMapping(
         profile,
         DataVaultLogicalPropertyKind.HashDiff,
@@ -319,7 +320,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
         DataVaultLogicalPropertyKind.ParticipantReference,
         typeof(string),
         "VARCHAR(64)",
-        DataVaultProviderValueFormat.Text);
+        DataVaultProviderValueFormat.LowercaseHexText);
     AssertMapping(
         profile,
         DataVaultLogicalPropertyKind.BusinessKey,
@@ -380,7 +381,7 @@ public sealed class DataVaultProviderCapabilityProfileTests {
         DataVaultLogicalPropertyKind.HashKey,
         typeof(string),
         "VARCHAR2(64 CHAR)",
-        DataVaultProviderValueFormat.Text);
+        DataVaultProviderValueFormat.LowercaseHexText);
   }
 
   [Fact]
@@ -402,6 +403,84 @@ public sealed class DataVaultProviderCapabilityProfileTests {
         typeof(long),
         "BIGINT",
         DataVaultProviderValueFormat.UtcTicks);
+  }
+
+  [Theory]
+  [InlineData("sqlite-v1", "sha256-v1", 32)]
+  [InlineData("sqlite-v1", "sha1-v1", 20)]
+  [InlineData("sqlite-v1", "sha256-128-v1", 16)]
+  [InlineData("sqlite-v1", "sha256-160-v1", 20)]
+  [InlineData("oracle-v1", "sha256-v1", 32)]
+  [InlineData("oracle-v1", "sha1-v1", 20)]
+  [InlineData("oracle-v1", "sha256-128-v1", 16)]
+  [InlineData("oracle-v1", "sha256-160-v1", 20)]
+  [InlineData("postgres-v1", "sha256-v1", 32)]
+  [InlineData("postgres-v1", "sha1-v1", 20)]
+  [InlineData("postgres-v1", "sha256-128-v1", 16)]
+  [InlineData("postgres-v1", "sha256-160-v1", 20)]
+  [InlineData("sqlserver-v1", "sha256-v1", 32)]
+  [InlineData("sqlserver-v1", "sha1-v1", 20)]
+  [InlineData("sqlserver-v1", "sha256-128-v1", 16)]
+  [InlineData("sqlserver-v1", "sha256-160-v1", 20)]
+  [InlineData("db2-v1", "sha256-v1", 32)]
+  [InlineData("db2-v1", "sha1-v1", 20)]
+  [InlineData("db2-v1", "sha256-128-v1", 16)]
+  [InlineData("db2-v1", "sha256-160-v1", 20)]
+  [InlineData("mysql-pomelo-v1", "sha256-v1", 32)]
+  [InlineData("mysql-pomelo-v1", "sha1-v1", 20)]
+  [InlineData("mysql-pomelo-v1", "sha256-128-v1", 16)]
+  [InlineData("mysql-pomelo-v1", "sha256-160-v1", 20)]
+  public void HashKeyHexStringStorageProfilesSizeKeysAndReferencesByStableHashDigest(
+      string profileName,
+      string algorithmId,
+      int digestByteLength) {
+    var profile = SelectProfile(profileName).WithStableHashAlgorithm(algorithmId, digestByteLength);
+    var expectedStoreType = ExpectedHexStringStoreType(profileName, digestByteLength);
+
+    AssertHashKeyMapping(
+        profile,
+        DataVaultLogicalPropertyKind.HashKey,
+        expectedStoreType,
+        DataVaultHashKeyStorageProfile.HexString,
+        DataVaultProviderValueFormat.LowercaseHexText,
+        algorithmId,
+        digestByteLength,
+        "none-string-model");
+    AssertHashKeyMapping(
+        profile,
+        DataVaultLogicalPropertyKind.ParticipantReference,
+        expectedStoreType,
+        DataVaultHashKeyStorageProfile.HexString,
+        DataVaultProviderValueFormat.LowercaseHexText,
+        algorithmId,
+        digestByteLength,
+        "none-string-model");
+  }
+
+  [Theory]
+  [InlineData("sqlite-v1", "BLOB")]
+  [InlineData("oracle-v1", "RAW(20)")]
+  [InlineData("postgres-v1", "bytea")]
+  [InlineData("sqlserver-v1", "varbinary(20)")]
+  [InlineData("db2-v1", "VARBINARY(20)")]
+  [InlineData("mysql-pomelo-v1", "varbinary(20)")]
+  public void BinaryHashKeyStorageProfileIsExplicitOptInAndKeepsStringModelBoundary(
+      string profileName,
+      string expectedStoreType) {
+    var profile = SelectProfile(profileName).WithHashKeyStorageProfile(
+        DataVaultHashKeyStorageProfile.Binary,
+        "sha1-v1",
+        20);
+
+    AssertHashKeyMapping(
+        profile,
+        DataVaultLogicalPropertyKind.HashKey,
+        expectedStoreType,
+        DataVaultHashKeyStorageProfile.Binary,
+        DataVaultProviderValueFormat.LowercaseHexBinary,
+        "sha1-v1",
+        20,
+        "lowercase-hex-string-to-bytes");
   }
 
   [Fact]
@@ -452,5 +531,52 @@ public sealed class DataVaultProviderCapabilityProfileTests {
     Assert.Equal(expectedClrType, mapping.ModelClrType);
     Assert.Equal(expectedNativeStoreType, mapping.NativeStoreType);
     Assert.Equal(expectedValueFormat, mapping.ValueFormat);
+  }
+
+  private static void AssertHashKeyMapping(
+      DataVaultProviderCapabilityProfile profile,
+      DataVaultLogicalPropertyKind logicalPropertyKind,
+      string expectedStoreType,
+      DataVaultHashKeyStorageProfile expectedStorageProfile,
+      DataVaultProviderValueFormat expectedValueFormat,
+      string expectedAlgorithmId,
+      int expectedDigestByteLength,
+      string expectedConversionBehavior) {
+    var mapping = profile.GetRequiredTypeMapping(logicalPropertyKind);
+
+    Assert.Equal(typeof(string), mapping.ModelClrType);
+    Assert.Equal(expectedStoreType, mapping.NativeStoreType);
+    Assert.Equal(expectedValueFormat, mapping.ValueFormat);
+    Assert.Equal(expectedStorageProfile, mapping.HashKeyStorageProfile);
+    Assert.Equal(expectedAlgorithmId, mapping.StableHashAlgorithmId);
+    Assert.Equal(expectedDigestByteLength, mapping.DigestByteLength);
+    Assert.Equal("lowercase-hex-no-prefix", mapping.DigestEncoding);
+    Assert.Equal(expectedConversionBehavior, mapping.ConversionBehavior);
+  }
+
+  private static DataVaultProviderCapabilityProfile SelectProfile(string profileName) {
+    return profileName switch {
+      "sqlite-v1" => DataVaultProviderCapabilityProfiles.Sqlite,
+      "oracle-v1" => DataVaultProviderCapabilityProfiles.Oracle,
+      "postgres-v1" => DataVaultProviderCapabilityProfiles.Postgres,
+      "sqlserver-v1" => DataVaultProviderCapabilityProfiles.SqlServer,
+      "db2-v1" => DataVaultProviderCapabilityProfiles.Db2,
+      "mysql-pomelo-v1" => DataVaultProviderCapabilityProfiles.MySql,
+      _ => throw new ArgumentOutOfRangeException(nameof(profileName), profileName, "Unsupported test profile."),
+    };
+  }
+
+  private static string ExpectedHexStringStoreType(
+      string profileName,
+      int digestByteLength) {
+    var hexLength = digestByteLength * 2;
+    return profileName switch {
+      "sqlite-v1" => "TEXT",
+      "oracle-v1" => "VARCHAR2(" + hexLength.ToString(CultureInfo.InvariantCulture) + " CHAR)",
+      "postgres-v1" or "mysql-pomelo-v1" => "varchar(" + hexLength.ToString(CultureInfo.InvariantCulture) + ")",
+      "sqlserver-v1" => "nvarchar(" + hexLength.ToString(CultureInfo.InvariantCulture) + ")",
+      "db2-v1" => "VARCHAR(" + hexLength.ToString(CultureInfo.InvariantCulture) + ")",
+      _ => throw new ArgumentOutOfRangeException(nameof(profileName), profileName, "Unsupported test profile."),
+    };
   }
 }

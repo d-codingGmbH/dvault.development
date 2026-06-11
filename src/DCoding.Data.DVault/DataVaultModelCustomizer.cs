@@ -20,9 +20,11 @@ internal sealed class DataVaultModelCustomizer : ModelCustomizer {
     }
 
     var source = DataVaultDbContextMetadataSource.Resolve(context, extension);
+    var conventions = DataVaultDbContextMetadataSource.TryResolveAppDefaultConventions(context);
     DataVaultModelBuilderExtensions.ApplyDataVaultMetadataRegistry(
         modelBuilder,
         source.MetadataRegistry,
-        source.SourceKind);
+        source.SourceKind,
+        conventions: conventions);
   }
 }

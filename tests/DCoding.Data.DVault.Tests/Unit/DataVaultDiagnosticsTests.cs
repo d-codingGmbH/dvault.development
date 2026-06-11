@@ -67,12 +67,34 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal(algorithmId, result.Explain.StableHash.AlgorithmId);
     Assert.Equal(digestByteLength, result.Explain.StableHash.DigestByteLength);
     Assert.Equal("lowercase-hex-no-prefix", result.Explain.StableHash.DigestEncoding);
+    var hashKeyMapping = result.Explain.TypeMappings.Single(mapping =>
+        mapping.LogicalPropertyKind == DataVaultLogicalPropertyKind.HashKey);
+    var hashReferenceMapping = result.Explain.TypeMappings.Single(mapping =>
+        mapping.LogicalPropertyKind == DataVaultLogicalPropertyKind.ParticipantReference);
+    AssertHashKeyStorageFacts(hashKeyMapping, algorithmId, digestByteLength);
+    AssertHashKeyStorageFacts(hashReferenceMapping, algorithmId, digestByteLength);
+    var hashKeyProperties = result.Explain.Entities
+        .SelectMany(entity => entity.Properties)
+        .Where(property => property.LogicalPropertyKind is
+            DataVaultLogicalPropertyKind.HashKey or
+            DataVaultLogicalPropertyKind.ParticipantReference)
+        .ToArray();
+    Assert.NotEmpty(hashKeyProperties);
+    Assert.All(hashKeyProperties, property => {
+      Assert.Equal(DataVaultHashKeyStorageProfile.HexString, property.HashKeyStorageProfile);
+      Assert.Equal(algorithmId, property.StableHashAlgorithmId);
+      Assert.Equal(digestByteLength, property.DigestByteLength);
+      Assert.Equal("lowercase-hex-no-prefix", property.DigestEncoding);
+      Assert.Equal("none-string-model", property.ConversionBehavior);
+      Assert.Equal(DataVaultProviderValueFormat.LowercaseHexText, property.ValueFormat);
+    });
 
     var display = result.ToDisplayString();
     Assert.Contains(
         "stable hash " + algorithmId + "/" + digestByteLength + " bytes/lowercase-hex-no-prefix",
         display,
         StringComparison.Ordinal);
+    Assert.Contains("hash-key storage HexString/TEXT/none-string-model", display, StringComparison.Ordinal);
 
     var supportBundleJson = DataVaultSupportBundleExporter.ExportJson(result);
     using var document = JsonDocument.Parse(supportBundleJson);
@@ -85,6 +107,18 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal(algorithmId, stableHash.GetProperty("algorithmId").GetString());
     Assert.Equal(digestByteLength, stableHash.GetProperty("digestByteLength").GetInt32());
     Assert.Equal("lowercase-hex-no-prefix", stableHash.GetProperty("digestEncoding").GetString());
+    var supportHashKeyMapping = document
+        .RootElement
+        .GetProperty("diagnostics")
+        .GetProperty("explain")
+        .GetProperty("typeMappings")
+        .EnumerateArray()
+        .Single(mapping => mapping.GetProperty("logicalPropertyKind").GetString() == "HashKey");
+    Assert.Equal("HexString", supportHashKeyMapping.GetProperty("hashKeyStorageProfile").GetString());
+    Assert.Equal(algorithmId, supportHashKeyMapping.GetProperty("stableHashAlgorithmId").GetString());
+    Assert.Equal(digestByteLength, supportHashKeyMapping.GetProperty("digestByteLength").GetInt32());
+    Assert.Equal("lowercase-hex-no-prefix", supportHashKeyMapping.GetProperty("digestEncoding").GetString());
+    Assert.Equal("none-string-model", supportHashKeyMapping.GetProperty("conversionBehavior").GetString());
 
     var forbiddenDigest = provider
         .GetRequiredService<IStableHashService>()
@@ -94,6 +128,34 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.DoesNotContain("diagnostics-secret-business-key", supportBundleJson, StringComparison.Ordinal);
     Assert.DoesNotContain(forbiddenDigest, display, StringComparison.Ordinal);
     Assert.DoesNotContain(forbiddenDigest, supportBundleJson, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void SupportBundleBaselineDistinguishesSameWidthStableHashAlgorithmDrift() {
+    using var sha1Provider = CreateServiceProvider("sha1-v1");
+    using var sha256160Provider = CreateServiceProvider("sha256-160-v1");
+    var sha1Diagnostics = sha1Provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    var sha256160Diagnostics = sha256160Provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    var sha1Result = sha1Diagnostics.Analyze(CreateCustomerMetadataModel(), DataVaultProviderCapabilityProfiles.SqlServer);
+    var sha256160Result = sha256160Diagnostics.Analyze(CreateCustomerMetadataModel(), DataVaultProviderCapabilityProfiles.SqlServer);
+
+    var sha1HashKey = sha1Result.Explain.TypeMappings.Single(mapping =>
+        mapping.LogicalPropertyKind == DataVaultLogicalPropertyKind.HashKey);
+    var sha256160HashKey = sha256160Result.Explain.TypeMappings.Single(mapping =>
+        mapping.LogicalPropertyKind == DataVaultLogicalPropertyKind.HashKey);
+    Assert.Equal(20, sha1HashKey.DigestByteLength);
+    Assert.Equal(20, sha256160HashKey.DigestByteLength);
+    Assert.Equal(sha1HashKey.StoreType, sha256160HashKey.StoreType);
+    Assert.NotEqual(sha1HashKey.StableHashAlgorithmId, sha256160HashKey.StableHashAlgorithmId);
+
+    var sha1BundleJson = DataVaultSupportBundleExporter.ExportJson(sha1Result);
+    var sha256160BundleJson = DataVaultSupportBundleExporter.ExportJson(sha256160Result);
+
+    Assert.Contains("\"algorithmId\": \"sha1-v1\"", sha1BundleJson, StringComparison.Ordinal);
+    Assert.Contains("\"stableHashAlgorithmId\": \"sha1-v1\"", sha1BundleJson, StringComparison.Ordinal);
+    Assert.Contains("\"algorithmId\": \"sha256-160-v1\"", sha256160BundleJson, StringComparison.Ordinal);
+    Assert.Contains("\"stableHashAlgorithmId\": \"sha256-160-v1\"", sha256160BundleJson, StringComparison.Ordinal);
   }
 
   [Fact]
@@ -1194,6 +1256,18 @@ public sealed class DataVaultDiagnosticsTests {
       IReadOnlyList<string> columnNames) {
     Assert.Equal(role, columnSet.Role);
     Assert.Equal(columnNames, columnSet.ColumnNames);
+  }
+
+  private static void AssertHashKeyStorageFacts(
+      DataVaultProviderTypeMappingExplain mapping,
+      string expectedAlgorithmId,
+      int expectedDigestByteLength) {
+    Assert.Equal(DataVaultHashKeyStorageProfile.HexString, mapping.HashKeyStorageProfile);
+    Assert.Equal(expectedAlgorithmId, mapping.StableHashAlgorithmId);
+    Assert.Equal(expectedDigestByteLength, mapping.DigestByteLength);
+    Assert.Equal("lowercase-hex-no-prefix", mapping.DigestEncoding);
+    Assert.Equal("none-string-model", mapping.ConversionBehavior);
+    Assert.Equal(DataVaultProviderValueFormat.LowercaseHexText, mapping.ValueFormat);
   }
 
   private static void AssertMigrationIssue(

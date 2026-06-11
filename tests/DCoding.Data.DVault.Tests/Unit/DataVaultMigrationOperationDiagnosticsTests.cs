@@ -562,6 +562,49 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
   }
 
   [Fact]
+  public void AnalyzeMigrationOperationsBlocksSameWidthStableHashAlgorithmDrift() {
+    using var provider = CreateServiceProvider("sha1-v1");
+    var baseline = provider
+        .GetRequiredService<IDataVaultDiagnosticsService>()
+        .Analyze(CreateMigrationGuardrailMetadataModel(), DataVaultProviderCapabilityProfiles.SqlServer);
+    var hashKey = FindGeneratedColumn(baseline, "HubCustomer", "CustomerHashKey");
+    var reference = FindGeneratedColumn(baseline, "LinkCustomerOrder", "OrderHashKey");
+
+    var report = DataVaultMigrationOperationDiagnostics.AnalyzeReport(
+        baseline,
+        [
+            CreateSameWidthAlgorithmDriftAlterColumnOperation("HubCustomer", hashKey),
+            CreateSameWidthAlgorithmDriftAlterColumnOperation("LinkCustomerOrder", reference),
+        ]);
+
+    Assert.False(report.IsValid);
+    Assert.Collection(
+        report.Issues,
+        issue => {
+          AssertIssue(
+              issue,
+              "DVM2003",
+              DataVaultDiagnosticsIssueSeverity.Error,
+              "migration/AlterColumn/HubCustomer/CustomerHashKey",
+              "MI-3");
+          Assert.Contains("stable-hash algorithm id", issue.Message, StringComparison.Ordinal);
+          Assert.Contains("sha1-v1", issue.Message, StringComparison.Ordinal);
+          Assert.Contains("sha256-160-v1", issue.Message, StringComparison.Ordinal);
+        },
+        issue => {
+          AssertIssue(
+              issue,
+              "DVM2003",
+              DataVaultDiagnosticsIssueSeverity.Error,
+              "migration/AlterColumn/LinkCustomerOrder/OrderHashKey",
+              "MI-3");
+          Assert.Contains("stable-hash algorithm id", issue.Message, StringComparison.Ordinal);
+          Assert.Contains("sha1-v1", issue.Message, StringComparison.Ordinal);
+          Assert.Contains("sha256-160-v1", issue.Message, StringComparison.Ordinal);
+        });
+  }
+
+  [Fact]
   public void AnalyzeMigrationOperationsReportExposesOrderedOperationOutcomes() {
     using var provider = CreateServiceProvider();
     var baseline = provider
@@ -799,6 +842,13 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
         property.StoreType,
         property.IsNullable);
     operation.AddAnnotation(DataVaultAnnotationNames.ProviderValueFormat, property.ValueFormat);
+    if (property.HashKeyStorageProfile is not null) {
+      operation.AddAnnotation(DataVaultAnnotationNames.HashKeyStorageProfile, property.HashKeyStorageProfile.Value);
+      operation.AddAnnotation(DataVaultAnnotationNames.StableHashAlgorithmId, property.StableHashAlgorithmId);
+      operation.AddAnnotation(DataVaultAnnotationNames.StableHashDigestByteLength, property.DigestByteLength);
+      operation.AddAnnotation(DataVaultAnnotationNames.StableHashDigestEncoding, property.DigestEncoding);
+      operation.AddAnnotation(DataVaultAnnotationNames.HashKeyConversionBehavior, property.ConversionBehavior);
+    }
 
     return operation;
   }
@@ -957,6 +1007,26 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
       IsNullable = !column.IsNullable,
     };
     operation.AddAnnotation(DataVaultAnnotationNames.ProviderValueFormat, driftValueFormat);
+
+    return operation;
+  }
+
+  private static AlterColumnOperation CreateSameWidthAlgorithmDriftAlterColumnOperation(
+      string tableName,
+      DataVaultPropertyExplain column) {
+    var operation = new AlterColumnOperation {
+      Table = tableName,
+      Name = column.Name,
+      ClrType = GetColumnClrType(column),
+      ColumnType = column.StoreType,
+      IsNullable = column.IsNullable,
+    };
+    operation.AddAnnotation(DataVaultAnnotationNames.ProviderValueFormat, column.ValueFormat);
+    operation.AddAnnotation(DataVaultAnnotationNames.HashKeyStorageProfile, column.HashKeyStorageProfile);
+    operation.AddAnnotation(DataVaultAnnotationNames.StableHashAlgorithmId, "sha256-160-v1");
+    operation.AddAnnotation(DataVaultAnnotationNames.StableHashDigestByteLength, column.DigestByteLength);
+    operation.AddAnnotation(DataVaultAnnotationNames.StableHashDigestEncoding, column.DigestEncoding);
+    operation.AddAnnotation(DataVaultAnnotationNames.HashKeyConversionBehavior, column.ConversionBehavior);
 
     return operation;
   }
@@ -1122,9 +1192,14 @@ public sealed class DataVaultMigrationOperationDiagnosticsTests {
     Assert.NotEmpty(DataVaultDiagnosticCatalog.GetMigrationOperationDefinition(code).Remediation);
   }
 
-  private static ServiceProvider CreateServiceProvider() {
+  private static ServiceProvider CreateServiceProvider(string? stableHashAlgorithmId = null) {
     var services = new ServiceCollection();
-    services.AddDVault();
+    if (stableHashAlgorithmId is null) {
+      services.AddDVault();
+    }
+    else {
+      services.AddDVault(options => options.UseStableHashAlgorithm(stableHashAlgorithmId));
+    }
 
     return services.BuildServiceProvider(validateScopes: true);
   }

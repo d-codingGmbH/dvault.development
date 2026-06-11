@@ -62,6 +62,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       DataVaultProviderCapabilityProfile providerCapabilities) {
     ArgumentNullException.ThrowIfNull(metadataModel);
     ArgumentNullException.ThrowIfNull(providerCapabilities);
+    providerCapabilities = CreateHashKeyCapabilityProfile(providerCapabilities);
 
     return AnalyzeMetadataModel(
         metadataModel,
@@ -91,6 +92,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       DataVaultProviderCapabilityProfile providerCapabilities) {
     ArgumentNullException.ThrowIfNull(metadataRegistry);
     ArgumentNullException.ThrowIfNull(providerCapabilities);
+    providerCapabilities = CreateHashKeyCapabilityProfile(providerCapabilities);
 
     return AnalyzeMetadataModel(
         DataVaultMetadataSourceAnnotations.CreateMetadataModel(metadataRegistry),
@@ -112,6 +114,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       DataVaultProviderCapabilityProfile providerCapabilities) {
     ArgumentNullException.ThrowIfNull(configureModel);
     ArgumentNullException.ThrowIfNull(providerCapabilities);
+    providerCapabilities = CreateHashKeyCapabilityProfile(providerCapabilities);
 
     try {
       var builder = new DataVaultCodeFirstModelBuilder();
@@ -263,7 +266,10 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     if (!validationIssues.Any(issue => issue.Severity == DataVaultDiagnosticsIssueSeverity.Error)) {
       try {
         modelBuilder = new ModelBuilder(new ConventionSet());
-        modelBuilder.UseDataVault(providerCapabilities);
+        providerCapabilities = DataVaultModelBuilderExtensions.UseDataVaultCore(
+            modelBuilder,
+            providerCapabilities,
+            CreateStableHashConventions());
         DataVaultEfMetadataTranslator.Apply(modelBuilder, metadataModel, providerCapabilities);
       }
       catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or NotSupportedException) {
@@ -304,7 +310,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     ArgumentNullException.ThrowIfNull(dbContext);
 
     var providerName = dbContext.Database.ProviderName;
-    var capabilityProfile = DataVaultProviderCapabilityProfileSelection.Select(providerName);
+    var capabilityProfile = CreateHashKeyCapabilityProfile(DataVaultProviderCapabilityProfileSelection.Select(providerName));
     var capabilityProfileDefaulted =
         !string.IsNullOrWhiteSpace(providerName) &&
         !DataVaultProviderCapabilityProfileSelection.TrySelectRegistered(providerName, out _);
@@ -1436,6 +1442,23 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         "lowercase-hex-no-prefix");
   }
 
+  private DataVaultConventions CreateStableHashConventions() {
+    var digest = _stableHashService.ComputeHash(string.Empty);
+    return DataVaultConventions.CreateWithStableHashAlgorithm(
+        _stableHashService.AlgorithmId,
+        digest.DigestByteLength);
+  }
+
+  private DataVaultProviderCapabilityProfile CreateHashKeyCapabilityProfile(
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    var hashKeyMapping = providerCapabilities.GetRequiredTypeMapping(DataVaultLogicalPropertyKind.HashKey);
+    var digest = _stableHashService.ComputeHash(string.Empty);
+    return providerCapabilities.WithHashKeyStorageProfile(
+        hashKeyMapping.HashKeyStorageProfile ?? DataVaultHashKeyStorageProfile.HexString,
+        _stableHashService.AlgorithmId,
+        digest.DigestByteLength);
+  }
+
   private static DataVaultEntityExplain CreateEntityExplain(IReadOnlyEntityType entityType) {
     var producedName = GetStringAnnotation(entityType, DataVaultAnnotationNames.ProducedName) ??
         entityType.GetTableName() ??
@@ -1505,6 +1528,13 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       ClrTypeName = property.ClrType.FullName ?? property.ClrType.Name,
       IsNullable = property.IsNullable,
       ProducedName = producedName,
+      HashKeyStorageProfile = GetNullableAnnotationValue<DataVaultHashKeyStorageProfile>(
+          property,
+          DataVaultAnnotationNames.HashKeyStorageProfile),
+      StableHashAlgorithmId = GetStringAnnotation(property, DataVaultAnnotationNames.StableHashAlgorithmId),
+      DigestByteLength = GetNullableAnnotationValue<int>(property, DataVaultAnnotationNames.StableHashDigestByteLength),
+      DigestEncoding = GetStringAnnotation(property, DataVaultAnnotationNames.StableHashDigestEncoding),
+      ConversionBehavior = GetStringAnnotation(property, DataVaultAnnotationNames.HashKeyConversionBehavior),
     };
   }
 
@@ -1846,7 +1876,13 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
             mapping.LogicalPropertyKind,
             mapping.ModelClrType.FullName ?? mapping.ModelClrType.Name,
             mapping.NativeStoreType,
-            mapping.ValueFormat))
+            mapping.ValueFormat) {
+          HashKeyStorageProfile = mapping.HashKeyStorageProfile,
+          StableHashAlgorithmId = mapping.StableHashAlgorithmId,
+          DigestByteLength = mapping.DigestByteLength,
+          DigestEncoding = mapping.DigestEncoding,
+          ConversionBehavior = mapping.ConversionBehavior,
+        })
         .ToArray();
   }
 

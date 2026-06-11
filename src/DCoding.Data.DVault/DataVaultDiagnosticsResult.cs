@@ -82,6 +82,17 @@ public sealed record DataVaultDiagnosticsResult(
     builder.Append(Explain.StableHash.DigestByteLength.ToString(CultureInfo.InvariantCulture));
     builder.Append(" bytes/");
     builder.Append(Explain.StableHash.DigestEncoding);
+    var hashKeyMapping = Explain.TypeMappings.FirstOrDefault(mapping =>
+        mapping.LogicalPropertyKind == DataVaultLogicalPropertyKind.HashKey);
+    if (hashKeyMapping is not null && hashKeyMapping.HashKeyStorageProfile is not null) {
+      builder.Append(", hash-key storage ");
+      builder.Append(hashKeyMapping.HashKeyStorageProfile);
+      builder.Append('/');
+      builder.Append(hashKeyMapping.StoreType);
+      builder.Append('/');
+      builder.Append(hashKeyMapping.ConversionBehavior ?? "<unspecified>");
+    }
+
     builder.Append(", entities ");
     builder.Append(Explain.Entities.Count.ToString(CultureInfo.InvariantCulture));
     builder.Append(", save strategy ");

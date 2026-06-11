@@ -1,6 +1,7 @@
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace DCoding.Data.DVault;
 
@@ -939,6 +940,13 @@ internal static class DataVaultEfMetadataTranslator {
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProviderLogicalPropertyKind, logicalPropertyKind);
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProviderStorageType, typeMapping.NativeStoreType);
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProviderValueFormat, typeMapping.ValueFormat);
+    if (typeMapping.HashKeyStorageProfile is not null) {
+      propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.HashKeyStorageProfile, typeMapping.HashKeyStorageProfile.Value);
+      propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.StableHashAlgorithmId, typeMapping.StableHashAlgorithmId);
+      propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.StableHashDigestByteLength, typeMapping.DigestByteLength);
+      propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.StableHashDigestEncoding, typeMapping.DigestEncoding);
+      propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.HashKeyConversionBehavior, typeMapping.ConversionBehavior);
+    }
 
     if (property.TechnicalRole is not null) {
       propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.TechnicalColumnRole, property.TechnicalRole);
@@ -957,7 +965,12 @@ internal static class DataVaultEfMetadataTranslator {
     }
 
     if (typeMapping.ModelClrType == typeof(string)) {
-      return entityBuilder.IndexerProperty<string>(property.Name);
+      var propertyBuilder = entityBuilder.IndexerProperty<string>(property.Name);
+      if (typeMapping.ValueFormat == DataVaultProviderValueFormat.LowercaseHexBinary) {
+        propertyBuilder.HasConversion(LowercaseHexStringToBytesConverter.Instance);
+      }
+
+      return propertyBuilder;
     }
 
     if (typeMapping.ModelClrType == typeof(int)) {
@@ -1038,4 +1051,14 @@ internal static class DataVaultEfMetadataTranslator {
   }
 
   private readonly record struct EndpointColumn(DataVaultBridgeEndpointRole Role, string ColumnName);
+
+  private sealed class LowercaseHexStringToBytesConverter : ValueConverter<string, byte[]> {
+    public static LowercaseHexStringToBytesConverter Instance { get; } = new();
+
+    private LowercaseHexStringToBytesConverter()
+        : base(
+            value => Convert.FromHexString(value),
+            value => Convert.ToHexString(value).ToLowerInvariant()) {
+    }
+  }
 }

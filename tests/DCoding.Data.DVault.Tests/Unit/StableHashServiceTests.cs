@@ -83,6 +83,8 @@ public sealed class StableHashServiceTests {
 
     Assert.Equal("sha256-v1", hashService.AlgorithmId);
     Assert.Equal("sha256-v1", conventions.StableHashAlgorithmId);
+    Assert.Equal(32, conventions.StableHashDigestByteLength);
+    Assert.Equal(DataVaultHashKeyStorageProfile.HexString, conventions.HashKeyStorageProfile);
     Assert.Equal("sha-256", conventions.PersistenceContentHashAlgorithm);
     Assert.Equal("n:", normalizer.NormalizeValue(null));
   }
@@ -128,6 +130,8 @@ public sealed class StableHashServiceTests {
     Assert.Equal(byteLength, digest.DigestByteLength);
     Assert.Matches("^[0-9a-f]{" + hexLength + "}$", digest.Value);
     Assert.Equal(algorithmId, conventions.StableHashAlgorithmId);
+    Assert.Equal(byteLength, conventions.StableHashDigestByteLength);
+    Assert.Equal(DataVaultHashKeyStorageProfile.HexString, conventions.HashKeyStorageProfile);
     Assert.Equal("sha-256", conventions.PersistenceContentHashAlgorithm);
   }
 

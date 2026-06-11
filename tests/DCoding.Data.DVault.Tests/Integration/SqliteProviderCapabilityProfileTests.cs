@@ -7,13 +7,15 @@ namespace DCoding.Data.DVault.Tests.Integration;
 [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqliteProvider)]
 public sealed class SqliteProviderCapabilityProfileTests {
   [Fact]
-  public void SqliteProfileTextStorageDeclarationsWorkWithRawSqliteTextValues() {
+  public void SqliteProfileHexStringStorageDeclarationsWorkWithRawSqliteTextValues() {
     var profile = DataVaultProviderCapabilityProfiles.Sqlite;
     var timestampMapping = profile.GetRequiredTypeMapping(DataVaultLogicalPropertyKind.LoadTimestamp);
     var hashKeyMapping = profile.GetRequiredTypeMapping(DataVaultLogicalPropertyKind.HashKey);
 
     Assert.Equal(DataVaultProviderValueFormat.Iso8601UtcText, timestampMapping.ValueFormat);
-    Assert.Equal(DataVaultProviderValueFormat.Text, hashKeyMapping.ValueFormat);
+    Assert.Equal(DataVaultProviderValueFormat.LowercaseHexText, hashKeyMapping.ValueFormat);
+
+    const string hashKeyValue = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
     using var database = SqliteTestDatabase.CreateInMemory();
     using var connection = database.CreateOpenConnection();
@@ -25,12 +27,12 @@ public sealed class SqliteProviderCapabilityProfileTests {
               );
 
               INSERT INTO vault_projection (load_timestamp, hash_key)
-              VALUES ('2026-04-29T10:15:00Z', 'customer-hash-key');
+              VALUES ('2026-04-29T10:15:00Z', '{hashKeyValue}');
               """);
 
     Assert.Equal("text", connection.ExecuteScalarString("SELECT typeof(load_timestamp) FROM vault_projection"));
     Assert.Equal("text", connection.ExecuteScalarString("SELECT typeof(hash_key) FROM vault_projection"));
     Assert.Equal("2026-04-29T10:15:00Z", connection.ExecuteScalarString("SELECT load_timestamp FROM vault_projection"));
-    Assert.Equal("customer-hash-key", connection.ExecuteScalarString("SELECT hash_key FROM vault_projection"));
+    Assert.Equal(hashKeyValue, connection.ExecuteScalarString("SELECT hash_key FROM vault_projection"));
   }
 }

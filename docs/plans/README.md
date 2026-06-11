@@ -13,6 +13,7 @@ This folder contains durable design contracts and release planning notes that ar
 - `fluent-hub-satellite-child-boundary.md`
 - `fluent-link-child-boundary.md`
 - `fluent-parity-child-boundary.md`
+- `hash-key-storage-profile-contract.md`
 - `multi-active-satellite-driving-key-contract.md`
 - `optional-advanced-configuration-hooks.md`
 - `pit-backed-as-of-read-api-contract.md`

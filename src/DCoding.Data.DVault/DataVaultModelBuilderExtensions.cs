@@ -30,8 +30,7 @@ public static class DataVaultModelBuilderExtensions {
     ArgumentNullException.ThrowIfNull(modelBuilder);
     ArgumentNullException.ThrowIfNull(providerCapabilities);
 
-    modelBuilder.Model.SetAnnotation(DataVaultAnnotationNames.Conventions, DataVaultConventions.Default);
-    modelBuilder.Model.SetAnnotation(DataVaultAnnotationNames.ProviderProfile, providerCapabilities.ProfileName);
+    UseDataVaultCore(modelBuilder, providerCapabilities);
 
     return modelBuilder;
   }
@@ -166,7 +165,7 @@ public static class DataVaultModelBuilderExtensions {
       return modelBuilder;
     }
 
-    modelBuilder.UseDataVault(providerCapabilities);
+    providerCapabilities = UseDataVaultCore(modelBuilder, providerCapabilities);
     DataVaultEfMetadataTranslator.Apply(modelBuilder, metadataModel, providerCapabilities);
 
     return modelBuilder;
@@ -196,7 +195,8 @@ public static class DataVaultModelBuilderExtensions {
       ModelBuilder modelBuilder,
       DataVaultMetadataRegistry metadataRegistry,
       string sourceKind,
-      DataVaultProviderCapabilityProfile? providerCapabilities = null) {
+      DataVaultProviderCapabilityProfile? providerCapabilities = null,
+      DataVaultConventions? conventions = null) {
     ArgumentNullException.ThrowIfNull(modelBuilder);
     ArgumentNullException.ThrowIfNull(metadataRegistry);
     ArgumentException.ThrowIfNullOrWhiteSpace(sourceKind);
@@ -214,9 +214,54 @@ public static class DataVaultModelBuilderExtensions {
         : DataVaultMetadataSourceAnnotations.SelectProviderCapabilities(providerCapabilities, metadataRegistry);
     var metadataModel = DataVaultMetadataSourceAnnotations.CreateMetadataModel(metadataRegistry);
 
-    modelBuilder.UseDataVault(providerCapabilities);
+    providerCapabilities = UseDataVaultCore(modelBuilder, providerCapabilities, conventions);
     DataVaultEfMetadataTranslator.Apply(modelBuilder, metadataModel, providerCapabilities);
 
     return modelBuilder;
+  }
+
+  internal static DataVaultProviderCapabilityProfile UseDataVaultCore(
+      ModelBuilder modelBuilder,
+      DataVaultProviderCapabilityProfile providerCapabilities,
+      DataVaultConventions? conventions = null) {
+    ArgumentNullException.ThrowIfNull(modelBuilder);
+    ArgumentNullException.ThrowIfNull(providerCapabilities);
+
+    var currentHashKeyMapping = providerCapabilities.GetRequiredTypeMapping(DataVaultLogicalPropertyKind.HashKey);
+    var annotatedConventions = modelBuilder.Model.FindAnnotation(DataVaultAnnotationNames.Conventions)?.Value as DataVaultConventions;
+    var providerHasNonDefaultHashShape = HasNonDefaultHashKeyShape(currentHashKeyMapping);
+    var modelConventions = providerHasNonDefaultHashShape ? null : annotatedConventions;
+    var hashKeyStorageProfile = conventions?.HashKeyStorageProfile ??
+        modelConventions?.HashKeyStorageProfile ??
+        currentHashKeyMapping.HashKeyStorageProfile ??
+        DataVaultConventions.Default.HashKeyStorageProfile;
+    var stableHashAlgorithmId = conventions?.StableHashAlgorithmId ??
+        modelConventions?.StableHashAlgorithmId ??
+        currentHashKeyMapping.StableHashAlgorithmId ??
+        DataVaultConventions.Default.StableHashAlgorithmId;
+    var stableHashDigestByteLength = conventions?.StableHashDigestByteLength ??
+        modelConventions?.StableHashDigestByteLength ??
+        currentHashKeyMapping.DigestByteLength ??
+        DataVaultConventions.Default.StableHashDigestByteLength;
+    conventions = DataVaultConventions.CreateWithStableHashAlgorithm(
+        stableHashAlgorithmId,
+        stableHashDigestByteLength,
+        hashKeyStorageProfile);
+    var projectedProviderCapabilities = providerCapabilities.WithHashKeyStorageProfile(
+        hashKeyStorageProfile,
+        stableHashAlgorithmId,
+        stableHashDigestByteLength);
+
+    modelBuilder.Model.SetAnnotation(DataVaultAnnotationNames.Conventions, conventions);
+    modelBuilder.Model.SetAnnotation(DataVaultAnnotationNames.ProviderProfile, projectedProviderCapabilities.ProfileName);
+
+    return projectedProviderCapabilities;
+  }
+
+  private static bool HasNonDefaultHashKeyShape(DataVaultProviderTypeMapping mapping) {
+    return mapping.HashKeyStorageProfile is not null &&
+        (mapping.HashKeyStorageProfile != DataVaultConventions.Default.HashKeyStorageProfile ||
+            !string.Equals(mapping.StableHashAlgorithmId, DataVaultConventions.Default.StableHashAlgorithmId, StringComparison.Ordinal) ||
+            mapping.DigestByteLength != DataVaultConventions.Default.StableHashDigestByteLength);
   }
 }

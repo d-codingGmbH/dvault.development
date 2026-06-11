@@ -70,7 +70,9 @@ public sealed class DataVaultOptions {
 
     _stableHashServiceDescriptor = ServiceDescriptor.Singleton(stableHashService);
     _conventionsDescriptor = ServiceDescriptor.Singleton(
-        DataVaultConventions.CreateWithStableHashAlgorithm(stableHashService.AlgorithmId));
+        DataVaultConventions.CreateWithStableHashAlgorithm(
+            stableHashService.AlgorithmId,
+            stableHashService.ComputeHash(string.Empty).DigestByteLength));
     return this;
   }
 

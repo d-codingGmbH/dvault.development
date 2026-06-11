@@ -70,6 +70,31 @@ public static class DataVaultAnnotationNames {
   public const string ProviderValueFormat = "DCoding.Data.DVault:ProviderValueFormat";
 
   /// <summary>
+  /// Identifies the annotation that stores the hash-key physical storage profile.
+  /// </summary>
+  public const string HashKeyStorageProfile = "DCoding.Data.DVault:HashKeyStorageProfile";
+
+  /// <summary>
+  /// Identifies the annotation that stores the stable-hash algorithm id for hash-key columns.
+  /// </summary>
+  public const string StableHashAlgorithmId = "DCoding.Data.DVault:StableHashAlgorithmId";
+
+  /// <summary>
+  /// Identifies the annotation that stores the stable-hash digest byte length for hash-key columns.
+  /// </summary>
+  public const string StableHashDigestByteLength = "DCoding.Data.DVault:StableHashDigestByteLength";
+
+  /// <summary>
+  /// Identifies the annotation that stores the stable-hash digest encoding for hash-key columns.
+  /// </summary>
+  public const string StableHashDigestEncoding = "DCoding.Data.DVault:StableHashDigestEncoding";
+
+  /// <summary>
+  /// Identifies the annotation that stores the EF conversion behavior for hash-key columns.
+  /// </summary>
+  public const string HashKeyConversionBehavior = "DCoding.Data.DVault:HashKeyConversionBehavior";
+
+  /// <summary>
   /// Identifies the annotation that stores the authoritative Data Vault metadata source kind for an Entity Framework model.
   /// </summary>
   public const string MetadataSourceKind = "DCoding.Data.DVault:MetadataSourceKind";

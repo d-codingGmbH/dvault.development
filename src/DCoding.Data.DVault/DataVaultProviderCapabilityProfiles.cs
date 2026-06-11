@@ -6,6 +6,9 @@ namespace DCoding.Data.DVault;
 /// Provides built-in provider capability profiles for the v1 Data Vault translator.
 /// </summary>
 public static class DataVaultProviderCapabilityProfiles {
+  private const string DefaultStableHashAlgorithmId = "sha256-v1";
+  private const int DefaultStableHashDigestByteLength = 32;
+
   /// <summary>
   /// Gets the initial SQLite v1 provider capability profile.
   /// </summary>
@@ -14,7 +17,7 @@ public static class DataVaultProviderCapabilityProfiles {
       DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported,
       DataVaultProviderConcurrencySupport.NoneInV1Unsupported,
       [
-          Text(DataVaultLogicalPropertyKind.HashKey),
+          HashKeyText(DataVaultLogicalPropertyKind.HashKey),
           Text(DataVaultLogicalPropertyKind.HashDiff),
           new(
               DataVaultLogicalPropertyKind.LoadTimestamp,
@@ -22,7 +25,7 @@ public static class DataVaultProviderCapabilityProfiles {
               "TEXT",
               DataVaultProviderValueFormat.Iso8601UtcText),
           Text(DataVaultLogicalPropertyKind.RecordSource),
-          Text(DataVaultLogicalPropertyKind.ParticipantReference),
+          HashKeyText(DataVaultLogicalPropertyKind.ParticipantReference),
           Text(DataVaultLogicalPropertyKind.BusinessKey),
           Text(DataVaultLogicalPropertyKind.PayloadText),
           new(
@@ -42,7 +45,7 @@ public static class DataVaultProviderCapabilityProfiles {
       DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported,
       DataVaultProviderConcurrencySupport.NoneInV1Unsupported,
       [
-          Text(DataVaultLogicalPropertyKind.HashKey, "VARCHAR2(64 CHAR)"),
+          HashKeyText(DataVaultLogicalPropertyKind.HashKey, "VARCHAR2(64 CHAR)"),
           Text(DataVaultLogicalPropertyKind.HashDiff, "VARCHAR2(64 CHAR)"),
           new(
               DataVaultLogicalPropertyKind.LoadTimestamp,
@@ -50,7 +53,7 @@ public static class DataVaultProviderCapabilityProfiles {
               "VARCHAR2(33 CHAR)",
               DataVaultProviderValueFormat.Iso8601UtcText),
           Text(DataVaultLogicalPropertyKind.RecordSource, "VARCHAR2(255 CHAR)"),
-          Text(DataVaultLogicalPropertyKind.ParticipantReference, "VARCHAR2(64 CHAR)"),
+          HashKeyText(DataVaultLogicalPropertyKind.ParticipantReference, "VARCHAR2(64 CHAR)"),
           Text(DataVaultLogicalPropertyKind.BusinessKey, "VARCHAR2(255 CHAR)"),
           Text(DataVaultLogicalPropertyKind.PayloadText, "CLOB"),
           new(
@@ -71,7 +74,7 @@ public static class DataVaultProviderCapabilityProfiles {
       DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported,
       DataVaultProviderConcurrencySupport.NoneInV1Unsupported,
       [
-          Text(DataVaultLogicalPropertyKind.HashKey, "varchar(64)"),
+          HashKeyText(DataVaultLogicalPropertyKind.HashKey, "varchar(64)"),
           Text(DataVaultLogicalPropertyKind.HashDiff, "varchar(64)"),
           new(
               DataVaultLogicalPropertyKind.LoadTimestamp,
@@ -79,7 +82,7 @@ public static class DataVaultProviderCapabilityProfiles {
               "timestamp with time zone",
               DataVaultProviderValueFormat.NativeDateTimeOffset),
           Text(DataVaultLogicalPropertyKind.RecordSource, "varchar(255)"),
-          Text(DataVaultLogicalPropertyKind.ParticipantReference, "varchar(64)"),
+          HashKeyText(DataVaultLogicalPropertyKind.ParticipantReference, "varchar(64)"),
           Text(DataVaultLogicalPropertyKind.BusinessKey, "varchar(255)"),
           Text(DataVaultLogicalPropertyKind.PayloadText, "text"),
           new(
@@ -99,7 +102,7 @@ public static class DataVaultProviderCapabilityProfiles {
       DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported,
       DataVaultProviderConcurrencySupport.NoneInV1Unsupported,
       [
-          Text(DataVaultLogicalPropertyKind.HashKey, "VARCHAR(64)"),
+          HashKeyText(DataVaultLogicalPropertyKind.HashKey, "VARCHAR(64)"),
           Text(DataVaultLogicalPropertyKind.HashDiff, "VARCHAR(64)"),
           new(
               DataVaultLogicalPropertyKind.LoadTimestamp,
@@ -107,7 +110,7 @@ public static class DataVaultProviderCapabilityProfiles {
               "VARCHAR(33)",
               DataVaultProviderValueFormat.Iso8601UtcText),
           Text(DataVaultLogicalPropertyKind.RecordSource, "VARCHAR(255)"),
-          Text(DataVaultLogicalPropertyKind.ParticipantReference, "VARCHAR(64)"),
+          HashKeyText(DataVaultLogicalPropertyKind.ParticipantReference, "VARCHAR(64)"),
           Text(DataVaultLogicalPropertyKind.BusinessKey, "VARCHAR(255)"),
           Text(DataVaultLogicalPropertyKind.PayloadText, "CLOB"),
           new(
@@ -130,7 +133,7 @@ public static class DataVaultProviderCapabilityProfiles {
       DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported,
       DataVaultProviderConcurrencySupport.NoneInV1Unsupported,
       [
-          Text(DataVaultLogicalPropertyKind.HashKey, "nvarchar(64)"),
+          HashKeyText(DataVaultLogicalPropertyKind.HashKey, "nvarchar(64)"),
           Text(DataVaultLogicalPropertyKind.HashDiff, "nvarchar(64)"),
           new(
               DataVaultLogicalPropertyKind.LoadTimestamp,
@@ -138,7 +141,7 @@ public static class DataVaultProviderCapabilityProfiles {
               "datetimeoffset",
               DataVaultProviderValueFormat.NativeDateTimeOffset),
           Text(DataVaultLogicalPropertyKind.RecordSource, "nvarchar(255)"),
-          Text(DataVaultLogicalPropertyKind.ParticipantReference, "nvarchar(64)"),
+          HashKeyText(DataVaultLogicalPropertyKind.ParticipantReference, "nvarchar(64)"),
           Text(DataVaultLogicalPropertyKind.BusinessKey, "nvarchar(255)"),
           Text(DataVaultLogicalPropertyKind.PayloadText, "nvarchar(max)"),
           new(
@@ -158,7 +161,7 @@ public static class DataVaultProviderCapabilityProfiles {
       DataVaultProviderSqlFunctionSupport.NoneInV1Unsupported,
       DataVaultProviderConcurrencySupport.NoneInV1Unsupported,
       [
-          Text(DataVaultLogicalPropertyKind.HashKey, "varchar(64)"),
+          HashKeyText(DataVaultLogicalPropertyKind.HashKey, "varchar(64)"),
           Text(DataVaultLogicalPropertyKind.HashDiff, "varchar(64)"),
           new(
               DataVaultLogicalPropertyKind.LoadTimestamp,
@@ -166,7 +169,7 @@ public static class DataVaultProviderCapabilityProfiles {
               "varchar(33)",
               DataVaultProviderValueFormat.Iso8601UtcText),
           Text(DataVaultLogicalPropertyKind.RecordSource, "varchar(255)"),
-          Text(DataVaultLogicalPropertyKind.ParticipantReference, "varchar(64)"),
+          HashKeyText(DataVaultLogicalPropertyKind.ParticipantReference, "varchar(64)"),
           Text(DataVaultLogicalPropertyKind.BusinessKey, "varchar(255)"),
           Text(DataVaultLogicalPropertyKind.PayloadText, "longtext"),
           new(
@@ -188,6 +191,21 @@ public static class DataVaultProviderCapabilityProfiles {
         typeof(string),
         nativeStoreType,
         DataVaultProviderValueFormat.Text);
+  }
+
+  private static DataVaultProviderTypeMapping HashKeyText(
+      DataVaultLogicalPropertyKind logicalPropertyKind,
+      string nativeStoreType = "TEXT") {
+    return new DataVaultProviderTypeMapping(
+        logicalPropertyKind,
+        typeof(string),
+        nativeStoreType,
+        DataVaultProviderValueFormat.LowercaseHexText,
+        DataVaultHashKeyStorageProfile.HexString,
+        DefaultStableHashAlgorithmId,
+        DefaultStableHashDigestByteLength,
+        "lowercase-hex-no-prefix",
+        "none-string-model");
   }
 
   private static DataVaultProviderTypeMapping Integer(

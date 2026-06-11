@@ -55,6 +55,31 @@ internal static class DataVaultDbContextMetadataSource {
             DataVaultMetadataSourceAnnotations.CreateFingerprint(metadataRegistry));
   }
 
+  public static DataVaultConventions? TryResolveAppDefaultConventions(DbContext context) {
+    ArgumentNullException.ThrowIfNull(context);
+
+    var serviceProvider = ((IInfrastructure<IServiceProvider>)context).Instance;
+    var conventions = serviceProvider.GetService<DataVaultConventions>();
+    if (conventions is not null) {
+      return conventions;
+    }
+
+    var options = serviceProvider.GetService<IDbContextOptions>();
+    if (options is null) {
+      return null;
+    }
+
+    foreach (var extension in options.Extensions) {
+      var applicationServiceProvider = TryGetApplicationServiceProvider(extension);
+      conventions = applicationServiceProvider?.GetService<DataVaultConventions>();
+      if (conventions is not null) {
+        return conventions;
+      }
+    }
+
+    return null;
+  }
+
   private static DataVaultMetadataRegistry? TryResolveAppDefaultRegistry(DbContext context) {
     var serviceProvider = ((IInfrastructure<IServiceProvider>)context).Instance;
     var metadataRegistry = serviceProvider.GetService<DataVaultMetadataRegistry>();

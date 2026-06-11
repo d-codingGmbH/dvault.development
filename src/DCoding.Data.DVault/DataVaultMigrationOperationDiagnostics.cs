@@ -1,6 +1,7 @@
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
+using System.Globalization;
 
 namespace DCoding.Data.DVault;
 
@@ -529,6 +530,8 @@ public static class DataVaultMigrationOperationDiagnostics {
 
   private static bool RequiresProviderColumnShapeGuardrail(DataVaultMigrationColumnBaseline column) {
     return column.LogicalPropertyKind is
+        DataVaultLogicalPropertyKind.HashKey or
+        DataVaultLogicalPropertyKind.ParticipantReference or
         DataVaultLogicalPropertyKind.LoadTimestamp or
         DataVaultLogicalPropertyKind.SatelliteSnapshotReference;
   }
@@ -555,6 +558,33 @@ public static class DataVaultMigrationOperationDiagnostics {
     var valueFormat = GetAnnotationValue<DataVaultProviderValueFormat>(operation, DataVaultAnnotationNames.ProviderValueFormat);
     if (valueFormat is not null && valueFormat.Value != column.ValueFormat) {
       differences.Add("provider value format");
+    }
+
+    var storageProfile = GetAnnotationValue<DataVaultHashKeyStorageProfile>(
+        operation,
+        DataVaultAnnotationNames.HashKeyStorageProfile);
+    if (storageProfile is not null && storageProfile.Value != column.HashKeyStorageProfile) {
+      differences.Add("hash-key storage profile");
+    }
+
+    var algorithmId = GetStringAnnotation(operation, DataVaultAnnotationNames.StableHashAlgorithmId);
+    if (algorithmId is not null && !string.Equals(algorithmId, column.StableHashAlgorithmId, StringComparison.Ordinal)) {
+      differences.Add("stable-hash algorithm id");
+    }
+
+    var digestByteLength = GetAnnotationValue<int>(operation, DataVaultAnnotationNames.StableHashDigestByteLength);
+    if (digestByteLength is not null && digestByteLength.Value != column.DigestByteLength) {
+      differences.Add("digest byte length");
+    }
+
+    var digestEncoding = GetStringAnnotation(operation, DataVaultAnnotationNames.StableHashDigestEncoding);
+    if (digestEncoding is not null && !string.Equals(digestEncoding, column.DigestEncoding, StringComparison.Ordinal)) {
+      differences.Add("digest encoding");
+    }
+
+    var conversionBehavior = GetStringAnnotation(operation, DataVaultAnnotationNames.HashKeyConversionBehavior);
+    if (conversionBehavior is not null && !string.Equals(conversionBehavior, column.ConversionBehavior, StringComparison.Ordinal)) {
+      differences.Add("hash-key conversion behavior");
     }
 
     return differences;
@@ -890,6 +920,10 @@ public static class DataVaultMigrationOperationDiagnostics {
         : null;
   }
 
+  private static string? GetStringAnnotation(MigrationOperation operation, string annotationName) {
+    return operation.FindAnnotation(annotationName)?.Value as string;
+  }
+
   private static string CreatePath(string operationName, string targetName, string? memberName = null) {
     return string.IsNullOrWhiteSpace(memberName)
         ? "migration/" + operationName + "/" + targetName
@@ -930,18 +964,44 @@ public static class DataVaultMigrationOperationDiagnostics {
   }
 
   private static string FormatColumnProviderShape(DataVaultMigrationColumnBaseline column) {
+    var hashKeyFacts = column.HashKeyStorageProfile is null
+        ? string.Empty
+        : ", hash-key storage " + column.HashKeyStorageProfile +
+            ", algorithm id '" + (column.StableHashAlgorithmId ?? "<unspecified>") +
+            "', digest bytes " + (column.DigestByteLength?.ToString(CultureInfo.InvariantCulture) ?? "<unspecified>") +
+            ", digest encoding '" + (column.DigestEncoding ?? "<unspecified>") +
+            "', conversion '" + (column.ConversionBehavior ?? "<unspecified>") + "'";
+
     return "nullable " + column.IsNullable.ToString().ToLowerInvariant() +
         ", store type '" + column.StoreType +
         "', value format " + column.ValueFormat +
-        ", CLR type '" + NormalizeClrTypeName(column.ClrTypeName) + "'";
+        ", CLR type '" + NormalizeClrTypeName(column.ClrTypeName) + "'" +
+        hashKeyFacts;
   }
 
   private static string FormatColumnOperationShape(ColumnOperation operation) {
     var valueFormat = GetAnnotationValue<DataVaultProviderValueFormat>(operation, DataVaultAnnotationNames.ProviderValueFormat);
+    var storageProfile = GetAnnotationValue<DataVaultHashKeyStorageProfile>(
+        operation,
+        DataVaultAnnotationNames.HashKeyStorageProfile);
+    var digestByteLength = GetAnnotationValue<int>(operation, DataVaultAnnotationNames.StableHashDigestByteLength);
+    var hashKeyFacts = storageProfile is null &&
+        GetStringAnnotation(operation, DataVaultAnnotationNames.StableHashAlgorithmId) is null &&
+        digestByteLength is null &&
+        GetStringAnnotation(operation, DataVaultAnnotationNames.StableHashDigestEncoding) is null &&
+        GetStringAnnotation(operation, DataVaultAnnotationNames.HashKeyConversionBehavior) is null
+            ? string.Empty
+            : ", hash-key storage " + (storageProfile?.ToString() ?? "<unspecified>") +
+                ", algorithm id '" + (GetStringAnnotation(operation, DataVaultAnnotationNames.StableHashAlgorithmId) ?? "<unspecified>") +
+                "', digest bytes " + (digestByteLength?.ToString(CultureInfo.InvariantCulture) ?? "<unspecified>") +
+                ", digest encoding '" + (GetStringAnnotation(operation, DataVaultAnnotationNames.StableHashDigestEncoding) ?? "<unspecified>") +
+                "', conversion '" + (GetStringAnnotation(operation, DataVaultAnnotationNames.HashKeyConversionBehavior) ?? "<unspecified>") + "'";
+
     return "nullable " + operation.IsNullable.ToString().ToLowerInvariant() +
         ", store type '" + (string.IsNullOrWhiteSpace(operation.ColumnType) ? "<unspecified>" : operation.ColumnType) +
         "', value format " + (valueFormat?.ToString() ?? "<unspecified>") +
-        ", CLR type '" + GetClrTypeName(operation.ClrType) + "'";
+        ", CLR type '" + GetClrTypeName(operation.ClrType) + "'" +
+        hashKeyFacts;
   }
 
   private static string FormatIndexOperationShape(
@@ -1333,12 +1393,6 @@ public static class DataVaultMigrationOperationDiagnostics {
       return operation.FindAnnotation(annotationName)?.Value as string;
     }
 
-    private static T? GetAnnotationValue<T>(MigrationOperation operation, string annotationName)
-        where T : struct {
-      return operation.FindAnnotation(annotationName)?.Value is T value
-          ? value
-          : null;
-    }
   }
 
   private sealed record TableReplacementCandidate(
@@ -1491,7 +1545,12 @@ public static class DataVaultMigrationOperationDiagnostics {
       string StoreType,
       DataVaultProviderValueFormat ValueFormat,
       bool IsNullable,
-      string ClrTypeName) {
+      string ClrTypeName,
+      DataVaultHashKeyStorageProfile? HashKeyStorageProfile,
+      string? StableHashAlgorithmId,
+      int? DigestByteLength,
+      string? DigestEncoding,
+      string? ConversionBehavior) {
     public static DataVaultMigrationColumnBaseline Create(DataVaultPropertyExplain property) {
       return new DataVaultMigrationColumnBaseline(
           property.Name,
@@ -1503,7 +1562,12 @@ public static class DataVaultMigrationOperationDiagnostics {
           property.StoreType,
           property.ValueFormat,
           property.IsNullable,
-          property.ClrTypeName);
+          property.ClrTypeName,
+          property.HashKeyStorageProfile,
+          property.StableHashAlgorithmId,
+          property.DigestByteLength,
+          property.DigestEncoding,
+          property.ConversionBehavior);
     }
   }
 

@@ -356,7 +356,7 @@ public sealed class DataVaultEfMetadataTranslationTests {
         DataVaultLogicalPropertyKind.HashKey,
         typeof(string),
         "VARCHAR2(64 CHAR)",
-        DataVaultProviderValueFormat.Text);
+        DataVaultProviderValueFormat.LowercaseHexText);
     AssertProviderProperty(
         hub,
         "LoadTimestamp",
@@ -384,7 +384,7 @@ public sealed class DataVaultEfMetadataTranslationTests {
         DataVaultLogicalPropertyKind.ParticipantReference,
         typeof(string),
         "VARCHAR2(64 CHAR)",
-        DataVaultProviderValueFormat.Text);
+        DataVaultProviderValueFormat.LowercaseHexText);
     AssertProviderProperty(
         satellite,
         "HashDiff",
@@ -403,6 +403,26 @@ public sealed class DataVaultEfMetadataTranslationTests {
         satellite.GetIndexes(),
         index => index.Properties.Select(property => property.Name)
             .SequenceEqual(["CustomerHashKey", "LoadTimestamp"], StringComparer.Ordinal));
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataPreservesExplicitHashKeyProfileSizing() {
+    var modelBuilder = CreateModelBuilder();
+    var profile = DataVaultProviderCapabilityProfiles.SqlServer.WithStableHashAlgorithm("sha1-v1", 20);
+
+    modelBuilder.ApplyDataVaultMetadata(CreateMetadataModel(), profile);
+
+    var hub = FindEntity(modelBuilder.Model, "HubCustomer");
+    var hashKey = hub.FindProperty("CustomerHashKey");
+
+    Assert.NotNull(hashKey);
+    Assert.Equal("nvarchar(40)", hashKey!.GetColumnType());
+    Assert.Equal("nvarchar(40)", AnnotationValue<string>(hashKey, DataVaultAnnotationNames.ProviderStorageType));
+    Assert.Equal("sha1-v1", AnnotationValue<string>(hashKey, DataVaultAnnotationNames.StableHashAlgorithmId));
+    Assert.Equal(20, AnnotationValue<int>(hashKey, DataVaultAnnotationNames.StableHashDigestByteLength));
+    Assert.Equal(
+        DataVaultHashKeyStorageProfile.HexString,
+        AnnotationValue<DataVaultHashKeyStorageProfile>(hashKey, DataVaultAnnotationNames.HashKeyStorageProfile));
   }
 
   [Fact]
@@ -1143,6 +1163,7 @@ public sealed class DataVaultEfMetadataTranslationTests {
     Assert.Equal(ExpectedValueFormat(expectedLogicalPropertyKind), AnnotationValue<DataVaultProviderValueFormat>(
         property,
         DataVaultAnnotationNames.ProviderValueFormat));
+    AssertHashKeyStorageAnnotations(property, expectedLogicalPropertyKind);
 
     if (expectedTechnicalRole is null) {
       Assert.Null(property.FindAnnotation(DataVaultAnnotationNames.TechnicalColumnRole));
@@ -1173,6 +1194,7 @@ public sealed class DataVaultEfMetadataTranslationTests {
     Assert.Equal(expectedValueFormat, AnnotationValue<DataVaultProviderValueFormat>(
         property,
         DataVaultAnnotationNames.ProviderValueFormat));
+    AssertHashKeyStorageAnnotations(property, expectedLogicalPropertyKind);
   }
 
   private static void InvokeTranslatorApply(
@@ -1225,6 +1247,8 @@ public sealed class DataVaultEfMetadataTranslationTests {
 
   private static DataVaultProviderValueFormat ExpectedValueFormat(DataVaultLogicalPropertyKind logicalPropertyKind) {
     return logicalPropertyKind switch {
+      DataVaultLogicalPropertyKind.HashKey => DataVaultProviderValueFormat.LowercaseHexText,
+      DataVaultLogicalPropertyKind.ParticipantReference => DataVaultProviderValueFormat.LowercaseHexText,
       DataVaultLogicalPropertyKind.LoadTimestamp => DataVaultProviderValueFormat.Iso8601UtcText,
       DataVaultLogicalPropertyKind.SatelliteSnapshotReference => DataVaultProviderValueFormat.Iso8601UtcText,
       DataVaultLogicalPropertyKind.BridgeDepth => DataVaultProviderValueFormat.NativeInteger,
@@ -1234,6 +1258,27 @@ public sealed class DataVaultEfMetadataTranslationTests {
 
   private static string ExpectedStorageType(DataVaultLogicalPropertyKind logicalPropertyKind) {
     return logicalPropertyKind == DataVaultLogicalPropertyKind.BridgeDepth ? "INTEGER" : "TEXT";
+  }
+
+  private static void AssertHashKeyStorageAnnotations(
+      IMutableProperty property,
+      DataVaultLogicalPropertyKind logicalPropertyKind) {
+    if (logicalPropertyKind is not (DataVaultLogicalPropertyKind.HashKey or DataVaultLogicalPropertyKind.ParticipantReference)) {
+      Assert.Null(property.FindAnnotation(DataVaultAnnotationNames.HashKeyStorageProfile));
+      Assert.Null(property.FindAnnotation(DataVaultAnnotationNames.StableHashAlgorithmId));
+      Assert.Null(property.FindAnnotation(DataVaultAnnotationNames.StableHashDigestByteLength));
+      Assert.Null(property.FindAnnotation(DataVaultAnnotationNames.StableHashDigestEncoding));
+      Assert.Null(property.FindAnnotation(DataVaultAnnotationNames.HashKeyConversionBehavior));
+      return;
+    }
+
+    Assert.Equal(DataVaultHashKeyStorageProfile.HexString, AnnotationValue<DataVaultHashKeyStorageProfile>(
+        property,
+        DataVaultAnnotationNames.HashKeyStorageProfile));
+    Assert.Equal("sha256-v1", AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashAlgorithmId));
+    Assert.Equal(32, AnnotationValue<int>(property, DataVaultAnnotationNames.StableHashDigestByteLength));
+    Assert.Equal("lowercase-hex-no-prefix", AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashDigestEncoding));
+    Assert.Equal("none-string-model", AnnotationValue<string>(property, DataVaultAnnotationNames.HashKeyConversionBehavior));
   }
 
   private static void AssertPrimaryKey(IMutableEntityType entityType, string expectedName, string[] expectedProperties) {

@@ -195,6 +195,8 @@ internal static class DefaultNamingPolicyTests {
         ["dvault_records", "dvault_record_payloads", "dvault_record_metadata"],
         conventions.LogicalObjectNames);
     Equal("sha256-v1", conventions.StableHashAlgorithmId);
+    Equal(32, conventions.StableHashDigestByteLength);
+    Equal(DataVaultHashKeyStorageProfile.HexString, conventions.HashKeyStorageProfile);
     Equal("sha-256", conventions.PersistenceContentHashAlgorithm);
     Equal("dvault.persistence-conventions.v1", conventions.PersistenceConventionVersion);
   }

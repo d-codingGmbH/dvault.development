@@ -18,13 +18,25 @@ internal sealed class DataVaultModelCacheKeyFactory : IModelCacheKeyFactory {
     var sourceKey = extension is null
         ? DataVaultDbContextMetadataSourceKey.None
         : DataVaultDbContextMetadataSource.CreateCacheKey(context, extension);
+    var conventions = DataVaultDbContextMetadataSource.TryResolveAppDefaultConventions(context) ??
+        DataVaultConventions.Default;
 
-    return new DataVaultModelCacheKey(context.GetType(), designTime, sourceKey.SourceKind, sourceKey.Fingerprint);
+    return new DataVaultModelCacheKey(
+        context.GetType(),
+        designTime,
+        sourceKey.SourceKind,
+        sourceKey.Fingerprint,
+        conventions.StableHashAlgorithmId,
+        conventions.StableHashDigestByteLength,
+        conventions.HashKeyStorageProfile);
   }
 
   private readonly record struct DataVaultModelCacheKey(
       Type ContextType,
       bool DesignTime,
       string SourceKind,
-      string Fingerprint);
+      string Fingerprint,
+      string StableHashAlgorithmId,
+      int StableHashDigestByteLength,
+      DataVaultHashKeyStorageProfile HashKeyStorageProfile);
 }
