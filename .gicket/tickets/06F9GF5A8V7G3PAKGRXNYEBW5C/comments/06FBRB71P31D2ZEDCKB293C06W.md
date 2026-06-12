@@ -1,0 +1,1 @@
+﻿Manual epic closure: all six child tickets in release v0.36.0 are done, the epic delivery contract states that no further split or implementation delta is required, and the latest dev run confirmed no tracked source/test/docs diff remained. Closing this as a tracking epic so developer automation does not keep reclaiming an already-complete umbrella ticket.
