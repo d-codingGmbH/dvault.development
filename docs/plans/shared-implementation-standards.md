@@ -113,16 +113,18 @@ The planning release number is not the consumer-facing NuGet package version. `v
 
 Do not publish or document a consumer-facing `0.36.0` DVault package version for this planning release. Do not combine `8.36.0` and `10.36.0` packages in one published artifact family or consumer example.
 
-Each resolved target must use exactly one compatible EF/provider dependency line. Runtime, provider, integration-test, and verifier project files may use conditional `PackageReference` entries only for target-framework selection and for the existing opt-in external-provider test switches. A single resolved target must not restore both the 8.x and 10.x dependency lines together.
+Each resolved target must use exactly one compatible EF/provider dependency line. Runtime, provider, integration-test, benchmark, example, and verifier project files may use conditional `PackageReference` entries only for target-framework selection and for the existing opt-in external-provider test switches. A single resolved target must not restore both the 8.x and 10.x dependency lines together.
+
+Provider-neutral EF Core, `Microsoft.EntityFrameworkCore.Relational`, and `Microsoft.Extensions.DependencyInjection.Abstractions` references must stay on the selected target's EF Core major line. Patch updates may advance within that line to the latest accepted repository baseline, but they must not jump to a newer EF/DI major line only because the target framework can restore it. The current accepted provider-neutral baseline is `8.0.28` / `8.0.28` / `8.0.2` for `net8.0` and `10.0.9` / `10.0.9` / `10.0.9` for `net10.0`.
 
 The required provider package evidence for the compatibility lines is:
 
 | Target framework | DB2 | SQLite | MySQL | PostgreSQL | Oracle | SQL Server |
 | --- | --- | --- | --- | --- | --- | --- |
-| `net8.0` | `IBM.EntityFrameworkCore` `8.0.0.400` | `Microsoft.EntityFrameworkCore.Sqlite` `8.0.27` | `MySql.EntityFrameworkCore` `10.0.7` | `Npgsql.EntityFrameworkCore.PostgreSQL` `8.0.11` | `Oracle.EntityFrameworkCore` `8.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `8.0.27` |
-| `net10.0` | `IBM.EntityFrameworkCore` `10.0.0.100` | `Microsoft.EntityFrameworkCore.Sqlite` `10.0.8` | `MySql.EntityFrameworkCore` `10.0.7` | `Npgsql.EntityFrameworkCore.PostgreSQL` `10.0.2` | `Oracle.EntityFrameworkCore` `10.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `10.0.8` |
+| `net8.0` | `IBM.EntityFrameworkCore` `8.0.0.400` | `Microsoft.EntityFrameworkCore.Sqlite` `8.0.28` | `MySql.EntityFrameworkCore` `8.0.26` | `Npgsql.EntityFrameworkCore.PostgreSQL` `8.0.11` | `Oracle.EntityFrameworkCore` `8.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `8.0.28` |
+| `net10.0` | `IBM.EntityFrameworkCore` `10.0.0.100` | `Microsoft.EntityFrameworkCore.Sqlite` `10.0.9` | `MySql.EntityFrameworkCore` `10.0.7` | `Npgsql.EntityFrameworkCore.PostgreSQL` `10.0.2` | `Oracle.EntityFrameworkCore` `10.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `10.0.9` |
 
-Provider-neutral EF Core references must follow the target's EF Core line. The `MySql.EntityFrameworkCore` `10.0.7` pin is the required evidence exception for both targets and must be called out explicitly in tests and documentation instead of treated as permission for arbitrary mixed-line resolution.
+Provider-specific references must follow the same target-specific major-line rule. The current visible repository baseline keeps `MySql.EntityFrameworkCore` on `8.0.26` for `net8.0` integration coverage and `10.0.7` for `net10.0` coverage, so downstream tests and documentation must describe those as target-specific accepted baselines instead of as a standing cross-line exception or permission for arbitrary mixed-line resolution.
 
 `DCoding.Data.DVault.Db2` registers `AddDVaultDb2()`, DB2 provider behavior for `IBM.EntityFrameworkCore`, the `db2-v1` provider capability profile, a diagnostics-gated optimized clean-context save strategy for ordinary hub, link, and satellite rows, and diagnostics-gated PIT/bridge read dispatch. DB2 still does not add optimized latest-satellite read dispatch, a staged bulk path, provider-native chunk execution, a live-schema reader, container provisioning, or a default CI database requirement.
 

@@ -16,6 +16,7 @@ public sealed class PackageVerifierTests {
   private const string Net10TargetFramework = "net10.0";
   private const string Authors = "d-coding GmbH";
   private const string RepositoryUrl = "https://github.com/d-codingGmbH/dvault.development.git";
+  private const string ExpectedAnalyzerBuildHostGuidance = "Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.36.0` package line.";
   private static readonly XNamespace NuspecNamespace = "http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd";
   private static readonly PackageLine[] PackageLines = [
       new(Net8PackageLineVersion, Net8TargetFramework, "EF Core 8"),
@@ -203,6 +204,41 @@ public sealed class PackageVerifierTests {
             issue.Message.Contains("net10.0 / EF Core 10", StringComparison.Ordinal) &&
             issue.Message.Contains(Net10PackageLineVersion, StringComparison.Ordinal) &&
             issue.Message.Contains("PrivateAssets", StringComparison.Ordinal));
+  }
+
+  [Fact]
+  public void RuntimeReadmeMustStateAnalyzerBuildHostSdkBaseline() {
+    using var packageDirectory = PackageDirectory.Create();
+    var options = CreatePackageOptions();
+    options[CorePackageId].ReadmeText =
+        CreateRuntimePackageReadme().Replace(ExpectedAnalyzerBuildHostGuidance, string.Empty, StringComparison.Ordinal);
+    WritePackageMatrix(packageDirectory.Path, options);
+
+    var result = Verify(packageDirectory.Path);
+
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == CorePackageId &&
+            issue.Message.Contains(".NET 10 SDK build-host baseline", StringComparison.Ordinal) &&
+            issue.Message.Contains(Net8PackageLineVersion, StringComparison.Ordinal));
+  }
+
+  [Fact]
+  public void AnalyzerReadmeMustStateAnalyzerBuildHostSdkBaseline() {
+    using var packageDirectory = PackageDirectory.Create();
+    var options = CreatePackageOptions();
+    options["DCoding.Data.DVault.Analyzers"].ReadmeText =
+        CreateAnalyzerPackageReadme("DCoding.Data.DVault.Analyzers")
+            .Replace(ExpectedAnalyzerBuildHostGuidance, string.Empty, StringComparison.Ordinal);
+    WritePackageMatrix(packageDirectory.Path, options);
+
+    var result = Verify(packageDirectory.Path);
+
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == "DCoding.Data.DVault.Analyzers" &&
+            issue.Message.Contains(".NET 10 SDK build-host baseline", StringComparison.Ordinal) &&
+            issue.Message.Contains(Net8PackageLineVersion, StringComparison.Ordinal));
   }
 
   [Fact]
@@ -477,6 +513,9 @@ public sealed class PackageVerifierTests {
 
   private static string CreateRuntimePackageReadme(IReadOnlyList<PackageLine> packageLines) {
     var builder = new StringBuilder();
+    builder
+        .AppendLine(ExpectedAnalyzerBuildHostGuidance);
+
     foreach (var packageLine in packageLines) {
       builder
           .Append(packageLine.TargetFramework)
@@ -510,6 +549,9 @@ public sealed class PackageVerifierTests {
     ];
 
     var builder = new StringBuilder();
+    builder
+        .AppendLine(ExpectedAnalyzerBuildHostGuidance);
+
     foreach (var packageLine in packageLines) {
       builder
           .Append(packageLine.TargetFramework)

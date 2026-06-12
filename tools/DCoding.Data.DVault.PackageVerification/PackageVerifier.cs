@@ -14,6 +14,7 @@ public sealed class PackageVerifier {
   private const string ExpectedRepositoryType = "git";
   private const string ExpectedRepositoryUrl = "https://github.com/d-codingGmbH/dvault.development.git";
   private const string ExpectedReadmeFile = "README.md";
+  private const string ExpectedAnalyzerBuildHostGuidance = "Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.36.0` package line.";
 
   private static readonly ExpectedPackageLine[] ExpectedPackageLines = [
       new("8.36.0", Net8TargetFramework, "EF Core 8"),
@@ -437,6 +438,7 @@ public sealed class PackageVerifier {
     }
 
     ValidateReadmeDoesNotUseDisallowedInstallVersions(archive, issues);
+    ValidateReadmeContainsAnalyzerBuildHostGuidance(archive, issues);
 
     if (ExpectedPackageById.TryGetValue(archive.Id, out var currentPackage) && currentPackage.IsAnalyzer) {
       foreach (var packageLine in ExpectedPackageLines) {
@@ -496,6 +498,16 @@ public sealed class PackageVerifier {
             archive.Id,
             "Packaged README.md must not document stale or planning-release install version fragment '" + disallowedFragment + "'; use separate 8.36.0 and 10.36.0 package-line guidance."));
       }
+    }
+  }
+
+  private static void ValidateReadmeContainsAnalyzerBuildHostGuidance(
+      PackageArchive archive,
+      List<PackageVerificationIssue> issues) {
+    if (archive.ReadmeText?.Contains(ExpectedAnalyzerBuildHostGuidance, StringComparison.Ordinal) != true) {
+      issues.Add(new PackageVerificationIssue(
+          archive.Id,
+          "Packaged README.md must state that DCoding.Data.DVault.Analyzers is supported on the .NET 10 SDK build-host baseline, including net8.0 projects using the 8.36.0 package line."));
     }
   }
 

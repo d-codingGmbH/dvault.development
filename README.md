@@ -41,7 +41,7 @@ dotnet add package DCoding.Data.DVault.Oracle --version 10.36.0
 dotnet add package DCoding.Data.DVault.SqlServer --version 10.36.0
 ```
 
-Add the analyzer package only to projects that own DVault declarations, compile-time generated row mappings, or generated typed read helpers, and keep it local with `PrivateAssets="all"`.
+Add the analyzer package only to projects that own DVault declarations, compile-time generated row mappings, or generated typed read helpers, and keep it local with `PrivateAssets="all"`. Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.36.0` package line. The current analyzer package carries one `net10.0` analyzer asset for both coordinated package lines; this repository does not validate pure `.NET 8 SDK` analyzer consumption.
 
 ```xml
 <ItemGroup>

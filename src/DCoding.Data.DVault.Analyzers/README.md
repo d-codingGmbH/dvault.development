@@ -18,7 +18,7 @@ The lifecycle diagnostics `DMV1912` through `DMV1914` are high-confidence EF Cor
 
 ## Installation
 
-Install the analyzer package in projects that declare DVault Code-First metadata, compile-time generated row mappings, or support-bundle-driven typed satellite, PIT, and bridge read helpers through normal Roslyn analyzer package conventions. Use the analyzer version from the same selected coordinated DVault package line as the runtime and provider packages: `8.36.0` for `net8.0` and EF Core 8, or `10.36.0` for `net10.0` and EF Core 10. Do not use a consumer-facing `0.36.0` version and do not mix analyzer and runtime/provider package lines. This documentation baseline does not by itself confirm package publication.
+Install the analyzer package in projects that declare DVault Code-First metadata, compile-time generated row mappings, or support-bundle-driven typed satellite, PIT, and bridge read helpers through normal Roslyn analyzer package conventions. Use the analyzer version from the same selected coordinated DVault package line as the runtime and provider packages: `8.36.0` for `net8.0` and EF Core 8, or `10.36.0` for `net10.0` and EF Core 10. Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.36.0` package line. The current analyzer package carries one `net10.0` analyzer asset for both coordinated package lines; this repository does not validate pure `.NET 8 SDK` analyzer consumption. Do not use a consumer-facing `0.36.0` version and do not mix analyzer and runtime/provider package lines. This documentation baseline does not by itself confirm package publication.
 
 For `net8.0` projects on EF Core 8, use the `8.36.0` package line:
 
