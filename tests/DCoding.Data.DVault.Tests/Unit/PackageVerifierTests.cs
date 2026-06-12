@@ -293,7 +293,7 @@ public sealed class PackageVerifierTests {
     options["DCoding.Data.DVault.Postgres"].OverrideDependencyVersion(
         Net8TargetFramework,
         "Microsoft.EntityFrameworkCore.Relational",
-        "10.0.8");
+        "10.0.9");
     WritePackageMatrix(packageDirectory.Path, options);
 
     var result = Verify(packageDirectory.Path);
@@ -303,8 +303,8 @@ public sealed class PackageVerifierTests {
         issue => issue.PackageId == "DCoding.Data.DVault.Postgres" &&
             issue.Message.Contains("Dependency group 'net8.0'", StringComparison.Ordinal) &&
             issue.Message.Contains("Microsoft.EntityFrameworkCore.Relational", StringComparison.Ordinal) &&
-            issue.Message.Contains("uses version '10.0.8'", StringComparison.Ordinal) &&
-            issue.Message.Contains("expected '8.0.27'", StringComparison.Ordinal));
+            issue.Message.Contains("uses version '10.0.9'", StringComparison.Ordinal) &&
+            issue.Message.Contains("expected '8.0.28'", StringComparison.Ordinal));
     Assert.Contains(
         result.Issues,
         issue => issue.PackageId == "DCoding.Data.DVault.Postgres" &&
@@ -345,7 +345,7 @@ public sealed class PackageVerifierTests {
     options["DCoding.Data.DVault.MySql"].OverrideDependencyVersion(
         Net8TargetFramework,
         "Microsoft.Extensions.DependencyInjection.Abstractions",
-        "10.0.8");
+        "10.0.9");
     WritePackageMatrix(packageDirectory.Path, options);
 
     var result = Verify(packageDirectory.Path);
@@ -355,7 +355,7 @@ public sealed class PackageVerifierTests {
         issue => issue.PackageId == "DCoding.Data.DVault.MySql" &&
             issue.Message.Contains("Dependency group 'net8.0'", StringComparison.Ordinal) &&
             issue.Message.Contains("Microsoft.Extensions.DependencyInjection.Abstractions", StringComparison.Ordinal) &&
-            issue.Message.Contains("uses version '10.0.8'", StringComparison.Ordinal) &&
+            issue.Message.Contains("uses version '10.0.9'", StringComparison.Ordinal) &&
             issue.Message.Contains("expected '8.0.2'", StringComparison.Ordinal));
   }
 
@@ -672,8 +672,8 @@ public sealed class PackageVerifierTests {
 
   private static string GetEfCoreVersion(string targetFramework) {
     return targetFramework switch {
-      Net8TargetFramework => "8.0.27",
-      Net10TargetFramework => "10.0.8",
+      Net8TargetFramework => "8.0.28",
+      Net10TargetFramework => "10.0.9",
       _ => throw new InvalidOperationException("Unsupported dependency target framework '" + targetFramework + "'."),
     };
   }
@@ -689,7 +689,7 @@ public sealed class PackageVerifierTests {
   private static string GetDependencyInjectionAbstractionsVersion(string targetFramework) {
     return targetFramework switch {
       Net8TargetFramework => "8.0.2",
-      Net10TargetFramework => "10.0.8",
+      Net10TargetFramework => "10.0.9",
       _ => throw new InvalidOperationException("Unsupported dependency target framework '" + targetFramework + "'."),
     };
   }

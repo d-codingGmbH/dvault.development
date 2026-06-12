@@ -702,8 +702,8 @@ public sealed class PackageVerifier {
 
   private static string GetEfCoreVersion(string targetFramework) {
     return targetFramework switch {
-      Net8TargetFramework => "8.0.27",
-      Net10TargetFramework => "10.0.8",
+      Net8TargetFramework => "8.0.28",
+      Net10TargetFramework => "10.0.9",
       _ => throw new InvalidOperationException("Unsupported dependency target framework '" + targetFramework + "'."),
     };
   }
@@ -711,7 +711,7 @@ public sealed class PackageVerifier {
   private static string GetDependencyInjectionAbstractionsVersion(string targetFramework) {
     return targetFramework switch {
       Net8TargetFramework => "8.0.2",
-      Net10TargetFramework => "10.0.8",
+      Net10TargetFramework => "10.0.9",
       _ => throw new InvalidOperationException("Unsupported dependency target framework '" + targetFramework + "'."),
     };
   }

@@ -3,8 +3,8 @@
   "ticket-id": "06FBSBW17VQ88MJVAXJZXCFHMM",
   "ticket-type": "task",
   "title": "Task: Validate build pack and package verification after dependency alignment",
-  "revision": "06FBSCWX8CAV699D3P87CT7PR8",
-  "status": "todo",
+  "revision": "06FBTM8CDENZHAJY1ATS8RAQNG",
+  "status": "done",
   "labels": [
     "automation/bot-ready",
     "needs-po",
@@ -17,5 +17,5 @@
   "milestone-id": "06FBSB0M9EXC79SK5QSANBAA8M",
   "release-id": "06FBSASXZZHMEX2KW4THVWJKEW",
   "created-at": "2026-06-12T16:34:39.1682374Z",
-  "updated-at": "2026-06-12T16:39:08.3550241Z"
+  "updated-at": "2026-06-12T19:31:05.9635261Z"
 }

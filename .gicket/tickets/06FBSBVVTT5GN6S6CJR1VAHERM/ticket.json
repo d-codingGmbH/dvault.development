@@ -3,8 +3,8 @@
   "ticket-id": "06FBSBVVTT5GN6S6CJR1VAHERM",
   "ticket-type": "task",
   "title": "Task: Update package verifier dependency expectations for v0.37",
-  "revision": "06FBSCWRDJS7W7WZ2WA25YM750",
-  "status": "todo",
+  "revision": "06FBTM7QMQJP42K05QW6SYPXW8",
+  "status": "done",
   "labels": [
     "automation/bot-ready",
     "needs-po",
@@ -18,5 +18,5 @@
   "milestone-id": "06FBSB0M9EXC79SK5QSANBAA8M",
   "release-id": "06FBSASXZZHMEX2KW4THVWJKEW",
   "created-at": "2026-06-12T16:34:37.7902426Z",
-  "updated-at": "2026-06-12T16:39:07.1164745Z"
+  "updated-at": "2026-06-12T19:31:00.6459906Z"
 }

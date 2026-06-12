@@ -13,17 +13,17 @@ public sealed class EfCoreProviderVersionMatrixTests {
         project,
         "net8.0",
         [
-            new("Microsoft.EntityFrameworkCore", "8.0.27"),
-            new("Microsoft.EntityFrameworkCore.Relational", "8.0.27"),
+            new("Microsoft.EntityFrameworkCore", "8.0.28"),
+            new("Microsoft.EntityFrameworkCore.Relational", "8.0.28"),
             new("Microsoft.Extensions.DependencyInjection.Abstractions", "8.0.2"),
         ]);
     AssertPackageReferences(
         project,
         "net10.0",
         [
-            new("Microsoft.EntityFrameworkCore", "10.0.8"),
-            new("Microsoft.EntityFrameworkCore.Relational", "10.0.8"),
-            new("Microsoft.Extensions.DependencyInjection.Abstractions", "10.0.8"),
+            new("Microsoft.EntityFrameworkCore", "10.0.9"),
+            new("Microsoft.EntityFrameworkCore.Relational", "10.0.9"),
+            new("Microsoft.Extensions.DependencyInjection.Abstractions", "10.0.9"),
         ]);
   }
 
@@ -36,23 +36,23 @@ public sealed class EfCoreProviderVersionMatrixTests {
         project,
         "net8.0",
         [
-            new("Microsoft.EntityFrameworkCore.Sqlite", "8.0.27"),
+            new("Microsoft.EntityFrameworkCore.Sqlite", "8.0.28"),
             new("IBM.EntityFrameworkCore", "8.0.0.400", "'$(DVAULT_TEST_DB2_CONNECTION_STRING)' != ''"),
-            new("MySql.EntityFrameworkCore", "10.0.7", "'$(DVAULT_TEST_MYSQL_CONNECTION_STRING)' != ''"),
+            new("MySql.EntityFrameworkCore", "8.0.26", "'$(DVAULT_TEST_MYSQL_CONNECTION_STRING)' != ''"),
             new("Npgsql.EntityFrameworkCore.PostgreSQL", "8.0.11", "'$(DVAULT_TEST_POSTGRES_CONNECTION_STRING)' != ''"),
             new("Oracle.EntityFrameworkCore", "8.23.26200", "'$(DVAULT_TEST_ORACLE_CONNECTION_STRING)' != ''"),
-            new("Microsoft.EntityFrameworkCore.SqlServer", "8.0.27", "'$(DVAULT_TEST_SQLSERVER_CONNECTION_STRING)' != ''"),
+            new("Microsoft.EntityFrameworkCore.SqlServer", "8.0.28", "'$(DVAULT_TEST_SQLSERVER_CONNECTION_STRING)' != ''"),
         ]);
     AssertProviderPackageReferences(
         project,
         "net10.0",
         [
-            new("Microsoft.EntityFrameworkCore.Sqlite", "10.0.8"),
+            new("Microsoft.EntityFrameworkCore.Sqlite", "10.0.9"),
             new("IBM.EntityFrameworkCore", "10.0.0.100", "'$(DVAULT_TEST_DB2_CONNECTION_STRING)' != ''"),
             new("MySql.EntityFrameworkCore", "10.0.7", "'$(DVAULT_TEST_MYSQL_CONNECTION_STRING)' != ''"),
             new("Npgsql.EntityFrameworkCore.PostgreSQL", "10.0.2", "'$(DVAULT_TEST_POSTGRES_CONNECTION_STRING)' != ''"),
             new("Oracle.EntityFrameworkCore", "10.23.26200", "'$(DVAULT_TEST_ORACLE_CONNECTION_STRING)' != ''"),
-            new("Microsoft.EntityFrameworkCore.SqlServer", "10.0.8", "'$(DVAULT_TEST_SQLSERVER_CONNECTION_STRING)' != ''"),
+            new("Microsoft.EntityFrameworkCore.SqlServer", "10.0.9", "'$(DVAULT_TEST_SQLSERVER_CONNECTION_STRING)' != ''"),
         ]);
     AssertCompileRemoved(project, "net8.0", "BenchmarkScenarioExecutionTests.cs");
     AssertProjectReferenceCondition(
@@ -70,10 +70,10 @@ public sealed class EfCoreProviderVersionMatrixTests {
     var project = LoadProject("tests/DCoding.Data.DVault.Tests/Unit/DCoding.Data.DVault.Tests.Unit.csproj");
 
     AssertTargetFrameworks(project, ["net8.0", "net10.0"]);
-    AssertPackageReference(project, "net8.0", new("Microsoft.EntityFrameworkCore.Sqlite", "8.0.27"));
+    AssertPackageReference(project, "net8.0", new("Microsoft.EntityFrameworkCore.Sqlite", "8.0.28"));
     AssertPackageReference(project, "net8.0", new("Microsoft.Extensions.DependencyInjection", "8.0.1"));
-    AssertPackageReference(project, "net10.0", new("Microsoft.EntityFrameworkCore.Sqlite", "10.0.8"));
-    AssertPackageReference(project, "net10.0", new("Microsoft.Extensions.DependencyInjection", "10.0.8"));
+    AssertPackageReference(project, "net10.0", new("Microsoft.EntityFrameworkCore.Sqlite", "10.0.9"));
+    AssertPackageReference(project, "net10.0", new("Microsoft.Extensions.DependencyInjection", "10.0.9"));
     AssertCompileRemoved(project, "net8.0", "PackageVerifierTests.cs");
     AssertProjectReferenceCondition(
         project,
@@ -98,7 +98,7 @@ public sealed class EfCoreProviderVersionMatrixTests {
         "net10.0",
         [
             new("IBM.EntityFrameworkCore", "10.0.0.100"),
-            new("Microsoft.Extensions.DependencyInjection.Abstractions", "10.0.8"),
+            new("Microsoft.Extensions.DependencyInjection.Abstractions", "10.0.9"),
         ]);
   }
 

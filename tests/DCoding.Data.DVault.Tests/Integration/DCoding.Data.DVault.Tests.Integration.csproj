@@ -17,12 +17,12 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.17" />
-    <PackageReference Include="IBM.EntityFrameworkCore" Version="9.0.0.400" Condition="'$(DVAULT_TEST_DB2_CONNECTION_STRING)' != ''" />
-    <PackageReference Include="MySql.EntityFrameworkCore" Version="10.0.7" Condition="'$(DVAULT_TEST_MYSQL_CONNECTION_STRING)' != ''" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" Condition="'$(DVAULT_TEST_POSTGRES_CONNECTION_STRING)' != ''" />
-    <PackageReference Include="Oracle.EntityFrameworkCore" Version="9.23.26200" Condition="'$(DVAULT_TEST_ORACLE_CONNECTION_STRING)' != ''" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.17" Condition="'$(DVAULT_TEST_SQLSERVER_CONNECTION_STRING)' != ''" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.28" />
+    <PackageReference Include="IBM.EntityFrameworkCore" Version="8.0.0.400" Condition="'$(DVAULT_TEST_DB2_CONNECTION_STRING)' != ''" />
+    <PackageReference Include="MySql.EntityFrameworkCore" Version="8.0.26" Condition="'$(DVAULT_TEST_MYSQL_CONNECTION_STRING)' != ''" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" Condition="'$(DVAULT_TEST_POSTGRES_CONNECTION_STRING)' != ''" />
+    <PackageReference Include="Oracle.EntityFrameworkCore" Version="8.23.26200" Condition="'$(DVAULT_TEST_ORACLE_CONNECTION_STRING)' != ''" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.28" Condition="'$(DVAULT_TEST_SQLSERVER_CONNECTION_STRING)' != ''" />
     <PackageReference Include="xunit.v3.mtp-v1" Version="3.2.2" />
   </ItemGroup>
 
