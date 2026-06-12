@@ -11,6 +11,9 @@ namespace DCoding.Data.DVault.Tests.Integration;
 [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.RequiredLocalProviderIntegration)]
 [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqliteProvider)]
 public sealed class DataVaultPitReadServiceSqliteTests {
+  private const string StableHashAlgorithmId = "sha256-128-v1";
+  private const int StableHashDigestByteLength = 16;
+
   [Theory]
   [InlineData(DataVaultLoadTimestampStorage.ProviderDefault)]
   [InlineData(DataVaultLoadTimestampStorage.Iso8601UtcText)]
@@ -201,6 +204,96 @@ public sealed class DataVaultPitReadServiceSqliteTests {
     }
   }
 
+  [Fact]
+  public async Task PitReadRoundTripsBinaryHashKeyStorageThroughSqlite() {
+    var metadata = CreateMetadata();
+    var importTimestamp = new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero);
+    var profileTimestamp = new DateTimeOffset(2026, 6, 1, 9, 0, 0, TimeSpan.Zero);
+    var pitLoadTimestamp = new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<PitReadContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .ReplaceService<IModelCacheKeyFactory, PitReadModelCacheKeyFactory>()
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVault(configure => configure.UseStableHashAlgorithm(StableHashAlgorithmId));
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var readService = provider.GetRequiredService<IDataVaultReadService>();
+    string customerHashKey;
+
+    await using (var context = new PitReadContext(
+        options,
+        DataVaultLoadTimestampStorage.ProviderDefault,
+        DataVaultHashKeyStorageProfile.Binary)) {
+      await context.Database.EnsureCreatedAsync();
+
+      var hubResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              importTimestamp,
+              "crm-import",
+              [new(metadata.Customer, [new("Customer Id", "C-BIN-PIT")])],
+              []));
+      customerHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Customer");
+
+      await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              profileTimestamp,
+              "crm-change",
+              [],
+              [],
+              [
+                  new(
+                      metadata.Profile,
+                      customerHashKey,
+                      [new("Customer Name", "Binary Customer"), new("Customer Tier", "Gold")],
+                      "profile-hash-2"),
+              ]));
+
+      context.Set<Dictionary<string, object>>("PitCustomerProfileStatus").Add(
+          CreatePitRow(
+              DataVaultLoadTimestampStorage.ProviderDefault,
+              customerHashKey,
+              pitLoadTimestamp,
+              profileTimestamp,
+              statusSnapshotTimestamp: null));
+      await context.SaveChangesAsync();
+    }
+
+    using (var connection = database.CreateOpenConnection()) {
+      AssertSqliteHashStorage(connection, "HubCustomer", "CustomerHashKey", customerHashKey, "blob", StableHashDigestByteLength);
+      AssertSqliteHashStorage(connection, "PitCustomerProfileStatus", "CustomerHashKey", customerHashKey, "blob", StableHashDigestByteLength);
+    }
+
+    await using (var context = new PitReadContext(
+        options,
+        DataVaultLoadTimestampStorage.ProviderDefault,
+        DataVaultHashKeyStorageProfile.Binary)) {
+      var request = new DataVaultPitAsOfReadRequest(metadata.Pit, [customerHashKey], pitLoadTimestamp.AddMinutes(1));
+      var records = await readService.ReadPitRowsAsync(context, request);
+      var projectedRows = await readService.ReadPitAsync(
+          context,
+          request,
+          row => row.RequiredString("ParentHashKey"));
+      var record = Assert.Single(records);
+      var profile = record.SatelliteSnapshots.Single(snapshot => snapshot.SatelliteName == "Profile");
+      var status = record.SatelliteSnapshots.Single(snapshot => snapshot.SatelliteName == "Status");
+
+      Assert.Equal(customerHashKey, record.ParentHashKey);
+      Assert.Equal(pitLoadTimestamp, record.LoadTimestamp);
+      Assert.True(profile.IsPresent);
+      Assert.Equal(profileTimestamp, profile.SnapshotLoadTimestamp);
+      Assert.Equal("Binary Customer", profile.PayloadValues["Customer Name"]);
+      Assert.Equal("Gold", profile.PayloadValues["Customer Tier"]);
+      Assert.False(status.IsPresent);
+      Assert.Equal([customerHashKey], projectedRows);
+    }
+  }
+
   private static Dictionary<string, object> CreatePitRow(
       DataVaultLoadTimestampStorage loadTimestampStorage,
       string parentHashKey,
@@ -226,6 +319,40 @@ public sealed class DataVaultPitReadServiceSqliteTests {
       DataVaultLoadTimestampStorage.UtcTicks => utcTimestamp.UtcDateTime.Ticks,
       _ => utcTimestamp,
     };
+  }
+
+  private static DataVaultProviderCapabilityProfile CreateSqliteProfile(DataVaultHashKeyStorageProfile storageProfile) {
+    return storageProfile == DataVaultHashKeyStorageProfile.HexString
+        ? DataVaultProviderCapabilityProfiles.Sqlite
+        : DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+            storageProfile,
+            StableHashAlgorithmId,
+            StableHashDigestByteLength);
+  }
+
+  private static void AssertSqliteHashStorage(
+      SqliteTestConnection connection,
+      string tableName,
+      string columnName,
+      string expectedHashKey,
+      string expectedStorageClass,
+      int expectedLength) {
+    Assert.Equal(
+        expectedStorageClass,
+        connection.ExecuteScalarString(
+            "SELECT typeof(" + QuoteSqliteIdentifier(columnName) + ") FROM " + QuoteSqliteIdentifier(tableName) + " ORDER BY rowid LIMIT 1;"));
+    Assert.Equal(
+        expectedLength.ToString(CultureInfo.InvariantCulture),
+        connection.ExecuteScalarString(
+            "SELECT length(" + QuoteSqliteIdentifier(columnName) + ") FROM " + QuoteSqliteIdentifier(tableName) + " ORDER BY rowid LIMIT 1;"));
+    Assert.Equal(
+        expectedHashKey.ToUpperInvariant(),
+        connection.ExecuteScalarString(
+            "SELECT hex(" + QuoteSqliteIdentifier(columnName) + ") FROM " + QuoteSqliteIdentifier(tableName) + " ORDER BY rowid LIMIT 1;"));
+  }
+
+  private static string QuoteSqliteIdentifier(string identifier) {
+    return "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
   }
 
   private static PitReadMetadata CreateMetadata() {
@@ -255,13 +382,16 @@ public sealed class DataVaultPitReadServiceSqliteTests {
 
   private sealed class PitReadContext(
       DbContextOptions<PitReadContext> options,
-      DataVaultLoadTimestampStorage loadTimestampStorage) : DbContext(options) {
+      DataVaultLoadTimestampStorage loadTimestampStorage,
+      DataVaultHashKeyStorageProfile storageProfile = DataVaultHashKeyStorageProfile.HexString) : DbContext(options) {
     public DataVaultLoadTimestampStorage LoadTimestampStorage { get; } = loadTimestampStorage;
+
+    public DataVaultHashKeyStorageProfile StorageProfile { get; } = storageProfile;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
       modelBuilder.ApplyDataVaultMetadata(
           CreateMetadata().Model,
-          DataVaultProviderCapabilityProfiles.Sqlite,
+          CreateSqliteProfile(StorageProfile),
           LoadTimestampStorage);
     }
   }
@@ -269,7 +399,13 @@ public sealed class DataVaultPitReadServiceSqliteTests {
   private sealed class PitReadModelCacheKeyFactory : IModelCacheKeyFactory {
     public object Create(DbContext context, bool designTime) {
       return context is PitReadContext pitReadContext
-          ? (context.GetType(), pitReadContext.LoadTimestampStorage, designTime)
+          ? (
+              context.GetType(),
+              pitReadContext.LoadTimestampStorage,
+              pitReadContext.StorageProfile,
+              StableHashAlgorithmId,
+              StableHashDigestByteLength,
+              designTime)
           : (object)(context.GetType(), designTime);
     }
   }

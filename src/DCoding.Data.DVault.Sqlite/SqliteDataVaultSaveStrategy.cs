@@ -333,6 +333,7 @@ internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrate
 
         foreach (var chunk in group.Chunk(chunkSize)) {
           rowsWritten += await ExecuteSqliteInsertChunkAsync(
+              dbContext,
               connection,
               transaction,
               group.Key.TableName,
@@ -368,6 +369,7 @@ internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrate
   }
 
   private static async Task<int> ExecuteSqliteInsertChunkAsync(
+      DbContext dbContext,
       DbConnection connection,
       DbTransaction transaction,
       string tableName,
@@ -384,7 +386,11 @@ internal sealed class SqliteDataVaultSaveStrategy : IDataVaultProviderSaveStrate
       foreach (var column in columns) {
         var parameter = command.CreateParameter();
         parameter.ParameterName = CreateSqliteParameterName(parameterIndex);
-        parameter.Value = row[column];
+        parameter.Value = DataVaultHashKeyProviderValueConverter.ToProviderParameterValue(
+            dbContext,
+            tableName,
+            column,
+            row[column]);
         command.Parameters.Add(parameter);
         parameterIndex++;
       }

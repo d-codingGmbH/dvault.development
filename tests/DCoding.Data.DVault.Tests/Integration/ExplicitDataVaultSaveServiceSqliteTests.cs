@@ -14,6 +14,9 @@ namespace DCoding.Data.DVault.Tests.Integration;
 [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.RequiredLocalProviderIntegration)]
 [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqliteProvider)]
 public sealed class ExplicitDataVaultSaveServiceSqliteTests {
+  private const string StableHashAlgorithmId = "sha256-128-v1";
+  private const int StableHashDigestByteLength = 16;
+
   [Fact]
   public async Task DefaultSaveServicePersistsHubAndLinkRowsThroughSqlite() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
@@ -2031,6 +2034,159 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
     }
   }
 
+  [Theory]
+  [InlineData(DataVaultHashKeyStorageProfile.HexString, "text", StableHashDigestByteLength * 2)]
+  [InlineData(DataVaultHashKeyStorageProfile.Binary, "blob", StableHashDigestByteLength)]
+  public async Task SaveAndReadServicesRoundTripHashKeyStorageProfilesThroughSqlite(
+      DataVaultHashKeyStorageProfile storageProfile,
+      string expectedStorageClass,
+      int expectedLength) {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["customer_name", "customer_status"]);
+    var firstLoadTimestamp = new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero);
+    var secondLoadTimestamp = new DateTimeOffset(2026, 6, 1, 9, 0, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateExplicitSaveServiceOptions(database);
+    var services = new ServiceCollection();
+    services.AddDVault(configure => configure.UseStableHashAlgorithm(StableHashAlgorithmId));
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var readService = provider.GetRequiredService<IDataVaultReadService>();
+    string customerHashKey;
+
+    await using (var context = new ExplicitSaveServiceContext(options, storageProfile: storageProfile)) {
+      await context.Database.EnsureCreatedAsync();
+
+      var hubResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              firstLoadTimestamp,
+              "crm-import",
+              [new(customer, [new("Customer Id", "C-STORAGE")])],
+              []));
+      customerHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Customer");
+
+      await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              firstLoadTimestamp,
+              "crm-import",
+              [],
+              [],
+              [
+                  new(
+                      profile,
+                      customerHashKey,
+                      [new("customer_name", "Alice Adams"), new("customer_status", "prospect")],
+                      "profile-hash-1"),
+              ]));
+      await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              secondLoadTimestamp,
+              "crm-change",
+              [],
+              [],
+              [
+                  new(
+                      profile,
+                      customerHashKey,
+                      [new("customer_name", "Alice Baker"), new("customer_status", "active")],
+                      "profile-hash-2"),
+              ]));
+    }
+
+    using (var connection = database.CreateOpenConnection()) {
+      AssertSqliteHashStorage(
+          connection,
+          "HubCustomer",
+          "CustomerHashKey",
+          customerHashKey,
+          expectedStorageClass,
+          expectedLength);
+      AssertSqliteHashStorage(
+          connection,
+          "SatCustomerProfile",
+          "CustomerHashKey",
+          customerHashKey,
+          expectedStorageClass,
+          expectedLength);
+    }
+
+    await using (var context = new ExplicitSaveServiceContext(options, storageProfile: storageProfile)) {
+      var latestRows = await readService.ReadLatestSatelliteRowsAsync(
+          context,
+          new DataVaultLatestSatelliteReadRequest(profile, [customerHashKey]));
+      var currentRows = await readService.ReadCurrentSatelliteRowsAsync(
+          context,
+          profile,
+          [customerHashKey]);
+      var asOfRows = await readService.ReadAsOfSatelliteRowsAsync(
+          context,
+          profile,
+          [customerHashKey],
+          firstLoadTimestamp);
+      var latestRow = Assert.Single(latestRows);
+      var currentRow = Assert.Single(currentRows);
+      var asOfRow = Assert.Single(asOfRows);
+
+      Assert.Equal(customerHashKey, latestRow.ParentHashKey);
+      Assert.Equal(customerHashKey, currentRow.ParentHashKey);
+      Assert.Equal(customerHashKey, asOfRow.ParentHashKey);
+      Assert.Equal("active", latestRow.PayloadValues["customer_status"]);
+      Assert.Equal("active", currentRow.PayloadValues["customer_status"]);
+      Assert.Equal("prospect", asOfRow.PayloadValues["customer_status"]);
+    }
+  }
+
+  [Fact]
+  public async Task BinaryHashKeyStorageProfileRejectsWrongDigestParticipantBeforeSqliteWrite() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+    var customerOrder = new DataVaultLinkMetadata(
+        "CustomerOrder",
+        [customer.ToReference(), order.ToReference()]);
+    var loadTimestamp = new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = CreateExplicitSaveServiceOptions(database);
+    var services = new ServiceCollection();
+    services.AddDVault(configure => configure.UseStableHashAlgorithm(StableHashAlgorithmId));
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+
+    await using (var context = new ExplicitSaveServiceContext(options, storageProfile: DataVaultHashKeyStorageProfile.Binary)) {
+      await context.Database.EnsureCreatedAsync();
+
+      var exception = await Assert.ThrowsAsync<FormatException>(() =>
+          saveService.SaveAsync(
+              context,
+              new DataVaultSaveRequest(
+                  loadTimestamp,
+                  "crm-import",
+                  [],
+                  [
+                      new(
+                          customerOrder,
+                          [
+                              new("Customer", CreateCanonicalHexDigest(StableHashDigestByteLength)),
+                              new("Order", "abcd"),
+                          ]),
+                  ])));
+
+      Assert.Contains("32 lowercase hexadecimal characters", exception.Message, StringComparison.Ordinal);
+    }
+
+    using var connection = database.CreateOpenConnection();
+    Assert.Equal("0", connection.ExecuteScalarString("SELECT count(*) FROM \"LinkCustomerOrder\";"));
+  }
+
   [Fact]
   public async Task RegistryBackedSaveAndReadResolveAppDefaultMetadataThroughDbContextOptions() {
     var firstLoadTimestamp = new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero);
@@ -2576,6 +2732,56 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
         .Options;
   }
 
+  private static DataVaultProviderCapabilityProfile CreateSqliteProfile(DataVaultHashKeyStorageProfile storageProfile) {
+    return storageProfile == DataVaultHashKeyStorageProfile.HexString
+        ? DataVaultProviderCapabilityProfiles.Sqlite
+        : DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+            storageProfile,
+            StableHashAlgorithmId,
+            StableHashDigestByteLength);
+  }
+
+  private static void AssertSqliteHashStorage(
+      SqliteTestConnection connection,
+      string tableName,
+      string columnName,
+      string expectedHashKey,
+      string expectedStorageClass,
+      int expectedLength) {
+    Assert.Equal(
+        expectedStorageClass,
+        connection.ExecuteScalarString(
+            "SELECT typeof(" + QuoteSqliteIdentifier(columnName) + ") FROM " + QuoteSqliteIdentifier(tableName) + " ORDER BY rowid LIMIT 1;"));
+    Assert.Equal(
+        expectedLength.ToString(CultureInfo.InvariantCulture),
+        connection.ExecuteScalarString(
+            "SELECT length(" + QuoteSqliteIdentifier(columnName) + ") FROM " + QuoteSqliteIdentifier(tableName) + " ORDER BY rowid LIMIT 1;"));
+
+    if (string.Equals(expectedStorageClass, "blob", StringComparison.Ordinal)) {
+      Assert.Equal(
+          expectedHashKey.ToUpperInvariant(),
+          connection.ExecuteScalarString(
+              "SELECT hex(" + QuoteSqliteIdentifier(columnName) + ") FROM " + QuoteSqliteIdentifier(tableName) + " ORDER BY rowid LIMIT 1;"));
+      return;
+    }
+
+    Assert.Equal(
+        expectedHashKey,
+        connection.ExecuteScalarString(
+            "SELECT " + QuoteSqliteIdentifier(columnName) + " FROM " + QuoteSqliteIdentifier(tableName) + " ORDER BY rowid LIMIT 1;"));
+  }
+
+  private static string CreateCanonicalHexDigest(int digestByteLength, int seed = 0) {
+    return Convert.ToHexString(Enumerable
+        .Range(0, digestByteLength)
+        .Select(value => (byte)((value + seed) % 256))
+        .ToArray()).ToLowerInvariant();
+  }
+
+  private static string QuoteSqliteIdentifier(string identifier) {
+    return "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+  }
+
   private static void AssertSingleSavedRecord(
       DataVaultSaveResult result,
       DataVaultTableKind kind,
@@ -2868,13 +3074,16 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
 
   private sealed class ExplicitSaveServiceContext(
       DbContextOptions<ExplicitSaveServiceContext> options,
-      DataVaultLoadTimestampStorage loadTimestampStorage = DataVaultLoadTimestampStorage.ProviderDefault) : DbContext(options) {
+      DataVaultLoadTimestampStorage loadTimestampStorage = DataVaultLoadTimestampStorage.ProviderDefault,
+      DataVaultHashKeyStorageProfile storageProfile = DataVaultHashKeyStorageProfile.HexString) : DbContext(options) {
     public DataVaultLoadTimestampStorage LoadTimestampStorage { get; } = loadTimestampStorage;
+
+    public DataVaultHashKeyStorageProfile StorageProfile { get; } = storageProfile;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
       modelBuilder.ApplyDataVaultMetadata(
           CreateMetadataModel(),
-          DataVaultProviderCapabilityProfiles.Sqlite,
+          CreateSqliteProfile(StorageProfile),
           LoadTimestampStorage);
     }
   }
@@ -2886,7 +3095,13 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
   private sealed class ExplicitSaveServiceModelCacheKeyFactory : IModelCacheKeyFactory {
     public object Create(DbContext context, bool designTime) {
       return context is ExplicitSaveServiceContext explicitSaveServiceContext
-          ? (context.GetType(), explicitSaveServiceContext.LoadTimestampStorage, designTime)
+          ? (
+              context.GetType(),
+              explicitSaveServiceContext.LoadTimestampStorage,
+              explicitSaveServiceContext.StorageProfile,
+              StableHashAlgorithmId,
+              StableHashDigestByteLength,
+              designTime)
           : (object)(context.GetType(), designTime);
     }
   }

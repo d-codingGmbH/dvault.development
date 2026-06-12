@@ -1,6 +1,8 @@
+using System.Globalization;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -9,6 +11,9 @@ namespace DCoding.Data.DVault.Tests.Integration;
 [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.RequiredLocalProviderIntegration)]
 [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqliteProvider)]
 public sealed class DataVaultBridgeReadServiceSqliteTests {
+  private const string StableHashAlgorithmId = "sha256-128-v1";
+  private const int StableHashDigestByteLength = 16;
+
   [Fact]
   public async Task ManyToManyBridgeReadUsesEndpointFilterAndDeterministicOrderingThroughSqlite() {
     var bridge = ManyToManyMetadataModel.Bridges.Single();
@@ -91,6 +96,126 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
     Assert.Equal(["order-1", "order-2"], projectedOrderKeys);
     Assert.Collection(reverseRows, row => AssertManyToManyRow(row, "customer-2", "order-3"));
     Assert.Empty(missingRows);
+  }
+
+  [Fact]
+  public async Task ManyToManyBridgeReadRoundTripsBinaryHashKeyStorageThroughSqlite() {
+    var customer = ManyToManyMetadataModel.Hubs.Single(hub => hub.Name == "Customer");
+    var order = ManyToManyMetadataModel.Hubs.Single(hub => hub.Name == "Order");
+    var customerOrder = ManyToManyMetadataModel.Links.Single();
+    var bridge = ManyToManyMetadataModel.Bridges.Single();
+    var loadTimestamp = new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<ManyToManyBridgeReadContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .ReplaceService<IModelCacheKeyFactory, BridgeReadModelCacheKeyFactory>()
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVault(configure => configure.UseStableHashAlgorithm(StableHashAlgorithmId));
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var readService = provider.GetRequiredService<IDataVaultReadService>();
+    string customerHashKey;
+    string orderHashKey;
+    string customerOrderHashKey;
+
+    await using (var context = new ManyToManyBridgeReadContext(options, DataVaultHashKeyStorageProfile.Binary)) {
+      await context.Database.EnsureCreatedAsync();
+
+      var hubResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              loadTimestamp,
+              "crm-import",
+              [
+                  new(customer, [new("Customer Id", "C-BIN-BRIDGE")]),
+                  new(order, [new("Order Id", "O-BIN-BRIDGE")]),
+              ],
+              []));
+      customerHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Customer");
+      orderHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Order");
+
+      var linkResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              loadTimestamp,
+              "crm-import",
+              [],
+              [
+                  new(customerOrder, [new("Customer", customerHashKey), new("Order", orderHashKey)]),
+              ]));
+      customerOrderHashKey = GetHashKey(linkResult, DataVaultTableKind.Link, "CustomerOrder");
+
+      context.Set<Dictionary<string, object>>("BridgeCustomerOrder").Add(
+          new Dictionary<string, object> {
+            ["CustomerHashKey"] = customerHashKey,
+            ["OrderHashKey"] = orderHashKey,
+          });
+      await context.SaveChangesAsync();
+    }
+
+    using (var connection = database.CreateOpenConnection()) {
+      AssertSqliteHashStorage(connection, "LinkCustomerOrder", "CustomerOrderHashKey", customerOrderHashKey, "blob", StableHashDigestByteLength);
+      AssertSqliteHashStorage(connection, "BridgeCustomerOrder", "CustomerHashKey", customerHashKey, "blob", StableHashDigestByteLength);
+      AssertSqliteHashStorage(connection, "BridgeCustomerOrder", "OrderHashKey", orderHashKey, "blob", StableHashDigestByteLength);
+    }
+
+    await using (var context = new ManyToManyBridgeReadContext(options, DataVaultHashKeyStorageProfile.Binary)) {
+      var request = new DataVaultBridgeReadRequest(
+          bridge,
+          DataVaultBridgeTraversalEndpoint.From,
+          [customerHashKey]);
+      var rows = await readService.ReadBridgeRowsAsync(context, request);
+      var projectedOrderHashKeys = await readService.ReadBridgeAsync(
+          context,
+          request,
+          row => row.RequiredString("OrderHashKey"));
+
+      Assert.Collection(rows, row => AssertManyToManyRow(row, customerHashKey, orderHashKey));
+      Assert.Equal([orderHashKey], projectedOrderHashKeys);
+    }
+  }
+
+  [Fact]
+  public async Task BinaryBridgeReadRejectsTextStoredInHashKeyBlobColumn() {
+    var bridge = ManyToManyMetadataModel.Bridges.Single();
+    var customerHashKey = CreateCanonicalHexDigest(StableHashDigestByteLength, seed: 16);
+    var orderHashKey = CreateCanonicalHexDigest(StableHashDigestByteLength, seed: 48);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<ManyToManyBridgeReadContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .ReplaceService<IModelCacheKeyFactory, BridgeReadModelCacheKeyFactory>()
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVault(configure => configure.UseStableHashAlgorithm(StableHashAlgorithmId));
+    services.AddDVaultSqlite();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var readService = provider.GetRequiredService<IDataVaultReadService>();
+
+    await using (var context = new ManyToManyBridgeReadContext(options, DataVaultHashKeyStorageProfile.Binary)) {
+      await context.Database.EnsureCreatedAsync();
+    }
+
+    using (var connection = database.CreateOpenConnection()) {
+      connection.ExecuteNonQuery(
+          "INSERT INTO \"BridgeCustomerOrder\" (\"CustomerHashKey\", \"OrderHashKey\") " +
+          "VALUES (X'" + customerHashKey + "', '" + orderHashKey + "');");
+    }
+
+    await using (var context = new ManyToManyBridgeReadContext(options, DataVaultHashKeyStorageProfile.Binary)) {
+      var exception = await Assert.ThrowsAsync<FormatException>(() =>
+          readService.ReadBridgeRowsAsync(
+              context,
+              new DataVaultBridgeReadRequest(
+                  bridge,
+                  DataVaultBridgeTraversalEndpoint.From,
+                  [customerHashKey])));
+
+      Assert.Contains("provider bytes", exception.Message, StringComparison.Ordinal);
+    }
   }
 
   [Fact]
@@ -280,6 +405,53 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
         traversalDepth);
   }
 
+  private static string GetHashKey(DataVaultSaveResult result, DataVaultTableKind kind, string metadataName) {
+    return result.SavedRecords
+        .Single(record => record.Kind == kind && record.MetadataName == metadataName)
+        .HashKey;
+  }
+
+  private static DataVaultProviderCapabilityProfile CreateSqliteProfile(DataVaultHashKeyStorageProfile storageProfile) {
+    return storageProfile == DataVaultHashKeyStorageProfile.HexString
+        ? DataVaultProviderCapabilityProfiles.Sqlite
+        : DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+            storageProfile,
+            StableHashAlgorithmId,
+            StableHashDigestByteLength);
+  }
+
+  private static void AssertSqliteHashStorage(
+      SqliteTestConnection connection,
+      string tableName,
+      string columnName,
+      string expectedHashKey,
+      string expectedStorageClass,
+      int expectedLength) {
+    Assert.Equal(
+        expectedStorageClass,
+        connection.ExecuteScalarString(
+            "SELECT typeof(" + QuoteSqliteIdentifier(columnName) + ") FROM " + QuoteSqliteIdentifier(tableName) + " ORDER BY rowid LIMIT 1;"));
+    Assert.Equal(
+        expectedLength.ToString(CultureInfo.InvariantCulture),
+        connection.ExecuteScalarString(
+            "SELECT length(" + QuoteSqliteIdentifier(columnName) + ") FROM " + QuoteSqliteIdentifier(tableName) + " ORDER BY rowid LIMIT 1;"));
+    Assert.Equal(
+        expectedHashKey.ToUpperInvariant(),
+        connection.ExecuteScalarString(
+            "SELECT hex(" + QuoteSqliteIdentifier(columnName) + ") FROM " + QuoteSqliteIdentifier(tableName) + " ORDER BY rowid LIMIT 1;"));
+  }
+
+  private static string CreateCanonicalHexDigest(int digestByteLength, int seed = 0) {
+    return Convert.ToHexString(Enumerable
+        .Range(0, digestByteLength)
+        .Select(value => (byte)((value + seed) % 256))
+        .ToArray()).ToLowerInvariant();
+  }
+
+  private static string QuoteSqliteIdentifier(string identifier) {
+    return "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+  }
+
   private static DataVaultMetadataModel CreateManyToManyMetadataModel() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var order = new DataVaultHubMetadata("Order", ["Order Id"]);
@@ -359,9 +531,13 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
         });
   }
 
-  private sealed class ManyToManyBridgeReadContext(DbContextOptions<ManyToManyBridgeReadContext> options) : DbContext(options) {
+  private sealed class ManyToManyBridgeReadContext(
+      DbContextOptions<ManyToManyBridgeReadContext> options,
+      DataVaultHashKeyStorageProfile storageProfile = DataVaultHashKeyStorageProfile.HexString) : DbContext(options) {
+    public DataVaultHashKeyStorageProfile StorageProfile { get; } = storageProfile;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(ManyToManyMetadataModel);
+      modelBuilder.ApplyDataVaultMetadata(ManyToManyMetadataModel, CreateSqliteProfile(StorageProfile));
     }
   }
 
@@ -372,5 +548,18 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
   }
 
   private sealed class RegistryBridgeReadContext(DbContextOptions<RegistryBridgeReadContext> options) : DbContext(options) {
+  }
+
+  private sealed class BridgeReadModelCacheKeyFactory : IModelCacheKeyFactory {
+    public object Create(DbContext context, bool designTime) {
+      return context is ManyToManyBridgeReadContext bridgeReadContext
+          ? (
+              context.GetType(),
+              bridgeReadContext.StorageProfile,
+              StableHashAlgorithmId,
+              StableHashDigestByteLength,
+              designTime)
+          : (object)(context.GetType(), designTime);
+    }
   }
 }

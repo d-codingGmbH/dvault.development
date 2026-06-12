@@ -2,6 +2,8 @@ using System.Text;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Xunit;
 
 namespace DCoding.Data.DVault.Tests.Integration;
@@ -9,6 +11,9 @@ namespace DCoding.Data.DVault.Tests.Integration;
 [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.RequiredLocalProviderIntegration)]
 [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.SqliteProvider)]
 public sealed class SqliteDataVaultSchemaTests {
+  private const string StableHashAlgorithmId = "sha256-128-v1";
+  private const int StableHashDigestByteLength = 16;
+
   [Fact]
   public void ApplyDataVaultMetadataCreatesExpectedSqliteSchema() {
     using var database = SqliteTestDatabase.CreateTemporaryFile();
@@ -116,6 +121,102 @@ public sealed class SqliteDataVaultSchemaTests {
         "IxSatCustomerOrderStateSatelliteParentCustomerOrderHashKeyLoadTimestamp",
         ["CustomerOrderHashKey", "LoadTimestamp", "HashDiff"],
         expectedIndexUnique: false);
+  }
+
+  [Theory]
+  [InlineData(DataVaultHashKeyStorageProfile.HexString, "TEXT", DataVaultProviderValueFormat.LowercaseHexText, "none-string-model")]
+  [InlineData(DataVaultHashKeyStorageProfile.Binary, "BLOB", DataVaultProviderValueFormat.LowercaseHexBinary, "lowercase-hex-string-to-bytes")]
+  public void ApplyDataVaultMetadataSizesHashColumnsFromActiveHashStorageProfile(
+      DataVaultHashKeyStorageProfile storageProfile,
+      string expectedStoreType,
+      DataVaultProviderValueFormat expectedValueFormat,
+      string expectedConversionBehavior) {
+    using var schemaDatabase = SqliteTestDatabase.CreateTemporaryFile();
+    using var pitDatabase = SqliteTestDatabase.CreateTemporaryFile();
+    var schemaOptions = new DbContextOptionsBuilder<TranslatedDataVaultSchemaContext>()
+        .UseSqlite(CreateConnectionString(schemaDatabase))
+        .ReplaceService<IModelCacheKeyFactory, StorageProfileSchemaModelCacheKeyFactory>()
+        .Options;
+    var pitOptions = new DbContextOptionsBuilder<PitDataVaultSchemaContext>()
+        .UseSqlite(CreateConnectionString(pitDatabase))
+        .ReplaceService<IModelCacheKeyFactory, StorageProfileSchemaModelCacheKeyFactory>()
+        .Options;
+
+    using var schemaContext = new TranslatedDataVaultSchemaContext(schemaOptions, storageProfile);
+    using var pitContext = new PitDataVaultSchemaContext(pitOptions, storageProfile);
+
+    AssertHashProperty(
+        schemaContext.Model,
+        "HubCustomer",
+        "CustomerHashKey",
+        DataVaultLogicalPropertyKind.HashKey,
+        storageProfile,
+        expectedStoreType,
+        expectedValueFormat,
+        expectedConversionBehavior);
+    AssertHashProperty(
+        schemaContext.Model,
+        "LinkCustomerOrder",
+        "CustomerOrderHashKey",
+        DataVaultLogicalPropertyKind.HashKey,
+        storageProfile,
+        expectedStoreType,
+        expectedValueFormat,
+        expectedConversionBehavior);
+    AssertHashProperty(
+        schemaContext.Model,
+        "LinkCustomerOrder",
+        "CustomerHashKey",
+        DataVaultLogicalPropertyKind.ParticipantReference,
+        storageProfile,
+        expectedStoreType,
+        expectedValueFormat,
+        expectedConversionBehavior);
+    AssertHashProperty(
+        schemaContext.Model,
+        "LinkCustomerOrder",
+        "OrderHashKey",
+        DataVaultLogicalPropertyKind.ParticipantReference,
+        storageProfile,
+        expectedStoreType,
+        expectedValueFormat,
+        expectedConversionBehavior);
+    AssertHashProperty(
+        schemaContext.Model,
+        "SatCustomerContact",
+        "CustomerHashKey",
+        DataVaultLogicalPropertyKind.HashKey,
+        storageProfile,
+        expectedStoreType,
+        expectedValueFormat,
+        expectedConversionBehavior);
+    AssertHashProperty(
+        schemaContext.Model,
+        "BridgeCustomerOrder",
+        "CustomerHashKey",
+        DataVaultLogicalPropertyKind.ParticipantReference,
+        storageProfile,
+        expectedStoreType,
+        expectedValueFormat,
+        expectedConversionBehavior);
+    AssertHashProperty(
+        schemaContext.Model,
+        "BridgeCustomerOrder",
+        "OrderHashKey",
+        DataVaultLogicalPropertyKind.ParticipantReference,
+        storageProfile,
+        expectedStoreType,
+        expectedValueFormat,
+        expectedConversionBehavior);
+    AssertHashProperty(
+        pitContext.Model,
+        "PitCustomerProfileStatus",
+        "CustomerHashKey",
+        DataVaultLogicalPropertyKind.HashKey,
+        storageProfile,
+        expectedStoreType,
+        expectedValueFormat,
+        expectedConversionBehavior);
   }
 
   [Fact]
@@ -323,6 +424,13 @@ public sealed class SqliteDataVaultSchemaTests {
 
   private static string CreateConnectionString(SqliteTestDatabase database) {
     return "Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False";
+  }
+
+  private static DataVaultProviderCapabilityProfile CreateSqliteProfile(DataVaultHashKeyStorageProfile storageProfile) {
+    return DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+        storageProfile,
+        StableHashAlgorithmId,
+        StableHashDigestByteLength);
   }
 
   private static DataVaultMetadataModel CreateMetadataModel() {
@@ -598,9 +706,52 @@ public sealed class SqliteDataVaultSchemaTests {
     return "'" + value.Replace("'", "''", StringComparison.Ordinal) + "'";
   }
 
-  private sealed class TranslatedDataVaultSchemaContext(DbContextOptions<TranslatedDataVaultSchemaContext> options) : DbContext(options) {
+  private static void AssertHashProperty(
+      IModel model,
+      string entityName,
+      string propertyName,
+      DataVaultLogicalPropertyKind expectedLogicalPropertyKind,
+      DataVaultHashKeyStorageProfile expectedStorageProfile,
+      string expectedStoreType,
+      DataVaultProviderValueFormat expectedValueFormat,
+      string expectedConversionBehavior) {
+    var entity = model.GetEntityTypes().Single(entityType => string.Equals(entityType.Name, entityName, StringComparison.Ordinal));
+    var property = entity.FindProperty(propertyName);
+
+    Assert.NotNull(property);
+    Assert.Equal(typeof(string), property!.ClrType);
+    Assert.Equal(expectedLogicalPropertyKind, AnnotationValue<DataVaultLogicalPropertyKind>(
+        property,
+        DataVaultAnnotationNames.ProviderLogicalPropertyKind));
+    Assert.Equal(expectedStoreType, property.GetColumnType());
+    Assert.Equal(expectedStoreType, AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderStorageType));
+    Assert.Equal(expectedValueFormat, AnnotationValue<DataVaultProviderValueFormat>(property, DataVaultAnnotationNames.ProviderValueFormat));
+    Assert.Equal(expectedStorageProfile, AnnotationValue<DataVaultHashKeyStorageProfile>(
+        property,
+        DataVaultAnnotationNames.HashKeyStorageProfile));
+    Assert.Equal(StableHashAlgorithmId, AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashAlgorithmId));
+    Assert.Equal(StableHashDigestByteLength, AnnotationValue<int>(property, DataVaultAnnotationNames.StableHashDigestByteLength));
+    Assert.Equal("lowercase-hex-no-prefix", AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashDigestEncoding));
+    Assert.Equal(expectedConversionBehavior, AnnotationValue<string>(property, DataVaultAnnotationNames.HashKeyConversionBehavior));
+    if (expectedStorageProfile == DataVaultHashKeyStorageProfile.Binary) {
+      Assert.NotNull(property.GetValueConverter());
+    }
+    else {
+      Assert.Null(property.GetValueConverter());
+    }
+  }
+
+  private static T AnnotationValue<T>(IProperty property, string annotationName) {
+    return Assert.IsType<T>(property.FindAnnotation(annotationName)?.Value);
+  }
+
+  private sealed class TranslatedDataVaultSchemaContext(
+      DbContextOptions<TranslatedDataVaultSchemaContext> options,
+      DataVaultHashKeyStorageProfile storageProfile = DataVaultHashKeyStorageProfile.HexString) : DbContext(options) {
+    public DataVaultHashKeyStorageProfile StorageProfile { get; } = storageProfile;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(CreateMetadataModel());
+      modelBuilder.ApplyDataVaultMetadata(CreateMetadataModel(), CreateSqliteProfile(StorageProfile));
     }
   }
 
@@ -625,9 +776,13 @@ public sealed class SqliteDataVaultSchemaTests {
     }
   }
 
-  private sealed class PitDataVaultSchemaContext(DbContextOptions<PitDataVaultSchemaContext> options) : DbContext(options) {
+  private sealed class PitDataVaultSchemaContext(
+      DbContextOptions<PitDataVaultSchemaContext> options,
+      DataVaultHashKeyStorageProfile storageProfile = DataVaultHashKeyStorageProfile.HexString) : DbContext(options) {
+    public DataVaultHashKeyStorageProfile StorageProfile { get; } = storageProfile;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(CreatePitMetadataModel());
+      modelBuilder.ApplyDataVaultMetadata(CreatePitMetadataModel(), CreateSqliteProfile(StorageProfile));
     }
   }
 
@@ -657,5 +812,25 @@ public sealed class SqliteDataVaultSchemaTests {
 
   private sealed class Order {
     public string OrderId { get; init; } = string.Empty;
+  }
+
+  private sealed class StorageProfileSchemaModelCacheKeyFactory : IModelCacheKeyFactory {
+    public object Create(DbContext context, bool designTime) {
+      return context switch {
+        TranslatedDataVaultSchemaContext schemaContext => (
+            context.GetType(),
+            schemaContext.StorageProfile,
+            StableHashAlgorithmId,
+            StableHashDigestByteLength,
+            designTime),
+        PitDataVaultSchemaContext pitContext => (
+            context.GetType(),
+            pitContext.StorageProfile,
+            StableHashAlgorithmId,
+            StableHashDigestByteLength,
+            designTime),
+        _ => (object)(context.GetType(), designTime),
+      };
+    }
   }
 }

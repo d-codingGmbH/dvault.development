@@ -83,6 +83,62 @@ public sealed class LiveSchemaReaderContractFixtureTests {
     Assert.Equal(["varchar(64)", "varchar(33)", "varchar(255)", "varchar(255)"], mySql.Columns.Select(column => column.ProviderStorageType));
   }
 
+  [Theory]
+  [InlineData("sqlite-v1", "TEXT", "BLOB")]
+  [InlineData("oracle-v1", "VARCHAR2(32 CHAR)", "RAW(16)")]
+  [InlineData("postgres-v1", "varchar(32)", "bytea")]
+  [InlineData("sqlserver-v1", "nvarchar(32)", "varbinary(16)")]
+  [InlineData("db2-v1", "VARCHAR(32)", "VARBINARY(16)")]
+  [InlineData("mysql-pomelo-v1", "varchar(32)", "varbinary(16)")]
+  public void ExpectedSnapshotsProjectHashStorageProfilesWithoutChangingLogicalShape(
+      string profileName,
+      string expectedHexStringStoreType,
+      string expectedBinaryStoreType) {
+    var hexStringProfile = SelectProfile(profileName).WithHashKeyStorageProfile(
+        DataVaultHashKeyStorageProfile.HexString,
+        "sha256-128-v1",
+        16);
+    var binaryProfile = SelectProfile(profileName).WithHashKeyStorageProfile(
+        DataVaultHashKeyStorageProfile.Binary,
+        "sha256-128-v1",
+        16);
+    var hexStringSnapshot = LiveSchemaReaderContractFixture.CreateExpectedSnapshot(hexStringProfile);
+    var binarySnapshot = LiveSchemaReaderContractFixture.CreateExpectedSnapshot(binaryProfile);
+
+    Assert.Equal(
+        hexStringSnapshot.Tables.Select(table => table.TableName),
+        binarySnapshot.Tables.Select(table => table.TableName));
+    foreach (var pair in hexStringSnapshot.Tables.Zip(binarySnapshot.Tables)) {
+      Assert.Equal(
+          pair.First.Columns.Select(column => (column.Ordinal, column.ColumnName)),
+          pair.Second.Columns.Select(column => (column.Ordinal, column.ColumnName)));
+      Assert.Equal(pair.First.PrimaryKey.ConstraintName, pair.Second.PrimaryKey.ConstraintName);
+      Assert.Equal(pair.First.PrimaryKey.ColumnNames, pair.Second.PrimaryKey.ColumnNames);
+      Assert.Equal(
+          pair.First.Indexes.Select(index => (index.IndexName, index.IsUnique, ColumnNames: string.Join("|", index.ColumnNames))),
+          pair.Second.Indexes.Select(index => (index.IndexName, index.IsUnique, ColumnNames: string.Join("|", index.ColumnNames))));
+    }
+
+    Assert.All(
+        HashKeyColumns(hexStringSnapshot),
+        column => Assert.Equal(expectedHexStringStoreType, column.ProviderStorageType));
+    Assert.All(
+        HashKeyColumns(binarySnapshot),
+        column => Assert.Equal(expectedBinaryStoreType, column.ProviderStorageType));
+    Assert.Equal(
+        [expectedHexStringStoreType, expectedHexStringStoreType, expectedHexStringStoreType],
+        FindTable(hexStringSnapshot, "LinkCustomerOrder")
+            .Columns
+            .Where(column => column.ColumnName.EndsWith("HashKey", StringComparison.Ordinal))
+            .Select(column => column.ProviderStorageType));
+    Assert.Equal(
+        [expectedBinaryStoreType, expectedBinaryStoreType, expectedBinaryStoreType],
+        FindTable(binarySnapshot, "LinkCustomerOrder")
+            .Columns
+            .Where(column => column.ColumnName.EndsWith("HashKey", StringComparison.Ordinal))
+            .Select(column => column.ProviderStorageType));
+  }
+
   [Fact]
   public void ExpectedSnapshotsClassifyProviderSpecificSatelliteIndexColumnContracts() {
     Assert.Equal(
@@ -154,5 +210,22 @@ public sealed class LiveSchemaReaderContractFixtureTests {
         tableName);
 
     return Assert.Single(table.Indexes);
+  }
+
+  private static DataVaultProviderCapabilityProfile SelectProfile(string profileName) {
+    return profileName switch {
+      "sqlite-v1" => DataVaultProviderCapabilityProfiles.Sqlite,
+      "oracle-v1" => DataVaultProviderCapabilityProfiles.Oracle,
+      "postgres-v1" => DataVaultProviderCapabilityProfiles.Postgres,
+      "sqlserver-v1" => DataVaultProviderCapabilityProfiles.SqlServer,
+      "db2-v1" => DataVaultProviderCapabilityProfiles.Db2,
+      "mysql-pomelo-v1" => DataVaultProviderCapabilityProfiles.MySql,
+      _ => throw new ArgumentOutOfRangeException(nameof(profileName), profileName, "Unknown provider profile."),
+    };
+  }
+
+  private static IEnumerable<DataVaultLiveSchemaColumn> HashKeyColumns(DataVaultLiveSchemaSnapshot snapshot) {
+    return snapshot.Tables.SelectMany(table => table.Columns)
+        .Where(column => column.ColumnName.EndsWith("HashKey", StringComparison.Ordinal));
   }
 }

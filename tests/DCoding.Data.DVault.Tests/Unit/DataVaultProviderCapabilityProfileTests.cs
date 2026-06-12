@@ -483,6 +483,64 @@ public sealed class DataVaultProviderCapabilityProfileTests {
         "lowercase-hex-string-to-bytes");
   }
 
+  [Theory]
+  [InlineData("sqlite-v1", "TEXT", "BLOB")]
+  [InlineData("oracle-v1", "VARCHAR2(32 CHAR)", "RAW(16)")]
+  [InlineData("postgres-v1", "varchar(32)", "bytea")]
+  [InlineData("sqlserver-v1", "nvarchar(32)", "varbinary(16)")]
+  [InlineData("db2-v1", "VARCHAR(32)", "VARBINARY(16)")]
+  [InlineData("mysql-pomelo-v1", "varchar(32)", "varbinary(16)")]
+  public void BuiltInProviderMatrixProjectsHexStringAndBinaryStoreTypesForKeysAndReferences(
+      string profileName,
+      string expectedHexStringStoreType,
+      string expectedBinaryStoreType) {
+    var hexStringProfile = SelectProfile(profileName).WithHashKeyStorageProfile(
+        DataVaultHashKeyStorageProfile.HexString,
+        "sha256-128-v1",
+        16);
+    var binaryProfile = SelectProfile(profileName).WithHashKeyStorageProfile(
+        DataVaultHashKeyStorageProfile.Binary,
+        "sha256-128-v1",
+        16);
+
+    AssertHashKeyMapping(
+        hexStringProfile,
+        DataVaultLogicalPropertyKind.HashKey,
+        expectedHexStringStoreType,
+        DataVaultHashKeyStorageProfile.HexString,
+        DataVaultProviderValueFormat.LowercaseHexText,
+        "sha256-128-v1",
+        16,
+        "none-string-model");
+    AssertHashKeyMapping(
+        hexStringProfile,
+        DataVaultLogicalPropertyKind.ParticipantReference,
+        expectedHexStringStoreType,
+        DataVaultHashKeyStorageProfile.HexString,
+        DataVaultProviderValueFormat.LowercaseHexText,
+        "sha256-128-v1",
+        16,
+        "none-string-model");
+    AssertHashKeyMapping(
+        binaryProfile,
+        DataVaultLogicalPropertyKind.HashKey,
+        expectedBinaryStoreType,
+        DataVaultHashKeyStorageProfile.Binary,
+        DataVaultProviderValueFormat.LowercaseHexBinary,
+        "sha256-128-v1",
+        16,
+        "lowercase-hex-string-to-bytes");
+    AssertHashKeyMapping(
+        binaryProfile,
+        DataVaultLogicalPropertyKind.ParticipantReference,
+        expectedBinaryStoreType,
+        DataVaultHashKeyStorageProfile.Binary,
+        DataVaultProviderValueFormat.LowercaseHexBinary,
+        "sha256-128-v1",
+        16,
+        "lowercase-hex-string-to-bytes");
+  }
+
   [Fact]
   public void LoadTimestampStorageCanBeProjectedToIsoTextForNativeTimestampProfiles() {
     var profile = DataVaultProviderCapabilityProfiles.SqlServer.WithLoadTimestampStorage(DataVaultLoadTimestampStorage.Iso8601UtcText);

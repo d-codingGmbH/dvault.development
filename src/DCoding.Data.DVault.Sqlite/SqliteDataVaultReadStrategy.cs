@@ -245,12 +245,24 @@ internal sealed class SqliteDataVaultReadStrategy :
     foreach (var parentHashKey in parentHashKeyBatch) {
       var parameter = command.CreateParameter();
       parameter.ParameterName = CreateSqliteParameterName(parameterIndex);
-      parameter.Value = parentHashKey;
+      parameter.Value = DataVaultHashKeyProviderValueConverter.ToProviderParameterValue(
+          context.DbContext,
+          projection.TableName,
+          projection.ParentHashKeyColumnName,
+          parentHashKey);
       command.Parameters.Add(parameter);
       parameterIndex++;
     }
 
-    return await ReadCommandRowsAsync(command, selectedColumns, cancellationToken).ConfigureAwait(false);
+    return await ReadCommandRowsAsync(
+        command,
+        selectedColumns,
+        cancellationToken,
+        (columnName, value) => DataVaultHashKeyProviderValueConverter.ReadProviderValue(
+            context.DbContext,
+            projection.TableName,
+            columnName,
+            value)).ConfigureAwait(false);
   }
 
   private static async Task<IReadOnlyList<Dictionary<string, object>>> ReadSqliteBridgeRowsAsync(
@@ -308,7 +320,11 @@ internal sealed class SqliteDataVaultReadStrategy :
     foreach (var endpointHashKey in endpointHashKeyBatch) {
       var parameter = command.CreateParameter();
       parameter.ParameterName = CreateSqliteParameterName(parameterIndex);
-      parameter.Value = endpointHashKey;
+      parameter.Value = DataVaultHashKeyProviderValueConverter.ToProviderParameterValue(
+          context.DbContext,
+          projection.TableName,
+          projection.FilterColumnName,
+          endpointHashKey);
       command.Parameters.Add(parameter);
       parameterIndex++;
     }
@@ -324,12 +340,20 @@ internal sealed class SqliteDataVaultReadStrategy :
         command,
         selectedColumns,
         cancellationToken,
-        (columnName, value) => string.Equals(columnName, projection.TraversalDepthColumnName, StringComparison.Ordinal) &&
-            value is long longValue &&
-            longValue >= int.MinValue &&
-            longValue <= int.MaxValue
-            ? (int)longValue
-            : value).ConfigureAwait(false);
+        (columnName, value) => {
+          var normalizedValue = string.Equals(columnName, projection.TraversalDepthColumnName, StringComparison.Ordinal) &&
+              value is long longValue &&
+              longValue >= int.MinValue &&
+              longValue <= int.MaxValue
+              ? (int)longValue
+              : value;
+
+          return DataVaultHashKeyProviderValueConverter.ReadProviderValue(
+              context.DbContext,
+              projection.TableName,
+              columnName,
+              normalizedValue);
+        }).ConfigureAwait(false);
   }
 
   private static async Task<IReadOnlyList<Dictionary<string, object>>> ExecuteLatestRowsBatchAsync(
@@ -351,7 +375,11 @@ internal sealed class SqliteDataVaultReadStrategy :
     foreach (var parentHashKey in parentHashKeyBatch) {
       var parameter = command.CreateParameter();
       parameter.ParameterName = CreateSqliteParameterName(parameterIndex);
-      parameter.Value = parentHashKey;
+      parameter.Value = DataVaultHashKeyProviderValueConverter.ToProviderParameterValue(
+          context.DbContext,
+          projection.TableName,
+          projection.ParentHashKeyColumnName,
+          parentHashKey);
       command.Parameters.Add(parameter);
       parameterIndex++;
     }
@@ -372,9 +400,14 @@ internal sealed class SqliteDataVaultReadStrategy :
     while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
       var row = new Dictionary<string, object>(StringComparer.Ordinal);
       for (var columnIndex = 0; columnIndex < selectedColumns.Count; columnIndex++) {
-        row[selectedColumns[columnIndex]] = await reader.IsDBNullAsync(columnIndex, cancellationToken).ConfigureAwait(false)
+        var columnName = selectedColumns[columnIndex];
+        row[columnName] = await reader.IsDBNullAsync(columnIndex, cancellationToken).ConfigureAwait(false)
             ? null!
-            : reader.GetValue(columnIndex);
+            : DataVaultHashKeyProviderValueConverter.ReadProviderValue(
+                context.DbContext,
+                projection.TableName,
+                columnName,
+                reader.GetValue(columnIndex));
       }
 
       readRows.Add(row);
