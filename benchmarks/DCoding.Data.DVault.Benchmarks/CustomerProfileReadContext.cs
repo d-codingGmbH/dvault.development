@@ -9,8 +9,8 @@ namespace DCoding.Data.DVault.Benchmarks;
 
 internal class CustomerProfileReadContext(
     DbContextOptions options,
-    DataVaultProviderCapabilityProfile providerCapabilities) : DbContext(options) {
-  protected DataVaultProviderCapabilityProfile ProviderCapabilities { get; } = providerCapabilities;
+    DataVaultProviderCapabilityProfile providerCapabilities) : DbContext(options), IBenchmarkDataVaultModelCacheKeySource {
+  public DataVaultProviderCapabilityProfile ProviderCapabilities { get; } = providerCapabilities;
 
   protected override void OnModelCreating(ModelBuilder modelBuilder) {
     modelBuilder.ApplyDataVaultMetadata(

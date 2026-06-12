@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace DCoding.Data.DVault.Benchmarks;
 
@@ -25,6 +26,7 @@ internal sealed class TempSqliteDatabase : IBenchmarkDatabase {
       where TContext : DbContext {
     return new DbContextOptionsBuilder<TContext>()
         .UseSqlite(ConnectionString)
+        .ReplaceService<IModelCacheKeyFactory, BenchmarkDataVaultModelCacheKeyFactory>()
         .Options;
   }
 

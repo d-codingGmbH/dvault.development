@@ -45,6 +45,14 @@ dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVau
 
 Valid timestamp storage values are `provider-default`, `iso8601-utc-text`, and `utc-ticks`.
 
+Use `--hash-key-storage-matrix` to run the bounded hash-key comparison baseline across `sha256-v1` hex, `sha256-v1` binary, `sha256-128-v1` hex, and `sha256-128-v1` binary without creating a second benchmark harness:
+
+```sh
+dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --provider sqlite --hash-key-storage-matrix --iterations 3 --warmup 1 --output artifacts/benchmarks/sqlite-hash-key-storage
+```
+
+The matrix keeps the public DVault hash-key boundary as lowercase hexadecimal strings while projecting the selected stable-hash algorithm and physical storage profile into the EF model. In matrix mode, DVault save, latest-read, PIT, bridge, streaming-save, and latest-satellite lookup rows append the hash-key variant to the existing baseline name, for example `dvault-adddvaultsqlite-optimized/sha256-128-v1-binary`. Single-variant runs can use `--stable-hash sha256-128-v1` and `--hash-key-storage binary` when isolating one comparison point.
+
 Use `--latest-indexes` to isolate the latest-satellite hash-diff lookup that protects insert-only satellites from repeated unchanged writes:
 
 ```sh
@@ -71,7 +79,15 @@ The command creates the output directory when needed and writes deterministic fi
 - `benchmark-summary.csv`
 - `benchmark-summary.json`
 
-The repository-facing evidence contract is defined in `docs/plans/performance-evidence-benchmark-artifact-contract.md`. Before/after evidence must keep two comparable copies of the artifact trio under one explicit scenario, ticket, or release label. The markdown, CSV, and JSON artifacts describe the same comparison rows. Each row includes scenario, provider, baseline, strategy family, dataset-size metadata, change-ratio metadata, execution status, skip reason, iteration count, mean/min/max milliseconds, mean/min/max allocated bytes, execution detail, and persisted outcome. Skipped and failed rows use `iterations=0`, blank CSV/markdown metric cells, and JSON `null` timing and allocation values while keeping execution detail visible. The markdown and JSON artifacts also include the benchmark options, OS description, OS and process architecture, processor count, .NET runtime details, provider filter, load-timestamp storage, and optional provider discovery status. Downstream docs that cite benchmark results must preserve that hardware and provider context with the copied table or linked artifact so machine-specific timings are not separated from the run environment. The adopter-facing interpretation of the root triplet is [Performance Profiles](../../docs/performance-profiles.md).
+Hash-key storage matrix runs also write same-directory footprint sidecars:
+
+- `hash-key-footprint.md`
+- `hash-key-footprint.csv`
+- `hash-key-footprint.json`
+
+These sidecars keep the compared algorithm id, digest byte length, hex character length, physical storage profile, provider store type, value format, and hash-reference payload bytes beside the root timing/allocation triplet. They are supplemental evidence for storage and index-shape interpretation; the required benchmark row schema remains the shared triplet schema.
+
+The repository-facing evidence contract is defined in `docs/plans/performance-evidence-benchmark-artifact-contract.md`. Before/after evidence must keep two comparable copies of the artifact trio under one explicit scenario, ticket, or release label. The markdown, CSV, and JSON artifacts describe the same comparison rows. Each row includes scenario, provider, baseline, strategy family, dataset-size metadata, change-ratio metadata, execution status, skip reason, iteration count, mean/min/max milliseconds, mean/min/max allocated bytes, execution detail, and persisted outcome. Skipped and failed rows use `iterations=0`, blank CSV/markdown metric cells, and JSON `null` timing and allocation values while keeping execution detail visible. The markdown and JSON artifacts also include the benchmark options, OS description, OS and process architecture, processor count, .NET runtime details, provider filter, load-timestamp storage, hash-key variants, and optional provider discovery status. Downstream docs that cite benchmark results must preserve that hardware and provider context with the copied table or linked artifact so machine-specific timings are not separated from the run environment. The adopter-facing interpretation of the root triplet is [Performance Profiles](../../docs/performance-profiles.md).
 
 The v0.20.0 provider-optimized documentation boundary reuses the same root artifact triplet: `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json`. Do not introduce separate staged-bulk or stored-procedure evidence filenames for that release note. PostgreSQL staged claims must be backed by the staged COPY row at the 60-operation threshold plus the retained direct or UNNEST row below that threshold. MySQL staged claims must be backed by the staged bulk row at the 60-operation threshold plus the retained multi-row row above the 50-operation native gate and below the staged threshold. SQL Server remains a single current native-bulk boundary, and Oracle remains direct optimized batching with `stagedOracleBulk=not-selected-no-measured-win` until an artifact set records a measured staged Oracle win. Stored procedures are outside the benchmark harness default matrix and require separate explicit provider and migration-synchronization evidence before any documentation can treat them as an application-owned escape hatch.
 

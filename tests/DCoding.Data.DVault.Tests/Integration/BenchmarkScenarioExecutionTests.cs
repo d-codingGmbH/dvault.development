@@ -1025,6 +1025,78 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
+  public void BenchmarkOptionsCanSelectBoundedHashKeyStorageMatrix() {
+    var options = BenchmarkOptions.Parse(["--hash-key-storage-matrix"]);
+
+    Assert.Equal(
+        ["sha256-v1-hex", "sha256-v1-binary", "sha256-128-v1-hex", "sha256-128-v1-binary"],
+        options.EffectiveHashKeyVariants.Select(variant => variant.Label));
+    Assert.Equal(
+        [DataVaultHashKeyStorageProfile.HexString, DataVaultHashKeyStorageProfile.Binary, DataVaultHashKeyStorageProfile.HexString, DataVaultHashKeyStorageProfile.Binary],
+        options.EffectiveHashKeyVariants.Select(variant => variant.StorageProfile));
+    Assert.Equal([32, 32, 16, 16], options.EffectiveHashKeyVariants.Select(variant => variant.DigestByteLength));
+  }
+
+  [Fact]
+  public async Task CustomerProfileDataVaultBenchmarkSupportsShortBinaryHashKeyVariant() {
+    var cancellationToken = TestContext.Current.CancellationToken;
+    var variant = BenchmarkHashKeyVariant.BoundedStorageMatrix.Single(candidate =>
+        candidate.Label == "sha256-128-v1-binary");
+    var benchmark = new CustomerProfileDataVaultBenchmark(
+        BenchmarkDatabaseProviders.Sqlite,
+        DataVaultBenchmarkStrategy.SqliteOptimized,
+        DataVaultLoadTimestampStorage.ProviderDefault,
+        variant);
+
+    var result = await benchmark.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+
+    Assert.Contains("1 customer hub row and 2 profile satellite rows for C-100", result.PersistedOutcome);
+    Assert.True(result.Elapsed > TimeSpan.Zero);
+  }
+
+  [Fact]
+  public void HashKeyFootprintSidecarRowsDescribeBoundedMatrixPayloads() {
+    var options = new BenchmarkOptions(
+        1,
+        0,
+        ProviderFilter: BenchmarkProviderFilters.Sqlite,
+        HashKeyVariants: BenchmarkHashKeyVariant.BoundedStorageMatrix);
+    var postgresAvailability = PostgresBenchmarkAvailability.Skipped(BenchmarkSkipReason.NotConfigured());
+    var context = BenchmarkRunContext.Create(
+        options,
+        postgresAvailability,
+        [BenchmarkProviderAvailability.FromPostgres(postgresAvailability)]);
+    var summaries = BenchmarkHashKeyVariant.BoundedStorageMatrix
+        .Select(variant => new BenchmarkSummary(
+            "customer-profile-history",
+            SqliteProviderName,
+            "dvault-adddvaultsqlite-optimized/" + variant.Label,
+            "sqlite-optimized-dvault",
+            "1 customer, 2 profile states",
+            "50% repeat-change history",
+            BenchmarkExecutionStatus.Completed,
+            string.Empty,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            "scenario=customer-profile-history; hashKeyVariant=" + variant.Label,
+            "1 customer hub row and 2 profile satellite rows for C-100"))
+        .ToArray();
+
+    var rows = BenchmarkHashKeyFootprintArtifacts.CreateRows(context, summaries);
+
+    Assert.Equal(4, rows.Count);
+    AssertFootprintRow(rows, "sha256-v1-hex", "TEXT", "LowercaseHexText", 64);
+    AssertFootprintRow(rows, "sha256-v1-binary", "BLOB", "LowercaseHexBinary", 32);
+    AssertFootprintRow(rows, "sha256-128-v1-hex", "TEXT", "LowercaseHexText", 32);
+    AssertFootprintRow(rows, "sha256-128-v1-binary", "BLOB", "LowercaseHexBinary", 16);
+  }
+
+  [Fact]
   public async Task PostgresDiscoveryTreatsMissingEnvironmentVariableAsNotConfiguredSkip() {
     var availability = await PostgresBenchmarkAvailability
         .DiscoverAsync(
@@ -1529,6 +1601,27 @@ public sealed class BenchmarkScenarioExecutionTests {
     foreach (var profile in ExpectedPerformanceProfiles) {
       Assert.Contains(profile.ProfileName, guidance, StringComparison.Ordinal);
     }
+  }
+
+  private static void AssertFootprintRow(
+      IReadOnlyList<BenchmarkHashKeyFootprintRow> rows,
+      string variant,
+      string expectedHashKeyStoreType,
+      string expectedValueFormat,
+      int expectedPayloadBytes) {
+    var row = Assert.Single(rows, candidate => candidate.Variant == variant);
+
+    Assert.Equal(SqliteProviderName, row.Provider);
+    Assert.Equal(expectedHashKeyStoreType, row.HashKeyStoreType);
+    Assert.Equal(expectedHashKeyStoreType, row.ParticipantReferenceStoreType);
+    Assert.Equal(expectedValueFormat, row.HashKeyValueFormat);
+    Assert.Equal(expectedValueFormat, row.ParticipantReferenceValueFormat);
+    Assert.Equal(expectedPayloadBytes, row.HashKeyPayloadBytes);
+    Assert.Equal(expectedPayloadBytes, row.ParentHashReferencePayloadBytes);
+    Assert.Equal(expectedPayloadBytes * 2, row.TwoColumnHashReferenceIndexPayloadBytes);
+    Assert.Equal(1, row.CompletedRows);
+    Assert.Equal(0, row.SkippedRows);
+    Assert.Equal(0, row.FailedRows);
   }
 
   private static void AssertRegressionBudgetDefaultsAreDocumented(string benchmarkContract) {

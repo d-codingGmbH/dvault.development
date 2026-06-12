@@ -9,8 +9,14 @@ namespace DCoding.Data.DVault.Benchmarks;
 
 internal static class ReadBenchmarkServices {
   public static ServiceProvider CreateProvider(DataVaultBenchmarkStrategy strategy) {
+    return CreateProvider(strategy, BenchmarkHashKeyVariant.Default);
+  }
+
+  public static ServiceProvider CreateProvider(
+      DataVaultBenchmarkStrategy strategy,
+      BenchmarkHashKeyVariant hashKeyVariant) {
     var services = new ServiceCollection();
-    DataVaultBenchmarkHelpers.AddDataVaultServices(services, strategy);
+    DataVaultBenchmarkHelpers.AddDataVaultServices(services, strategy, hashKeyVariant);
 
     return services.BuildServiceProvider(validateScopes: true);
   }
@@ -76,6 +82,11 @@ internal static class ReadBenchmarkServices {
                 })
                 .ToArray()))
         .ToArray();
+
+    DataVaultBenchmarkHelpers.AssertStableHashKey(
+        customerHashKeys[scenario.SampleCustomerIndex],
+        providerCapabilities,
+        "Seeded read benchmark customer hash key must use the active stable-hash shape.");
 
     await saveService
         .SaveAsync(context, new DataVaultBulkSaveRequest(satelliteRequests), cancellationToken)

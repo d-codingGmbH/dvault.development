@@ -36,6 +36,7 @@ The JSON context and markdown run context must preserve:
 - warmup iterations
 - load-timestamp storage
 - provider filter
+- hash-key variants when stable-hash algorithm or hash-key storage profile varies
 - OS description
 - OS architecture
 - process architecture
@@ -90,6 +91,8 @@ The required local baseline is SQLite temporary files. A standard local evidence
 Streaming-save evidence must reuse the artifact fields above. The materialized, synchronous chunked, and async-source rows must use the same logical explicit save requests and comparable run inputs. Synchronous chunked rows must make the exercised `DataVaultChunkedSaveRequest` path, chunk size, chunk count, processed chunk count, and retained-state high-water count visible through `executionDetail` or existing metadata fields without adding a new artifact schema. Async-source rows must stay on the same provider-neutral chunked telemetry boundary, identify `IAsyncEnumerable<DataVaultSaveChunk>` as the exercised source shape, preserve the chunk size and processed-chunk counts, and avoid provider-native async ingestion or alternate ordering claims.
 
 When the claim depends on scale behavior, include the scale matrix mode. When the claim depends on latest-satellite lookup/index behavior, include the latest-index matrix mode.
+
+When the claim compares stable-hash algorithm width or physical hash-key storage profile, keep supplemental footprint sidecars beside the same benchmark artifact triplet under the same label. The sidecars may capture provider store types, value formats, digest byte lengths, hex character lengths, and hash-reference payload bytes without adding new columns to the required benchmark-summary row schema.
 
 The optional external-provider matrix is limited to PostgreSQL, SQL Server, MySQL, and Oracle. Those providers emit provider-native bulk-ingestion comparison rows only when the provider is configured and reachable. The provider-native bulk matrix must keep provider-neutral fallback rows, retained provider-native direct or multi-row rows where the repository exposes them, and staged-provider rows where the repository exposes them as distinct row identities. If an optional provider is not configured, its rows must remain present as `executionStatus=skipped` with the normalized skip reason and an `executionDetail` value that preserves the planned provider-native strategy boundary.
 

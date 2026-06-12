@@ -7,9 +7,16 @@ internal sealed record BenchmarkOptions(
     bool ScaleMatrix = false,
     bool LatestIndexMatrix = false,
     DataVaultLoadTimestampStorage LoadTimestampStorage = DataVaultLoadTimestampStorage.ProviderDefault,
-    string ProviderFilter = BenchmarkProviderFilters.All) {
+    string ProviderFilter = BenchmarkProviderFilters.All,
+    IReadOnlyList<BenchmarkHashKeyVariant>? HashKeyVariants = null) {
   private const int DefaultIterations = 5;
   private const int DefaultWarmupIterations = 1;
+  private const string DefaultStableHashAlgorithmId = "sha256-v1";
+
+  public IReadOnlyList<BenchmarkHashKeyVariant> EffectiveHashKeyVariants { get; } =
+      HashKeyVariants is null || HashKeyVariants.Count == 0
+          ? [BenchmarkHashKeyVariant.Default]
+          : HashKeyVariants;
 
   public static bool IsHelpRequested(IReadOnlyCollection<string> args) {
     return args.Contains("--help", StringComparer.Ordinal) || args.Contains("-h", StringComparer.Ordinal);
@@ -23,6 +30,9 @@ internal sealed record BenchmarkOptions(
     var latestIndexMatrix = false;
     var loadTimestampStorage = DataVaultLoadTimestampStorage.ProviderDefault;
     var providerFilter = BenchmarkProviderFilters.All;
+    var hashKeyStorageMatrix = false;
+    string? stableHashAlgorithmId = null;
+    DataVaultHashKeyStorageProfile? hashKeyStorageProfile = null;
 
     for (var index = 0; index < args.Count; index++) {
       switch (args[index]) {
@@ -47,6 +57,15 @@ internal sealed record BenchmarkOptions(
         case "--provider":
           providerFilter = ReadProviderFilter(args, ref index);
           break;
+        case "--hash-key-storage-matrix":
+          hashKeyStorageMatrix = true;
+          break;
+        case "--stable-hash":
+          stableHashAlgorithmId = ReadStableHashAlgorithmId(args, ref index);
+          break;
+        case "--hash-key-storage":
+          hashKeyStorageProfile = ReadHashKeyStorageProfile(args, ref index);
+          break;
         default:
           throw new ArgumentException(
               "Unsupported benchmark argument '" + args[index] + "'. Run with --help for usage.");
@@ -57,6 +76,11 @@ internal sealed record BenchmarkOptions(
       throw new ArgumentException("--scale and --latest-indexes cannot be combined.");
     }
 
+    if (hashKeyStorageMatrix && (stableHashAlgorithmId is not null || hashKeyStorageProfile is not null)) {
+      throw new ArgumentException(
+          "--hash-key-storage-matrix cannot be combined with --stable-hash or --hash-key-storage.");
+    }
+
     return new BenchmarkOptions(
         iterations,
         warmupIterations,
@@ -64,7 +88,14 @@ internal sealed record BenchmarkOptions(
         scaleMatrix,
         latestIndexMatrix,
         loadTimestampStorage,
-        providerFilter);
+        providerFilter,
+        hashKeyStorageMatrix
+            ? BenchmarkHashKeyVariant.BoundedStorageMatrix
+            : [
+                CreateHashKeyVariant(
+                    stableHashAlgorithmId ?? DefaultStableHashAlgorithmId,
+                    hashKeyStorageProfile ?? DataVaultHashKeyStorageProfile.HexString),
+            ]);
   }
 
   private static int ReadPositiveInt(IReadOnlyList<string> args, ref int index, string optionName) {
@@ -131,5 +162,46 @@ internal sealed record BenchmarkOptions(
     }
 
     throw new ArgumentException("Value for --provider must be all, sqlite, postgres, sqlserver, mysql, or oracle.");
+  }
+
+  private static string ReadStableHashAlgorithmId(IReadOnlyList<string> args, ref int index) {
+    var value = ReadNonEmptyString(args, ref index, "--stable-hash").ToLowerInvariant();
+
+    return value switch {
+      "sha256-v1" or "sha256-128-v1" => value,
+      _ => throw new ArgumentException("Value for --stable-hash must be sha256-v1 or sha256-128-v1."),
+    };
+  }
+
+  private static DataVaultHashKeyStorageProfile ReadHashKeyStorageProfile(IReadOnlyList<string> args, ref int index) {
+    var value = ReadNonEmptyString(args, ref index, "--hash-key-storage").ToLowerInvariant();
+
+    return value switch {
+      "hex" or "hex-string" or "hexstring" => DataVaultHashKeyStorageProfile.HexString,
+      "binary" => DataVaultHashKeyStorageProfile.Binary,
+      _ => throw new ArgumentException("Value for --hash-key-storage must be hex or binary."),
+    };
+  }
+
+  private static BenchmarkHashKeyVariant CreateHashKeyVariant(
+      string stableHashAlgorithmId,
+      DataVaultHashKeyStorageProfile storageProfile) {
+    var digestByteLength = stableHashAlgorithmId switch {
+      "sha256-v1" => 32,
+      "sha256-128-v1" => 16,
+      _ => throw new ArgumentException("Unsupported stable hash algorithm id '" + stableHashAlgorithmId + "'."),
+    };
+
+    var storageLabel = storageProfile == DataVaultHashKeyStorageProfile.Binary
+        ? "binary"
+        : "hex";
+    return stableHashAlgorithmId == BenchmarkHashKeyVariant.Default.StableHashAlgorithmId &&
+        storageProfile == BenchmarkHashKeyVariant.Default.StorageProfile
+        ? BenchmarkHashKeyVariant.Default
+        : new BenchmarkHashKeyVariant(
+            stableHashAlgorithmId + "-" + storageLabel,
+            stableHashAlgorithmId,
+            digestByteLength,
+            storageProfile);
   }
 }

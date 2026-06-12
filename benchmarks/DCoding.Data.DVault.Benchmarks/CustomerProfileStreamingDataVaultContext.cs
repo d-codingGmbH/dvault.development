@@ -7,8 +7,10 @@ namespace DCoding.Data.DVault.Benchmarks;
 
 internal sealed class CustomerProfileStreamingDataVaultContext(
     DbContextOptions<CustomerProfileStreamingDataVaultContext> options,
-    DataVaultProviderCapabilityProfile providerCapabilities) : DbContext(options) {
+    DataVaultProviderCapabilityProfile providerCapabilities) : DbContext(options), IBenchmarkDataVaultModelCacheKeySource {
+  public DataVaultProviderCapabilityProfile ProviderCapabilities { get; } = providerCapabilities;
+
   protected override void OnModelCreating(ModelBuilder modelBuilder) {
-    modelBuilder.ApplyDataVaultMetadata(ScenarioContracts.CreateCustomerProfileDataVaultModel(), providerCapabilities);
+    modelBuilder.ApplyDataVaultMetadata(ScenarioContracts.CreateCustomerProfileDataVaultModel(), ProviderCapabilities);
   }
 }

@@ -2,6 +2,7 @@ using System.Data.Common;
 using System.Reflection;
 using DCoding.Data.DVault;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 #pragma warning disable EF1003 // Benchmark cleanup uses fixed produced table names plus provider quoting helpers.
 
@@ -19,6 +20,7 @@ internal sealed class TempOracleDatabase : SharedExternalBenchmarkDatabase {
   public override DbContextOptions<TContext> CreateOptions<TContext>() {
     var builder = new DbContextOptionsBuilder<TContext>();
     OracleBenchmarkReflection.UseOracle(builder, _connectionString);
+    builder.ReplaceService<IModelCacheKeyFactory, BenchmarkDataVaultModelCacheKeyFactory>();
 
     return builder.Options;
   }

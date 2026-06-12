@@ -7,30 +7,43 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DCoding.Data.DVault.Benchmarks;
 
-internal sealed class LatestSatelliteReadBenchmark : IScenarioBenchmark {
+internal sealed class LatestSatelliteReadBenchmark : IScenarioBenchmark, IBenchmarkHashKeyVariantSource {
   private readonly BenchmarkDatabaseProvider _provider;
   private readonly DataVaultBenchmarkStrategy _strategy;
   private readonly DataVaultLoadTimestampStorage _loadTimestampStorage;
+  private readonly BenchmarkHashKeyVariant _hashKeyVariant;
   private readonly CustomerProfileBulkScenarioDefinition _scenario = CustomerProfileBulkScenarios.ChangeHeavy;
 
   public LatestSatelliteReadBenchmark(
       BenchmarkDatabaseProvider provider,
       DataVaultBenchmarkStrategy strategy,
-      DataVaultLoadTimestampStorage loadTimestampStorage) {
+      DataVaultLoadTimestampStorage loadTimestampStorage)
+      : this(provider, strategy, loadTimestampStorage, BenchmarkHashKeyVariant.Default) {
+  }
+
+  public LatestSatelliteReadBenchmark(
+      BenchmarkDatabaseProvider provider,
+      DataVaultBenchmarkStrategy strategy,
+      DataVaultLoadTimestampStorage loadTimestampStorage,
+      BenchmarkHashKeyVariant hashKeyVariant) {
     ArgumentNullException.ThrowIfNull(provider);
+    ArgumentNullException.ThrowIfNull(hashKeyVariant);
 
     _provider = provider;
     _strategy = strategy;
     _loadTimestampStorage = loadTimestampStorage;
+    _hashKeyVariant = hashKeyVariant;
   }
 
   public string ScenarioName => "latest-satellite-read";
 
   public string ProviderName => _provider.ProviderName;
 
-  public string BaselineName => DataVaultBenchmarkHelpers.GetDataVaultBaselineName(_strategy);
+  public string BaselineName => DataVaultBenchmarkHelpers.GetDataVaultBaselineName(_strategy, _hashKeyVariant);
 
   public string StrategyFamily => DataVaultBenchmarkHelpers.GetDataVaultStrategyFamily(_strategy);
+
+  public BenchmarkHashKeyVariant HashKeyVariant => _hashKeyVariant;
 
   public string DatasetSize => _scenario.DatasetSize;
 
@@ -39,8 +52,8 @@ internal sealed class LatestSatelliteReadBenchmark : IScenarioBenchmark {
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
     using var database = _provider.CreateDatabase();
     var options = database.CreateOptions<CustomerProfileReadContext>();
-    var providerCapabilities = _provider.GetProviderCapabilities(_loadTimestampStorage);
-    using var provider = ReadBenchmarkServices.CreateProvider(_strategy);
+    var providerCapabilities = _provider.GetProviderCapabilities(_loadTimestampStorage, _hashKeyVariant);
+    using var provider = ReadBenchmarkServices.CreateProvider(_strategy, _hashKeyVariant);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
     var readService = provider.GetRequiredService<IDataVaultReadService>();
     var readDiagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
@@ -119,6 +132,10 @@ internal sealed class LatestSatelliteReadBenchmark : IScenarioBenchmark {
     BenchmarkAssert.Equal(expected.RecordSource, sampleRow.RecordSource, "The latest satellite read record source drifted.");
     BenchmarkAssert.Equal(expected.CustomerName, sampleRow.PayloadValues["customer_name"], "The latest satellite read name drifted.");
     BenchmarkAssert.Equal(expected.CustomerStatus, sampleRow.PayloadValues["customer_status"], "The latest satellite read status drifted.");
+    DataVaultBenchmarkHelpers.AssertStableHashKey(
+        sampleHashKey,
+        _provider.GetProviderCapabilities(_loadTimestampStorage, _hashKeyVariant),
+        "The latest satellite read parent hash key must use the active stable-hash shape.");
     BenchmarkAssert.True(
         readRows.All(row => customerHashKeys.Contains(row.ParentHashKey, StringComparer.Ordinal)),
         "The latest satellite read benchmark returned an unseeded parent hash key.");

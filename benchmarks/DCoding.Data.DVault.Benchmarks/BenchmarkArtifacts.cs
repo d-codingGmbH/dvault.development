@@ -39,8 +39,11 @@ internal static class BenchmarkArtifacts {
         .ConfigureAwait(false);
     await File.WriteAllTextAsync(jsonPath, CreateJson(context, summaries), cancellationToken)
         .ConfigureAwait(false);
+    var hashKeyFootprintPaths = await BenchmarkHashKeyFootprintArtifacts
+        .WriteAsync(fullOutputDirectory, context, summaries, cancellationToken)
+        .ConfigureAwait(false);
 
-    return new BenchmarkArtifactPaths(markdownPath, csvPath, jsonPath);
+    return new BenchmarkArtifactPaths(markdownPath, csvPath, jsonPath, hashKeyFootprintPaths);
   }
 
   public static string CreateMarkdownTable(IEnumerable<BenchmarkSummary> summaries) {
@@ -148,6 +151,9 @@ internal static class BenchmarkArtifacts {
     builder
         .Append("- Provider filter: ")
         .AppendLine(context.ProviderFilter);
+    builder
+        .Append("- Hash key variants: ")
+        .AppendLine(string.Join(", ", context.HashKeyVariants.Select(variant => variant.Label)));
     builder
         .Append("- OS description: ")
         .AppendLine(context.OsDescription);

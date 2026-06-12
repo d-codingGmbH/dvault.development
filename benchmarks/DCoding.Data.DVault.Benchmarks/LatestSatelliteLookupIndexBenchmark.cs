@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DCoding.Data.DVault.Benchmarks;
 
-internal sealed class LatestSatelliteLookupIndexBenchmark : IScenarioBenchmark {
+internal sealed class LatestSatelliteLookupIndexBenchmark : IScenarioBenchmark, IBenchmarkHashKeyVariantSource {
   private const int CustomerCount = 100;
   private const int SeededHistoryStateCount = 20;
   private const string CustomerHashKeyColumnName = "CustomerHashKey";
@@ -20,6 +20,7 @@ internal sealed class LatestSatelliteLookupIndexBenchmark : IScenarioBenchmark {
   private readonly BenchmarkDatabaseProvider _provider;
   private readonly DataVaultBenchmarkStrategy _strategy;
   private readonly DataVaultLoadTimestampStorage _loadTimestampStorage;
+  private readonly BenchmarkHashKeyVariant _hashKeyVariant;
   private readonly LatestSatelliteLookupIndexVariant _indexVariant;
   private readonly LatestSatelliteLookupWorkload _workload;
 
@@ -28,13 +29,31 @@ internal sealed class LatestSatelliteLookupIndexBenchmark : IScenarioBenchmark {
       DataVaultBenchmarkStrategy strategy,
       DataVaultLoadTimestampStorage loadTimestampStorage,
       LatestSatelliteLookupIndexVariant indexVariant,
+      LatestSatelliteLookupWorkload workload)
+      : this(
+          provider,
+          strategy,
+          loadTimestampStorage,
+          BenchmarkHashKeyVariant.Default,
+          indexVariant,
+          workload) {
+  }
+
+  public LatestSatelliteLookupIndexBenchmark(
+      BenchmarkDatabaseProvider provider,
+      DataVaultBenchmarkStrategy strategy,
+      DataVaultLoadTimestampStorage loadTimestampStorage,
+      BenchmarkHashKeyVariant hashKeyVariant,
+      LatestSatelliteLookupIndexVariant indexVariant,
       LatestSatelliteLookupWorkload workload) {
     ArgumentNullException.ThrowIfNull(provider);
+    ArgumentNullException.ThrowIfNull(hashKeyVariant);
     ArgumentNullException.ThrowIfNull(indexVariant);
 
     _provider = provider;
     _strategy = strategy;
     _loadTimestampStorage = loadTimestampStorage;
+    _hashKeyVariant = hashKeyVariant;
     _indexVariant = indexVariant;
     _workload = workload;
   }
@@ -45,11 +64,13 @@ internal sealed class LatestSatelliteLookupIndexBenchmark : IScenarioBenchmark {
 
   public string ProviderName => _provider.ProviderName;
 
-  public string BaselineName => DataVaultBenchmarkHelpers.GetDataVaultBaselineName(_strategy) +
+  public string BaselineName => DataVaultBenchmarkHelpers.GetDataVaultBaselineName(_strategy, _hashKeyVariant) +
       "/" +
       _indexVariant.BaselineName;
 
   public string StrategyFamily => DataVaultBenchmarkHelpers.GetDataVaultStrategyFamily(_strategy);
+
+  public BenchmarkHashKeyVariant HashKeyVariant => _hashKeyVariant;
 
   public string DatasetSize =>
       CustomerCount.ToString(CultureInfo.InvariantCulture) +
@@ -64,9 +85,9 @@ internal sealed class LatestSatelliteLookupIndexBenchmark : IScenarioBenchmark {
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
     using var database = _provider.CreateDatabase();
     var options = database.CreateOptions<LatestSatelliteLookupDataVaultContext>();
-    var providerCapabilities = _provider.GetProviderCapabilities(_loadTimestampStorage);
+    var providerCapabilities = _provider.GetProviderCapabilities(_loadTimestampStorage, _hashKeyVariant);
     var services = new ServiceCollection();
-    DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy);
+    DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy, _hashKeyVariant);
 
     using var provider = services.BuildServiceProvider(validateScopes: true);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
@@ -188,6 +209,10 @@ internal sealed class LatestSatelliteLookupIndexBenchmark : IScenarioBenchmark {
         ExpectedSatelliteRowCount,
         satelliteRows.Count,
         "The latest satellite lookup benchmark persisted an unexpected satellite row count.");
+    DataVaultBenchmarkHelpers.AssertStableHashKey(
+        sampleHashKey,
+        providerCapabilities,
+        "The latest satellite lookup customer hash key must use the active stable-hash shape.");
     BenchmarkAssert.Equal(
         ExpectedLatestHashDiff(42),
         (string)sampleLatestRow[HashDiffColumnName],
@@ -259,9 +284,11 @@ internal sealed class LatestSatelliteLookupIndexBenchmark : IScenarioBenchmark {
 
   private sealed class LatestSatelliteLookupDataVaultContext(
       DbContextOptions<LatestSatelliteLookupDataVaultContext> options,
-      DataVaultProviderCapabilityProfile providerCapabilities) : DbContext(options) {
+      DataVaultProviderCapabilityProfile providerCapabilities) : DbContext(options), IBenchmarkDataVaultModelCacheKeySource {
+    public DataVaultProviderCapabilityProfile ProviderCapabilities { get; } = providerCapabilities;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(ScenarioContracts.CreateCustomerProfileDataVaultModel(), providerCapabilities);
+      modelBuilder.ApplyDataVaultMetadata(ScenarioContracts.CreateCustomerProfileDataVaultModel(), ProviderCapabilities);
     }
   }
 }

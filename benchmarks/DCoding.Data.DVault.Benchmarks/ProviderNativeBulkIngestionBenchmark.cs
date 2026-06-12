@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DCoding.Data.DVault.Benchmarks;
 
-internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark {
+internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark, IBenchmarkHashKeyVariantSource {
   private static readonly ProviderNativeBulkIngestionWorkload StagedEligibleWorkload = new(
       PairCount: 20,
       DatasetSize: "20 order-product pairs, 3 fulfillment satellite operations",
@@ -24,6 +24,7 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark 
   private readonly BenchmarkDatabaseProvider _provider;
   private readonly DataVaultBenchmarkStrategy _strategy;
   private readonly DataVaultLoadTimestampStorage _loadTimestampStorage;
+  private readonly BenchmarkHashKeyVariant _hashKeyVariant;
   private readonly ProviderNativeBulkIngestionWorkload _workload;
   private readonly string? _baselineNameOverride;
   private readonly string? _executionPathOverride;
@@ -33,10 +34,19 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark 
       BenchmarkDatabaseProvider provider,
       DataVaultBenchmarkStrategy strategy,
       DataVaultLoadTimestampStorage loadTimestampStorage)
+      : this(provider, strategy, loadTimestampStorage, BenchmarkHashKeyVariant.Default) {
+  }
+
+  public ProviderNativeBulkIngestionBenchmark(
+      BenchmarkDatabaseProvider provider,
+      DataVaultBenchmarkStrategy strategy,
+      DataVaultLoadTimestampStorage loadTimestampStorage,
+      BenchmarkHashKeyVariant hashKeyVariant)
       : this(
           provider,
           strategy,
           loadTimestampStorage,
+          hashKeyVariant,
           StagedEligibleWorkload,
           baselineNameOverride: null,
           executionPathOverride: null,
@@ -47,16 +57,19 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark 
       BenchmarkDatabaseProvider provider,
       DataVaultBenchmarkStrategy strategy,
       DataVaultLoadTimestampStorage loadTimestampStorage,
+      BenchmarkHashKeyVariant hashKeyVariant,
       ProviderNativeBulkIngestionWorkload workload,
       string? baselineNameOverride,
       string? executionPathOverride,
       string? expectedProviderSaveStrategyName) {
     ArgumentNullException.ThrowIfNull(provider);
+    ArgumentNullException.ThrowIfNull(hashKeyVariant);
     ArgumentNullException.ThrowIfNull(workload);
 
     _provider = provider;
     _strategy = strategy;
     _loadTimestampStorage = loadTimestampStorage;
+    _hashKeyVariant = hashKeyVariant;
     _workload = workload;
     _baselineNameOverride = baselineNameOverride;
     _executionPathOverride = executionPathOverride;
@@ -67,9 +80,13 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark 
 
   public string ProviderName => _provider.ProviderName;
 
-  public string BaselineName => _baselineNameOverride ?? DataVaultBenchmarkHelpers.GetDataVaultBaselineName(_strategy);
+  public string BaselineName => _baselineNameOverride is null
+      ? DataVaultBenchmarkHelpers.GetDataVaultBaselineName(_strategy, _hashKeyVariant)
+      : AppendHashKeyVariant(_baselineNameOverride, _hashKeyVariant);
 
   public string StrategyFamily => DataVaultBenchmarkHelpers.GetDataVaultStrategyFamily(_strategy);
+
+  public BenchmarkHashKeyVariant HashKeyVariant => _hashKeyVariant;
 
   public string DatasetSize => _workload.DatasetSize;
 
@@ -80,10 +97,18 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark 
   public static ProviderNativeBulkIngestionBenchmark CreatePostgresRetainedDirectOrUnnest(
       BenchmarkDatabaseProvider provider,
       DataVaultLoadTimestampStorage loadTimestampStorage) {
+    return CreatePostgresRetainedDirectOrUnnest(provider, loadTimestampStorage, BenchmarkHashKeyVariant.Default);
+  }
+
+  public static ProviderNativeBulkIngestionBenchmark CreatePostgresRetainedDirectOrUnnest(
+      BenchmarkDatabaseProvider provider,
+      DataVaultLoadTimestampStorage loadTimestampStorage,
+      BenchmarkHashKeyVariant hashKeyVariant) {
     return new ProviderNativeBulkIngestionBenchmark(
         provider,
         DataVaultBenchmarkStrategy.PostgresOptimized,
         loadTimestampStorage,
+        hashKeyVariant,
         StagedIneligibleRetainedPathWorkload,
         "dvault-adddvaultpostgres-direct-or-unnest",
         "DVault PostgreSQL retained direct or UNNEST save path; transfer=direct-or-UNNEST; " +
@@ -95,10 +120,18 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark 
   public static ProviderNativeBulkIngestionBenchmark CreateMySqlRetainedMultiRow(
       BenchmarkDatabaseProvider provider,
       DataVaultLoadTimestampStorage loadTimestampStorage) {
+    return CreateMySqlRetainedMultiRow(provider, loadTimestampStorage, BenchmarkHashKeyVariant.Default);
+  }
+
+  public static ProviderNativeBulkIngestionBenchmark CreateMySqlRetainedMultiRow(
+      BenchmarkDatabaseProvider provider,
+      DataVaultLoadTimestampStorage loadTimestampStorage,
+      BenchmarkHashKeyVariant hashKeyVariant) {
     return new ProviderNativeBulkIngestionBenchmark(
         provider,
         DataVaultBenchmarkStrategy.MySqlOptimized,
         loadTimestampStorage,
+        hashKeyVariant,
         StagedIneligibleRetainedPathWorkload,
         "dvault-adddvaultmysql-multi-row",
         "DVault MySQL retained multi-row save path; selectedStrategy=MySqlDataVaultSaveStrategy; " +
@@ -109,9 +142,9 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark 
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
     using var database = _provider.CreateDatabase();
     var options = database.CreateOptions<ProviderNativeBulkIngestionContext>();
-    var providerCapabilities = _provider.GetProviderCapabilities(_loadTimestampStorage);
+    var providerCapabilities = _provider.GetProviderCapabilities(_loadTimestampStorage, _hashKeyVariant);
     var services = new ServiceCollection();
-    DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy);
+    DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy, _hashKeyVariant);
 
     using var provider = services.BuildServiceProvider(validateScopes: true);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
@@ -330,6 +363,16 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark 
     BenchmarkAssert.Equal(scenario.ProductHashKeys[0], ReadString(firstProductRow, "ProductHashKey"), "Product hub hash key drifted.");
     BenchmarkAssert.Equal(scenario.OrderHashKeys[0], ReadString(firstLinkRow, "OrderHashKey"), "Order-product link order hash key drifted.");
     BenchmarkAssert.Equal(scenario.ProductHashKeys[0], ReadString(firstLinkRow, "ProductHashKey"), "Order-product link product hash key drifted.");
+    DataVaultBenchmarkHelpers.AssertStableHashKey(
+        scenario.OrderHashKeys[0],
+        providerCapabilities,
+        "Provider-native order hash key must use the active stable-hash shape.");
+    DataVaultBenchmarkHelpers.AssertHashKeyStorageMapping(
+        context,
+        "HubOrder",
+        "OrderHashKey",
+        providerCapabilities,
+        "Provider-native order hub hash key must project the active storage profile.");
 
     AssertFulfillmentRow(
         fulfillmentRows[0],
@@ -402,11 +445,21 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark 
     };
   }
 
+  private static string AppendHashKeyVariant(
+      string baselineName,
+      BenchmarkHashKeyVariant hashKeyVariant) {
+    return hashKeyVariant == BenchmarkHashKeyVariant.Default
+        ? baselineName
+        : baselineName + "/" + hashKeyVariant.Label;
+  }
+
   private sealed class ProviderNativeBulkIngestionContext(
       DbContextOptions<ProviderNativeBulkIngestionContext> options,
-      DataVaultProviderCapabilityProfile providerCapabilities) : DbContext(options) {
+      DataVaultProviderCapabilityProfile providerCapabilities) : DbContext(options), IBenchmarkDataVaultModelCacheKeySource {
+    public DataVaultProviderCapabilityProfile ProviderCapabilities { get; } = providerCapabilities;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(ScenarioContracts.CreateOrderProductDataVaultModel(), providerCapabilities);
+      modelBuilder.ApplyDataVaultMetadata(ScenarioContracts.CreateOrderProductDataVaultModel(), ProviderCapabilities);
     }
   }
 

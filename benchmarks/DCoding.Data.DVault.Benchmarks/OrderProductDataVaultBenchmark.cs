@@ -5,29 +5,42 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DCoding.Data.DVault.Benchmarks;
 
-internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
+internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark, IBenchmarkHashKeyVariantSource {
   private readonly BenchmarkDatabaseProvider _provider;
   private readonly DataVaultBenchmarkStrategy _strategy;
   private readonly DataVaultLoadTimestampStorage _loadTimestampStorage;
+  private readonly BenchmarkHashKeyVariant _hashKeyVariant;
 
   public OrderProductDataVaultBenchmark(
       BenchmarkDatabaseProvider provider,
       DataVaultBenchmarkStrategy strategy,
-      DataVaultLoadTimestampStorage loadTimestampStorage) {
+      DataVaultLoadTimestampStorage loadTimestampStorage)
+      : this(provider, strategy, loadTimestampStorage, BenchmarkHashKeyVariant.Default) {
+  }
+
+  public OrderProductDataVaultBenchmark(
+      BenchmarkDatabaseProvider provider,
+      DataVaultBenchmarkStrategy strategy,
+      DataVaultLoadTimestampStorage loadTimestampStorage,
+      BenchmarkHashKeyVariant hashKeyVariant) {
     ArgumentNullException.ThrowIfNull(provider);
+    ArgumentNullException.ThrowIfNull(hashKeyVariant);
 
     _provider = provider;
     _strategy = strategy;
     _loadTimestampStorage = loadTimestampStorage;
+    _hashKeyVariant = hashKeyVariant;
   }
 
   public string ScenarioName => "order-product-fulfillment-history";
 
   public string ProviderName => _provider.ProviderName;
 
-  public string BaselineName => DataVaultBenchmarkHelpers.GetDataVaultBaselineName(_strategy);
+  public string BaselineName => DataVaultBenchmarkHelpers.GetDataVaultBaselineName(_strategy, _hashKeyVariant);
 
   public string StrategyFamily => DataVaultBenchmarkHelpers.GetDataVaultStrategyFamily(_strategy);
+
+  public BenchmarkHashKeyVariant HashKeyVariant => _hashKeyVariant;
 
   public string DatasetSize => "1 order-product relationship, 2 fulfillment states";
 
@@ -36,9 +49,9 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
     using var database = _provider.CreateDatabase();
     var options = database.CreateOptions<OrderProductDataVaultContext>();
-    var providerCapabilities = _provider.GetProviderCapabilities(_loadTimestampStorage);
+    var providerCapabilities = _provider.GetProviderCapabilities(_loadTimestampStorage, _hashKeyVariant);
     var services = new ServiceCollection();
-    DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy);
+    DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy, _hashKeyVariant);
 
     using var provider = services.BuildServiceProvider(validateScopes: true);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
@@ -169,9 +182,30 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
 
     BenchmarkAssert.Equal(ScenarioContracts.OrderBusinessKey, (string)orderRow["OrderId"], "Order hub business key drifted.");
     BenchmarkAssert.Equal(ScenarioContracts.ProductBusinessKey, (string)productRow["Sku"], "Product hub business key drifted.");
-    BenchmarkAssert.True(DataVaultBenchmarkHelpers.IsLowercaseSha256(orderHashKey), "Order hub hash key must use the stable SHA-256 shape.");
-    BenchmarkAssert.True(DataVaultBenchmarkHelpers.IsLowercaseSha256(productHashKey), "Product hub hash key must use the stable SHA-256 shape.");
-    BenchmarkAssert.True(DataVaultBenchmarkHelpers.IsLowercaseSha256(orderProductHashKey), "Order-product link hash key must use the stable SHA-256 shape.");
+    DataVaultBenchmarkHelpers.AssertStableHashKey(
+        orderHashKey,
+        providerCapabilities,
+        "Order hub hash key must use the active stable-hash shape.");
+    DataVaultBenchmarkHelpers.AssertStableHashKey(
+        productHashKey,
+        providerCapabilities,
+        "Product hub hash key must use the active stable-hash shape.");
+    DataVaultBenchmarkHelpers.AssertStableHashKey(
+        orderProductHashKey,
+        providerCapabilities,
+        "Order-product link hash key must use the active stable-hash shape.");
+    DataVaultBenchmarkHelpers.AssertHashKeyStorageMapping(
+        context,
+        "HubOrder",
+        "OrderHashKey",
+        providerCapabilities,
+        "Order hub hash key must project the active storage profile.");
+    DataVaultBenchmarkHelpers.AssertHashKeyStorageMapping(
+        context,
+        "LinkOrderProduct",
+        "OrderProductHashKey",
+        providerCapabilities,
+        "Order-product link hash key must project the active storage profile.");
     BenchmarkAssert.Equal(orderHashKey, (string)linkRow["OrderHashKey"], "Order-product link order hash key drifted.");
     BenchmarkAssert.Equal(productHashKey, (string)linkRow["ProductHashKey"], "Order-product link product hash key drifted.");
     BenchmarkAssert.Equal(ScenarioContracts.OrderRelationship.CreatedAtUtc, DataVaultBenchmarkHelpers.ReadLoadTimestamp(linkRow), "Order-product link load timestamp drifted.");
@@ -200,9 +234,11 @@ internal sealed class OrderProductDataVaultBenchmark : IScenarioBenchmark {
 
   private sealed class OrderProductDataVaultContext(
       DbContextOptions<OrderProductDataVaultContext> options,
-      DataVaultProviderCapabilityProfile providerCapabilities) : DbContext(options) {
+      DataVaultProviderCapabilityProfile providerCapabilities) : DbContext(options), IBenchmarkDataVaultModelCacheKeySource {
+    public DataVaultProviderCapabilityProfile ProviderCapabilities { get; } = providerCapabilities;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(ScenarioContracts.CreateOrderProductDataVaultModel(), providerCapabilities);
+      modelBuilder.ApplyDataVaultMetadata(ScenarioContracts.CreateOrderProductDataVaultModel(), ProviderCapabilities);
     }
   }
 }

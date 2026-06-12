@@ -90,11 +90,16 @@ internal static class BenchmarkExecutionDetails {
   }
 
   private static string CreateDetail(IScenarioBenchmark benchmark, string executionPath) {
+    var hashKeyVariantDetail = benchmark is IBenchmarkHashKeyVariantSource variantSource
+        ? "; " + variantSource.HashKeyVariant.CreateExecutionDetail()
+        : string.Empty;
+
     return "scenario=" + benchmark.ScenarioName +
         "; provider=" + benchmark.ProviderName +
         "; baseline=" + benchmark.BaselineName +
         "; strategyFamily=" + benchmark.StrategyFamily +
-        "; executionPath=" + executionPath;
+        "; executionPath=" + executionPath +
+        hashKeyVariantDetail;
   }
 
   private static string GetSaveExecutionPath(

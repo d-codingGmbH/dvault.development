@@ -5,23 +5,34 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DCoding.Data.DVault.Benchmarks;
 
-internal sealed class CustomerProfileStreamingAsyncSourceBenchmark(int chunkSize) : CustomerProfileStreamingSaveBenchmarkBase {
+internal sealed class CustomerProfileStreamingAsyncSourceBenchmark : CustomerProfileStreamingSaveBenchmarkBase {
   private const string AsyncSourceShape = "IAsyncEnumerable<DataVaultSaveChunk>";
 
+  public CustomerProfileStreamingAsyncSourceBenchmark(int chunkSize)
+      : this(chunkSize, BenchmarkHashKeyVariant.Default) {
+  }
+
+  public CustomerProfileStreamingAsyncSourceBenchmark(
+      int chunkSize,
+      BenchmarkHashKeyVariant hashKeyVariant)
+      : base(hashKeyVariant) {
+    ChunkSize = RequireChunkSize(chunkSize);
+  }
+
   public override string BaselineName =>
-      DataVaultBenchmarkHelpers.GetDataVaultBaselineName(Strategy) +
+      DataVaultBenchmarkHelpers.GetDataVaultBaselineName(Strategy, HashKeyVariant) +
       "/async-source-bounded-" +
       ChunkSize.ToString(CultureInfo.InvariantCulture);
 
-  private int ChunkSize { get; } = RequireChunkSize(chunkSize);
+  private int ChunkSize { get; }
 
   public override async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
     using var database = Provider.CreateDatabase();
     var options = database.CreateOptions<CustomerProfileStreamingDataVaultContext>();
-    var providerCapabilities = Provider.GetProviderCapabilities(LoadTimestampStorage);
+    var providerCapabilities = Provider.GetProviderCapabilities(LoadTimestampStorage, HashKeyVariant);
     var telemetryObserver = new CapturingTelemetryObserver();
     var services = new ServiceCollection();
-    DataVaultBenchmarkHelpers.AddDataVaultServices(services, Strategy);
+    DataVaultBenchmarkHelpers.AddDataVaultServices(services, Strategy, HashKeyVariant);
     services.AddSingleton<IDataVaultTelemetryObserver>(telemetryObserver);
 
     using var serviceProvider = services.BuildServiceProvider(validateScopes: true);

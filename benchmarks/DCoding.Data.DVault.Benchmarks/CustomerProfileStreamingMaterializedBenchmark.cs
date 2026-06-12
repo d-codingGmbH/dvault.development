@@ -6,15 +6,23 @@ using Microsoft.Extensions.DependencyInjection;
 namespace DCoding.Data.DVault.Benchmarks;
 
 internal sealed class CustomerProfileStreamingMaterializedBenchmark : CustomerProfileStreamingSaveBenchmarkBase {
-  public override string BaselineName => DataVaultBenchmarkHelpers.GetDataVaultBaselineName(Strategy) + "/materialized-explicit-bulk";
+  public CustomerProfileStreamingMaterializedBenchmark()
+      : this(BenchmarkHashKeyVariant.Default) {
+  }
+
+  public CustomerProfileStreamingMaterializedBenchmark(BenchmarkHashKeyVariant hashKeyVariant)
+      : base(hashKeyVariant) {
+  }
+
+  public override string BaselineName => DataVaultBenchmarkHelpers.GetDataVaultBaselineName(Strategy, HashKeyVariant) + "/materialized-explicit-bulk";
 
   public override async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
     using var database = Provider.CreateDatabase();
     var options = database.CreateOptions<CustomerProfileStreamingDataVaultContext>();
-    var providerCapabilities = Provider.GetProviderCapabilities(LoadTimestampStorage);
+    var providerCapabilities = Provider.GetProviderCapabilities(LoadTimestampStorage, HashKeyVariant);
     var telemetryObserver = new CapturingTelemetryObserver();
     var services = new ServiceCollection();
-    DataVaultBenchmarkHelpers.AddDataVaultServices(services, Strategy);
+    DataVaultBenchmarkHelpers.AddDataVaultServices(services, Strategy, HashKeyVariant);
     services.AddSingleton<IDataVaultTelemetryObserver>(telemetryObserver);
 
     using var serviceProvider = services.BuildServiceProvider(validateScopes: true);

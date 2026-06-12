@@ -7,30 +7,43 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DCoding.Data.DVault.Benchmarks;
 
-internal sealed class PitAsOfReadBenchmark : IScenarioBenchmark {
+internal sealed class PitAsOfReadBenchmark : IScenarioBenchmark, IBenchmarkHashKeyVariantSource {
   private readonly BenchmarkDatabaseProvider _provider;
   private readonly DataVaultBenchmarkStrategy _strategy;
   private readonly DataVaultLoadTimestampStorage _loadTimestampStorage;
+  private readonly BenchmarkHashKeyVariant _hashKeyVariant;
   private readonly CustomerProfileBulkScenarioDefinition _scenario = CustomerProfileBulkScenarios.ChangeHeavy;
 
   public PitAsOfReadBenchmark(
       BenchmarkDatabaseProvider provider,
       DataVaultBenchmarkStrategy strategy,
-      DataVaultLoadTimestampStorage loadTimestampStorage) {
+      DataVaultLoadTimestampStorage loadTimestampStorage)
+      : this(provider, strategy, loadTimestampStorage, BenchmarkHashKeyVariant.Default) {
+  }
+
+  public PitAsOfReadBenchmark(
+      BenchmarkDatabaseProvider provider,
+      DataVaultBenchmarkStrategy strategy,
+      DataVaultLoadTimestampStorage loadTimestampStorage,
+      BenchmarkHashKeyVariant hashKeyVariant) {
     ArgumentNullException.ThrowIfNull(provider);
+    ArgumentNullException.ThrowIfNull(hashKeyVariant);
 
     _provider = provider;
     _strategy = strategy;
     _loadTimestampStorage = loadTimestampStorage;
+    _hashKeyVariant = hashKeyVariant;
   }
 
   public string ScenarioName => "pit-as-of-read";
 
   public string ProviderName => _provider.ProviderName;
 
-  public string BaselineName => DataVaultBenchmarkHelpers.GetDataVaultBaselineName(_strategy);
+  public string BaselineName => DataVaultBenchmarkHelpers.GetDataVaultBaselineName(_strategy, _hashKeyVariant);
 
   public string StrategyFamily => DataVaultBenchmarkHelpers.GetDataVaultStrategyFamily(_strategy);
+
+  public BenchmarkHashKeyVariant HashKeyVariant => _hashKeyVariant;
 
   public string DatasetSize => "100 customers, 100 PIT rows, 2 satellite segments";
 
@@ -39,8 +52,8 @@ internal sealed class PitAsOfReadBenchmark : IScenarioBenchmark {
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
     using var database = _provider.CreateDatabase();
     var options = database.CreateOptions<PitAsOfReadContext>();
-    var providerCapabilities = _provider.GetProviderCapabilities(_loadTimestampStorage);
-    using var provider = ReadBenchmarkServices.CreateProvider(_strategy);
+    var providerCapabilities = _provider.GetProviderCapabilities(_loadTimestampStorage, _hashKeyVariant);
+    using var provider = ReadBenchmarkServices.CreateProvider(_strategy, _hashKeyVariant);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
     var readService = provider.GetRequiredService<IDataVaultReadService>();
     var readDiagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
@@ -185,5 +198,9 @@ internal sealed class PitAsOfReadBenchmark : IScenarioBenchmark {
     BenchmarkAssert.Equal(expectedProfile.CustomerStatus, profile.PayloadValues["customer_status"], "The PIT read profile status drifted.");
     BenchmarkAssert.Equal("status-0042", status.HashDiff, "The PIT read status hash diff drifted.");
     BenchmarkAssert.Equal("Active", status.PayloadValues["status_code"], "The PIT read status code drifted.");
+    DataVaultBenchmarkHelpers.AssertStableHashKey(
+        sampleHashKey,
+        _provider.GetProviderCapabilities(_loadTimestampStorage, _hashKeyVariant),
+        "The PIT read parent hash key must use the active stable-hash shape.");
   }
 }

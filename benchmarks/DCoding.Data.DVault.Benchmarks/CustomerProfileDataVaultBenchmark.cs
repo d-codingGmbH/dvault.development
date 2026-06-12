@@ -6,29 +6,42 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DCoding.Data.DVault.Benchmarks;
 
-internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
+internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark, IBenchmarkHashKeyVariantSource {
   private readonly BenchmarkDatabaseProvider _provider;
   private readonly DataVaultBenchmarkStrategy _strategy;
   private readonly DataVaultLoadTimestampStorage _loadTimestampStorage;
+  private readonly BenchmarkHashKeyVariant _hashKeyVariant;
 
   public CustomerProfileDataVaultBenchmark(
       BenchmarkDatabaseProvider provider,
       DataVaultBenchmarkStrategy strategy,
-      DataVaultLoadTimestampStorage loadTimestampStorage) {
+      DataVaultLoadTimestampStorage loadTimestampStorage)
+      : this(provider, strategy, loadTimestampStorage, BenchmarkHashKeyVariant.Default) {
+  }
+
+  public CustomerProfileDataVaultBenchmark(
+      BenchmarkDatabaseProvider provider,
+      DataVaultBenchmarkStrategy strategy,
+      DataVaultLoadTimestampStorage loadTimestampStorage,
+      BenchmarkHashKeyVariant hashKeyVariant) {
     ArgumentNullException.ThrowIfNull(provider);
+    ArgumentNullException.ThrowIfNull(hashKeyVariant);
 
     _provider = provider;
     _strategy = strategy;
     _loadTimestampStorage = loadTimestampStorage;
+    _hashKeyVariant = hashKeyVariant;
   }
 
   public string ScenarioName => "customer-profile-history";
 
   public string ProviderName => _provider.ProviderName;
 
-  public string BaselineName => DataVaultBenchmarkHelpers.GetDataVaultBaselineName(_strategy);
+  public string BaselineName => DataVaultBenchmarkHelpers.GetDataVaultBaselineName(_strategy, _hashKeyVariant);
 
   public string StrategyFamily => DataVaultBenchmarkHelpers.GetDataVaultStrategyFamily(_strategy);
+
+  public BenchmarkHashKeyVariant HashKeyVariant => _hashKeyVariant;
 
   public string DatasetSize => "1 customer, 2 profile states";
 
@@ -37,9 +50,9 @@ internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
     using var database = _provider.CreateDatabase();
     var options = database.CreateOptions<CustomerProfileDataVaultContext>();
-    var providerCapabilities = _provider.GetProviderCapabilities(_loadTimestampStorage);
+    var providerCapabilities = _provider.GetProviderCapabilities(_loadTimestampStorage, _hashKeyVariant);
     var services = new ServiceCollection();
-    DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy);
+    DataVaultBenchmarkHelpers.AddDataVaultServices(services, _strategy, _hashKeyVariant);
 
     using var provider = services.BuildServiceProvider(validateScopes: true);
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
@@ -140,7 +153,16 @@ internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
     var customerHashKey = (string)customerRow["CustomerHashKey"];
 
     BenchmarkAssert.Equal(ScenarioContracts.CustomerBusinessKey, (string)customerRow["CustomerId"], "Customer hub business key drifted.");
-    BenchmarkAssert.True(DataVaultBenchmarkHelpers.IsLowercaseSha256(customerHashKey), "Customer hub hash key must use the stable SHA-256 shape.");
+    DataVaultBenchmarkHelpers.AssertStableHashKey(
+        customerHashKey,
+        providerCapabilities,
+        "Customer hub hash key must use the active stable-hash shape.");
+    DataVaultBenchmarkHelpers.AssertHashKeyStorageMapping(
+        context,
+        "HubCustomer",
+        "CustomerHashKey",
+        providerCapabilities,
+        "Customer hub hash key must project the active storage profile.");
     BenchmarkAssert.Equal(ScenarioContracts.CustomerProfileEvents.Length, profileRows.Length, "The DVault customer benchmark must persist two profile satellite rows.");
 
     for (var index = 0; index < ScenarioContracts.CustomerProfileEvents.Length; index++) {
@@ -162,9 +184,11 @@ internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark {
 
   private sealed class CustomerProfileDataVaultContext(
       DbContextOptions<CustomerProfileDataVaultContext> options,
-      DataVaultProviderCapabilityProfile providerCapabilities) : DbContext(options) {
+      DataVaultProviderCapabilityProfile providerCapabilities) : DbContext(options), IBenchmarkDataVaultModelCacheKeySource {
+    public DataVaultProviderCapabilityProfile ProviderCapabilities { get; } = providerCapabilities;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(ScenarioContracts.CreateCustomerProfileDataVaultModel(), providerCapabilities);
+      modelBuilder.ApplyDataVaultMetadata(ScenarioContracts.CreateCustomerProfileDataVaultModel(), ProviderCapabilities);
     }
   }
 }

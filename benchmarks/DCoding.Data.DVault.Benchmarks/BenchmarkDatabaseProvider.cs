@@ -22,5 +22,18 @@ internal abstract class BenchmarkDatabaseProvider {
     return ProviderCapabilities.WithLoadTimestampStorage(loadTimestampStorage);
   }
 
+  public DataVaultProviderCapabilityProfile GetProviderCapabilities(
+      DataVaultLoadTimestampStorage loadTimestampStorage,
+      BenchmarkHashKeyVariant hashKeyVariant) {
+    ArgumentNullException.ThrowIfNull(hashKeyVariant);
+
+    return ProviderCapabilities
+        .WithLoadTimestampStorage(loadTimestampStorage)
+        .WithHashKeyStorageProfile(
+            hashKeyVariant.StorageProfile,
+            hashKeyVariant.StableHashAlgorithmId,
+            hashKeyVariant.DigestByteLength);
+  }
+
   public abstract IBenchmarkDatabase CreateDatabase();
 }

@@ -76,6 +76,7 @@ internal static class BenchmarkRunner {
 
     Console.WriteLine("DVault scenario comparison benchmarks");
     Console.WriteLine("Required provider: " + BenchmarkArtifacts.RequiredProviderName);
+    Console.WriteLine("Hash key variants: " + string.Join(", ", options.EffectiveHashKeyVariants.Select(variant => variant.Label)));
     foreach (var availability in selectedOptionalProviders) {
       Console.WriteLine(
           availability.ProviderName +
@@ -131,6 +132,11 @@ internal static class BenchmarkRunner {
       Console.WriteLine("  " + artifactPaths.MarkdownPath);
       Console.WriteLine("  " + artifactPaths.CsvPath);
       Console.WriteLine("  " + artifactPaths.JsonPath);
+      if (artifactPaths.HashKeyFootprintPaths is not null) {
+        Console.WriteLine("  " + artifactPaths.HashKeyFootprintPaths.MarkdownPath);
+        Console.WriteLine("  " + artifactPaths.HashKeyFootprintPaths.CsvPath);
+        Console.WriteLine("  " + artifactPaths.HashKeyFootprintPaths.JsonPath);
+      }
     }
   }
 
@@ -149,6 +155,12 @@ internal static class BenchmarkRunner {
     Console.WriteLine("                    Physical Data Vault load-timestamp storage to project. Default: provider-default.");
     Console.WriteLine("  --provider <all|sqlite|postgres|sqlserver|mysql|oracle>");
     Console.WriteLine("                    Provider set to execute. Default: all.");
+    Console.WriteLine("  --stable-hash <sha256-v1|sha256-128-v1>");
+    Console.WriteLine("                    Stable hash algorithm for a single hash-key variant. Default: sha256-v1.");
+    Console.WriteLine("  --hash-key-storage <hex|binary>");
+    Console.WriteLine("                    Physical hash-key storage profile for a single variant. Default: hex.");
+    Console.WriteLine("  --hash-key-storage-matrix");
+    Console.WriteLine("                    Run the bounded sha256-v1/sha256-128-v1 hex and binary comparison matrix.");
     Console.WriteLine();
     Console.WriteLine("Optional PostgreSQL provider:");
     Console.WriteLine(
@@ -199,82 +211,144 @@ internal static class BenchmarkRunner {
 
   private static IScenarioBenchmark[] CreateSqliteBenchmarks(BenchmarkOptions options) {
     var provider = BenchmarkDatabaseProviders.Sqlite;
-
-    return
-    [
+    var benchmarks = new List<IScenarioBenchmark> {
         new CustomerProfilePlainEfBenchmark(),
-        new CustomerProfileDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
-        new CustomerProfileDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.SqliteOptimized, options.LoadTimestampStorage),
         new CustomerProfileBulkPlainEfBenchmark(CustomerProfileBulkScenarios.InsertOnly),
-        new CustomerProfileBulkDataVaultBenchmark(
-            provider,
-            CustomerProfileBulkScenarios.InsertOnly,
-            DataVaultBenchmarkStrategy.ProviderNeutralFallback,
-            options.LoadTimestampStorage),
-        new CustomerProfileBulkDataVaultBenchmark(
-            provider,
-            CustomerProfileBulkScenarios.InsertOnly,
-            DataVaultBenchmarkStrategy.SqliteOptimized,
-            options.LoadTimestampStorage),
         new CustomerProfileBulkPlainEfBenchmark(CustomerProfileBulkScenarios.ChangeHeavy),
-        new CustomerProfileBulkDataVaultBenchmark(
-            provider,
-            CustomerProfileBulkScenarios.ChangeHeavy,
-            DataVaultBenchmarkStrategy.ProviderNeutralFallback,
-            options.LoadTimestampStorage),
-        new CustomerProfileBulkDataVaultBenchmark(
-            provider,
-            CustomerProfileBulkScenarios.ChangeHeavy,
-            DataVaultBenchmarkStrategy.SqliteOptimized,
-            options.LoadTimestampStorage),
-        new CustomerProfileStreamingMaterializedBenchmark(),
-        new CustomerProfileStreamingChunkedBenchmark(chunkSize: 10),
-        new CustomerProfileStreamingAsyncSourceBenchmark(chunkSize: 10),
-        new CustomerProfileStreamingChunkedBenchmark(chunkSize: 5),
         new OrderProductPlainEfBenchmark(),
-        new OrderProductDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
-        new OrderProductDataVaultBenchmark(provider, DataVaultBenchmarkStrategy.SqliteOptimized, options.LoadTimestampStorage),
-        new LatestSatelliteReadBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
-        new LatestSatelliteReadBenchmark(provider, DataVaultBenchmarkStrategy.SqliteOptimized, options.LoadTimestampStorage),
-        new PitAsOfReadBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
-        new PitAsOfReadBenchmark(provider, DataVaultBenchmarkStrategy.SqliteOptimized, options.LoadTimestampStorage),
-        new BridgeTraversalReadBenchmark(provider, DataVaultBenchmarkStrategy.ProviderNeutralFallback, options.LoadTimestampStorage),
-        new BridgeTraversalReadBenchmark(provider, DataVaultBenchmarkStrategy.SqliteOptimized, options.LoadTimestampStorage),
-        new CompiledModelBenchmark(useRuntimeModel: false),
-        new CompiledModelBenchmark(useRuntimeModel: true),
-        new CompiledQueryBenchmark(compiledQuery: false),
-        new CompiledQueryBenchmark(compiledQuery: true),
-        new DbContextPoolingBenchmark(pooled: false),
-        new DbContextPoolingBenchmark(pooled: true),
-    ];
+    };
+
+    foreach (var variant in options.EffectiveHashKeyVariants) {
+      benchmarks.Add(new CustomerProfileDataVaultBenchmark(
+          provider,
+          DataVaultBenchmarkStrategy.ProviderNeutralFallback,
+          options.LoadTimestampStorage,
+          variant));
+      benchmarks.Add(new CustomerProfileDataVaultBenchmark(
+          provider,
+          DataVaultBenchmarkStrategy.SqliteOptimized,
+          options.LoadTimestampStorage,
+          variant));
+      benchmarks.Add(new CustomerProfileBulkDataVaultBenchmark(
+          provider,
+          CustomerProfileBulkScenarios.InsertOnly,
+          DataVaultBenchmarkStrategy.ProviderNeutralFallback,
+          options.LoadTimestampStorage,
+          variant));
+      benchmarks.Add(new CustomerProfileBulkDataVaultBenchmark(
+          provider,
+          CustomerProfileBulkScenarios.InsertOnly,
+          DataVaultBenchmarkStrategy.SqliteOptimized,
+          options.LoadTimestampStorage,
+          variant));
+      benchmarks.Add(new CustomerProfileBulkDataVaultBenchmark(
+          provider,
+          CustomerProfileBulkScenarios.ChangeHeavy,
+          DataVaultBenchmarkStrategy.ProviderNeutralFallback,
+          options.LoadTimestampStorage,
+          variant));
+      benchmarks.Add(new CustomerProfileBulkDataVaultBenchmark(
+          provider,
+          CustomerProfileBulkScenarios.ChangeHeavy,
+          DataVaultBenchmarkStrategy.SqliteOptimized,
+          options.LoadTimestampStorage,
+          variant));
+      benchmarks.Add(new CustomerProfileStreamingMaterializedBenchmark(variant));
+      benchmarks.Add(new CustomerProfileStreamingChunkedBenchmark(10, variant));
+      benchmarks.Add(new CustomerProfileStreamingAsyncSourceBenchmark(10, variant));
+      benchmarks.Add(new CustomerProfileStreamingChunkedBenchmark(5, variant));
+      benchmarks.Add(new OrderProductDataVaultBenchmark(
+          provider,
+          DataVaultBenchmarkStrategy.ProviderNeutralFallback,
+          options.LoadTimestampStorage,
+          variant));
+      benchmarks.Add(new OrderProductDataVaultBenchmark(
+          provider,
+          DataVaultBenchmarkStrategy.SqliteOptimized,
+          options.LoadTimestampStorage,
+          variant));
+      benchmarks.Add(new LatestSatelliteReadBenchmark(
+          provider,
+          DataVaultBenchmarkStrategy.ProviderNeutralFallback,
+          options.LoadTimestampStorage,
+          variant));
+      benchmarks.Add(new LatestSatelliteReadBenchmark(
+          provider,
+          DataVaultBenchmarkStrategy.SqliteOptimized,
+          options.LoadTimestampStorage,
+          variant));
+      benchmarks.Add(new PitAsOfReadBenchmark(
+          provider,
+          DataVaultBenchmarkStrategy.ProviderNeutralFallback,
+          options.LoadTimestampStorage,
+          variant));
+      benchmarks.Add(new PitAsOfReadBenchmark(
+          provider,
+          DataVaultBenchmarkStrategy.SqliteOptimized,
+          options.LoadTimestampStorage,
+          variant));
+      benchmarks.Add(new BridgeTraversalReadBenchmark(
+          provider,
+          DataVaultBenchmarkStrategy.ProviderNeutralFallback,
+          options.LoadTimestampStorage,
+          variant));
+      benchmarks.Add(new BridgeTraversalReadBenchmark(
+          provider,
+          DataVaultBenchmarkStrategy.SqliteOptimized,
+          options.LoadTimestampStorage,
+          variant));
+
+      if (options.EffectiveHashKeyVariants.Count > 1) {
+        AddLatestIndexBenchmarks(
+            benchmarks,
+            provider,
+            DataVaultBenchmarkStrategy.SqliteOptimized,
+            options.LoadTimestampStorage,
+            variant);
+      }
+    }
+
+    benchmarks.Add(new CompiledModelBenchmark(useRuntimeModel: false));
+    benchmarks.Add(new CompiledModelBenchmark(useRuntimeModel: true));
+    benchmarks.Add(new CompiledQueryBenchmark(compiledQuery: false));
+    benchmarks.Add(new CompiledQueryBenchmark(compiledQuery: true));
+    benchmarks.Add(new DbContextPoolingBenchmark(pooled: false));
+    benchmarks.Add(new DbContextPoolingBenchmark(pooled: true));
+
+    return [.. benchmarks];
   }
 
   private static IScenarioBenchmark[] CreateProviderBenchmarks(
       BenchmarkDatabaseProvider provider,
       DataVaultBenchmarkStrategy optimizedStrategy,
       BenchmarkOptions options) {
-    var benchmarks = new List<IScenarioBenchmark> {
-        new ProviderNativeBulkIngestionBenchmark(
+    var benchmarks = new List<IScenarioBenchmark>();
+
+    foreach (var variant in options.EffectiveHashKeyVariants) {
+      benchmarks.Add(new ProviderNativeBulkIngestionBenchmark(
+          provider,
+          DataVaultBenchmarkStrategy.ProviderNeutralFallback,
+          options.LoadTimestampStorage,
+          variant));
+
+      if (optimizedStrategy == DataVaultBenchmarkStrategy.PostgresOptimized) {
+        benchmarks.Add(ProviderNativeBulkIngestionBenchmark.CreatePostgresRetainedDirectOrUnnest(
             provider,
-            DataVaultBenchmarkStrategy.ProviderNeutralFallback,
-            options.LoadTimestampStorage),
-    };
+            options.LoadTimestampStorage,
+            variant));
+      }
+      else if (optimizedStrategy == DataVaultBenchmarkStrategy.MySqlOptimized) {
+        benchmarks.Add(ProviderNativeBulkIngestionBenchmark.CreateMySqlRetainedMultiRow(
+            provider,
+            options.LoadTimestampStorage,
+            variant));
+      }
 
-    if (optimizedStrategy == DataVaultBenchmarkStrategy.PostgresOptimized) {
-      benchmarks.Add(ProviderNativeBulkIngestionBenchmark.CreatePostgresRetainedDirectOrUnnest(
-          provider,
-          options.LoadTimestampStorage));
+      benchmarks.Add(new ProviderNativeBulkIngestionBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage, variant));
+      benchmarks.Add(new LatestSatelliteReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage, variant));
+      benchmarks.Add(new PitAsOfReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage, variant));
+      benchmarks.Add(new BridgeTraversalReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage, variant));
     }
-    else if (optimizedStrategy == DataVaultBenchmarkStrategy.MySqlOptimized) {
-      benchmarks.Add(ProviderNativeBulkIngestionBenchmark.CreateMySqlRetainedMultiRow(
-          provider,
-          options.LoadTimestampStorage));
-    }
-
-    benchmarks.Add(new ProviderNativeBulkIngestionBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage));
-    benchmarks.Add(new LatestSatelliteReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage));
-    benchmarks.Add(new PitAsOfReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage));
-    benchmarks.Add(new BridgeTraversalReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage));
 
     return [.. benchmarks];
   }
@@ -287,12 +361,20 @@ internal static class BenchmarkRunner {
 
     foreach (var scenario in CustomerProfileBulkScenarios.ScaleMatrix) {
       benchmarks.Add(new CustomerProfileBulkPlainEfBenchmark(provider, scenario));
-      benchmarks.Add(new CustomerProfileBulkDataVaultBenchmark(
-          provider,
-          scenario,
-          DataVaultBenchmarkStrategy.ProviderNeutralFallback,
-          options.LoadTimestampStorage));
-      benchmarks.Add(new CustomerProfileBulkDataVaultBenchmark(provider, scenario, optimizedStrategy, options.LoadTimestampStorage));
+      foreach (var variant in options.EffectiveHashKeyVariants) {
+        benchmarks.Add(new CustomerProfileBulkDataVaultBenchmark(
+            provider,
+            scenario,
+            DataVaultBenchmarkStrategy.ProviderNeutralFallback,
+            options.LoadTimestampStorage,
+            variant));
+        benchmarks.Add(new CustomerProfileBulkDataVaultBenchmark(
+            provider,
+            scenario,
+            optimizedStrategy,
+            options.LoadTimestampStorage,
+            variant));
+      }
     }
 
     return [.. benchmarks];
@@ -304,22 +386,40 @@ internal static class BenchmarkRunner {
       BenchmarkOptions options) {
     var benchmarks = new List<IScenarioBenchmark>();
 
-    foreach (var variant in LatestSatelliteLookupIndexVariant.GetVariants(provider.ProviderName)) {
-      benchmarks.Add(new LatestSatelliteLookupIndexBenchmark(
+    foreach (var hashKeyVariant in options.EffectiveHashKeyVariants) {
+      AddLatestIndexBenchmarks(
+          benchmarks,
           provider,
           optimizedStrategy,
           options.LoadTimestampStorage,
-          variant,
+          hashKeyVariant);
+    }
+
+    return [.. benchmarks];
+  }
+
+  private static void AddLatestIndexBenchmarks(
+      List<IScenarioBenchmark> benchmarks,
+      BenchmarkDatabaseProvider provider,
+      DataVaultBenchmarkStrategy optimizedStrategy,
+      DataVaultLoadTimestampStorage loadTimestampStorage,
+      BenchmarkHashKeyVariant hashKeyVariant) {
+    foreach (var indexVariant in LatestSatelliteLookupIndexVariant.GetVariants(provider.ProviderName)) {
+      benchmarks.Add(new LatestSatelliteLookupIndexBenchmark(
+          provider,
+          optimizedStrategy,
+          loadTimestampStorage,
+          hashKeyVariant,
+          indexVariant,
           LatestSatelliteLookupWorkload.UnchangedReplay));
       benchmarks.Add(new LatestSatelliteLookupIndexBenchmark(
           provider,
           optimizedStrategy,
-          options.LoadTimestampStorage,
-          variant,
+          loadTimestampStorage,
+          hashKeyVariant,
+          indexVariant,
           LatestSatelliteLookupWorkload.ChangedReplay));
     }
-
-    return [.. benchmarks];
   }
 
   private static async Task<BenchmarkSummary> ExecuteBenchmarkAsync(
@@ -371,6 +471,10 @@ internal static class BenchmarkRunner {
           benchmark.StrategyFamily +
           " / " +
           options.LoadTimestampStorage +
+          " / " +
+          (benchmark is IBenchmarkHashKeyVariantSource variantSource
+              ? variantSource.HashKeyVariant.Label
+              : "no-hash-key-variant") +
           "...");
       return await ExecuteBenchmarkAsync(benchmark, options, cancellationToken).ConfigureAwait(false);
     }

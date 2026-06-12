@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DCoding.Data.DVault.Benchmarks;
 
-internal abstract class CustomerProfileStreamingSaveBenchmarkBase : IScenarioBenchmark {
+internal abstract class CustomerProfileStreamingSaveBenchmarkBase : IScenarioBenchmark, IBenchmarkHashKeyVariantSource {
   protected const int CustomerCount = 20;
   protected const int EventCountPerCustomer = 3;
   protected const int RequestCount = CustomerCount * EventCountPerCustomer;
@@ -14,10 +14,17 @@ internal abstract class CustomerProfileStreamingSaveBenchmarkBase : IScenarioBen
 
   private static readonly DateTimeOffset BaseTimestamp = new(2026, 5, 25, 9, 0, 0, TimeSpan.Zero);
 
-  protected CustomerProfileStreamingSaveBenchmarkBase() {
+  protected CustomerProfileStreamingSaveBenchmarkBase()
+      : this(BenchmarkHashKeyVariant.Default) {
+  }
+
+  protected CustomerProfileStreamingSaveBenchmarkBase(BenchmarkHashKeyVariant hashKeyVariant) {
+    ArgumentNullException.ThrowIfNull(hashKeyVariant);
+
     Provider = BenchmarkDatabaseProviders.Sqlite;
     Strategy = DataVaultBenchmarkStrategy.ProviderNeutralFallback;
     LoadTimestampStorage = DataVaultLoadTimestampStorage.ProviderDefault;
+    HashKeyVariant = hashKeyVariant;
   }
 
   public string ScenarioName => "customer-profile-streaming-save";
@@ -37,6 +44,8 @@ internal abstract class CustomerProfileStreamingSaveBenchmarkBase : IScenarioBen
   protected DataVaultBenchmarkStrategy Strategy { get; }
 
   protected DataVaultLoadTimestampStorage LoadTimestampStorage { get; }
+
+  public BenchmarkHashKeyVariant HashKeyVariant { get; }
 
   public abstract Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken);
 
@@ -120,6 +129,10 @@ internal abstract class CustomerProfileStreamingSaveBenchmarkBase : IScenarioBen
         scenario.CustomerHashKeys[sampleCustomerIndex],
         sampleCustomerHashKey,
         "The streaming-save benchmark customer hash key drifted.");
+    DataVaultBenchmarkHelpers.AssertStableHashKey(
+        sampleCustomerHashKey,
+        providerCapabilities,
+        "Streaming-save customer hub hash key must use the active stable-hash shape.");
 
     AssertProfileSatelliteRow(sampleProfileRows[0], sampleCustomerHashKey, CreateEvent(sampleCustomerIndex, 0));
     AssertProfileSatelliteRow(sampleProfileRows[1], sampleCustomerHashKey, CreateEvent(sampleCustomerIndex, 2));

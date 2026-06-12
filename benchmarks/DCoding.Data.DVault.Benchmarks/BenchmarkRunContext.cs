@@ -20,6 +20,7 @@ internal sealed record BenchmarkRunContext(
     int ProcessorCount,
     string DotNetRuntimeDescription,
     string DotNetRuntimeVersion,
+    IReadOnlyList<BenchmarkHashKeyVariantRunContext> HashKeyVariants,
     IReadOnlyList<BenchmarkProviderRunContext> OptionalProviders) {
   public static BenchmarkRunContext Create(
       BenchmarkOptions options,
@@ -53,6 +54,7 @@ internal sealed record BenchmarkRunContext(
         Environment.ProcessorCount,
         RuntimeInformation.FrameworkDescription,
         Environment.Version.ToString(),
+        [.. options.EffectiveHashKeyVariants.Select(BenchmarkHashKeyVariantRunContext.FromVariant)],
         [.. optionalProviders.Select(BenchmarkProviderRunContext.FromAvailability)]);
   }
 }

@@ -1,5 +1,6 @@
 using DCoding.Data.DVault;
 using DCoding.Data.DVault.Modeling;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Globalization;
 
@@ -15,6 +16,16 @@ internal static class DataVaultBenchmarkHelpers {
   public const string OracleOptimizedStrategyFamily = "oracle-optimized-dvault";
 
   public static void AddDataVaultServices(IServiceCollection services, DataVaultBenchmarkStrategy strategy) {
+    AddDataVaultServices(services, strategy, BenchmarkHashKeyVariant.Default);
+  }
+
+  public static void AddDataVaultServices(
+      IServiceCollection services,
+      DataVaultBenchmarkStrategy strategy,
+      BenchmarkHashKeyVariant hashKeyVariant) {
+    ArgumentNullException.ThrowIfNull(services);
+    ArgumentNullException.ThrowIfNull(hashKeyVariant);
+
     switch (strategy) {
       case DataVaultBenchmarkStrategy.ProviderNeutralFallback:
         services.AddDVault();
@@ -37,6 +48,8 @@ internal static class DataVaultBenchmarkHelpers {
       default:
         throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Unsupported benchmark strategy.");
     }
+
+    services.AddDVault(options => options.UseStableHashAlgorithm(hashKeyVariant.StableHashAlgorithmId));
   }
 
   public static string GetDataVaultBaselineName(DataVaultBenchmarkStrategy strategy) {
@@ -49,6 +62,17 @@ internal static class DataVaultBenchmarkHelpers {
       DataVaultBenchmarkStrategy.OracleOptimized => "dvault-adddvaultoracle-optimized",
       _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Unsupported benchmark strategy."),
     };
+  }
+
+  public static string GetDataVaultBaselineName(
+      DataVaultBenchmarkStrategy strategy,
+      BenchmarkHashKeyVariant hashKeyVariant) {
+    ArgumentNullException.ThrowIfNull(hashKeyVariant);
+
+    var baselineName = GetDataVaultBaselineName(strategy);
+    return hashKeyVariant == BenchmarkHashKeyVariant.Default
+        ? baselineName
+        : baselineName + "/" + hashKeyVariant.Label;
   }
 
   public static string GetDataVaultStrategyFamily(DataVaultBenchmarkStrategy strategy) {
@@ -162,6 +186,68 @@ internal static class DataVaultBenchmarkHelpers {
   public static bool IsLowercaseSha256(string value) {
     return value.Length == 64 && value.All(static character =>
         character is >= '0' and <= '9' or >= 'a' and <= 'f');
+  }
+
+  public static bool IsLowercaseHexDigest(string value, int digestByteLength) {
+    return value.Length == digestByteLength * 2 && value.All(static character =>
+        character is >= '0' and <= '9' or >= 'a' and <= 'f');
+  }
+
+  public static void AssertStableHashKey(
+      string value,
+      DataVaultProviderCapabilityProfile providerCapabilities,
+      string description) {
+    ArgumentNullException.ThrowIfNull(value);
+    ArgumentNullException.ThrowIfNull(providerCapabilities);
+    ArgumentException.ThrowIfNullOrWhiteSpace(description);
+
+    var mapping = providerCapabilities.GetRequiredTypeMapping(DataVaultLogicalPropertyKind.HashKey);
+    if (mapping.DigestByteLength is not { } digestByteLength) {
+      throw new InvalidOperationException(description + " The active provider profile does not declare a digest byte length.");
+    }
+
+    BenchmarkAssert.True(
+        IsLowercaseHexDigest(value, digestByteLength),
+        description +
+        " Expected a canonical lowercase hexadecimal " +
+        digestByteLength.ToString(CultureInfo.InvariantCulture) +
+        "-byte stable-hash digest for algorithm '" +
+        (mapping.StableHashAlgorithmId ?? "<unspecified>") +
+        "'.");
+  }
+
+  public static void AssertHashKeyStorageMapping(
+      DbContext context,
+      string entityName,
+      string propertyName,
+      DataVaultProviderCapabilityProfile providerCapabilities,
+      string description) {
+    ArgumentNullException.ThrowIfNull(context);
+    ArgumentException.ThrowIfNullOrWhiteSpace(entityName);
+    ArgumentException.ThrowIfNullOrWhiteSpace(propertyName);
+    ArgumentNullException.ThrowIfNull(providerCapabilities);
+    ArgumentException.ThrowIfNullOrWhiteSpace(description);
+
+    var expectedMapping = providerCapabilities.GetRequiredTypeMapping(DataVaultLogicalPropertyKind.HashKey);
+    var property = context.Model.FindEntityType(entityName)?.FindProperty(propertyName) ??
+        throw new InvalidOperationException(description + " The EF model is missing " + entityName + "." + propertyName + ".");
+
+    BenchmarkAssert.Equal(
+        expectedMapping.HashKeyStorageProfile,
+        property.FindAnnotation(DataVaultAnnotationNames.HashKeyStorageProfile)?.Value as DataVaultHashKeyStorageProfile?,
+        description + " The EF model hash-key storage profile drifted.");
+    BenchmarkAssert.Equal(
+        expectedMapping.StableHashAlgorithmId,
+        property.FindAnnotation(DataVaultAnnotationNames.StableHashAlgorithmId)?.Value as string,
+        description + " The EF model stable-hash algorithm drifted.");
+    BenchmarkAssert.Equal(
+        expectedMapping.DigestByteLength,
+        property.FindAnnotation(DataVaultAnnotationNames.StableHashDigestByteLength)?.Value as int?,
+        description + " The EF model stable-hash digest length drifted.");
+    BenchmarkAssert.Equal(
+        expectedMapping.ValueFormat,
+        property.FindAnnotation(DataVaultAnnotationNames.ProviderValueFormat)?.Value as DataVaultProviderValueFormat?,
+        description + " The EF model provider value format drifted.");
   }
 
   public static DateTimeOffset ReadLoadTimestamp(

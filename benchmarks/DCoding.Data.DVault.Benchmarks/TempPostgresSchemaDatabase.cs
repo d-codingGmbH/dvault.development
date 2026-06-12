@@ -2,6 +2,7 @@ using System.Data.Common;
 using System.Reflection;
 using DCoding.Data.DVault;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 #pragma warning disable EF1003 // Benchmark cleanup uses fixed produced table names plus provider quoting helpers.
 
@@ -24,6 +25,7 @@ internal sealed class TempPostgresSchemaDatabase : IBenchmarkDatabase {
       where TContext : DbContext {
     var builder = new DbContextOptionsBuilder<TContext>();
     NpgsqlReflection.UseNpgsql(builder, _schemaConnectionString);
+    builder.ReplaceService<IModelCacheKeyFactory, BenchmarkDataVaultModelCacheKeyFactory>();
 
     return builder.Options;
   }
