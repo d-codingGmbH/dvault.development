@@ -3,21 +3,20 @@
   "ticket-id": "06F9GF5TNAXBCKN5BD9CKD7WVG",
   "ticket-type": "story",
   "title": "Story: Add provider-specific binary hash column mappings",
-  "revision": "06F9GF75RRYTF9X09W6X3TJXT8",
-  "status": "todo",
+  "revision": "06FBK5A41RTJH1M5C3MXXMPQCW",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
     "area/ef-core",
+    "area/hashing",
     "area/provider-support",
     "area/schema",
-    "area/hashing"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06F9GF58FTFVFQB3W0TEKTESVR",
   "release-id": "06F9GF56ZVW18EP8HX6YBWQS44",
   "created-at": "2026-06-05T14:42:57.5302310Z",
-  "updated-at": "2026-06-05T14:43:08.3585470Z"
+  "updated-at": "2026-06-12T02:07:07.7902829Z"
 }
