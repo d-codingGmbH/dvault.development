@@ -52,7 +52,7 @@ Before final publish approval, the maintainer performing the release must confir
 
 ## Release Notes Evidence
 
-The release operator must prepare and review release notes or changelog content before final publish approval. A dedicated changelog file is not required by this checklist. When no dedicated changelog exists, record the release-note evidence in the release ticket, release approval note, or another auditable release record.
+The release operator must prepare and review release notes or changelog content before final publish approval. When a dedicated changelog exists, link it from the approval record together with the release notes. When no dedicated changelog exists, record the release-note evidence in the release ticket, release approval note, or another auditable release record.
 
 Minimum auditable release-note content is:
 
