@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Xunit;
 
 namespace DCoding.Data.DVault.Tests.Unit;
@@ -423,6 +424,138 @@ public sealed class DataVaultEfMetadataTranslationTests {
     Assert.Equal(
         DataVaultHashKeyStorageProfile.HexString,
         AnnotationValue<DataVaultHashKeyStorageProfile>(hashKey, DataVaultAnnotationNames.HashKeyStorageProfile));
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataBinaryHashKeyProfileAppliesProviderNeutralConversionToKeysAndReferences() {
+    var modelBuilder = CreateModelBuilder();
+    var profile = DataVaultProviderCapabilityProfiles.SqlServer.WithHashKeyStorageProfile(
+        DataVaultHashKeyStorageProfile.Binary,
+        "sha256-128-v1",
+        16);
+
+    modelBuilder.ApplyDataVaultMetadata(CreateBridgeMetadataModel(), profile);
+
+    AssertBinaryHashKeyProperty(
+        FindEntity(modelBuilder.Model, "HubCustomer"),
+        "CustomerHashKey",
+        DataVaultLogicalPropertyKind.HashKey);
+    AssertBinaryHashKeyProperty(
+        FindEntity(modelBuilder.Model, "LinkCustomerOrder"),
+        "CustomerHashKey",
+        DataVaultLogicalPropertyKind.ParticipantReference);
+    AssertBinaryHashKeyProperty(
+        FindEntity(modelBuilder.Model, "BridgeCustomerOrder"),
+        "OrderHashKey",
+        DataVaultLogicalPropertyKind.ParticipantReference);
+  }
+
+  [Theory]
+  [InlineData("sha256-v1", 32)]
+  [InlineData("sha1-v1", 20)]
+  [InlineData("sha256-128-v1", 16)]
+  [InlineData("sha256-160-v1", 20)]
+  public void BinaryHashKeyConversionRoundTripsBuiltInDigestSizesAndNulls(
+      string algorithmId,
+      int digestByteLength) {
+    var converter = GetBinaryHashKeyConverter(algorithmId, digestByteLength);
+    var canonicalHash = CreateCanonicalHexDigest(digestByteLength);
+
+    var providerValue = Assert.IsType<byte[]>(converter.ConvertToProvider(canonicalHash));
+    var roundTrippedHash = Assert.IsType<string>(converter.ConvertFromProvider(providerValue));
+
+    Assert.Equal(Enumerable.Range(0, digestByteLength).Select(value => (byte)value).ToArray(), providerValue);
+    Assert.Equal(canonicalHash, roundTrippedHash);
+    Assert.Null(converter.ConvertToProvider(null));
+    Assert.Null(converter.ConvertFromProvider(null));
+  }
+
+  [Fact]
+  public void BinaryHashKeyConversionKeepsStringModelChangeTrackingStable() {
+    using var context = CreateBinaryHashKeyChangeTrackingContext();
+    var link = CreateLinkEntity(
+        CreateCanonicalHexDigest(16),
+        CreateCanonicalHexDigest(16, seed: 16),
+        CreateCanonicalHexDigest(16, seed: 32));
+    var linkSet = context.Set<Dictionary<string, object>>("LinkCustomerOrder");
+
+    linkSet.Attach(link);
+
+    var entry = context.Entry(link);
+    var participantReference = entry.Property("CustomerHashKey");
+    var participantReferenceMetadata = participantReference.Metadata;
+    var linkHashKeyMetadata = entry.Metadata.FindPrimaryKey()!.Properties.Single(property => property.Name == "CustomerOrderHashKey");
+    var keyValueComparer = linkHashKeyMetadata.GetKeyValueComparer();
+    var valueComparer = participantReferenceMetadata.GetValueComparer();
+    var originalCustomerHashKey = Assert.IsType<string>(participantReference.OriginalValue);
+
+    Assert.Equal(EntityState.Unchanged, entry.State);
+    Assert.True(keyValueComparer.Equals(link["CustomerOrderHashKey"], new string(Assert.IsType<string>(link["CustomerOrderHashKey"]).ToCharArray())));
+    Assert.True(keyValueComparer.Equals(null, null));
+    Assert.Equal(
+        link["CustomerOrderHashKey"],
+        Assert.IsType<string>(keyValueComparer.Snapshot(link["CustomerOrderHashKey"])));
+    Assert.NotNull(valueComparer);
+    Assert.True(valueComparer!.Equals(originalCustomerHashKey, new string(originalCustomerHashKey.ToCharArray())));
+    Assert.True(valueComparer.Equals(null, null));
+    Assert.Equal(originalCustomerHashKey, Assert.IsType<string>(valueComparer.Snapshot(originalCustomerHashKey)));
+
+    link["CustomerHashKey"] = new string(originalCustomerHashKey.ToCharArray());
+    context.ChangeTracker.DetectChanges();
+
+    Assert.Equal(EntityState.Unchanged, entry.State);
+    Assert.False(participantReference.IsModified);
+
+    link["CustomerHashKey"] = CreateCanonicalHexDigest(16, seed: 48);
+    context.ChangeTracker.DetectChanges();
+
+    Assert.Equal(EntityState.Modified, entry.State);
+    Assert.True(participantReference.IsModified);
+
+    using var nullContext = CreateBinaryHashKeyChangeTrackingContext();
+    var nullReferenceLink = CreateLinkEntity(
+        CreateCanonicalHexDigest(16, seed: 64),
+        null,
+        CreateCanonicalHexDigest(16, seed: 80));
+    var nullReferenceSet = nullContext.Set<Dictionary<string, object>>("LinkCustomerOrder");
+
+    nullReferenceSet.Attach(nullReferenceLink);
+
+    var nullEntry = nullContext.Entry(nullReferenceLink);
+    var nullParticipantReference = nullEntry.Property("CustomerHashKey");
+
+    Assert.Equal(EntityState.Unchanged, nullEntry.State);
+    Assert.Null(nullParticipantReference.OriginalValue);
+
+    nullReferenceLink["CustomerHashKey"] = null!;
+    nullContext.ChangeTracker.DetectChanges();
+
+    Assert.Equal(EntityState.Unchanged, nullEntry.State);
+    Assert.False(nullParticipantReference.IsModified);
+  }
+
+  [Theory]
+  [InlineData("000102030405060708090a0b0c0d0e", "32 lowercase hexadecimal characters")]
+  [InlineData("000102030405060708090a0b0c0d0e0f00", "32 lowercase hexadecimal characters")]
+  [InlineData("000102030405060708090A0B0C0D0E0F", "canonical lowercase hexadecimal values")]
+  [InlineData("000102030405060708090a0b0c0d0e0g", "canonical lowercase hexadecimal values")]
+  public void BinaryHashKeyConversionRejectsInvalidModelValues(
+      string value,
+      string expectedMessage) {
+    var converter = GetBinaryHashKeyConverter();
+
+    var exception = Assert.Throws<FormatException>(() => converter.ConvertToProvider(value));
+
+    Assert.Contains(expectedMessage, exception.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void BinaryHashKeyConversionRejectsProviderBytesWithWrongDigestLength() {
+    var converter = GetBinaryHashKeyConverter();
+
+    var exception = Assert.Throws<FormatException>(() => converter.ConvertFromProvider(new byte[15]));
+
+    Assert.Contains("16 provider bytes", exception.Message, StringComparison.Ordinal);
   }
 
   [Fact]
@@ -1197,6 +1330,38 @@ public sealed class DataVaultEfMetadataTranslationTests {
     AssertHashKeyStorageAnnotations(property, expectedLogicalPropertyKind);
   }
 
+  private static void AssertBinaryHashKeyProperty(
+      IMutableEntityType entityType,
+      string propertyName,
+      DataVaultLogicalPropertyKind expectedLogicalPropertyKind) {
+    var property = entityType.FindProperty(propertyName);
+
+    Assert.NotNull(property);
+    Assert.Equal(typeof(string), property!.ClrType);
+    Assert.Equal("sqlserver-v1", AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderProfile));
+    Assert.Equal(expectedLogicalPropertyKind, AnnotationValue<DataVaultLogicalPropertyKind>(
+        property,
+        DataVaultAnnotationNames.ProviderLogicalPropertyKind));
+    Assert.Equal("varbinary(16)", property.GetColumnType());
+    Assert.Equal("varbinary(16)", AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderStorageType));
+    Assert.Equal(DataVaultProviderValueFormat.LowercaseHexBinary, AnnotationValue<DataVaultProviderValueFormat>(
+        property,
+        DataVaultAnnotationNames.ProviderValueFormat));
+    Assert.Equal(DataVaultHashKeyStorageProfile.Binary, AnnotationValue<DataVaultHashKeyStorageProfile>(
+        property,
+        DataVaultAnnotationNames.HashKeyStorageProfile));
+    Assert.Equal("sha256-128-v1", AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashAlgorithmId));
+    Assert.Equal(16, AnnotationValue<int>(property, DataVaultAnnotationNames.StableHashDigestByteLength));
+    Assert.Equal("lowercase-hex-no-prefix", AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashDigestEncoding));
+    Assert.Equal("lowercase-hex-string-to-bytes", AnnotationValue<string>(property, DataVaultAnnotationNames.HashKeyConversionBehavior));
+
+    var converter = property.GetValueConverter();
+
+    Assert.NotNull(converter);
+    Assert.Equal(typeof(string), converter!.ModelClrType);
+    Assert.Equal(typeof(byte[]), converter.ProviderClrType);
+  }
+
   private static void InvokeTranslatorApply(
       ModelBuilder modelBuilder,
       DataVaultMetadataModel metadataModel,
@@ -1213,6 +1378,70 @@ public sealed class DataVaultEfMetadataTranslationTests {
             methodInfo.GetParameters().Length == 3);
 
     applyMethod.Invoke(null, [modelBuilder, metadataModel, providerCapabilities]);
+  }
+
+  private static ValueConverter GetBinaryHashKeyConverter(
+      string algorithmId = "sha256-128-v1",
+      int digestByteLength = 16) {
+    var modelBuilder = CreateModelBuilder();
+    var profile = DataVaultProviderCapabilityProfiles.SqlServer.WithHashKeyStorageProfile(
+        DataVaultHashKeyStorageProfile.Binary,
+        algorithmId,
+        digestByteLength);
+
+    modelBuilder.ApplyDataVaultMetadata(CreateMetadataModel(), profile);
+
+    var hashKey = FindEntity(modelBuilder.Model, "HubCustomer").FindProperty("CustomerHashKey");
+
+    Assert.NotNull(hashKey);
+
+    var converter = hashKey!.GetValueConverter();
+
+    Assert.NotNull(converter);
+    return converter!;
+  }
+
+  private static BinaryHashKeyChangeTrackingContext CreateBinaryHashKeyChangeTrackingContext() {
+    var options = new DbContextOptionsBuilder<BinaryHashKeyChangeTrackingContext>()
+        .UseSqlite("Data Source=:memory:")
+        .Options;
+
+    return new BinaryHashKeyChangeTrackingContext(options);
+  }
+
+  private static Dictionary<string, object> CreateLinkEntity(
+      string linkHashKey,
+      string? customerHashKey,
+      string? orderHashKey) {
+    return new Dictionary<string, object> {
+      ["CustomerOrderHashKey"] = linkHashKey,
+      ["LoadTimestamp"] = DateTimeOffset.UnixEpoch,
+      ["RecordSource"] = "unit-test",
+      ["CustomerHashKey"] = customerHashKey!,
+      ["OrderHashKey"] = orderHashKey!,
+    };
+  }
+
+  private static string CreateCanonicalHexDigest(int digestByteLength, int seed = 0) {
+    return Convert.ToHexString(Enumerable
+        .Range(0, digestByteLength)
+        .Select(value => (byte)((value + seed) % 256))
+        .ToArray()).ToLowerInvariant();
+  }
+
+  private sealed class BinaryHashKeyChangeTrackingContext : DbContext {
+    public BinaryHashKeyChangeTrackingContext(DbContextOptions<BinaryHashKeyChangeTrackingContext> options)
+        : base(options) {
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      var profile = DataVaultProviderCapabilityProfiles.SqlServer.WithHashKeyStorageProfile(
+          DataVaultHashKeyStorageProfile.Binary,
+          "sha256-128-v1",
+          16);
+
+      modelBuilder.ApplyDataVaultMetadata(CreateBridgeMetadataModel(), profile);
+    }
   }
 
   private static DataVaultLogicalPropertyKind GetExpectedLogicalPropertyKind(

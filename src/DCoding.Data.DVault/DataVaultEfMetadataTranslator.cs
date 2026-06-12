@@ -1,3 +1,4 @@
+using System.Globalization;
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -967,7 +968,10 @@ internal static class DataVaultEfMetadataTranslator {
     if (typeMapping.ModelClrType == typeof(string)) {
       var propertyBuilder = entityBuilder.IndexerProperty<string>(property.Name);
       if (typeMapping.ValueFormat == DataVaultProviderValueFormat.LowercaseHexBinary) {
-        propertyBuilder.HasConversion(LowercaseHexStringToBytesConverter.Instance);
+        propertyBuilder.HasConversion(new LowercaseHexStringToBytesConverter(
+            typeMapping.DigestByteLength ??
+            throw new InvalidOperationException(
+                "Binary hash-key conversion requires a declared stable-hash digest byte length.")));
       }
 
       return propertyBuilder;
@@ -1053,12 +1057,53 @@ internal static class DataVaultEfMetadataTranslator {
   private readonly record struct EndpointColumn(DataVaultBridgeEndpointRole Role, string ColumnName);
 
   private sealed class LowercaseHexStringToBytesConverter : ValueConverter<string, byte[]> {
-    public static LowercaseHexStringToBytesConverter Instance { get; } = new();
-
-    private LowercaseHexStringToBytesConverter()
+    public LowercaseHexStringToBytesConverter(int digestByteLength)
         : base(
-            value => Convert.FromHexString(value),
-            value => Convert.ToHexString(value).ToLowerInvariant()) {
+            value => ConvertCanonicalHexToBytes(value, digestByteLength),
+            value => ConvertBytesToCanonicalHex(value, digestByteLength)) {
+      if (digestByteLength <= 0) {
+        throw new ArgumentOutOfRangeException(nameof(digestByteLength));
+      }
+    }
+
+    private static byte[] ConvertCanonicalHexToBytes(string value, int digestByteLength) {
+      ArgumentNullException.ThrowIfNull(value);
+
+      var expectedHexLength = digestByteLength * 2;
+      if (value.Length != expectedHexLength) {
+        throw new FormatException(
+            "Data Vault binary hash-key conversion expected " +
+            expectedHexLength.ToString(CultureInfo.InvariantCulture) +
+            " lowercase hexadecimal characters for a " +
+            digestByteLength.ToString(CultureInfo.InvariantCulture) +
+            "-byte stable hash digest.");
+      }
+
+      for (var index = 0; index < value.Length; index++) {
+        var character = value[index];
+        var isLowercaseHex =
+            character is >= '0' and <= '9' ||
+            character is >= 'a' and <= 'f';
+        if (!isLowercaseHex) {
+          throw new FormatException(
+              "Data Vault binary hash-key conversion requires canonical lowercase hexadecimal values without prefixes.");
+        }
+      }
+
+      return Convert.FromHexString(value);
+    }
+
+    private static string ConvertBytesToCanonicalHex(byte[] value, int digestByteLength) {
+      ArgumentNullException.ThrowIfNull(value);
+
+      if (value.Length != digestByteLength) {
+        throw new FormatException(
+            "Data Vault binary hash-key conversion expected " +
+            digestByteLength.ToString(CultureInfo.InvariantCulture) +
+            " provider bytes for the active stable hash digest.");
+      }
+
+      return Convert.ToHexString(value).ToLowerInvariant();
     }
   }
 }
