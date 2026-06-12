@@ -1,0 +1,5 @@
+variant,provider,stableHashAlgorithmId,digestByteLength,hexCharacterLength,storageProfile,hashKeyStoreType,participantReferenceStoreType,hashKeyValueFormat,participantReferenceValueFormat,hashKeyPayloadBytes,parentHashReferencePayloadBytes,twoColumnHashReferenceIndexPayloadBytes,completedRows,skippedRows,failedRows
+sha256-v1-hex,SQLite local temporary files,sha256-v1,32,64,HexString,TEXT,TEXT,LowercaseHexText,LowercaseHexText,64,64,128,24,0,0
+sha256-v1-binary,SQLite local temporary files,sha256-v1,32,64,Binary,BLOB,BLOB,LowercaseHexBinary,LowercaseHexBinary,32,32,64,24,0,0
+sha256-128-v1-hex,SQLite local temporary files,sha256-128-v1,16,32,HexString,TEXT,TEXT,LowercaseHexText,LowercaseHexText,32,32,64,24,0,0
+sha256-128-v1-binary,SQLite local temporary files,sha256-128-v1,16,32,Binary,BLOB,BLOB,LowercaseHexBinary,LowercaseHexBinary,16,16,32,24,0,0

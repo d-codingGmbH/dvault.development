@@ -3,22 +3,21 @@
   "ticket-id": "06F9GF6CX7WE2JGBDW3QH1GX98",
   "ticket-type": "task",
   "title": "Task: Document binary hash storage adoption guidance",
-  "revision": "06F9GFH6WSMYCZMG64QE0NTP44",
-  "status": "todo",
+  "revision": "06FBNQHMP1DNX9ENEN2GTASNS4",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/documentation",
     "area/hashing",
-    "area/schema",
+    "area/performance",
     "area/provider-support",
-    "area/performance"
+    "area/schema",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06F9GF597F30HRK2J6A2REVN2C",
   "release-id": "06F9GF56ZVW18EP8HX6YBWQS44",
   "created-at": "2026-06-05T14:43:02.2329352Z",
-  "updated-at": "2026-06-05T14:44:30.5660123Z"
+  "updated-at": "2026-06-12T08:06:25.2005972Z"
 }

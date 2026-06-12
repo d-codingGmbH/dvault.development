@@ -4,43 +4,43 @@ DVault is the repository for the `DCoding.Data.DVault` .NET library.
 
 ## Installation
 
-Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family keeps the same package ids across both supported package-version lines. Use exactly one line for a consumer project: `8.35.0` for `net8.0` and EF Core 8, or `10.35.0` for `net10.0` and EF Core 10. Do not mix package versions from both lines in one project, and do not use a consumer-facing `0.35.0` package version. This documentation baseline does not by itself confirm package publication.
+Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The coordinated DVault package family keeps the same package ids across both supported package-version lines. Use exactly one line for a consumer project: `8.36.0` for `net8.0` and EF Core 8, or `10.36.0` for `net10.0` and EF Core 10. Do not mix package versions from both lines in one project, and do not use a consumer-facing `0.36.0` package version. This documentation baseline does not by itself confirm package publication.
 
-For `net8.0` projects on EF Core 8, use the `8.35.0` package line:
+For `net8.0` projects on EF Core 8, use the `8.36.0` package line:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 8.35.0
-dotnet add package DCoding.Data.DVault.Db2 --version 8.35.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 8.35.0
-dotnet add package DCoding.Data.DVault.Postgres --version 8.35.0
-dotnet add package DCoding.Data.DVault.MySql --version 8.35.0
-dotnet add package DCoding.Data.DVault.Oracle --version 8.35.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 8.35.0
+dotnet add package DCoding.Data.DVault --version 8.36.0
+dotnet add package DCoding.Data.DVault.Db2 --version 8.36.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 8.36.0
+dotnet add package DCoding.Data.DVault.Postgres --version 8.36.0
+dotnet add package DCoding.Data.DVault.MySql --version 8.36.0
+dotnet add package DCoding.Data.DVault.Oracle --version 8.36.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 8.36.0
 ```
 
-For `net10.0` projects on EF Core 10, use the `10.35.0` package line:
+For `net10.0` projects on EF Core 10, use the `10.36.0` package line:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 10.35.0
-dotnet add package DCoding.Data.DVault.Db2 --version 10.35.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 10.35.0
-dotnet add package DCoding.Data.DVault.Postgres --version 10.35.0
-dotnet add package DCoding.Data.DVault.MySql --version 10.35.0
-dotnet add package DCoding.Data.DVault.Oracle --version 10.35.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 10.35.0
+dotnet add package DCoding.Data.DVault --version 10.36.0
+dotnet add package DCoding.Data.DVault.Db2 --version 10.36.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 10.36.0
+dotnet add package DCoding.Data.DVault.Postgres --version 10.36.0
+dotnet add package DCoding.Data.DVault.MySql --version 10.36.0
+dotnet add package DCoding.Data.DVault.Oracle --version 10.36.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 10.36.0
 ```
 
 Add the analyzer package only to projects that own DVault declarations or generated read helpers, and keep it local with `PrivateAssets="all"`. Use the analyzer version that matches the selected package line:
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="8.35.0" PrivateAssets="all" />
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="8.36.0" PrivateAssets="all" />
 </ItemGroup>
 ```
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="10.35.0" PrivateAssets="all" />
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="10.36.0" PrivateAssets="all" />
 </ItemGroup>
 ```
 
@@ -50,7 +50,7 @@ Applications still need their normal Entity Framework Core database provider pac
 
 Runnable SQLite and PostgreSQL quickstart projects are available under `examples/`; see `examples/README.md` for exact build and run commands.
 
-The latest persisted release-note baseline is [DVault v0.35.0 Release Notes](docs/releases/v0.35.0.md). Earlier release notes remain historical feature-introduction records. For detailed performance guidance, see [Performance Profiles](docs/performance-profiles.md). For a short adopter readiness pass before production use, see the [Production Adoption Checklist](docs/production-adoption-checklist.md).
+The latest persisted release-note baseline is [DVault v0.36.0 Release Notes](docs/releases/v0.36.0.md). Earlier release notes remain historical feature-introduction records. For detailed performance guidance, see [Performance Profiles](docs/performance-profiles.md). For a short adopter readiness pass before production use, see the [Production Adoption Checklist](docs/production-adoption-checklist.md).
 
 ## Quickstart
 
@@ -279,7 +279,7 @@ await saveService.SaveAsync(
 
 Keep `DataVaultBulkSaveRequest` when the loader already has the full ordered request set materialized. Switch to `DataVaultChunkedSaveRequest` when the caller has already formed bounded chunks and wants materialized chunk input without changing explicit timestamps, record sources, request ordering, or caller-owned transaction behavior. Use `IDataVaultSaveService.SaveAsync(DbContext, IAsyncEnumerable<DataVaultSaveChunk>, ...)` or the async source helpers when bounded chunks or source rows are already asynchronous. Provider-specific save strategies remain optimizations around the same public save contract; PostgreSQL and MySQL can stage larger eligible materialized bulk batches behind that boundary, while DVault does not claim provider-native async writes, provider-native chunk execution, background ingestion, or scheduler behavior.
 
-The current v0.35.0 documentation baseline keeps that same write hierarchy and carries forward support-bundle-backed satellite, PIT, and bounded bridge typed read helpers. `IDataVaultSaveService` remains the public write entry point, `DataVaultBulkSaveRequest` remains the compatibility baseline for already-materialized ordered saves, `DataVaultChunkedSaveRequest` remains provider-neutral bounded chunking guidance, and `IAsyncEnumerable<DataVaultSaveChunk>` is the async source shape over those same bounded chunks. Provider-specific optimized write paths stay evidence-bound behind the same service contract: PostgreSQL staged COPY and MySQL staged bulk are the preferred optimized paths only for their documented staged-provider lanes, SQL Server keeps its current native-bulk wording, Oracle keeps the retained direct optimized path until benchmark evidence selects a staged Oracle path, and DB2 registers a diagnostics-gated optimized clean-context save strategy for ordinary hub, link, and satellite rows. Stored procedures and provider-specific SQL artifacts are not DVault default write paths: treat them only as explicit opt-in, design-time artifact escape hatches after provider evidence, migration synchronization, consumer-owned deployment, rollback, invocation, and cleanup rules are documented.
+The current v0.36.0 documentation baseline keeps that same write hierarchy and carries forward support-bundle-backed satellite, PIT, and bounded bridge typed read helpers. `IDataVaultSaveService` remains the public write entry point, `DataVaultBulkSaveRequest` remains the compatibility baseline for already-materialized ordered saves, `DataVaultChunkedSaveRequest` remains provider-neutral bounded chunking guidance, and `IAsyncEnumerable<DataVaultSaveChunk>` is the async source shape over those same bounded chunks. Provider-specific optimized write paths stay evidence-bound behind the same service contract: PostgreSQL staged COPY and MySQL staged bulk are the preferred optimized paths only for their documented staged-provider lanes, SQL Server keeps its current native-bulk wording, Oracle keeps the retained direct optimized path until benchmark evidence selects a staged Oracle path, and DB2 registers a diagnostics-gated optimized clean-context save strategy for ordinary hub, link, and satellite rows. Stored procedures and provider-specific SQL artifacts are not DVault default write paths: treat them only as explicit opt-in, design-time artifact escape hatches after provider evidence, migration synchronization, consumer-owned deployment, rollback, invocation, and cleanup rules are documented.
 
 ### Govern stable hashes
 
@@ -815,7 +815,7 @@ The aggregate facade does not couple DVault to EF `ModelSnapshot`, scan the repo
 
 ### Review provider schema guardrails
 
-The v0.29.0 provider schema guardrail baseline remains documented in [DVault v0.29.0 Release Notes](docs/releases/v0.29.0.md), is carried forward by the current v0.35.0 documentation baseline, and is anchored by [Provider Identifier And DDL Guardrail Contract](docs/plans/provider-identifier-ddl-guardrail-contract.md). Logical DVault names remain provider-neutral and traceable through `DataVaultAnnotationNames.ProducedName`; supported provider profiles may derive safe physical names only when generated DVault-owned tables, columns, keys, indexes, or constraints would otherwise be unsafe for the selected provider.
+The v0.29.0 provider schema guardrail baseline remains documented in [DVault v0.29.0 Release Notes](docs/releases/v0.29.0.md), is carried forward by the current v0.36.0 documentation baseline, and is anchored by [Provider Identifier And DDL Guardrail Contract](docs/plans/provider-identifier-ddl-guardrail-contract.md). Logical DVault names remain provider-neutral and traceable through `DataVaultAnnotationNames.ProducedName`; supported provider profiles may derive safe physical names only when generated DVault-owned tables, columns, keys, indexes, or constraints would otherwise be unsafe for the selected provider.
 
 The finite provider-specific safety baseline is SQLite (`sqlite-v1`), Oracle (`oracle-v1`), PostgreSQL (`postgres-v1`), SQL Server (`sqlserver-v1`), DB2 (`db2-v1`), and MySQL (`mysql-pomelo-v1`). Unrecognized providers must not inherit provider-specific DDL safety guarantees from those profiles. Treat them as unsupported for provider-specific identifier, index, load-timestamp, and migration DDL safety claims until a future contract adds an explicit profile.
 
@@ -942,19 +942,20 @@ Providers without a built-in live-schema reader return `DataVaultLiveSchemaReadS
 
 SQLite remains the default local live-schema proof because it does not require external infrastructure. PostgreSQL, SQL Server, Oracle, and MySQL live-schema checks require consumer-managed reachable databases, connection strings, credentials, lifecycle cleanup, and CI isolation. Keep those external provider checks opt-in behind the documented connection-string environment variables: `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_MYSQL_CONNECTION_STRING`. DB2 has opt-in live smoke tests, but not a live-schema reader. Default local test execution does not require those external databases.
 
-## Current v0.35.0 Stable Hash Algorithm Guidance Baseline
+## Current v0.36.0 Hash-Key Storage Guidance Baseline
 
-The v0.35.0 release record is the current coordinated eight-package documentation baseline for the dual consumer package-version lines. See `docs/releases/v0.35.0.md` for package scope, the `8.35.0` / `net8.0` / EF Core 8 line, the `10.35.0` / `net10.0` / EF Core 10 line, stable hash algorithm-selection guidance, manual publication separation, validation evidence, compatibility caveats, and non-goals.
+The v0.36.0 release record is the current coordinated eight-package documentation baseline for the dual consumer package-version lines. See `docs/releases/v0.36.0.md` for package scope, the `8.36.0` / `net8.0` / EF Core 8 line, the `10.36.0` / `net10.0` / EF Core 10 line, stable hash algorithm-selection guidance, binary hash-key storage opt-in guidance, manual publication separation, validation evidence, compatibility caveats, and non-goals.
 
-Notable stable-hash documentation points:
+Notable stable-hash and hash-key storage documentation points:
 
-- `AddDVault()` keeps `sha256-v1` as the default stable hash service registration.
-- `sha256-v1` means SHA-256 over UTF-8 normalized input bytes without a byte order mark, serialized as 64 lowercase hexadecimal characters.
-- `sha1-v1`, `sha256-128-v1`, and `sha256-160-v1` are built-in explicit opt-in ids only; they are not enabled automatically by `AddDVault()`.
-- Shorter digests are non-adversarial Data Vault identity tradeoffs, not security or compliance controls.
-- Post-persistence algorithm or truncation changes are caller-owned compatibility work; DVault does not automatically rehash, backfill, migrate, repair, or reconcile stored values.
-- Diagnostics and support bundles expose the active stable-hash `algorithmId`, `digestByteLength`, and lowercase-hex encoding metadata without printing digest values or key material.
-- Proof surfaces remain `docs/plans/stable-hashing-contract.md`, `src/DCoding.Data.DVault/BuiltInStableHashService.cs`, `src/DCoding.Data.DVault/StableHashDigest.cs`, `src/DCoding.Data.DVault/DataVaultDiagnostics.cs`, `tests/DCoding.Data.DVault.Tests/Unit/StableHashServiceTests.cs`, and `tests/DCoding.Data.DVault.Tests/Unit/DataVaultDiagnosticsTests.cs`.
+- `AddDVault()` keeps `sha256-v1` as the default stable hash service registration and keeps `HexString` as the compatible default hash-key storage profile.
+- Logical hash-key values at request, save, read, diagnostics, and support-bundle boundaries remain canonical lowercase hexadecimal strings without a prefix. `Binary` is a persistence-only opt-in storage profile; it does not change public hash-key values to `byte[]`.
+- `sha256-v1` means SHA-256 over UTF-8 normalized input bytes without a byte order mark, serialized as 32 digest bytes and 64 lowercase hexadecimal characters. `sha1-v1`, `sha256-128-v1`, and `sha256-160-v1` remain built-in explicit opt-in ids only.
+- The active stable-hash digest length sizes both `HashKey` and `ParticipantReference` storage. For built-in providers, `HexString` uses SQLite `TEXT`, Oracle `VARCHAR2(n CHAR)`, PostgreSQL `varchar(n)`, SQL Server `nvarchar(n)`, DB2 `VARCHAR(n)`, and MySQL `varchar(n)` where `n` is the active hex character count except SQLite. `Binary` uses SQLite `BLOB`, Oracle `RAW(n)`, PostgreSQL `bytea`, SQL Server `varbinary(n)`, DB2 `VARBINARY(n)`, and MySQL `varbinary(n)` where `n` is the active digest byte count except PostgreSQL.
+- The checked-in SQLite footprint sidecar records bounded storage deltas only for that local evidence bundle: `sha256-v1` moves hash-key payloads from 64 bytes under `HexString` to 32 bytes under `Binary`, and two-column hash-reference index payloads from 128 bytes to 64 bytes; `sha256-128-v1` moves those payloads from 32 to 16 bytes and from 64 to 32 bytes.
+- Post-persistence algorithm, truncation, or hash-key storage-profile changes are caller-owned compatibility work. DVault does not automatically rehash, backfill, migrate, repair, reconcile, or dual-write stored values.
+- Diagnostics and support bundles expose the active stable-hash `algorithmId`, `digestByteLength`, `digestEncoding`, `hashKeyStorageProfile`, provider store type, value format, and conversion behavior without printing digest values, raw hash-key values, raw business keys, or diagnostic payload text.
+- Proof surfaces remain `docs/plans/hash-key-storage-profile-contract.md`, `docs/plans/stable-hashing-contract.md`, `src/DCoding.Data.DVault/DataVaultProviderCapabilityProfile.cs`, `src/DCoding.Data.DVault/DataVaultDiagnostics.cs`, `tests/DCoding.Data.DVault.Tests/Unit/DataVaultDiagnosticsTests.cs`, `hash-key-footprint.md`, and `artifacts/benchmarks/06F9GF66B10J4K7RBDTJ9NQRQC-hash-key-storage-matrix-sqlite-20260612/`.
 
 ## Previous v0.34.0 DB2 Documentation Baseline
 
@@ -1093,7 +1094,7 @@ Notable user-facing changes:
 - Benchmark verifier evidence points to the root `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` triplet plus row-consistency and regression-budget checks instead of duplicating raw tables.
 - Migration guardrails and idempotency preflight remain consumer-owned operations: callers supply migration operations, reviewed artifacts, snapshot models, live-schema read results, and representative diagnostics explicitly.
 - Stored-procedure and provider-specific SQL artifact discussion is limited to opt-in design-time artifacts with consumer-owned deployment, versioning, invocation, rollback, cleanup, credentials, transactions, and lifecycle.
-- At the v0.26.0 release boundary, SQLite remained the only repository-proven optimized latest-satellite, PIT, and bridge read provider path. The current v0.35.0 baseline preserves SQLite-only latest-satellite optimization and documents later PIT/bridge candidate evidence for PostgreSQL, SQL Server, MySQL, Oracle, and DB2.
+- At the v0.26.0 release boundary, SQLite remained the only repository-proven optimized latest-satellite, PIT, and bridge read provider path. The current v0.36.0 baseline preserves SQLite-only latest-satellite optimization and documents later PIT/bridge candidate evidence for PostgreSQL, SQL Server, MySQL, Oracle, and DB2.
 - No default save/read runtime dispatch changes, new benchmark artifact schema, package publication, provider-specific SQL generation, automatic migrations, automatic schema repair, stored-procedure runtime dispatch, or deployment automation are introduced by the v0.26.0 release baseline.
 
 Primary v0.26.0 validation surfaces are [BenchmarkScenarioExecutionTests.cs](tests/DCoding.Data.DVault.Tests/Integration/BenchmarkScenarioExecutionTests.cs), [DataVaultDiagnosticsIntegrationTests.cs](tests/DCoding.Data.DVault.Tests/Integration/DataVaultDiagnosticsIntegrationTests.cs), [DataVaultPreflightTests.cs](tests/DCoding.Data.DVault.Tests/Unit/DataVaultPreflightTests.cs), [DataVaultIdempotencyPreflightTests.cs](tests/DCoding.Data.DVault.Tests/Unit/DataVaultIdempotencyPreflightTests.cs), [DVault V2 Redacted Read-Plan Explain Contract](docs/architecture/dvault-v2-redacted-read-plan-explain-contract.md), [DVault Dotnet EF Design-Time Workflow](docs/architecture/dvault-dotnet-ef-design-time-workflow.md), [Performance Profiles](docs/performance-profiles.md), and the package-local [DCoding.Data.DVault.Analyzers README](src/DCoding.Data.DVault.Analyzers/README.md).
@@ -1176,7 +1177,7 @@ Notable user-facing changes:
 - Hub-parent ordinary PITs, hub-parent shared-driving-key multi-active PITs, and runtime link-parent non-multi-active PITs are documented as the bounded supported shapes.
 - Registry-backed PIT coverage is limited to `DataVaultRegistryPitRebuildRequest` and `DataVaultRegistryPitParentMaintenanceRequest`; there is no documented registry-backed PIT as-of read request.
 - `IDataVaultBridgeMaintenanceService` remains the explicit maintenance boundary for bridge tables. `MaintainBridgeAsync(...)` inserts missing rows and can lower hierarchy depths, while `RebuildBridgeAsync(...)` is the shrink-safe path for row removal or increased `TraversalDepth`.
-- At the v0.21.0 release boundary, `AddDVaultSqlite()` was the repository-proven optimized PIT/bridge read provider path. The current v0.35.0 baseline documents diagnostics-gated PIT/bridge read strategy candidates for SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2, while unsupported providers and unsupported request shapes fall back to provider-neutral read pipelines.
+- At the v0.21.0 release boundary, `AddDVaultSqlite()` was the repository-proven optimized PIT/bridge read provider path. The current v0.36.0 baseline documents diagnostics-gated PIT/bridge read strategy candidates for SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2, while unsupported providers and unsupported request shapes fall back to provider-neutral read pipelines.
 - `IDataVaultReadDiagnosticsService` provides read strategy and read-shape evidence for latest/current/as-of satellite, PIT as-of, and bridge read requests without exposing raw hash keys, request values, SQL text, or query plans; the current bounded payload is formalized by the [DVault V2 Redacted Read-Plan Explain Contract](docs/architecture/dvault-v2-redacted-read-plan-explain-contract.md).
 - The benchmark evidence keeps fallback and SQLite-optimized `pit-as-of-read` and `bridge-traversal-read` rows visible in the root [benchmark-summary.md](benchmark-summary.md), [benchmark-summary.csv](benchmark-summary.csv), and [benchmark-summary.json](benchmark-summary.json) triplet plus the [PIT/bridge diagnostics benchmark bundle](artifacts/benchmarks/06F5Q91DR1555RSBQT7KDST684-pit-bridge-diagnostics/benchmark-summary.md).
 - `DataVaultChunkedSaveRequest`, `DataVaultSaveChunk`, staged PostgreSQL/MySQL ordered-bulk guidance, SQL Server native-bulk wording, Oracle direct optimization, EF compiled-model/query/pooling guidance, `DMV1910`/`DMV1911`, `UseDataVaultSaveChangesGuardInterceptor(...)`, aggregate preflight, provider explainability, telemetry, support-bundle export, model-first governance, and typed current/as-of reads from earlier releases remain carried forward into the current public baseline.
@@ -1223,7 +1224,7 @@ Notable user-facing changes:
 
 ## v0.20.0 Historical Provider-Optimized Write Boundary
 
-The [v0.20.0 notes](docs/releases/v0.20.0.md) document a provider-specific optimized write-path boundary without changing the public write API. v0.19.0 remains the historical baseline for provider-neutral chunked explicit saves and kept staged provider bulk ingestion outside that release's claim set. v0.20.0 moved the write documentation boundary forward only where repository evidence already exposed a supported or measured provider path; v0.21.0 carried that write guidance forward as the PIT/bridge read-model documentation boundary preserved by the current v0.35.0 baseline.
+The [v0.20.0 notes](docs/releases/v0.20.0.md) document a provider-specific optimized write-path boundary without changing the public write API. v0.19.0 remains the historical baseline for provider-neutral chunked explicit saves and kept staged provider bulk ingestion outside that release's claim set. v0.20.0 moved the write documentation boundary forward only where repository evidence already exposed a supported or measured provider path; v0.21.0 carried that write guidance forward as the PIT/bridge read-model documentation boundary preserved by the current v0.36.0 baseline.
 
 Use this carried-forward hierarchy when planning provider-optimized write adoption:
 
@@ -1238,9 +1239,9 @@ Use this carried-forward hierarchy when planning provider-optimized write adopti
 
 The benchmark-facing evidence continues to use the root `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` triplet plus the shared [Performance Evidence And Benchmark Artifact Contract](docs/plans/performance-evidence-benchmark-artifact-contract.md). Provider-specific timing claims must preserve provider, strategy, execution-detail, skip, and run-context information instead of introducing new ad hoc evidence files.
 
-## Current v0.35.0 Limitations
+## Current v0.36.0 Limitations
 
-Lifecycle guardrails remain explicit library APIs hosted by the consumer application. The `DMV1912` through `DMV1914` lifecycle diagnostics are analyzer-only source-visible guardrails; they do not add a runtime guard, runtime behavior change, compiled-model generator, provider-specific lifecycle guarantee, cross-assembly inference, or whole-application inference. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.35.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation. DB2 live-schema reading is explicitly unsupported for `IBM.EntityFrameworkCore` until a DB2 catalog reader exists.
+Lifecycle guardrails remain explicit library APIs hosted by the consumer application. The `DMV1912` through `DMV1914` lifecycle diagnostics are analyzer-only source-visible guardrails; they do not add a runtime guard, runtime behavior change, compiled-model generator, provider-specific lifecycle guarantee, cross-assembly inference, or whole-application inference. DVault does not ship a standalone CLI, does not ship a first-party `dotnet ef` command shim, does not intercept EF migration commands, does not automatically execute migrations, and does not apply schema repairs. Startup-project and target-project splits for design-time discovery remain outside the v0.36.0 boundary. Live-schema reading is built in for SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, but non-SQLite checks still require consumer-managed databases and should remain opt-in operational evidence rather than default local validation. DB2 live-schema reading is explicitly unsupported for `IBM.EntityFrameworkCore` until a DB2 catalog reader exists.
 
 Provider schema guardrails are review and diagnostics guidance for DVault-owned generated metadata. They do not add provider support beyond SQLite, Oracle, PostgreSQL, SQL Server, DB2, and MySQL; they do not give unrecognized providers provider-specific DDL safety guarantees; and they do not rewrite arbitrary consumer migrations, raw SQL, or third-party DDL.
 
@@ -1260,7 +1261,7 @@ Typed read-model generation is opt-in and support-bundle-driven for bounded sate
 
 Chunked and async source explicit saves are provider-neutral public behavior over the same `IDataVaultSaveService` boundary. Provider-native async writes, provider-native chunk execution, file ingestion, background workers, schedulers, CDC ingestion, and implicit `SaveChanges` streaming remain outside the public claim set.
 
-Provider-native bulk dispatch is an optimization, not a separate persistence contract. Dirty tracked contexts, multi-active satellite batches, provider-name mismatches, below-threshold PostgreSQL or MySQL staged-bulk batches, SQL Server or Oracle batches outside their native gates, MySQL batches below the 50-operation native gate, SQL Server batches with more than `500` satellite operations, and Oracle batches with more than `10000` satellite operations fall back to a smaller provider-native path or the provider-neutral writer as appropriate. PostgreSQL uses the existing set-based direct or UNNEST path below the staged threshold and uses transient staging plus PostgreSQL COPY for larger eligible ordered batches. MySQL deliberately routes tiny satellite-history batches through provider-neutral fallback while keeping staged bulk for larger eligible ordered batches. DB2 uses its clean-context optimized save strategy for ordinary hub, link, and satellite requests, but does not add a staged bulk lane or provider-native chunk execution in this release. DVault does not provision Docker containers, databases, users, schemas, credentials, or external-provider CI infrastructure; the v0.32 checked-in benchmark bundles are local Podman evidence with preserved run context, not a promise that consumer environments match those timings. The v0.35.0 compatibility baseline does not add provider provisioning or make live external-provider tests mandatory in the default local path.
+Provider-native bulk dispatch is an optimization, not a separate persistence contract. Dirty tracked contexts, multi-active satellite batches, provider-name mismatches, below-threshold PostgreSQL or MySQL staged-bulk batches, SQL Server or Oracle batches outside their native gates, MySQL batches below the 50-operation native gate, SQL Server batches with more than `500` satellite operations, and Oracle batches with more than `10000` satellite operations fall back to a smaller provider-native path or the provider-neutral writer as appropriate. PostgreSQL uses the existing set-based direct or UNNEST path below the staged threshold and uses transient staging plus PostgreSQL COPY for larger eligible ordered batches. MySQL deliberately routes tiny satellite-history batches through provider-neutral fallback while keeping staged bulk for larger eligible ordered batches. DB2 uses its clean-context optimized save strategy for ordinary hub, link, and satellite requests, but does not add a staged bulk lane or provider-native chunk execution in this release. DVault does not provision Docker containers, databases, users, schemas, credentials, or external-provider CI infrastructure; the v0.32 checked-in benchmark bundles are local Podman evidence with preserved run context, not a promise that consumer environments match those timings. The v0.36.0 compatibility baseline does not add provider provisioning or make live external-provider tests mandatory in the default local path.
 
 The provider-specific SQL artifact lane is review-only design-time output. The `sql-artifact` verb can emit a SQL Server `dvault.sql-artifact.v1` dry-run manifest for the documented `provider-native-bulk-ingestion` workload, but it does not emit deployable SQL payload files, auto-generate stored procedures for every provider, auto-discover artifacts at runtime, auto-deploy, auto-invoke, auto-clean up, or synchronize artifacts with EF migrations, live schema, metadata changes, model-first artifacts, support bundles, or benchmark outputs.
 
@@ -1300,7 +1301,7 @@ bash tools/check-format.sh
 
 The normal test run includes package-specific public API snapshot checks for `DCoding.Data.DVault` and the six provider packages. See `docs/quality/api-surface-snapshots.md` for the approved baseline location and the explicit update workflow for intentional API changes.
 
-`bash tools/pack-release-packages.sh` creates the two coordinated package lines under `artifacts/packages/`: eight `8.35.0` packages with `net8.0` assets and EF Core 8 dependency groups, and eight `10.35.0` packages with `net10.0` assets and EF Core 10 dependency groups. `bash tools/verify-packages.sh` inspects those artifacts, expects exactly sixteen DVault `.nupkg` files plus fourteen matching symbol packages for the runtime/provider packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider package depends on the packed `DCoding.Data.DVault` version from the same package line. It also verifies line-specific nuspec dependency groups, expected EF Core, IBM Entity Framework Core, and `Microsoft.Extensions.DependencyInjection.Abstractions` lines, dual `8.35.0` / `10.35.0` README install guidance, and analyzer `PrivateAssets="all"` guidance. The verifier intentionally fails when stale, unexpected, mixed-line, multi-target-combined, or non-packable package artifacts remain in `artifacts/packages/`.
+`bash tools/pack-release-packages.sh` creates the two coordinated package lines under `artifacts/packages/`: eight `8.36.0` packages with `net8.0` assets and EF Core 8 dependency groups, and eight `10.36.0` packages with `net10.0` assets and EF Core 10 dependency groups. `bash tools/verify-packages.sh` inspects those artifacts, expects exactly sixteen DVault `.nupkg` files plus fourteen matching symbol packages for the runtime/provider packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider package depends on the packed `DCoding.Data.DVault` version from the same package line. It also verifies line-specific nuspec dependency groups, expected EF Core, IBM Entity Framework Core, and `Microsoft.Extensions.DependencyInjection.Abstractions` lines, dual `8.36.0` / `10.36.0` README install guidance, and analyzer `PrivateAssets="all"` guidance. The verifier intentionally fails when stale, unexpected, mixed-line, multi-target-combined, or non-packable package artifacts remain in `artifacts/packages/`.
 
 Provider integration tests use stable xUnit trait categories so required local coverage and opt-in external database coverage can be selected explicitly:
 
