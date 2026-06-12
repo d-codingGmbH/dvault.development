@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FBSC9DCB0S58DYFY3TAEZ848",
+  "ticket-type": "task",
+  "title": "Task: Evaluate PostgreSQL bulk strategy gaps",
+  "revision": "06FBSCYV2Z29STNYDRTQSF1700",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/benchmarking",
+    "area/performance",
+    "area/provider-support",
+    "provider/postgres"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FBSB0VYDD4F750GXHCY0J5E0",
+  "release-id": "06FBSAX27W6ZCB62YPJZS475E8",
+  "created-at": "2026-06-12T16:36:28.7747896Z",
+  "updated-at": "2026-06-12T16:39:24.1835484Z"
+}

@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FBSCAJ5HDJH6CR0HZQ4B7H30",
+  "ticket-type": "task",
+  "title": "Task: Implement accepted Oracle bulk improvement",
+  "revision": "06FBSCZ7FG6GEH8QENMPXW1T9C",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/performance",
+    "area/provider-support",
+    "area/testing",
+    "provider/oracle"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FBSB0WN6A04NBF5YBVXQ4W9G",
+  "release-id": "06FBSAX27W6ZCB62YPJZS475E8",
+  "created-at": "2026-06-12T16:36:38.2331068Z",
+  "updated-at": "2026-06-12T16:39:27.3561479Z"
+}

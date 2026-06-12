@@ -1,0 +1,1 @@
+﻿Turn collected evidence into a prioritized provider gap matrix for later save/read strategy work. Acceptance: each gap has provider, scenario, measured evidence or missing-evidence note, expected benefit, and stop condition.

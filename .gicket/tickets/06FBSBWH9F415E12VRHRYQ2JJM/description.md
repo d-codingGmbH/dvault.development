@@ -1,0 +1,1 @@
+﻿Update src/DCoding.Data.DVault.Analyzers/README.md, root README guidance, and package verification if the analyzer asset shape or SDK requirement changes. Acceptance: analyzer installation guidance is not misleading for net8 projects.

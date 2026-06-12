@@ -1,0 +1,1 @@
+﻿Surface the selected hash storage profile in existing diagnostics/support-bundle/explain outputs without leaking sensitive data. Acceptance: binary-first, explicit binary, and hex-compatible profiles are distinguishable in tests.

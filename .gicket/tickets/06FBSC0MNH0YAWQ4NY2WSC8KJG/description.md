@@ -1,0 +1,1 @@
+﻿Add or update focused benchmark evidence comparing binary-first and hex-compatible storage in at least one representative provider scenario. Acceptance: results are stored under artifacts/benchmarks or documented release evidence and include caveats.

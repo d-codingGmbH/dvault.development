@@ -1,0 +1,1 @@
+﻿Document when to use the binary-first profile, when to stay with hex-compatible storage, and why DVault does not provide automatic hash-storage migrations. Acceptance: README/CHANGELOG/release notes consistently describe the recommendation for new projects.

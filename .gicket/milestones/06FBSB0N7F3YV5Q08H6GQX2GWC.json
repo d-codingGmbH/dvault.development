@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestone-id": "06FBSB0N7F3YV5Q08H6GQX2GWC",
+  "name": "v0.37.0 - Analyzer consumer compatibility",
+  "description": "Audit and, if needed, adjust the analyzer package target-framework/assets so net8 consumers can use DVault analyzers with the intended SDK baseline.",
+  "status": "active",
+  "created-at": "2026-06-12T16:30:54.7798683Z"
+}

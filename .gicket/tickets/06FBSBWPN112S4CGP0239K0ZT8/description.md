@@ -1,0 +1,1 @@
+﻿Update README, CHANGELOG, manual NuGet publication guidance, and docs/releases/v0.37.0.md for the accepted dependency-line policy, latest package baseline, analyzer compatibility outcome, and validation evidence. Acceptance: no stale v0.36 dependency matrix remains where v0.37 guidance is expected.

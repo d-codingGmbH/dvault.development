@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestone-id": "06FBSB0NZ1T8D70Z80FD7JQTFR",
+  "name": "v0.37.0 - Compatibility docs and validation",
+  "description": "Update README, manual NuGet publication docs, release notes, and validation evidence for the accepted v0.37 dependency/analyzer compatibility baseline.",
+  "status": "active",
+  "created-at": "2026-06-12T16:30:54.9682813Z"
+}

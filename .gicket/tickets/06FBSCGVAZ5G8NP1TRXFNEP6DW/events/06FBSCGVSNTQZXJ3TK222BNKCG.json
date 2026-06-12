@@ -1,0 +1,14 @@
+{
+  "event-id": "06FBSCGVSNTQZXJ3TK222BNKCG",
+  "occurred-at": "2026-06-12T16:37:29.6774665Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Close MySQL PIT and bridge read gaps",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

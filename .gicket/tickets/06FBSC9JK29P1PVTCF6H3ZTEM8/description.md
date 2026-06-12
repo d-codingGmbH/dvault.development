@@ -1,0 +1,1 @@
+﻿Use the v0.39 evidence matrix to evaluate MySQL multi-row insert, LOAD DATA feasibility, staging, and threshold gaps. Acceptance: produce a small recommendation: implement, tune threshold, document no-op, or defer with reason.

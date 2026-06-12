@@ -1,0 +1,14 @@
+{
+  "event-id": "06FBSC4KB9AERQTB18SATBEPSR",
+  "occurred-at": "2026-06-12T16:35:49.2104725Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Publish provider optimization gap matrix",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

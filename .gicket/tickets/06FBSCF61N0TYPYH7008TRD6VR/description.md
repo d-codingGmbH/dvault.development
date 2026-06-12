@@ -1,0 +1,1 @@
+﻿Define criteria for provider-specific latest-satellite, PIT, and bridge read strategies: supported shapes, SQL boundaries, fallback, diagnostics, benchmark threshold, and no platform behavior. Acceptance: provider read tickets can be closed as no-work if evidence does not meet criteria.

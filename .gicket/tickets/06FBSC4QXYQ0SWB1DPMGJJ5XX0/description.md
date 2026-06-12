@@ -1,0 +1,1 @@
+﻿Update performance documentation and release notes with the v0.39 evidence matrix, caveats, and follow-up recommendations. Acceptance: docs separate measured facts from future optimization ideas.

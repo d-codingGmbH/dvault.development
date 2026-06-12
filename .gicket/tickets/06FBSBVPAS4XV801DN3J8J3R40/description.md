@@ -1,0 +1,1 @@
+﻿Normalize all net10.0 runtime, provider, test, benchmark, and example package references to the accepted latest 10.x baseline. Acceptance: net10.0 package references, tests, benchmarks, examples, and package verifier expectations all agree on the same patch versions.

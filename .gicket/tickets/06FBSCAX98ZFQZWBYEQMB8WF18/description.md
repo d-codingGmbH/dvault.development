@@ -1,0 +1,1 @@
+﻿Document accepted provider bulk changes, no-op decisions, benchmark results, fallback behavior, and provider caveats. Acceptance: README/performance docs/release notes do not overpromise unsupported bulk paths.

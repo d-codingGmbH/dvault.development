@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FBSCGVAZ5G8NP1TRXFNEP6DW",
+  "ticket-type": "task",
+  "title": "Task: Close MySQL PIT and bridge read gaps",
+  "revision": "06FBSD0QWZQ9ET8WT0N0C3VX1M",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/performance",
+    "area/provider-support",
+    "area/read-models",
+    "area/testing",
+    "provider/mysql"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FBSB0ZHPP00Y6PXHR5YG2DPM",
+  "release-id": "06FBSAVBYTWWZ3K6NV1XQQJADR",
+  "created-at": "2026-06-12T16:37:29.6774665Z",
+  "updated-at": "2026-06-12T16:39:39.7510857Z"
+}

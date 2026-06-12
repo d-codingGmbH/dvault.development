@@ -1,0 +1,1 @@
+﻿Use v0.39 evidence and v0.41 criteria to implement or reject an Oracle latest-satellite read strategy improvement. Acceptance: tests, diagnostics, fallback, and benchmark evidence are updated, or no-work-required is documented.

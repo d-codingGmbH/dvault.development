@@ -1,0 +1,1 @@
+﻿Run and record the standard validation evidence after dependency alignment: dotnet build DVault.slnx --nologo, dotnet test DVault.slnx --nologo when feasible, bash tools/pack-release-packages.sh, bash tools/verify-packages.sh, and bash tools/check-format.sh. Acceptance: failures are either fixed or documented with a concrete blocker.

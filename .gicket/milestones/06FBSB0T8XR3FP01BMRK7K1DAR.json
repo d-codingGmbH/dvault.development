@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestone-id": "06FBSB0T8XR3FP01BMRK7K1DAR",
+  "name": "v0.39.0 - Provider gap documentation",
+  "description": "Publish provider gap findings and recommendations without implementing unproven optimizations in the evidence release.",
+  "status": "planned",
+  "created-at": "2026-06-12T16:30:56.0715995Z"
+}

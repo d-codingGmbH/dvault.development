@@ -1,0 +1,14 @@
+{
+  "event-id": "06FBSBWQD3X0FTMBC3ACE6VY98",
+  "occurred-at": "2026-06-12T16:34:44.7129883Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Document v0.37 dependency and analyzer compatibility baseline",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

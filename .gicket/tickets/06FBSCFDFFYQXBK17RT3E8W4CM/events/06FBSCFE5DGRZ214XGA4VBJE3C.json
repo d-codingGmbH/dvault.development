@@ -1,0 +1,14 @@
+{
+  "event-id": "06FBSCFE5DGRZ214XGA4VBJE3C",
+  "occurred-at": "2026-06-12T16:37:17.9955888Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Close PostgreSQL latest-satellite read gap",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

@@ -1,0 +1,1 @@
+﻿Define an explicit new-project profile that selects binary hash-key storage by default without silently changing existing-project behavior. Acceptance: contract names profile entry points, default/compatibility rules, diagnostics, provider responsibilities, non-goals, and caller-owned migration boundaries.

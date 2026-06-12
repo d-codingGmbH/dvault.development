@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FBSC8TS7R98ZEBDKE5XG2KTC",
+  "ticket-type": "story",
+  "title": "Story: Define provider bulk expansion acceptance criteria",
+  "revision": "06FBSDAYGASYSV12AB4D8FV68G",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/story",
+    "area/architecture",
+    "area/performance",
+    "area/provider-support",
+    "area/ef-core"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FBSB0V06BYAP38C31HH3889M",
+  "release-id": "06FBSAX27W6ZCB62YPJZS475E8",
+  "created-at": "2026-06-12T16:36:24.2592721Z",
+  "updated-at": "2026-06-12T16:41:03.3621974Z"
+}

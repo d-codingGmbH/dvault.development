@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FBSCFDFFYQXBK17RT3E8W4CM",
+  "ticket-type": "task",
+  "title": "Task: Close PostgreSQL latest-satellite read gap",
+  "revision": "06FBSD0CHNP5E0GWH6MNW839ZW",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/performance",
+    "area/provider-support",
+    "area/read-models",
+    "area/testing",
+    "provider/postgres"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FBSB0YTBAVEP119Y08RTN3C4",
+  "release-id": "06FBSAVBYTWWZ3K6NV1XQQJADR",
+  "created-at": "2026-06-12T16:37:17.9955888Z",
+  "updated-at": "2026-06-12T16:39:36.8454884Z"
+}

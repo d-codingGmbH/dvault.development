@@ -1,0 +1,1 @@
+﻿Extend benchmark coverage so binary and hex hash storage can be compared across configured providers without making benchmark execution mandatory for consumers. Acceptance: at least SQLite plus any configured external providers can emit comparable binary-vs-hex evidence.

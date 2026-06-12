@@ -1,0 +1,1 @@
+﻿Implement or reject SQL Server PIT/bridge read strategy improvements based on the audit. Acceptance: tests, diagnostics, fallback, and benchmark evidence are updated, or no-work-required is documented.

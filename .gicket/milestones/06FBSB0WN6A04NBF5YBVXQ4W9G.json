@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestone-id": "06FBSB0WN6A04NBF5YBVXQ4W9G",
+  "name": "v0.40.0 - Provider bulk implementations",
+  "description": "Implement only proven provider-specific bulk improvements with tests, diagnostics, fallback, and no platform deployment responsibilities.",
+  "status": "planned",
+  "created-at": "2026-06-12T16:30:56.6814746Z"
+}

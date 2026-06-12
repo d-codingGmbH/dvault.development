@@ -1,0 +1,14 @@
+{
+  "event-id": "06FBSBVPZJTH6BYQ8HYQYXVA40",
+  "occurred-at": "2026-06-12T16:34:36.4124673Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Align net10 dependency references with latest accepted 10.x patches",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

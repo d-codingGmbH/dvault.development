@@ -1,0 +1,1 @@
+﻿Document and, where useful, wire the DB2 optional connection/container lane into provider benchmark instructions. Acceptance: DB2 evidence can be collected with the same provider matrix shape as other providers.

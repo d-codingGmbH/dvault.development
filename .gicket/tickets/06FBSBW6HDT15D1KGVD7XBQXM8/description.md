@@ -1,0 +1,1 @@
+﻿Determine whether DCoding.Data.DVault.Analyzers targeting only net10.0 is acceptable for consumers installing the 8.x package line with net8 projects and common SDK baselines. Acceptance: documented decision with proof, including whether analyzer assets should target netstandard2.0, multi-target, or remain net10.0 with an explicit SDK requirement.

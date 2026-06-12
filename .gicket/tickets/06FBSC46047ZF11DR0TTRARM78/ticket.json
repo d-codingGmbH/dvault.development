@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FBSC46047ZF11DR0TTRARM78",
+  "ticket-type": "task",
+  "title": "Task: Add DB2 benchmark and test lane documentation",
+  "revision": "06FBSCXZE8H3HFY0BPAXB2NVAC",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/benchmarking",
+    "area/provider-support",
+    "area/testing",
+    "area/documentation"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FBSB0SHQ194H6HBDHFZ724C4",
+  "release-id": "06FBSAW8SK6EZN360H9N3ZD6P0",
+  "created-at": "2026-06-12T16:35:45.9236686Z",
+  "updated-at": "2026-06-12T16:39:17.1065305Z"
+}

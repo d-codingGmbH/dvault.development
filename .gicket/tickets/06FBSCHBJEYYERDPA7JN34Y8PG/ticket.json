@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FBSCHBJEYYERDPA7JN34Y8PG",
+  "ticket-type": "task",
+  "title": "Task: Document provider read parity outcomes and benchmarks",
+  "revision": "06FBSCHGRQ8DG00B3FRP392BV0",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/documentation",
+    "area/benchmarking",
+    "area/performance",
+    "area/provider-support",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FBSB108SRM9W6WWHRTADFVVM",
+  "release-id": "06FBSAVBYTWWZ3K6NV1XQQJADR",
+  "created-at": "2026-06-12T16:37:33.8831256Z",
+  "updated-at": "2026-06-12T16:37:35.0456116Z"
+}

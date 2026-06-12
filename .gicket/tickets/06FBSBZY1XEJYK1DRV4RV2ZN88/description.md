@@ -1,0 +1,1 @@
+﻿Implement a small public API or options entry point for new projects to select the binary-first DVault profile. Acceptance: existing HexString-compatible behavior remains the default for existing configuration paths, and tests cover the new profile selection.

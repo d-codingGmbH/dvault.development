@@ -1,0 +1,1 @@
+﻿Implement the analyzer compatibility outcome from the audit. If compatibility requires an asset change, adjust the analyzer project/package layout and tests. If net10.0 remains intentional, add an explicit package/documentation gate so net8 consumers understand the required SDK. Acceptance: analyzer package behavior is verified for the selected 8.x and 10.x consumer story.

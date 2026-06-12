@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FBSC96JQAYEZXHYGS5GB0ESC",
+  "ticket-type": "task",
+  "title": "Task: Evaluate SQL Server bulk strategy gaps",
+  "revision": "06FBSCYSGXTR6QKDKQPC7WPE40",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/benchmarking",
+    "area/performance",
+    "area/provider-support",
+    "provider/sqlserver"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FBSB0VYDD4F750GXHCY0J5E0",
+  "release-id": "06FBSAX27W6ZCB62YPJZS475E8",
+  "created-at": "2026-06-12T16:36:27.3097814Z",
+  "updated-at": "2026-06-12T16:39:23.7832152Z"
+}

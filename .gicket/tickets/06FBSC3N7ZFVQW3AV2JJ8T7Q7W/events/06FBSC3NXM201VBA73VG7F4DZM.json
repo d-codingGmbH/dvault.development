@@ -1,0 +1,14 @@
+{
+  "event-id": "06FBSC3NXM201VBA73VG7F4DZM",
+  "occurred-at": "2026-06-12T16:35:41.6778973Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define provider optimization evidence matrix",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

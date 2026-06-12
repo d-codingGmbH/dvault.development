@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FBSBVPAS4XV801DN3J8J3R40",
+  "ticket-type": "task",
+  "title": "Task: Align net10 dependency references with latest accepted 10.x patches",
+  "revision": "06FBSCWNSN93TFXDFRQM24SN00",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/ef-core",
+    "area/packaging",
+    "area/testing"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FBSB0M9EXC79SK5QSANBAA8M",
+  "release-id": "06FBSASXZZHMEX2KW4THVWJKEW",
+  "created-at": "2026-06-12T16:34:36.4124673Z",
+  "updated-at": "2026-06-12T16:39:06.4451110Z"
+}

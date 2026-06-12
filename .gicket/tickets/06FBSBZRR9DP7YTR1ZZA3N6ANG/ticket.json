@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FBSBZRR9DP7YTR1ZZA3N6ANG",
+  "ticket-type": "story",
+  "title": "Story: Define binary-first new-project hash profile contract",
+  "revision": "06FBSDA9CXMVRCQSPZZ2NZHZM4",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/story",
+    "area/architecture",
+    "area/ef-core",
+    "area/hashing",
+    "area/schema"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FBSB0PPQ650WWHHRQHSDB03M",
+  "release-id": "06FBSAVBR5AHWKVMMR014KGW94",
+  "created-at": "2026-06-12T16:35:09.7536260Z",
+  "updated-at": "2026-06-12T16:40:57.9595697Z"
+}

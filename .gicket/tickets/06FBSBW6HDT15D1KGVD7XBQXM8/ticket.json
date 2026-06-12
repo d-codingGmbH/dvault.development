@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FBSBW6HDT15D1KGVD7XBQXM8",
+  "ticket-type": "story",
+  "title": "Story: Audit analyzer package compatibility for net8 consumers",
+  "revision": "06FBSD9ZNE0RQHMDG6ADDHKZMM",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/story",
+    "area/developer-experience",
+    "area/diagnostics",
+    "area/packaging",
+    "area/api-compatibility"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FBSB0N7F3YV5Q08H6GQX2GWC",
+  "release-id": "06FBSASXZZHMEX2KW4THVWJKEW",
+  "created-at": "2026-06-12T16:34:40.5674138Z",
+  "updated-at": "2026-06-12T16:40:55.4672063Z"
+}

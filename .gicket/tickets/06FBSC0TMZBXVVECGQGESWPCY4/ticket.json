@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FBSC0TMZBXVVECGQGESWPCY4",
+  "ticket-type": "task",
+  "title": "Task: Document binary-first adoption and migration non-goals",
+  "revision": "06FBSCXK0CM5GY4E6VPX029Q04",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/documentation",
+    "area/hashing",
+    "area/schema",
+    "area/api-compatibility"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FBSB0R45T7THA6KW1X824QV0",
+  "release-id": "06FBSAVBR5AHWKVMMR014KGW94",
+  "created-at": "2026-06-12T16:35:18.4849854Z",
+  "updated-at": "2026-06-12T16:39:13.9230122Z"
+}

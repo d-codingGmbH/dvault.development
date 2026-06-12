@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FBSC9QSAAF0J1Y9K27ZAEPDC",
+  "ticket-type": "task",
+  "title": "Task: Evaluate Oracle bulk strategy gaps",
+  "revision": "06FBSCYZ083EQ6DS5QQFJA7PSR",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/benchmarking",
+    "area/performance",
+    "area/provider-support",
+    "provider/oracle"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FBSB0VYDD4F750GXHCY0J5E0",
+  "release-id": "06FBSAX27W6ZCB62YPJZS475E8",
+  "created-at": "2026-06-12T16:36:31.4274224Z",
+  "updated-at": "2026-06-12T16:39:25.1865734Z"
+}

@@ -1,0 +1,1 @@
+﻿Populate the provider optimization matrix for SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2 where connection strings are available. Acceptance: missing external providers are recorded as unavailable, not silently skipped.

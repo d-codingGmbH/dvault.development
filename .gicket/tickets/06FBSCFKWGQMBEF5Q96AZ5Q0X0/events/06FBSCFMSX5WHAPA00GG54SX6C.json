@@ -1,0 +1,14 @@
+{
+  "event-id": "06FBSCFMSX5WHAPA00GG54SX6C",
+  "occurred-at": "2026-06-12T16:37:19.6956596Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Close SQL Server latest-satellite read gap",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

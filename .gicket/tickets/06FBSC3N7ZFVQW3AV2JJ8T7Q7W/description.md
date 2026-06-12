@@ -1,0 +1,1 @@
+﻿Define a comparable evidence matrix for provider optimizations across save, latest-satellite read, PIT read, bridge read, binary-vs-hex storage, DB2, fallback reasons, and stop conditions. Acceptance: implementation tickets in later releases can point to matrix rows instead of ad hoc benchmark notes.

@@ -1,0 +1,1 @@
+﻿Prepare the small v0.37 release checklist content that future release closure can use: selected package lines, dependency versions, analyzer compatibility decision, verification commands, and known limitations. Acceptance: release-note material is ready before v0.38 feature work starts.

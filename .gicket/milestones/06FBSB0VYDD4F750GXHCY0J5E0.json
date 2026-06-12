@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestone-id": "06FBSB0VYDD4F750GXHCY0J5E0",
+  "name": "v0.40.0 - Provider bulk spikes",
+  "description": "Investigate provider-native bulk options in small, evidence-only tickets before implementation choices.",
+  "status": "planned",
+  "created-at": "2026-06-12T16:30:56.4995209Z"
+}

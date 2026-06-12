@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FBSCAX98ZFQZWBYEQMB8WF18",
+  "ticket-type": "task",
+  "title": "Task: Document provider bulk outcomes and benchmarks",
+  "revision": "06FBSCZCKCQ9T05S4MV768HADM",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/documentation",
+    "area/benchmarking",
+    "area/performance",
+    "area/provider-support"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FBSB0XBRMWEXKS3J85T2T70G",
+  "release-id": "06FBSAX27W6ZCB62YPJZS475E8",
+  "created-at": "2026-06-12T16:36:41.0832057Z",
+  "updated-at": "2026-06-12T16:39:28.6675870Z"
+}

@@ -1,0 +1,1 @@
+﻿Update the quickstart path for new projects to show the binary-first profile as the recommended option while keeping an explicit existing-project compatibility note. Acceptance: quickstart examples do not imply automatic migration for existing databases.

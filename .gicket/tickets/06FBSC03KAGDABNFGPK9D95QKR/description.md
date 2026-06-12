@@ -1,0 +1,1 @@
+﻿Add regression coverage proving that current setup paths keep HexString-compatible hash storage unless the new-project binary profile is explicitly selected. Acceptance: package/API snapshots and model mapping tests catch accidental default changes.

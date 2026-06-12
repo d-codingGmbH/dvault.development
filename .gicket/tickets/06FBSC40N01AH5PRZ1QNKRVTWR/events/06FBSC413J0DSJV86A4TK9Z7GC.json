@@ -1,0 +1,14 @@
+{
+  "event-id": "06FBSC413J0DSJV86A4TK9Z7GC",
+  "occurred-at": "2026-06-12T16:35:44.5400351Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add binary-vs-hex provider benchmark dimension",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

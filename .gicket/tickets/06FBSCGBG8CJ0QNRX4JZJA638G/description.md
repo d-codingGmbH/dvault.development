@@ -1,0 +1,1 @@
+﻿Use v0.39 evidence to identify provider-specific PIT and bridge read gaps worth implementing in v0.41. Acceptance: each provider is marked implement, no-op, or defer with reason before provider implementation tickets run.

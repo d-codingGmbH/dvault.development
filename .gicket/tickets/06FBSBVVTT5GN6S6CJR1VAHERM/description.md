@@ -1,0 +1,1 @@
+﻿Update tools/DCoding.Data.DVault.PackageVerification so dependency-group checks match the accepted v0.37 package matrix and continue to detect accidental EF Core line mixing. Acceptance: verifier still rejects unintended cross-line dependencies and passes after the project references are aligned.

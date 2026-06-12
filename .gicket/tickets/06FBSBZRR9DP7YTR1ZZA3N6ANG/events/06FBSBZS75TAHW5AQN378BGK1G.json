@@ -1,0 +1,14 @@
+{
+  "event-id": "06FBSBZS75TAHW5AQN378BGK1G",
+  "occurred-at": "2026-06-12T16:35:09.7536260Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define binary-first new-project hash profile contract",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "release-id": "06FBSASXZZHMEX2KW4THVWJKEW",
+  "name": "v0.37.0 - Dependency Line and Analyzer Compatibility",
+  "description": "Resolve the post-v0.36 dependency update baseline before feature work: keep package lines coherent with latest acceptable provider patches, align package verification/docs, and audit analyzer compatibility for net8 consumers without changing DVault\u0027s EF Core library focus.",
+  "status": "active",
+  "created-at": "2026-06-12T16:29:59.6798312Z"
+}

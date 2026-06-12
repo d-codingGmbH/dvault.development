@@ -1,0 +1,14 @@
+{
+  "event-id": "06FBSCA86F8DM35AZ4ANNM8SJC",
+  "occurred-at": "2026-06-12T16:36:35.5074629Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Implement accepted PostgreSQL bulk improvement",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

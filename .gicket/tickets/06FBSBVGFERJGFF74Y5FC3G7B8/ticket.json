@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FBSBVGFERJGFF74Y5FC3G7B8",
+  "ticket-type": "task",
+  "title": "Task: Align net8 dependency references with accepted package-line policy",
+  "revision": "06FBSCWKAPGR0NZS8T8HRWFENC",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/ef-core",
+    "area/packaging",
+    "area/testing"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FBSB0M9EXC79SK5QSANBAA8M",
+  "release-id": "06FBSASXZZHMEX2KW4THVWJKEW",
+  "created-at": "2026-06-12T16:34:34.9225343Z",
+  "updated-at": "2026-06-12T16:39:05.8131892Z"
+}

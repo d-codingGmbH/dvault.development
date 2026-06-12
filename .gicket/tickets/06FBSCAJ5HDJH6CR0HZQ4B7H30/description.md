@@ -1,0 +1,1 @@
+﻿Implement the accepted Oracle bulk improvement, if the spike recommends one. Acceptance: provider strategy tests, diagnostics/fallback coverage, and benchmark evidence are updated; close with no-work-required if the spike rejects implementation.

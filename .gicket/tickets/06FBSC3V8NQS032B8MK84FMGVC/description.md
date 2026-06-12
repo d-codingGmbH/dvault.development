@@ -1,0 +1,1 @@
+﻿Add or document a machine-readable or consistently structured manifest for provider evidence rows, including provider, strategy, shape, dataset, selected path, fallback causes, and result summary. Acceptance: benchmark and docs tasks can populate the same shape.

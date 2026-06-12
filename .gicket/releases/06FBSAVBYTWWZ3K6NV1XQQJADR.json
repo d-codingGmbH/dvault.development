@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "release-id": "06FBSAVBYTWWZ3K6NV1XQQJADR",
+  "name": "v0.41.0 - Provider Read Strategy Parity",
+  "description": "Improve latest-satellite, PIT, and bridge read strategy parity across non-SQLite providers using provider-specific SQL only where diagnostics and benchmarks show a clear benefit.",
+  "status": "planned",
+  "created-at": "2026-06-12T16:30:11.4468907Z"
+}

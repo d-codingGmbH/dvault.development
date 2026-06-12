@@ -1,0 +1,1 @@
+﻿Document accepted read strategy changes, no-op decisions, benchmark outcomes, fallback behavior, and provider caveats. Acceptance: docs distinguish measured provider wins from unsupported or deferred read shapes.

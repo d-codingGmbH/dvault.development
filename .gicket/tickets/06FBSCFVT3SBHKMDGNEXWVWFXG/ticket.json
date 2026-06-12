@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FBSCFVT3SBHKMDGNEXWVWFXG",
+  "ticket-type": "task",
+  "title": "Task: Close MySQL latest-satellite read gap",
+  "revision": "06FBSD0FWDJBBF4NKRWMZMF11G",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/performance",
+    "area/provider-support",
+    "area/read-models",
+    "area/testing",
+    "provider/mysql"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FBSB0YTBAVEP119Y08RTN3C4",
+  "release-id": "06FBSAVBYTWWZ3K6NV1XQQJADR",
+  "created-at": "2026-06-12T16:37:21.6781475Z",
+  "updated-at": "2026-06-12T16:39:37.6991762Z"
+}

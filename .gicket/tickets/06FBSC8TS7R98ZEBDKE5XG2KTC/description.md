@@ -1,0 +1,1 @@
+﻿Define the narrow acceptance criteria for new provider bulk work: supported shapes, EF Core transaction behavior, provider-neutral fallback, diagnostics, benchmark threshold, and no deployment/runtime-platform responsibilities. Acceptance: provider implementation tickets can be closed as no-work if evidence does not meet the criteria.
