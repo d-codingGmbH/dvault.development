@@ -1,64 +1,59 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Repository and ticket evidence show the explicit `.NET 10 SDK` gate path is already present on `develop`; this ticket has no residual implementation delta and should be treated as a closure-only/no-work-required refinement while docs and verifier ownership stay outside this ticket.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+PO-critic checklist responses
+- critic-item-1: `answered` - No residual implementation work remains for this ticket. `develop` already carries the selected single-asset `net10.0` analyzer packaging plus the explicit `.NET 10 SDK` host guidance, so this ticket should move to closure/no-work-required rather than back to developers.
+- critic-item-2: `answered` - Ownership is now explicit: this ticket is narrowed to closure-only for the already-landed asset-or-SDK-gate decision, and README/package-verifier/validation ownership is removed from this ticket. If any residual docs or verification delta is later proven, that scope belongs only to `06FBSBWH9F415E12VRHRYQ2JJM`.
+- critic-item-3: `answered` - No concrete missing artifact or failing verifier expectation remains. The correct refinement is to remove developer handoff, because the repository already contains the analyzer-host validation lane, the packaged README guidance, and the package-verifier expectations that this ticket previously described.
+- critic-item-4: `answered` - Confirmed. Direct repository evidence already matches the single-asset `net10.0` plus explicit `.NET 10 SDK` gate path, and the current ticket branch carries no non-ticket repository delta. The contract is therefore changed from ambiguous developer handoff to explicit closure/no-work-required.
+- critic-item-5: `answered` - Scope ownership is clarified by removing documentation and verification work from this ticket. `06FBSBWH9F415E12VRHRYQ2JJM` remains the only open ticket that could own that area if a real residual delta later appears; the live `blocks` relation from this ticket is now only stale metadata, not proof of remaining implementation work here.
+
+Clarifications
 - This refinement converts `06FBSBWBT33K7Y1Z6NM71GAQ68` from an implementation handoff into a closure-only/no-work-required ticket because the selected explicit SDK-gate path is already landed on `develop`.
 - This ticket no longer owns README, packaged README, package-verifier, or validation-lane work; that scope is outside this ticket and would belong to `06FBSBWH9F415E12VRHRYQ2JJM` only if a real residual delta were later proven.
 - No child tickets, attachments, planning documents, or relation writes were materialized in this run; the refinement only narrows the contract based on repository and ticket evidence.
 - The live `blocks` relation from `06FBSBWBT33K7Y1Z6NM71GAQ68` to `06FBSBWH9F415E12VRHRYQ2JJM` remains stale metadata in current state and should not be read as evidence of remaining implementation work on this ticket.
 
-### Scope In
+Scope In
 - Confirm that the repository already implements the single-asset `net10.0` analyzer plus explicit `.NET 10 SDK` host requirement baseline.
 - Refine this ticket to closure/no-work-required based on that already-landed baseline.
 - Preserve the compatibility decision boundary so any future expansion beyond the current SDK-gate path is tracked separately.
 
-### Scope Out
+Scope Out
 - Any new analyzer asset retargeting, extra package layout work, README edits, packaged README edits, package-verifier edits, or test changes for the current v0.36 baseline.
 - Documentation or verification implementation work inside this ticket; that area is not owned here.
 - A future pure `.NET 8 SDK` analyzer-consumption compatibility expansion.
 
-## Acceptance Criteria
-- `develop` already shows `DCoding.Data.DVault.Analyzers` as a single `net10.0` analyzer asset packed under `analyzers/dotnet/cs/`.
-- Current installation and publication guidance already states the `.NET 10 SDK` build-host requirement for analyzer consumers on both `8.36.0` and `10.36.0` package lines.
-- Current verification surfaces already enforce that guidance and analyzer asset presence, so this ticket does not hand any further repository delta to developers.
-- This ticket contract no longer claims ownership of documentation or verification implementation work.
-
-## Definition of Done
-- The ticket handoff text clearly marks this ticket as closure-only/no-work-required.
-- Developer handoff ambiguity is removed by excluding README/package-verifier/test ownership from this ticket.
-- Any later compatibility expansion or documentation delta is tracked outside this ticket rather than reopening the already-landed baseline here.
-
-## Implementation Notes
-- Local branch inspection shows `HEAD` at `cb53e9d97d4df1f47eb24ef005a81108db75784f`, equal to the supplied scratch source ref, and `git diff --name-only develop..HEAD` returns only `.gicket` metadata files.
-- `tools/DCoding.Data.DVault.PackageVerification/PackageVerifier.cs` and `tests/DCoding.Data.DVault.Tests/Unit/PackageVerifierTests.cs` already enforce the `.NET 10 SDK` build-host guidance text and analyzer-package asset expectations.
-- `tests/DCoding.Data.DVault.Tests/Integration/DCoding.Data.DVault.Tests.Integration.csproj` already proves the supported `net8.0` consumer target plus `net10.0` analyzer-host lane through the analyzer reference override.
-- Related ticket `06FBSBWH9F415E12VRHRYQ2JJM` remains `todo` with documentation-and-verification wording, but current ticket scope is narrowed so that wording does not duplicate active responsibility here.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should `06FBSBWH9F415E12VRHRYQ2JJM` also be closed or re-scoped as no-work-required, since its stated README/package-verification changes appear already present on `develop`?
 - Should the stale live `blocks` relation `06FBSBWBT33K7Y1Z6NM71GAQ68 -> 06FBSBWH9F415E12VRHRYQ2JJM` be removed as relation housekeeping when that related ticket is next touched?
 
-## Risks
+Risks
 - If the stale live `blocks` relation stays in place, later readers may wrongly infer that `06FBSBWH9F415E12VRHRYQ2JJM` still waits on implementation work from this ticket even though the repository delta is already landed.
 - Reopening this ticket for documentation or verification edits would duplicate scope and recreate ambiguity with `06FBSBWH9F415E12VRHRYQ2JJM`.
 
-## Split Recommendations
+Split recommendations
 - No new split is needed. Keep `06FBSBWBT33K7Y1Z6NM71GAQ68` as closure/no-work-required and use a separate ticket only if a new compatibility delta appears later; if a real docs/verifier delta reappears, `06FBSBWH9F415E12VRHRYQ2JJM` is the existing holder.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 4
+- definition-of-done items: 3
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Implement the analyzer compatibility outcome from the audit. If compatibility requires an asset change, adjust the analyzer project/package layout and tests. If net10.0 remains intentional, add an explicit package/documentation gate so net8 consumers understand the required SDK. Acceptance: analyzer package behavior is verified for the selected 8.x and 10.x consumer story.
+Run mode
+- apply: planned updates are applied after this comment
