@@ -8,12 +8,12 @@ DVault currently publishes the same coordinated package family on two visible co
 
 | Package version line | Target framework | EF Core line |
 | --- | --- | --- |
-| `8.36.0` | `net8.0` | EF Core 8 |
-| `10.36.0` | `net10.0` | EF Core 10 |
+| `8.37.0` | `net8.0` | EF Core 8 |
+| `10.37.0` | `net10.0` | EF Core 10 |
 
-Use exactly one line in a consumer project. Do not mix `8.36.0` and `10.36.0` packages in one project, install example, restored target, or publish approval.
+Use exactly one line in a consumer project. Do not mix `8.37.0` and `10.37.0` packages in one project, install example, restored target, or publish approval.
 
-The `v0.37.0` release label is a repository release tag and release-note label, not a consumer-facing NuGet package version. Do not publish or document `0.37.0`, `8.37.0`, or `10.37.0` package versions from this baseline unless a future packaging change updates the pack script, package verifier, release notes, and installation guidance together.
+The `v0.37.0` release label is a repository release tag and release-note label, not a consumer-facing NuGet package version. Publish or document `8.37.0` and `10.37.0` package versions for this baseline, and do not publish or document a consumer-facing `0.37.0` package version. Future package version movement must update the pack script, package verifier, release notes, and installation guidance together.
 
 ## Package Family
 
@@ -45,7 +45,7 @@ The `MySql.EntityFrameworkCore` pins are target-specific: `8.0.26` for `net8.0` 
 
 `DCoding.Data.DVault.Analyzers` is a local build-time package reference, not a runtime dependency. Keep analyzer references local with `PrivateAssets="all"`.
 
-The analyzer package currently ships one `net10.0` analyzer asset for both coordinated package lines. Supported analyzer consumption for both `8.36.0` and `10.36.0` uses a `.NET 10 SDK` build host, including `net8.0` projects on the `8.36.0` package line. The repository does not validate pure `.NET 8 SDK` analyzer consumption.
+The analyzer package currently ships one `net10.0` analyzer asset for both coordinated package lines. Supported analyzer consumption for both `8.37.0` and `10.37.0` uses a `.NET 10 SDK` build host, including `net8.0` projects on the `8.37.0` package line. The repository does not validate pure `.NET 8 SDK` analyzer consumption.
 
 ## Related Guidance
 
