@@ -1,0 +1,17 @@
+{
+  "event-id": "06FC13GV0VC379B80BFPJTTGQ0",
+  "occurred-at": "2026-06-13T10:36:39.0464894Z",
+  "event-type": "TicketEdited",
+  "actor": {
+    "name": "system",
+    "email": "system@example.invalid"
+  },
+  "payload": {
+    "changes": [
+      {
+        "field": "labels",
+        "op": "set"
+      }
+    ]
+  }
+}

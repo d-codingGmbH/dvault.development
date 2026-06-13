@@ -1,4 +1,4 @@
-﻿# Shared Implementation Standards
+# Shared Implementation Standards
 
 Status: v1 shared standards
 Ticket: 06EXB6NWYVB37D7S74VB3PVTCC

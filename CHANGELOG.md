@@ -2,13 +2,30 @@
 
 This changelog summarizes the public release-note trail. The detailed release records remain under [docs/releases/](docs/releases/); those files are the source of truth for scope, evidence, non-goals, and validation notes.
 
+## v0.37.0 - Dependency Line and Analyzer Compatibility
+
+- Defines the current coordinated documentation baseline for the visible consumer package lines: `8.36.0` / `net8.0` / EF Core 8 and `10.36.0` / `net10.0` / EF Core 10.
+- Records that the v0.37.0 planning label does not introduce consumer-facing `0.37.0`, `8.37.0`, or `10.37.0` package versions.
+- Documents the accepted target-specific dependency matrix:
+
+| Target framework | Provider-neutral EF packages | DB2 | SQLite | MySQL | PostgreSQL | Oracle | SQL Server |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `net8.0` | `Microsoft.EntityFrameworkCore` `8.0.28`, `Microsoft.EntityFrameworkCore.Relational` `8.0.28`, `Microsoft.Extensions.DependencyInjection.Abstractions` `8.0.2` | `IBM.EntityFrameworkCore` `8.0.0.400` | `Microsoft.EntityFrameworkCore.Sqlite` `8.0.28` | `MySql.EntityFrameworkCore` `8.0.26` | `Npgsql.EntityFrameworkCore.PostgreSQL` `8.0.11` | `Oracle.EntityFrameworkCore` `8.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `8.0.28` |
+| `net10.0` | `Microsoft.EntityFrameworkCore` `10.0.9`, `Microsoft.EntityFrameworkCore.Relational` `10.0.9`, `Microsoft.Extensions.DependencyInjection.Abstractions` `10.0.9` | `IBM.EntityFrameworkCore` `10.0.0.100` | `Microsoft.EntityFrameworkCore.Sqlite` `10.0.9` | `MySql.EntityFrameworkCore` `10.0.7` | `Npgsql.EntityFrameworkCore.PostgreSQL` `10.0.2` | `Oracle.EntityFrameworkCore` `10.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `10.0.9` |
+
+- Keeps `DCoding.Data.DVault.Analyzers` as one `net10.0` analyzer asset used through local `PrivateAssets="all"` references on the `.NET 10 SDK` build-host baseline for both coordinated package lines.
+- Carries forward the repository validation evidence story: `dotnet build DVault.slnx --nologo`, `dotnet test DVault.slnx --nologo`, `bash tools/pack-release-packages.sh`, `bash tools/verify-packages.sh`, and `bash tools/check-format.sh`.
+- Leaves package publication, package-version movement, project dependency changes, and pure `.NET 8 SDK` analyzer consumption outside this documentation baseline.
+
+See [DVault v0.37.0 Release Notes](docs/releases/v0.37.0.md).
+
 ## v0.36.0 - Binary Hash-Key Storage Adoption Guidance
 
-- Defines the current coordinated package baseline for `8.36.0` / `net8.0` / EF Core 8 and `10.36.0` / `net10.0` / EF Core 10.
-- Documents `HexString` as the compatible default hash-key storage profile and `Binary` as explicit opt-in physical storage for generated hash-key columns.
-- Keeps public hash-key values as canonical lowercase hexadecimal strings across save, read, diagnostics, and support-bundle boundaries.
-- Carries forward stable hash algorithm-selection guidance and records that algorithm or storage-profile changes are caller-owned compatibility work.
-- Keeps package publication separate from repository package creation and verification.
+- Defined the coordinated package baseline for `8.36.0` / `net8.0` / EF Core 8 and `10.36.0` / `net10.0` / EF Core 10.
+- Documented `HexString` as the compatible default hash-key storage profile and `Binary` as explicit opt-in physical storage for generated hash-key columns.
+- Kept public hash-key values as canonical lowercase hexadecimal strings across save, read, diagnostics, and support-bundle boundaries.
+- Carried forward stable hash algorithm-selection guidance and recorded that algorithm or storage-profile changes are caller-owned compatibility work.
+- Kept package publication separate from repository package creation and verification.
 
 See [DVault v0.36.0 Release Notes](docs/releases/v0.36.0.md).
 

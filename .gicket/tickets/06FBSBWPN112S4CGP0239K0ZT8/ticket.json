@@ -3,20 +3,19 @@
   "ticket-id": "06FBSBWPN112S4CGP0239K0ZT8",
   "ticket-type": "task",
   "title": "Task: Document v0.37 dependency and analyzer compatibility baseline",
-  "revision": "06FBSDAATPQ47KA7VASBZ7NWCG",
-  "status": "todo",
+  "revision": "06FC1C1EBHBX2R69J1XH07SGTC",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
     "area/documentation",
+    "area/ef-core",
     "area/packaging",
-    "area/ef-core"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FBSB0NZ1T8D70Z80FD7JQTFR",
   "release-id": "06FBSASXZZHMEX2KW4THVWJKEW",
   "created-at": "2026-06-12T16:34:44.7129883Z",
-  "updated-at": "2026-06-12T16:40:58.3251181Z"
+  "updated-at": "2026-06-13T11:13:52.2205828Z"
 }
