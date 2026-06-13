@@ -4,7 +4,7 @@ Ticket: `06FBSBW6HDT15D1KGVD7XBQXM8`
 
 ## Decision
 
-For the current v0.36.x compatibility contract, keep `DCoding.Data.DVault.Analyzers` on one `net10.0` analyzer asset and treat the `.NET 10 SDK` as the supported build-host baseline for both the `8.36.0` and `10.36.0` package lines.
+For the current v0.37.0 compatibility baseline, keep `DCoding.Data.DVault.Analyzers` on one `net10.0` analyzer asset and treat the `.NET 10 SDK` as the supported build-host baseline for both the visible `8.36.0` and `10.36.0` package lines.
 
 The current repository evidence does not prove support for consuming the analyzer package from a pure `.NET 8 SDK` baseline. If that baseline becomes a product requirement, the analyzer asset target and its verification lane must change explicitly.
 

@@ -26,7 +26,7 @@ The current v0.37.0 documentation baseline uses two consumer package-version lin
 | `8.36.0` | `net8.0` | EF Core 8 |
 | `10.36.0` | `net10.0` | EF Core 10 |
 
-Do not publish or document a consumer-facing `0.37.0`, `8.37.0`, or `10.37.0` package version from the v0.37.0 planning label. Do not combine `8.36.0` and `10.36.0` packages in one consumer install example or one publish approval.
+Do not publish or document a consumer-facing `0.37.0`, `8.37.0`, or `10.37.0` package version from the v0.37.0 release label. Do not combine `8.36.0` and `10.36.0` packages in one consumer install example or one publish approval.
 
 The `src/DCoding.Data` project is a non-packable source-root build anchor for the namespace family. It is not a NuGet publication artifact and is outside the coordinated publication scope.
 
@@ -47,7 +47,7 @@ Before final publish approval, the maintainer performing the release must confir
 - all required pre-publish validation commands have passed against the same checkout and selected package version
 - package verification confirms each provider package depends on the packed `DCoding.Data.DVault` package version from the same package-version line and carries only that line's target-framework dependency group
 - package verification confirms the packaged README guidance separates `8.36.0` for `net8.0` and EF Core 8 from `10.36.0` for `net10.0` and EF Core 10
-- release notes and README guidance explain that `v0.37.0` is the planning or release-note label, not a consumer NuGet package version, and keep the dependency-line, analyzer-compatibility, manual-publication, and validation guidance aligned with the published package-version lines
+- release notes and README guidance explain that `v0.37.0` is the release tag and release-note label, not a consumer NuGet package version, and keep the dependency-line, analyzer-compatibility, manual-publication, and validation guidance aligned with the published package-version lines
 - final publish approval has been recorded before the first package push
 
 ## Release Notes Evidence
@@ -92,7 +92,7 @@ The analyzer package is a local build-time asset, not a runtime dependency. `DCo
 
 ## Version And Dependency Alignment
 
-Use one aligned package version across all eight packages in the selected package-version line. For the v0.37.0 documentation baseline, validate `8.36.0` and `10.36.0` as separate publish approvals; do not publish `0.37.0`, `8.37.0`, or `10.37.0` from the planning label and do not mix packages from both lines in one consumer example or approval record. The `v0.37.0` Git tag is the release-note and planning tag. Package versions for the visible consumer lines are set explicitly by `bash tools/pack-release-packages.sh` through MinVer version overrides. Before final approval, inspect the package outputs produced by the release pack script through the package verification gate:
+Use one aligned package version across all eight packages in the selected package-version line. For the v0.37.0 documentation baseline, validate `8.36.0` and `10.36.0` as separate publish approvals; do not publish `0.37.0`, `8.37.0`, or `10.37.0` from the release label and do not mix packages from both lines in one consumer example or approval record. The `v0.37.0` Git tag is the release-note tag. Package versions for the visible consumer lines are set explicitly by `bash tools/pack-release-packages.sh` through MinVer version overrides. Before final approval, inspect the package outputs produced by the release pack script through the package verification gate:
 
 ```sh
 bash tools/verify-packages.sh

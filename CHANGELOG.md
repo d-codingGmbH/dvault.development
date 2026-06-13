@@ -4,8 +4,8 @@ This changelog summarizes the public release-note trail. The detailed release re
 
 ## v0.37.0 - Dependency Line and Analyzer Compatibility
 
-- Defines the current coordinated documentation baseline for the visible consumer package lines: `8.36.0` / `net8.0` / EF Core 8 and `10.36.0` / `net10.0` / EF Core 10.
-- Records that the v0.37.0 planning label does not introduce consumer-facing `0.37.0`, `8.37.0`, or `10.37.0` package versions.
+- Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.36.0` / `net8.0` / EF Core 8 and `10.36.0` / `net10.0` / EF Core 10.
+- Records that the v0.37.0 release label does not introduce consumer-facing `0.37.0`, `8.37.0`, or `10.37.0` package versions.
 - Documents the accepted target-specific dependency matrix:
 
 | Target framework | Provider-neutral EF packages | DB2 | SQLite | MySQL | PostgreSQL | Oracle | SQL Server |
@@ -15,7 +15,7 @@ This changelog summarizes the public release-note trail. The detailed release re
 
 - Keeps `DCoding.Data.DVault.Analyzers` as one `net10.0` analyzer asset used through local `PrivateAssets="all"` references on the `.NET 10 SDK` build-host baseline for both coordinated package lines.
 - Carries forward the repository validation evidence story: `dotnet build DVault.slnx --nologo`, `dotnet test DVault.slnx --nologo`, `bash tools/pack-release-packages.sh`, `bash tools/verify-packages.sh`, and `bash tools/check-format.sh`.
-- Leaves package publication, package-version movement, project dependency changes, and pure `.NET 8 SDK` analyzer consumption outside this documentation baseline.
+- Leaves package publication, package-version movement, runtime behavior changes, analyzer retargeting, and pure `.NET 8 SDK` analyzer consumption outside this baseline.
 
 See [DVault v0.37.0 Release Notes](docs/releases/v0.37.0.md).
 

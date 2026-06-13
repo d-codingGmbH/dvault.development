@@ -3,6 +3,6 @@
   "milestone-id": "06FBSB0M9EXC79SK5QSANBAA8M",
   "name": "v0.37.0 - Dependency matrix and package verifier",
   "description": "Decide and enforce the package dependency matrix after the library updates: latest acceptable patches per package line, package verifier alignment, and build/pack validation.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-12T16:30:54.5399592Z"
 }
