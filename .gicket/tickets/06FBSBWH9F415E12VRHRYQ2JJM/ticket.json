@@ -3,20 +3,19 @@
   "ticket-id": "06FBSBWH9F415E12VRHRYQ2JJM",
   "ticket-type": "task",
   "title": "Task: Update analyzer packaging docs and verification for compatibility outcome",
-  "revision": "06FBSCWZ0WP7MHSMYNTY3HWYTG",
-  "status": "todo",
+  "revision": "06FC01YTCQM3DKXB1QSQJ7C3FC",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
-    "area/documentation",
     "area/diagnostics",
-    "area/packaging"
+    "area/documentation",
+    "area/packaging",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FBSB0N7F3YV5Q08H6GQX2GWC",
   "release-id": "06FBSASXZZHMEX2KW4THVWJKEW",
   "created-at": "2026-06-12T16:34:43.2649569Z",
-  "updated-at": "2026-06-12T16:39:08.8076125Z"
+  "updated-at": "2026-06-13T08:10:00.6773289Z"
 }

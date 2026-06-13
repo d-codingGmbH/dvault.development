@@ -16,6 +16,14 @@ public sealed class PackageVerifier {
   private const string ExpectedReadmeFile = "README.md";
   private const string ExpectedAnalyzerBuildHostGuidance = "Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.36.0` package line.";
 
+  private static readonly string[] DisallowedAnalyzerBuildHostContradictionFragments = [
+      "Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 8 SDK` host",
+      "This repository validates pure `.NET 8 SDK` analyzer consumption",
+      "The current analyzer package supports pure `.NET 8 SDK` analyzer consumption",
+      "does not require a `.NET 10 SDK` host",
+      "without a `.NET 10 SDK` host",
+  ];
+
   private static readonly ExpectedPackageLine[] ExpectedPackageLines = [
       new("8.36.0", Net8TargetFramework, "EF Core 8"),
       new("10.36.0", Net10TargetFramework, "EF Core 10"),
@@ -439,6 +447,7 @@ public sealed class PackageVerifier {
 
     ValidateReadmeDoesNotUseDisallowedInstallVersions(archive, issues);
     ValidateReadmeContainsAnalyzerBuildHostGuidance(archive, issues);
+    ValidateReadmeDoesNotContradictAnalyzerBuildHostGuidance(archive, issues);
 
     if (ExpectedPackageById.TryGetValue(archive.Id, out var currentPackage) && currentPackage.IsAnalyzer) {
       foreach (var packageLine in ExpectedPackageLines) {
@@ -508,6 +517,18 @@ public sealed class PackageVerifier {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
           "Packaged README.md must state that DCoding.Data.DVault.Analyzers is supported on the .NET 10 SDK build-host baseline, including net8.0 projects using the 8.36.0 package line."));
+    }
+  }
+
+  private static void ValidateReadmeDoesNotContradictAnalyzerBuildHostGuidance(
+      PackageArchive archive,
+      List<PackageVerificationIssue> issues) {
+    foreach (var disallowedFragment in DisallowedAnalyzerBuildHostContradictionFragments) {
+      if (archive.ReadmeText?.Contains(disallowedFragment, StringComparison.Ordinal) == true) {
+        issues.Add(new PackageVerificationIssue(
+            archive.Id,
+            "Packaged README.md must not contradict the .NET 10 SDK build-host baseline for DCoding.Data.DVault.Analyzers; remove unsupported analyzer-host claim '" + disallowedFragment + "'."));
+      }
     }
   }
 

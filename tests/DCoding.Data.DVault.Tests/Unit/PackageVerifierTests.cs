@@ -242,6 +242,42 @@ public sealed class PackageVerifierTests {
   }
 
   [Fact]
+  public void RuntimeReadmeMustNotContradictAnalyzerBuildHostSdkBaseline() {
+    using var packageDirectory = PackageDirectory.Create();
+    var options = CreatePackageOptions();
+    options[CorePackageId].ReadmeText =
+        CreateRuntimePackageReadme() +
+        "Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 8 SDK` host.\n";
+    WritePackageMatrix(packageDirectory.Path, options);
+
+    var result = Verify(packageDirectory.Path);
+
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == CorePackageId &&
+            issue.Message.Contains("must not contradict the .NET 10 SDK build-host baseline", StringComparison.Ordinal) &&
+            issue.Message.Contains(".NET 8 SDK", StringComparison.Ordinal));
+  }
+
+  [Fact]
+  public void AnalyzerReadmeMustNotContradictAnalyzerBuildHostSdkBaseline() {
+    using var packageDirectory = PackageDirectory.Create();
+    var options = CreatePackageOptions();
+    options["DCoding.Data.DVault.Analyzers"].ReadmeText =
+        CreateAnalyzerPackageReadme("DCoding.Data.DVault.Analyzers") +
+        "The current analyzer package supports pure `.NET 8 SDK` analyzer consumption.\n";
+    WritePackageMatrix(packageDirectory.Path, options);
+
+    var result = Verify(packageDirectory.Path);
+
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == "DCoding.Data.DVault.Analyzers" &&
+            issue.Message.Contains("must not contradict the .NET 10 SDK build-host baseline", StringComparison.Ordinal) &&
+            issue.Message.Contains("pure `.NET 8 SDK` analyzer consumption", StringComparison.Ordinal));
+  }
+
+  [Fact]
   public void ReadmeMustNotUseStaleOrPlanningReleaseInstallVersions() {
     using var packageDirectory = PackageDirectory.Create();
     var options = CreatePackageOptions();
