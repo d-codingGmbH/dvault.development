@@ -3,21 +3,20 @@
   "ticket-id": "06FBSBN23A20NX2K0YAXZ40ZGR",
   "ticket-type": "story",
   "title": "Story: Codify dependency-line policy after package updates",
-  "revision": "06FBSD9W6P7X513E9M0JP67SRW",
-  "status": "todo",
+  "revision": "06FBX2EWB6B1R13GFX1CV88MJ0",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
+    "area/api-compatibility",
     "area/architecture",
     "area/ef-core",
     "area/packaging",
-    "area/api-compatibility"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FBSB0M9EXC79SK5QSANBAA8M",
   "release-id": "06FBSASXZZHMEX2KW4THVWJKEW",
   "created-at": "2026-06-12T16:33:42.0453840Z",
-  "updated-at": "2026-06-12T16:40:54.5811162Z"
+  "updated-at": "2026-06-13T01:12:46.4253872Z"
 }

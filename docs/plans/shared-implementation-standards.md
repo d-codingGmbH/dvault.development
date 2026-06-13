@@ -1,4 +1,4 @@
-# Shared Implementation Standards
+﻿# Shared Implementation Standards
 
 Status: v1 shared standards
 Ticket: 06EXB6NWYVB37D7S74VB3PVTCC
@@ -113,24 +113,24 @@ The planning release number is not the consumer-facing NuGet package version. `v
 
 Do not publish or document a consumer-facing `0.36.0` DVault package version for this planning release. Do not combine `8.36.0` and `10.36.0` packages in one published artifact family or consumer example.
 
-Each resolved target must use exactly one compatible EF/provider dependency line. Runtime, provider, integration-test, benchmark, example, and verifier project files may use conditional `PackageReference` entries only for target-framework selection and for the existing opt-in external-provider test switches. A single resolved target must not restore both the 8.x and 10.x dependency lines together.
+Each resolved target must use exactly one compatible EF/provider dependency line. Runtime, provider, integration-test, benchmark, example, and verifier project files may use conditional `PackageReference` entries only for target-framework selection and for the existing opt-in external-provider test switches. A single resolved target must not restore both the 8.x and 10.x dependency lines together. Patch movement is allowed only within the selected target major line and must be reflected together in the project files, matrix tests, package verifier, and current documentation baseline.
 
 Provider-neutral EF Core, `Microsoft.EntityFrameworkCore.Relational`, and `Microsoft.Extensions.DependencyInjection.Abstractions` references must stay on the selected target's EF Core major line. Patch updates may advance within that line to the latest accepted repository baseline, but they must not jump to a newer EF/DI major line only because the target framework can restore it. The current accepted provider-neutral baseline is `8.0.28` / `8.0.28` / `8.0.2` for `net8.0` and `10.0.9` / `10.0.9` / `10.0.9` for `net10.0`.
 
-The required provider package evidence for the compatibility lines is:
+The required EF/provider package evidence for the compatibility lines is:
 
-| Target framework | DB2 | SQLite | MySQL | PostgreSQL | Oracle | SQL Server |
-| --- | --- | --- | --- | --- | --- | --- |
-| `net8.0` | `IBM.EntityFrameworkCore` `8.0.0.400` | `Microsoft.EntityFrameworkCore.Sqlite` `8.0.28` | `MySql.EntityFrameworkCore` `8.0.26` | `Npgsql.EntityFrameworkCore.PostgreSQL` `8.0.11` | `Oracle.EntityFrameworkCore` `8.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `8.0.28` |
-| `net10.0` | `IBM.EntityFrameworkCore` `10.0.0.100` | `Microsoft.EntityFrameworkCore.Sqlite` `10.0.9` | `MySql.EntityFrameworkCore` `10.0.7` | `Npgsql.EntityFrameworkCore.PostgreSQL` `10.0.2` | `Oracle.EntityFrameworkCore` `10.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `10.0.9` |
+| Target framework | Provider-neutral EF packages | DB2 | SQLite | MySQL | PostgreSQL | Oracle | SQL Server |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `net8.0` | `Microsoft.EntityFrameworkCore` `8.0.28`, `Microsoft.EntityFrameworkCore.Relational` `8.0.28`, `Microsoft.Extensions.DependencyInjection.Abstractions` `8.0.2` | `IBM.EntityFrameworkCore` `8.0.0.400` | `Microsoft.EntityFrameworkCore.Sqlite` `8.0.28` | `MySql.EntityFrameworkCore` `8.0.26` | `Npgsql.EntityFrameworkCore.PostgreSQL` `8.0.11` | `Oracle.EntityFrameworkCore` `8.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `8.0.28` |
+| `net10.0` | `Microsoft.EntityFrameworkCore` `10.0.9`, `Microsoft.EntityFrameworkCore.Relational` `10.0.9`, `Microsoft.Extensions.DependencyInjection.Abstractions` `10.0.9` | `IBM.EntityFrameworkCore` `10.0.0.100` | `Microsoft.EntityFrameworkCore.Sqlite` `10.0.9` | `MySql.EntityFrameworkCore` `10.0.7` | `Npgsql.EntityFrameworkCore.PostgreSQL` `10.0.2` | `Oracle.EntityFrameworkCore` `10.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `10.0.9` |
 
-Provider-specific references must follow the same target-specific major-line rule. The current visible repository baseline keeps `MySql.EntityFrameworkCore` on `8.0.26` for `net8.0` integration coverage and `10.0.7` for `net10.0` coverage, so downstream tests and documentation must describe those as target-specific accepted baselines instead of as a standing cross-line exception or permission for arbitrary mixed-line resolution.
+Provider-neutral EF Core references, provider packages, integration tests, matrix tests, release notes, and package verifier expectations must follow the selected target's EF Core major line. The `MySql.EntityFrameworkCore` pins are target-specific: `8.0.26` for `net8.0` and `10.0.7` for `net10.0`. Downstream tests and documentation must describe those as target-specific accepted baselines rather than as a standing cross-line exception or permission for arbitrary mixed-line resolution.
 
 `DCoding.Data.DVault.Db2` registers `AddDVaultDb2()`, DB2 provider behavior for `IBM.EntityFrameworkCore`, the `db2-v1` provider capability profile, a diagnostics-gated optimized clean-context save strategy for ordinary hub, link, and satellite rows, and diagnostics-gated PIT/bridge read dispatch. DB2 still does not add optimized latest-satellite read dispatch, a staged bulk path, provider-native chunk execution, a live-schema reader, container provisioning, or a default CI database requirement.
 
 `DCoding.Data.DVault.Analyzers` remains coordinated family tooling, not a runtime dependency. Consuming projects should keep analyzer/source-generator references local with `PrivateAssets="all"`. Package verification for the analyzer line must prove analyzer assets are present, while runtime package verification must not treat the analyzer as a transitive runtime dependency.
 
-Downstream package verification, matrix tests, release notes, README guidance, and CI documentation are incomplete if they blur planning release `v0.36.0` with package versions `8.36.0` and `10.36.0`, omit one of the required provider pins above, omit the DB2 package from the eight-package family, allow a mixed 8.x/10.x restored target, overstate DB2 beyond the registered save and PIT/bridge read strategies, overstate stable hash opt-in ids as security or compliance controls, overstate binary hash-key storage as an automatic migration or public byte-key contract, or export analyzer assets as runtime dependencies.
+Downstream package verification, matrix tests, release notes, README guidance, and CI documentation are incomplete if they blur planning release `v0.36.0` with package versions `8.36.0` and `10.36.0`, omit one of the required EF/provider pins above, omit the DB2 package from the eight-package family, allow a mixed 8.x/10.x restored target, overstate DB2 beyond the registered save and PIT/bridge read strategies, overstate stable hash opt-in ids as security or compliance controls, overstate binary hash-key storage as an automatic migration or public byte-key contract, or export analyzer assets as runtime dependencies.
 
 ## V0.33 Compatibility Contract
 
