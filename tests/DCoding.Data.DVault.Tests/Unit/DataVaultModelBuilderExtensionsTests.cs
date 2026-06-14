@@ -48,6 +48,27 @@ public sealed class DataVaultModelBuilderExtensionsTests {
 
     Assert.NotNull(annotation);
     Assert.Same(DataVaultConventions.Default, annotation.Value);
+    Assert.Equal("default", Assert.IsType<DataVaultConventions>(annotation.Value).ProfileName);
+    Assert.Equal(
+        "sqlite-v1",
+        Assert.IsType<string>(modelBuilder.Model.FindAnnotation(DataVaultAnnotationNames.ProviderProfile)?.Value));
+  }
+
+  [Fact]
+  public void UseDataVaultBinaryFirstProfileReturnsSameBuilderAndStoresNamedConventionsAnnotation() {
+    var modelBuilder = CreateModelBuilder();
+
+    var result = modelBuilder.UseDataVaultBinaryFirstProfile();
+
+    Assert.Same(modelBuilder, result);
+
+    var conventions = Assert.IsType<DataVaultConventions>(
+        modelBuilder.Model.FindAnnotation(DataVaultAnnotationNames.Conventions)?.Value);
+
+    Assert.Equal("sha256-v1", conventions.StableHashAlgorithmId);
+    Assert.Equal(32, conventions.StableHashDigestByteLength);
+    Assert.Equal(DataVaultHashKeyStorageProfile.Binary, conventions.HashKeyStorageProfile);
+    Assert.Equal("binary-first", conventions.ProfileName);
     Assert.Equal(
         "sqlite-v1",
         Assert.IsType<string>(modelBuilder.Model.FindAnnotation(DataVaultAnnotationNames.ProviderProfile)?.Value));
@@ -74,6 +95,19 @@ public sealed class DataVaultModelBuilderExtensionsTests {
         modelBuilder!.UseDataVault(DataVaultProviderCapabilityProfiles.Oracle));
     var profileException = Assert.Throws<ArgumentNullException>(() =>
         CreateModelBuilder().UseDataVault(null!));
+
+    Assert.Equal("modelBuilder", modelBuilderException.ParamName);
+    Assert.Equal("providerCapabilities", profileException.ParamName);
+  }
+
+  [Fact]
+  public void UseDataVaultBinaryFirstProfileRejectsNullArguments() {
+    ModelBuilder? modelBuilder = null;
+
+    var modelBuilderException = Assert.Throws<ArgumentNullException>(() =>
+        modelBuilder!.UseDataVaultBinaryFirstProfile(DataVaultProviderCapabilityProfiles.Oracle));
+    var profileException = Assert.Throws<ArgumentNullException>(() =>
+        CreateModelBuilder().UseDataVaultBinaryFirstProfile(null!));
 
     Assert.Equal("modelBuilder", modelBuilderException.ParamName);
     Assert.Equal("providerCapabilities", profileException.ParamName);

@@ -19,6 +19,15 @@ public static class DataVaultModelBuilderExtensions {
   }
 
   /// <summary>
+  /// Records DVault's named binary-first conventions profile on the Entity Framework model.
+  /// </summary>
+  /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
+  /// <returns>The same model builder so Entity Framework model configuration can continue fluently.</returns>
+  public static ModelBuilder UseDataVaultBinaryFirstProfile(this ModelBuilder modelBuilder) {
+    return modelBuilder.UseDataVaultBinaryFirstProfile(DefaultProviderCapabilities);
+  }
+
+  /// <summary>
   /// Records the provider-neutral DVault default conventions and selected provider capability profile on the Entity Framework model.
   /// </summary>
   /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
@@ -31,6 +40,26 @@ public static class DataVaultModelBuilderExtensions {
     ArgumentNullException.ThrowIfNull(providerCapabilities);
 
     UseDataVaultCore(modelBuilder, providerCapabilities);
+
+    return modelBuilder;
+  }
+
+  /// <summary>
+  /// Records DVault's named binary-first conventions profile and selected provider capability profile on the Entity Framework model.
+  /// </summary>
+  /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
+  /// <param name="providerCapabilities">The provider capability profile used when projecting Data Vault metadata.</param>
+  /// <returns>The same model builder so Entity Framework model configuration can continue fluently.</returns>
+  public static ModelBuilder UseDataVaultBinaryFirstProfile(
+      this ModelBuilder modelBuilder,
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    ArgumentNullException.ThrowIfNull(modelBuilder);
+    ArgumentNullException.ThrowIfNull(providerCapabilities);
+
+    UseDataVaultCore(
+        modelBuilder,
+        providerCapabilities,
+        CreateBinaryFirstConventions(modelBuilder, providerCapabilities));
 
     return modelBuilder;
   }
@@ -243,10 +272,16 @@ public static class DataVaultModelBuilderExtensions {
         modelConventions?.StableHashDigestByteLength ??
         currentHashKeyMapping.DigestByteLength ??
         DataVaultConventions.Default.StableHashDigestByteLength;
+    var conventionsProfileName = conventions?.ProfileName ??
+        modelConventions?.ProfileName ??
+        (providerHasNonDefaultHashShape
+            ? DataVaultConventions.ExplicitProviderProfileName
+            : DataVaultConventions.Default.ProfileName);
     conventions = DataVaultConventions.CreateWithStableHashAlgorithm(
         stableHashAlgorithmId,
         stableHashDigestByteLength,
-        hashKeyStorageProfile);
+        hashKeyStorageProfile,
+        conventionsProfileName);
     var projectedProviderCapabilities = providerCapabilities.WithHashKeyStorageProfile(
         hashKeyStorageProfile,
         stableHashAlgorithmId,
@@ -256,6 +291,23 @@ public static class DataVaultModelBuilderExtensions {
     modelBuilder.Model.SetAnnotation(DataVaultAnnotationNames.ProviderProfile, projectedProviderCapabilities.ProfileName);
 
     return projectedProviderCapabilities;
+  }
+
+  private static DataVaultConventions CreateBinaryFirstConventions(
+      ModelBuilder modelBuilder,
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    var currentHashKeyMapping = providerCapabilities.GetRequiredTypeMapping(DataVaultLogicalPropertyKind.HashKey);
+    var annotatedConventions = modelBuilder.Model.FindAnnotation(DataVaultAnnotationNames.Conventions)?.Value as DataVaultConventions;
+
+    return DataVaultConventions.CreateWithStableHashAlgorithm(
+        annotatedConventions?.StableHashAlgorithmId ??
+            currentHashKeyMapping.StableHashAlgorithmId ??
+            DataVaultConventions.Default.StableHashAlgorithmId,
+        annotatedConventions?.StableHashDigestByteLength ??
+            currentHashKeyMapping.DigestByteLength ??
+            DataVaultConventions.Default.StableHashDigestByteLength,
+        DataVaultHashKeyStorageProfile.Binary,
+        DataVaultConventions.BinaryFirstProfileName);
   }
 
   private static bool HasNonDefaultHashKeyShape(DataVaultProviderTypeMapping mapping) {

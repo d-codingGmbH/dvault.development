@@ -12,6 +12,10 @@ public sealed class DataVaultOptions {
   private ServiceDescriptor? _metadataRegistryDescriptor;
   private ServiceDescriptor? _stableHashServiceDescriptor;
   private ServiceDescriptor? _conventionsDescriptor;
+  private string _stableHashAlgorithmId = DataVaultConventions.Default.StableHashAlgorithmId;
+  private int _stableHashDigestByteLength = DataVaultConventions.Default.StableHashDigestByteLength;
+  private DataVaultHashKeyStorageProfile _hashKeyStorageProfile = DataVaultConventions.Default.HashKeyStorageProfile;
+  private string _conventionsProfileName = DataVaultConventions.Default.ProfileName;
   private readonly List<ServiceDescriptor> _providerBehaviorDescriptors = [];
 
   /// <summary>
@@ -67,12 +71,23 @@ public sealed class DataVaultOptions {
   /// <returns>The current options instance.</returns>
   public DataVaultOptions UseStableHashAlgorithm(string algorithmId) {
     var stableHashService = BuiltInStableHashService.Create(algorithmId);
+    var digest = stableHashService.ComputeHash(string.Empty);
 
     _stableHashServiceDescriptor = ServiceDescriptor.Singleton(stableHashService);
-    _conventionsDescriptor = ServiceDescriptor.Singleton(
-        DataVaultConventions.CreateWithStableHashAlgorithm(
-            stableHashService.AlgorithmId,
-            stableHashService.ComputeHash(string.Empty).DigestByteLength));
+    _stableHashAlgorithmId = stableHashService.AlgorithmId;
+    _stableHashDigestByteLength = digest.DigestByteLength;
+    RefreshConventionsDescriptor();
+    return this;
+  }
+
+  /// <summary>
+  /// Selects DVault's named binary-first profile for generated hash-key storage while preserving lowercase hexadecimal public values.
+  /// </summary>
+  /// <returns>The current options instance.</returns>
+  public DataVaultOptions UseBinaryFirstProfile() {
+    _hashKeyStorageProfile = DataVaultHashKeyStorageProfile.Binary;
+    _conventionsProfileName = DataVaultConventions.BinaryFirstProfileName;
+    RefreshConventionsDescriptor();
     return this;
   }
 
@@ -158,5 +173,14 @@ public sealed class DataVaultOptions {
     }
 
     services.Add(descriptor);
+  }
+
+  private void RefreshConventionsDescriptor() {
+    _conventionsDescriptor = ServiceDescriptor.Singleton(
+        DataVaultConventions.CreateWithStableHashAlgorithm(
+            _stableHashAlgorithmId,
+            _stableHashDigestByteLength,
+            _hashKeyStorageProfile,
+            _conventionsProfileName));
   }
 }

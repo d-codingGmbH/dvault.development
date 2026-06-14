@@ -488,6 +488,41 @@ public sealed class DataVaultEfMetadataTranslationTests {
         DataVaultLogicalPropertyKind.ParticipantReference);
   }
 
+  [Fact]
+  public void ApplyDataVaultMetadataBinaryFirstConventionsProfileProjectsBinaryKeysAndReferences() {
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.UseDataVaultBinaryFirstProfile();
+    modelBuilder.ApplyDataVaultMetadata(CreateBridgeMetadataModel(), DataVaultProviderCapabilityProfiles.SqlServer);
+
+    var conventions = Assert.IsType<DataVaultConventions>(
+        modelBuilder.Model.FindAnnotation(DataVaultAnnotationNames.Conventions)?.Value);
+
+    Assert.Equal("binary-first", conventions.ProfileName);
+    Assert.Equal(DataVaultHashKeyStorageProfile.Binary, conventions.HashKeyStorageProfile);
+    AssertBinaryHashKeyProperty(
+        FindEntity(modelBuilder.Model, "HubCustomer"),
+        "CustomerHashKey",
+        DataVaultLogicalPropertyKind.HashKey,
+        "varbinary(32)",
+        "sha256-v1",
+        32);
+    AssertBinaryHashKeyProperty(
+        FindEntity(modelBuilder.Model, "LinkCustomerOrder"),
+        "OrderHashKey",
+        DataVaultLogicalPropertyKind.ParticipantReference,
+        "varbinary(32)",
+        "sha256-v1",
+        32);
+    AssertBinaryHashKeyProperty(
+        FindEntity(modelBuilder.Model, "BridgeCustomerOrder"),
+        "CustomerHashKey",
+        DataVaultLogicalPropertyKind.ParticipantReference,
+        "varbinary(32)",
+        "sha256-v1",
+        32);
+  }
+
   [Theory]
   [InlineData("sha256-v1", 32)]
   [InlineData("sha1-v1", 20)]
@@ -1371,7 +1406,10 @@ public sealed class DataVaultEfMetadataTranslationTests {
   private static void AssertBinaryHashKeyProperty(
       IMutableEntityType entityType,
       string propertyName,
-      DataVaultLogicalPropertyKind expectedLogicalPropertyKind) {
+      DataVaultLogicalPropertyKind expectedLogicalPropertyKind,
+      string expectedStorageType = "varbinary(16)",
+      string expectedStableHashAlgorithmId = "sha256-128-v1",
+      int expectedStableHashDigestByteLength = 16) {
     var property = entityType.FindProperty(propertyName);
 
     Assert.NotNull(property);
@@ -1380,16 +1418,16 @@ public sealed class DataVaultEfMetadataTranslationTests {
     Assert.Equal(expectedLogicalPropertyKind, AnnotationValue<DataVaultLogicalPropertyKind>(
         property,
         DataVaultAnnotationNames.ProviderLogicalPropertyKind));
-    Assert.Equal("varbinary(16)", property.GetColumnType());
-    Assert.Equal("varbinary(16)", AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderStorageType));
+    Assert.Equal(expectedStorageType, property.GetColumnType());
+    Assert.Equal(expectedStorageType, AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderStorageType));
     Assert.Equal(DataVaultProviderValueFormat.LowercaseHexBinary, AnnotationValue<DataVaultProviderValueFormat>(
         property,
         DataVaultAnnotationNames.ProviderValueFormat));
     Assert.Equal(DataVaultHashKeyStorageProfile.Binary, AnnotationValue<DataVaultHashKeyStorageProfile>(
         property,
         DataVaultAnnotationNames.HashKeyStorageProfile));
-    Assert.Equal("sha256-128-v1", AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashAlgorithmId));
-    Assert.Equal(16, AnnotationValue<int>(property, DataVaultAnnotationNames.StableHashDigestByteLength));
+    Assert.Equal(expectedStableHashAlgorithmId, AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashAlgorithmId));
+    Assert.Equal(expectedStableHashDigestByteLength, AnnotationValue<int>(property, DataVaultAnnotationNames.StableHashDigestByteLength));
     Assert.Equal("lowercase-hex-no-prefix", AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashDigestEncoding));
     Assert.Equal("lowercase-hex-string-to-bytes", AnnotationValue<string>(property, DataVaultAnnotationNames.HashKeyConversionBehavior));
 

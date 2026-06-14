@@ -85,8 +85,48 @@ public sealed class StableHashServiceTests {
     Assert.Equal("sha256-v1", conventions.StableHashAlgorithmId);
     Assert.Equal(32, conventions.StableHashDigestByteLength);
     Assert.Equal(DataVaultHashKeyStorageProfile.HexString, conventions.HashKeyStorageProfile);
+    Assert.Equal("default", conventions.ProfileName);
     Assert.Equal("sha-256", conventions.PersistenceContentHashAlgorithm);
     Assert.Equal("n:", normalizer.NormalizeValue(null));
+  }
+
+  [Fact]
+  public void AddDVaultCanSelectBinaryFirstProfileWithoutChangingLogicalHashBoundary() {
+    var services = new ServiceCollection();
+
+    services.AddDVault(options => options.UseBinaryFirstProfile());
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var hashService = provider.GetRequiredService<IStableHashService>();
+    var conventions = provider.GetRequiredService<DataVaultConventions>();
+    var digest = hashService.ComputeHash("s:21:dvault:stable-hash:v1");
+
+    Assert.Equal("sha256-v1", hashService.AlgorithmId);
+    Assert.Equal("sha256-v1", conventions.StableHashAlgorithmId);
+    Assert.Equal(32, conventions.StableHashDigestByteLength);
+    Assert.Equal(DataVaultHashKeyStorageProfile.Binary, conventions.HashKeyStorageProfile);
+    Assert.Equal("binary-first", conventions.ProfileName);
+    Assert.Equal("eb99c3da5f4b0e5f6137357a0134b1d8d92133d1137ebe0606daae281a6a4281", digest.Value);
+    Assert.Matches("^[0-9a-f]{64}$", digest.Value);
+  }
+
+  [Fact]
+  public void AddDVaultBinaryFirstProfilePreservesSelectedStableHashAlgorithm() {
+    var services = new ServiceCollection();
+
+    services.AddDVault(options => options
+        .UseStableHashAlgorithm("sha1-v1")
+        .UseBinaryFirstProfile());
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var hashService = provider.GetRequiredService<IStableHashService>();
+    var conventions = provider.GetRequiredService<DataVaultConventions>();
+
+    Assert.Equal("sha1-v1", hashService.AlgorithmId);
+    Assert.Equal("sha1-v1", conventions.StableHashAlgorithmId);
+    Assert.Equal(20, conventions.StableHashDigestByteLength);
+    Assert.Equal(DataVaultHashKeyStorageProfile.Binary, conventions.HashKeyStorageProfile);
+    Assert.Equal("binary-first", conventions.ProfileName);
   }
 
   [Theory]
@@ -132,6 +172,7 @@ public sealed class StableHashServiceTests {
     Assert.Equal(algorithmId, conventions.StableHashAlgorithmId);
     Assert.Equal(byteLength, conventions.StableHashDigestByteLength);
     Assert.Equal(DataVaultHashKeyStorageProfile.HexString, conventions.HashKeyStorageProfile);
+    Assert.Equal("default", conventions.ProfileName);
     Assert.Equal("sha-256", conventions.PersistenceContentHashAlgorithm);
   }
 

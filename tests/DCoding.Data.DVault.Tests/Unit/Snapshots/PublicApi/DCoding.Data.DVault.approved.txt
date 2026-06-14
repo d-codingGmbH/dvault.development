@@ -627,6 +627,8 @@ type public static class DCoding.Data.DVault.DataVaultModelBuilderExtensions
   method public static Microsoft.EntityFrameworkCore.ModelBuilder UseDataVault(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder)
   method public static Microsoft.EntityFrameworkCore.ModelBuilder UseDataVault(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
   method public static Microsoft.EntityFrameworkCore.ModelBuilder UseDataVault(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities, DCoding.Data.DVault.DataVaultLoadTimestampStorage loadTimestampStorage)
+  method public static Microsoft.EntityFrameworkCore.ModelBuilder UseDataVaultBinaryFirstProfile(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder)
+  method public static Microsoft.EntityFrameworkCore.ModelBuilder UseDataVaultBinaryFirstProfile(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
 
 type public sealed class DCoding.Data.DVault.DataVaultModelDriftDifference : System.IEquatable<DCoding.Data.DVault.DataVaultModelDriftDifference>
   ctor public DataVaultModelDriftDifference(DCoding.Data.DVault.DataVaultModelDriftSeverity Severity, string Code, DCoding.Data.DVault.DataVaultModelDriftElementKind ElementKind, string LogicalName, string? ProducedName, string PropertyPath, string? ExpectedValue, string? ActualValue, string Message)
@@ -718,6 +720,7 @@ type public sealed class DCoding.Data.DVault.DataVaultModelImportResult
 
 type public sealed class DCoding.Data.DVault.DataVaultOptions
   ctor public DataVaultOptions()
+  method public DCoding.Data.DVault.DataVaultOptions UseBinaryFirstProfile()
   method public DCoding.Data.DVault.DataVaultOptions UseLoadTimestampResolver(DCoding.Data.DVault.IDataVaultLoadTimestampResolver resolver)
   method public DCoding.Data.DVault.DataVaultOptions UseLoadTimestampResolver<TResolver>() where TResolver : class, DCoding.Data.DVault.IDataVaultLoadTimestampResolver
   method public DCoding.Data.DVault.DataVaultOptions UseMetadataModel(DCoding.Data.DVault.DataVaultModelImportResult importResult)
@@ -1916,6 +1919,7 @@ type public sealed class DCoding.Data.DVault.Modeling.DataVaultConventions
   property public static DCoding.Data.DVault.Modeling.DataVaultConventions Default { get; }
   property public string PersistenceContentHashAlgorithm { get; }
   property public string PersistenceConventionVersion { get; }
+  property public string ProfileName { get; }
   property public string StableHashAlgorithmId { get; }
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultHubBuilder

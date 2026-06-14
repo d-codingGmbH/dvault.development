@@ -10,6 +10,9 @@ public sealed class DataVaultConventions {
   private const int DefaultStableHashDigestByteLength = 32;
   private const string DefaultPersistenceContentHashAlgorithm = "sha-256";
   private const string DefaultPersistenceConventionVersion = "dvault.persistence-conventions.v1";
+  internal const string DefaultProfileName = "default";
+  internal const string BinaryFirstProfileName = "binary-first";
+  internal const string ExplicitProviderProfileName = "explicit-provider";
 
   private static readonly DataVaultModelConcept[] DefaultModelConcepts =
   [
@@ -36,6 +39,7 @@ public sealed class DataVaultConventions {
       string stableHashAlgorithmId,
       int stableHashDigestByteLength,
       DataVaultHashKeyStorageProfile hashKeyStorageProfile,
+      string profileName,
       string persistenceContentHashAlgorithm,
       string persistenceConventionVersion,
       IReadOnlyList<string> logicalObjectNames) {
@@ -44,6 +48,7 @@ public sealed class DataVaultConventions {
     StableHashAlgorithmId = stableHashAlgorithmId;
     StableHashDigestByteLength = stableHashDigestByteLength;
     HashKeyStorageProfile = hashKeyStorageProfile;
+    ProfileName = profileName;
     PersistenceContentHashAlgorithm = persistenceContentHashAlgorithm;
     PersistenceConventionVersion = persistenceConventionVersion;
     LogicalObjectNames = logicalObjectNames;
@@ -58,15 +63,24 @@ public sealed class DataVaultConventions {
       DefaultStableHashAlgorithmId,
       DefaultStableHashDigestByteLength,
       DataVaultHashKeyStorageProfile.HexString,
+      DefaultProfileName,
       DefaultPersistenceContentHashAlgorithm,
       DefaultPersistenceConventionVersion,
       new ReadOnlyCollection<string>(DefaultLogicalObjectNames));
 
+  internal static DataVaultConventions BinaryFirst { get; } = CreateWithStableHashAlgorithm(
+      DefaultStableHashAlgorithmId,
+      DefaultStableHashDigestByteLength,
+      DataVaultHashKeyStorageProfile.Binary,
+      BinaryFirstProfileName);
+
   internal static DataVaultConventions CreateWithStableHashAlgorithm(
       string stableHashAlgorithmId,
       int stableHashDigestByteLength,
-      DataVaultHashKeyStorageProfile hashKeyStorageProfile = DataVaultHashKeyStorageProfile.HexString) {
+      DataVaultHashKeyStorageProfile hashKeyStorageProfile = DataVaultHashKeyStorageProfile.HexString,
+      string profileName = DefaultProfileName) {
     ArgumentNullException.ThrowIfNull(stableHashAlgorithmId);
+    ArgumentException.ThrowIfNullOrWhiteSpace(profileName);
     if (stableHashDigestByteLength <= 0) {
       throw new ArgumentOutOfRangeException(nameof(stableHashDigestByteLength));
     }
@@ -77,7 +91,8 @@ public sealed class DataVaultConventions {
 
     if (stableHashAlgorithmId == DefaultStableHashAlgorithmId &&
         stableHashDigestByteLength == DefaultStableHashDigestByteLength &&
-        hashKeyStorageProfile == DataVaultHashKeyStorageProfile.HexString) {
+        hashKeyStorageProfile == DataVaultHashKeyStorageProfile.HexString &&
+        string.Equals(profileName, DefaultProfileName, StringComparison.Ordinal)) {
       return Default;
     }
 
@@ -87,6 +102,7 @@ public sealed class DataVaultConventions {
         stableHashAlgorithmId,
         stableHashDigestByteLength,
         hashKeyStorageProfile,
+        profileName,
         Default.PersistenceContentHashAlgorithm,
         Default.PersistenceConventionVersion,
         Default.LogicalObjectNames);
@@ -116,6 +132,11 @@ public sealed class DataVaultConventions {
   /// Gets the physical storage profile used for generated hash-key columns.
   /// </summary>
   public DataVaultHashKeyStorageProfile HashKeyStorageProfile { get; }
+
+  /// <summary>
+  /// Gets the named DVault conventions profile selected by the high-level setup path.
+  /// </summary>
+  public string ProfileName { get; }
 
   /// <summary>
   /// Gets the default logical persistence content hash algorithm value.

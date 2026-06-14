@@ -28,7 +28,8 @@ internal sealed class DataVaultModelCacheKeyFactory : IModelCacheKeyFactory {
         sourceKey.Fingerprint,
         conventions.StableHashAlgorithmId,
         conventions.StableHashDigestByteLength,
-        conventions.HashKeyStorageProfile);
+        conventions.HashKeyStorageProfile,
+        conventions.ProfileName);
   }
 
   private readonly record struct DataVaultModelCacheKey(
@@ -38,5 +39,6 @@ internal sealed class DataVaultModelCacheKeyFactory : IModelCacheKeyFactory {
       string Fingerprint,
       string StableHashAlgorithmId,
       int StableHashDigestByteLength,
-      DataVaultHashKeyStorageProfile HashKeyStorageProfile);
+      DataVaultHashKeyStorageProfile HashKeyStorageProfile,
+      string ProfileName);
 }

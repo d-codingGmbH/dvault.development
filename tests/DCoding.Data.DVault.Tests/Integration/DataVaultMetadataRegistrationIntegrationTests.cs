@@ -31,6 +31,29 @@ public sealed class DataVaultMetadataRegistrationIntegrationTests {
   }
 
   [Fact]
+  public void DbContextOptionsProjectAppDefaultBinaryFirstProfileThroughMetadataTranslation() {
+    var services = new ServiceCollection();
+    services.AddDVault(options => options
+        .UseBinaryFirstProfile()
+        .UseMetadataModel(CreateRelationshipMetadataModel()));
+    services.AddDbContext<RegistryProjectionContext>(
+        options => options
+            .UseSqlite("Data Source=:memory:")
+            .UseDataVaultMetadata());
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    using var scope = provider.CreateScope();
+    using var context = scope.ServiceProvider.GetRequiredService<RegistryProjectionContext>();
+    var conventions = Assert.IsType<DataVaultConventions>(
+        context.Model.FindAnnotation(DataVaultAnnotationNames.Conventions)?.Value);
+
+    Assert.Equal("binary-first", conventions.ProfileName);
+    Assert.Equal(DataVaultHashKeyStorageProfile.Binary, conventions.HashKeyStorageProfile);
+    AssertBinaryHashKeyProperty(context.Model, "HubCustomer", "CustomerHashKey", DataVaultLogicalPropertyKind.HashKey);
+    AssertBinaryHashKeyProperty(context.Model, "LinkCustomerOrder", "CustomerHashKey", DataVaultLogicalPropertyKind.ParticipantReference);
+  }
+
+  [Fact]
   public void DbContextOptionsAppDefaultRegistryParticipatesInModelCacheKey() {
     using var customerProvider = CreateAppDefaultProvider(CreateCustomerMetadataModel());
     using var orderProvider = CreateAppDefaultProvider(CreateOrderMetadataModel());
@@ -174,6 +197,20 @@ public sealed class DataVaultMetadataRegistrationIntegrationTests {
         []);
   }
 
+  private static DataVaultMetadataModel CreateRelationshipMetadataModel() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+
+    return new DataVaultMetadataModel(
+        [customer, order],
+        [
+            new DataVaultLinkMetadata(
+                "CustomerOrder",
+                [customer.ToReference(), order.ToReference()]),
+        ],
+        []);
+  }
+
   private static DataVaultModelImportResult ImportModelArtifact(
       string hubName,
       string businessKeyName) {
@@ -214,6 +251,39 @@ public sealed class DataVaultMetadataRegistrationIntegrationTests {
     Assert.NotNull(entityType);
 
     return entityType!.GetTableName() ?? entityType.Name;
+  }
+
+  private static void AssertBinaryHashKeyProperty(
+      IModel model,
+      string entityName,
+      string propertyName,
+      DataVaultLogicalPropertyKind expectedLogicalPropertyKind) {
+    var property = model.FindEntityType(entityName)?.FindProperty(propertyName);
+
+    Assert.NotNull(property);
+    Assert.Equal(typeof(string), property!.ClrType);
+    Assert.Equal("BLOB", property.GetColumnType());
+    Assert.Equal("BLOB", AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderStorageType));
+    Assert.Equal(expectedLogicalPropertyKind, AnnotationValue<DataVaultLogicalPropertyKind>(
+        property,
+        DataVaultAnnotationNames.ProviderLogicalPropertyKind));
+    Assert.Equal(DataVaultProviderValueFormat.LowercaseHexBinary, AnnotationValue<DataVaultProviderValueFormat>(
+        property,
+        DataVaultAnnotationNames.ProviderValueFormat));
+    Assert.Equal(DataVaultHashKeyStorageProfile.Binary, AnnotationValue<DataVaultHashKeyStorageProfile>(
+        property,
+        DataVaultAnnotationNames.HashKeyStorageProfile));
+    Assert.Equal("lowercase-hex-string-to-bytes", AnnotationValue<string>(
+        property,
+        DataVaultAnnotationNames.HashKeyConversionBehavior));
+  }
+
+  private static T AnnotationValue<T>(IProperty property, string annotationName) {
+    var annotation = property.FindAnnotation(annotationName);
+
+    Assert.NotNull(annotation);
+
+    return Assert.IsType<T>(annotation!.Value);
   }
 
   private sealed class RegistryProjectionContext(DbContextOptions<RegistryProjectionContext> options) : DbContext(options) {
