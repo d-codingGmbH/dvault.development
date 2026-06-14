@@ -58,7 +58,7 @@ From the repository root:
 dotnet run --project examples/DCoding.Data.DVault.PostgresQuickstart/DCoding.Data.DVault.PostgresQuickstart.csproj
 ```
 
-The quickstart uses `AddDVaultPostgres()`, `UseNpgsql(...)`, and `UseDataVaultMetadata()` to create the DVault schema in the configured database, save the sample customer profile history, and read latest/as-of projections.
+The quickstart uses `UseBinaryFirstProfile()`, `AddDVaultPostgres()`, `UseNpgsql(...)`, and `UseDataVaultMetadata()` to create the recommended binary-first new-project DVault schema in the configured database, save the sample customer profile history, and read latest/as-of projections. Existing `HexString`-compatible databases are not migrated automatically; keep them on the compatible path until a separate migration, reset, or data-move change is intentionally planned and executed.
 
 ## Run The Opt-In Postgres Tests
 

@@ -14,15 +14,17 @@ Pick one authoritative path per model boundary. The other paths are alternatives
 
 ## Register Services
 
-Use the provider-neutral registration plus the provider extension package that matches the EF Core database provider configured for the `DbContext`.
+Use the provider-neutral registration plus the provider extension package that matches the EF Core database provider configured for the `DbContext`. New projects should select the binary-first profile explicitly while keeping DVault persistence caller-driven.
 
 ```csharp
-services.AddDVault();
+services.AddDVault(options => options.UseBinaryFirstProfile());
 services.AddDVaultSqlite();
 
 services.AddDbContext<SalesVaultContext>(options =>
     options.UseSqlite(connectionString));
 ```
+
+The binary-first profile changes the recommended physical hash-key storage for new generated schemas; it does not migrate existing databases or configurations automatically. Existing `HexString`-compatible setups remain valid until the application owner intentionally plans and executes a separate reviewed migration, reset, or data-move change. Logical and public hash-key values stay lowercase hexadecimal strings even when binary physical storage is selected for new projects.
 
 Provider packages can register provider capability profiles, behavior, diagnostics, read strategies, or save strategies behind the shared `IDataVaultSaveService` and `IDataVaultReadService` boundaries. They do not replace the application's normal EF Core provider configuration.
 
@@ -31,6 +33,7 @@ Provider packages can register provider capability profiles, behavior, diagnosti
 Code-First declarations are additive over EF Core model building. Business keys, participants, driving keys, and payloads use direct scalar member selectors. Composite keys use repeated calls in canonical order.
 
 ```csharp
+modelBuilder.UseDataVaultBinaryFirstProfile();
 modelBuilder.ApplyDataVaultMetadata(vault => {
   vault.Hub<Customer>(hub => {
     hub.BusinessKey(customer => customer.CustomerId);

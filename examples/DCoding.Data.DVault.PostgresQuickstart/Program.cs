@@ -14,7 +14,9 @@ if (string.IsNullOrWhiteSpace(connectionString)) {
 }
 
 var services = new ServiceCollection();
-services.AddDVault(options => options.UseMetadataModel(QuickstartHistoryFlow.MetadataModel));
+services.AddDVault(options => options
+    .UseBinaryFirstProfile()
+    .UseMetadataModel(QuickstartHistoryFlow.MetadataModel));
 services.AddDVaultPostgres();
 services.AddDbContext<QuickstartVaultContext>(
     options => options

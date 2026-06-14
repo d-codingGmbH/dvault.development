@@ -3,20 +3,19 @@
   "ticket-id": "06FBSC0EJHAY200E7PXNRGV7XR",
   "ticket-type": "task",
   "title": "Task: Update new-project quickstart for binary-first profile",
-  "revision": "06FBSCXFCEV8E6KG2EXY02BGAR",
-  "status": "todo",
+  "revision": "06FCFP87M2HFTY50M829BVMA9G",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
-    "area/documentation",
     "area/developer-experience",
-    "area/hashing"
+    "area/documentation",
+    "area/hashing",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FBSB0R45T7THA6KW1X824QV0",
   "release-id": "06FBSAVBR5AHWKVMMR014KGW94",
   "created-at": "2026-06-12T16:35:15.3993185Z",
-  "updated-at": "2026-06-12T16:39:12.9953633Z"
+  "updated-at": "2026-06-14T20:35:49.7923253Z"
 }

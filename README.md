@@ -59,7 +59,9 @@ Applications still need their normal Entity Framework Core provider package, suc
 
 ## Quickstart
 
-Use `AddDVault()` plus the provider extension package that matches the configured EF Core provider. DVault persistence stays explicit: generated hub, link, and satellite rows are written through `IDataVaultSaveService`; ordinary EF entity tracking remains under the application's control.
+Use `AddDVault(options => options.UseBinaryFirstProfile())` plus the provider extension package that matches the configured EF Core provider. For direct Code-First model projection, call `UseDataVaultBinaryFirstProfile()` before applying DVault metadata. DVault persistence stays explicit: generated hub, link, and satellite rows are written through `IDataVaultSaveService`; ordinary EF entity tracking remains under the application's control.
+
+The binary-first profile is the recommended physical storage profile for new projects. Existing databases and configurations are not migrated automatically; `HexString`-compatible setups remain valid until the application owner intentionally plans and executes a separate reviewed migration, reset, or data-move change. Logical and public hash-key values remain lowercase hexadecimal strings even when new projects choose binary physical storage.
 
 ```csharp
 using DCoding.Data.DVault;
@@ -68,7 +70,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 var services = new ServiceCollection();
 
-services.AddDVault();
+services.AddDVault(options => options.UseBinaryFirstProfile());
 services.AddDVaultSqlite();
 
 services.AddDbContext<SalesVaultContext>(options =>
@@ -80,6 +82,7 @@ Declare Data Vault metadata in `OnModelCreating` with Code-First metadata, or pr
 ```csharp
 public sealed class SalesVaultContext(DbContextOptions<SalesVaultContext> options) : DbContext(options) {
   protected override void OnModelCreating(ModelBuilder modelBuilder) {
+    modelBuilder.UseDataVaultBinaryFirstProfile();
     modelBuilder.ApplyDataVaultMetadata(vault => {
       vault.Hub<Customer>(hub => {
         hub.BusinessKey(customer => customer.CustomerId);

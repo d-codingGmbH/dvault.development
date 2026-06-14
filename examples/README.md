@@ -5,7 +5,9 @@ These examples run the same bounded customer-profile history flow through the pu
 - `DCoding.Data.DVault.SqliteQuickstart` uses SQLite through `AddDVaultSqlite()` and needs no external infrastructure.
 - `DCoding.Data.DVault.PostgresQuickstart` uses PostgreSQL through `AddDVaultPostgres()` and a developer-managed connection string.
 
-Both projects register one shared `DataVaultMetadataModel` with `AddDVault(options => options.UseMetadataModel(...))`, opt the DbContext into that registry with `UseDataVaultMetadata()`, create the sample schema with EF Core for the quickstart run, write through `IDataVaultSaveService`, read typed latest/as-of satellite projections through `IDataVaultReadService`, and print bounded request-level diagnostics from the current DVault diagnostics services.
+Both projects register one shared `DataVaultMetadataModel` with `AddDVault(options => options.UseBinaryFirstProfile().UseMetadataModel(...))`, opt the DbContext into that registry with `UseDataVaultMetadata()`, create the sample schema with EF Core for the quickstart run, write through `IDataVaultSaveService`, read typed latest/as-of satellite projections through `IDataVaultReadService`, and print bounded request-level diagnostics from the current DVault diagnostics services.
+
+The runnable quickstarts show the recommended binary-first physical storage profile for new projects. Existing databases and configurations are not migrated automatically; `HexString`-compatible setups remain valid until the application owner intentionally plans and executes a separate reviewed migration, reset, or data-move change. Logical and public hash-key values remain lowercase hexadecimal strings even when the new generated schema stores hash-key columns in binary form.
 
 The checked-in examples use project references so they can build against the current repository checkout. Published consumer applications should install the same coordinated NuGet package family described in the root [README installation guidance](../README.md#installation).
 
@@ -54,10 +56,12 @@ Applications also need the normal Entity Framework Core provider package for the
 
 The analyzer package is optional and should usually be referenced with `PrivateAssets="all"` in consumer projects that own DVault Code-First declarations or compile-time generated row mapping declarations. Use `8.34.0` or `10.34.0` to match the runtime and provider package line.
 
-Provider startup is explicit. Register `AddDVault()` for the provider-neutral services, then register the matching provider extension when a provider package is installed:
+Provider startup is explicit. Register `AddDVault(...)` with the binary-first profile and the shared metadata model for the provider-neutral services, then register the matching provider extension when a provider package is installed:
 
 ```csharp
-services.AddDVault(options => options.UseMetadataModel(QuickstartHistoryFlow.MetadataModel));
+services.AddDVault(options => options
+    .UseBinaryFirstProfile()
+    .UseMetadataModel(QuickstartHistoryFlow.MetadataModel));
 services.AddDVaultSqlite();
 services.AddDbContext<QuickstartVaultContext>(
     options => options
@@ -69,7 +73,7 @@ The PostgreSQL quickstart uses the same shape with `AddDVaultPostgres()` and `Us
 
 ## Observability Examples
 
-`AddDVault()` is telemetry-free by default. It does not add counters, `ActivityListener` instances, exporters, dashboards, collectors, hosting, or OpenTelemetry package requirements. Applications opt into each observability surface they want to own.
+`AddDVault(...)` is telemetry-free by default. It does not add counters, `ActivityListener` instances, exporters, dashboards, collectors, hosting, or OpenTelemetry package requirements. Applications opt into each observability surface they want to own.
 
 Built-in save/read metrics use the `System.Diagnostics.Metrics` observer path. Register the provider-neutral services first, then add `AddDVaultTelemetry()`:
 
@@ -77,7 +81,9 @@ Built-in save/read metrics use the `System.Diagnostics.Metrics` observer path. R
 using DCoding.Data.DVault;
 using Microsoft.Extensions.DependencyInjection;
 
-services.AddDVault(options => options.UseMetadataModel(QuickstartHistoryFlow.MetadataModel));
+services.AddDVault(options => options
+    .UseBinaryFirstProfile()
+    .UseMetadataModel(QuickstartHistoryFlow.MetadataModel));
 services.AddDVaultTelemetry();
 ```
 
@@ -99,7 +105,9 @@ using var listener = new ActivityListener {
 
 ActivitySource.AddActivityListener(listener);
 
-services.AddDVault(options => options.UseMetadataModel(QuickstartHistoryFlow.MetadataModel));
+services.AddDVault(options => options
+    .UseBinaryFirstProfile()
+    .UseMetadataModel(QuickstartHistoryFlow.MetadataModel));
 ```
 
 For OpenTelemetry-style application wiring, keep DVault to the source and meter names while the application chooses packages, exporters, sampling, hosting, and backends:
@@ -138,7 +146,7 @@ Set `DVAULT_TEST_POSTGRES_CONNECTION_STRING` to a developer-managed PostgreSQL c
 dotnet run --project examples/DCoding.Data.DVault.PostgresQuickstart/DCoding.Data.DVault.PostgresQuickstart.csproj
 ```
 
-The PostgreSQL quickstart uses `AddDVaultPostgres()` plus the same `UseDataVaultMetadata()` registry-backed DbContext path as SQLite. It creates the DVault schema in the database named by the connection string and runs the same explicit save, typed read, and bounded diagnostics flow.
+The PostgreSQL quickstart uses `UseBinaryFirstProfile()`, `AddDVaultPostgres()`, and the same `UseDataVaultMetadata()` registry-backed DbContext path as SQLite. It creates the DVault schema in the database named by the connection string and runs the same explicit save, typed read, and bounded diagnostics flow.
 
 For a local Podman or Docker fixture that can supply this connection string, see `examples/DCoding.Data.DVault.PostgresQuickstart/README.md`. The fixture remains opt-in; default `dotnet test` execution does not require PostgreSQL, Docker, or Podman.
 

@@ -9,7 +9,9 @@ var databasePath = Path.Combine(
 var connectionString = "Data Source=" + databasePath + ";Pooling=False";
 
 var services = new ServiceCollection();
-services.AddDVault(options => options.UseMetadataModel(QuickstartHistoryFlow.MetadataModel));
+services.AddDVault(options => options
+    .UseBinaryFirstProfile()
+    .UseMetadataModel(QuickstartHistoryFlow.MetadataModel));
 services.AddDVaultSqlite();
 services.AddDbContext<QuickstartVaultContext>(
     options => options
