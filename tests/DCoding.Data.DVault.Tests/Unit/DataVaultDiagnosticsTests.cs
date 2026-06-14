@@ -119,6 +119,18 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal(digestByteLength, supportHashKeyMapping.GetProperty("digestByteLength").GetInt32());
     Assert.Equal("lowercase-hex-no-prefix", supportHashKeyMapping.GetProperty("digestEncoding").GetString());
     Assert.Equal("none-string-model", supportHashKeyMapping.GetProperty("conversionBehavior").GetString());
+    var supportHashReferenceMapping = document
+        .RootElement
+        .GetProperty("diagnostics")
+        .GetProperty("explain")
+        .GetProperty("typeMappings")
+        .EnumerateArray()
+        .Single(mapping => mapping.GetProperty("logicalPropertyKind").GetString() == "ParticipantReference");
+    Assert.Equal("HexString", supportHashReferenceMapping.GetProperty("hashKeyStorageProfile").GetString());
+    Assert.Equal(algorithmId, supportHashReferenceMapping.GetProperty("stableHashAlgorithmId").GetString());
+    Assert.Equal(digestByteLength, supportHashReferenceMapping.GetProperty("digestByteLength").GetInt32());
+    Assert.Equal("lowercase-hex-no-prefix", supportHashReferenceMapping.GetProperty("digestEncoding").GetString());
+    Assert.Equal("none-string-model", supportHashReferenceMapping.GetProperty("conversionBehavior").GetString());
 
     var forbiddenDigest = provider
         .GetRequiredService<IStableHashService>()
@@ -128,6 +140,109 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.DoesNotContain("diagnostics-secret-business-key", supportBundleJson, StringComparison.Ordinal);
     Assert.DoesNotContain(forbiddenDigest, display, StringComparison.Ordinal);
     Assert.DoesNotContain(forbiddenDigest, supportBundleJson, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void AnalyzeReportsExplicitBinaryHashKeyStorageProfileInExplainDisplayAndSupportBundle() {
+    using var provider = CreateServiceProvider();
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    var binaryProfile = DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+        DataVaultHashKeyStorageProfile.Binary,
+        "sha256-v1",
+        32);
+
+    var result = diagnostics.Analyze(CreateHashKeyReferenceMetadataModel(), binaryProfile);
+
+    Assert.True(result.Validation.IsValid);
+    AssertBinaryHashKeyStorageDiagnostics(result, expectedStoreType: "BLOB");
+
+    var display = result.ToDisplayString();
+    Assert.Contains(
+        "stable hash sha256-v1/32 bytes/lowercase-hex-no-prefix",
+        display,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "hash-key storage Binary/BLOB/lowercase-hex-string-to-bytes",
+        display,
+        StringComparison.Ordinal);
+
+    var supportBundleJson = DataVaultSupportBundleExporter.ExportJson(result);
+    using var document = JsonDocument.Parse(supportBundleJson);
+    var explain = document
+        .RootElement
+        .GetProperty("diagnostics")
+        .GetProperty("explain");
+
+    AssertSupportBundleHashKeyStorageFacts(
+        explain,
+        DataVaultLogicalPropertyKind.HashKey,
+        expectedStoreType: "BLOB",
+        DataVaultHashKeyStorageProfile.Binary,
+        DataVaultProviderValueFormat.LowercaseHexBinary,
+        "lowercase-hex-string-to-bytes");
+    AssertSupportBundleHashKeyStorageFacts(
+        explain,
+        DataVaultLogicalPropertyKind.ParticipantReference,
+        expectedStoreType: "BLOB",
+        DataVaultHashKeyStorageProfile.Binary,
+        DataVaultProviderValueFormat.LowercaseHexBinary,
+        "lowercase-hex-string-to-bytes");
+
+    var forbiddenDigest = provider
+        .GetRequiredService<IStableHashService>()
+        .ComputeHash("diagnostics-secret-business-key")
+        .Value;
+    Assert.DoesNotContain("diagnostics-secret-business-key", display, StringComparison.Ordinal);
+    Assert.DoesNotContain("diagnostics-secret-business-key", supportBundleJson, StringComparison.Ordinal);
+    Assert.DoesNotContain(forbiddenDigest, display, StringComparison.Ordinal);
+    Assert.DoesNotContain(forbiddenDigest, supportBundleJson, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void AnalyzeRegistryReportsPreselectedBinaryHashKeyStorageProfileInDiagnostics() {
+    using var provider = CreateServiceProvider();
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    var binaryProfile = DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+        DataVaultHashKeyStorageProfile.Binary,
+        "sha256-v1",
+        32);
+    var registry = DataVaultMetadataRegistry.Create(
+        CreateHashKeyReferenceMetadataModel(),
+        [binaryProfile],
+        []);
+
+    var result = diagnostics.Analyze(registry);
+
+    Assert.True(result.Validation.IsValid);
+    Assert.Equal("sqlite-v1", result.Explain.CapabilityProfileName);
+    AssertBinaryHashKeyStorageDiagnostics(result, expectedStoreType: "BLOB");
+    Assert.Contains(
+        "hash-key storage Binary/BLOB/lowercase-hex-string-to-bytes",
+        result.ToDisplayString(),
+        StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void AnalyzeDbContextReportsModelSelectedBinaryHashKeyStorageProfileInDiagnostics() {
+    var services = new ServiceCollection();
+    services.AddDVaultSqlite();
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    var options = new DbContextOptionsBuilder<BinaryHashKeyDiagnosticsContext>()
+        .UseSqlite("Data Source=:memory:")
+        .Options;
+    using var context = new BinaryHashKeyDiagnosticsContext(options);
+
+    var result = diagnostics.Analyze(context);
+
+    Assert.True(result.Validation.IsValid);
+    Assert.Equal(KnownProviderNames.Sqlite, result.Explain.ProviderName);
+    Assert.Equal("sqlite-v1", result.Explain.CapabilityProfileName);
+    AssertBinaryHashKeyStorageDiagnostics(result, expectedStoreType: "BLOB");
+    Assert.Contains(
+        "hash-key storage Binary/BLOB/lowercase-hex-string-to-bytes",
+        result.ToDisplayString(),
+        StringComparison.Ordinal);
   }
 
   [Fact]
@@ -1181,6 +1296,16 @@ public sealed class DataVaultDiagnosticsTests {
     return new DataVaultMetadataModel([customerHub], [], [customerSatellite]);
   }
 
+  private static DataVaultMetadataModel CreateHashKeyReferenceMetadataModel() {
+    var customerHub = new DataVaultHubMetadata("Customer", ["CustomerNumber"]);
+    var orderHub = new DataVaultHubMetadata("Order", ["OrderNumber"]);
+    var link = new DataVaultLinkMetadata(
+        "CustomerOrder",
+        [customerHub.ToReference(), orderHub.ToReference()]);
+
+    return new DataVaultMetadataModel([customerHub, orderHub], [link], []);
+  }
+
   private static DataVaultMetadataModel CreateMigrationGuardrailMetadataModel() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var order = new DataVaultHubMetadata("Order", ["Order Id"]);
@@ -1262,12 +1387,133 @@ public sealed class DataVaultDiagnosticsTests {
       DataVaultProviderTypeMappingExplain mapping,
       string expectedAlgorithmId,
       int expectedDigestByteLength) {
-    Assert.Equal(DataVaultHashKeyStorageProfile.HexString, mapping.HashKeyStorageProfile);
+    AssertHashKeyStorageFacts(
+        mapping,
+        "TEXT",
+        DataVaultHashKeyStorageProfile.HexString,
+        DataVaultProviderValueFormat.LowercaseHexText,
+        expectedAlgorithmId,
+        expectedDigestByteLength,
+        "none-string-model");
+  }
+
+  private static void AssertHashKeyStorageFacts(
+      DataVaultProviderTypeMappingExplain mapping,
+      string expectedStoreType,
+      DataVaultHashKeyStorageProfile expectedStorageProfile,
+      DataVaultProviderValueFormat expectedValueFormat,
+      string expectedAlgorithmId,
+      int expectedDigestByteLength,
+      string expectedConversionBehavior) {
+    Assert.Equal(expectedStoreType, mapping.StoreType);
+    Assert.Equal(expectedStorageProfile, mapping.HashKeyStorageProfile);
     Assert.Equal(expectedAlgorithmId, mapping.StableHashAlgorithmId);
     Assert.Equal(expectedDigestByteLength, mapping.DigestByteLength);
     Assert.Equal("lowercase-hex-no-prefix", mapping.DigestEncoding);
-    Assert.Equal("none-string-model", mapping.ConversionBehavior);
-    Assert.Equal(DataVaultProviderValueFormat.LowercaseHexText, mapping.ValueFormat);
+    Assert.Equal(expectedConversionBehavior, mapping.ConversionBehavior);
+    Assert.Equal(expectedValueFormat, mapping.ValueFormat);
+  }
+
+  private static void AssertHashKeyStorageFacts(
+      DataVaultPropertyExplain property,
+      string expectedStoreType,
+      DataVaultHashKeyStorageProfile expectedStorageProfile,
+      DataVaultProviderValueFormat expectedValueFormat,
+      string expectedAlgorithmId,
+      int expectedDigestByteLength,
+      string expectedConversionBehavior) {
+    Assert.Equal(expectedStoreType, property.StoreType);
+    Assert.Equal(expectedStorageProfile, property.HashKeyStorageProfile);
+    Assert.Equal(expectedAlgorithmId, property.StableHashAlgorithmId);
+    Assert.Equal(expectedDigestByteLength, property.DigestByteLength);
+    Assert.Equal("lowercase-hex-no-prefix", property.DigestEncoding);
+    Assert.Equal(expectedConversionBehavior, property.ConversionBehavior);
+    Assert.Equal(expectedValueFormat, property.ValueFormat);
+  }
+
+  private static void AssertBinaryHashKeyStorageDiagnostics(
+      DataVaultDiagnosticsResult result,
+      string expectedStoreType) {
+    var hashKeyMapping = result.Explain.TypeMappings.Single(mapping =>
+        mapping.LogicalPropertyKind == DataVaultLogicalPropertyKind.HashKey);
+    var hashReferenceMapping = result.Explain.TypeMappings.Single(mapping =>
+        mapping.LogicalPropertyKind == DataVaultLogicalPropertyKind.ParticipantReference);
+    AssertHashKeyStorageFacts(
+        hashKeyMapping,
+        expectedStoreType,
+        DataVaultHashKeyStorageProfile.Binary,
+        DataVaultProviderValueFormat.LowercaseHexBinary,
+        "sha256-v1",
+        32,
+        "lowercase-hex-string-to-bytes");
+    AssertHashKeyStorageFacts(
+        hashReferenceMapping,
+        expectedStoreType,
+        DataVaultHashKeyStorageProfile.Binary,
+        DataVaultProviderValueFormat.LowercaseHexBinary,
+        "sha256-v1",
+        32,
+        "lowercase-hex-string-to-bytes");
+
+    var hashKeyProperties = result.Explain.Entities
+        .SelectMany(entity => entity.Properties)
+        .Where(property => property.LogicalPropertyKind == DataVaultLogicalPropertyKind.HashKey)
+        .ToArray();
+    var hashReferenceProperties = result.Explain.Entities
+        .SelectMany(entity => entity.Properties)
+        .Where(property => property.LogicalPropertyKind == DataVaultLogicalPropertyKind.ParticipantReference)
+        .ToArray();
+
+    Assert.NotEmpty(hashKeyProperties);
+    Assert.NotEmpty(hashReferenceProperties);
+    Assert.All(hashKeyProperties.Concat(hashReferenceProperties), property => AssertHashKeyStorageFacts(
+        property,
+        expectedStoreType,
+        DataVaultHashKeyStorageProfile.Binary,
+        DataVaultProviderValueFormat.LowercaseHexBinary,
+        "sha256-v1",
+        32,
+        "lowercase-hex-string-to-bytes"));
+  }
+
+  private static void AssertSupportBundleHashKeyStorageFacts(
+      JsonElement explain,
+      DataVaultLogicalPropertyKind logicalPropertyKind,
+      string expectedStoreType,
+      DataVaultHashKeyStorageProfile expectedStorageProfile,
+      DataVaultProviderValueFormat expectedValueFormat,
+      string expectedConversionBehavior) {
+    var logicalPropertyKindName = logicalPropertyKind.ToString();
+    var typeMapping = explain
+        .GetProperty("typeMappings")
+        .EnumerateArray()
+        .Single(mapping => mapping.GetProperty("logicalPropertyKind").GetString() == logicalPropertyKindName);
+
+    Assert.Equal(expectedStoreType, typeMapping.GetProperty("storeType").GetString());
+    Assert.Equal(expectedStorageProfile.ToString(), typeMapping.GetProperty("hashKeyStorageProfile").GetString());
+    Assert.Equal(expectedValueFormat.ToString(), typeMapping.GetProperty("valueFormat").GetString());
+    Assert.Equal("sha256-v1", typeMapping.GetProperty("stableHashAlgorithmId").GetString());
+    Assert.Equal(32, typeMapping.GetProperty("digestByteLength").GetInt32());
+    Assert.Equal("lowercase-hex-no-prefix", typeMapping.GetProperty("digestEncoding").GetString());
+    Assert.Equal(expectedConversionBehavior, typeMapping.GetProperty("conversionBehavior").GetString());
+
+    var properties = explain
+        .GetProperty("entities")
+        .EnumerateArray()
+        .SelectMany(entity => entity.GetProperty("properties").EnumerateArray())
+        .Where(property => property.GetProperty("logicalPropertyKind").GetString() == logicalPropertyKindName)
+        .ToArray();
+
+    Assert.NotEmpty(properties);
+    Assert.All(properties, property => {
+      Assert.Equal(expectedStoreType, property.GetProperty("storeType").GetString());
+      Assert.Equal(expectedStorageProfile.ToString(), property.GetProperty("hashKeyStorageProfile").GetString());
+      Assert.Equal(expectedValueFormat.ToString(), property.GetProperty("valueFormat").GetString());
+      Assert.Equal("sha256-v1", property.GetProperty("stableHashAlgorithmId").GetString());
+      Assert.Equal(32, property.GetProperty("digestByteLength").GetInt32());
+      Assert.Equal("lowercase-hex-no-prefix", property.GetProperty("digestEncoding").GetString());
+      Assert.Equal(expectedConversionBehavior, property.GetProperty("conversionBehavior").GetString());
+    });
   }
 
   private static void AssertMigrationIssue(
@@ -1465,6 +1711,17 @@ public sealed class DataVaultDiagnosticsTests {
       DataVaultBridgeMetadata HierarchyBridge);
 
   private sealed class ReadShapeDiagnosticsContext(DbContextOptions<ReadShapeDiagnosticsContext> options) : DbContext(options) {
+  }
+
+  private sealed class BinaryHashKeyDiagnosticsContext(DbContextOptions<BinaryHashKeyDiagnosticsContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(
+          CreateHashKeyReferenceMetadataModel(),
+          DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+              DataVaultHashKeyStorageProfile.Binary,
+              "sha256-v1",
+              32));
+    }
   }
 
   private sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStrategy {

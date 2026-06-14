@@ -268,8 +268,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         modelBuilder = new ModelBuilder(new ConventionSet());
         providerCapabilities = DataVaultModelBuilderExtensions.UseDataVaultCore(
             modelBuilder,
-            providerCapabilities,
-            CreateStableHashConventions());
+            providerCapabilities);
         DataVaultEfMetadataTranslator.Apply(modelBuilder, metadataModel, providerCapabilities);
       }
       catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or NotSupportedException) {
@@ -1367,6 +1366,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       DataVaultProviderBehaviorProfile providerBehaviorProfile,
       bool capabilityProfileDefaulted,
       bool providerBehaviorDefaulted) {
+    providerCapabilities = ProjectProviderCapabilitiesFromModelHashKeyShape(model, providerCapabilities);
     var loadTimestampMapping = GetLoadTimestampMapping(providerCapabilities);
     var satelliteSnapshotReferenceMapping = GetSatelliteSnapshotReferenceMapping(providerCapabilities);
     var entities = model
@@ -1399,6 +1399,42 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       ConcurrencySupport = providerCapabilities.ConcurrencySupport,
       StableHash = CreateStableHashExplain(),
     };
+  }
+
+  private static DataVaultProviderCapabilityProfile ProjectProviderCapabilitiesFromModelHashKeyShape(
+      IReadOnlyModel model,
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    var hashKeyProperty = model
+        .GetEntityTypes()
+        .Where(IsDataVaultEntity)
+        .SelectMany(entity => entity.GetProperties())
+        .FirstOrDefault(property =>
+            GetNullableAnnotationValue<DataVaultHashKeyStorageProfile>(
+                property,
+                DataVaultAnnotationNames.HashKeyStorageProfile) is not null);
+
+    if (hashKeyProperty is null) {
+      return providerCapabilities;
+    }
+
+    var storageProfile = GetNullableAnnotationValue<DataVaultHashKeyStorageProfile>(
+        hashKeyProperty,
+        DataVaultAnnotationNames.HashKeyStorageProfile);
+    var algorithmId = GetStringAnnotation(hashKeyProperty, DataVaultAnnotationNames.StableHashAlgorithmId);
+    var digestByteLength = GetNullableAnnotationValue<int>(
+        hashKeyProperty,
+        DataVaultAnnotationNames.StableHashDigestByteLength);
+
+    if (storageProfile is null ||
+        string.IsNullOrWhiteSpace(algorithmId) ||
+        digestByteLength is null) {
+      return providerCapabilities;
+    }
+
+    return providerCapabilities.WithHashKeyStorageProfile(
+        storageProfile.Value,
+        algorithmId,
+        digestByteLength.Value);
   }
 
   private DataVaultExplainDiagnostics CreateEmptyExplain(
@@ -1440,13 +1476,6 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         _stableHashService.AlgorithmId,
         digest.DigestByteLength,
         "lowercase-hex-no-prefix");
-  }
-
-  private DataVaultConventions CreateStableHashConventions() {
-    var digest = _stableHashService.ComputeHash(string.Empty);
-    return DataVaultConventions.CreateWithStableHashAlgorithm(
-        _stableHashService.AlgorithmId,
-        digest.DigestByteLength);
   }
 
   private DataVaultProviderCapabilityProfile CreateHashKeyCapabilityProfile(
