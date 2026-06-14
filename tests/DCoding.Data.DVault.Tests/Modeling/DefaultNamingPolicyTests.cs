@@ -22,6 +22,7 @@ internal static class DefaultNamingPolicyTests {
             new("repeat calls return identical names", RepeatCallsReturnIdenticalNames),
             new("AddDVault no-option overload is discoverable from DCoding.Data.DVault namespace", AddDVaultNoOptionOverloadIsDiscoverable),
             new("AddDVault optionless startup path builds a service provider", AddDVaultOptionlessStartupPathBuildsServiceProvider),
+            new("AddDVault optionless startup path resolves existing project hash compatibility defaults", AddDVaultOptionlessStartupPathResolvesExistingProjectHashCompatibilityDefaults),
             new("UseDataVault no-option overload applies default conventions", UseDataVaultNoOptionOverloadAppliesDefaultConventions),
             new("default conventions expose MVP vocabulary and hash defaults", DefaultConventionsExposeMvpVocabularyAndHashDefaults),
     };
@@ -164,6 +165,19 @@ internal static class DefaultNamingPolicyTests {
     Equal("HubCustomer", conventions.NamingPolicy.GetHubTableName("Customers"));
   }
 
+  private static void AddDVaultOptionlessStartupPathResolvesExistingProjectHashCompatibilityDefaults() {
+    var services = new ServiceCollection();
+
+    services.AddDVault();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+
+    var conventions = provider.GetRequiredService<DataVaultConventions>();
+
+    Same(DataVaultConventions.Default, conventions);
+    AssertExistingProjectHashDefaults(conventions);
+  }
+
   private static void UseDataVaultNoOptionOverloadAppliesDefaultConventions() {
     var modelBuilder = new DataVaultModelBuilder();
 
@@ -194,11 +208,15 @@ internal static class DefaultNamingPolicyTests {
     SequenceEqual(
         ["dvault_records", "dvault_record_payloads", "dvault_record_metadata"],
         conventions.LogicalObjectNames);
+    AssertExistingProjectHashDefaults(conventions);
+    Equal("sha-256", conventions.PersistenceContentHashAlgorithm);
+    Equal("dvault.persistence-conventions.v1", conventions.PersistenceConventionVersion);
+  }
+
+  private static void AssertExistingProjectHashDefaults(DataVaultConventions conventions) {
     Equal("sha256-v1", conventions.StableHashAlgorithmId);
     Equal(32, conventions.StableHashDigestByteLength);
     Equal(DataVaultHashKeyStorageProfile.HexString, conventions.HashKeyStorageProfile);
-    Equal("sha-256", conventions.PersistenceContentHashAlgorithm);
-    Equal("dvault.persistence-conventions.v1", conventions.PersistenceConventionVersion);
   }
 
   private static void Equal<T>(T expected, T actual) {

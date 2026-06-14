@@ -427,6 +427,44 @@ public sealed class DataVaultEfMetadataTranslationTests {
   }
 
   [Fact]
+  public void UseDataVaultNoOptionOverloadRecordsExistingProjectHashCompatibilityDefaults() {
+    var modelBuilder = CreateModelBuilder();
+
+    var result = modelBuilder.UseDataVault();
+
+    Assert.Same(modelBuilder, result);
+    Assert.Equal(
+        "sqlite-v1",
+        Assert.IsType<string>(modelBuilder.Model.FindAnnotation(DataVaultAnnotationNames.ProviderProfile)?.Value));
+
+    var conventions = Assert.IsType<DataVaultConventions>(
+        modelBuilder.Model.FindAnnotation(DataVaultAnnotationNames.Conventions)?.Value);
+
+    Assert.Same(DataVaultConventions.Default, conventions);
+    AssertExistingProjectHashDefaults(conventions);
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataDefaultPathProjectsExistingProjectHexCompatibilityMappings() {
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.ApplyDataVaultMetadata(CreateBridgeMetadataModel());
+
+    AssertHexStringHashKeyCompatibilityProperty(
+        FindEntity(modelBuilder.Model, "HubCustomer"),
+        "CustomerHashKey",
+        DataVaultLogicalPropertyKind.HashKey);
+    AssertHexStringHashKeyCompatibilityProperty(
+        FindEntity(modelBuilder.Model, "LinkCustomerOrder"),
+        "CustomerHashKey",
+        DataVaultLogicalPropertyKind.ParticipantReference);
+    AssertHexStringHashKeyCompatibilityProperty(
+        FindEntity(modelBuilder.Model, "BridgeCustomerOrder"),
+        "OrderHashKey",
+        DataVaultLogicalPropertyKind.ParticipantReference);
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataBinaryHashKeyProfileAppliesProviderNeutralConversionToKeysAndReferences() {
     var modelBuilder = CreateModelBuilder();
     var profile = DataVaultProviderCapabilityProfiles.SqlServer.WithHashKeyStorageProfile(
@@ -1508,6 +1546,40 @@ public sealed class DataVaultEfMetadataTranslationTests {
     Assert.Equal(32, AnnotationValue<int>(property, DataVaultAnnotationNames.StableHashDigestByteLength));
     Assert.Equal("lowercase-hex-no-prefix", AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashDigestEncoding));
     Assert.Equal("none-string-model", AnnotationValue<string>(property, DataVaultAnnotationNames.HashKeyConversionBehavior));
+    Assert.Null(property.GetValueConverter());
+  }
+
+  private static void AssertExistingProjectHashDefaults(DataVaultConventions conventions) {
+    Assert.Equal("sha256-v1", conventions.StableHashAlgorithmId);
+    Assert.Equal(32, conventions.StableHashDigestByteLength);
+    Assert.Equal(DataVaultHashKeyStorageProfile.HexString, conventions.HashKeyStorageProfile);
+  }
+
+  private static void AssertHexStringHashKeyCompatibilityProperty(
+      IMutableEntityType entityType,
+      string propertyName,
+      DataVaultLogicalPropertyKind expectedLogicalPropertyKind) {
+    var property = entityType.FindProperty(propertyName);
+
+    Assert.NotNull(property);
+    Assert.Equal(typeof(string), property!.ClrType);
+    Assert.Equal("sqlite-v1", AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderProfile));
+    Assert.Equal(expectedLogicalPropertyKind, AnnotationValue<DataVaultLogicalPropertyKind>(
+        property,
+        DataVaultAnnotationNames.ProviderLogicalPropertyKind));
+    Assert.Equal("TEXT", property.GetColumnType());
+    Assert.Equal("TEXT", AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderStorageType));
+    Assert.Equal(DataVaultProviderValueFormat.LowercaseHexText, AnnotationValue<DataVaultProviderValueFormat>(
+        property,
+        DataVaultAnnotationNames.ProviderValueFormat));
+    Assert.Equal(DataVaultHashKeyStorageProfile.HexString, AnnotationValue<DataVaultHashKeyStorageProfile>(
+        property,
+        DataVaultAnnotationNames.HashKeyStorageProfile));
+    Assert.Equal("sha256-v1", AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashAlgorithmId));
+    Assert.Equal(32, AnnotationValue<int>(property, DataVaultAnnotationNames.StableHashDigestByteLength));
+    Assert.Equal("lowercase-hex-no-prefix", AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashDigestEncoding));
+    Assert.Equal("none-string-model", AnnotationValue<string>(property, DataVaultAnnotationNames.HashKeyConversionBehavior));
+    Assert.Null(property.GetValueConverter());
   }
 
   private static void AssertPrimaryKey(IMutableEntityType entityType, string expectedName, string[] expectedProperties) {

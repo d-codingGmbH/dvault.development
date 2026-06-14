@@ -220,6 +220,51 @@ public sealed class SqliteDataVaultSchemaTests {
   }
 
   [Fact]
+  public void DefaultApplyDataVaultMetadataKeepsSqliteHashColumnsHexStringCompatible() {
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+
+    var options = new DbContextOptionsBuilder<DefaultTranslatedDataVaultSchemaContext>()
+        .UseSqlite(CreateConnectionString(database))
+        .Options;
+
+    using var context = new DefaultTranslatedDataVaultSchemaContext(options);
+
+    AssertHashProperty(
+        context.Model,
+        "HubCustomer",
+        "CustomerHashKey",
+        DataVaultLogicalPropertyKind.HashKey,
+        DataVaultHashKeyStorageProfile.HexString,
+        "TEXT",
+        DataVaultProviderValueFormat.LowercaseHexText,
+        "none-string-model",
+        expectedStableHashAlgorithmId: "sha256-v1",
+        expectedStableHashDigestByteLength: 32);
+    AssertHashProperty(
+        context.Model,
+        "LinkCustomerOrder",
+        "CustomerHashKey",
+        DataVaultLogicalPropertyKind.ParticipantReference,
+        DataVaultHashKeyStorageProfile.HexString,
+        "TEXT",
+        DataVaultProviderValueFormat.LowercaseHexText,
+        "none-string-model",
+        expectedStableHashAlgorithmId: "sha256-v1",
+        expectedStableHashDigestByteLength: 32);
+    AssertHashProperty(
+        context.Model,
+        "BridgeCustomerOrder",
+        "OrderHashKey",
+        DataVaultLogicalPropertyKind.ParticipantReference,
+        DataVaultHashKeyStorageProfile.HexString,
+        "TEXT",
+        DataVaultProviderValueFormat.LowercaseHexText,
+        "none-string-model",
+        expectedStableHashAlgorithmId: "sha256-v1",
+        expectedStableHashDigestByteLength: 32);
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataCodeFirstCreatesSameSqliteSchemaAsMetadataBaseline() {
     using var metadataFirstDatabase = SqliteTestDatabase.CreateTemporaryFile();
     using var codeFirstDatabase = SqliteTestDatabase.CreateTemporaryFile();
@@ -714,7 +759,9 @@ public sealed class SqliteDataVaultSchemaTests {
       DataVaultHashKeyStorageProfile expectedStorageProfile,
       string expectedStoreType,
       DataVaultProviderValueFormat expectedValueFormat,
-      string expectedConversionBehavior) {
+      string expectedConversionBehavior,
+      string expectedStableHashAlgorithmId = StableHashAlgorithmId,
+      int expectedStableHashDigestByteLength = StableHashDigestByteLength) {
     var entity = model.GetEntityTypes().Single(entityType => string.Equals(entityType.Name, entityName, StringComparison.Ordinal));
     var property = entity.FindProperty(propertyName);
 
@@ -729,8 +776,8 @@ public sealed class SqliteDataVaultSchemaTests {
     Assert.Equal(expectedStorageProfile, AnnotationValue<DataVaultHashKeyStorageProfile>(
         property,
         DataVaultAnnotationNames.HashKeyStorageProfile));
-    Assert.Equal(StableHashAlgorithmId, AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashAlgorithmId));
-    Assert.Equal(StableHashDigestByteLength, AnnotationValue<int>(property, DataVaultAnnotationNames.StableHashDigestByteLength));
+    Assert.Equal(expectedStableHashAlgorithmId, AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashAlgorithmId));
+    Assert.Equal(expectedStableHashDigestByteLength, AnnotationValue<int>(property, DataVaultAnnotationNames.StableHashDigestByteLength));
     Assert.Equal("lowercase-hex-no-prefix", AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashDigestEncoding));
     Assert.Equal(expectedConversionBehavior, AnnotationValue<string>(property, DataVaultAnnotationNames.HashKeyConversionBehavior));
     if (expectedStorageProfile == DataVaultHashKeyStorageProfile.Binary) {
@@ -743,6 +790,12 @@ public sealed class SqliteDataVaultSchemaTests {
 
   private static T AnnotationValue<T>(IProperty property, string annotationName) {
     return Assert.IsType<T>(property.FindAnnotation(annotationName)?.Value);
+  }
+
+  private sealed class DefaultTranslatedDataVaultSchemaContext(DbContextOptions<DefaultTranslatedDataVaultSchemaContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(CreateMetadataModel());
+    }
   }
 
   private sealed class TranslatedDataVaultSchemaContext(
