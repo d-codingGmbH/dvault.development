@@ -3,21 +3,20 @@
   "ticket-id": "06FBSC0MNH0YAWQ4NY2WSC8KJG",
   "ticket-type": "task",
   "title": "Task: Benchmark binary-first profile against hex-compatible profile",
-  "revision": "06FBSCXT2YAYC4NPZERDTFZBNW",
-  "status": "todo",
+  "revision": "06FCGWFERK3SRW3JYWH61ZSR0G",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
     "area/benchmarking",
-    "area/performance",
     "area/hashing",
-    "area/testing"
+    "area/performance",
+    "area/testing",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FBSB0R45T7THA6KW1X824QV0",
   "release-id": "06FBSAVBR5AHWKVMMR014KGW94",
   "created-at": "2026-06-12T16:35:16.9635178Z",
-  "updated-at": "2026-06-12T16:39:15.7354734Z"
+  "updated-at": "2026-06-14T23:22:50.4369231Z"
 }
