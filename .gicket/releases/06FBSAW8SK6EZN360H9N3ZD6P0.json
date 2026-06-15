@@ -3,6 +3,6 @@
   "release-id": "06FBSAW8SK6EZN360H9N3ZD6P0",
   "name": "v0.39.0 - Provider Optimization Evidence Matrix",
   "description": "Close provider-performance blind spots with a comparable evidence matrix across supported EF Core providers, including DB2, binary-vs-hex measurements, and documented strategy gaps before new optimizations are implemented.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-12T16:30:18.8284442Z"
 }

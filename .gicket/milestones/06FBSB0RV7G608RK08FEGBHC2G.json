@@ -3,6 +3,6 @@
   "milestone-id": "06FBSB0RV7G608RK08FEGBHC2G",
   "name": "v0.39.0 - Provider evidence contract",
   "description": "Define a comparable provider optimization matrix covering save/read shapes, binary-vs-hex storage, DB2, fallback reasons, and stop conditions.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-12T16:30:55.7053116Z"
 }
