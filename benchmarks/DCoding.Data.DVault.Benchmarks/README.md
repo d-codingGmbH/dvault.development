@@ -52,7 +52,9 @@ Use `--hash-key-storage-matrix` to run the bounded hash-key comparison baseline 
 dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --provider sqlite --hash-key-storage-matrix --iterations 3 --warmup 1 --output artifacts/benchmarks/sqlite-hash-key-storage
 ```
 
-The matrix keeps the public DVault hash-key boundary as lowercase hexadecimal strings while projecting the selected stable-hash algorithm and physical storage profile into the EF model. In matrix mode, DVault save, latest-read, PIT, bridge, streaming-save, and latest-satellite lookup rows append the hash-key variant to the existing baseline name, for example `dvault-adddvaultsqlite-optimized/sha256-128-v1-binary`. Single-variant runs can use `--stable-hash sha256-128-v1` and `--hash-key-storage binary` when isolating one comparison point.
+Use the default `--provider all` filter, or one configured provider filter, when collecting provider comparison rows for the same four variants. The external benchmark-lane set is PostgreSQL, SQL Server, MySQL, and Oracle; DB2 remains diagnostics-only or smoke-only unless a later ticket adds a benchmark lane. Unconfigured selected providers still emit skipped placeholder rows with planned strategy detail and `hashKeyVariant` execution metadata so binary-vs-hex artifact sets remain comparable.
+
+The matrix keeps the public DVault hash-key boundary as lowercase hexadecimal strings while projecting the selected stable-hash algorithm and physical storage profile into the EF model. In matrix mode, DVault save, latest-read, PIT, bridge, streaming-save, and latest-satellite lookup rows preserve `hashKeyVariant` in `executionDetail`; non-default variants also append the variant to the existing baseline name, for example `dvault-adddvaultsqlite-optimized/sha256-128-v1-binary`. Single-variant runs can use `--stable-hash sha256-128-v1` and `--hash-key-storage binary` when isolating one comparison point.
 
 Use `--latest-indexes` to isolate the latest-satellite hash-diff lookup that protects insert-only satellites from repeated unchanged writes:
 

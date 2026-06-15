@@ -1,79 +1,61 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the ticket to the existing four-variant hash-key benchmark matrix baseline so SQLite plus configured PostgreSQL, SQL Server, MySQL, and Oracle lanes can emit comparable binary-vs-hex rows without reopening DB2 or consumer-runtime scope.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The bounded variant set is already visible in the repository: sha256-v1-hex, sha256-v1-binary, sha256-128-v1-hex, and sha256-128-v1-binary.
 - Comparable evidence should reuse the existing benchmark-summary.md, benchmark-summary.csv, and benchmark-summary.json schema plus deterministic executionDetail hashKeyVariant metadata; hash-key-footprint sidecars remain supplemental SQLite-local storage evidence.
 - Configured external benchmark providers for this ticket are the existing PostgreSQL, SQL Server, MySQL, and Oracle lanes. DB2 stays out of scope because the benchmark filter set and evidence matrix still treat DB2 as diagnostics-only or smoke-only with no benchmark lane.
 - The safe v1 baseline is one matrix run that keeps the required SQLite rows present and adds configured optional-provider rows, rather than inventing standalone provider-only footprint artifacts.
 - No child tickets, relation writes, description updates, attachments, or planning documents were materialized during this refinement.
 
-### Scope In
+Scope In
 - Extend or verify the benchmark harness, tests, and guidance so the bounded hash-key storage matrix can run against the required SQLite baseline and any configured PostgreSQL, SQL Server, MySQL, or Oracle benchmark lane.
 - Preserve comparable scenario and baseline identities for provider-native bulk ingestion, latest-satellite read, PIT as-of read, bridge traversal read, and the existing SQLite save, streaming-save, read, and latest-index rows under each hash-key variant.
 - Preserve run-context reporting of hash-key variants, provider filter, optional-provider availability, skip reasons, runtime environment, and iteration or warmup settings in the shared artifact triplet.
 - Keep optional-provider rows visible as skipped placeholders when connection strings, provider packages, or live connectivity are unavailable.
 - Update benchmark-facing docs or release/planning guidance only as needed to make the dimension discoverable without making benchmark execution a consumer prerequisite.
 
-### Scope Out
+Scope Out
 - Adding a DB2 benchmark lane, DB2 provider filter, or DB2 timing claims.
 - Replacing the shared benchmark artifact schema or inventing provider-specific benchmark file names.
 - Claiming cross-provider physical footprint evidence; hash-key-footprint sidecars remain SQLite-local unless a separate provider-specific bundle is added.
 - Changing public hash-key value boundaries, default stable-hash behavior, binary-first migration posture, or persisted-key repair behavior.
 - Collecting and checking in new external-provider evidence bundles; downstream evidence population remains separate work under ticket 06FBSC4BEBGSVVTJSQXM1Z74CC.
 
-## Acceptance Criteria
-- A bounded hash-key matrix run can emit comparable benchmark-summary artifacts for SQLite plus any configured PostgreSQL, SQL Server, MySQL, or Oracle lane, using the shared markdown, CSV, and JSON contract and preserving skipped rows for unconfigured providers.
-- The bounded variant set is exactly sha256-v1-hex, sha256-v1-binary, sha256-128-v1-hex, and sha256-128-v1-binary, and each emitted row preserves deterministic hashKeyVariant execution detail without inventing new row fields.
-- Optional-provider save and read rows remain present under each variant with the same planned or selected strategy facts and normalized skip-reason behavior already used by the provider optimization matrix.
-- The run context preserves hashKeyVariants, providerFilter, required and optional provider execution status, iterations, warmup iterations, load-timestamp storage, and runtime environment so binary-vs-hex comparisons stay machine- and provider-context aware.
-- When a matrix run includes more than one variant, SQLite hash-key-footprint sidecars are still emitted and docs explicitly scope them as supplemental SQLite-local storage evidence rather than cross-provider timing proof.
-- Benchmark guidance clearly states that the configured external-provider set for this ticket is PostgreSQL, SQL Server, MySQL, and Oracle, while DB2 remains outside the benchmark lane baseline.
-
-## Definition of Done
-- Repository tests, benchmark harness behavior, and benchmark guidance tell one consistent story about the four-variant matrix and the existing optional provider set.
-- A standard matrix run that includes SQLite can generate contract-compliant artifacts without custom post-processing or consumer-only setup beyond the already documented optional provider environment variables.
-- Public docs and release or planning references describe benchmark execution as optional evidence tooling, not as a runtime prerequisite for consumers who adopt binary hash-key storage.
-- No repository guidance overstates skipped, diagnostics-only, smoke-only, or SQLite-local storage-footprint evidence as guaranteed measured cross-provider performance.
-- Downstream evidence collection can treat this ticket as the harness or dimension prerequisite without reopening provider set, variant set, or artifact-contract decisions.
-
-## Implementation Notes
-- BenchmarkOptions.Parse already exposes the bounded matrix switch and variant vocabulary; reuse those four labels instead of creating ticket-specific matrix names.
-- BenchmarkRunner.CreateSqliteBenchmarks and CreateProviderBenchmarks already iterate EffectiveHashKeyVariants; keep that pattern authoritative for SQLite and the configured PostgreSQL, SQL Server, MySQL, and Oracle lanes.
-- BenchmarkRunContext already records hash-key variants and optional-provider execution status; those context fields should remain the authoritative comparison surface for artifact readers.
-- BenchmarkHashKeyFootprintArtifacts is currently SQLite-specific through the required-provider baseline and SQLite capability mapping; this ticket should not widen footprint claims beyond that boundary.
-- The existing provider-read guidance rows already show that non-SQLite latest-satellite optimization is not registered, so PIT and bridge rows may be compared across variants but non-SQLite latest-satellite rows remain provider-neutral or skipped-placeholder guidance rather than optimized timing evidence.
-- Live relations currently show done tickets 06FBSC3N7ZFVQW3AV2JJ8T7Q7W and 06FBSC0MNH0YAWQ4NY2WSC8KJG blocking this ticket, and this ticket blocking 06FBSC4BEBGSVVTJSQXM1Z74CC; no relation cleanup was materialized during this refinement.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After this dimension is in place, should ticket 06FBSC4BEBGSVVTJSQXM1Z74CC check in one external-provider evidence bundle so the matrix includes at least one measured non-SQLite binary-vs-hex comparison instead of only placeholder rows when providers are absent?
 - If later work needs provider-specific storage-footprint sidecars, which provider should be first rather than broadening this ticket beyond the current SQLite-local footprint baseline?
 - If DB2 eventually gains a benchmark lane, should it reuse the same four-variant matrix labels and shared artifact contract rather than introducing a separate DB2-only format?
 
-## Risks
+Risks
 - If docs broaden SQLite-local hash-key-footprint sidecars into cross-provider proof, downstream tickets may overstate storage evidence that the repository does not yet measure.
 - If matrix mode drops skipped optional-provider rows or their strategy metadata, artifact readers will lose comparability when external providers are not configured.
 - If non-SQLite latest-satellite rows are presented as optimized binary-vs-hex timing evidence, the ticket contract will contradict the current read-strategy baseline.
 - If this ticket grows from harness and dimension work into checked-in external evidence collection, it will overlap the separate provider-evidence population ticket.
 
-## Split Recommendations
+Split recommendations
 - No split recommended inside this ticket; harness and dimension work is already cleanly separated from downstream evidence population in ticket 06FBSC4BEBGSVVTJSQXM1Z74CC.
 - If provider-specific footprint bundles are needed later, create a separate follow-up per provider or one explicit cross-provider storage-evidence story instead of enlarging this ticket.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 5
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Extend benchmark coverage so binary and hex hash storage can be compared across configured providers without making benchmark execution mandatory for consumers. Acceptance: at least SQLite plus any configured external providers can emit comparable binary-vs-hex evidence.
+Run mode
+- apply: planned updates are applied after this comment

@@ -3,21 +3,20 @@
   "ticket-id": "06FBSC40N01AH5PRZ1QNKRVTWR",
   "ticket-type": "task",
   "title": "Task: Add binary-vs-hex provider benchmark dimension",
-  "revision": "06FBSCXXPP535CFS30GHPY64YW",
-  "status": "todo",
+  "revision": "06FCS0T5XWKZBB1P08ZP9QNVA4",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
     "area/benchmarking",
-    "area/performance",
     "area/hashing",
-    "area/provider-support"
+    "area/performance",
+    "area/provider-support",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FBSB0SHQ194H6HBDHFZ724C4",
   "release-id": "06FBSAW8SK6EZN360H9N3ZD6P0",
   "created-at": "2026-06-12T16:35:44.5400351Z",
-  "updated-at": "2026-06-12T16:39:16.6614989Z"
+  "updated-at": "2026-06-15T18:20:15.7273678Z"
 }

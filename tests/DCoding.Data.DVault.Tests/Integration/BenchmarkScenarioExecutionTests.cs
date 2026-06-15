@@ -546,6 +546,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.Contains("- Warmup iterations: 0", markdown);
       Assert.Contains("- Load timestamp storage: ProviderDefault", markdown);
       Assert.Contains("- Provider filter: all", markdown);
+      Assert.Contains("- Hash key variants: sha256-v1-hex", markdown);
       Assert.Contains("- OS description: ", markdown);
       Assert.Contains("- OS architecture: ", markdown);
       Assert.Contains("- Process architecture: ", markdown);
@@ -580,6 +581,9 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.Equal(0, context.GetProperty("warmupIterations").GetInt32());
       Assert.Equal("ProviderDefault", context.GetProperty("loadTimestampStorage").GetString());
       Assert.Equal("all", context.GetProperty("providerFilter").GetString());
+      AssertHashKeyVariantContext(
+          ParseHashKeyVariantContext(context.GetProperty("hashKeyVariants")),
+          [BenchmarkHashKeyVariant.Default]);
       Assert.False(string.IsNullOrWhiteSpace(context.GetProperty("osDescription").GetString()));
       Assert.False(string.IsNullOrWhiteSpace(context.GetProperty("osArchitecture").GetString()));
       Assert.False(string.IsNullOrWhiteSpace(context.GetProperty("processArchitecture").GetString()));
@@ -1218,6 +1222,67 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
+  public async Task ProviderFilteredHashKeyStorageMatrixEmitsSelectedProviderPlaceholders() {
+    var artifactDirectory = Path.Combine(
+        Path.GetTempPath(),
+        "DVaultBenchmarkProviderMatrixArtifacts-" + Guid.NewGuid().ToString("N"));
+    var expectedVariantLabels = string.Join(", ", BenchmarkHashKeyVariant.BoundedStorageMatrix.Select(variant => variant.Label));
+
+    try {
+      var text = await RunBenchmarkAndCaptureOutputAsync(new BenchmarkOptions(
+          1,
+          0,
+          artifactDirectory,
+          ProviderFilter: BenchmarkProviderFilters.Postgres,
+          HashKeyVariants: BenchmarkHashKeyVariant.BoundedStorageMatrix))
+          .ConfigureAwait(false);
+
+      Assert.Contains("Hash key variants: " + expectedVariantLabels, text);
+      Assert.Contains(PostgresProviderName + ": skipped - " + NotConfiguredSkipReason, text);
+      Assert.Contains("Recorded 24 benchmark report rows.", text);
+      Assert.Contains("Skipped 24 benchmark report rows.", text);
+      Assert.DoesNotContain("Running " + SqliteProviderName, text);
+      Assert.DoesNotContain(SqlServerProviderName + ": skipped", text);
+      Assert.DoesNotContain(MySqlProviderName + ": skipped", text);
+      Assert.DoesNotContain(OracleProviderName + ": skipped", text);
+
+      var artifacts = VerifyBenchmarkArtifactTriplet(
+          await File.ReadAllTextAsync(Path.Combine(artifactDirectory, "benchmark-summary.md")).ConfigureAwait(false),
+          await File.ReadAllTextAsync(Path.Combine(artifactDirectory, "benchmark-summary.csv")).ConfigureAwait(false),
+          await File.ReadAllTextAsync(Path.Combine(artifactDirectory, "benchmark-summary.json")).ConfigureAwait(false));
+
+      Assert.Equal(BenchmarkProviderFilters.Postgres, artifacts.Context.ProviderFilter);
+      Assert.Equal(24, artifacts.RowsByKey.Count);
+      AssertHashKeyVariantContext(artifacts.Context.HashKeyVariants, BenchmarkHashKeyVariant.BoundedStorageMatrix);
+      Assert.Single(artifacts.Context.OptionalProviders);
+      AssertOptionalProviderContext(
+          artifacts.Context.OptionalProviders,
+          PostgresProviderName,
+          BenchmarkExternalProviderDefinitions.Postgres.ConnectionStringEnvironmentVariable,
+          NotConfiguredSkipReason);
+
+      foreach (var row in artifacts.RowsByKey.Values) {
+        Assert.Equal(PostgresProviderName, row.ProviderName);
+        Assert.Equal("skipped", row.ExecutionStatus);
+        Assert.Equal(0, row.Iterations);
+        Assert.Equal("not executed", row.PersistedOutcome);
+        Assert.Contains("hashKeyVariant=", row.ExecutionDetail, StringComparison.Ordinal);
+      }
+
+      foreach (var variant in BenchmarkHashKeyVariant.BoundedStorageMatrix) {
+        Assert.Contains(
+            artifacts.RowsByKey.Values,
+            row => row.ExecutionDetail.Contains("hashKeyVariant=" + variant.Label, StringComparison.Ordinal));
+      }
+    }
+    finally {
+      if (Directory.Exists(artifactDirectory)) {
+        Directory.Delete(artifactDirectory, recursive: true);
+      }
+    }
+  }
+
+  [Fact]
   public async Task CustomerProfileDataVaultBenchmarkSupportsShortBinaryHashKeyVariant() {
     var cancellationToken = TestContext.Current.CancellationToken;
     var variant = BenchmarkHashKeyVariant.BoundedStorageMatrix.Single(candidate =>
@@ -1417,6 +1482,9 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   private static BenchmarkArtifactContext ParseBenchmarkContext(JsonElement context) {
+    var hashKeyVariants = context.TryGetProperty("hashKeyVariants", out var hashKeyVariantsProperty)
+        ? ParseHashKeyVariantContext(hashKeyVariantsProperty)
+        : [];
     var optionalProviders = context.GetProperty("optionalProviders")
         .EnumerateArray()
         .Select(provider => new BenchmarkOptionalProviderContext(
@@ -1449,6 +1517,7 @@ public sealed class BenchmarkScenarioExecutionTests {
         GetRequiredInt32(context, "processorCount"),
         GetRequiredString(context, "dotNetRuntimeDescription"),
         GetRequiredString(context, "dotNetRuntimeVersion"),
+        hashKeyVariants,
         optionalProvidersByName);
   }
 
@@ -1626,6 +1695,13 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Contains("- Warmup iterations: " + context.WarmupIterations.ToString(CultureInfo.InvariantCulture), markdown, StringComparison.Ordinal);
     Assert.Contains("- Load timestamp storage: " + context.LoadTimestampStorage, markdown, StringComparison.Ordinal);
     Assert.Contains("- Provider filter: " + context.ProviderFilter, markdown, StringComparison.Ordinal);
+    if (context.HashKeyVariants.Count > 0) {
+      Assert.Contains(
+          "- Hash key variants: " + string.Join(", ", context.HashKeyVariants.Select(variant => variant.Label)),
+          markdown,
+          StringComparison.Ordinal);
+    }
+
     Assert.Contains("- OS description: " + context.OsDescription, markdown, StringComparison.Ordinal);
     Assert.Contains("- OS architecture: " + context.OsArchitecture, markdown, StringComparison.Ordinal);
     Assert.Contains("- Process architecture: " + context.ProcessArchitecture, markdown, StringComparison.Ordinal);
@@ -1646,6 +1722,7 @@ public sealed class BenchmarkScenarioExecutionTests {
   private static void AssertExpectedRootBenchmarkRows(VerifiedBenchmarkArtifacts artifacts) {
     Assert.Equal(SqliteProviderName, artifacts.Context.Provider);
     Assert.Equal(ExpectedRows.Length, artifacts.RowsByKey.Count);
+    AssertHashKeyVariantContext(artifacts.Context.HashKeyVariants, [BenchmarkHashKeyVariant.Default]);
     AssertOptionalProviderContext(
         artifacts.Context.OptionalProviders,
         PostgresProviderName,
@@ -1690,6 +1767,28 @@ public sealed class BenchmarkScenarioExecutionTests {
     }
 
     AssertProviderReadRowsStayVisibleAsSkipped(artifacts);
+    AssertRootHashKeyVariantRowsIncludeExecutionDetail(artifacts);
+  }
+
+  private static void AssertRootHashKeyVariantRowsIncludeExecutionDetail(VerifiedBenchmarkArtifacts artifacts) {
+    var variant = Assert.Single(artifacts.Context.HashKeyVariants);
+    var expectedFragments = new[] {
+        "hashKeyVariant=" + variant.Label,
+        "stableHashAlgorithm=" + variant.StableHashAlgorithmId,
+        "digestBytes=" + variant.DigestByteLength.ToString(CultureInfo.InvariantCulture),
+        "hashKeyStorage=" + variant.StorageProfile,
+        "hashKeyPayloadBytes=" + variant.HashKeyPayloadBytes.ToString(CultureInfo.InvariantCulture),
+    };
+
+    foreach (var row in artifacts.RowsByKey.Values.Where(IsHashKeyVariantBenchmarkRow)) {
+      foreach (var fragment in expectedFragments) {
+        Assert.Contains(fragment, row.ExecutionDetail, StringComparison.Ordinal);
+      }
+    }
+  }
+
+  private static bool IsHashKeyVariantBenchmarkRow(BenchmarkArtifactRow row) {
+    return row.BaselineName.StartsWith("dvault-adddvault", StringComparison.Ordinal);
   }
 
   private static void AssertProviderReadRowsStayVisibleAsSkipped(VerifiedBenchmarkArtifacts artifacts) {
@@ -2057,6 +2156,21 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Equal(skipReason, provider.SkipReason);
   }
 
+  private static void AssertHashKeyVariantContext(
+      IReadOnlyList<BenchmarkHashKeyVariantArtifactContext> actualVariants,
+      IReadOnlyList<BenchmarkHashKeyVariant> expectedVariants) {
+    Assert.Equal(expectedVariants.Select(variant => variant.Label), actualVariants.Select(variant => variant.Label));
+
+    foreach (var expectedVariant in expectedVariants) {
+      var actualVariant = Assert.Single(actualVariants, variant => variant.Label == expectedVariant.Label);
+      Assert.Equal(expectedVariant.StableHashAlgorithmId, actualVariant.StableHashAlgorithmId);
+      Assert.Equal(expectedVariant.DigestByteLength, actualVariant.DigestByteLength);
+      Assert.Equal(expectedVariant.HexCharacterLength, actualVariant.HexCharacterLength);
+      Assert.Equal(expectedVariant.StorageProfile.ToString(), actualVariant.StorageProfile);
+      Assert.Equal(expectedVariant.HashKeyPayloadBytes, actualVariant.HashKeyPayloadBytes);
+    }
+  }
+
   private static void AssertCompletedMetricsPresent(BenchmarkArtifactRow row) {
     Assert.False(string.IsNullOrWhiteSpace(row.MeanMilliseconds), "Completed row '" + row.Key + "' has no meanMilliseconds.");
     Assert.False(string.IsNullOrWhiteSpace(row.MinMilliseconds), "Completed row '" + row.Key + "' has no minMilliseconds.");
@@ -2077,6 +2191,21 @@ public sealed class BenchmarkScenarioExecutionTests {
 
   private static void AssertJsonMetricNull(JsonElement result, string propertyName) {
     Assert.Equal(JsonValueKind.Null, result.GetProperty(propertyName).ValueKind);
+  }
+
+  private static BenchmarkHashKeyVariantArtifactContext[] ParseHashKeyVariantContext(JsonElement hashKeyVariants) {
+    Assert.Equal(JsonValueKind.Array, hashKeyVariants.ValueKind);
+
+    return hashKeyVariants
+        .EnumerateArray()
+        .Select(variant => new BenchmarkHashKeyVariantArtifactContext(
+            GetRequiredString(variant, "label"),
+            GetRequiredString(variant, "stableHashAlgorithmId"),
+            GetRequiredInt32(variant, "digestByteLength"),
+            GetRequiredInt32(variant, "hexCharacterLength"),
+            GetRequiredString(variant, "storageProfile"),
+            GetRequiredInt32(variant, "hashKeyPayloadBytes")))
+        .ToArray();
   }
 
   private static string[] ParseCsvLine(string line) {
@@ -2405,7 +2534,16 @@ public sealed class BenchmarkScenarioExecutionTests {
       int ProcessorCount,
       string DotNetRuntimeDescription,
       string DotNetRuntimeVersion,
+      IReadOnlyList<BenchmarkHashKeyVariantArtifactContext> HashKeyVariants,
       IReadOnlyDictionary<string, BenchmarkOptionalProviderContext> OptionalProviders);
+
+  private sealed record BenchmarkHashKeyVariantArtifactContext(
+      string Label,
+      string StableHashAlgorithmId,
+      int DigestByteLength,
+      int HexCharacterLength,
+      string StorageProfile,
+      int HashKeyPayloadBytes);
 
   private sealed record BenchmarkOptionalProviderContext(
       string ProviderName,

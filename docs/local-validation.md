@@ -87,3 +87,5 @@ DVAULT_TEST_DB2_CONNECTION_STRING='Server=localhost:50000;Database=dvault;UID=dv
 When DB2 is unset, unavailable, or unreachable, the root benchmark artifact triplet still preserves DB2 rows in the optional-provider matrix with `executionStatus=skipped`, `iterations=0`, blank/null metrics, normalized skip reasons, and planned execution details for the DB2 clean-context save and PIT/bridge read boundaries.
 
 Pass `--output <directory>` to emit `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json`. Increase `--iterations` and `--warmup` locally when collecting steadier timing numbers.
+
+Use `--hash-key-storage-matrix` to emit the bounded `sha256-v1` hex, `sha256-v1` binary, `sha256-128-v1` hex, and `sha256-128-v1` binary comparison rows. With the default provider filter, SQLite always runs locally and configured PostgreSQL, SQL Server, MySQL, and Oracle lanes run or stay visible as skipped placeholders; DB2 is not part of this benchmark lane baseline.
