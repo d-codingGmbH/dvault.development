@@ -1,8 +1,8 @@
 # Performance Profiles
 
-Status: v0.32.0 provider-threshold evidence with carried-forward v0.31.0 decision-tree contract
+Status: v0.39.0 provider-evidence documentation baseline with carried-forward v0.32.0 provider-threshold evidence and v0.31.0 decision-tree contract
 
-This guide is the detailed performance-profile reference for the current DVault performance-guidance baseline. It carries forward the v0.31.0 adopter decision tree and adds the v0.32.0 provider-threshold evidence bundles for PostgreSQL, SQL Server, MySQL, and Oracle plus the review-only provider-specific SQL artifact gate. It does not create automatic routing, absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, credential-management guidance, automatic PIT or bridge maintenance, raw SQL or physical-plan promises, deployable provider-specific SQL payload generation, or runtime artifact dispatch. The coordinated release record for the current provider-threshold evidence is [DVault v0.32.0 Release Notes](releases/v0.32.0.md). Earlier release notes remain historical feature-introduction records.
+This guide is the detailed performance-profile reference for the current DVault performance-guidance baseline. It carries forward the v0.31.0 adopter decision tree, the v0.32.0 provider-threshold evidence bundles for PostgreSQL, SQL Server, MySQL, and Oracle, the review-only provider-specific SQL artifact gate, and the v0.39.0 provider-evidence matrix handoff. It does not create automatic routing, absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, credential-management guidance, automatic PIT or bridge maintenance, raw SQL or physical-plan promises, deployable provider-specific SQL payload generation, runtime artifact dispatch, new benchmark artifacts, or package-version movement. The coordinated release record for the current provider-evidence documentation baseline is [DVault v0.39.0 Release Notes](releases/v0.39.0.md). Earlier release notes remain historical feature-introduction records.
 
 ## Evidence Baseline
 
@@ -12,7 +12,24 @@ Use the root benchmark artifact triplet as the quick local SQLite and skipped-pr
 - [benchmark-summary.csv](../benchmark-summary.csv)
 - [benchmark-summary.json](../benchmark-summary.json)
 
-Use [Provider Optimization Evidence Matrix](plans/provider-optimization-evidence-matrix.md) as the canonical lookup surface for provider optimization row identity, evidence posture, artifact source, stop/fallback conditions, and the `dvault.provider-evidence.v1` manifest row contract. It distinguishes completed timing evidence, skipped optional-provider placeholders, diagnostics-only evidence, smoke-only evidence, and SQLite-local storage-footprint evidence so follow-up tickets do not cite those postures interchangeably.
+Use [Provider Optimization Evidence Matrix](plans/provider-optimization-evidence-matrix.md) as the canonical lookup surface for provider optimization row identity, evidence posture, artifact source, stop/fallback conditions, and the `dvault.provider-evidence.v1` manifest row contract. Cite evidence rows by `scenario`, `provider`, `baseline`, and `posture` instead of copying raw benchmark tables or treating planning text as measured results. The matrix distinguishes completed timing evidence, skipped optional-provider placeholders, diagnostics-only evidence, smoke-only evidence, and SQLite-local storage-footprint evidence so follow-up tickets do not cite those postures interchangeably.
+
+Use [Provider Optimization Gap Matrix](plans/provider-optimization-gap-matrix.md) as the canonical follow-up recommendation surface. Its P0-P3 rows are planning backlog entries: non-SQLite `latest-satellite-read` rows are capability-gap recommendations, and PostgreSQL, SQL Server, MySQL, Oracle, and DB2 `provider-native-bulk-ingestion`, `pit-as-of-read`, and `bridge-traversal-read` rows are evidence-gap recommendations until provider-configured benchmark triplets exist. Gap-matrix recommendations do not promote skipped placeholders, diagnostics-only rows, smoke-only rows, or storage-footprint rows into completed provider timing evidence.
+
+## v0.39.0 Provider Evidence Boundary
+
+The v0.39.0 documentation baseline separates measured facts from forward-looking recommendations:
+
+| Surface | Use it for | Do not use it for |
+| --- | --- | --- |
+| Root benchmark artifact triplet | Local SQLite completed timing rows, skipped optional-provider row identity, run context, and deterministic execution details. | Completed PostgreSQL, SQL Server, MySQL, Oracle, or DB2 timing claims when the root row is skipped. |
+| Provider Optimization Evidence Matrix | Canonical row identity, posture semantics, artifact source, and claim boundaries for provider evidence rows. | Backlog priority, implementation ordering, or unsupported promotion of skipped, diagnostics-only, smoke-only, or storage-footprint rows. |
+| Provider Optimization Gap Matrix | Follow-up recommendations for capability gaps and evidence gaps, ordered by matrix priority. | Measured timing evidence, provider capability expansion, or release promises. |
+| v0.32 provider benchmark bundles | Completed external-provider timing where the linked bundle recorded completed rows with preserved run context. | Universal performance guarantees or claims for unconfigured providers. |
+
+For example, `scenario=latest-satellite-read; provider=SQLite local temporary files; baseline=dvault-adddvaultsqlite-optimized; posture=completed-timing` is a measured SQLite timing row when cited with the root triplet and run context. By contrast, `scenario=provider-native-bulk-ingestion; provider=PostgreSQL external provider; baseline=dvault-adddvaultpostgres-optimized; posture=skipped-placeholder` preserves row identity and planned path facts only until a provider-configured benchmark bundle completes.
+
+The DB2 boundary remains narrower than the other provider follow-ups. DB2 clean-context save and PIT/bridge candidate behavior may be cited from diagnostics and opt-in smoke posture where applicable, but completed DB2 timing, DB2 latest-satellite optimization, staged DB2 bulk, provider-native chunk execution, and DB2 live-schema reading remain outside the current evidence baseline.
 
 The v0.32.0 provider-threshold evidence extends that root triplet with checked-in benchmark bundles under `artifacts/benchmarks/...`:
 

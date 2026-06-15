@@ -2,6 +2,17 @@
 
 This changelog summarizes the public release-note trail. The detailed release records remain under [docs/releases/](docs/releases/); those files are the source of truth for scope, evidence, non-goals, and validation notes.
 
+## v0.39.0 - Provider Evidence Matrix Documentation Baseline
+
+- Adds a docs-only provider-evidence release record for the matrix baseline, caveats, and follow-up posture without defining a new consumer package-version line.
+- Updates the performance guidance to cite [Provider Optimization Evidence Matrix](docs/plans/provider-optimization-evidence-matrix.md) rows by `scenario`, `provider`, `baseline`, and `posture`.
+- Points follow-up recommendations to [Provider Optimization Gap Matrix](docs/plans/provider-optimization-gap-matrix.md) so planning rows stay separate from measured timing claims.
+- Preserves the checked-in root benchmark posture: SQLite local timing rows are completed where present, while optional PostgreSQL, SQL Server, MySQL, Oracle, and DB2 rows remain skipped placeholders when connection strings are unset.
+- Keeps DB2 bounded to the current diagnostics and smoke posture; no completed DB2 timing, latest-satellite optimization, staged DB2 bulk, provider-native chunk execution, or live-schema reading is claimed.
+- Records that no benchmarks were rerun, no benchmark schemas changed, no provider implementation changed, and no package publication or release automation outcome is documented by this note.
+
+See [DVault v0.39.0 Release Notes](docs/releases/v0.39.0.md).
+
 ## v0.38.0 - Binary-First New Project Profile
 
 - Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.38.0` / `net8.0` / EF Core 8 and `10.38.0` / `net10.0` / EF Core 10.
