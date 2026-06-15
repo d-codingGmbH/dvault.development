@@ -3,22 +3,21 @@
   "ticket-id": "06FBSBZRR9DP7YTR1ZZA3N6ANG",
   "ticket-type": "story",
   "title": "Story: Define binary-first new-project hash profile contract",
-  "revision": "06FCMKEX74C15NG9JFTDC0ZGEC",
-  "status": "todo",
+  "revision": "06FCN34M1682FZ90FND4P8A4CC",
+  "status": "done",
   "labels": [
     "area/architecture",
     "area/ef-core",
     "area/hashing",
     "area/schema",
     "automation/bot-ready",
-    "type/story",
     "tracking/parent",
-    "critic-needed"
+    "type/story"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FBSB0PPQ650WWHHRQHSDB03M",
   "release-id": "06FBSAVBR5AHWKVMMR014KGW94",
   "created-at": "2026-06-12T16:35:09.7536260Z",
-  "updated-at": "2026-06-15T08:02:41.0811766Z"
+  "updated-at": "2026-06-15T09:11:11.1130745Z"
 }
