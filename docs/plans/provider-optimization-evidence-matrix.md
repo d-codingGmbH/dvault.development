@@ -33,8 +33,182 @@ The matrix reuses the existing benchmark artifact contract vocabulary from [Perf
 - Row verifier coverage: [BenchmarkScenarioExecutionTests.cs](../../tests/DCoding.Data.DVault.Tests/Integration/BenchmarkScenarioExecutionTests.cs).
 - Closed fallback vocabularies: [DataVaultSaveStrategyFallbackCauseKind.cs](../../src/DCoding.Data.DVault/DataVaultSaveStrategyFallbackCauseKind.cs), [DataVaultReadStrategyFallbackCauseKind.cs](../../src/DCoding.Data.DVault/DataVaultReadStrategyFallbackCauseKind.cs), and [DataVaultChunkedSaveStateFallbackCauseKind.cs](../../src/DCoding.Data.DVault/DataVaultChunkedSaveStateFallbackCauseKind.cs).
 
+## Provider Evidence Manifest V1
+
+When benchmark or documentation work needs a machine-readable provider-evidence row, use this manifest shape instead of parsing prose-only benchmark notes or copying a bespoke table shape. The manifest is a contract for shared row data; this document does not add a new exporter, replace `benchmark-summary.md`, `benchmark-summary.csv`, or `benchmark-summary.json`, or create runtime manifest discovery.
+
+The document schema version is `dvault.provider-evidence.v1`. A manifest document contains exactly these top-level fields in this order:
+
+| Field | Type | Rule |
+| --- | --- | --- |
+| `schemaVersion` | string | Required. Must be `dvault.provider-evidence.v1`. |
+| `rows` | array | Required. Sort rows by `scenario`, `provider`, `baseline`, and `evidencePosture` with ordinal string comparison. |
+
+Each `rows[]` item uses deterministic camelCase fields in this order:
+
+| Field | Type | Null or omission rule |
+| --- | --- | --- |
+| `scenario` | string | Required. Use the benchmark `scenarioName` value when the row is benchmark-backed. Use the matrix scenario label for docs-owned rows. |
+| `provider` | string | Required. Reuse the provider display names from the benchmark artifact or matrix. |
+| `baseline` | string | Required. Use the benchmark `baselineName` value or the documented baseline label for docs-owned rows. |
+| `strategyFamily` | string or null | Required. Use the benchmark `strategyFamily` value when present; use `null` only when a docs-only row has no strategy-family label. |
+| `datasetSize` | string or null | Required. Use the benchmark row value when present; use `null` for docs-only rows that do not describe a benchmark dataset. |
+| `changeRatio` | string or null | Required. Use the benchmark row value when present; use `null` for docs-only rows that do not describe a benchmark change-ratio input. |
+| `sourceArtifacts` | array of strings | Required. Use repository-relative paths. Benchmark-backed rows list the artifact triplet; docs-only rows list their documentation, diagnostics, smoke, or storage-footprint sources. |
+| `evidencePosture` | string | Required. Use one of the closed posture values below. |
+| `executionStatus` | string or null | Required. Use `completed`, `skipped`, or `failed` for benchmark-backed rows. Use `null` for docs-only rows without a benchmark execution. |
+| `skipReason` | string or null | Required. Use the benchmark skip or failure reason for skipped and failed rows; otherwise `null`. |
+| `workloadShape` | string or null | Required. Use a bounded workload label such as `provider-native-bulk-ingestion` for save/workload rows; otherwise `null`. |
+| `readShape` | string or null | Required. Use the closed read-shape vocabulary for read rows; otherwise `null`. |
+| `selectedPath` | string or null | Required. Use the selected `executionPath` only when the row completed or diagnostics selected a provider path; otherwise `null`. |
+| `plannedPath` | string or null | Required. Use the planned `executionPath` for skipped placeholder or docs-only candidate rows; otherwise `null`. |
+| `selectedStrategy` | string or null | Required. Use the selected provider strategy only when the row completed or diagnostics selected it; convert `<none>` to `null`. |
+| `plannedStrategy` | string or null | Required. Use the planned provider strategy for skipped placeholder or docs-only candidate rows; convert `<none>` to `null`. |
+| `fallbackCauses` | array of strings | Required. Use an empty array when no bounded fallback cause applies; never serialize `none` as a cause. |
+| `resultSummary` | object | Required. Use the bounded result summary shape below. |
+
+The `resultSummary` object uses these fields in this order:
+
+| Field | Type | Rule |
+| --- | --- | --- |
+| `iterations` | number or null | Use the benchmark row iteration count for benchmark-backed rows. Use `null` for docs-only rows. |
+| `metricState` | string | Use `present`, `not-executed`, or `not-applicable`. Only `present` rows may support timing or allocation claims. |
+| `persistedOutcome` | string or null | Use the benchmark `persistedOutcome` value for benchmark-backed rows; use `null` for docs-only rows. |
+| `summary` | string | Required bounded summary text. Do not include raw request values, credentials, machine paths, stack traces, provider messages, or arbitrary prose copied from benchmark output. |
+
+Closed vocabularies:
+
+- `evidencePosture`: `completed-timing`, `skipped-placeholder`, `diagnostics-only`, `smoke-only`, `storage-footprint`.
+- `executionStatus`: `completed`, `skipped`, `failed`, or `null` for docs-only rows.
+- `readShape`: `LatestSatellite`, `PitAsOf`, `Bridge`, or `null`.
+- `metricState`: `present`, `not-executed`, `not-applicable`.
+- `fallbackCauses`: enum names from `DataVaultSaveStrategyFallbackCauseKind`, `DataVaultReadStrategyFallbackCauseKind`, and `DataVaultChunkedSaveStateFallbackCauseKind`; use `[]` when the detail token says `none`.
+
+### Source Mapping
+
+Benchmark-backed rows map from the existing artifact row fields without changing the benchmark triplet:
+
+- `scenarioName` -> `scenario`
+- `provider` -> `provider`
+- `baselineName` -> `baseline`
+- `strategyFamily` -> `strategyFamily`
+- `datasetSize` -> `datasetSize`
+- `changeRatio` -> `changeRatio`
+- `executionStatus` -> `executionStatus`
+- `skipReason` -> `skipReason`
+- `iterations` -> `resultSummary.iterations`
+- `persistedOutcome` -> `resultSummary.persistedOutcome`
+
+Provider facts map from deterministic `executionDetail` tokens emitted by `BenchmarkExecutionDetails`, not arbitrary prose. Split the detail string on `; ` and read only named `key=value` tokens:
+
+- `executionPath` supplies `selectedPath` for completed rows and `plannedPath` for skipped placeholder rows.
+- `selectedStrategy` supplies `selectedStrategy` for completed rows when not `<none>`. For skipped provider guidance rows, it supplies `plannedStrategy` when `plannedReadStrategy` is absent and the value is not `<none>`.
+- `plannedReadStrategy` supplies `plannedStrategy` for skipped read rows when not `<none>`.
+- `readShape` supplies `readShape`.
+- `fallbackCauses`, `readShapeFallbackCauses`, and `stagedProviderBulkFallbackCauses` supply `fallbackCauses`; split pipe-delimited values and treat `none` as `[]`.
+- Boundary tokens such as `transfer`, `nativeBulkBoundary`, `stagedBulkBoundary`, `smallBatchBoundary`, `oracleBulkBoundary`, `stagedOracleBulk`, `cleanupBoundary`, and `providerSpecificReadStrategy` are allowed inputs for `resultSummary.summary` and docs text, but they do not create new top-level manifest fields in v1.
+
+Docs-owned rows use the same shape with `executionStatus=null`, `iterations=null`, `metricState=not-applicable`, and `persistedOutcome=null` unless a checked-in benchmark artifact backs the row. Do not cite docs-owned `diagnostics-only`, `smoke-only`, or `storage-footprint` rows as measured timing evidence.
+
+### Representative Rows
+
+```json
+{
+  "schemaVersion": "dvault.provider-evidence.v1",
+  "rows": [
+    {
+      "scenario": "latest-satellite-read",
+      "provider": "SQLite local temporary files",
+      "baseline": "dvault-adddvaultsqlite-optimized",
+      "strategyFamily": "sqlite-optimized-dvault",
+      "datasetSize": "100 customers, 10 profile states each",
+      "changeRatio": "90% repeat-change history latest read",
+      "sourceArtifacts": [
+        "benchmark-summary.md",
+        "benchmark-summary.csv",
+        "benchmark-summary.json"
+      ],
+      "evidencePosture": "completed-timing",
+      "executionStatus": "completed",
+      "skipReason": null,
+      "workloadShape": null,
+      "readShape": "LatestSatellite",
+      "selectedPath": "DVault SQLite optimized path",
+      "plannedPath": null,
+      "selectedStrategy": "SqliteDataVaultReadStrategy",
+      "plannedStrategy": null,
+      "fallbackCauses": [],
+      "resultSummary": {
+        "iterations": 3,
+        "metricState": "present",
+        "persistedOutcome": "100 latest profile satellite rows read from 1000 seeded profile states",
+        "summary": "completed SQLite optimized latest-satellite timing row"
+      }
+    },
+    {
+      "scenario": "provider-native-bulk-ingestion",
+      "provider": "PostgreSQL external provider",
+      "baseline": "dvault-adddvaultpostgres-optimized",
+      "strategyFamily": "postgres-optimized-dvault",
+      "datasetSize": "20 order-product pairs, 3 fulfillment satellite operations",
+      "changeRatio": "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
+      "sourceArtifacts": [
+        "benchmark-summary.md",
+        "benchmark-summary.csv",
+        "benchmark-summary.json"
+      ],
+      "evidencePosture": "skipped-placeholder",
+      "executionStatus": "skipped",
+      "skipReason": "not configured: DVAULT_TEST_POSTGRES_CONNECTION_STRING is not set or empty.",
+      "workloadShape": "provider-native-bulk-ingestion",
+      "readShape": null,
+      "selectedPath": null,
+      "plannedPath": "DVault PostgreSQL staged bulk save path",
+      "selectedStrategy": null,
+      "plannedStrategy": "PostgresDataVaultSaveStrategy",
+      "fallbackCauses": [],
+      "resultSummary": {
+        "iterations": 0,
+        "metricState": "not-executed",
+        "persistedOutcome": "not executed",
+        "summary": "planned staged COPY boundary only; not measured timing evidence"
+      }
+    },
+    {
+      "scenario": "pit-as-of-read",
+      "provider": "DB2 external provider",
+      "baseline": "AddDVaultDb2() / Db2DataVaultReadStrategy",
+      "strategyFamily": "db2-optimized-dvault",
+      "datasetSize": null,
+      "changeRatio": null,
+      "sourceArtifacts": [
+        "docs/releases/v0.34.0.md",
+        "tests/DCoding.Data.DVault.Tests/Integration/Db2DataVaultSmokeTests.cs"
+      ],
+      "evidencePosture": "diagnostics-only",
+      "executionStatus": null,
+      "skipReason": null,
+      "workloadShape": null,
+      "readShape": "PitAsOf",
+      "selectedPath": null,
+      "plannedPath": "diagnostics-gated DB2 PIT read candidate",
+      "selectedStrategy": null,
+      "plannedStrategy": "Db2DataVaultReadStrategy",
+      "fallbackCauses": [],
+      "resultSummary": {
+        "iterations": null,
+        "metricState": "not-applicable",
+        "persistedOutcome": null,
+        "summary": "docs-owned diagnostics posture; no DB2 benchmark timing row claimed"
+      }
+    }
+  ]
+}
+```
+
 ## Global Claim Rules
 
+- When a follow-up ticket needs a provider-evidence manifest, populate `dvault.provider-evidence.v1` rows from the contract above instead of inventing parallel fields or scraping human-only markdown tables.
 - Cite matrix rows with scenario, provider, baseline, and posture. Do not cite `skipped-placeholder`, `diagnostics-only`, `smoke-only`, or `storage-footprint` rows as measured provider performance.
 - Keep timing claims attached to the artifact triplet, run context, provider filter, load-timestamp storage, iteration count, warmup count, hardware, runtime, dataset size, request shape, provider configuration, and skip/failure rows.
 - SQLite is the only repository-proven optimized latest-satellite provider path in the current baseline.

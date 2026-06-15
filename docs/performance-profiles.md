@@ -12,7 +12,7 @@ Use the root benchmark artifact triplet as the quick local SQLite and skipped-pr
 - [benchmark-summary.csv](../benchmark-summary.csv)
 - [benchmark-summary.json](../benchmark-summary.json)
 
-Use [Provider Optimization Evidence Matrix](plans/provider-optimization-evidence-matrix.md) as the canonical lookup surface for provider optimization row identity, evidence posture, artifact source, and stop/fallback conditions. It distinguishes completed timing evidence, skipped optional-provider placeholders, diagnostics-only evidence, smoke-only evidence, and SQLite-local storage-footprint evidence so follow-up tickets do not cite those postures interchangeably.
+Use [Provider Optimization Evidence Matrix](plans/provider-optimization-evidence-matrix.md) as the canonical lookup surface for provider optimization row identity, evidence posture, artifact source, stop/fallback conditions, and the `dvault.provider-evidence.v1` manifest row contract. It distinguishes completed timing evidence, skipped optional-provider placeholders, diagnostics-only evidence, smoke-only evidence, and SQLite-local storage-footprint evidence so follow-up tickets do not cite those postures interchangeably.
 
 The v0.32.0 provider-threshold evidence extends that root triplet with checked-in benchmark bundles under `artifacts/benchmarks/...`:
 

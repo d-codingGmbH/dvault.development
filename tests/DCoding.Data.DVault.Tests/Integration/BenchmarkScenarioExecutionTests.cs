@@ -16,6 +16,7 @@ public sealed class BenchmarkScenarioExecutionTests {
   private const string SqlServerProviderName = "SQL Server external provider";
   private const string MySqlProviderName = "MySQL external provider";
   private const string OracleProviderName = "Oracle external provider";
+  private const string ProviderEvidenceManifestSchemaVersion = "dvault.provider-evidence.v1";
   private const string BenchmarkCsvHeader = "scenario,provider,baseline,strategyFamily,datasetSize,changeRatio,executionStatus,skipReason,iterations,meanMilliseconds,minMilliseconds,maxMilliseconds,meanAllocatedBytes,minAllocatedBytes,maxAllocatedBytes,executionDetail,persistedOutcome";
   private const string BenchmarkMarkdownHeader = "| Scenario | Provider | Baseline | Strategy family | Dataset size | Change ratio | Execution status | Skip reason | Iterations | Mean ms | Min ms | Max ms | Mean allocated bytes | Min allocated bytes | Max allocated bytes | Execution detail | Persisted outcome |";
   private const string BenchmarkMarkdownSeparator = "| --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |";
@@ -855,6 +856,109 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
+  public void ProviderEvidenceManifestContractMapsBenchmarkAndDocsEvidenceRows() {
+    var markdown = ReadRepositoryText("benchmark-summary.md");
+    var csv = ReadRepositoryText("benchmark-summary.csv");
+    var json = ReadRepositoryText("benchmark-summary.json");
+    var evidenceMatrix = ReadRepositoryText(Path.Combine(
+        "docs",
+        "plans",
+        "provider-optimization-evidence-matrix.md"));
+    var benchmarkContract = ReadRepositoryText(Path.Combine(
+        "docs",
+        "plans",
+        "performance-evidence-benchmark-artifact-contract.md"));
+    var benchmarkReadme = ReadRepositoryText(Path.Combine(
+        "benchmarks",
+        "DCoding.Data.DVault.Benchmarks",
+        "README.md"));
+    var performanceProfiles = ReadRepositoryText(Path.Combine("docs", "performance-profiles.md"));
+
+    var artifacts = VerifyBenchmarkArtifactTriplet(markdown, csv, json);
+
+    AssertProviderEvidenceManifestContractIsDocumented(
+        evidenceMatrix,
+        benchmarkContract,
+        benchmarkReadme,
+        performanceProfiles);
+
+    var completedReadRow = FindArtifactRow(
+        artifacts,
+        SqliteProviderName,
+        "latest-satellite-read",
+        "dvault-adddvaultsqlite-optimized");
+    var completedManifestRow = CreateBenchmarkBackedProviderEvidenceManifestRow(
+        completedReadRow,
+        "completed-timing");
+
+    Assert.Equal("latest-satellite-read", completedManifestRow.Scenario);
+    Assert.Equal(SqliteProviderName, completedManifestRow.Provider);
+    Assert.Equal("dvault-adddvaultsqlite-optimized", completedManifestRow.Baseline);
+    Assert.Equal("sqlite-optimized-dvault", completedManifestRow.StrategyFamily);
+    Assert.Equal(
+        new[] { "benchmark-summary.md", "benchmark-summary.csv", "benchmark-summary.json" },
+        completedManifestRow.SourceArtifacts);
+    Assert.Equal("completed-timing", completedManifestRow.EvidencePosture);
+    Assert.Equal("completed", completedManifestRow.ExecutionStatus);
+    Assert.Null(completedManifestRow.SkipReason);
+    Assert.Null(completedManifestRow.WorkloadShape);
+    Assert.Equal("LatestSatellite", completedManifestRow.ReadShape);
+    Assert.Equal("DVault SQLite optimized path", completedManifestRow.SelectedPath);
+    Assert.Null(completedManifestRow.PlannedPath);
+    Assert.Equal("SqliteDataVaultReadStrategy", completedManifestRow.SelectedStrategy);
+    Assert.Null(completedManifestRow.PlannedStrategy);
+    Assert.Empty(completedManifestRow.FallbackCauses);
+    Assert.Equal(artifacts.Context.Iterations, completedManifestRow.ResultSummary.Iterations);
+    Assert.Equal("present", completedManifestRow.ResultSummary.MetricState);
+    Assert.Equal(completedReadRow.PersistedOutcome, completedManifestRow.ResultSummary.PersistedOutcome);
+
+    var skippedProviderRow = FindArtifactRow(
+        artifacts,
+        PostgresProviderName,
+        "provider-native-bulk-ingestion",
+        "dvault-adddvaultpostgres-optimized");
+    var skippedManifestRow = CreateBenchmarkBackedProviderEvidenceManifestRow(
+        skippedProviderRow,
+        "skipped-placeholder");
+
+    Assert.Equal("provider-native-bulk-ingestion", skippedManifestRow.Scenario);
+    Assert.Equal(PostgresProviderName, skippedManifestRow.Provider);
+    Assert.Equal("dvault-adddvaultpostgres-optimized", skippedManifestRow.Baseline);
+    Assert.Equal("postgres-optimized-dvault", skippedManifestRow.StrategyFamily);
+    Assert.Equal("skipped-placeholder", skippedManifestRow.EvidencePosture);
+    Assert.Equal("skipped", skippedManifestRow.ExecutionStatus);
+    Assert.Equal(NotConfiguredSkipReason, skippedManifestRow.SkipReason);
+    Assert.Equal("provider-native-bulk-ingestion", skippedManifestRow.WorkloadShape);
+    Assert.Null(skippedManifestRow.ReadShape);
+    Assert.Null(skippedManifestRow.SelectedPath);
+    Assert.Equal("DVault PostgreSQL staged bulk save path", skippedManifestRow.PlannedPath);
+    Assert.Null(skippedManifestRow.SelectedStrategy);
+    Assert.Equal("PostgresDataVaultSaveStrategy", skippedManifestRow.PlannedStrategy);
+    Assert.Empty(skippedManifestRow.FallbackCauses);
+    Assert.Equal(0, skippedManifestRow.ResultSummary.Iterations);
+    Assert.Equal("not-executed", skippedManifestRow.ResultSummary.MetricState);
+    Assert.Equal("not executed", skippedManifestRow.ResultSummary.PersistedOutcome);
+
+    var docsOnlyManifestRow = CreateDocsOnlyProviderEvidenceManifestRow();
+
+    Assert.Equal("pit-as-of-read", docsOnlyManifestRow.Scenario);
+    Assert.Equal("DB2 external provider", docsOnlyManifestRow.Provider);
+    Assert.Equal("AddDVaultDb2() / Db2DataVaultReadStrategy", docsOnlyManifestRow.Baseline);
+    Assert.Equal("diagnostics-only", docsOnlyManifestRow.EvidencePosture);
+    Assert.Null(docsOnlyManifestRow.ExecutionStatus);
+    Assert.Null(docsOnlyManifestRow.SkipReason);
+    Assert.Equal("PitAsOf", docsOnlyManifestRow.ReadShape);
+    Assert.Equal("diagnostics-gated DB2 PIT read candidate", docsOnlyManifestRow.PlannedPath);
+    Assert.Equal("Db2DataVaultReadStrategy", docsOnlyManifestRow.PlannedStrategy);
+    Assert.Null(docsOnlyManifestRow.ResultSummary.Iterations);
+    Assert.Equal("not-applicable", docsOnlyManifestRow.ResultSummary.MetricState);
+    Assert.Null(docsOnlyManifestRow.ResultSummary.PersistedOutcome);
+    Assert.Contains("\"provider\": \"DB2 external provider\"", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("\"evidencePosture\": \"diagnostics-only\"", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("\"metricState\": \"not-applicable\"", evidenceMatrix, StringComparison.Ordinal);
+  }
+
+  [Fact]
   public void OracleHighVolumeThresholdArtifactRecordsNoChangeDecision() {
     var artifactDirectory = Path.Combine(
         "artifacts",
@@ -1631,6 +1735,217 @@ public sealed class BenchmarkScenarioExecutionTests {
     }
   }
 
+  private static void AssertProviderEvidenceManifestContractIsDocumented(
+      string evidenceMatrix,
+      string benchmarkContract,
+      string benchmarkReadme,
+      string performanceProfiles) {
+    Assert.Contains("## Provider Evidence Manifest V1", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains(ProviderEvidenceManifestSchemaVersion, evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`schemaVersion` | string | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`rows` | array | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`scenario` | string | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`provider` | string | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`baseline` | string | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`strategyFamily` | string or null | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`datasetSize` | string or null | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`changeRatio` | string or null | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`sourceArtifacts` | array of strings | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`evidencePosture` | string | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`executionStatus` | string or null | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`skipReason` | string or null | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`workloadShape` | string or null | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`readShape` | string or null | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`selectedPath` | string or null | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`plannedPath` | string or null | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`selectedStrategy` | string or null | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`plannedStrategy` | string or null | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`fallbackCauses` | array of strings | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`resultSummary` | object | Required.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`metricState`: `present`, `not-executed`, `not-applicable`.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`readShape`: `LatestSatellite`, `PitAsOf`, `Bridge`, or `null`.", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains(
+        "Provider facts map from deterministic `executionDetail` tokens emitted by `BenchmarkExecutionDetails`, not arbitrary prose.",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains("`executionPath` supplies `selectedPath`", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("`plannedReadStrategy` supplies `plannedStrategy`", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("treat `none` as `[]`", evidenceMatrix, StringComparison.Ordinal);
+
+    Assert.Contains("## Provider Evidence Manifest Alignment", benchmarkContract, StringComparison.Ordinal);
+    Assert.Contains(ProviderEvidenceManifestSchemaVersion, benchmarkContract, StringComparison.Ordinal);
+    Assert.Contains("deterministic `executionDetail` tokens", benchmarkContract, StringComparison.Ordinal);
+    Assert.Contains(ProviderEvidenceManifestSchemaVersion, benchmarkReadme, StringComparison.Ordinal);
+    Assert.Contains("provider-optimization-evidence-matrix.md", benchmarkReadme, StringComparison.Ordinal);
+    Assert.Contains(ProviderEvidenceManifestSchemaVersion, performanceProfiles, StringComparison.Ordinal);
+  }
+
+  private static ProviderEvidenceManifestRow CreateBenchmarkBackedProviderEvidenceManifestRow(
+      BenchmarkArtifactRow row,
+      string evidencePosture) {
+    var detailTokens = ParseExecutionDetailTokens(row.ExecutionDetail);
+    var executionPath = GetRequiredExecutionDetailToken(detailTokens, "executionPath", row);
+    var readShape = ToManifestNullableValue(GetOptionalExecutionDetailToken(detailTokens, "readShape"));
+    var isCompleted = string.Equals(row.ExecutionStatus, "completed", StringComparison.Ordinal);
+    var selectedStrategy = isCompleted
+        ? ToManifestNullableValue(GetOptionalExecutionDetailToken(detailTokens, "selectedStrategy"))
+        : null;
+    var plannedStrategy = isCompleted
+        ? null
+        : ToManifestNullableValue(
+            GetOptionalExecutionDetailToken(detailTokens, "plannedReadStrategy") ??
+            GetOptionalExecutionDetailToken(detailTokens, "selectedStrategy"));
+
+    return new ProviderEvidenceManifestRow(
+        row.ScenarioName,
+        row.ProviderName,
+        row.BaselineName,
+        row.StrategyFamily,
+        row.DatasetSize,
+        row.ChangeRatio,
+        new[] { "benchmark-summary.md", "benchmark-summary.csv", "benchmark-summary.json" },
+        evidencePosture,
+        row.ExecutionStatus,
+        string.IsNullOrEmpty(row.SkipReason) ? null : row.SkipReason,
+        readShape is null ? row.ScenarioName : null,
+        readShape,
+        isCompleted ? executionPath : null,
+        isCompleted ? null : executionPath,
+        selectedStrategy,
+        plannedStrategy,
+        CollectFallbackCauses(detailTokens),
+        new ProviderEvidenceManifestResultSummary(
+            row.Iterations,
+            isCompleted ? "present" : "not-executed",
+            row.PersistedOutcome,
+            CreateProviderEvidenceSummary(row, detailTokens)));
+  }
+
+  private static ProviderEvidenceManifestRow CreateDocsOnlyProviderEvidenceManifestRow() {
+    return new ProviderEvidenceManifestRow(
+        "pit-as-of-read",
+        "DB2 external provider",
+        "AddDVaultDb2() / Db2DataVaultReadStrategy",
+        "db2-optimized-dvault",
+        null,
+        null,
+        new[]
+        {
+            "docs/releases/v0.34.0.md",
+            "tests/DCoding.Data.DVault.Tests/Integration/Db2DataVaultSmokeTests.cs",
+        },
+        "diagnostics-only",
+        null,
+        null,
+        null,
+        "PitAsOf",
+        null,
+        "diagnostics-gated DB2 PIT read candidate",
+        null,
+        "Db2DataVaultReadStrategy",
+        Array.Empty<string>(),
+        new ProviderEvidenceManifestResultSummary(
+            null,
+            "not-applicable",
+            null,
+            "docs-owned diagnostics posture; no DB2 benchmark timing row claimed"));
+  }
+
+  private static IReadOnlyDictionary<string, string> ParseExecutionDetailTokens(string executionDetail) {
+    var tokens = new Dictionary<string, string>(StringComparer.Ordinal);
+    foreach (var segment in executionDetail.Split("; ", StringSplitOptions.None)) {
+      var separatorIndex = segment.IndexOf('=', StringComparison.Ordinal);
+      if (separatorIndex <= 0) {
+        continue;
+      }
+
+      tokens[segment[..separatorIndex]] = segment[(separatorIndex + 1)..];
+    }
+
+    return tokens;
+  }
+
+  private static string GetRequiredExecutionDetailToken(
+      IReadOnlyDictionary<string, string> detailTokens,
+      string name,
+      BenchmarkArtifactRow row) {
+    var value = GetOptionalExecutionDetailToken(detailTokens, name);
+    Assert.False(
+        string.IsNullOrWhiteSpace(value),
+        "Benchmark row '" + row.Key + "' is missing executionDetail token '" + name + "'.");
+
+    return value!;
+  }
+
+  private static string? GetOptionalExecutionDetailToken(
+      IReadOnlyDictionary<string, string> detailTokens,
+      string name) {
+    return detailTokens.TryGetValue(name, out var value) ? value : null;
+  }
+
+  private static string? ToManifestNullableValue(string? value) {
+    if (string.IsNullOrWhiteSpace(value) ||
+        string.Equals(value, "<none>", StringComparison.Ordinal) ||
+        string.Equals(value, "none", StringComparison.Ordinal)) {
+      return null;
+    }
+
+    return value;
+  }
+
+  private static string[] CollectFallbackCauses(IReadOnlyDictionary<string, string> detailTokens) {
+    var causes = new List<string>();
+    AddFallbackCauses(detailTokens, "fallbackCauses", causes);
+    AddFallbackCauses(detailTokens, "readShapeFallbackCauses", causes);
+    AddFallbackCauses(detailTokens, "stagedProviderBulkFallbackCauses", causes);
+
+    return causes
+        .Distinct(StringComparer.Ordinal)
+        .ToArray();
+  }
+
+  private static void AddFallbackCauses(
+      IReadOnlyDictionary<string, string> detailTokens,
+      string name,
+      List<string> causes) {
+    if (!detailTokens.TryGetValue(name, out var value)) {
+      return;
+    }
+
+    foreach (var cause in value.Split('|', StringSplitOptions.RemoveEmptyEntries)) {
+      var manifestCause = ToManifestNullableValue(cause);
+      if (manifestCause is not null) {
+        causes.Add(manifestCause);
+      }
+    }
+  }
+
+  private static string CreateProviderEvidenceSummary(
+      BenchmarkArtifactRow row,
+      IReadOnlyDictionary<string, string> detailTokens) {
+    var boundaryTokens = new[]
+    {
+        "transfer",
+        "nativeBulkBoundary",
+        "stagedBulkBoundary",
+        "smallBatchBoundary",
+        "oracleBulkBoundary",
+        "stagedOracleBulk",
+        "cleanupBoundary",
+        "providerSpecificReadStrategy",
+    };
+    var boundaries = boundaryTokens
+        .Select(name => detailTokens.TryGetValue(name, out var value) ? name + "=" + value : null)
+        .Where(value => value is not null)
+        .ToArray();
+
+    if (boundaries.Length == 0) {
+      return row.ExecutionStatus + " provider evidence row";
+    }
+
+    return string.Join("; ", boundaries!);
+  }
+
   private static BenchmarkArtifactRow FindArtifactRow(
       VerifiedBenchmarkArtifacts artifacts,
       string providerName,
@@ -2012,6 +2327,32 @@ public sealed class BenchmarkScenarioExecutionTests {
       string ConnectionStringEnvironmentVariable,
       string ExecutionStatus,
       string SkipReason);
+
+  private sealed record ProviderEvidenceManifestRow(
+      string Scenario,
+      string Provider,
+      string Baseline,
+      string? StrategyFamily,
+      string? DatasetSize,
+      string? ChangeRatio,
+      IReadOnlyList<string> SourceArtifacts,
+      string EvidencePosture,
+      string? ExecutionStatus,
+      string? SkipReason,
+      string? WorkloadShape,
+      string? ReadShape,
+      string? SelectedPath,
+      string? PlannedPath,
+      string? SelectedStrategy,
+      string? PlannedStrategy,
+      IReadOnlyList<string> FallbackCauses,
+      ProviderEvidenceManifestResultSummary ResultSummary);
+
+  private sealed record ProviderEvidenceManifestResultSummary(
+      int? Iterations,
+      string MetricState,
+      string? PersistedOutcome,
+      string Summary);
 
   private sealed record BenchmarkArtifactRow(
       string ScenarioName,

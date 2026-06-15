@@ -75,6 +75,14 @@ Markdown, CSV, and JSON rows describe the same comparison rows. The core row con
 
 Completed rows must carry timing and allocation values. Skipped and failed rows must keep the row visible, set `iterations=0`, preserve the skip or failure reason, use blank markdown/CSV metric cells and JSON `null` metric values, and keep `persistedOutcome` as `not executed`. Every row must keep a deterministic `executionDetail` string that identifies the exercised or planned execution path. Provider-optimized rows must include the selected provider strategy name when the row completes, or the planned provider strategy name when the row is skipped before execution.
 
+## Provider Evidence Manifest Alignment
+
+The provider-evidence manifest row contract is documented in [Provider Optimization Evidence Matrix](provider-optimization-evidence-matrix.md) with schema version `dvault.provider-evidence.v1`. That manifest shape sits beside this benchmark triplet contract; it does not replace `benchmark-summary.md`, `benchmark-summary.csv`, or `benchmark-summary.json`, and it does not add benchmark result columns.
+
+When a benchmark-backed provider-evidence manifest row is populated from the artifact triplet, map the existing row identity fields directly: `scenarioName`, `provider`, `baselineName`, `strategyFamily`, `datasetSize`, `changeRatio`, `executionStatus`, `skipReason`, `iterations`, and `persistedOutcome`. Map provider facts only from deterministic `executionDetail` tokens such as `executionPath`, `selectedStrategy`, `plannedReadStrategy`, `readShape`, `fallbackCauses`, `readShapeFallbackCauses`, `stagedProviderBulkFallbackCauses`, `transfer`, `nativeBulkBoundary`, `stagedBulkBoundary`, `smallBatchBoundary`, `oracleBulkBoundary`, `stagedOracleBulk`, `cleanupBoundary`, and `providerSpecificReadStrategy`. Downstream work must not parse arbitrary prose or scrape human-only markdown tables to recover provider evidence facts.
+
+Completed benchmark rows map to manifest `evidencePosture=completed-timing` only when they keep their artifact triplet and run context. Skipped optional-provider rows map to `evidencePosture=skipped-placeholder`, `resultSummary.metricState=not-executed`, and the planned provider path or strategy facts preserved in `executionDetail`. Documentation-only rows from the evidence matrix use the same manifest shape with `executionStatus=null`, `iterations=null`, and `resultSummary.metricState=not-applicable` unless a checked-in benchmark artifact backs the row.
+
 ## Minimum Scenario Baseline
 
 The required local baseline is SQLite temporary files. A standard local evidence set must include:

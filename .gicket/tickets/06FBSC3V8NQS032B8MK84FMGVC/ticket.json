@@ -3,20 +3,19 @@
   "ticket-id": "06FBSC3V8NQS032B8MK84FMGVC",
   "ticket-type": "task",
   "title": "Task: Add provider evidence manifest shape",
-  "revision": "06FBSCXVX56Z5MJ2ZE4BPXACHG",
-  "status": "todo",
+  "revision": "06FCPSQT3Z5KVBF1TMFG1GGZ5G",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
     "area/benchmarking",
     "area/diagnostics",
-    "area/provider-support"
+    "area/provider-support",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FBSB0RV7G608RK08FEGBHC2G",
   "release-id": "06FBSAW8SK6EZN360H9N3ZD6P0",
   "created-at": "2026-06-12T16:35:43.1681896Z",
-  "updated-at": "2026-06-12T16:39:16.2016912Z"
+  "updated-at": "2026-06-15T13:09:44.0958096Z"
 }
