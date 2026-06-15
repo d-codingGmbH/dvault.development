@@ -1,76 +1,60 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the ticket to ratify the existing baseline provider-optimization evidence surface: SQLite completed root-triplet rows, checked-in v0.32 external-provider bundles where present, and explicit skipped or diagnostics-only placeholders for unavailable external providers including DB2.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The repository already fixes the baseline evidence surfaces: docs/plans/provider-optimization-evidence-matrix.md is the canonical lookup surface, benchmark-summary.md/csv/json are the root artifact triplet, and docs/performance-profiles.md cites the checked-in v0.32 PostgreSQL, SQL Server, MySQL, and Oracle evidence bundles.
 - For this ticket, unavailable provider coverage means an explicit provider row is preserved with executionStatus=skipped, iterations=0, blank or null metrics, persistedOutcome=not executed, and a normalized skip reason rather than silently omitting the provider.
 - The normalized unavailable categories are already repository-visible through BenchmarkSkipReason: not configured, provider dependency unavailable, and connection unreachable.
 - SQLite is the completed required-provider baseline; PostgreSQL, SQL Server, MySQL, and Oracle may use existing checked-in completed bundles where present or skipped-placeholder rows when a local run is unavailable; DB2 remains skipped-placeholder and/or diagnostics-only or smoke-only unless a reachable DB2 connection string produces a checked-in benchmark triplet.
 - No child tickets, relation changes, description updates, attachments, or planning documents were applied or queued in this run.
 
-### Scope In
+Scope In
 - Ratify and populate the baseline provider-optimization evidence set for SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2 using the existing matrix and artifact vocabulary.
 - Use the root benchmark triplet for SQLite completed rows and for explicit skipped placeholder rows when optional provider lanes are unavailable.
 - Cite the existing checked-in v0.32 external-provider evidence bundles for PostgreSQL, SQL Server, MySQL, and Oracle when those bundles provide the authoritative completed timing claim.
 - Keep DB2 in the current bounded baseline as skipped-placeholder, diagnostics-only, or smoke-only unless a checked-in DB2 benchmark triplet is produced from a configured local run.
 - Preserve provider, scenario, baseline, strategy family, evidence posture, and stop or fallback facts so downstream gap-matrix work can consume one consistent evidence surface.
 
-### Scope Out
+Scope Out
 - Do not create new provider strategies, new provider implementations, or new DB2 completed timing claims without a configured and checked-in benchmark run.
 - Do not invent a new artifact schema or replace benchmark-summary.md, benchmark-summary.csv, benchmark-summary.json, or the existing dvault.provider-evidence.v1 mapping contract.
 - Do not provision external databases, credentials, containers, or CI infrastructure.
 - Do not broaden this ticket into binary-vs-hex provider-expansion work or cross-provider storage-footprint claims.
 - Do not publish the prioritized consumer-facing gap matrix here; that remains downstream story 06FBSC4HSXFJ5FM6GWECH2CTGG.
 
-## Acceptance Criteria
-- The refined contract explicitly covers SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2 and maps each provider lane to an allowed evidence posture using the canonical provider-optimization evidence matrix.
-- SQLite baseline rows are backed by the root benchmark triplet as completed timing evidence.
-- PostgreSQL, SQL Server, MySQL, and Oracle baseline entries cite existing checked-in completed bundles where available and otherwise remain explicit skipped-placeholder rows with preserved planned strategy and path facts.
-- DB2 baseline entries are still present even without timing data, using skipped-placeholder benchmark rows and/or diagnostics-only or smoke-only repository evidence rather than silent omission.
-- Any unavailable optional-provider lane is represented with executionStatus=skipped, a normalized skip reason, iterations=0, blank or null metrics, and persistedOutcome=not executed.
-- Benchmark docs, tests, and the evidence matrix remain consistent about which rows are completed timing evidence versus skipped-placeholder, diagnostics-only, smoke-only, or storage-footprint evidence.
-
-## Definition of Done
-- Repository guidance and verifier coverage tell one consistent story about the baseline provider evidence sources, provider set, and evidence postures.
-- Downstream work can cite the authoritative source for each provider row without inventing new provider names, evidence postures, or availability wording.
-- Unavailable-provider reporting is explicit and normalized through the existing skip-reason categories instead of silent row omission.
-- Story 06FBSC4HSXFJ5FM6GWECH2CTGG can consume this ticket as the baseline evidence owner without reopening provider-set or evidence-posture decisions.
-
-## Implementation Notes
-- Reuse docs/plans/provider-optimization-evidence-matrix.md, benchmark-summary.md/csv/json, docs/performance-profiles.md, BenchmarkProviderAvailability, PostgresBenchmarkAvailability, and BenchmarkSkipReason as the authoritative sources for row identity and unavailable-lane wording.
-- Do not introduce a new unavailable execution status; the current repository contract already represents unavailable optional providers as executionStatus=skipped plus the normalized skip reason.
-- The root triplet already preserves planned strategy and path tokens for skipped optional-provider rows, so follow-on work should reuse those rows instead of re-deriving provider facts from ad hoc prose.
-- Live relation state still contains incoming blocks links from done tickets 06FBSC3V8NQS032B8MK84FMGVC, 06FBSC40N01AH5PRZ1QNKRVTWR, and 06FBSC46047ZF11DR0TTRARM78; the current ticket record is still is-blocked=false, so treat that as non-blocking housekeeping unless a later run materializes relation cleanup.
-- No persistent planning writes were materialized in this refinement run.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should the stale incoming blocks relations from done tickets be cleaned up on the owner branch so live relation state matches the completed prerequisites?
 - After this baseline is ratified, should story 06FBSC4HSXFJ5FM6GWECH2CTGG rely only on existing checked-in bundles or require a fresh multi-provider rerun when additional local connection strings are available?
 - If a later ticket wants new measured evidence beyond the current baseline, should the first expansion be a DB2 completed benchmark bundle or a non-SQLite binary-vs-hex comparison bundle?
 
-## Risks
+Risks
 - If downstream docs cite skipped-placeholder rows as timing proof, the repository will overstate external-provider evidence that is only preserved as unavailable guidance.
 - DB2 remains a non-timing baseline unless a reachable DB2 connection string produces a checked-in benchmark triplet, so its baseline can still be limited to skipped-placeholder, diagnostics-only, or smoke-only evidence.
 - The live stale blocks relations from done tickets may confuse relation reports even though the current ticket record is not blocked.
 
-## Split Recommendations
+Split recommendations
 - No split recommended; the baseline evidence contract is already bounded and downstream publication work is separated into story 06FBSC4HSXFJ5FM6GWECH2CTGG.
 - Any future work to generate new provider bundles or broaden into binary-vs-hex cross-provider evidence should be handled as follow-up tickets rather than expanding this refinement.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Populate the provider optimization matrix for SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2 where connection strings are available. Acceptance: missing external providers are recorded as unavailable, not silently skipped.
+Run mode
+- apply: planned updates are applied after this comment
