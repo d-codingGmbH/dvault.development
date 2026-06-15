@@ -104,6 +104,8 @@ Validation vocabulary:
 
 This matrix now reflects the v0.34.0 supported provider set while preserving the earlier explicit-save service boundary. PostgreSQL, SQL Server, Oracle, MySQL, and DB2 live execution evidence remains opt-in because it requires developer-managed databases through `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, `DVAULT_TEST_MYSQL_CONNECTION_STRING`, and `DVAULT_TEST_DB2_CONNECTION_STRING`. Benchmark artifact scope is SQLite-required plus optional PostgreSQL, SQL Server, Oracle, and MySQL provider-native bulk-ingestion rows; DB2 does not have a benchmark lane in the current harness. Skipped optional-provider rows remain part of the artifact contract through `executionStatus` and `skipReason`, and copied timings must keep provider and hardware/runtime context attached.
 
+Use [Provider Optimization Evidence Matrix](../plans/provider-optimization-evidence-matrix.md) as the canonical save-row lookup for scenario, provider, baseline, evidence posture, authoritative artifact source, and finite stop/fallback conditions. This service boundary remains the behavior contract; the matrix is the citation surface for downstream provider optimization evidence.
+
 Current optimization-hook ownership is:
 
 - `src/DCoding.Data.DVault`: shared capability-profile contracts, provider-name keyed built-in profile selection, provider save strategy contracts, deterministic dispatch, and provider-neutral fallback.

@@ -88,6 +88,8 @@ Benchmark evidence:
 
 The shared benchmark artifact contract is [Performance Evidence And Benchmark Artifact Contract](../plans/performance-evidence-benchmark-artifact-contract.md). The relevant completed timing rows are SQLite `latest-satellite-read`, `pit-as-of-read`, and `bridge-traversal-read`. Optional PostgreSQL, SQL Server, MySQL, and Oracle read rows remain visible as skipped rows when their connection-string environment variables are unset; PIT/bridge rows carry `selectedStrategy`/`plannedReadStrategy` guidance, while non-SQLite latest-satellite rows explicitly record that no provider-specific latest-satellite read strategy is registered.
 
+Use [Provider Optimization Evidence Matrix](../plans/provider-optimization-evidence-matrix.md) as the canonical read-row lookup for scenario, provider, baseline, evidence posture, authoritative artifact source, and finite stop/fallback conditions. This PIT/bridge boundary remains the behavior contract; the matrix is the citation surface for downstream provider optimization evidence.
+
 ## Migration, Drift, And Compatibility Context
 
 Migration and drift guidance remains centralized in [DVault Dotnet EF Design-Time Workflow](dvault-dotnet-ef-design-time-workflow.md) and [Model-First Governance Workflow](../model-first-governance.md). PIT and bridge declarations can participate in the same configured-model validation, reviewed-artifact import, drift comparison, migration guardrail, and support-bundle lanes when the consumer supplies those inputs.

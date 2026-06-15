@@ -12,6 +12,8 @@ Use the root benchmark artifact triplet as the quick local SQLite and skipped-pr
 - [benchmark-summary.csv](../benchmark-summary.csv)
 - [benchmark-summary.json](../benchmark-summary.json)
 
+Use [Provider Optimization Evidence Matrix](plans/provider-optimization-evidence-matrix.md) as the canonical lookup surface for provider optimization row identity, evidence posture, artifact source, and stop/fallback conditions. It distinguishes completed timing evidence, skipped optional-provider placeholders, diagnostics-only evidence, smoke-only evidence, and SQLite-local storage-footprint evidence so follow-up tickets do not cite those postures interchangeably.
+
 The v0.32.0 provider-threshold evidence extends that root triplet with checked-in benchmark bundles under `artifacts/benchmarks/...`:
 
 - [v0.32.0 all-provider scale baseline](../artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-scale-5-all-providers-20260607/benchmark-summary.md)
@@ -62,6 +64,7 @@ This section is the authoritative choice order for adopter performance decisions
 Use the existing detail surfaces when a branch needs more than choice order:
 
 - Benchmark evidence: [benchmark-summary.md](../benchmark-summary.md), [benchmark-summary.csv](../benchmark-summary.csv), [benchmark-summary.json](../benchmark-summary.json), [DVault Benchmarks](../benchmarks/DCoding.Data.DVault.Benchmarks/README.md), and [Performance Evidence And Benchmark Artifact Contract](plans/performance-evidence-benchmark-artifact-contract.md).
+- Canonical provider row lookup: [Provider Optimization Evidence Matrix](plans/provider-optimization-evidence-matrix.md).
 - Write boundary: [DVault V1 Explicit Save Service](architecture/dvault-v1-explicit-save-service.md).
 - Read diagnostics and `ReadShape`: [DVault V2 Redacted Read-Plan Explain Contract](architecture/dvault-v2-redacted-read-plan-explain-contract.md).
 - PIT and bridge maintenance and read boundary: [DVault V1 PIT And Bridge Boundary](architecture/dvault-v1-pit-bridge-boundary.md).

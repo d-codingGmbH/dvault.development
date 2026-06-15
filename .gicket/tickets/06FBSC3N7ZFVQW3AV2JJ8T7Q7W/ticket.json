@@ -3,21 +3,20 @@
   "ticket-id": "06FBSC3N7ZFVQW3AV2JJ8T7Q7W",
   "ticket-type": "story",
   "title": "Story: Define provider optimization evidence matrix",
-  "revision": "06FBSD9NEGRPADQCAPCGHQ0B8R",
-  "status": "todo",
+  "revision": "06FCNXM88GY86F13EJM6YPKYHC",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
     "area/architecture",
+    "area/benchmarking",
     "area/performance",
     "area/provider-support",
-    "area/benchmarking"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FBSB0RV7G608RK08FEGBHC2G",
   "release-id": "06FBSAW8SK6EZN360H9N3ZD6P0",
   "created-at": "2026-06-12T16:35:41.6778973Z",
-  "updated-at": "2026-06-12T16:40:52.8528421Z"
+  "updated-at": "2026-06-15T11:06:54.9165815Z"
 }
