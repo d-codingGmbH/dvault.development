@@ -3,7 +3,7 @@
   "ticket-id": "06FBSBWW414TE19KZT14CB7Y3R",
   "ticket-type": "task",
   "title": "Task: Prepare v0.37 release checklist and validation note",
-  "revision": "06FC1P3SQNNJ9CY9MGMXVXZVX0",
+  "revision": "06FCMWKXJZ8MPCEQWT1C5A8BNR",
   "status": "done",
   "labels": [
     "area/documentation",
@@ -17,5 +17,5 @@
   "milestone-id": "06FBSB0NZ1T8D70Z80FD7JQTFR",
   "release-id": "06FBSASXZZHMEX2KW4THVWJKEW",
   "created-at": "2026-06-12T16:34:46.0356053Z",
-  "updated-at": "2026-06-13T11:57:52.9574149Z"
+  "updated-at": "2026-06-15T08:42:41.4310899Z"
 }
