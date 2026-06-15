@@ -129,6 +129,25 @@ public sealed class StableHashServiceTests {
     Assert.Equal("binary-first", conventions.ProfileName);
   }
 
+  [Fact]
+  public void AddDVaultBinaryFirstProfilePreservesLaterSelectedStableHashAlgorithm() {
+    var services = new ServiceCollection();
+
+    services.AddDVault(options => options
+        .UseBinaryFirstProfile()
+        .UseStableHashAlgorithm("sha1-v1"));
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var hashService = provider.GetRequiredService<IStableHashService>();
+    var conventions = provider.GetRequiredService<DataVaultConventions>();
+
+    Assert.Equal("sha1-v1", hashService.AlgorithmId);
+    Assert.Equal("sha1-v1", conventions.StableHashAlgorithmId);
+    Assert.Equal(20, conventions.StableHashDigestByteLength);
+    Assert.Equal(DataVaultHashKeyStorageProfile.Binary, conventions.HashKeyStorageProfile);
+    Assert.Equal("binary-first", conventions.ProfileName);
+  }
+
   [Theory]
   [InlineData(
       "sha256-v1",

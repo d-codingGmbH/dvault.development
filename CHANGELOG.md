@@ -2,6 +2,18 @@
 
 This changelog summarizes the public release-note trail. The detailed release records remain under [docs/releases/](docs/releases/); those files are the source of truth for scope, evidence, non-goals, and validation notes.
 
+## v0.38.0 - Binary-First New Project Profile
+
+- Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.38.0` / `net8.0` / EF Core 8 and `10.38.0` / `net10.0` / EF Core 10.
+- Records that the v0.38.0 release label maps to consumer package versions `8.38.0` and `10.38.0`, not to a `0.38.0` package version.
+- Adds explicit binary-first setup APIs for new projects through `AddDVault(options => options.UseBinaryFirstProfile())` and `modelBuilder.UseDataVaultBinaryFirstProfile()`.
+- Keeps the existing-project default compatible: `AddDVault()` and `UseDataVault()` still use `HexString` physical hash-key storage unless a caller opts into binary storage.
+- Reports the selected hash-key storage profile through diagnostics and support-bundle evidence while preserving lowercase hexadecimal public hash-key values.
+- Updates quickstarts and getting-started guidance so new projects start on binary physical hash-key storage without implying automatic migration for existing persisted keys.
+- Carries forward the no-automatic-migration posture: DVault does not automatically rehash, backfill, dual-write, repair, or migrate persisted hash-key storage when the storage profile or stable hash algorithm changes.
+
+See [DVault v0.38.0 Release Notes](docs/releases/v0.38.0.md).
+
 ## v0.37.0 - Dependency Line and Analyzer Compatibility
 
 - Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.37.0` / `net8.0` / EF Core 8 and `10.37.0` / `net10.0` / EF Core 10.

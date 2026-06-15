@@ -3,6 +3,6 @@
   "milestone-id": "06FBSB0QDAHJKDW41HTXRXR9N0",
   "name": "v0.38.0 - Binary-first profile implementation",
   "description": "Implement small API/configuration entry points, diagnostics, and tests for the binary-first new-project profile.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-12T16:30:55.3386340Z"
 }

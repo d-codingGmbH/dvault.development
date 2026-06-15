@@ -17,21 +17,21 @@ public sealed class DataVaultConventions {
   private static readonly DataVaultModelConcept[] DefaultModelConcepts =
   [
       DataVaultModelConcept.Hub,
-        DataVaultModelConcept.Link,
-        DataVaultModelConcept.Satellite,
-        DataVaultModelConcept.Bridge,
-        DataVaultModelConcept.HashKey,
-        DataVaultModelConcept.HashDiff,
-        DataVaultModelConcept.LoadTimestamp,
-        DataVaultModelConcept.RecordSource,
-    ];
+      DataVaultModelConcept.Link,
+      DataVaultModelConcept.Satellite,
+      DataVaultModelConcept.Bridge,
+      DataVaultModelConcept.HashKey,
+      DataVaultModelConcept.HashDiff,
+      DataVaultModelConcept.LoadTimestamp,
+      DataVaultModelConcept.RecordSource,
+  ];
 
   private static readonly string[] DefaultLogicalObjectNames =
   [
       "dvault_records",
-        "dvault_record_payloads",
-        "dvault_record_metadata",
-    ];
+      "dvault_record_payloads",
+      "dvault_record_metadata",
+  ];
 
   private DataVaultConventions(
       DefaultNamingPolicy namingPolicy,

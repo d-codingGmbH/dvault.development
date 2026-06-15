@@ -3,6 +3,6 @@
   "release-id": "06FBSAVBR5AHWKVMMR014KGW94",
   "name": "v0.38.0 - Binary-First New Project Profile",
   "description": "Make binary hash-key storage the recommended default path for new DVault projects through an explicit new-project profile, while preserving existing hex-compatible defaults and caller-owned migration decisions.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-12T16:30:11.3939944Z"
 }
