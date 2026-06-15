@@ -14,6 +14,8 @@ This changelog summarizes the public release-note trail. The detailed release re
 | `net10.0` | `Microsoft.EntityFrameworkCore` `10.0.9`, `Microsoft.EntityFrameworkCore.Relational` `10.0.9`, `Microsoft.Extensions.DependencyInjection.Abstractions` `10.0.9` | `IBM.EntityFrameworkCore` `10.0.0.100` | `Microsoft.EntityFrameworkCore.Sqlite` `10.0.9` | `MySql.EntityFrameworkCore` `10.0.7` | `Npgsql.EntityFrameworkCore.PostgreSQL` `10.0.2` | `Oracle.EntityFrameworkCore` `10.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `10.0.9` |
 
 - Keeps `DCoding.Data.DVault.Analyzers` as one `net10.0` analyzer asset used through local `PrivateAssets="all"` references on the `.NET 10 SDK` build-host baseline for both coordinated package lines.
+- Carries forward the binary-first adoption guidance for new projects while keeping existing `HexString`-compatible databases and configurations valid until an owner-planned reviewed migration, reset, or data move is executed.
+- Carries forward the no-automatic-migration posture: DVault does not automatically rehash, backfill, dual-write, repair, or migrate persisted hash-key storage when the storage profile or stable hash algorithm changes.
 - Carries forward the repository validation evidence story: `dotnet build DVault.slnx --nologo`, `dotnet test DVault.slnx --nologo`, `bash tools/pack-release-packages.sh`, `bash tools/verify-packages.sh`, and `bash tools/check-format.sh`.
 - Leaves package publication, runtime behavior changes, analyzer retargeting, and pure `.NET 8 SDK` analyzer consumption outside this baseline.
 
@@ -24,7 +26,8 @@ See [DVault v0.37.0 Release Notes](docs/releases/v0.37.0.md).
 - Defined the coordinated package baseline for `8.36.0` / `net8.0` / EF Core 8 and `10.36.0` / `net10.0` / EF Core 10.
 - Documented `HexString` as the compatible default hash-key storage profile and `Binary` as explicit opt-in physical storage for generated hash-key columns.
 - Kept public hash-key values as canonical lowercase hexadecimal strings across save, read, diagnostics, and support-bundle boundaries.
-- Carried forward stable hash algorithm-selection guidance and recorded that algorithm or storage-profile changes are caller-owned compatibility work.
+- Recorded that existing `HexString`-compatible databases and configurations remain valid until the application owner intentionally plans and executes a separate reviewed migration, reset, or data-move change.
+- Carried forward stable hash algorithm-selection guidance and recorded that algorithm or storage-profile changes are caller-owned compatibility work; DVault does not automatically rehash, backfill, dual-write, repair, or migrate persisted hash-key storage for those changes.
 - Kept package publication separate from repository package creation and verification.
 
 See [DVault v0.36.0 Release Notes](docs/releases/v0.36.0.md).
