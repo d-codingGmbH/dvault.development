@@ -11,9 +11,9 @@ Define the bounded documentation scope for carrying the provider optimization ev
 
 - `docs/plans/provider-optimization-evidence-matrix.md` is the canonical lookup surface for provider row identity, evidence posture, source artifacts, claim boundaries, and the `dvault.provider-evidence.v1` manifest shape.
 - `docs/plans/provider-optimization-gap-matrix.md` is the canonical follow-up backlog and recommendation surface for capability gaps and evidence gaps.
-- `docs/performance-profiles.md` already points readers to the evidence matrix and preserves the bounded decision-tree guidance, but it does not yet carry a v0.39 release-alignment note or a direct handoff to the gap-matrix follow-up recommendations.
+- At ticket start, `docs/performance-profiles.md` already pointed readers to the evidence matrix and preserved the bounded decision-tree guidance, but it did not yet carry a v0.39 release-alignment note or a direct handoff to the gap-matrix follow-up recommendations.
 - The root benchmark artifact triplet (`benchmark-summary.md`, `.csv`, `.json`) keeps SQLite completed timing rows and optional PostgreSQL, SQL Server, MySQL, Oracle, and DB2 rows as skipped placeholders because the corresponding connection-string environment variables were unset in the checked-in run.
-- The checked-in release history currently stops at `docs/releases/v0.38.0.md`, and `CHANGELOG.md` currently starts with the v0.38.0 entry. No v0.39.0 release note or changelog entry is present in the visible repository baseline.
+- At ticket start, the checked-in release history stopped at `docs/releases/v0.38.0.md`, and `CHANGELOG.md` started with the v0.38.0 entry. The v0.39.0 release note and changelog entry are part of this ticket's documentation alignment.
 
 ## Required Documentation Surfaces
 
