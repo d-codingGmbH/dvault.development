@@ -17,10 +17,12 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" Condition="'$(DVAULT_TEST_POSTGRES_CONNECTION_STRING)' != ''" />
     <PackageReference Include="Oracle.EntityFrameworkCore" Version="10.23.26200" Condition="'$(DVAULT_TEST_ORACLE_CONNECTION_STRING)' != ''" />
     <PackageReference Include="MySql.EntityFrameworkCore" Version="10.0.7" Condition="'$(DVAULT_TEST_MYSQL_CONNECTION_STRING)' != ''" />
+    <PackageReference Include="IBM.EntityFrameworkCore" Version="10.0.0.100" Condition="'$(DVAULT_TEST_DB2_CONNECTION_STRING)' != ''" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
+    <ProjectReference Include="../../src/DCoding.Data.DVault.Db2/DCoding.Data.DVault.Db2.csproj" Condition="'$(DVAULT_TEST_DB2_CONNECTION_STRING)' != ''" />
     <ProjectReference Include="../../src/DCoding.Data.DVault.MySql/DCoding.Data.DVault.MySql.csproj" />
     <ProjectReference Include="../../src/DCoding.Data.DVault.Oracle/DCoding.Data.DVault.Oracle.csproj" />
     <ProjectReference Include="../../src/DCoding.Data.DVault.Postgres/DCoding.Data.DVault.Postgres.csproj" />

@@ -36,6 +36,14 @@ internal static class BenchmarkExternalProviderDefinitions {
       OracleBenchmarkReflection.IsProviderDependencyAvailable,
       OracleBenchmarkReflection.TryOpenConnectionAsync);
 
+  public static BenchmarkExternalProviderDefinition Db2 { get; } = new(
+      "DB2 external provider",
+      "DVAULT_TEST_DB2_CONNECTION_STRING",
+      "IBM.EntityFrameworkCore",
+      BenchmarkDatabaseProviders.CreateDb2,
+      Db2BenchmarkReflection.IsProviderDependencyAvailable,
+      Db2BenchmarkReflection.TryOpenConnectionAsync);
+
   private static async Task<string?> TryOpenPostgresConnectionAsync(
       string connectionString,
       CancellationToken cancellationToken) {

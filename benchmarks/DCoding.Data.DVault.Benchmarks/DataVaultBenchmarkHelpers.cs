@@ -14,6 +14,7 @@ internal static class DataVaultBenchmarkHelpers {
   public const string SqlServerOptimizedStrategyFamily = "sqlserver-optimized-dvault";
   public const string MySqlOptimizedStrategyFamily = "mysql-optimized-dvault";
   public const string OracleOptimizedStrategyFamily = "oracle-optimized-dvault";
+  public const string Db2OptimizedStrategyFamily = "db2-optimized-dvault";
 
   public static void AddDataVaultServices(IServiceCollection services, DataVaultBenchmarkStrategy strategy) {
     AddDataVaultServices(services, strategy, BenchmarkHashKeyVariant.Default);
@@ -45,6 +46,9 @@ internal static class DataVaultBenchmarkHelpers {
       case DataVaultBenchmarkStrategy.OracleOptimized:
         services.AddDVaultOracle();
         break;
+      case DataVaultBenchmarkStrategy.Db2Optimized:
+        Db2BenchmarkReflection.AddDVaultDb2(services);
+        break;
       default:
         throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Unsupported benchmark strategy.");
     }
@@ -60,6 +64,7 @@ internal static class DataVaultBenchmarkHelpers {
       DataVaultBenchmarkStrategy.SqlServerOptimized => "dvault-adddvaultsqlserver-optimized",
       DataVaultBenchmarkStrategy.MySqlOptimized => "dvault-adddvaultmysql-optimized",
       DataVaultBenchmarkStrategy.OracleOptimized => "dvault-adddvaultoracle-optimized",
+      DataVaultBenchmarkStrategy.Db2Optimized => "dvault-adddvaultdb2-optimized",
       _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Unsupported benchmark strategy."),
     };
   }
@@ -83,6 +88,7 @@ internal static class DataVaultBenchmarkHelpers {
       DataVaultBenchmarkStrategy.SqlServerOptimized => SqlServerOptimizedStrategyFamily,
       DataVaultBenchmarkStrategy.MySqlOptimized => MySqlOptimizedStrategyFamily,
       DataVaultBenchmarkStrategy.OracleOptimized => OracleOptimizedStrategyFamily,
+      DataVaultBenchmarkStrategy.Db2Optimized => Db2OptimizedStrategyFamily,
       _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Unsupported benchmark strategy."),
     };
   }
@@ -95,6 +101,7 @@ internal static class DataVaultBenchmarkHelpers {
       DataVaultBenchmarkStrategy.SqlServerOptimized => "SqlServerDataVaultSaveStrategy",
       DataVaultBenchmarkStrategy.MySqlOptimized => "MySqlStagedDataVaultSaveStrategy",
       DataVaultBenchmarkStrategy.OracleOptimized => "OracleDataVaultSaveStrategy",
+      DataVaultBenchmarkStrategy.Db2Optimized => "Db2DataVaultSaveStrategy",
       _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Unsupported benchmark strategy."),
     };
   }
@@ -107,6 +114,7 @@ internal static class DataVaultBenchmarkHelpers {
       DataVaultBenchmarkStrategy.SqlServerOptimized => null,
       DataVaultBenchmarkStrategy.MySqlOptimized => null,
       DataVaultBenchmarkStrategy.OracleOptimized => null,
+      DataVaultBenchmarkStrategy.Db2Optimized => null,
       _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Unsupported benchmark strategy."),
     };
   }
@@ -130,6 +138,7 @@ internal static class DataVaultBenchmarkHelpers {
         DataVaultBenchmarkStrategy.SqlServerOptimized => "SqlServerDataVaultReadStrategy",
         DataVaultBenchmarkStrategy.MySqlOptimized => "MySqlDataVaultReadStrategy",
         DataVaultBenchmarkStrategy.OracleOptimized => "OracleDataVaultReadStrategy",
+        DataVaultBenchmarkStrategy.Db2Optimized => "Db2DataVaultReadStrategy",
         _ => throw new ArgumentOutOfRangeException(nameof(strategy), strategy, "Unsupported benchmark strategy."),
       };
     }

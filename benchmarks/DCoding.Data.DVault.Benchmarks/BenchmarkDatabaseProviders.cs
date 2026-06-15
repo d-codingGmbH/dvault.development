@@ -26,6 +26,10 @@ internal static class BenchmarkDatabaseProviders {
     return new OracleBenchmarkDatabaseProvider(connectionString);
   }
 
+  public static BenchmarkDatabaseProvider CreateDb2(string connectionString) {
+    return new Db2BenchmarkDatabaseProvider(connectionString);
+  }
+
   private sealed class SqliteBenchmarkDatabaseProvider : BenchmarkDatabaseProvider {
     public SqliteBenchmarkDatabaseProvider()
         : base(BenchmarkArtifacts.RequiredProviderName) {
@@ -122,5 +126,27 @@ internal static class BenchmarkDatabaseProviders {
     }
 
     public override DataVaultProviderCapabilityProfile ProviderCapabilities => DataVaultProviderCapabilityProfiles.Oracle;
+  }
+
+  private sealed class Db2BenchmarkDatabaseProvider : BenchmarkDatabaseProvider {
+    private readonly string _connectionString;
+
+    public Db2BenchmarkDatabaseProvider(string connectionString)
+        : base(BenchmarkExternalProviderDefinitions.Db2.ProviderName) {
+      _connectionString = connectionString;
+    }
+
+    public override IBenchmarkDatabase CreateDatabase() {
+      if (string.IsNullOrWhiteSpace(_connectionString)) {
+        throw new InvalidOperationException(
+            "DB2 benchmark rows cannot execute without " +
+            BenchmarkExternalProviderDefinitions.Db2.ConnectionStringEnvironmentVariable +
+            ".");
+      }
+
+      return new TempDb2Database(_connectionString);
+    }
+
+    public override DataVaultProviderCapabilityProfile ProviderCapabilities => DataVaultProviderCapabilityProfiles.Db2;
   }
 }

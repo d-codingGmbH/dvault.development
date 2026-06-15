@@ -441,6 +441,9 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark,
       DataVaultBenchmarkStrategy.OracleOptimized =>
           "DVault Oracle direct optimized save path; selectedStrategy=OracleDataVaultSaveStrategy; " +
           "oracleBulkBoundary=direct-oracle-batching; stagedOracleBulk=not-selected-no-measured-win; cleanupBoundary=direct-provider-transaction",
+      DataVaultBenchmarkStrategy.Db2Optimized =>
+          "DVault DB2 optimized save path; selectedStrategy=Db2DataVaultSaveStrategy; " +
+          "db2SaveBoundary=clean-context-set-based; stagedBulkBoundary=not-supported; cleanupBoundary=direct-provider-transaction",
       _ => throw new ArgumentOutOfRangeException(nameof(_strategy), _strategy, "Unsupported benchmark strategy."),
     };
   }

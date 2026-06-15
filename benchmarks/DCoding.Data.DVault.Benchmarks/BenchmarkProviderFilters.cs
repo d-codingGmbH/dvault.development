@@ -7,6 +7,7 @@ internal static class BenchmarkProviderFilters {
   public const string SqlServer = "sqlserver";
   public const string MySql = "mysql";
   public const string Oracle = "oracle";
+  public const string Db2 = "db2";
 
   public static IReadOnlyList<string> AllProviderFilters { get; } =
   [
@@ -16,5 +17,6 @@ internal static class BenchmarkProviderFilters {
       SqlServer,
       MySql,
       Oracle,
+      Db2,
   ];
 }

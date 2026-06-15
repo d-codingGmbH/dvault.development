@@ -161,7 +161,7 @@ internal sealed record BenchmarkOptions(
       return value;
     }
 
-    throw new ArgumentException("Value for --provider must be all, sqlite, postgres, sqlserver, mysql, or oracle.");
+    throw new ArgumentException("Value for --provider must be all, sqlite, postgres, sqlserver, mysql, oracle, or db2.");
   }
 
   private static string ReadStableHashAlgorithmId(IReadOnlyList<string> args, ref int index) {

@@ -79,6 +79,9 @@ internal static class BenchmarkExecutionDetails {
       DataVaultBenchmarkHelpers.OracleOptimizedStrategyFamily =>
           "DVault Oracle direct optimized save path; selectedStrategy=OracleDataVaultSaveStrategy; " +
           "oracleBulkBoundary=direct-oracle-batching; stagedOracleBulk=not-selected-no-measured-win",
+      DataVaultBenchmarkHelpers.Db2OptimizedStrategyFamily =>
+          "DVault DB2 optimized save path; selectedStrategy=Db2DataVaultSaveStrategy; " +
+          "db2SaveBoundary=clean-context-set-based; stagedBulkBoundary=not-supported",
       "ef-model-build" => "ordinary EF model-building startup path",
       "ef-usemodel-runtime-model" => "precomputed EF runtime model path",
       "direct-ef-query" => "ordinary direct EF query path",
@@ -127,6 +130,9 @@ internal static class BenchmarkExecutionDetails {
       "OracleDataVaultSaveStrategy" =>
           "DVault Oracle direct optimized save path; selectedStrategy=OracleDataVaultSaveStrategy; " +
           "oracleBulkBoundary=direct-oracle-batching; stagedOracleBulk=not-selected-no-measured-win; cleanupBoundary=direct-provider-transaction",
+      "Db2DataVaultSaveStrategy" =>
+          "DVault DB2 optimized save path; selectedStrategy=Db2DataVaultSaveStrategy; " +
+          "db2SaveBoundary=clean-context-set-based; stagedBulkBoundary=not-supported; cleanupBoundary=direct-provider-transaction",
       "SqliteDataVaultSaveStrategy" =>
           "DVault SQLite optimized path; selectedStrategy=SqliteDataVaultSaveStrategy",
       _ => GetExecutionPath(benchmark),
@@ -178,6 +184,8 @@ internal static class BenchmarkExecutionDetails {
           "MySqlDataVaultReadStrategy",
       DataVaultBenchmarkHelpers.OracleOptimizedStrategyFamily when scenarioName is "pit-as-of-read" or "bridge-traversal-read" =>
           "OracleDataVaultReadStrategy",
+      DataVaultBenchmarkHelpers.Db2OptimizedStrategyFamily when scenarioName is "pit-as-of-read" or "bridge-traversal-read" =>
+          "Db2DataVaultReadStrategy",
       _ => null,
     };
   }
@@ -189,6 +197,7 @@ internal static class BenchmarkExecutionDetails {
       DataVaultBenchmarkHelpers.SqlServerOptimizedStrategyFamily => "SQL Server",
       DataVaultBenchmarkHelpers.MySqlOptimizedStrategyFamily => "MySQL",
       DataVaultBenchmarkHelpers.OracleOptimizedStrategyFamily => "Oracle",
+      DataVaultBenchmarkHelpers.Db2OptimizedStrategyFamily => "DB2",
       _ => "provider-specific",
     };
   }

@@ -12,4 +12,5 @@ internal enum DataVaultBenchmarkStrategy {
   SqlServerOptimized,
   MySqlOptimized,
   OracleOptimized,
+  Db2Optimized,
 }

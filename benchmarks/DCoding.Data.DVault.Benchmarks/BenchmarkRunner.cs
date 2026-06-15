@@ -35,11 +35,19 @@ internal static class BenchmarkRunner {
         : BenchmarkProviderAvailability.Skipped(
             BenchmarkExternalProviderDefinitions.Oracle,
             BenchmarkSkipReason.NotConfigured(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable));
+    var db2Availability = ShouldRunProvider(options, BenchmarkExternalProviderDefinitions.Db2.ProviderName)
+        ? await BenchmarkProviderAvailability
+            .DiscoverAsync(BenchmarkExternalProviderDefinitions.Db2, cancellationToken)
+            .ConfigureAwait(false)
+        : BenchmarkProviderAvailability.Skipped(
+            BenchmarkExternalProviderDefinitions.Db2,
+            BenchmarkSkipReason.NotConfigured(BenchmarkExternalProviderDefinitions.Db2.ConnectionStringEnvironmentVariable));
     var optionalProviders = new[] {
         BenchmarkProviderAvailability.FromPostgres(postgresAvailability),
         sqlServerAvailability,
         mySqlAvailability,
         oracleAvailability,
+        db2Availability,
     }
         .Where(availability => ShouldRunProvider(options, availability.ProviderName))
         .ToArray();
@@ -72,6 +80,7 @@ internal static class BenchmarkRunner {
       [BenchmarkExternalProviderDefinitions.SqlServer.ProviderName] = DataVaultBenchmarkStrategy.SqlServerOptimized,
       [BenchmarkExternalProviderDefinitions.MySql.ProviderName] = DataVaultBenchmarkStrategy.MySqlOptimized,
       [BenchmarkExternalProviderDefinitions.Oracle.ProviderName] = DataVaultBenchmarkStrategy.OracleOptimized,
+      [BenchmarkExternalProviderDefinitions.Db2.ProviderName] = DataVaultBenchmarkStrategy.Db2Optimized,
     };
 
     Console.WriteLine("DVault scenario comparison benchmarks");
@@ -153,7 +162,7 @@ internal static class BenchmarkRunner {
     Console.WriteLine("  --latest-indexes  Run only seeded latest-satellite lookup scenarios across index variants.");
     Console.WriteLine("  --load-timestamp-storage <provider-default|iso8601-utc-text|utc-ticks>");
     Console.WriteLine("                    Physical Data Vault load-timestamp storage to project. Default: provider-default.");
-    Console.WriteLine("  --provider <all|sqlite|postgres|sqlserver|mysql|oracle>");
+    Console.WriteLine("  --provider <all|sqlite|postgres|sqlserver|mysql|oracle|db2>");
     Console.WriteLine("                    Provider set to execute. Default: all.");
     Console.WriteLine("  --stable-hash <sha256-v1|sha256-128-v1>");
     Console.WriteLine("                    Stable hash algorithm for a single hash-key variant. Default: sha256-v1.");
@@ -174,6 +183,9 @@ internal static class BenchmarkRunner {
     Console.WriteLine("Optional Oracle provider:");
     Console.WriteLine(
         "  Set DVAULT_TEST_ORACLE_CONNECTION_STRING before restore/build/run to include Oracle comparison rows.");
+    Console.WriteLine("Optional DB2 provider:");
+    Console.WriteLine(
+        "  Set DVAULT_TEST_DB2_CONNECTION_STRING before restore/build/run to include DB2 comparison rows.");
   }
 
   private static void WriteSummary(IEnumerable<BenchmarkSummary> summaries) {
@@ -204,6 +216,10 @@ internal static class BenchmarkRunner {
 
     if (string.Equals(providerName, BenchmarkExternalProviderDefinitions.Oracle.ProviderName, StringComparison.Ordinal)) {
       return BenchmarkProviderFilters.Oracle;
+    }
+
+    if (string.Equals(providerName, BenchmarkExternalProviderDefinitions.Db2.ProviderName, StringComparison.Ordinal)) {
+      return BenchmarkProviderFilters.Db2;
     }
 
     return BenchmarkProviderFilters.All;

@@ -32,7 +32,7 @@ The checked-in root quick baseline used:
 - Debian GNU/Linux 13 (trixie), X64 OS and process architecture, 32 processors.
 - .NET 10.0.8.
 - Required provider `SQLite local temporary files`.
-- Optional PostgreSQL, SQL Server, MySQL, and Oracle rows emitted as `executionStatus=skipped` because `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_MYSQL_CONNECTION_STRING`, and `DVAULT_TEST_ORACLE_CONNECTION_STRING` were unset.
+- Optional PostgreSQL, SQL Server, MySQL, Oracle, and DB2 rows emitted as `executionStatus=skipped` because `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_MYSQL_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_DB2_CONNECTION_STRING` were unset.
 
 Treat all millisecond values below as observations from their linked run only. The v0.32 bundles record local Podman evidence where their rows are completed, but they are not universal timing promises. Rerun the benchmarks when provider, hardware, runtime, load-timestamp storage, iteration count, warmup count, dataset size, request shape, or provider configuration changes.
 
@@ -42,8 +42,8 @@ The repository evidence is the artifact triplet plus verifier coverage, not copi
 
 - `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` are emitted from one run and contain the same result rows.
 - The checked-in run keeps the four profile categories visible: `SmallAppLocalVault`, `MediumChunkedIngestion`, `StagedProviderIngestion`, and `ReadModelHeavy`.
-- Provider guidance rows stay visible for PostgreSQL, SQL Server, MySQL, and Oracle even when their external provider lanes are skipped, including provider-native ingestion rows and read-model rows.
-- Provider-read evidence separates completed SQLite latest-satellite, PIT, and bridge timing rows from optional PostgreSQL, SQL Server, MySQL, and Oracle read guidance rows that may remain skipped when connection strings are unset.
+- Provider guidance rows stay visible for PostgreSQL, SQL Server, MySQL, Oracle, and DB2 even when their external provider lanes are skipped, including provider-native ingestion rows and read-model rows.
+- Provider-read evidence separates completed SQLite latest-satellite, PIT, and bridge timing rows from optional PostgreSQL, SQL Server, MySQL, Oracle, and DB2 read guidance rows that may remain skipped when connection strings are unset.
 - Regression-budget guidance stays attached to the shared artifact contract instead of being inferred from one timing row.
 
 Use redacted verifier summaries when referencing this evidence in tickets or release notes:
@@ -158,7 +158,7 @@ Use this table as a compact summary after applying the v0.31.0 decision-tree con
 | --- | --- | --- | --- |
 | Small app-local vault | The application writes ordinary hub, link, and satellite rows and needs a local SQLite or app-local proof first. | Register `AddDVault()` first, then add `AddDVaultSqlite()` only for SQLite deployments that want the provider package path. | Save/read diagnostics show provider fallback, a non-SQLite provider is selected, or the workload grows beyond the root customer-profile rows. |
 | Medium chunked ingestion | The loader has an ordered source stream and must bound memory without changing load timestamps, record sources, or request order. | Keep `DataVaultBulkSaveRequest` for materialized batches; use `DataVaultChunkedSaveRequest` for already-bounded ordered loaders, starting around chunk size 10. Use the `IAsyncEnumerable<DataVaultSaveChunk>` overload or async helper methods only when the producer is already asynchronous. | Materializing the batch is acceptable, chunk overhead dominates, or chunk count/retained-state telemetry no longer matches the local workload. |
-| Staged provider ingestion | The application has clean provider-specific contexts and larger eligible ordered bulk batches for PostgreSQL, SQL Server, MySQL, or Oracle. | Register `AddDVault()` plus the matching provider extension and verify save-strategy diagnostics before claiming provider-native behavior. | The linked provider evidence bundle is missing or skipped for the claim, the context is dirty, native gates decline, or the provider-local run has not been collected. |
+| Staged provider ingestion | The application has clean provider-specific contexts and larger eligible ordered bulk batches for PostgreSQL, SQL Server, MySQL, Oracle, or DB2. | Register `AddDVault()` plus the matching provider extension and verify save-strategy diagnostics before claiming provider-native behavior. | The linked provider evidence bundle is missing or skipped for the claim, the context is dirty, native gates decline, or the provider-local run has not been collected. |
 | Read-model heavy | The application repeatedly reads latest satellites, maintained PIT rows, or maintained bridge rows. | Use `IDataVaultReadService`; add `AddDVaultSqlite()` for optimized SQLite latest-satellite and PIT/bridge reads, or the matching non-SQLite provider package for diagnostics-gated PIT/bridge candidates. | PIT or bridge maintenance is stale, latest-satellite reads target a non-SQLite provider, PIT/bridge reads target an unsupported provider, or read-shape diagnostics report fallback, unsupported shape, or incomplete evidence. |
 
 ## Small App-Local Vault
@@ -243,7 +243,7 @@ Prefer the materialized bulk request when memory use is acceptable and the appli
 
 ### Workload Shape
 
-Use this profile for provider-eligible ordered bulk ingestion on PostgreSQL, SQL Server, MySQL, or Oracle. The root `provider-native-bulk-ingestion` rows describe 20 order-product pairs, 20 order-product links, and 3 ordered fulfillment satellite operations, including one unchanged replay, in a clean-context provider-eligible batch. PostgreSQL and MySQL also keep smaller retained-path rows below the staged threshold.
+Use this profile for provider-eligible ordered bulk ingestion on PostgreSQL, SQL Server, MySQL, Oracle, or DB2. The root `provider-native-bulk-ingestion` rows describe 20 order-product pairs, 20 order-product links, and 3 ordered fulfillment satellite operations, including one unchanged replay, in a clean-context provider-eligible batch. PostgreSQL and MySQL also keep smaller retained-path rows below the staged threshold.
 
 ### Registration Guidance
 
@@ -253,6 +253,7 @@ Register `AddDVault()` and the matching provider extension:
 - `AddDVaultSqlServer()` for clean SQL Server contexts.
 - `AddDVaultMySql()` for clean Pomelo or official MySQL EF Core contexts.
 - `AddDVaultOracle()` for clean `Oracle.EntityFrameworkCore` contexts.
+- `AddDVaultDb2()` for clean `IBM.EntityFrameworkCore` contexts.
 
 Provider-native dispatch is diagnostics-gated behind the same public save service. Dirty tracked contexts, provider-name mismatches, unsupported multi-active satellite batches, or batches outside the provider gate decline to a smaller provider-native path or the provider-neutral writer. The detailed save boundary is documented in [DVault V1 Explicit Save Service](architecture/dvault-v1-explicit-save-service.md).
 
@@ -266,6 +267,7 @@ Use these provider boundaries as starting gates, not timing claims from the chec
 | SQL Server | Native bulk starts at 50-plus total operations and no more than 500 satellite operations. | v0.32 threshold evidence keeps the 50 minimum-operation and 500 maximum-satellite-operation gates. |
 | MySQL | Tiny satellite-history batches fall back to provider-neutral behavior; larger eligible ordered batches use the retained multi-row or staged bulk provider paths. | v0.32 local evidence records the tiny satellite-history fallback decision and keeps staged bulk for larger eligible rows. |
 | Oracle | Direct optimized batching starts at 50-plus total operations and no more than 10000 satellite operations. | v0.32 local evidence retains the direct optimized path and records `stagedOracleBulk=not-selected-no-measured-win`. |
+| DB2 | Clean-context hub, link, and ordinary satellite batches can select `Db2DataVaultSaveStrategy`; no staged bulk or provider-native chunk execution is claimed. | The root triplet keeps DB2 skipped placeholders unless `DVAULT_TEST_DB2_CONNECTION_STRING` is configured for an opt-in local run. |
 
 ### Diagnostics And Telemetry
 
@@ -294,6 +296,7 @@ Rows to cite:
 - SQL Server: `dvault-adddvaultsqlserver-optimized` for the native bulk boundary, fallback wording, and 50/500 gates.
 - MySQL: `dvault-adddvaultmysql-multi-row` for retained provider paths where selected, `dvault-adddvaultmysql-optimized` for staged bulk, and the tiny satellite-history provider-neutral fallback row for the deliberate small-batch exception.
 - Oracle: `dvault-adddvaultoracle-optimized` for retained direct optimized batching and the current no-measured-win staged posture.
+- DB2: `dvault-adddvaultdb2-optimized` for the clean-context optimized save boundary and current `stagedBulkBoundary=not-supported` posture.
 
 ### Stop Conditions And Rerun Triggers
 

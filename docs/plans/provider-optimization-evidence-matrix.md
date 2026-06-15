@@ -7,7 +7,7 @@ Ticket: 06FBSC3N7ZFVQW3AV2JJ8T7Q7W
 
 This document is the canonical lookup surface for DVault provider optimization evidence rows. Later tickets should cite these matrix rows by scenario, provider, baseline, and evidence posture instead of restating benchmark notes or mixing measured timing evidence with skipped, diagnostics-only, smoke-only, or storage-footprint evidence.
 
-The matrix reuses the existing benchmark artifact contract vocabulary from [Performance Evidence And Benchmark Artifact Contract](performance-evidence-benchmark-artifact-contract.md). It does not add benchmark fields, change benchmark schemas, rerun benchmarks, add provider implementations, add a DB2 benchmark lane, or widen hash-key storage claims beyond the checked-in SQLite-local evidence bundle.
+The matrix reuses the existing benchmark artifact contract vocabulary from [Performance Evidence And Benchmark Artifact Contract](performance-evidence-benchmark-artifact-contract.md). It does not add benchmark fields, change benchmark schemas, rerun benchmarks, add provider implementations, add completed DB2 timing claims, or widen hash-key storage claims beyond the checked-in SQLite-local evidence bundle. DB2 uses the same optional-provider skipped-placeholder lane as the other external providers unless a developer supplies a reachable local DB2 connection string.
 
 ## Evidence Postures
 
@@ -106,7 +106,7 @@ Provider facts map from deterministic `executionDetail` tokens emitted by `Bench
 - `plannedReadStrategy` supplies `plannedStrategy` for skipped read rows when not `<none>`.
 - `readShape` supplies `readShape`.
 - `fallbackCauses`, `readShapeFallbackCauses`, and `stagedProviderBulkFallbackCauses` supply `fallbackCauses`; split pipe-delimited values and treat `none` as `[]`.
-- Boundary tokens such as `transfer`, `nativeBulkBoundary`, `stagedBulkBoundary`, `smallBatchBoundary`, `oracleBulkBoundary`, `stagedOracleBulk`, `cleanupBoundary`, and `providerSpecificReadStrategy` are allowed inputs for `resultSummary.summary` and docs text, but they do not create new top-level manifest fields in v1.
+- Boundary tokens such as `transfer`, `nativeBulkBoundary`, `stagedBulkBoundary`, `smallBatchBoundary`, `oracleBulkBoundary`, `stagedOracleBulk`, `db2SaveBoundary`, `cleanupBoundary`, and `providerSpecificReadStrategy` are allowed inputs for `resultSummary.summary` and docs text, but they do not create new top-level manifest fields in v1.
 
 Docs-owned rows use the same shape with `executionStatus=null`, `iterations=null`, `metricState=not-applicable`, and `persistedOutcome=null` unless a checked-in benchmark artifact backs the row. Do not cite docs-owned `diagnostics-only`, `smoke-only`, or `storage-footprint` rows as measured timing evidence.
 
@@ -213,7 +213,7 @@ Docs-owned rows use the same shape with `executionStatus=null`, `iterations=null
 - Keep timing claims attached to the artifact triplet, run context, provider filter, load-timestamp storage, iteration count, warmup count, hardware, runtime, dataset size, request shape, provider configuration, and skip/failure rows.
 - SQLite is the only repository-proven optimized latest-satellite provider path in the current baseline.
 - PostgreSQL, SQL Server, MySQL, Oracle, and DB2 are diagnostics-gated PIT/bridge read-strategy candidates. Their non-SQLite latest-satellite requests remain provider-neutral unless a later ticket adds new benchmark-backed strategy evidence.
-- DB2 evidence is limited to diagnostics-gated clean-context save behavior, diagnostics-gated PIT/bridge read behavior, and opt-in live smoke evidence until a DB2 benchmark lane is added. DB2 latest-satellite optimization and DB2 live-schema reading remain unsupported in the current baseline.
+- DB2 evidence includes skipped-placeholder benchmark rows for the existing clean-context save and read guidance lane, diagnostics-gated clean-context save behavior, diagnostics-gated PIT/bridge read behavior, and opt-in live smoke evidence. DB2 latest-satellite optimization, completed DB2 timing evidence, staged DB2 bulk, provider-native chunk execution, and DB2 live-schema reading remain unsupported in the current baseline.
 - Binary-vs-hex storage comparisons are SQLite-local to the checked-in hash-key storage bundle unless a future provider-specific bundle is added.
 
 ## Save Matrix
@@ -236,9 +236,11 @@ Docs-owned rows use the same shape with `executionStatus=null`, `iterations=null
 | `provider-native-bulk-ingestion` | MySQL external provider | `dvault-adddvaultmysql-optimized` | `mysql-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Planned MySQL staged bulk path using temporary staging tables at 60-plus operations. |
 | `provider-native-bulk-ingestion` | Oracle external provider | `dvault-adddvault-fallback` | `provider-neutral-dvault-fallback` | `skipped-placeholder` | Root benchmark triplet | Optional provider-neutral comparison row; skipped when `DVAULT_TEST_ORACLE_CONNECTION_STRING` is unset. |
 | `provider-native-bulk-ingestion` | Oracle external provider | `dvault-adddvaultoracle-optimized` | `oracle-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Planned Oracle direct optimized batching; staged Oracle bulk remains `not-selected-no-measured-win`. |
-| DB2 clean-context save | DB2 external provider | `AddDVaultDb2()` / `Db2DataVaultSaveStrategy` | `db2-optimized-dvault` | `diagnostics-only` and `smoke-only` | v0.34.0 release notes and DB2 smoke evidence | DB2 supports optimized clean-context hub, link, and ordinary satellite saves through provider diagnostics and opt-in smoke coverage. No DB2 benchmark lane, timing row, staged bulk lane, provider-native chunk execution, or live-schema reader is claimed. |
+| `provider-native-bulk-ingestion` | DB2 external provider | `dvault-adddvault-fallback` | `provider-neutral-dvault-fallback` | `skipped-placeholder` | Root benchmark triplet | Optional provider-neutral comparison row; skipped when `DVAULT_TEST_DB2_CONNECTION_STRING` is unset. |
+| `provider-native-bulk-ingestion` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Planned DB2 clean-context optimized save path; staged DB2 bulk and provider-native chunk execution are not claimed. |
+| DB2 clean-context save smoke | DB2 external provider | `AddDVaultDb2()` / `Db2DataVaultSaveStrategy` | `db2-optimized-dvault` | `diagnostics-only` and `smoke-only` | v0.34.0 release notes and DB2 smoke evidence | DB2 supports optimized clean-context hub, link, and ordinary satellite saves through provider diagnostics and opt-in smoke coverage. No completed DB2 timing row, staged bulk lane, provider-native chunk execution, or live-schema reader is claimed. |
 
-The root benchmark triplet keeps optional PostgreSQL, SQL Server, MySQL, and Oracle rows visible as skipped placeholders. Completed external-provider timing claims, where needed, must cite the provider-threshold bundles linked from [Performance Profiles](../performance-profiles.md), not these skipped root rows alone.
+The root benchmark triplet keeps optional PostgreSQL, SQL Server, MySQL, Oracle, and DB2 rows visible as skipped placeholders. Completed external-provider timing claims, where needed, must cite the provider-threshold bundles linked from [Performance Profiles](../performance-profiles.md), not these skipped root rows alone.
 
 ## Read Matrix
 
@@ -262,8 +264,10 @@ The root benchmark triplet keeps optional PostgreSQL, SQL Server, MySQL, and Ora
 | `latest-satellite-read` | Oracle external provider | `dvault-adddvaultoracle-optimized` | `oracle-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records `providerSpecificReadStrategy=not registered for latest satellite reads`; no Oracle latest-satellite optimization claim. |
 | `pit-as-of-read` | Oracle external provider | `dvault-adddvaultoracle-optimized` | `oracle-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records planned `OracleDataVaultReadStrategy` for diagnostics-gated PIT reads. |
 | `bridge-traversal-read` | Oracle external provider | `dvault-adddvaultoracle-optimized` | `oracle-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records planned `OracleDataVaultReadStrategy` for diagnostics-gated bridge reads. |
-| Latest-satellite read | DB2 external provider | `AddDVaultDb2()` provider-neutral latest read | `provider-neutral-dvault-fallback` | `diagnostics-only` and `smoke-only` | v0.34.0 release notes | DB2 latest/as-of satellite reads use the provider-neutral latest pipeline; no provider-native latest-satellite read strategy is registered. |
-| PIT/bridge read | DB2 external provider | `AddDVaultDb2()` / `Db2DataVaultReadStrategy` | `db2-optimized-dvault` | `diagnostics-only` and `smoke-only` | v0.34.0 release notes and DB2 smoke evidence | DB2 registers diagnostics-gated PIT/bridge read dispatch and opt-in representative smoke coverage. No DB2 benchmark lane or timing row exists. |
+| `latest-satellite-read` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records `providerSpecificReadStrategy=not registered for latest satellite reads`; no DB2 latest-satellite optimization claim. |
+| `pit-as-of-read` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records planned `Db2DataVaultReadStrategy` for diagnostics-gated PIT reads. |
+| `bridge-traversal-read` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records planned `Db2DataVaultReadStrategy` for diagnostics-gated bridge reads. |
+| PIT/bridge read smoke | DB2 external provider | `AddDVaultDb2()` / `Db2DataVaultReadStrategy` | `db2-optimized-dvault` | `diagnostics-only` and `smoke-only` | v0.34.0 release notes and DB2 smoke evidence | DB2 registers diagnostics-gated PIT/bridge read dispatch and opt-in representative smoke coverage. No completed DB2 timing row is claimed. |
 
 ## Hash-Key Storage Matrix
 
@@ -313,7 +317,7 @@ Read claims must stop or fall back when PIT or bridge rows are not explicitly ma
 - `IncompleteReadShapeEvidence`
 - `StaleReadModelMaintenance`
 
-Provider-specific threshold facts remain part of the stop conditions: PostgreSQL staged COPY starts at 60-plus operations, SQL Server native bulk starts at 50-plus operations and accepts at most 500 satellite operations, MySQL native and staged candidates apply only when their candidate gates are met, Oracle direct optimized batching starts at 50-plus operations and accepts at most 10000 satellite operations, and DB2 has no staged bulk, provider-native chunk execution, or benchmark lane in the current baseline.
+Provider-specific threshold facts remain part of the stop conditions: PostgreSQL staged COPY starts at 60-plus operations, SQL Server native bulk starts at 50-plus operations and accepts at most 500 satellite operations, MySQL native and staged candidates apply only when their candidate gates are met, Oracle direct optimized batching starts at 50-plus operations and accepts at most 10000 satellite operations, and DB2 has no staged bulk, provider-native chunk execution, or completed timing evidence in the current baseline.
 
 ## Citation Examples
 
@@ -330,6 +334,6 @@ claim: measured SQLite latest-satellite read evidence, valid only with the root 
 ```
 
 ```text
-matrix row: provider=DB2 external provider; baseline=AddDVaultDb2()/Db2DataVaultReadStrategy; posture=diagnostics-only and smoke-only
-claim: diagnostics-gated PIT/bridge support and opt-in smoke behavior only; no DB2 timing evidence
+matrix row: scenario=pit-as-of-read; provider=DB2 external provider; baseline=dvault-adddvaultdb2-optimized; posture=skipped-placeholder
+claim: row identity and planned Db2DataVaultReadStrategy guidance only; not measured DB2 timing evidence from the root baseline
 ```

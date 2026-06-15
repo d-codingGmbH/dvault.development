@@ -78,4 +78,12 @@ Run local SQLite scenario comparison benchmarks from the repository root:
 dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --iterations 1 --warmup 0
 ```
 
+DB2 benchmark rows use the same optional-provider contract as the other external providers. Set the DB2 connection string before restore/build/run, keep provisioning outside the repository, and select `--provider db2` when isolating the lane:
+
+```sh
+DVAULT_TEST_DB2_CONNECTION_STRING='Server=localhost:50000;Database=dvault;UID=dvault;PWD=local-secret' dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --provider db2 --iterations 1 --warmup 0 --output artifacts/benchmarks/db2
+```
+
+When DB2 is unset, unavailable, or unreachable, the root benchmark artifact triplet still preserves DB2 rows in the optional-provider matrix with `executionStatus=skipped`, `iterations=0`, blank/null metrics, normalized skip reasons, and planned execution details for the DB2 clean-context save and PIT/bridge read boundaries.
+
 Pass `--output <directory>` to emit `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json`. Increase `--iterations` and `--warmup` locally when collecting steadier timing numbers.
