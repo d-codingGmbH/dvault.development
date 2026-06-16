@@ -1,0 +1,18 @@
+﻿## SQL Server Bulk Strategy Evaluation
+
+Recommendation: `defer with reason`.
+
+The repository-backed outcome is to defer any SQL Server bulk-strategy implementation or threshold-tuning work from this ticket. The current visible SQL Server optimized save baseline is already a staged temporary-table path that writes staging rows through `SqlBulkCopy`, and both `SqlServerDataVaultSaveStrategy` and `DataVaultProviderSaveStrategyGateEvaluator` keep the bounded gate at 50 minimum total operations and 500 maximum satellite operations. The checked-in v0.32 SQL Server threshold decision keeps those gates unchanged and records provider-neutral fallback outside the eligible boundary.
+
+This is not a new timing claim from the v0.39 root triplet. The v0.39 root SQL Server `provider-native-bulk-ingestion` rows are skipped placeholders because `DVAULT_TEST_SQLSERVER_CONNECTION_STRING` is unset, so they preserve row identity and planned path facts only. Completed SQL Server threshold evidence comes from the v0.32 threshold bundle and release/profile documentation, not from the skipped v0.39 rows.
+
+Evidence summary:
+- `docs/plans/provider-optimization-evidence-matrix.md` records SQL Server `provider-native-bulk-ingestion` fallback and optimized rows as `skipped-placeholder`; the optimized row names `SqlBulkCopy`, a 50-plus operation native gate, and at most 500 satellite operations.
+- `docs/plans/provider-optimization-gap-matrix.md` row `P1.02` classifies SQL Server `provider-native-bulk-ingestion` as an evidence gap in the root triplet and says the stop conditions are missing connection string, dirty context, fewer than 50 operations, more than 500 satellite operations, or diagnostics not selecting the strategy, with provider-neutral fallback.
+- `docs/performance-profiles.md` points provider timing claims to the v0.32 provider benchmark bundles and keeps skipped optional-provider rows from being promoted into completed timing evidence.
+- `docs/releases/v0.32.0.md` links the SQL Server threshold decision and states that the SQL Server native-bulk gates remain 50 minimum operations and 500 maximum satellite operations.
+- `artifacts/benchmarks/06F9XD2M71D1XFT7FJX62KD8HM-sqlserver-save-threshold-diagnostics/sqlserver-threshold-decision.md` keeps the 50/500 gates unchanged, preserves a provider-native SQL Server lane at 100 satellite operations, and corrects fallback rows to provider-neutral wording.
+- `src/DCoding.Data.DVault.SqlServer/SqlServerDataVaultSaveStrategy.cs` uses temporary staging tables and `SqlBulkCopy`, with visible `OPENJSON` builders; `src/DCoding.Data.DVault/DataVaultProviderSaveStrategyGateEvaluator.cs` enforces the same 50/500 gate.
+- A repository search for `TVP`, `table-valued`, and `TableValued` under source, docs, tests, root benchmark summaries, and benchmark artifacts found no repository-visible TVP implementation or TVP benchmark evidence.
+
+Follow-up proof required before changing release guidance or thresholds: run a provider-configured SQL Server benchmark/evidence bundle that compares the current staged `SqlBulkCopy` lane directly against provider-neutral fallback, and only if TVP remains a candidate, compare TVP against both the current staged `SqlBulkCopy` lane and the visible `OPENJSON` surface with request-bound diagnostics and preserved artifact triplets. Until that proof exists, do not retune the 50/500 gates and do not implement TVP as the default next step.
