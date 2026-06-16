@@ -3,21 +3,20 @@
   "ticket-id": "06FBSCAD13RR10GHR82CPD864W",
   "ticket-type": "task",
   "title": "Task: Implement accepted MySQL bulk improvement",
-  "revision": "06FBSCZ5F9J9CSAPTWSF48GB3G",
-  "status": "todo",
+  "revision": "06FCXMCFC7PXY3KHG88C2950N0",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
     "area/performance",
     "area/provider-support",
     "area/testing",
-    "provider/mysql"
+    "automation/bot-ready",
+    "provider/mysql",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FBSB0WN6A04NBF5YBVXQ4W9G",
   "release-id": "06FBSAX27W6ZCB62YPJZS475E8",
   "created-at": "2026-06-12T16:36:36.8660827Z",
-  "updated-at": "2026-06-12T16:39:26.8428221Z"
+  "updated-at": "2026-06-16T05:05:00.7690347Z"
 }

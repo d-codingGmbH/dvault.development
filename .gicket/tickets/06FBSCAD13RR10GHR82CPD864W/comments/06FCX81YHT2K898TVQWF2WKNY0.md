@@ -1,67 +1,55 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Done MySQL bulk-gap evaluation ticket `06FBSC9JK29P1PVTCF6H3ZTEM8` already concluded the current MySQL bulk baseline is accepted as-is, so this follow-up should close as no-work-required rather than reopen implementation work.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Done evaluation ticket `06FBSC9JK29P1PVTCF6H3ZTEM8` concluded the repository already has the accepted MySQL bulk baseline: retained multi-row saves below the staged boundary, staged temporary-table bulk at 60-plus operations, and no current `LOAD DATA` lane.
 - The visible MySQL gates are already bounded in code and tests: provider-native candidacy starts at 50 total operations, staged bulk starts at 60 total operations, and tiny satellite-only history batches deliberately fall back to the provider-neutral writer at 10 or fewer operations in one request or 100 or fewer across multiple requests.
 - Root v0.39 MySQL bulk rows remain skipped placeholders when `DVAULT_TEST_MYSQL_CONNECTION_STRING` is unset; completed local timing evidence lives in the earlier checked-in MySQL bundles, so skipped root placeholders must not be treated as missing MySQL bulk functionality.
 - Earlier delivered MySQL tuning work already adjusted tiny-workload behavior and benchmark clarity; the completed gap evaluation found no distinct remaining implementation to accept inside this ticket.
 
-### Scope In
+Scope In
 - Close this ticket as no-work-required based on the completed MySQL bulk-gap evaluation and the current repository-backed MySQL bulk baseline.
 - Capture in the ticket handoff or closure note that the accepted MySQL save posture is the existing dual-lane baseline: retained multi-row below the staged boundary, staged temporary-table bulk at 60-plus operations, and provider-neutral fallback for tiny satellite-history batches.
 - Point downstream documentation work to the existing evidence and caveats so MySQL bulk support is documented accurately without implying a missing implementation task.
 
-### Scope Out
+Scope Out
 - Any new MySQL provider code, threshold retune, or save-strategy selection change in this ticket.
 - Any `LOAD DATA` or `LOAD DATA INFILE` experiment, deployment concern, or operational bulk-artifact work.
 - Benchmark reruns or new benchmark artifact generation in this ticket.
 - MySQL latest-satellite, PIT, or bridge read work.
 
-## Acceptance Criteria
-- The ticket conclusion explicitly states that no new MySQL bulk implementation is accepted from the completed evaluation ticket `06FBSC9JK29P1PVTCF6H3ZTEM8`, and this task therefore closes as no-work-required.
-- The closure note cites the current repo-backed MySQL baseline accurately: `MySqlDataVaultSaveStrategy`, `MySqlStagedDataVaultSaveStrategy`, the 50-operation provider-native gate, the 60-operation staged threshold, and the tiny satellite-history provider-neutral fallback boundary.
-- The closure note distinguishes skipped v0.39 root MySQL rows from completed local MySQL evidence and does not describe skipped placeholders as absent functionality or as new implementation debt.
-- Any future `LOAD DATA` experiment or threshold retune is explicitly deferred to a separate ticket with fresh provider-configured evidence instead of being reopened inside this task.
-
-## Definition of Done
-- This ticket can be closed without source, test, benchmark, or documentation changes because the completed evaluation already determined that the current MySQL bulk baseline is the accepted outcome.
-- Downstream documentation ticket `06FBSCAX98ZFQZWBYEQMB8WF18` has enough closure context to describe the MySQL no-op and deferral posture without implying missing MySQL bulk support.
-- No blocker-level ambiguity remains about the active MySQL save lanes, threshold counts, or why this ticket performs no implementation work.
-
-## Implementation Notes
-- Use done evaluation ticket `06FBSC9JK29P1PVTCF6H3ZTEM8` as the controlling recommendation: document no-op for the existing multi-row and staged threshold baseline, and defer any future `LOAD DATA` work with reason.
-- When closing the ticket, cite the existing repository surfaces that already prove the baseline, including `DVaultMySqlServiceCollectionExtensions`, `MySqlDataVaultSaveStrategy`, `MySqlStagedDataVaultSaveStrategy`, `MySqlProviderCapabilityTests`, and `BenchmarkScenarioExecutionTests`.
-- Use the current evidence chain as-is: root v0.39 quick baseline for row identity and skipped placeholders, plus the earlier checked-in MySQL local evidence bundles for completed timing context.
-- If maintainers later want more MySQL bulk work, open a separate ticket scoped specifically to `LOAD DATA` experimentation or threshold-retune benchmarking with explicit benchmark reruns and evidence gates.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should documentation ticket `06FBSCAX98ZFQZWBYEQMB8WF18` explicitly call out that MySQL already ships retained multi-row and staged temporary-table bulk lanes and that this implementation ticket closed no-work-required?
 - If maintainers still want to explore `LOAD DATA` or revisit the 50 and 60 operation thresholds, which representative mixed hub, link, and satellite workloads should define that future ticket's evidence gate?
 
-## Risks
+Risks
 - If the closure note omits the completed evaluation and existing local evidence, readers may misread skipped v0.39 root MySQL rows as proof that MySQL bulk support is still missing.
 - Reopening threshold or `LOAD DATA` work inside this ticket would blur a resolved no-work decision and bypass the fresh provider-configured evidence the completed evaluation said is required.
 - Because this ticket blocks documentation task `06FBSCAX98ZFQZWBYEQMB8WF18`, leaving the no-work rationale implicit could keep downstream provider-bulk docs ambiguous.
 
-## Split Recommendations
+Split recommendations
 - Do not split within this ticket; close it as no-work-required.
 - If future MySQL bulk experimentation is desired, create one separate task for `LOAD DATA` or threshold-retune benchmarking rather than reviving this ticket.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 4
+- definition-of-done items: 3
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Implement the accepted MySQL bulk improvement, if the spike recommends one. Acceptance: provider strategy tests, diagnostics/fallback coverage, and benchmark evidence are updated; close with no-work-required if the spike rejects implementation.
+Run mode
+- apply: planned updates are applied after this comment
