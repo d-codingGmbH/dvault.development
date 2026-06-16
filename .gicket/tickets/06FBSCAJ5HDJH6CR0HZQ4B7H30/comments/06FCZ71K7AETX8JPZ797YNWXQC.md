@@ -1,68 +1,54 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Repository evidence already bounds Oracle bulk work to the existing direct AddDVaultOracle batching path with staged Oracle bulk still unselected, so no split is justified and this ticket should be treated as closure-focused rather than new staged-bulk implementation.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The accepted Oracle bulk baseline is the current direct Oracle batching path behind AddDVaultOracle and OracleDataVaultSaveStrategy, not a staged Oracle bulk lane.
 - Oracle bulk eligibility is already bounded to clean Oracle.EntityFrameworkCore contexts with at least 50 total operations, no multi-active satellites, and no more than 10000 satellite operations; batches outside that gate fall back to the provider-neutral writer.
 - The root benchmark triplet may remain a skipped-placeholder for Oracle when DVAULT_TEST_ORACLE_CONNECTION_STRING is unset; the checked-in v0.32.0 Oracle threshold artifact is the current completed evidence for retaining the direct path and 10000-satellite cap.
 - No child tickets, relation changes, description updates, attachments, or planning documents were materialized in this refinement run.
 
-### Scope In
+Scope In
 - Ratify the existing direct Oracle optimized bulk save boundary as the only implementation and closure path owned by this ticket.
 - Keep Oracle strategy-selection diagnostics, fallback causes, and benchmark/verifier coverage aligned with that direct batching path.
 - If any narrow code or artifact refresh is still performed, keep Oracle unit, integration, and smoke coverage proving strategy selection, rollback and fallback behavior, and the 10000-satellite threshold boundary.
 
-### Scope Out
+Scope Out
 - Selecting or implementing staged Oracle bulk without new benchmark evidence showing a measured win and deterministic cleanup under the caller-owned transaction boundary.
 - Changing Oracle latest-satellite, PIT, or bridge read scope beyond the current registration and evidence baseline.
 - Provider-native chunk execution, SQL artifact exporter expansion, or new provider-support work.
 - Changing the 50-operation minimum or 10000-satellite safety cap without new artifact-backed evidence.
 
-## Acceptance Criteria
-- The ticket contract explicitly states that Oracle bulk work stays on the retained direct Oracle batching path selected by OracleDataVaultSaveStrategy and does not reopen staged Oracle bulk.
-- Any implementation or artifact refresh preserves the current Oracle gate and fallback contract: clean Oracle provider, at least 50 total operations, no multi-active satellites, no more than 10000 satellite operations, otherwise provider-neutral fallback.
-- Repository tests that cover Oracle strategy selection, fallback and rollback behavior, and benchmark-row verification remain aligned with stagedOracleBulk=not-selected-no-measured-win unless a separately evidenced follow-up replaces that boundary.
-- Benchmark evidence updates do not convert skipped Oracle root-triplet rows into timing claims unless provider-configured Oracle artifacts are actually produced; if no new evidence run is needed and no code delta is required beyond the existing baseline, the ticket may close as no-work-required.
-
-## Definition of Done
-- No touched docs, release notes, or planning text claim a staged Oracle bulk lane or broader Oracle timing evidence than the checked-in artifacts support.
-- Oracle save-strategy coverage still proves selected strategy, provider-neutral fallback, rollback behavior, and the retained 10000-satellite threshold boundary.
-- Benchmark verifier coverage still preserves Oracle planned-strategy and evidence-posture tokens for both completed artifact bundles and skipped optional-provider rows.
-- No new scope is introduced outside the current Oracle direct bulk save boundary.
-
-## Implementation Notes
-- Current source already implements the direct Oracle batching path in OracleDataVaultSaveStrategy; its staged decision branch returns not-selected-no-measured-win and does not select a staged path.
-- Current DI registration in DVaultOracleServiceCollectionExtensions already binds Oracle provider capability selection plus Oracle save, PIT, and bridge strategy registration.
-- Current repository coverage already includes OracleProviderOptimizationTests, OracleDataVaultSmokeTests, and BenchmarkScenarioExecutionTests for strategy selection, fallback boundaries, and the v0.32.0 Oracle high-volume threshold artifact.
-- The current ticket branch shows no file delta relative to the supplied scratch-source ref, so this refinement is based on the already checked-in Oracle baseline rather than new branch work.
-- This refinement relies on the supplied ticket snapshot plus repository evidence because direct gicket ticket, comment, and relation reads were trust-blocked in-session.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - When an Oracle environment is available, should a separate follow-up collect fresh provider-configured root-triplet timing artifacts for the retained direct Oracle path so the current skipped-placeholder row can be supplemented with completed timing evidence?
 - If future experiments revisit staged Oracle bulk, should that happen only in a separate evidence-first ticket with explicit before-and-after artifacts and cleanup-parity proof?
 
-## Risks
+Risks
 - The root quick benchmark baseline still carries Oracle as a skipped-placeholder row when DVAULT_TEST_ORACLE_CONNECTION_STRING is unset, so downstream documentation can overstate Oracle timing evidence if it ignores evidence posture.
 - Reopening staged Oracle bulk inside this ticket would conflict with the current source, docs, and artifact contract that keep Oracle on the retained direct batching path.
 - Any stale live relation cleanup could not be re-verified in-session because gicket relation reads were trust-blocked.
 
-## Split Recommendations
+Split recommendations
 - No split is justified from current repository evidence; the remaining Oracle work is already bounded as an evidence-gap follow-up in the provider optimization gap matrix rather than a child implementation ticket from this task.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 4
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Implement the accepted Oracle bulk improvement, if the spike recommends one. Acceptance: provider strategy tests, diagnostics/fallback coverage, and benchmark evidence are updated; close with no-work-required if the spike rejects implementation.
+Run mode
+- apply: planned updates are applied after this comment
