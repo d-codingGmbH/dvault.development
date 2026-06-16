@@ -1,68 +1,55 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Repository and documentation evidence show PostgreSQL bulk support is already implemented and threshold-bounded; this ticket should refine to an evaluation outcome that defers code or threshold changes until new provider-configured benchmark evidence exists.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The supplied ticket snapshot already shows no recent comments.
 - PostgreSQL bulk support is present today: `AddDVaultPostgres()` registers `PostgresDataVaultSaveStrategy`, with retained direct or UNNEST work below 60 operations and staged `COPY` at 60-plus operations.
 - The exact direct-versus-UNNEST crossover is already repository-defined inside the current implementation (`PostgresUnnestInsertMinimumRowCount = 32`) and is not an open PO-level decision.
 - The checked-in v0.32 PostgreSQL evidence bundle already records completed wins for both lanes, while the v0.39 root benchmark triplet still skips PostgreSQL provider rows when `DVAULT_TEST_POSTGRES_CONNECTION_STRING` is unset.
 - No child tickets, relation changes, description updates, attachments, or planning documents were materialized in this run.
 
-### Scope In
+Scope In
 - Ratify the current PostgreSQL save-path baseline from code, tests, and documentation.
 - Record the bounded recommendation for this ticket as `defer with reason` on implementation or threshold changes.
 - Point delivery to the authoritative evidence surfaces that distinguish existing implementation from missing provider-configured timing evidence.
 
-### Scope Out
+Scope Out
 - New PostgreSQL provider code, new latest-satellite or PIT or bridge strategy work, or benchmark harness changes.
 - Threshold retuning without a new PostgreSQL benchmark triplet that compares the current 60-operation boundary against provider-neutral fallback.
 - Provider provisioning, connection-string setup, or re-running local Podman benchmarks.
 - Ticket-graph cleanup beyond noting that relation reads were unavailable through the blocked local transport.
 
-## Acceptance Criteria
-- The ticket states that PostgreSQL bulk strategy support already exists and is not an implementation gap.
-- The ticket records the current default boundary: below 60 operations stay on the retained direct or UNNEST lane; 60-plus operations use staged `COPY`; provider-neutral fallback applies only when provider or environment gates decline the strategy.
-- The ticket recommends `defer with reason` for code or threshold changes because the remaining PostgreSQL gap in v0.39 is provider-configured timing evidence, not missing behavior.
-- The ticket cites `docs/plans/provider-optimization-gap-matrix.md` row `P1.01`, `docs/plans/provider-optimization-evidence-matrix.md`, `docs/performance-profiles.md`, the root benchmark triplet, and the checked-in v0.32 PostgreSQL evidence bundle as the authoritative evidence set.
-
-## Definition of Done
-- PO refinement leaves no blocking ambiguity about the recommendation or evidence sources.
-- Developers are not asked to reopen the direct-versus-UNNEST or staged-`COPY` baseline as a fresh architecture decision.
-- Open questions remain empty because the repository already fixes the bounded default and the only remaining work is future evidence collection if someone wants to challenge it.
-- No persistent planning artifact or child-ticket split is required for this ticket as currently scoped.
-
-## Implementation Notes
-- Use gap-matrix row `P1.01` as the authoritative statement of the remaining PostgreSQL backlog item: collect provider-configured evidence to validate the retained and staged boundaries against provider-neutral fallback.
-- Current code already exposes the evaluated baseline through `PostgresDataVaultSaveStrategy.MinimumStagedBulkOperationCount = 60`, `IsStagedBatchShape(...)`, and the internal direct or UNNEST crossover at `PostgresUnnestInsertMinimumRowCount = 32`.
-- Integration and benchmark verifier coverage already preserve the expected execution-detail tokens for PostgreSQL, including `DVault PostgreSQL retained direct or UNNEST save path`, `DVault PostgreSQL staged bulk save path`, `transfer=COPY`, and the 60-operation staged boundary.
-- Because local gicket ticket, comment, and relation reads were previously trust-blocked, no relation cleanup or child-ticket materialization was attempted from this refinement run.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - If a later ticket wants to challenge the 60-operation threshold, which exact PostgreSQL before-and-after benchmark triplet and workload shapes should be required so the change is compared against the existing v0.32 evidence rather than an ad hoc local run?
 - Should future PostgreSQL evidence collection stay under the shared provider gap-matrix execution backlog or be broken out as a dedicated benchmark ticket once relation reads are available again?
 
-## Risks
+Risks
 - Changing the threshold now without a new provider-configured benchmark triplet would replace a repository-backed boundary with guesswork.
 - The v0.39 root benchmark triplet still shows PostgreSQL provider rows as skipped placeholders, so a future developer could misread the root summary unless this ticket explicitly points them to the v0.32 completed evidence bundle.
 - Relation state could not be re-verified through the blocked local gicket transport during this run; if downstream workflow depends on exact ticket links, a later tool-enabled pass should confirm them.
 
-## Split Recommendations
+Split recommendations
 - No split recommended. If follow-up work is opened later, make it a dedicated provider-configured PostgreSQL evidence-collection ticket rather than mixing new benchmarks into this evaluation ticket.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 4
+- definition-of-done items: 4
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Use the v0.39 evidence matrix to evaluate PostgreSQL COPY, UNNEST, staging, and threshold gaps. Acceptance: produce a small recommendation: implement, tune threshold, document no-op, or defer with reason.
+Run mode
+- apply: planned updates are applied after this comment
