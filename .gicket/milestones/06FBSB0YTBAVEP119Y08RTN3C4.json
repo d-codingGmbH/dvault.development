@@ -3,6 +3,6 @@
   "milestone-id": "06FBSB0YTBAVEP119Y08RTN3C4",
   "name": "v0.41.0 - Latest-satellite provider parity",
   "description": "Close latest-satellite provider read strategy gaps where evidence supports provider-specific SQL.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-12T16:30:57.2342201Z"
 }

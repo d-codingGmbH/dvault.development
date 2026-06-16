@@ -3,6 +3,6 @@
   "milestone-id": "06FBSB108SRM9W6WWHRTADFVVM",
   "name": "v0.41.0 - Read docs and benchmarks",
   "description": "Update read strategy documentation, benchmark evidence, and fallback guidance after provider parity work.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-12T16:30:57.6063693Z"
 }

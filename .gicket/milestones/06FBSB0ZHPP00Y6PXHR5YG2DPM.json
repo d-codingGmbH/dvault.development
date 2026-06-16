@@ -3,6 +3,6 @@
   "milestone-id": "06FBSB0ZHPP00Y6PXHR5YG2DPM",
   "name": "v0.41.0 - PIT and bridge provider parity",
   "description": "Close PIT and bridge provider read strategy gaps where evidence supports provider-specific SQL.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-12T16:30:57.4213281Z"
 }
