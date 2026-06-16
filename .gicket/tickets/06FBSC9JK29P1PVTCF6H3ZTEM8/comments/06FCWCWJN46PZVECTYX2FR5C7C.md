@@ -1,0 +1,15 @@
+﻿## Developer Evaluation: MySQL bulk strategy gaps
+
+Recommendation: document no-op for the current MySQL save-strategy baseline, and defer any LOAD DATA / LOAD DATA INFILE lane to a separate future implementation ticket with its own operational constraints and provider-configured evidence.
+
+Findings:
+- The current MySQL baseline already includes a retained multi-row provider path below the staged boundary. `src/DCoding.Data.DVault.MySql/MySqlDataVaultSaveStrategy.cs` defines the 50-operation optimized gate and keeps batches below 60 staged operations on the retained MySQL path when they are otherwise provider-eligible.
+- The current MySQL baseline already includes a staged temporary-table path at 60-plus total operations. `src/DCoding.Data.DVault.MySql/MySqlStagedDataVaultSaveStrategy.cs` delegates to `MySqlDataVaultSaveStrategy.ExecuteStagedSaveAsync`, and `MySqlDataVaultSaveStrategy` builds `CREATE TEMPORARY TABLE` staging commands before inserting from staging.
+- The gates are: 50-plus total operations for provider-native MySQL candidacy, 60-plus total operations for staged bulk, and provider-neutral fallback for tiny satellite-only history batches at 10 or fewer operations in one explicit request or 100 or fewer total operations across multiple explicit requests.
+- The root v0.39 MySQL provider-native-bulk-ingestion rows in `benchmark-summary.md` / `benchmark-summary.csv` are skipped placeholders because `DVAULT_TEST_MYSQL_CONNECTION_STRING` is unset. They preserve planned row identity and selected-strategy facts, but they are not completed timing proof.
+- Completed local MySQL evidence exists in `artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.md`: the retained multi-row row completed with `MySqlDataVaultSaveStrategy` at 57 staged operations, and the staged row completed with `MySqlStagedDataVaultSaveStrategy` at 63 staged operations.
+- `docs/plans/provider-optimization-evidence-matrix.md` keeps the MySQL provider-native-bulk-ingestion root rows as skipped-placeholder evidence, while `docs/plans/provider-optimization-gap-matrix.md` classifies the remaining posture as an evidence gap to validate with provider-configured runs, not as missing MySQL save support.
+- Repository search found no `LOAD DATA` or `LOAD DATA INFILE` references in the MySQL provider source, docs, or root benchmark artifacts.
+
+Conclusion:
+The existing retained multi-row and staged temporary-table threshold baseline closes the current MySQL save-strategy capability question for this ticket. No MySQL provider code, threshold change, or new ingestion lane should be added here. Future LOAD DATA work, if desired, should be opened separately and must include explicit file/permission/cleanup/deployment constraints plus new provider-configured benchmark evidence.

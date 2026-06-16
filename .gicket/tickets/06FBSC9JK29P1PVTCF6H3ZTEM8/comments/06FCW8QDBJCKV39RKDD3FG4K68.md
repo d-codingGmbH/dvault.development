@@ -1,70 +1,56 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the ticket around the repository-backed MySQL dual-lane save baseline: retained multi-row below the staged boundary, staged temporary-table bulk at 60-plus operations, and no current LOAD DATA lane; no child tickets, relation updates, attachments, or planning documents were materialized.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The repository already implements two MySQL save lanes: MySqlDataVaultSaveStrategy for retained multi-row inserts and MySqlStagedDataVaultSaveStrategy for staged bulk using temporary tables.
 - The visible MySQL gates are bounded: provider-native candidacy starts at 50 total operations, staged bulk starts at 60 total operations, and tiny satellite-only history batches deliberately stay provider-neutral at 10 or fewer operations in one request or 100 or fewer across multiple requests.
 - The current staged implementation uses temporary tables plus parameterized inserts and INSERT IGNORE or INSERT ... SELECT flow; no LOAD DATA or LOAD DATA INFILE path is present in the visible MySQL provider code, docs, or artifacts.
 - The root v0.39 evidence rows for MySQL provider-native-bulk-ingestion are skipped placeholders when DVAULT_TEST_MYSQL_CONNECTION_STRING is unset, but the repository also preserves completed v0.32 local MySQL evidence for the retained multi-row representative row at 57 operations and the staged representative row at 63 operations.
 - No bounded child tickets, relation changes, description updates, attachments, or planning documents were materialized in this refinement pass.
 
-### Scope In
+Scope In
 - Evaluate whether the existing MySQL retained multi-row lane, staged temporary-table lane, and documented thresholds already close the current save-strategy gap.
 - Produce a repository-backed recommendation for this ticket: document no-op, defer with reason, or open a future implementation follow-up only if a distinct unsupported gap remains.
 - Tie the recommendation to the v0.39 evidence matrix and gap-matrix posture plus the completed v0.32 MySQL evidence bundles.
 
-### Scope Out
+Scope Out
 - Changing MySQL provider code, thresholds, or save strategy selection logic in this ticket.
 - Adding a new LOAD DATA or LOAD DATA INFILE ingestion lane.
 - Claiming new MySQL timing evidence from the root v0.39 quick baseline when those rows are skipped.
 - Changing latest-satellite, PIT, or bridge read behavior.
 
-## Acceptance Criteria
-- The evaluation states that the current MySQL baseline already includes a retained multi-row path below the staged boundary and a staged temporary-table path at 60-plus operations.
-- The evaluation records the current gates exactly: 50-plus total operations for provider-native MySQL candidacy, 60-plus total operations for staged bulk, and deliberate provider-neutral fallback for tiny satellite-only history batches.
-- The evaluation explicitly records that no LOAD DATA lane exists today and recommends defer with reason for LOAD DATA unless a separate future ticket adds new implementation and evidence.
-- The evaluation distinguishes skipped v0.39 root MySQL rows from completed v0.32 local MySQL evidence and does not present skipped placeholders as completed timing proof.
-- The evaluation ends with a concrete recommendation: document no-op for the existing multi-row and staged threshold baseline, and defer with reason for any future LOAD DATA lane.
-
-## Definition of Done
-- Ticket handoff text or equivalent notes capture the chosen recommendation and cite the repository evidence that supports it.
-- The refined contract leaves no blocker-level ambiguity about the active MySQL save lanes, threshold counts, or tiny-history fallback boundary.
-- Any future implementation work is explicitly separated into a new follow-up ticket instead of being implied inside this evaluation task.
-
-## Implementation Notes
-- DataVaultProviderSaveStrategyGateEvaluator and MySqlDataVaultSaveStrategy show the current MySQL save boundaries: minimum 50 operations for provider-native dispatch, minimum 60 operations for staged bulk, and tiny satellite-history provider-neutral fallback at 10 or fewer operations in one request or 100 or fewer across multiple requests.
-- MySqlDataVaultSaveStrategy builds multi-row INSERT statements for the retained lane and uses CREATE TEMPORARY TABLE, parameterized staging inserts, and INSERT IGNORE or INSERT ... SELECT for the staged lane.
-- The representative provider-native-bulk-ingestion guidance rows are already bounded in the repository: a retained multi-row row below the staged boundary and a staged row for the larger mixed hub, link, and satellite batch.
-- The repository-visible recommendation should treat the remaining gap as evaluation and documentation posture, not as proof that MySQL save support is missing.
-- The current design-time SQL artifact lane is SQL Server-only, so this ticket should not infer existing MySQL artifact or exporter support from the general provider-support baseline.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - If maintainers still want a LOAD DATA experiment after this evaluation, should it be opened as a separate implementation ticket with explicit operational constraints, artifact and evidence requirements, and benchmark reruns?
 - If maintainers want to revisit the 50 and 60 operation MySQL thresholds, which representative mixed hub, link, and satellite workloads should be rerun to prove a changed boundary against both provider-neutral fallback and the retained multi-row lane?
 
-## Risks
+Risks
 - Because the root v0.39 quick baseline skips MySQL provider-native rows when the connection string is unset, future readers may misread the posture unless this ticket explicitly cites the completed v0.32 evidence bundles.
 - The repository proves the current retained and staged MySQL boundaries, but any threshold retune or LOAD DATA proposal would need new provider-configured evidence rather than reinterpretation of the existing bundles.
 - A future LOAD DATA lane would expand operational scope beyond the current temporary-table and save-service baseline, including permissions, file movement, cleanup, and deployment ownership concerns.
 
-## Split Recommendations
+Split recommendations
 - Do not split while the ticket outcome is evaluation only; close it as a documentation or no-op plus LOAD DATA deferral if the recommendation matches the current evidence.
 - If the evaluation still calls for action beyond documentation, create one separate follow-up ticket for a MySQL LOAD DATA experiment or threshold-retune benchmark rerun rather than widening this ticket.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 3
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Use the v0.39 evidence matrix to evaluate MySQL multi-row insert, LOAD DATA feasibility, staging, and threshold gaps. Acceptance: produce a small recommendation: implement, tune threshold, document no-op, or defer with reason.
+Run mode
+- apply: planned updates are applied after this comment
