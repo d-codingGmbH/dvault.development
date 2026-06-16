@@ -3,21 +3,20 @@
   "ticket-id": "06FBSCF61N0TYPYH7008TRD6VR",
   "ticket-type": "story",
   "title": "Story: Define provider read parity acceptance criteria",
-  "revision": "06FBSDBGPRZ7828T6W0YZ7GJ04",
-  "status": "todo",
+  "revision": "06FD197EHYBXREGSA5A7HBXX4M",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
     "area/architecture",
     "area/performance",
     "area/provider-support",
-    "area/read-models"
+    "area/read-models",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FBSB0Y35J55AMF2F5EKFYGQC",
   "release-id": "06FBSAVBYTWWZ3K6NV1XQQJADR",
   "created-at": "2026-06-12T16:37:16.1540153Z",
-  "updated-at": "2026-06-12T16:41:08.0227418Z"
+  "updated-at": "2026-06-16T13:35:30.4474577Z"
 }

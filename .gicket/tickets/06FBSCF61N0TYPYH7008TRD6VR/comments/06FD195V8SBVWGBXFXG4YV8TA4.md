@@ -1,0 +1,36 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `2` selected relation flow(s) for source ticket `06FBSCF61N0TYPYH7008TRD6VR`.
+- Role `test` completed with outcome `test-workflow-awaiting-integrator` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `6`; dropped obsolete follow-up(s): `2`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `8705c2239ee64717a7223f92dce6cd87`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06FBSCFDFFYQXBK17RT3E8W4CM` via `blocks` path `06FBSCF61N0TYPYH7008TRD6VR -> 06FBSCFDFFYQXBK17RT3E8W4CM`
+- [queued] `blocked-follow-up-comment` -> `06FBSCFKWGQMBEF5Q96AZ5Q0X0` via `blocks` path `06FBSCF61N0TYPYH7008TRD6VR -> 06FBSCFKWGQMBEF5Q96AZ5Q0X0`
+- [queued] `blocked-follow-up-comment` -> `06FBSCFVT3SBHKMDGNEXWVWFXG` via `blocks` path `06FBSCF61N0TYPYH7008TRD6VR -> 06FBSCFVT3SBHKMDGNEXWVWFXG`
+- [queued] `blocked-follow-up-comment` -> `06FBSCG18KBRT1FTHDRX073EF4` via `blocks` path `06FBSCF61N0TYPYH7008TRD6VR -> 06FBSCG18KBRT1FTHDRX073EF4`
+- [queued] `blocked-follow-up-comment` -> `06FBSCG6C40X9CV3FFEHHKS6G0` via `blocks` path `06FBSCF61N0TYPYH7008TRD6VR -> 06FBSCG6C40X9CV3FFEHHKS6G0`
+- [queued] `blocked-follow-up-comment` -> `06FBSCGBG8CJ0QNRX4JZJA638G` via `blocks` path `06FBSCF61N0TYPYH7008TRD6VR -> 06FBSCGBG8CJ0QNRX4JZJA638G`
+- [dropped] `blocked-by-follow-up-comment` -> `06FBSC4QXYQ0SWB1DPMGJJ5XX0` via `blocks` path `06FBSCF61N0TYPYH7008TRD6VR -> 06FBSC4QXYQ0SWB1DPMGJJ5XX0`
+- [dropped] `blocked-by-follow-up-comment` -> `06FBSCAX98ZFQZWBYEQMB8WF18` via `blocks` path `06FBSCF61N0TYPYH7008TRD6VR -> 06FBSCAX98ZFQZWBYEQMB8WF18`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06FBSCF61N0TYPYH7008TRD6VR` owner `ticket/06FBSCF61N0TYPYH7008TRD6VR-story-define-provider-read-parity-acceptance-cri` base `develop` source-owner `ticket/06FBSCF61N0TYPYH7008TRD6VR-story-define-provider-read-parity-acceptance-cri`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06FBSCFDFFYQXBK17RT3E8W4CM` owner `ticket/06FBSCFDFFYQXBK17RT3E8W4CM-task-close-postgresql-latest-satellite-read-gap` base `develop` source-owner `ticket/06FBSCF61N0TYPYH7008TRD6VR-story-define-provider-read-parity-acceptance-cri`: Mutation targets 'ticket/06FBSCFDFFYQXBK17RT3E8W4CM-task-close-postgresql-latest-satellite-read-gap', not current branch 'ticket/06FBSCF61N0TYPYH7008TRD6VR-story-define-provider-read-parity-acceptance-cri'; queue for target-branch replay.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06FBSCFKWGQMBEF5Q96AZ5Q0X0` owner `ticket/06FBSCFKWGQMBEF5Q96AZ5Q0X0-task-close-sql-server-latest-satellite-read-gap` base `develop` source-owner `ticket/06FBSCF61N0TYPYH7008TRD6VR-story-define-provider-read-parity-acceptance-cri`: Mutation targets 'ticket/06FBSCFKWGQMBEF5Q96AZ5Q0X0-task-close-sql-server-latest-satellite-read-gap', not current branch 'ticket/06FBSCF61N0TYPYH7008TRD6VR-story-define-provider-read-parity-acceptance-cri'; queue for target-branch replay.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06FBSCFVT3SBHKMDGNEXWVWFXG` owner `ticket/06FBSCFVT3SBHKMDGNEXWVWFXG-task-close-mysql-latest-satellite-read-gap` base `develop` source-owner `ticket/06FBSCF61N0TYPYH7008TRD6VR-story-define-provider-read-parity-acceptance-cri`: Mutation targets 'ticket/06FBSCFVT3SBHKMDGNEXWVWFXG-task-close-mysql-latest-satellite-read-gap', not current branch 'ticket/06FBSCF61N0TYPYH7008TRD6VR-story-define-provider-read-parity-acceptance-cri'; queue for target-branch replay.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06FBSCG18KBRT1FTHDRX073EF4` owner `ticket/06FBSCG18KBRT1FTHDRX073EF4-task-close-oracle-latest-satellite-read-gap` base `develop` source-owner `ticket/06FBSCF61N0TYPYH7008TRD6VR-story-define-provider-read-parity-acceptance-cri`: Mutation targets 'ticket/06FBSCG18KBRT1FTHDRX073EF4-task-close-oracle-latest-satellite-read-gap', not current branch 'ticket/06FBSCF61N0TYPYH7008TRD6VR-story-define-provider-read-parity-acceptance-cri'; queue for target-branch replay.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06FBSCG6C40X9CV3FFEHHKS6G0` owner `ticket/06FBSCG6C40X9CV3FFEHHKS6G0-task-close-db2-latest-satellite-read-gap` base `develop` source-owner `ticket/06FBSCF61N0TYPYH7008TRD6VR-story-define-provider-read-parity-acceptance-cri`: Mutation targets 'ticket/06FBSCG6C40X9CV3FFEHHKS6G0-task-close-db2-latest-satellite-read-gap', not current branch 'ticket/06FBSCF61N0TYPYH7008TRD6VR-story-define-provider-read-parity-acceptance-cri'; queue for target-branch replay.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06FBSCGBG8CJ0QNRX4JZJA638G` owner `ticket/06FBSCGBG8CJ0QNRX4JZJA638G-task-audit-provider-pit-and-bridge-read-gaps` base `develop` source-owner `ticket/06FBSCF61N0TYPYH7008TRD6VR-story-define-provider-read-parity-acceptance-cri`: Mutation targets 'ticket/06FBSCGBG8CJ0QNRX4JZJA638G-task-audit-provider-pit-and-bridge-read-gaps', not current branch 'ticket/06FBSCF61N0TYPYH7008TRD6VR-story-define-provider-read-parity-acceptance-cri'; queue for target-branch replay.
+- [base-terminal-dropped] `relation-audit-follow-up` `06FBSC4QXYQ0SWB1DPMGJJ5XX0` owner `develop` base `develop` source-owner `ticket/06FBSCF61N0TYPYH7008TRD6VR-story-define-provider-read-parity-acceptance-cri`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06FBSCAX98ZFQZWBYEQMB8WF18` owner `develop` base `develop` source-owner `ticket/06FBSCF61N0TYPYH7008TRD6VR-story-define-provider-read-parity-acceptance-cri`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06FBSCFDFFYQXBK17RT3E8W4CM` on owner branch `ticket/06FBSCFDFFYQXBK17RT3E8W4CM-task-close-postgresql-latest-satellite-read-gap` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06FBSCFKWGQMBEF5Q96AZ5Q0X0` on owner branch `ticket/06FBSCFKWGQMBEF5Q96AZ5Q0X0-task-close-sql-server-latest-satellite-read-gap` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06FBSCFVT3SBHKMDGNEXWVWFXG` on owner branch `ticket/06FBSCFVT3SBHKMDGNEXWVWFXG-task-close-mysql-latest-satellite-read-gap` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06FBSCG18KBRT1FTHDRX073EF4` on owner branch `ticket/06FBSCG18KBRT1FTHDRX073EF4-task-close-oracle-latest-satellite-read-gap` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06FBSCG6C40X9CV3FFEHHKS6G0` on owner branch `ticket/06FBSCG6C40X9CV3FFEHHKS6G0-task-close-db2-latest-satellite-read-gap` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06FBSCGBG8CJ0QNRX4JZJA638G` on owner branch `ticket/06FBSCGBG8CJ0QNRX4JZJA638G-task-audit-provider-pit-and-bridge-read-gaps` after that branch is refreshed/rebased.
