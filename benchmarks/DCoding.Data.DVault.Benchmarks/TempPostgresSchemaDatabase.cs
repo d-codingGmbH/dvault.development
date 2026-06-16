@@ -38,6 +38,12 @@ internal sealed class TempPostgresSchemaDatabase : IBenchmarkDatabase {
         cancellationToken).ConfigureAwait(false);
   }
 
+  public Task EnsureCreatedAsync(DbContext context, CancellationToken cancellationToken) {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return context.Database.EnsureCreatedAsync(cancellationToken);
+  }
+
   public async Task CleanupAsync(DbContext context, CancellationToken cancellationToken) {
     ArgumentNullException.ThrowIfNull(context);
 

@@ -3,6 +3,7 @@ using System.Reflection;
 using DCoding.Data.DVault;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 
 #pragma warning disable EF1003 // Benchmark cleanup uses fixed produced table names plus provider quoting helpers.
 
@@ -25,11 +26,20 @@ internal sealed class TempDb2Database : SharedExternalBenchmarkDatabase {
     return builder.Options;
   }
 
+  public override async Task EnsureCreatedAsync(DbContext context, CancellationToken cancellationToken) {
+    ArgumentNullException.ThrowIfNull(context);
+
+    await context.GetService<IRelationalDatabaseCreator>()
+        .CreateTablesAsync(cancellationToken)
+        .ConfigureAwait(false);
+  }
+
   public override async Task CleanupAsync(DbContext context, CancellationToken cancellationToken) {
     ArgumentNullException.ThrowIfNull(context);
 
     foreach (var tableName in GetProducedTableNames()) {
       await DropTableIfExistsAsync(context, tableName, cancellationToken).ConfigureAwait(false);
+      await DropTableIfExistsAsync(context, tableName.ToUpperInvariant(), cancellationToken).ConfigureAwait(false);
     }
   }
 

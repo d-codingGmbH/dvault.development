@@ -64,7 +64,7 @@ internal sealed class BridgeTraversalReadBenchmark : IScenarioBenchmark, IBenchm
     try {
       await using (var context = new BridgeTraversalReadContext(options, providerCapabilities)) {
         await database.InitializeAsync(context, cancellationToken).ConfigureAwait(false);
-        await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+        await database.EnsureCreatedAsync(context, cancellationToken).ConfigureAwait(false);
         await SeedBridgeRowsAsync(context, ancestorHashKey, _hashKeyVariant, cancellationToken).ConfigureAwait(false);
       }
 

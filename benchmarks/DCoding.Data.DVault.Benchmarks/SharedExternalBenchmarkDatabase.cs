@@ -31,6 +31,12 @@ internal abstract class SharedExternalBenchmarkDatabase : IBenchmarkDatabase {
     return CleanupAsync(context, cancellationToken);
   }
 
+  public virtual Task EnsureCreatedAsync(DbContext context, CancellationToken cancellationToken) {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return context.Database.EnsureCreatedAsync(cancellationToken);
+  }
+
   public abstract Task CleanupAsync(DbContext context, CancellationToken cancellationToken);
 
   public void Dispose() {

@@ -60,7 +60,7 @@ internal sealed class CustomerProfileDataVaultBenchmark : IScenarioBenchmark, IB
     try {
       await using (var context = new CustomerProfileDataVaultContext(options, providerCapabilities)) {
         await database.InitializeAsync(context, cancellationToken).ConfigureAwait(false);
-        await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+        await database.EnsureCreatedAsync(context, cancellationToken).ConfigureAwait(false);
       }
 
       var elapsed = await BenchmarkClock.MeasureAsync(async () => {

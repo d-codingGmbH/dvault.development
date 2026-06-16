@@ -38,7 +38,7 @@ internal sealed class CompiledQueryBenchmark : IScenarioBenchmark {
     string orderHashKey;
 
     await using (var context = new CompiledEvidenceContext(options, metadataModel, "compiled-query")) {
-      await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+      await database.EnsureCreatedAsync(context, cancellationToken).ConfigureAwait(false);
       orderHashKey = await CompiledEvidenceScenario
           .SeedOrderHubAsync(context, OrderBusinessKey, "compiled-query-seed", cancellationToken)
           .ConfigureAwait(false);

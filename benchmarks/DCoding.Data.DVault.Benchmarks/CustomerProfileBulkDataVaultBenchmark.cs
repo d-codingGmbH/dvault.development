@@ -66,7 +66,7 @@ internal sealed class CustomerProfileBulkDataVaultBenchmark : IScenarioBenchmark
     try {
       await using (var context = new CustomerProfileBulkDataVaultContext(options, providerCapabilities)) {
         await database.InitializeAsync(context, cancellationToken).ConfigureAwait(false);
-        await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+        await database.EnsureCreatedAsync(context, cancellationToken).ConfigureAwait(false);
       }
 
       var executionDetail = BenchmarkExecutionDetails.CreatePlanned(this);

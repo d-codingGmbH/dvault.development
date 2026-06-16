@@ -61,7 +61,7 @@ internal sealed class PitAsOfReadBenchmark : IScenarioBenchmark, IBenchmarkHashK
     try {
       await using (var context = new PitAsOfReadContext(options, providerCapabilities)) {
         await database.InitializeAsync(context, cancellationToken).ConfigureAwait(false);
-        await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+        await database.EnsureCreatedAsync(context, cancellationToken).ConfigureAwait(false);
       }
 
       var customerHashKeys = await ReadBenchmarkServices

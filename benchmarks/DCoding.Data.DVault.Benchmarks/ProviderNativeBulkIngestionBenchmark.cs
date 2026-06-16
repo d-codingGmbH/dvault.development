@@ -154,7 +154,7 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark,
     try {
       await using (var context = new ProviderNativeBulkIngestionContext(options, providerCapabilities)) {
         await database.InitializeAsync(context, cancellationToken).ConfigureAwait(false);
-        await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+        await database.EnsureCreatedAsync(context, cancellationToken).ConfigureAwait(false);
       }
 
       var executionDetail = BenchmarkExecutionDetails.CreatePlanned(this);

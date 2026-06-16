@@ -41,7 +41,7 @@ internal sealed class CompiledModelBenchmark : IScenarioBenchmark {
         designOptions,
         metadataModel,
         "compiled-model-seed")) {
-      await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+      await database.EnsureCreatedAsync(context, cancellationToken).ConfigureAwait(false);
       orderHashKey = await CompiledEvidenceScenario
           .SeedOrderHubAsync(context, OrderBusinessKey, "compiled-model-seed", cancellationToken)
           .ConfigureAwait(false);

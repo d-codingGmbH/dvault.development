@@ -9,7 +9,11 @@ namespace DCoding.Data.DVault.Benchmarks;
 internal static class Db2BenchmarkReflection {
   private const string ProviderAssemblyName = "IBM.EntityFrameworkCore";
   private const string DVaultDb2AssemblyName = "DCoding.Data.DVault.Db2";
-  private const string ConnectionTypeName = "IBM.Data.Db2.Core.DB2Connection, IBM.Data.Db2.Core";
+  private static readonly string[] ConnectionTypeNames =
+  [
+      "IBM.Data.Db2.DB2Connection, IBM.Data.Db2",
+      "IBM.Data.Db2.Core.DB2Connection, IBM.Data.Db2.Core",
+  ];
 
   public static bool IsProviderDependencyAvailable() {
     return GetConnectionType() is not null &&
@@ -21,7 +25,7 @@ internal static class Db2BenchmarkReflection {
     ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
     var connectionType = GetConnectionType()
-        ?? throw new InvalidOperationException("IBM.Data.Db2.Core is not available to the benchmark process.");
+        ?? throw new InvalidOperationException("IBM.Data.Db2 is not available to the benchmark process.");
 
     return (DbConnection)Activator.CreateInstance(connectionType, connectionString)!;
   }
@@ -82,12 +86,14 @@ internal static class Db2BenchmarkReflection {
   }
 
   private static Type? GetConnectionType() {
-    var connectionType = Type.GetType(ConnectionTypeName, throwOnError: false);
-    if (connectionType is null || !typeof(DbConnection).IsAssignableFrom(connectionType)) {
-      return null;
+    foreach (var connectionTypeName in ConnectionTypeNames) {
+      var connectionType = Type.GetType(connectionTypeName, throwOnError: false);
+      if (connectionType is not null && typeof(DbConnection).IsAssignableFrom(connectionType)) {
+        return connectionType;
+      }
     }
 
-    return connectionType;
+    return null;
   }
 
   private static MethodInfo? FindUseDb2Method(Assembly providerAssembly) {

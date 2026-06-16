@@ -37,7 +37,7 @@ internal sealed class DbContextPoolingBenchmark : IScenarioBenchmark {
 
     await using (var scope = provider.CreateAsyncScope()) {
       var context = scope.ServiceProvider.GetRequiredService<PooledEvidenceContext>();
-      await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+      await database.EnsureCreatedAsync(context, cancellationToken).ConfigureAwait(false);
     }
 
     string orderHashKey = string.Empty;

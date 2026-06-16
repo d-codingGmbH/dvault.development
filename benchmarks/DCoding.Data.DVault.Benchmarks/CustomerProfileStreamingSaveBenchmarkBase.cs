@@ -83,7 +83,7 @@ internal abstract class CustomerProfileStreamingSaveBenchmarkBase : IScenarioBen
       CancellationToken cancellationToken) {
     await using var context = new CustomerProfileStreamingDataVaultContext(options, providerCapabilities);
     await database.InitializeAsync(context, cancellationToken).ConfigureAwait(false);
-    await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+    await database.EnsureCreatedAsync(context, cancellationToken).ConfigureAwait(false);
   }
 
   protected static async Task CleanupDatabaseAsync(

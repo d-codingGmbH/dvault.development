@@ -26,7 +26,7 @@ internal sealed class CustomerProfilePlainEfBenchmark : IScenarioBenchmark {
         .Options;
 
     await using (var context = new CustomerProfileHistoryContext(options)) {
-      await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+      await database.EnsureCreatedAsync(context, cancellationToken).ConfigureAwait(false);
     }
 
     var elapsed = await BenchmarkClock.MeasureAsync(async () => {

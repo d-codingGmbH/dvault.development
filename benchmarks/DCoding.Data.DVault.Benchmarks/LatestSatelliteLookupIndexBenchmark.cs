@@ -95,7 +95,7 @@ internal sealed class LatestSatelliteLookupIndexBenchmark : IScenarioBenchmark, 
     try {
       await using (var context = new LatestSatelliteLookupDataVaultContext(options, providerCapabilities)) {
         await database.InitializeAsync(context, cancellationToken).ConfigureAwait(false);
-        await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+        await database.EnsureCreatedAsync(context, cancellationToken).ConfigureAwait(false);
         await _indexVariant.ApplyAsync(context, cancellationToken).ConfigureAwait(false);
         await SeedHistoryAsync(context, saveService, cancellationToken).ConfigureAwait(false);
       }

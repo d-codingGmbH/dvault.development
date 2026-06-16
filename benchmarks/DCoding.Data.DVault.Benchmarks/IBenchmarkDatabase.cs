@@ -13,5 +13,7 @@ internal interface IBenchmarkDatabase : IDisposable {
 
   Task InitializeAsync(DbContext context, CancellationToken cancellationToken);
 
+  Task EnsureCreatedAsync(DbContext context, CancellationToken cancellationToken);
+
   Task CleanupAsync(DbContext context, CancellationToken cancellationToken);
 }

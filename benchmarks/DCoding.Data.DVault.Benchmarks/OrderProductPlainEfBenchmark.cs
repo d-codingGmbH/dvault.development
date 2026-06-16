@@ -29,7 +29,7 @@ internal sealed class OrderProductPlainEfBenchmark : IScenarioBenchmark {
         .Options;
 
     await using (var context = new OrderFulfillmentHistoryContext(options)) {
-      await context.Database.EnsureCreatedAsync(cancellationToken).ConfigureAwait(false);
+      await database.EnsureCreatedAsync(context, cancellationToken).ConfigureAwait(false);
     }
 
     var elapsed = await BenchmarkClock.MeasureAsync(async () => {

@@ -36,6 +36,12 @@ internal sealed class TempSqliteDatabase : IBenchmarkDatabase {
     return Task.CompletedTask;
   }
 
+  public Task EnsureCreatedAsync(DbContext context, CancellationToken cancellationToken) {
+    ArgumentNullException.ThrowIfNull(context);
+
+    return context.Database.EnsureCreatedAsync(cancellationToken);
+  }
+
   public Task CleanupAsync(DbContext context, CancellationToken cancellationToken) {
     ArgumentNullException.ThrowIfNull(context);
 
