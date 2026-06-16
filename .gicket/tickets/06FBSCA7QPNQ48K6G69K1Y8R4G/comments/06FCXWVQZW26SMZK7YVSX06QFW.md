@@ -1,0 +1,19 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `2` selected relation flow(s) for source ticket `06FBSCA7QPNQ48K6G69K1Y8R4G`.
+- Role `po` completed with outcome `po-refinement-ready` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `1`; dropped obsolete follow-up(s): `1`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `96f8e486238e489e8fa7fd828a1ff55f`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06FBSCAX98ZFQZWBYEQMB8WF18` via `blocks` path `06FBSCA7QPNQ48K6G69K1Y8R4G -> 06FBSCAX98ZFQZWBYEQMB8WF18`
+- [dropped] `blocked-by-follow-up-comment` -> `06FBSC9DCB0S58DYFY3TAEZ848` via `blocks` path `06FBSCA7QPNQ48K6G69K1Y8R4G -> 06FBSC9DCB0S58DYFY3TAEZ848`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06FBSCA7QPNQ48K6G69K1Y8R4G` owner `ticket/06FBSCA7QPNQ48K6G69K1Y8R4G-task-implement-accepted-postgresql-bulk-improvem` base `develop` source-owner `ticket/06FBSCA7QPNQ48K6G69K1Y8R4G-task-implement-accepted-postgresql-bulk-improvem`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06FBSCAX98ZFQZWBYEQMB8WF18` owner `ticket/06FBSCAX98ZFQZWBYEQMB8WF18-task-document-provider-bulk-outcomes-and-benchma` base `develop` source-owner `ticket/06FBSCA7QPNQ48K6G69K1Y8R4G-task-implement-accepted-postgresql-bulk-improvem`: Mutation targets 'ticket/06FBSCAX98ZFQZWBYEQMB8WF18-task-document-provider-bulk-outcomes-and-benchma', not current branch 'ticket/06FBSCA7QPNQ48K6G69K1Y8R4G-task-implement-accepted-postgresql-bulk-improvem'; queue for target-branch replay.
+- [base-terminal-dropped] `relation-audit-follow-up` `06FBSC9DCB0S58DYFY3TAEZ848` owner `develop` base `develop` source-owner `ticket/06FBSCA7QPNQ48K6G69K1Y8R4G-task-implement-accepted-postgresql-bulk-improvem`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06FBSCAX98ZFQZWBYEQMB8WF18` on owner branch `ticket/06FBSCAX98ZFQZWBYEQMB8WF18-task-document-provider-bulk-outcomes-and-benchma` after that branch is refreshed/rebased.
