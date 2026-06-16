@@ -3,6 +3,6 @@
   "release-id": "06FBSAX27W6ZCB62YPJZS475E8",
   "name": "v0.40.0 - Provider Bulk Strategy Expansion",
   "description": "Explore and implement small provider-specific bulk save improvements where evidence shows value, keeping all behavior inside EF Core provider libraries with provider-neutral fallback and no deployment platform responsibilities.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-12T16:30:25.3438303Z"
 }
