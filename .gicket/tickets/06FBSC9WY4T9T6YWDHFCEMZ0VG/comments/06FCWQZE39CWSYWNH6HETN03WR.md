@@ -1,0 +1,13 @@
+﻿## Developer recommendation
+
+Recommendation: document no-op for the existing DB2 clean-context save path and defer staged DB2 bulk, DB2 multi-row-style variants, provider-native chunk execution, and fresh threshold tuning.
+
+Cited repository evidence:
+- docs/plans/provider-optimization-gap-matrix.md row P1.05 identifies the DB2 provider-native-bulk-ingestion item as an evidence gap, with Db2DataVaultSaveStrategy limited to clean-context set-based saves and a stop condition when work needs staged DB2 bulk or provider-native chunk execution.
+- benchmark-summary.md, benchmark-summary.csv, and benchmark-summary.json keep the DB2 provider-native-bulk-ingestion fallback and optimized rows as skipped because DVAULT_TEST_DB2_CONNECTION_STRING is unset; the optimized row records selectedStrategy=Db2DataVaultSaveStrategy, db2SaveBoundary=clean-context-set-based, stagedBulkBoundary=not-supported, and persistedOutcome=not executed.
+- src/DCoding.Data.DVault.Db2/Db2DataVaultSaveStrategy.cs and src/DCoding.Data.DVault.Db2/DVaultDb2ServiceCollectionExtensions.cs provide the visible DB2 optimized save registration and implementation.
+- src/DCoding.Data.DVault/DataVaultProviderSaveStrategyGateEvaluator.cs evaluates DB2 with minimumOperationCount null and maximumSatelliteOperationCount null, and lists only the common provider-name, dirty-context, and multi-active-satellite gates for Db2DataVaultSaveStrategy.
+- docs/releases/v0.34.0.md, docs/performance-profiles.md, and docs/plans/provider-optimization-evidence-matrix.md all preserve the same boundary: clean-context optimized DB2 saves exist, while completed DB2 timing, staged DB2 bulk, provider-native chunk execution, latest-satellite optimization, and live-schema reading remain unsupported in the current baseline.
+- tests/DCoding.Data.DVault.Tests/Integration/Db2DataVaultSmokeTests.cs covers representative DB2 hub, link, and ordinary satellite saves plus PIT/bridge diagnostics as smoke evidence, not completed timing evidence.
+
+Rationale: the checked-in evidence does not contradict the current baseline. Staged DB2 bulk and provider-native chunk execution are explicitly outside the boundary, and the DB2 gate has no checked-in batch-size threshold to tune. A measured DB2 performance claim should be handled by a later DB2 benchmark/evidence ticket with a configured DVAULT_TEST_DB2_CONNECTION_STRING and checked-in artifact triplet.
