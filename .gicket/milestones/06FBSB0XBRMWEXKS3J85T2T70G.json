@@ -3,6 +3,6 @@
   "milestone-id": "06FBSB0XBRMWEXKS3J85T2T70G",
   "name": "v0.40.0 - Bulk docs and benchmarks",
   "description": "Document bulk behavior, provider caveats, and benchmark outcomes for accepted implementations.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-12T16:30:56.8625197Z"
 }

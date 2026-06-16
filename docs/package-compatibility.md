@@ -8,12 +8,12 @@ DVault currently publishes the same coordinated package family on two visible co
 
 | Package version line | Target framework | EF Core line |
 | --- | --- | --- |
-| `8.39.0` | `net8.0` | EF Core 8 |
-| `10.39.0` | `net10.0` | EF Core 10 |
+| `8.40.0` | `net8.0` | EF Core 8 |
+| `10.40.0` | `net10.0` | EF Core 10 |
 
-Use exactly one line in a consumer project. Do not mix `8.39.0` and `10.39.0` packages in one project, install example, restored target, or publish approval.
+Use exactly one line in a consumer project. Do not mix `8.40.0` and `10.40.0` packages in one project, install example, restored target, or publish approval.
 
-The `v0.39.0` release label is a repository release tag and release-note label, not a consumer-facing NuGet package version. Publish or document `8.39.0` and `10.39.0` package versions for this baseline, and do not publish or document a consumer-facing `0.39.0` package version. Future package version movement must update the pack script, package verifier, release notes, and installation guidance together.
+The `v0.40.0` release label is a repository release tag and release-note label, not a consumer-facing NuGet package version. Publish or document `8.40.0` and `10.40.0` package versions for this baseline, and do not publish or document a consumer-facing `0.40.0` package version. Future package version movement must update the pack script, package verifier, release notes, and installation guidance together.
 
 ## Package Family
 
@@ -45,11 +45,11 @@ The `MySql.EntityFrameworkCore` pins are target-specific: `8.0.26` for `net8.0` 
 
 `DCoding.Data.DVault.Analyzers` is a local build-time package reference, not a runtime dependency. Keep analyzer references local with `PrivateAssets="all"`.
 
-The analyzer package currently ships one `net10.0` analyzer asset for both coordinated package lines. Supported analyzer consumption for both `8.39.0` and `10.39.0` uses a `.NET 10 SDK` build host, including `net8.0` projects on the `8.39.0` package line. The repository does not validate pure `.NET 8 SDK` analyzer consumption.
+The analyzer package currently ships one `net10.0` analyzer asset for both coordinated package lines. Supported analyzer consumption for both `8.40.0` and `10.40.0` uses a `.NET 10 SDK` build host, including `net8.0` projects on the `8.40.0` package line. The repository does not validate pure `.NET 8 SDK` analyzer consumption.
 
 ## Related Guidance
 
-- [DVault v0.39.0 Release Notes](releases/v0.39.0.md)
+- [DVault v0.40.0 Release Notes](releases/v0.40.0.md)
 - [Manual NuGet Publication Checklist](manual-nuget-publication.md)
 - [Local Validation](local-validation.md)
 - [Analyzer Package Compatibility Audit](plans/analyzer-package-compatibility-audit.md)

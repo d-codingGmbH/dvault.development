@@ -2,6 +2,20 @@
 
 This changelog summarizes the public release-note trail. The detailed release records remain under [docs/releases/](docs/releases/); those files are the source of truth for scope, evidence, non-goals, and validation notes.
 
+## v0.40.0 - Provider Bulk Strategy Expansion
+
+- Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.40.0` / `net8.0` / EF Core 8 and `10.40.0` / `net10.0` / EF Core 10.
+- Records that the v0.40.0 release label maps to consumer package versions `8.40.0` and `10.40.0`, not to a `0.40.0` package version.
+- Keeps provider bulk work inside the existing `IDataVaultSaveService` and provider-strategy boundary; no new platform, scheduler, stored-procedure runtime dispatch, or deployment surface is introduced.
+- Hardens shared-type batch filtering by de-duplicating string values and building balanced `OrElse` predicates for larger generated equality batches.
+- Adds unit coverage for the large-batch predicate shape so future changes keep duplicate removal and bounded predicate depth intact.
+- Moves benchmark table creation behind `IBenchmarkDatabase.EnsureCreatedAsync`, allowing provider-specific benchmark databases to own schema creation behavior.
+- Improves DB2 benchmark setup by using relational table creation for the existing database, cleaning up uppercase produced table names, and accepting both current IBM DB2 connection type names.
+- Updates README, package compatibility, manual publication, local validation, production adoption, performance, analyzer, and example guidance to the `8.40.0` / `10.40.0` package baseline.
+- Updates package creation and verification so `8.40.0` and `10.40.0` are the expected package outputs and stale `8.39.0` / `10.39.0` install guidance is rejected.
+
+See [DVault v0.40.0 Release Notes](docs/releases/v0.40.0.md).
+
 ## v0.39.0 - Provider Evidence Matrix Documentation Baseline
 
 - Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.39.0` / `net8.0` / EF Core 8 and `10.39.0` / `net10.0` / EF Core 10.

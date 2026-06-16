@@ -3,6 +3,6 @@
   "milestone-id": "06FBSB0V06BYAP38C31HH3889M",
   "name": "v0.40.0 - Bulk strategy contracts",
   "description": "Define the narrow provider bulk strategy boundary, diagnostics, fallback requirements, and benchmark acceptance criteria.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-12T16:30:56.2570615Z"
 }

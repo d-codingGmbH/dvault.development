@@ -1,8 +1,8 @@
 # Performance Profiles
 
-Status: v0.39.0 provider-evidence documentation baseline with carried-forward v0.32.0 provider-threshold evidence and v0.31.0 decision-tree contract
+Status: v0.40.0 provider-bulk strategy documentation baseline with carried-forward v0.32.0 provider-threshold evidence and v0.31.0 decision-tree contract
 
-This guide is the detailed performance-profile reference for the current DVault performance-guidance baseline. It carries forward the v0.31.0 adopter decision tree, the v0.32.0 provider-threshold evidence bundles for PostgreSQL, SQL Server, MySQL, and Oracle, the review-only provider-specific SQL artifact gate, and the v0.39.0 provider-evidence matrix handoff. It does not create automatic routing, absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, credential-management guidance, automatic PIT or bridge maintenance, raw SQL or physical-plan promises, deployable provider-specific SQL payload generation, runtime artifact dispatch, new benchmark artifacts, or package-publication approval. The coordinated release record for the current provider-evidence and package documentation baseline is [DVault v0.39.0 Release Notes](releases/v0.39.0.md). Earlier release notes remain historical feature-introduction records.
+This guide is the detailed performance-profile reference for the current DVault performance-guidance baseline. It carries forward the v0.31.0 adopter decision tree, the v0.32.0 provider-threshold evidence bundles for PostgreSQL, SQL Server, MySQL, and Oracle, the review-only provider-specific SQL artifact gate, and the v0.40.0 provider-bulk strategy boundary. It does not create automatic routing, absolute performance guarantees, provider service-level objectives, dashboards, hosted observability, database provisioning, scheduler templates, credential-management guidance, automatic PIT or bridge maintenance, raw SQL or physical-plan promises, deployable provider-specific SQL payload generation, runtime artifact dispatch, new benchmark artifacts, or package-publication approval. The coordinated release record for the current provider-bulk, evidence, and package documentation baseline is [DVault v0.40.0 Release Notes](releases/v0.40.0.md). Earlier release notes remain historical feature-introduction records.
 
 ## Evidence Baseline
 
@@ -16,9 +16,9 @@ Use [Provider Optimization Evidence Matrix](plans/provider-optimization-evidence
 
 Use [Provider Optimization Gap Matrix](plans/provider-optimization-gap-matrix.md) as the canonical follow-up recommendation surface. Its P0-P3 rows are planning backlog entries: non-SQLite `latest-satellite-read` rows are capability-gap recommendations, and PostgreSQL, SQL Server, MySQL, Oracle, and DB2 `provider-native-bulk-ingestion`, `pit-as-of-read`, and `bridge-traversal-read` rows are evidence-gap recommendations until provider-configured benchmark triplets exist. Gap-matrix recommendations do not promote skipped placeholders, diagnostics-only rows, smoke-only rows, or storage-footprint rows into completed provider timing evidence.
 
-## v0.39.0 Provider Evidence Boundary
+## v0.40.0 Provider Bulk Evidence Boundary
 
-The v0.39.0 documentation baseline separates measured facts from forward-looking recommendations:
+The v0.40.0 provider-bulk documentation baseline separates measured facts from forward-looking recommendations:
 
 | Surface | Use it for | Do not use it for |
 | --- | --- | --- |
