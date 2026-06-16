@@ -30,7 +30,7 @@ The evidence and gap matrices remain the source documents for row-level facts an
   - skipped-placeholder, diagnostics-only, smoke-only, and storage-footprint rows are not measured external-provider timing claims
 - Cite provider evidence by matrix row identity (`scenario`, `provider`, `baseline`, `posture`) instead of copying raw benchmark prose or mixing planning statements into timing claims.
 - Use the gap matrix as the canonical source for follow-up recommendations:
-  - non-SQLite `latest-satellite-read` remains a capability-gap recommendation set
+  - at the v0.39 documentation baseline, non-SQLite `latest-satellite-read` remained a capability-gap recommendation set; later provider-specific closures should be reflected in the current gap matrix rather than backported as v0.39 timing evidence
   - external-provider save, PIT, and bridge rows remain evidence-gap recommendations until completed provider-configured benchmark artifacts exist
 - Preserve the current DB2 boundary from the checked-in baseline:
   - diagnostics-gated clean-context save and PIT/bridge candidate behavior may be documented

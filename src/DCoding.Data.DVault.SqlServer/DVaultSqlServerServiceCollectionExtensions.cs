@@ -8,7 +8,7 @@ namespace DCoding.Data.DVault;
 /// </summary>
 public static class DVaultSqlServerServiceCollectionExtensions {
   /// <summary>
-  /// Adds DVault defaults plus the SQL Server optimized save and PIT/bridge read strategies.
+  /// Adds DVault defaults plus the SQL Server optimized save and latest-satellite/PIT/bridge read strategies.
   /// </summary>
   /// <param name="services">The service collection used by the application startup pipeline.</param>
   /// <returns>The same service collection so startup configuration can continue fluently.</returns>
@@ -21,6 +21,7 @@ public static class DVaultSqlServerServiceCollectionExtensions {
     services.AddDVault();
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBehavior, SqlServerDataVaultProviderBehavior>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, SqlServerDataVaultSaveStrategy>());
+    services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderReadStrategy, SqlServerDataVaultReadStrategy>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderPitReadStrategy, SqlServerDataVaultReadStrategy>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBridgeReadStrategy, SqlServerDataVaultReadStrategy>());
 

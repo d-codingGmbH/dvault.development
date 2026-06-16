@@ -166,6 +166,96 @@ public sealed class SqlServerDataVaultSmokeTests {
   }
 
   [Fact]
+  public async Task AddDVaultSqlServerReadsCurrentAndAsOfSatelliteRowsWhenConfigured() {
+    var metadataModel = CreateMetadataModel();
+    var customer = metadataModel.Hubs.Single(hub => hub.Name == "Customer");
+    var contact = metadataModel.Satellites.Single(satellite => satellite.Name == "Contact");
+    var linkState = metadataModel.Satellites.Single(satellite => satellite.Name == "State");
+    var firstLoadTimestamp = new DateTimeOffset(2026, 5, 4, 10, 15, 0, TimeSpan.Zero);
+    var secondLoadTimestamp = new DateTimeOffset(2026, 5, 4, 10, 45, 0, TimeSpan.Zero);
+    await using var database = await SqlServerSmokeDatabase.CreateAsync();
+    using var provider = CreateServiceProvider();
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var readService = provider.GetRequiredService<IDataVaultReadService>();
+    var readDiagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+    string customerHashKey;
+
+    await using (var context = database.CreateContext()) {
+      var hubResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              firstLoadTimestamp,
+              "sqlserver-read-smoke",
+              [new(customer, [new("Customer Id", "C-SQL-READ")])],
+              []));
+      customerHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Customer");
+
+      await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              firstLoadTimestamp,
+              "sqlserver-read-smoke",
+              [],
+              [],
+              [
+                  new(contact, customerHashKey, [new("Email Address", "first-sqlserver@example.test")], "contact-hash-sqlserver-1"),
+              ]));
+      await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              secondLoadTimestamp,
+              "sqlserver-read-smoke",
+              [],
+              [],
+              [
+                  new(contact, customerHashKey, [new("Email Address", "latest-sqlserver@example.test")], "contact-hash-sqlserver-2"),
+              ]));
+    }
+
+    await using (var context = database.CreateContext()) {
+      var latestRequest = new DataVaultLatestSatelliteReadRequest(contact, [customerHashKey]);
+      var asOfRequest = new DataVaultLatestSatelliteReadRequest(contact, [customerHashKey], firstLoadTimestamp);
+      var diagnostics = readDiagnostics.Analyze(context, latestRequest);
+      var unsupportedShapeDiagnostics = readDiagnostics.Analyze(
+          context,
+          new DataVaultLatestSatelliteReadRequest(linkState, ["link-hk"]));
+
+      Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected, diagnostics.ReadStrategy.Status);
+      Assert.Equal(KnownProviderNames.SqlServer, diagnostics.ReadStrategy.ProviderName);
+      Assert.Equal("SqlServerDataVaultReadStrategy", diagnostics.ReadStrategy.SelectedStrategyName);
+      Assert.Empty(diagnostics.ReadStrategy.FallbackCauses);
+      Assert.Contains(
+          diagnostics.ReadStrategy.Candidates,
+          candidate => candidate.StrategyName == "SqlServerDataVaultReadStrategy" && candidate.CanRead);
+      Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback, unsupportedShapeDiagnostics.ReadStrategy.Status);
+      Assert.Contains(
+          unsupportedShapeDiagnostics.ReadStrategy.FallbackCauses,
+          cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent);
+
+      var latestRows = await readService.ReadLatestSatelliteRowsAsync(context, latestRequest);
+      var currentRows = await readService.ReadCurrentSatelliteRowsAsync(context, contact, [customerHashKey]);
+      var asOfRows = await readService.ReadLatestSatelliteRowsAsync(context, asOfRequest);
+      var projectedRows = await readService.ReadLatestSatelliteAsync(
+          context,
+          latestRequest,
+          row => row.RequiredString("Email Address"));
+      var latestRow = Assert.Single(latestRows);
+      var currentRow = Assert.Single(currentRows);
+      var asOfRow = Assert.Single(asOfRows);
+
+      Assert.Equal(customerHashKey, latestRow.ParentHashKey);
+      Assert.Equal("contact-hash-sqlserver-2", latestRow.HashDiff);
+      Assert.Equal(secondLoadTimestamp, latestRow.LoadTimestamp);
+      Assert.Equal("latest-sqlserver@example.test", latestRow.PayloadValues["Email Address"]);
+      Assert.Equal(latestRow.HashDiff, currentRow.HashDiff);
+      Assert.Equal("contact-hash-sqlserver-1", asOfRow.HashDiff);
+      Assert.Equal(firstLoadTimestamp, asOfRow.LoadTimestamp);
+      Assert.Equal("first-sqlserver@example.test", asOfRow.PayloadValues["Email Address"]);
+      Assert.Equal(["latest-sqlserver@example.test"], projectedRows);
+    }
+  }
+
+  [Fact]
   public async Task AddDVaultSqlServerBulkStrategyPersistsOrderedHubLinkAndSatelliteBatchWhenConfigured() {
     await ExternalProviderBulkSaveAssertions.AssertProviderBulkSaveAsync(
         ExternalProviderLiveSchemaFixture.CreateSqlServerAsync,

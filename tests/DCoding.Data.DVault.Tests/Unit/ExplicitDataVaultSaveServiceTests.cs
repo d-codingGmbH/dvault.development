@@ -240,13 +240,14 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.MySqlProvider)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.OracleProvider)]
   [Trait(ProviderTestCategories.ProviderTraitName, ProviderTestCategories.Db2Provider)]
-  public void RelationalProviderPackagesRegisterOptimizedPitAndBridgeReadStrategies() {
+  public void RelationalProviderPackagesRegisterOptimizedReadStrategies() {
     AssertProviderPitBridgeReadRegistration(
         services => services.AddDVaultPostgres(),
         "PostgresDataVaultReadStrategy");
     AssertProviderPitBridgeReadRegistration(
         services => services.AddDVaultSqlServer(),
-        "SqlServerDataVaultReadStrategy");
+        "SqlServerDataVaultReadStrategy",
+        expectedLatestSatelliteStrategyName: "SqlServerDataVaultReadStrategy");
     AssertProviderPitBridgeReadRegistration(
         services => services.AddDVaultMySql(),
         "MySqlDataVaultReadStrategy");
@@ -847,7 +848,8 @@ public sealed class ExplicitDataVaultSaveServiceTests {
 
   private static void AssertProviderPitBridgeReadRegistration(
       Action<IServiceCollection> configure,
-      string expectedStrategyName) {
+      string expectedStrategyName,
+      string? expectedLatestSatelliteStrategyName = null) {
     try {
       var services = new ServiceCollection();
 
@@ -855,7 +857,15 @@ public sealed class ExplicitDataVaultSaveServiceTests {
 
       using var provider = services.BuildServiceProvider(validateScopes: true);
 
-      Assert.Empty(provider.GetServices<IDataVaultProviderReadStrategy>());
+      if (expectedLatestSatelliteStrategyName is null) {
+        Assert.Empty(provider.GetServices<IDataVaultProviderReadStrategy>());
+      }
+      else {
+        Assert.Equal(
+            expectedLatestSatelliteStrategyName,
+            Assert.Single(provider.GetServices<IDataVaultProviderReadStrategy>()).GetType().Name);
+      }
+
       Assert.Equal(expectedStrategyName, Assert.Single(provider.GetServices<IDataVaultProviderPitReadStrategy>()).GetType().Name);
       Assert.Equal(expectedStrategyName, Assert.Single(provider.GetServices<IDataVaultProviderBridgeReadStrategy>()).GetType().Name);
     }

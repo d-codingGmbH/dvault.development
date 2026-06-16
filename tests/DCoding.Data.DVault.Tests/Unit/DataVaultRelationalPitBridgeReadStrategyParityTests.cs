@@ -9,6 +9,74 @@ namespace DCoding.Data.DVault.Tests.Unit;
 
 public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
   [Fact]
+  public async Task SqlServerLatestSatelliteCandidateReturnsProviderNeutralRowsAndProjections() {
+    var metadata = CreatePitMetadata();
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<PitReadParityContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    using var provider = CreateSqliteProvider();
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    using var fallbackProvider = CreateFallbackProvider();
+    var fallbackReadService = fallbackProvider.GetRequiredService<IDataVaultReadService>();
+    var sqlServerReadService = CreateLatestCandidateReadService(new SqlServerDataVaultReadStrategy());
+    string customerHashKey;
+
+    await using (var context = new PitReadParityContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+      customerHashKey = await SaveCustomerAsync(saveService, context, metadata);
+      await SaveProfileAsync(
+          saveService,
+          context,
+          metadata,
+          customerHashKey,
+          Utc(2026, 5, 11, 10, 0),
+          "Alice Adams",
+          "Gold",
+          "profile-hash-1");
+      await SaveProfileAsync(
+          saveService,
+          context,
+          metadata,
+          customerHashKey,
+          Utc(2026, 5, 11, 11, 0),
+          "Alice Baker",
+          "Platinum",
+          "profile-hash-2");
+    }
+
+    await using (var context = new PitReadParityContext(options)) {
+      var latestRequest = new DataVaultLatestSatelliteReadRequest(metadata.Profile, [customerHashKey]);
+      var asOfRequest = new DataVaultLatestSatelliteReadRequest(
+          metadata.Profile,
+          [customerHashKey],
+          Utc(2026, 5, 11, 10, 30));
+
+      Assert.True(DataVaultProviderReadStrategyGateEvaluator
+          .EvaluateSqlServer(KnownProviderNames.SqlServer, latestRequest)
+          .CanRead);
+
+      var fallbackLatestRows = await fallbackReadService.ReadLatestSatelliteRowsAsync(context, latestRequest);
+      var sqlServerLatestRows = await new SqlServerDataVaultReadStrategy().ReadLatestSatelliteRowsAsync(
+          new DataVaultProviderReadStrategyContext(context, latestRequest));
+      var fallbackAsOfRows = await fallbackReadService.ReadLatestSatelliteRowsAsync(context, asOfRequest);
+      var sqlServerAsOfRows = await new SqlServerDataVaultReadStrategy().ReadLatestSatelliteRowsAsync(
+          new DataVaultProviderReadStrategyContext(context, asOfRequest));
+      var fallbackLatestProjections = await ProjectLatestRowsAsync(fallbackReadService, context, latestRequest);
+      var sqlServerLatestProjections = await ProjectLatestRowsAsync(sqlServerReadService, context, latestRequest);
+      var fallbackAsOfProjections = await ProjectLatestRowsAsync(fallbackReadService, context, asOfRequest);
+      var sqlServerAsOfProjections = await ProjectLatestRowsAsync(sqlServerReadService, context, asOfRequest);
+
+      Assert.Equal(FormatSatelliteRows(fallbackLatestRows), FormatSatelliteRows(sqlServerLatestRows));
+      Assert.Equal(FormatSatelliteRows(fallbackAsOfRows), FormatSatelliteRows(sqlServerAsOfRows));
+      Assert.Equal(["Alice Baker|Platinum|profile-hash-2"], fallbackLatestProjections);
+      Assert.Equal(fallbackLatestProjections, sqlServerLatestProjections);
+      Assert.Equal(["Alice Adams|Gold|profile-hash-1"], fallbackAsOfProjections);
+      Assert.Equal(fallbackAsOfProjections, sqlServerAsOfProjections);
+    }
+  }
+
+  [Fact]
   public async Task RelationalPitCandidatesReturnProviderNeutralRowsAndProjections() {
     var metadata = CreatePitMetadata();
     using var database = SqliteTestDatabase.CreateTemporaryFile();
@@ -213,6 +281,13 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
     return services.BuildServiceProvider(validateScopes: true);
   }
 
+  private static IDataVaultReadService CreateLatestCandidateReadService(IDataVaultProviderReadStrategy strategy) {
+    return new DefaultDataVaultReadService(
+        [new AlwaysAcceptLatestReadStrategy(strategy)],
+        Array.Empty<IDataVaultProviderPitReadStrategy>(),
+        Array.Empty<IDataVaultProviderBridgeReadStrategy>());
+  }
+
   private static IDataVaultReadService CreatePitCandidateReadService(IDataVaultProviderPitReadStrategy strategy) {
     return new DefaultDataVaultReadService(
         Array.Empty<IDataVaultProviderReadStrategy>(),
@@ -255,6 +330,21 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
         context,
         request,
         row => row.RequiredString("CustomerHashKey") + "->" + row.RequiredString("OrderHashKey"));
+  }
+
+  private static async Task<IReadOnlyList<string>> ProjectLatestRowsAsync(
+      IDataVaultReadService readService,
+      DbContext context,
+      DataVaultLatestSatelliteReadRequest request) {
+    return await readService.ReadLatestSatelliteAsync(
+        context,
+        request,
+        row =>
+            row.RequiredString("Customer Name") +
+            "|" +
+            row.RequiredString("Customer Tier") +
+            "|" +
+            row.RequiredString("HashDiff"));
   }
 
   private static async Task<string> SaveCustomerAsync(
@@ -343,6 +433,25 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
             FormatDictionary(row.DrivingKeyValues) +
             "|" +
             string.Join(";", row.SatelliteSnapshots.Select(FormatSnapshot)))
+        .ToArray();
+  }
+
+  private static IReadOnlyList<string> FormatSatelliteRows(IReadOnlyList<DataVaultSatelliteReadRecord> rows) {
+    return rows
+        .Select(row =>
+            row.MetadataName +
+            "|" +
+            row.TableName +
+            "|" +
+            row.ParentHashKey +
+            "|" +
+            row.HashDiff +
+            "|" +
+            row.LoadTimestamp.ToString("O", CultureInfo.InvariantCulture) +
+            "|" +
+            row.RecordSource +
+            "|" +
+            FormatDictionary(row.PayloadValues))
         .ToArray();
   }
 
@@ -437,6 +546,29 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
   private sealed class BridgeReadParityContext(DbContextOptions<BridgeReadParityContext> options) : DbContext(options) {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
       modelBuilder.ApplyDataVaultMetadata(ManyToManyMetadataModel, DataVaultProviderCapabilityProfiles.Sqlite);
+    }
+  }
+
+  private sealed class AlwaysAcceptLatestReadStrategy(IDataVaultProviderReadStrategy inner) : IDataVaultProviderReadStrategy {
+    public int Priority => inner.Priority;
+
+    public bool CanReadLatestSatelliteRows(DbContext dbContext, DataVaultLatestSatelliteReadRequest request) {
+      ArgumentNullException.ThrowIfNull(dbContext);
+      ArgumentNullException.ThrowIfNull(request);
+
+      return true;
+    }
+
+    public Task<IReadOnlyList<DataVaultSatelliteReadRecord>> ReadLatestSatelliteRowsAsync(
+        DataVaultProviderReadStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      return inner.ReadLatestSatelliteRowsAsync(context, cancellationToken);
+    }
+
+    public Task<IReadOnlyList<DataVaultSatelliteProjectionRow>> ReadLatestSatelliteProjectionRowsAsync(
+        DataVaultProviderReadStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      return inner.ReadLatestSatelliteProjectionRowsAsync(context, cancellationToken);
     }
   }
 

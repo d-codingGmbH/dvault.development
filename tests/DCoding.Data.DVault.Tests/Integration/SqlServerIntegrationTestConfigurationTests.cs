@@ -53,7 +53,7 @@ public sealed class SqlServerIntegrationTestConfigurationTests {
   }
 
   [Fact]
-  public void AddDVaultSqlServerRegistersProviderSaveStrategyInDefaultSmokeCoverage() {
+  public void AddDVaultSqlServerRegistersProviderStrategiesInDefaultSmokeCoverage() {
     var services = new ServiceCollection();
 
     services.AddDVaultSqlServer();
@@ -61,5 +61,8 @@ public sealed class SqlServerIntegrationTestConfigurationTests {
     using var provider = services.BuildServiceProvider(validateScopes: true);
 
     Assert.NotEmpty(provider.GetServices<IDataVaultProviderSaveStrategy>());
+    Assert.Contains(
+        provider.GetServices<IDataVaultProviderReadStrategy>(),
+        strategy => strategy.GetType().Name == "SqlServerDataVaultReadStrategy");
   }
 }

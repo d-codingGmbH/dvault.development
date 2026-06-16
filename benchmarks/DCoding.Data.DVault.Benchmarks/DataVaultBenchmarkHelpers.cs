@@ -125,9 +125,11 @@ internal static class DataVaultBenchmarkHelpers {
     ArgumentException.ThrowIfNullOrWhiteSpace(scenarioName);
 
     if (string.Equals(scenarioName, "latest-satellite-read", StringComparison.Ordinal)) {
-      return strategy == DataVaultBenchmarkStrategy.SqliteOptimized
-          ? "SqliteDataVaultReadStrategy"
-          : null;
+      return strategy switch {
+        DataVaultBenchmarkStrategy.SqliteOptimized => "SqliteDataVaultReadStrategy",
+        DataVaultBenchmarkStrategy.SqlServerOptimized => "SqlServerDataVaultReadStrategy",
+        _ => null,
+      };
     }
 
     if (scenarioName is "pit-as-of-read" or "bridge-traversal-read") {

@@ -67,6 +67,14 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
 
   public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlServer(
       DbContext dbContext,
+      DataVaultLatestSatelliteReadRequest request) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    return EvaluateSqlServer(dbContext.Database.ProviderName, request);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlServer(
+      DbContext dbContext,
       DataVaultPitAsOfReadRequest request) {
     ArgumentNullException.ThrowIfNull(dbContext);
 
@@ -295,6 +303,16 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
         supportedProviderNames: [KnownProviderNames.Postgres],
         hasCompleteReadShapeEvidence: hasCompleteReadShapeEvidence,
         hasStaleReadModelMaintenanceSignal: hasStaleReadModelMaintenanceSignal);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlServer(
+      string? providerName,
+      DataVaultLatestSatelliteReadRequest request) {
+    return EvaluateLatestSatellite(
+        DataVaultKnownProviderReadStrategy.SqlServer,
+        providerName,
+        request,
+        supportedProviderNames: [KnownProviderNames.SqlServer]);
   }
 
   public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlServer(
@@ -560,6 +578,7 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
       out DataVaultProviderReadStrategyGateEvaluation evaluation) {
     evaluation = strategy.GetType().Name switch {
       "SqliteDataVaultReadStrategy" => EvaluateSqlite(dbContext, request),
+      "SqlServerDataVaultReadStrategy" => EvaluateSqlServer(dbContext, request),
       _ => new DataVaultProviderReadStrategyGateEvaluation(false, Array.Empty<DataVaultReadStrategyFallbackCause>()),
     };
 
@@ -626,6 +645,11 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
 
     return strategy.GetType().Name switch {
       "SqliteDataVaultReadStrategy" => [
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported),
+      ],
+      "SqlServerDataVaultReadStrategy" => [
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent),
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported),
