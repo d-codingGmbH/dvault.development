@@ -12,7 +12,10 @@ internal static class DataVaultSharedTypeQueryFilters {
     ArgumentException.ThrowIfNullOrWhiteSpace(propertyName);
     ArgumentNullException.ThrowIfNull(values);
 
-    if (values.Count == 0) {
+    var distinctValues = values
+        .Distinct(StringComparer.Ordinal)
+        .ToArray();
+    if (distinctValues.Length == 0) {
       return rows.Where(_ => false);
     }
 
@@ -23,14 +26,36 @@ internal static class DataVaultSharedTypeQueryFilters {
         [typeof(string)],
         row,
         Expression.Constant(propertyName));
-    Expression? predicate = null;
+    var predicate = CreateBalancedStringEqualsAnyExpression(
+        property,
+        distinctValues,
+        startIndex: 0,
+        distinctValues.Length);
 
-    foreach (var value in values) {
-      var equals = Expression.Equal(property, Expression.Constant(value, typeof(string)));
-      predicate = predicate is null ? equals : Expression.OrElse(predicate, equals);
+    return rows.Where(Expression.Lambda<Func<Dictionary<string, object>, bool>>(predicate, row));
+  }
+
+  private static Expression CreateBalancedStringEqualsAnyExpression(
+      Expression property,
+      IReadOnlyList<string> values,
+      int startIndex,
+      int length) {
+    if (length <= 0) {
+      throw new ArgumentOutOfRangeException(nameof(length));
     }
 
-    return rows.Where(Expression.Lambda<Func<Dictionary<string, object>, bool>>(predicate!, row));
+    if (length == 1) {
+      return Expression.Equal(
+          property,
+          Expression.Constant(values[startIndex], typeof(string)));
+    }
+
+    var leftLength = length / 2;
+    var rightLength = length - leftLength;
+
+    return Expression.OrElse(
+        CreateBalancedStringEqualsAnyExpression(property, values, startIndex, leftLength),
+        CreateBalancedStringEqualsAnyExpression(property, values, startIndex + leftLength, rightLength));
   }
 
   public static IQueryable<Dictionary<string, object>> WhereIntPropertyLessThanOrEqual(
