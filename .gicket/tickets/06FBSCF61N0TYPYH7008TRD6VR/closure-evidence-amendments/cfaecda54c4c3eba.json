@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "amendedTicketId": "06FBSCF61N0TYPYH7008TRD6VR",
+  "amendmentType": "terminal-relation-follow-up-evidence",
+  "supersededClaims": [
+    "Historical relation follow-up targeted owner branch \u0027develop\u0027 after base branch \u0027develop\u0027 already recorded terminal status \u0027done\u0027.",
+    "The original follow-up evidence is preserved append-only instead of reopening the terminal ticket or recreating its owner branch."
+  ],
+  "landedEvidence": [
+    "Relation follow-up from ticket \u002706FBSCG18KBRT1FTHDRX073EF4\u0027 via flow \u0027blocked-by-follow-up-comment\u0027 and action \u0027blocked-by-follow-up-target\u0027 became available after the target ticket was terminal.",
+    "Base branch \u0027develop\u0027 records target status \u0027done\u0027.",
+    "Original follow-up comment: [gicket-bot] relation follow-up\n\nSummary\n- Source ticket \u006006FBSCG18KBRT1FTHDRX073EF4\u0060 completed a bot run for role \u0060dev\u0060 with outcome \u0060dev-workflow-apply\u0060.\n- Source run summary: Developer workflow prepared branch \u0027ticket/06FBSCG18KBRT1FTHDRX073EF4-task-close-oracle-latest-satellite-read-gap\u0027 and commit \u00272f7951f1bf97\u0027 for ticket \u002706FBSCG18KBRT1FTHDRX073EF4\u0027.\n- Selected flow \u0060blocked-by-follow-up-comment\u0060 reached this ticket via \u0060blocks\u0060 path \u006006FBSCG18KBRT1FTHDRX073EF4 -\u003E 06FBSCF61N0TYPYH7008TRD6..."
+  ],
+  "baseBranch": "develop",
+  "sourceTicketId": "06FBSCG18KBRT1FTHDRX073EF4",
+  "sourceRunId": "b436087853de4c46b16dc015a730454f",
+  "sourceRoleToken": "dev",
+  "sourceKind": "relation-follow-up",
+  "createdAtUtc": "2026-06-17T01:34:45.6632511+00:00",
+  "semanticIdempotencyKey": "closure-evidence-amendment-ledger:06fbscf61n0typyh7008trd6vr:terminal-relation-follow-up-evidence:develop:06fbscg18kbrt1fthdrx073ef4:relation-follow-up:16e462054d6e0988"
+}

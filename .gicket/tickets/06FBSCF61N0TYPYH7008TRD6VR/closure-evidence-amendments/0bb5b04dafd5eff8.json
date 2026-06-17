@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "amendedTicketId": "06FBSCF61N0TYPYH7008TRD6VR",
+  "amendmentType": "terminal-relation-follow-up-evidence",
+  "supersededClaims": [
+    "Historical relation follow-up targeted owner branch \u0027develop\u0027 after base branch \u0027develop\u0027 already recorded terminal status \u0027done\u0027.",
+    "The original follow-up evidence is preserved append-only instead of reopening the terminal ticket or recreating its owner branch."
+  ],
+  "landedEvidence": [
+    "Relation follow-up from ticket \u002706FBSCFVT3SBHKMDGNEXWVWFXG\u0027 via flow \u0027blocked-by-follow-up-comment\u0027 and action \u0027blocked-by-follow-up-target\u0027 became available after the target ticket was terminal.",
+    "Base branch \u0027develop\u0027 records target status \u0027done\u0027.",
+    "Original follow-up comment: [gicket-bot] relation follow-up\n\nSummary\n- Source ticket \u006006FBSCFVT3SBHKMDGNEXWVWFXG\u0060 completed a bot run for role \u0060test\u0060 with outcome \u0060test-workflow-returned\u0060.\n- Source run summary: Tester workflow returned ticket \u002706FBSCFVT3SBHKMDGNEXWVWFXG\u0027 for rework because persisted acceptance criteria, definition-of-done expectations, or checklist gates were not fully confirmed.\n- Selected flow \u0060blocked-by-follow-up-comment\u0060 reached this ticket via \u0060blocks\u0060 path \u006006FBSCFVT3SBHKMDGNEXWVWFXG -\u003E 06FBSCF61N0T..."
+  ],
+  "baseBranch": "develop",
+  "sourceTicketId": "06FBSCFVT3SBHKMDGNEXWVWFXG",
+  "sourceRunId": "ebf30e71ba8d420ca3e1a52a7f3b2cb4",
+  "sourceRoleToken": "test",
+  "sourceKind": "relation-follow-up",
+  "createdAtUtc": "2026-06-17T01:34:45.660249+00:00",
+  "semanticIdempotencyKey": "closure-evidence-amendment-ledger:06fbscf61n0typyh7008trd6vr:terminal-relation-follow-up-evidence:develop:06fbscfvt3sbhkmdgnexwvwfxg:relation-follow-up:cd81488a0ac89646"
+}
