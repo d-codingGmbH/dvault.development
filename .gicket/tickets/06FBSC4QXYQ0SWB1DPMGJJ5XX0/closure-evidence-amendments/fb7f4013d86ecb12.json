@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "amendedTicketId": "06FBSC4QXYQ0SWB1DPMGJJ5XX0",
+  "amendmentType": "terminal-relation-follow-up-evidence",
+  "supersededClaims": [
+    "Historical relation follow-up targeted owner branch \u0027develop\u0027 after base branch \u0027develop\u0027 already recorded terminal status \u0027done\u0027.",
+    "The original follow-up evidence is preserved append-only instead of reopening the terminal ticket or recreating its owner branch."
+  ],
+  "landedEvidence": [
+    "Relation follow-up from ticket \u002706FBSC8TS7R98ZEBDKE5XG2KTC\u0027 via flow \u0027blocked-by-follow-up-comment\u0027 and action \u0027blocked-by-follow-up-target\u0027 became available after the target ticket was terminal.",
+    "Base branch \u0027develop\u0027 records target status \u0027done\u0027.",
+    "Original follow-up comment: [gicket-bot] relation follow-up\n\nSummary\n- Source ticket \u006006FBSC8TS7R98ZEBDKE5XG2KTC\u0060 completed a bot run for role \u0060test\u0060 with outcome \u0060test-workflow-awaiting-integrator\u0060.\n- Source run summary: Tester workflow verified branch \u0027ticket/06FBSC8TS7R98ZEBDKE5XG2KTC-story-define-provider-bulk-expansion-acceptance\u0027 for ticket \u002706FBSC8TS7R98ZEBDKE5XG2KTC\u0027.\n- Selected flow \u0060blocked-by-follow-up-comment\u0060 reached this ticket via \u0060blocks\u0060 path \u006006FBSC8TS7R98ZEBDKE5XG2KTC -\u003E 06FBSC4QXYQ0SWB1DPMGJJ5XX0\u0060.\n\nRun..."
+  ],
+  "baseBranch": "develop",
+  "sourceTicketId": "06FBSC8TS7R98ZEBDKE5XG2KTC",
+  "sourceRunId": "7b23e772a84641afae388f8010e05ed5",
+  "sourceRoleToken": "test",
+  "sourceKind": "relation-follow-up",
+  "createdAtUtc": "2026-06-17T01:34:13.2227616+00:00",
+  "semanticIdempotencyKey": "closure-evidence-amendment-ledger:06fbsc4qxyq0swb1dpmgjj5xx0:terminal-relation-follow-up-evidence:develop:06fbsc8ts7r98zebdke5xg2ktc:relation-follow-up:0e3fd2aeb0c61173"
+}
