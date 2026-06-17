@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "amendedTicketId": "06FBSC9JK29P1PVTCF6H3ZTEM8",
+  "amendmentType": "terminal-relation-follow-up-evidence",
+  "supersededClaims": [
+    "Historical relation follow-up targeted owner branch \u0027develop\u0027 after base branch \u0027develop\u0027 already recorded terminal status \u0027done\u0027.",
+    "The original follow-up evidence is preserved append-only instead of reopening the terminal ticket or recreating its owner branch."
+  ],
+  "landedEvidence": [
+    "Relation follow-up from ticket \u002706FBSCAD13RR10GHR82CPD864W\u0027 via flow \u0027blocked-by-follow-up-comment\u0027 and action \u0027blocked-by-follow-up-target\u0027 became available after the target ticket was terminal.",
+    "Base branch \u0027develop\u0027 records target status \u0027done\u0027.",
+    "Original follow-up comment: [gicket-bot] relation follow-up\n\nSummary\n- Source ticket \u006006FBSCAD13RR10GHR82CPD864W\u0060 completed a bot run for role \u0060test\u0060 with outcome \u0060test-workflow-awaiting-integrator\u0060.\n- Source run summary: Tester workflow verified branch \u0027ticket/06FBSCAD13RR10GHR82CPD864W-task-implement-accepted-mysql-bulk-improvement\u0027 for ticket \u002706FBSCAD13RR10GHR82CPD864W\u0027.\n- Selected flow \u0060blocked-by-follow-up-comment\u0060 reached this ticket via \u0060blocks\u0060 path \u006006FBSCAD13RR10GHR82CPD864W -\u003E 06FBSC9JK29P1PVTCF6H3ZTEM8\u0060.\n\nRun ..."
+  ],
+  "baseBranch": "develop",
+  "sourceTicketId": "06FBSCAD13RR10GHR82CPD864W",
+  "sourceRunId": "a22ba9f3290c4f67a121efbeb07a2522",
+  "sourceRoleToken": "test",
+  "sourceKind": "relation-follow-up",
+  "createdAtUtc": "2026-06-17T01:34:29.0883958+00:00",
+  "semanticIdempotencyKey": "closure-evidence-amendment-ledger:06fbsc9jk29p1pvtcf6h3ztem8:terminal-relation-follow-up-evidence:develop:06fbscad13rr10ghr82cpd864w:relation-follow-up:6d2487c0d75b0e21"
+}
