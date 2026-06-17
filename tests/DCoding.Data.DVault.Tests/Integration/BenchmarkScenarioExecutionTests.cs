@@ -1039,6 +1039,86 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
+  public void ProviderPitBridgeAuditKeepsProviderSpecificFollowUpSplit() {
+    var gapMatrix = ReadRepositoryText(Path.Combine(
+        "docs",
+        "plans",
+        "provider-optimization-gap-matrix.md"));
+    var evidenceMatrix = ReadRepositoryText(Path.Combine(
+        "docs",
+        "plans",
+        "provider-optimization-evidence-matrix.md"));
+    var pitBridgeBoundary = ReadRepositoryText(Path.Combine(
+        "docs",
+        "architecture",
+        "dvault-v1-pit-bridge-boundary.md"));
+    var artifacts = VerifyBenchmarkArtifactTriplet(
+        ReadRepositoryText("benchmark-summary.md"),
+        ReadRepositoryText("benchmark-summary.csv"),
+        ReadRepositoryText("benchmark-summary.json"));
+    var activeProviderRows = new[]
+    {
+        new ProviderPitBridgeAuditRow(
+            "P2.01",
+            PostgresProviderName,
+            "dvault-adddvaultpostgres-optimized",
+            "PostgresDataVaultReadStrategy",
+            "AddDVaultPostgres()",
+            BenchmarkExternalProviderDefinitions.Postgres.ConnectionStringEnvironmentVariable),
+        new ProviderPitBridgeAuditRow(
+            "P2.02",
+            SqlServerProviderName,
+            "dvault-adddvaultsqlserver-optimized",
+            "SqlServerDataVaultReadStrategy",
+            "AddDVaultSqlServer()",
+            BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable),
+        new ProviderPitBridgeAuditRow(
+            "P2.03",
+            MySqlProviderName,
+            "dvault-adddvaultmysql-optimized",
+            "MySqlDataVaultReadStrategy",
+            "AddDVaultMySql()",
+            BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable),
+        new ProviderPitBridgeAuditRow(
+            "P2.04",
+            OracleProviderName,
+            "dvault-adddvaultoracle-optimized",
+            "OracleDataVaultReadStrategy",
+            "AddDVaultOracle()",
+            BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable),
+    };
+
+    foreach (var provider in activeProviderRows) {
+      AssertProviderPitBridgeAuditRow(
+          provider,
+          gapMatrix,
+          evidenceMatrix,
+          pitBridgeBoundary,
+          artifacts);
+    }
+
+    Assert.Contains("| P2.05 | Evidence gap | DB2 external provider | `pit-as-of-read`", gapMatrix, StringComparison.Ordinal);
+    Assert.Contains("| P3.05 | Evidence gap | DB2 external provider | `bridge-traversal-read`", gapMatrix, StringComparison.Ordinal);
+    Assert.Contains("DB2 rows keep the narrower v0.34.0 boundary", gapMatrix, StringComparison.Ordinal);
+    Assert.Contains("no completed DB2 timing", gapMatrix, StringComparison.Ordinal);
+    Assert.Contains("DB2 registers diagnostics-gated PIT/bridge read dispatch", evidenceMatrix, StringComparison.Ordinal);
+
+    var skippedDb2PitRow = FindArtifactRow(
+        artifacts,
+        Db2ProviderName,
+        "pit-as-of-read",
+        "dvault-adddvaultdb2-optimized");
+    var skippedDb2BridgeRow = FindArtifactRow(
+        artifacts,
+        Db2ProviderName,
+        "bridge-traversal-read",
+        "dvault-adddvaultdb2-optimized");
+
+    AssertSkippedDb2ReadPlaceholder(skippedDb2PitRow, "Db2DataVaultReadStrategy");
+    AssertSkippedDb2ReadPlaceholder(skippedDb2BridgeRow, "Db2DataVaultReadStrategy");
+  }
+
+  [Fact]
   public void OracleHighVolumeThresholdArtifactRecordsNoChangeDecision() {
     var artifactDirectory = Path.Combine(
         "artifacts",
@@ -1810,6 +1890,84 @@ public sealed class BenchmarkScenarioExecutionTests {
     }
   }
 
+  private static void AssertProviderPitBridgeAuditRow(
+      ProviderPitBridgeAuditRow provider,
+      string gapMatrix,
+      string evidenceMatrix,
+      string pitBridgeBoundary,
+      VerifiedBenchmarkArtifacts artifacts) {
+    var bridgePriority = "P3" + provider.PitPriority[2..];
+    Assert.Contains(
+        "| " + provider.PitPriority + " | Evidence gap | " + provider.ProviderName + " | `pit-as-of-read`",
+        gapMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| " + bridgePriority + " | Evidence gap | " + provider.ProviderName + " | `bridge-traversal-read`",
+        gapMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "`" + provider.StrategyName + "` for supported maintained PIT shapes.",
+        gapMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "`" + provider.StrategyName + "` for supported maintained bridge shapes.",
+        gapMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| `pit-as-of-read` | " + provider.ProviderName + " | `" + provider.BaselineName + "`",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| `bridge-traversal-read` | " + provider.ProviderName + " | `" + provider.BaselineName + "`",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "Guidance row records planned `" + provider.StrategyName + "` for diagnostics-gated PIT reads.",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "Guidance row records planned `" + provider.StrategyName + "` for diagnostics-gated bridge reads.",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(provider.ExtensionName, pitBridgeBoundary, StringComparison.Ordinal);
+
+    AssertProviderReadPlaceholder(
+        FindArtifactRow(artifacts, provider.ProviderName, "pit-as-of-read", provider.BaselineName),
+        provider.StrategyName,
+        "PitAsOf",
+        provider.ConnectionStringEnvironmentVariable);
+    AssertProviderReadPlaceholder(
+        FindArtifactRow(artifacts, provider.ProviderName, "bridge-traversal-read", provider.BaselineName),
+        provider.StrategyName,
+        "Bridge",
+        provider.ConnectionStringEnvironmentVariable);
+  }
+
+  private static void AssertProviderReadPlaceholder(
+      BenchmarkArtifactRow row,
+      string strategyName,
+      string readShape,
+      string connectionStringEnvironmentVariable) {
+    Assert.Equal("skipped", row.ExecutionStatus);
+    Assert.Equal(0, row.Iterations);
+    Assert.Equal(NotConfiguredSkipReasonFor(connectionStringEnvironmentVariable), row.SkipReason);
+    Assert.Equal("not executed", row.PersistedOutcome);
+    AssertSkippedMetricsBlank(row);
+    Assert.Contains("readShape=" + readShape, row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("selectedStrategy=" + strategyName, row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("plannedReadStrategy=" + strategyName, row.ExecutionDetail, StringComparison.Ordinal);
+  }
+
+  private static void AssertSkippedDb2ReadPlaceholder(
+      BenchmarkArtifactRow row,
+      string strategyName) {
+    AssertProviderReadPlaceholder(
+        row,
+        strategyName,
+        row.ScenarioName == "pit-as-of-read" ? "PitAsOf" : "Bridge",
+        BenchmarkExternalProviderDefinitions.Db2.ConnectionStringEnvironmentVariable);
+  }
+
   private static void AssertPerformanceGuidanceMatchesArtifacts(
       string guidance,
       VerifiedBenchmarkArtifacts artifacts) {
@@ -2517,6 +2675,14 @@ public sealed class BenchmarkScenarioExecutionTests {
       string ScenarioName,
       string BaselineName,
       string[] RequiredExecutionDetailFragments);
+
+  private sealed record ProviderPitBridgeAuditRow(
+      string PitPriority,
+      string ProviderName,
+      string BaselineName,
+      string StrategyName,
+      string ExtensionName,
+      string ConnectionStringEnvironmentVariable);
 
   private sealed record VerifiedBenchmarkArtifacts(
       BenchmarkArtifactContext Context,
