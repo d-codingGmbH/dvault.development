@@ -1,4 +1,5 @@
 using DCoding.Data.DVault.Modeling;
+using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Reflection;
 using Xunit;
@@ -143,6 +144,56 @@ public sealed class OracleProviderOptimizationTests {
         "SELECT :p0, :p1, :p2, :p3 FROM DUAL WHERE NOT EXISTS " +
         "(SELECT 1 FROM \"HubCustomer\" WHERE \"CustomerHashKey\" = :p4)",
         commandText);
+  }
+
+  [Fact]
+  public void OracleLatestSatelliteReadSqlUsesOracleBindParametersAndRowNumberSelection() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["Customer Name", "Customer Tier"]);
+    var projection = DataVaultSatelliteReadPipeline.CreateSatelliteProjection(profile);
+    var selectedColumns = new[]
+    {
+        projection.ParentHashKeyColumnName,
+        projection.HashDiffColumnName,
+        projection.LoadTimestampColumnName,
+        projection.RecordSourceColumnName,
+    }
+        .Concat(projection.PayloadColumnNames)
+        .ToArray();
+    using var dbContext = new DbContext(new DbContextOptionsBuilder().Options);
+
+    var commandText = new OracleDataVaultReadStrategy().CreateLatestRowsCommandText(
+        dbContext,
+        projection,
+        selectedColumns,
+        parentHashKeyCount: 2,
+        hasAsOf: true);
+
+    Assert.Contains(
+        "ROW_NUMBER() OVER (PARTITION BY \"target\".\"" + projection.ParentHashKeyColumnName + "\" ORDER BY \"target\".\"" + projection.LoadTimestampColumnName + "\" DESC) \"__dvault_row_number\"",
+        commandText,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "FROM \"" + projection.TableName + "\" \"target\"",
+        commandText,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "\"target\".\"" + projection.ParentHashKeyColumnName + "\" IN (:p0, :p1)",
+        commandText,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "\"target\".\"" + projection.LoadTimestampColumnName + "\" <= :p2",
+        commandText,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "WHERE \"__dvault_row_number\" = 1 ORDER BY \"" + projection.ParentHashKeyColumnName + "\"",
+        commandText,
+        StringComparison.Ordinal);
+    Assert.DoesNotContain(" AS \"target\"", commandText, StringComparison.Ordinal);
+    Assert.DoesNotContain(" AS \"ranked\"", commandText, StringComparison.Ordinal);
   }
 
   [Fact]

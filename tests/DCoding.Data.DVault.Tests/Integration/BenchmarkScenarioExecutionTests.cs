@@ -460,7 +460,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       new(MySqlProviderName, "latest-satellite-read", "dvault-adddvaultmysql-optimized", ["readShape=LatestSatellite", "selectedStrategy=<none>", "providerSpecificReadStrategy=not registered for latest satellite reads"]),
       new(MySqlProviderName, "pit-as-of-read", "dvault-adddvaultmysql-optimized", ["readShape=PitAsOf", "selectedStrategy=MySqlDataVaultReadStrategy", "plannedReadStrategy=MySqlDataVaultReadStrategy"]),
       new(MySqlProviderName, "bridge-traversal-read", "dvault-adddvaultmysql-optimized", ["readShape=Bridge", "selectedStrategy=MySqlDataVaultReadStrategy", "plannedReadStrategy=MySqlDataVaultReadStrategy"]),
-      new(OracleProviderName, "latest-satellite-read", "dvault-adddvaultoracle-optimized", ["readShape=LatestSatellite", "selectedStrategy=<none>", "providerSpecificReadStrategy=not registered for latest satellite reads"]),
+      new(OracleProviderName, "latest-satellite-read", "dvault-adddvaultoracle-optimized", ["readShape=LatestSatellite", "selectedStrategy=OracleDataVaultReadStrategy", "plannedReadStrategy=OracleDataVaultReadStrategy"]),
       new(OracleProviderName, "pit-as-of-read", "dvault-adddvaultoracle-optimized", ["readShape=PitAsOf", "selectedStrategy=OracleDataVaultReadStrategy", "plannedReadStrategy=OracleDataVaultReadStrategy"]),
       new(OracleProviderName, "bridge-traversal-read", "dvault-adddvaultoracle-optimized", ["readShape=Bridge", "selectedStrategy=OracleDataVaultReadStrategy", "plannedReadStrategy=OracleDataVaultReadStrategy"]),
       new(Db2ProviderName, "latest-satellite-read", "dvault-adddvaultdb2-optimized", ["readShape=LatestSatellite", "selectedStrategy=<none>", "providerSpecificReadStrategy=not registered for latest satellite reads"]),

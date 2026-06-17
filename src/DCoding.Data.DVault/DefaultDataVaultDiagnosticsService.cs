@@ -881,7 +881,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         "Read-model heavy",
         "Read diagnostics provide provider-neutral " +
         readShapeKind +
-        " guidance; SQLite remains the repository-proven optimized latest-satellite provider, while SQLite, PostgreSQL, and SQL Server are repository-proven optimized PIT/bridge providers when diagnostics select their candidates. Unsupported providers, unsupported shapes, or incomplete read-shape evidence remain fallback guidance.");
+        " guidance; SQLite, SQL Server, and Oracle are repository-proven optimized latest-satellite providers, while SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2 are repository-proven optimized PIT/bridge providers when diagnostics select their candidates. Unsupported providers, unsupported shapes, or incomplete read-shape evidence remain fallback guidance.");
   }
 
   private static bool IsRepositoryProvenOptimizedReadStrategy(
@@ -890,7 +890,10 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     return selectedStrategyName switch {
       "SqliteDataVaultReadStrategy" => true,
       "PostgresDataVaultReadStrategy" => readShapeKind is DataVaultReadShapeKind.PitAsOf or DataVaultReadShapeKind.Bridge,
-      "SqlServerDataVaultReadStrategy" => readShapeKind is DataVaultReadShapeKind.PitAsOf or DataVaultReadShapeKind.Bridge,
+      "SqlServerDataVaultReadStrategy" => readShapeKind is DataVaultReadShapeKind.LatestSatellite or DataVaultReadShapeKind.PitAsOf or DataVaultReadShapeKind.Bridge,
+      "MySqlDataVaultReadStrategy" => readShapeKind is DataVaultReadShapeKind.PitAsOf or DataVaultReadShapeKind.Bridge,
+      "OracleDataVaultReadStrategy" => readShapeKind is DataVaultReadShapeKind.LatestSatellite or DataVaultReadShapeKind.PitAsOf or DataVaultReadShapeKind.Bridge,
+      "Db2DataVaultReadStrategy" => readShapeKind is DataVaultReadShapeKind.PitAsOf or DataVaultReadShapeKind.Bridge,
       _ => false,
     };
   }
@@ -900,6 +903,9 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       "SqliteDataVaultReadStrategy" => "SQLite",
       "PostgresDataVaultReadStrategy" => "PostgreSQL",
       "SqlServerDataVaultReadStrategy" => "SQL Server",
+      "MySqlDataVaultReadStrategy" => "MySQL",
+      "OracleDataVaultReadStrategy" => "Oracle",
+      "Db2DataVaultReadStrategy" => "DB2",
       _ => "provider-specific",
     };
   }

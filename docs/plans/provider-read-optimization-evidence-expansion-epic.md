@@ -25,14 +25,14 @@ The current branch already carries the coordinated v0.28.0 provider-read-optimiz
 
 - `docs/releases/v0.28.0.md` defines the public release posture.
 - `README.md`, `docs/production-adoption-checklist.md`, `docs/performance-profiles.md`, and `docs/architecture/dvault-v1-pit-bridge-boundary.md` align on the same provider matrix.
-- SQLite and SQL Server are the optimized latest-satellite read provider paths for supported hub-parent, non-multi-active shapes.
-- SQLite, PostgreSQL, SQL Server, MySQL, and Oracle are the diagnostics-gated PIT/bridge optimized read-strategy candidate paths.
-- Unsupported providers, PostgreSQL/MySQL/Oracle latest-satellite requests, unsupported PIT/bridge shapes, incomplete read-shape evidence, and stale PIT/bridge maintenance evidence fall back to provider-neutral reads.
+- SQLite, SQL Server, and Oracle are the optimized latest-satellite read provider paths for supported hub-parent, non-multi-active shapes.
+- SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2 are the diagnostics-gated PIT/bridge optimized read-strategy candidate paths.
+- Unsupported providers, PostgreSQL/MySQL/DB2 latest-satellite requests, unsupported PIT/bridge shapes, incomplete read-shape evidence, and stale PIT/bridge maintenance evidence fall back to provider-neutral reads.
 
 Repository code and tests also prove the same boundary:
 
-- `src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs` and `src/DCoding.Data.DVault.SqlServer/DVaultSqlServerServiceCollectionExtensions.cs` register latest-satellite, PIT, and bridge read strategies.
-- `src/DCoding.Data.DVault.Postgres/DVaultPostgresServiceCollectionExtensions.cs`, `src/DCoding.Data.DVault.MySql/DVaultMySqlServiceCollectionExtensions.cs`, and `src/DCoding.Data.DVault.Oracle/DVaultOracleServiceCollectionExtensions.cs` register PIT and bridge read strategies.
+- `src/DCoding.Data.DVault.Sqlite/DVaultSqliteServiceCollectionExtensions.cs`, `src/DCoding.Data.DVault.SqlServer/DVaultSqlServerServiceCollectionExtensions.cs`, and `src/DCoding.Data.DVault.Oracle/DVaultOracleServiceCollectionExtensions.cs` register latest-satellite, PIT, and bridge read strategies.
+- `src/DCoding.Data.DVault.Postgres/DVaultPostgresServiceCollectionExtensions.cs`, `src/DCoding.Data.DVault.MySql/DVaultMySqlServiceCollectionExtensions.cs`, and `src/DCoding.Data.DVault.Db2/DVaultDb2ServiceCollectionExtensions.cs` register PIT and bridge read strategies.
 - `tests/DCoding.Data.DVault.Tests/Integration/BenchmarkScenarioExecutionTests.cs` preserves the completed SQLite read rows plus optional external-provider guidance rows with planned strategy names.
 - `tests/DCoding.Data.DVault.Tests/Unit/DataVaultProviderReadStrategyTests.cs` and `src/DCoding.Data.DVault/DataVaultDiagnostics.cs` preserve the finite fallback and diagnostics gate posture.
 

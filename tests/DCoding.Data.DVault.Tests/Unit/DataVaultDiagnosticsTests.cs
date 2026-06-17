@@ -1066,9 +1066,14 @@ public sealed class DataVaultDiagnosticsTests {
         cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape);
 
     var readStrategy = new SqliteDataVaultReadStrategy();
+    IDataVaultProviderReadStrategy oracleLatestReadStrategy = new OracleDataVaultReadStrategy();
     Assert.Equal([KnownProviderNames.Sqlite], DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(readStrategy));
+    Assert.Equal([KnownProviderNames.Oracle], DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(oracleLatestReadStrategy));
     Assert.Contains(
         DataVaultProviderReadStrategyGateEvaluator.GetKnownLatestSatelliteGateRequirements(readStrategy),
+        requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownLatestSatelliteGateRequirements(oracleLatestReadStrategy),
         requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
 
     IDataVaultProviderPitReadStrategy mySqlPitReadStrategy = new MySqlDataVaultReadStrategy();

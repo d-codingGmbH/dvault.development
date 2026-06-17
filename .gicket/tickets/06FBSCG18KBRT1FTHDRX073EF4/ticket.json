@@ -3,22 +3,21 @@
   "ticket-id": "06FBSCG18KBRT1FTHDRX073EF4",
   "ticket-type": "task",
   "title": "Task: Close Oracle latest-satellite read gap",
-  "revision": "06FBSD0HEJS266SW4T7FHH0H88",
-  "status": "todo",
+  "revision": "06FD6JCRW6W88N7H8V1QCMNS7C",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
     "area/performance",
     "area/provider-support",
     "area/read-models",
     "area/testing",
-    "provider/oracle"
+    "automation/bot-ready",
+    "provider/oracle",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FBSB0YTBAVEP119Y08RTN3C4",
   "release-id": "06FBSAVBYTWWZ3K6NV1XQQJADR",
   "created-at": "2026-06-12T16:37:23.0011101Z",
-  "updated-at": "2026-06-12T16:39:38.1009081Z"
+  "updated-at": "2026-06-17T01:54:36.3856025Z"
 }

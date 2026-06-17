@@ -9,7 +9,7 @@ namespace DCoding.Data.DVault.Tests.Unit;
 
 public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
   [Fact]
-  public async Task SqlServerLatestSatelliteCandidateReturnsProviderNeutralRowsAndProjections() {
+  public async Task SqlServerAndOracleLatestSatelliteCandidatesReturnProviderNeutralRowsAndProjections() {
     var metadata = CreatePitMetadata();
     using var database = SqliteTestDatabase.CreateTemporaryFile();
     var options = new DbContextOptionsBuilder<PitReadParityContext>()
@@ -20,6 +20,7 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
     using var fallbackProvider = CreateFallbackProvider();
     var fallbackReadService = fallbackProvider.GetRequiredService<IDataVaultReadService>();
     var sqlServerReadService = CreateLatestCandidateReadService(new SqlServerDataVaultReadStrategy());
+    var oracleReadService = CreateLatestCandidateReadService(new OracleDataVaultReadStrategy());
     string customerHashKey;
 
     await using (var context = new PitReadParityContext(options)) {
@@ -55,24 +56,37 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
       Assert.True(DataVaultProviderReadStrategyGateEvaluator
           .EvaluateSqlServer(KnownProviderNames.SqlServer, latestRequest)
           .CanRead);
+      Assert.True(DataVaultProviderReadStrategyGateEvaluator
+          .EvaluateOracle(KnownProviderNames.Oracle, latestRequest)
+          .CanRead);
 
       var fallbackLatestRows = await fallbackReadService.ReadLatestSatelliteRowsAsync(context, latestRequest);
       var sqlServerLatestRows = await new SqlServerDataVaultReadStrategy().ReadLatestSatelliteRowsAsync(
           new DataVaultProviderReadStrategyContext(context, latestRequest));
+      var oracleLatestRows = await new OracleDataVaultReadStrategy().ReadLatestSatelliteRowsAsync(
+          new DataVaultProviderReadStrategyContext(context, latestRequest));
       var fallbackAsOfRows = await fallbackReadService.ReadLatestSatelliteRowsAsync(context, asOfRequest);
       var sqlServerAsOfRows = await new SqlServerDataVaultReadStrategy().ReadLatestSatelliteRowsAsync(
           new DataVaultProviderReadStrategyContext(context, asOfRequest));
+      var oracleAsOfRows = await new OracleDataVaultReadStrategy().ReadLatestSatelliteRowsAsync(
+          new DataVaultProviderReadStrategyContext(context, asOfRequest));
       var fallbackLatestProjections = await ProjectLatestRowsAsync(fallbackReadService, context, latestRequest);
       var sqlServerLatestProjections = await ProjectLatestRowsAsync(sqlServerReadService, context, latestRequest);
+      var oracleLatestProjections = await ProjectLatestRowsAsync(oracleReadService, context, latestRequest);
       var fallbackAsOfProjections = await ProjectLatestRowsAsync(fallbackReadService, context, asOfRequest);
       var sqlServerAsOfProjections = await ProjectLatestRowsAsync(sqlServerReadService, context, asOfRequest);
+      var oracleAsOfProjections = await ProjectLatestRowsAsync(oracleReadService, context, asOfRequest);
 
       Assert.Equal(FormatSatelliteRows(fallbackLatestRows), FormatSatelliteRows(sqlServerLatestRows));
+      Assert.Equal(FormatSatelliteRows(fallbackLatestRows), FormatSatelliteRows(oracleLatestRows));
       Assert.Equal(FormatSatelliteRows(fallbackAsOfRows), FormatSatelliteRows(sqlServerAsOfRows));
+      Assert.Equal(FormatSatelliteRows(fallbackAsOfRows), FormatSatelliteRows(oracleAsOfRows));
       Assert.Equal(["Alice Baker|Platinum|profile-hash-2"], fallbackLatestProjections);
       Assert.Equal(fallbackLatestProjections, sqlServerLatestProjections);
+      Assert.Equal(fallbackLatestProjections, oracleLatestProjections);
       Assert.Equal(["Alice Adams|Gold|profile-hash-1"], fallbackAsOfProjections);
       Assert.Equal(fallbackAsOfProjections, sqlServerAsOfProjections);
+      Assert.Equal(fallbackAsOfProjections, oracleAsOfProjections);
     }
   }
 

@@ -8,7 +8,7 @@ namespace DCoding.Data.DVault;
 /// </summary>
 public static class DVaultOracleServiceCollectionExtensions {
   /// <summary>
-  /// Adds DVault defaults plus the Oracle optimized save-strategy boundary and PIT/bridge read strategy candidates.
+  /// Adds DVault defaults plus the Oracle optimized save-strategy boundary and latest-satellite/PIT/bridge read strategy candidates.
   /// </summary>
   /// <param name="services">The service collection used by the application startup pipeline.</param>
   /// <returns>The same service collection so startup configuration can continue fluently.</returns>
@@ -21,6 +21,7 @@ public static class DVaultOracleServiceCollectionExtensions {
     services.AddDVault();
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBehavior, OracleDataVaultProviderBehavior>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, OracleDataVaultSaveStrategy>());
+    services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderReadStrategy, OracleDataVaultReadStrategy>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderPitReadStrategy, OracleDataVaultReadStrategy>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBridgeReadStrategy, OracleDataVaultReadStrategy>());
 

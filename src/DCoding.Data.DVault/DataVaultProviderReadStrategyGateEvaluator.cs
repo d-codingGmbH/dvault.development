@@ -123,6 +123,14 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
 
   public static DataVaultProviderReadStrategyGateEvaluation EvaluateOracle(
       DbContext dbContext,
+      DataVaultLatestSatelliteReadRequest request) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    return EvaluateOracle(dbContext.Database.ProviderName, request);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateOracle(
+      DbContext dbContext,
       DataVaultPitAsOfReadRequest request) {
     ArgumentNullException.ThrowIfNull(dbContext);
 
@@ -445,6 +453,16 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
 
   public static DataVaultProviderReadStrategyGateEvaluation EvaluateOracle(
       string? providerName,
+      DataVaultLatestSatelliteReadRequest request) {
+    return EvaluateLatestSatellite(
+        DataVaultKnownProviderReadStrategy.Oracle,
+        providerName,
+        request,
+        supportedProviderNames: [KnownProviderNames.Oracle]);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateOracle(
+      string? providerName,
       DataVaultPitAsOfReadRequest request) {
     return EvaluateOracle(providerName, request, hasCompleteReadShapeEvidence: true);
   }
@@ -579,6 +597,7 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
     evaluation = strategy.GetType().Name switch {
       "SqliteDataVaultReadStrategy" => EvaluateSqlite(dbContext, request),
       "SqlServerDataVaultReadStrategy" => EvaluateSqlServer(dbContext, request),
+      "OracleDataVaultReadStrategy" => EvaluateOracle(dbContext, request),
       _ => new DataVaultProviderReadStrategyGateEvaluation(false, Array.Empty<DataVaultReadStrategyFallbackCause>()),
     };
 
@@ -650,6 +669,11 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported),
       ],
       "SqlServerDataVaultReadStrategy" => [
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported),
+      ],
+      "OracleDataVaultReadStrategy" => [
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent),
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported),

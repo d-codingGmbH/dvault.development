@@ -128,6 +128,7 @@ internal static class DataVaultBenchmarkHelpers {
       return strategy switch {
         DataVaultBenchmarkStrategy.SqliteOptimized => "SqliteDataVaultReadStrategy",
         DataVaultBenchmarkStrategy.SqlServerOptimized => "SqlServerDataVaultReadStrategy",
+        DataVaultBenchmarkStrategy.OracleOptimized => "OracleDataVaultReadStrategy",
         _ => null,
       };
     }

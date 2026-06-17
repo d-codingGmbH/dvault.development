@@ -153,17 +153,22 @@ public sealed class DataVaultProviderReadStrategyTests {
   }
 
   [Fact]
-  public void SqlServerLatestSatelliteReadGateAcceptsHubParentOrdinarySatellites() {
-    var supported = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlServer(
+  public void SqlServerAndOracleLatestSatelliteReadGatesAcceptHubParentOrdinarySatellites() {
+    var sqlServerSupported = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlServer(
         KnownProviderNames.SqlServer,
         CreateReadRequest(["customer-hk"]));
+    var oracleSupported = DataVaultProviderReadStrategyGateEvaluator.EvaluateOracle(
+        KnownProviderNames.Oracle,
+        CreateReadRequest(["customer-hk"]));
 
-    Assert.True(supported.CanRead);
-    Assert.Empty(supported.FallbackCauses);
+    Assert.True(sqlServerSupported.CanRead);
+    Assert.Empty(sqlServerSupported.FallbackCauses);
+    Assert.True(oracleSupported.CanRead);
+    Assert.Empty(oracleSupported.FallbackCauses);
   }
 
   [Fact]
-  public void SqlServerLatestSatelliteReadGateFailsClosedForMismatchedProviderOrUnsupportedShapes() {
+  public void SqlServerAndOracleLatestSatelliteReadGatesFailClosedForMismatchedProviderOrUnsupportedShapes() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var linkParentSatellite = new DataVaultSatelliteMetadata(
         "Fulfillment",
@@ -184,6 +189,15 @@ public sealed class DataVaultProviderReadStrategyTests {
     var multiActive = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlServer(
         KnownProviderNames.SqlServer,
         new DataVaultLatestSatelliteReadRequest(multiActiveSatellite, ["customer-hk"]));
+    var oracleProviderMismatch = DataVaultProviderReadStrategyGateEvaluator.EvaluateOracle(
+        KnownProviderNames.SqlServer,
+        CreateReadRequest(["customer-hk"]));
+    var oracleUnsupportedParent = DataVaultProviderReadStrategyGateEvaluator.EvaluateOracle(
+        KnownProviderNames.Oracle,
+        new DataVaultLatestSatelliteReadRequest(linkParentSatellite, ["link-hk"]));
+    var oracleMultiActive = DataVaultProviderReadStrategyGateEvaluator.EvaluateOracle(
+        KnownProviderNames.Oracle,
+        new DataVaultLatestSatelliteReadRequest(multiActiveSatellite, ["customer-hk"]));
 
     Assert.False(providerMismatch.CanRead);
     Assert.Contains(
@@ -196,6 +210,18 @@ public sealed class DataVaultProviderReadStrategyTests {
     Assert.False(multiActive.CanRead);
     Assert.Contains(
         multiActive.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
+    Assert.False(oracleProviderMismatch.CanRead);
+    Assert.Contains(
+        oracleProviderMismatch.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch);
+    Assert.False(oracleUnsupportedParent.CanRead);
+    Assert.Contains(
+        oracleUnsupportedParent.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent);
+    Assert.False(oracleMultiActive.CanRead);
+    Assert.Contains(
+        oracleMultiActive.FallbackCauses,
         cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
   }
 
