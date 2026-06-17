@@ -725,6 +725,30 @@ public sealed class DataVaultDiagnosticsTests {
         forbiddenValues: ["secret-bridge-fallback-hash-key"]);
   }
 
+  [Theory]
+  [InlineData("SqliteDataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, true, "SQLite")]
+  [InlineData("SqlServerDataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, true, "SQL Server")]
+  [InlineData("Db2DataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, true, "DB2")]
+  [InlineData("PostgresDataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, false, "PostgreSQL")]
+  [InlineData("MySqlDataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, false, "MySQL")]
+  [InlineData("OracleDataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, true, "Oracle")]
+  [InlineData("PostgresDataVaultReadStrategy", DataVaultReadShapeKind.PitAsOf, true, "PostgreSQL")]
+  [InlineData("MySqlDataVaultReadStrategy", DataVaultReadShapeKind.PitAsOf, true, "MySQL")]
+  [InlineData("OracleDataVaultReadStrategy", DataVaultReadShapeKind.Bridge, true, "Oracle")]
+  [InlineData("Db2DataVaultReadStrategy", DataVaultReadShapeKind.Bridge, true, "DB2")]
+  public void ReadProviderTuningRecognizesRepositoryProvenOptimizedProviderBoundaries(
+      string strategyName,
+      DataVaultReadShapeKind readShapeKind,
+      bool expectedRepositoryProven,
+      string expectedProviderName) {
+    Assert.Equal(
+        expectedRepositoryProven,
+        DefaultDataVaultDiagnosticsService.IsRepositoryProvenOptimizedReadStrategy(strategyName, readShapeKind));
+    Assert.Equal(
+        expectedProviderName,
+        DefaultDataVaultDiagnosticsService.FormatOptimizedReadProviderName(strategyName));
+  }
+
   [Fact]
   public void SupportBundleSerializesSaveProviderTuningThresholdFactsWithoutRequestValues() {
     var metadata = CreateReadShapeMetadata();
@@ -1029,6 +1053,9 @@ public sealed class DataVaultDiagnosticsTests {
             bridge,
             DataVaultBridgeTraversalEndpoint.From,
             ["customer-hk"]));
+    var supportedDb2Latest = DataVaultProviderReadStrategyGateEvaluator.EvaluateDb2(
+        KnownProviderNames.Db2,
+        new DataVaultLatestSatelliteReadRequest(supportedSatellite, ["customer-hk"]));
     var supportedDb2Pit = DataVaultProviderReadStrategyGateEvaluator.EvaluateDb2(
         KnownProviderNames.Db2,
         new DataVaultPitAsOfReadRequest(
@@ -1048,6 +1075,8 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Empty(supportedPit.FallbackCauses);
     Assert.True(supportedBridge.CanRead);
     Assert.Empty(supportedBridge.FallbackCauses);
+    Assert.True(supportedDb2Latest.CanRead);
+    Assert.Empty(supportedDb2Latest.FallbackCauses);
     Assert.True(supportedDb2Pit.CanRead);
     Assert.Empty(supportedDb2Pit.FallbackCauses);
     Assert.True(supportedDb2Bridge.CanRead);
@@ -1080,6 +1109,7 @@ public sealed class DataVaultDiagnosticsTests {
     IDataVaultProviderBridgeReadStrategy mySqlBridgeReadStrategy = new MySqlDataVaultReadStrategy();
     IDataVaultProviderPitReadStrategy oraclePitReadStrategy = new OracleDataVaultReadStrategy();
     IDataVaultProviderBridgeReadStrategy oracleBridgeReadStrategy = new OracleDataVaultReadStrategy();
+    IDataVaultProviderReadStrategy db2LatestReadStrategy = new Db2DataVaultReadStrategy();
     IDataVaultProviderPitReadStrategy db2PitReadStrategy = new Db2DataVaultReadStrategy();
     IDataVaultProviderBridgeReadStrategy db2BridgeReadStrategy = new Db2DataVaultReadStrategy();
     Assert.Equal(
@@ -1096,6 +1126,9 @@ public sealed class DataVaultDiagnosticsTests {
         DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(oracleBridgeReadStrategy));
     Assert.Equal(
         [KnownProviderNames.Db2],
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(db2LatestReadStrategy));
+    Assert.Equal(
+        [KnownProviderNames.Db2],
         DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(db2PitReadStrategy));
     Assert.Equal(
         [KnownProviderNames.Db2],
@@ -1109,6 +1142,9 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains(
         DataVaultProviderReadStrategyGateEvaluator.GetKnownPitGateRequirements(db2PitReadStrategy),
         requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownLatestSatelliteGateRequirements(db2LatestReadStrategy),
+        requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
     Assert.Contains(
         DataVaultProviderReadStrategyGateEvaluator.GetKnownBridgeGateRequirements(db2BridgeReadStrategy),
         requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.StaleReadModelMaintenance);

@@ -127,7 +127,7 @@ public sealed class Db2DataVaultSmokeTests {
   }
 
   [Fact]
-  public async Task AddDVaultDb2ReadsLatestThroughFallbackAndPitBridgeThroughProviderStrategiesWhenConfigured() {
+  public async Task AddDVaultDb2ReadsLatestPitAndBridgeThroughProviderStrategiesWhenConfigured() {
     await using var database = await Db2SmokeDatabase.CreateAsync();
     using var provider = CreateServiceProvider();
     var saveService = provider.GetRequiredService<IDataVaultSaveService>();
@@ -219,8 +219,11 @@ public sealed class Db2DataVaultSmokeTests {
         DataVaultBridgeTraversalEndpoint.From,
         [customerHashKey]);
 
-    AssertProviderNeutralReadDiagnostics(
+    AssertDb2ReadStrategyDiagnostics(
         readDiagnostics.Analyze(context, latestRequest),
+        DataVaultReadShapeKind.LatestSatellite);
+    AssertDb2ReadStrategyDiagnostics(
+        readDiagnostics.Analyze(context, asOfRequest),
         DataVaultReadShapeKind.LatestSatellite);
     AssertDb2ReadStrategyDiagnostics(
         readDiagnostics.Analyze(context, pitRequest),
@@ -310,23 +313,6 @@ public sealed class Db2DataVaultSmokeTests {
         candidate => string.Equals(candidate.StrategyName, "Db2DataVaultSaveStrategy", StringComparison.Ordinal) &&
             candidate.CanSave);
     Assert.Empty(diagnostics.SaveStrategy.FallbackCauses);
-  }
-
-  private static void AssertProviderNeutralReadDiagnostics(
-      DataVaultDiagnosticsResult diagnostics,
-      DataVaultReadShapeKind expectedShapeKind) {
-    Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback, diagnostics.ReadStrategy.Status);
-    Assert.Equal(Db2ProviderName, diagnostics.ReadStrategy.ProviderName);
-    Assert.Null(diagnostics.ReadStrategy.SelectedStrategyName);
-    Assert.Empty(diagnostics.ReadStrategy.Candidates);
-    Assert.Contains(
-        diagnostics.ReadStrategy.FallbackCauses,
-        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered);
-    Assert.NotNull(diagnostics.ReadShape);
-    Assert.Equal(expectedShapeKind, diagnostics.ReadShape!.Kind);
-    Assert.Equal(
-        DataVaultReadStrategyDiagnosticsStatus.ProviderNeutralFallback,
-        diagnostics.ReadShape.Provider.ReadStrategyStatus);
   }
 
   private static void AssertDb2ReadStrategyDiagnostics(

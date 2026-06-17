@@ -129,6 +129,7 @@ internal static class DataVaultBenchmarkHelpers {
         DataVaultBenchmarkStrategy.SqliteOptimized => "SqliteDataVaultReadStrategy",
         DataVaultBenchmarkStrategy.SqlServerOptimized => "SqlServerDataVaultReadStrategy",
         DataVaultBenchmarkStrategy.OracleOptimized => "OracleDataVaultReadStrategy",
+        DataVaultBenchmarkStrategy.Db2Optimized => "Db2DataVaultReadStrategy",
         _ => null,
       };
     }

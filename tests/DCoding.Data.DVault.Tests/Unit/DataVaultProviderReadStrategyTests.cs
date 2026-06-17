@@ -226,6 +226,53 @@ public sealed class DataVaultProviderReadStrategyTests {
   }
 
   [Fact]
+  public void Db2LatestSatelliteReadGateAcceptsHubParentOrdinarySatellites() {
+    var supported = DataVaultProviderReadStrategyGateEvaluator.EvaluateDb2(
+        KnownProviderNames.Db2,
+        CreateReadRequest(["customer-hk"]));
+
+    Assert.True(supported.CanRead);
+    Assert.Empty(supported.FallbackCauses);
+  }
+
+  [Fact]
+  public void Db2LatestSatelliteReadGateFailsClosedForMismatchedProviderOrUnsupportedShapes() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var linkParentSatellite = new DataVaultSatelliteMetadata(
+        "Fulfillment",
+        DataVaultMetadataReference.Link("OrderProduct"),
+        ["State"]);
+    var multiActiveSatellite = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email Address"],
+        ["Contact Type"]);
+
+    var providerMismatch = DataVaultProviderReadStrategyGateEvaluator.EvaluateDb2(
+        KnownProviderNames.SqlServer,
+        CreateReadRequest(["customer-hk"]));
+    var unsupportedParent = DataVaultProviderReadStrategyGateEvaluator.EvaluateDb2(
+        KnownProviderNames.Db2,
+        new DataVaultLatestSatelliteReadRequest(linkParentSatellite, ["link-hk"]));
+    var multiActive = DataVaultProviderReadStrategyGateEvaluator.EvaluateDb2(
+        KnownProviderNames.Db2,
+        new DataVaultLatestSatelliteReadRequest(multiActiveSatellite, ["customer-hk"]));
+
+    Assert.False(providerMismatch.CanRead);
+    Assert.Contains(
+        providerMismatch.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch);
+    Assert.False(unsupportedParent.CanRead);
+    Assert.Contains(
+        unsupportedParent.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent);
+    Assert.False(multiActive.CanRead);
+    Assert.Contains(
+        multiActive.FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
+  }
+
+  [Fact]
   public void PostgresAndSqlServerPitReadGatesAcceptPublishedMaintainedPitShapes() {
     var hubPit = new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["Profile"]);
     var hubMultiActivePit = new DataVaultPitMetadata(

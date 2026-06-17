@@ -1062,7 +1062,7 @@
       "meanAllocatedBytes": null,
       "minAllocatedBytes": null,
       "maxAllocatedBytes": null,
-      "executionDetail": "scenario=latest-satellite-read; provider=DB2 external provider; baseline=dvault-adddvaultdb2-optimized; strategyFamily=db2-optimized-dvault; executionPath=DVault DB2 provider package latest satellite read path; selectedStrategy=\u003Cnone\u003E; plannedReadStrategy=\u003Cnone\u003E; providerSpecificReadStrategy=not registered for latest satellite reads; readShape=LatestSatellite; hashKeyVariant=sha256-v1-hex; stableHashAlgorithm=sha256-v1; digestBytes=32; hashKeyStorage=HexString; hashKeyPayloadBytes=64",
+      "executionDetail": "scenario=latest-satellite-read; provider=DB2 external provider; baseline=dvault-adddvaultdb2-optimized; strategyFamily=db2-optimized-dvault; executionPath=DVault DB2 optimized latest satellite read path; selectedStrategy=Db2DataVaultReadStrategy; plannedReadStrategy=Db2DataVaultReadStrategy; readShape=LatestSatellite; hashKeyVariant=sha256-v1-hex; stableHashAlgorithm=sha256-v1; digestBytes=32; hashKeyStorage=HexString; hashKeyPayloadBytes=64",
       "persistedOutcome": "not executed"
     },
     {

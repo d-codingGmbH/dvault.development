@@ -32,9 +32,9 @@ The evidence and gap matrices remain the source documents for row-level facts an
 - Use the gap matrix as the canonical source for follow-up recommendations:
   - at the v0.39 documentation baseline, non-SQLite `latest-satellite-read` remained a capability-gap recommendation set; later provider-specific closures should be reflected in the current gap matrix rather than backported as v0.39 timing evidence
   - external-provider save, PIT, and bridge rows remain evidence-gap recommendations until completed provider-configured benchmark artifacts exist
-- Preserve the current DB2 boundary from the checked-in baseline:
+- Preserve the DB2 boundary that was current for the v0.39 checked-in baseline:
   - diagnostics-gated clean-context save and PIT/bridge candidate behavior may be documented
-  - completed DB2 timing, latest-satellite optimization, staged DB2 bulk, provider-native chunk execution, and live-schema reading must remain out of scope
+  - completed DB2 timing, latest-satellite optimization, staged DB2 bulk, provider-native chunk execution, and live-schema reading remained out of scope for that refinement
 - Preserve the established release-note pattern unless another ticket changes it explicitly: v0.39.0 should continue the coordinated release-label documentation model over the visible `8.39.0` and `10.39.0` consumer package-version lines.
 
 ## Acceptance Boundary

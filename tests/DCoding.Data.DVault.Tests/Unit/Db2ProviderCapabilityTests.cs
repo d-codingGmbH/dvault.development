@@ -14,6 +14,7 @@ public sealed class Db2ProviderCapabilityTests {
       using var provider = services.BuildServiceProvider(validateScopes: true);
 
       Assert.Contains(provider.GetServices<IDataVaultProviderSaveStrategy>(), strategy => strategy is Db2DataVaultSaveStrategy);
+      Assert.Contains(provider.GetServices<IDataVaultProviderReadStrategy>(), strategy => strategy is Db2DataVaultReadStrategy);
       Assert.Contains(provider.GetServices<IDataVaultProviderPitReadStrategy>(), strategy => strategy is Db2DataVaultReadStrategy);
       Assert.Contains(provider.GetServices<IDataVaultProviderBridgeReadStrategy>(), strategy => strategy is Db2DataVaultReadStrategy);
       Assert.Same(

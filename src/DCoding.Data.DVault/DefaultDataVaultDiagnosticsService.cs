@@ -881,10 +881,10 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         "Read-model heavy",
         "Read diagnostics provide provider-neutral " +
         readShapeKind +
-        " guidance; SQLite, SQL Server, and Oracle are repository-proven optimized latest-satellite providers, while SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2 are repository-proven optimized PIT/bridge providers when diagnostics select their candidates. Unsupported providers, unsupported shapes, or incomplete read-shape evidence remain fallback guidance.");
+        " guidance; SQLite, SQL Server, Oracle, and DB2 are repository-proven optimized latest-satellite providers for supported shapes, while SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2 are repository-proven optimized PIT/bridge providers when diagnostics select their candidates. Unsupported providers, unsupported shapes, or incomplete read-shape evidence remain fallback guidance.");
   }
 
-  private static bool IsRepositoryProvenOptimizedReadStrategy(
+  internal static bool IsRepositoryProvenOptimizedReadStrategy(
       string? selectedStrategyName,
       DataVaultReadShapeKind readShapeKind) {
     return selectedStrategyName switch {
@@ -893,12 +893,12 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       "SqlServerDataVaultReadStrategy" => readShapeKind is DataVaultReadShapeKind.LatestSatellite or DataVaultReadShapeKind.PitAsOf or DataVaultReadShapeKind.Bridge,
       "MySqlDataVaultReadStrategy" => readShapeKind is DataVaultReadShapeKind.PitAsOf or DataVaultReadShapeKind.Bridge,
       "OracleDataVaultReadStrategy" => readShapeKind is DataVaultReadShapeKind.LatestSatellite or DataVaultReadShapeKind.PitAsOf or DataVaultReadShapeKind.Bridge,
-      "Db2DataVaultReadStrategy" => readShapeKind is DataVaultReadShapeKind.PitAsOf or DataVaultReadShapeKind.Bridge,
+      "Db2DataVaultReadStrategy" => true,
       _ => false,
     };
   }
 
-  private static string FormatOptimizedReadProviderName(string? selectedStrategyName) {
+  internal static string FormatOptimizedReadProviderName(string? selectedStrategyName) {
     return selectedStrategyName switch {
       "SqliteDataVaultReadStrategy" => "SQLite",
       "PostgresDataVaultReadStrategy" => "PostgreSQL",

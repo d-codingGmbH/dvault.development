@@ -257,7 +257,8 @@ public sealed class ExplicitDataVaultSaveServiceTests {
         expectedLatestSatelliteStrategyName: "OracleDataVaultReadStrategy");
     AssertProviderPitBridgeReadRegistration(
         services => services.AddDVaultDb2(),
-        "Db2DataVaultReadStrategy");
+        "Db2DataVaultReadStrategy",
+        expectedLatestSatelliteStrategyName: "Db2DataVaultReadStrategy");
   }
 
   [Fact]
