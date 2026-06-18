@@ -21,6 +21,9 @@ public sealed class MySqlProviderCapabilityTests {
 
       Assert.Contains(strategies, strategy => strategy is MySqlStagedDataVaultSaveStrategy and IDataVaultProviderStagedBulkSaveDiagnostics);
       Assert.Contains(strategies, strategy => strategy is MySqlDataVaultSaveStrategy);
+      Assert.Contains(provider.GetServices<IDataVaultProviderReadStrategy>(), strategy => strategy is MySqlDataVaultReadStrategy);
+      Assert.Contains(provider.GetServices<IDataVaultProviderPitReadStrategy>(), strategy => strategy is MySqlDataVaultReadStrategy);
+      Assert.Contains(provider.GetServices<IDataVaultProviderBridgeReadStrategy>(), strategy => strategy is MySqlDataVaultReadStrategy);
       Assert.Same(
           DataVaultProviderCapabilityProfiles.MySql,
           DataVaultProviderCapabilityProfileSelection.Select(MySqlDataVaultSaveStrategy.PomeloProviderName));
@@ -229,6 +232,33 @@ public sealed class MySqlProviderCapabilityTests {
         "ROW_NUMBER() OVER (PARTITION BY `CustomerHashKey` ORDER BY `LoadTimestamp` DESC) AS `__dvault_row_number` " +
         "FROM `Sat``CustomerProfile` WHERE `CustomerHashKey` IN (@p0, @p1)) AS `__dvault_latest` " +
         "WHERE `__dvault_row_number` = 1",
+        commandText);
+  }
+
+  [Fact]
+  public void MySqlReadStrategyBuildsWindowFunctionForLatestSatelliteRows() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["Name"]);
+    var projection = DataVaultSatelliteReadPipeline.CreateSatelliteProjection(profile);
+    var strategy = new MySqlDataVaultReadStrategy();
+    using var context = new DbContext(new DbContextOptionsBuilder().Options);
+
+    var commandText = strategy.CreateLatestRowsCommandText(
+        context,
+        projection,
+        ["CustomerHashKey", "HashDiff", "LoadTimestamp", "RecordSource", "Name"],
+        parentHashKeyCount: 2,
+        hasAsOf: true);
+
+    Assert.Equal(
+        "SELECT `CustomerHashKey`, `HashDiff`, `LoadTimestamp`, `RecordSource`, `Name` FROM " +
+        "(SELECT `CustomerHashKey`, `HashDiff`, `LoadTimestamp`, `RecordSource`, `Name`, " +
+        "ROW_NUMBER() OVER (PARTITION BY `CustomerHashKey` ORDER BY `LoadTimestamp` DESC) AS `__dvault_row_number` " +
+        "FROM `SatCustomerProfile` WHERE `CustomerHashKey` IN (@p0, @p1) AND `LoadTimestamp` <= @p2) " +
+        "AS `__dvault_latest` WHERE `__dvault_row_number` = 1 ORDER BY `CustomerHashKey`",
         commandText);
   }
 

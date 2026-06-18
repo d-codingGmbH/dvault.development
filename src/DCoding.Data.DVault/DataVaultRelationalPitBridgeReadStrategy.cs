@@ -8,15 +8,52 @@ using Microsoft.EntityFrameworkCore.Storage;
 namespace DCoding.Data.DVault;
 
 internal abstract class DataVaultRelationalPitBridgeReadStrategy :
+    IDataVaultProviderReadStrategy,
     IDataVaultProviderPitReadStrategy,
     IDataVaultProviderBridgeReadStrategy {
   public int Priority => 100;
 
   protected abstract int MaxCommandParameterCount { get; }
 
+  public virtual bool CanReadLatestSatelliteRows(DbContext dbContext, DataVaultLatestSatelliteReadRequest request) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(request);
+
+    return false;
+  }
+
   public abstract bool CanReadPitRows(DbContext dbContext, DataVaultPitAsOfReadRequest request);
 
   public abstract bool CanReadBridgeRows(DbContext dbContext, DataVaultBridgeReadRequest request);
+
+  public async Task<IReadOnlyList<DataVaultSatelliteReadRecord>> ReadLatestSatelliteRowsAsync(
+      DataVaultProviderReadStrategyContext context,
+      CancellationToken cancellationToken = default) {
+    ArgumentNullException.ThrowIfNull(context);
+
+    var projection = DataVaultSatelliteReadPipeline.CreateSatelliteProjection(context.Request.Satellite);
+    var rows = await ReadLatestRowsAsync(context, projection, cancellationToken).ConfigureAwait(false);
+
+    return rows
+        .Select(row => DataVaultSatelliteReadPipeline.TryCreateReadRecord(projection, row))
+        .Where(row => row is not null)
+        .Cast<DataVaultSatelliteReadRecord>()
+        .OrderBy(row => row.ParentHashKey, StringComparer.Ordinal)
+        .ToArray();
+  }
+
+  public async Task<IReadOnlyList<DataVaultSatelliteProjectionRow>> ReadLatestSatelliteProjectionRowsAsync(
+      DataVaultProviderReadStrategyContext context,
+      CancellationToken cancellationToken = default) {
+    ArgumentNullException.ThrowIfNull(context);
+
+    var projection = DataVaultSatelliteReadPipeline.CreateSatelliteProjection(context.Request.Satellite);
+    var rows = await ReadLatestRowsAsync(context, projection, cancellationToken).ConfigureAwait(false);
+
+    return rows
+        .Select(row => DataVaultSatelliteReadPipeline.CreateProjectionRow(projection, row))
+        .ToArray();
+  }
 
   public async Task<IReadOnlyList<DataVaultPitReadRecord>> ReadPitRowsAsync(
       DataVaultProviderPitReadStrategyContext context,
@@ -108,6 +145,97 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
     return QuoteIdentifier(tableName);
   }
 
+  private async Task<IReadOnlyList<Dictionary<string, object>>> ReadLatestRowsAsync(
+      DataVaultProviderReadStrategyContext context,
+      DataVaultSatelliteReadPipeline.SatelliteReadProjection projection,
+      CancellationToken cancellationToken) {
+    if (context.Request.ParentHashKeys.Count == 0) {
+      return [];
+    }
+
+    var connection = context.DbContext.Database.GetDbConnection();
+    var shouldCloseConnection = connection.State != ConnectionState.Open;
+    if (shouldCloseConnection) {
+      await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    try {
+      var readRows = new List<Dictionary<string, object>>();
+      var selectedColumns = CreateLatestSelectedColumns(projection);
+      foreach (var parentHashKeyBatch in context.Request.ParentHashKeys.Chunk(GetLatestParentHashKeyBatchSize(context.Request))) {
+        readRows.AddRange(await ExecuteLatestRowsBatchAsync(
+            context,
+            projection,
+            selectedColumns,
+            parentHashKeyBatch,
+            connection,
+            cancellationToken).ConfigureAwait(false));
+      }
+
+      return readRows
+          .OrderBy(
+              row => row.TryGetValue(projection.ParentHashKeyColumnName, out var value) ? value as string : null,
+              StringComparer.Ordinal)
+          .ToArray();
+    }
+    finally {
+      if (shouldCloseConnection) {
+        await connection.CloseAsync().ConfigureAwait(false);
+      }
+    }
+  }
+
+  private async Task<IReadOnlyList<Dictionary<string, object>>> ExecuteLatestRowsBatchAsync(
+      DataVaultProviderReadStrategyContext context,
+      DataVaultSatelliteReadPipeline.SatelliteReadProjection projection,
+      IReadOnlyList<string> selectedColumns,
+      IReadOnlyList<string> parentHashKeyBatch,
+      DbConnection connection,
+      CancellationToken cancellationToken) {
+    await using var command = connection.CreateCommand();
+    command.Transaction = context.DbContext.Database.CurrentTransaction?.GetDbTransaction();
+    command.CommandText = CreateLatestRowsCommandText(
+        context.DbContext,
+        projection,
+        selectedColumns,
+        parentHashKeyBatch.Count,
+        context.Request.AsOf is not null);
+
+    var parameterIndex = 0;
+    foreach (var parentHashKey in parentHashKeyBatch) {
+      var parameter = command.CreateParameter();
+      parameter.ParameterName = CreateParameterName(parameterIndex);
+      parameter.Value = DataVaultHashKeyProviderValueConverter.ToProviderParameterValue(
+          context.DbContext,
+          projection.TableName,
+          projection.ParentHashKeyColumnName,
+          parentHashKey);
+      command.Parameters.Add(parameter);
+      parameterIndex++;
+    }
+
+    if (context.Request.AsOf is not null) {
+      var asOfParameter = command.CreateParameter();
+      asOfParameter.ParameterName = CreateParameterName(parameterIndex);
+      asOfParameter.Value = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          context.DbContext,
+          projection.TableName,
+          projection.LoadTimestampColumnName,
+          context.Request.AsOf.Value);
+      command.Parameters.Add(asOfParameter);
+    }
+
+    return await ReadCommandRowsAsync(
+        command,
+        selectedColumns,
+        cancellationToken,
+        (columnName, value) => DataVaultHashKeyProviderValueConverter.ReadProviderValue(
+            context.DbContext,
+            projection.TableName,
+            columnName,
+            value)).ConfigureAwait(false);
+  }
+
   private async Task<IReadOnlyDictionary<DataVaultPitReadPipeline.PitRowIdentityKey, DataVaultPitReadPipeline.MatchedPitRow>> ReadMatchedPitRowsAsync(
       DataVaultProviderPitReadStrategyContext context,
       DataVaultPitReadPipeline.PitReadProjection projection,
@@ -175,6 +303,64 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
     }
 
     return await ReadCommandRowsAsync(command, selectedColumns, cancellationToken).ConfigureAwait(false);
+  }
+
+  internal string CreateLatestRowsCommandText(
+      DbContext dbContext,
+      DataVaultSatelliteReadPipeline.SatelliteReadProjection projection,
+      IReadOnlyList<string> selectedColumns,
+      int parentHashKeyCount,
+      bool hasAsOf) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(projection);
+    ArgumentNullException.ThrowIfNull(selectedColumns);
+    if (parentHashKeyCount <= 0) {
+      throw new ArgumentOutOfRangeException(nameof(parentHashKeyCount));
+    }
+
+    var rowNumberAlias = "__dvault_row_number";
+    var latestAlias = "__dvault_latest";
+    var builder = new StringBuilder();
+    builder.Append("SELECT ");
+    AppendColumnList(builder, selectedColumns);
+    builder.Append(" FROM (SELECT ");
+    AppendColumnList(builder, selectedColumns);
+    builder.Append(", ROW_NUMBER() OVER (PARTITION BY ")
+        .Append(QuoteIdentifier(projection.ParentHashKeyColumnName))
+        .Append(" ORDER BY ")
+        .Append(QuoteIdentifier(projection.LoadTimestampColumnName))
+        .Append(" DESC) AS ")
+        .Append(QuoteIdentifier(rowNumberAlias))
+        .Append(" FROM ")
+        .Append(QuoteTableIdentifier(dbContext, projection.TableName))
+        .Append(" WHERE ")
+        .Append(QuoteIdentifier(projection.ParentHashKeyColumnName))
+        .Append(" IN (");
+
+    for (var index = 0; index < parentHashKeyCount; index++) {
+      if (index > 0) {
+        builder.Append(", ");
+      }
+
+      builder.Append(CreateParameterPlaceholder(index));
+    }
+
+    builder.Append(')');
+    if (hasAsOf) {
+      builder.Append(" AND ")
+          .Append(QuoteIdentifier(projection.LoadTimestampColumnName))
+          .Append(" <= ")
+          .Append(CreateParameterPlaceholder(parentHashKeyCount));
+    }
+
+    builder.Append(") AS ")
+        .Append(QuoteIdentifier(latestAlias))
+        .Append(" WHERE ")
+        .Append(QuoteIdentifier(rowNumberAlias))
+        .Append(" = 1 ORDER BY ")
+        .Append(QuoteIdentifier(projection.ParentHashKeyColumnName));
+
+    return builder.ToString();
   }
 
   private async Task<IReadOnlyList<Dictionary<string, object>>> ReadBridgeRowsAsync(
@@ -383,6 +569,17 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
     return builder.ToString();
   }
 
+  private static IReadOnlyList<string> CreateLatestSelectedColumns(
+      DataVaultSatelliteReadPipeline.SatelliteReadProjection projection) {
+    return [
+        projection.ParentHashKeyColumnName,
+        projection.HashDiffColumnName,
+        projection.LoadTimestampColumnName,
+        projection.RecordSourceColumnName,
+        .. projection.PayloadColumnNames,
+    ];
+  }
+
   private static IReadOnlyList<string> CreatePitSelectedColumns(
       DataVaultPitReadPipeline.PitReadProjection projection) {
     return [
@@ -407,6 +604,13 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
     return Math.Min(
         DataVaultPitReadPipeline.ParentHashKeyBatchSize,
         MaxCommandParameterCount);
+  }
+
+  private int GetLatestParentHashKeyBatchSize(DataVaultLatestSatelliteReadRequest request) {
+    var asOfParameterCount = request.AsOf.HasValue ? 1 : 0;
+    return Math.Min(
+        DataVaultSatelliteReadPipeline.ParentHashKeyBatchSize,
+        MaxCommandParameterCount - asOfParameterCount);
   }
 
   private int GetBridgeEndpointHashKeyBatchSize(DataVaultBridgeReadRequest request) {

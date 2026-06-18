@@ -247,18 +247,19 @@ public sealed class ExplicitDataVaultSaveServiceTests {
     AssertProviderPitBridgeReadRegistration(
         services => services.AddDVaultSqlServer(),
         "SqlServerDataVaultReadStrategy",
-        expectedLatestSatelliteStrategyName: "SqlServerDataVaultReadStrategy");
+        expectLatestSatelliteReadRegistration: true);
     AssertProviderPitBridgeReadRegistration(
         services => services.AddDVaultMySql(),
-        "MySqlDataVaultReadStrategy");
+        "MySqlDataVaultReadStrategy",
+        expectLatestSatelliteReadRegistration: true);
     AssertProviderPitBridgeReadRegistration(
         services => services.AddDVaultOracle(),
         "OracleDataVaultReadStrategy",
-        expectedLatestSatelliteStrategyName: "OracleDataVaultReadStrategy");
+        expectLatestSatelliteReadRegistration: true);
     AssertProviderPitBridgeReadRegistration(
         services => services.AddDVaultDb2(),
         "Db2DataVaultReadStrategy",
-        expectedLatestSatelliteStrategyName: "Db2DataVaultReadStrategy");
+        expectLatestSatelliteReadRegistration: true);
   }
 
   [Fact]
@@ -851,7 +852,7 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   private static void AssertProviderPitBridgeReadRegistration(
       Action<IServiceCollection> configure,
       string expectedStrategyName,
-      string? expectedLatestSatelliteStrategyName = null) {
+      bool expectLatestSatelliteReadRegistration = false) {
     try {
       var services = new ServiceCollection();
 
@@ -859,13 +860,11 @@ public sealed class ExplicitDataVaultSaveServiceTests {
 
       using var provider = services.BuildServiceProvider(validateScopes: true);
 
-      if (expectedLatestSatelliteStrategyName is null) {
-        Assert.Empty(provider.GetServices<IDataVaultProviderReadStrategy>());
+      if (expectLatestSatelliteReadRegistration) {
+        Assert.Equal(expectedStrategyName, Assert.Single(provider.GetServices<IDataVaultProviderReadStrategy>()).GetType().Name);
       }
       else {
-        Assert.Equal(
-            expectedLatestSatelliteStrategyName,
-            Assert.Single(provider.GetServices<IDataVaultProviderReadStrategy>()).GetType().Name);
+        Assert.Empty(provider.GetServices<IDataVaultProviderReadStrategy>());
       }
 
       Assert.Equal(expectedStrategyName, Assert.Single(provider.GetServices<IDataVaultProviderPitReadStrategy>()).GetType().Name);

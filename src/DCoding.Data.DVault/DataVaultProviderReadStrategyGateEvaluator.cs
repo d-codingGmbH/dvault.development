@@ -99,6 +99,14 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
 
   public static DataVaultProviderReadStrategyGateEvaluation EvaluateMySql(
       DbContext dbContext,
+      DataVaultLatestSatelliteReadRequest request) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    return EvaluateMySql(dbContext.Database.ProviderName, request);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateMySql(
+      DbContext dbContext,
       DataVaultPitAsOfReadRequest request) {
     ArgumentNullException.ThrowIfNull(dbContext);
 
@@ -397,6 +405,16 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
 
   public static DataVaultProviderReadStrategyGateEvaluation EvaluateMySql(
       string? providerName,
+      DataVaultLatestSatelliteReadRequest request) {
+    return EvaluateLatestSatellite(
+        DataVaultKnownProviderReadStrategy.MySql,
+        providerName,
+        request,
+        supportedProviderNames: [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle]);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluateMySql(
+      string? providerName,
       DataVaultPitAsOfReadRequest request) {
     return EvaluateMySql(providerName, request, hasCompleteReadShapeEvidence: true);
   }
@@ -615,6 +633,7 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
     evaluation = strategy.GetType().Name switch {
       "SqliteDataVaultReadStrategy" => EvaluateSqlite(dbContext, request),
       "SqlServerDataVaultReadStrategy" => EvaluateSqlServer(dbContext, request),
+      "MySqlDataVaultReadStrategy" => EvaluateMySql(dbContext, request),
       "OracleDataVaultReadStrategy" => EvaluateOracle(dbContext, request),
       "Db2DataVaultReadStrategy" => EvaluateDb2(dbContext, request),
       _ => new DataVaultProviderReadStrategyGateEvaluation(false, Array.Empty<DataVaultReadStrategyFallbackCause>()),
@@ -688,6 +707,11 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported),
       ],
       "SqlServerDataVaultReadStrategy" => [
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported),
+      ],
+      "MySqlDataVaultReadStrategy" => [
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent),
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported),

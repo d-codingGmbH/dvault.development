@@ -7,6 +7,15 @@ internal sealed class MySqlDataVaultReadStrategy : DataVaultRelationalPitBridgeR
 
   protected override int MaxCommandParameterCount => MySqlMaxCommandParameterCount;
 
+  public override bool CanReadLatestSatelliteRows(
+      DbContext dbContext,
+      DataVaultLatestSatelliteReadRequest request) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(request);
+
+    return DataVaultProviderReadStrategyGateEvaluator.EvaluateMySql(dbContext, request).CanRead;
+  }
+
   public override bool CanReadPitRows(
       DbContext dbContext,
       DataVaultPitAsOfReadRequest request) {

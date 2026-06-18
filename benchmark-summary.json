@@ -948,7 +948,7 @@
       "meanAllocatedBytes": null,
       "minAllocatedBytes": null,
       "maxAllocatedBytes": null,
-      "executionDetail": "scenario=latest-satellite-read; provider=MySQL external provider; baseline=dvault-adddvaultmysql-optimized; strategyFamily=mysql-optimized-dvault; executionPath=DVault MySQL provider package latest satellite read path; selectedStrategy=\u003Cnone\u003E; plannedReadStrategy=\u003Cnone\u003E; providerSpecificReadStrategy=not registered for latest satellite reads; readShape=LatestSatellite; hashKeyVariant=sha256-v1-hex; stableHashAlgorithm=sha256-v1; digestBytes=32; hashKeyStorage=HexString; hashKeyPayloadBytes=64",
+      "executionDetail": "scenario=latest-satellite-read; provider=MySQL external provider; baseline=dvault-adddvaultmysql-optimized; strategyFamily=mysql-optimized-dvault; executionPath=DVault MySQL optimized latest satellite read path; selectedStrategy=MySqlDataVaultReadStrategy; plannedReadStrategy=MySqlDataVaultReadStrategy; readShape=LatestSatellite; hashKeyVariant=sha256-v1-hex; stableHashAlgorithm=sha256-v1; digestBytes=32; hashKeyStorage=HexString; hashKeyPayloadBytes=64",
       "persistedOutcome": "not executed"
     },
     {

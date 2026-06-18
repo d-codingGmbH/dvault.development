@@ -226,6 +226,57 @@ public sealed class DataVaultProviderReadStrategyTests {
   }
 
   [Fact]
+  public void MySqlLatestSatelliteReadGateAcceptsPublishedHubParentShapeForPomeloAndOracleProviders() {
+    var request = CreateReadRequest(["customer-hk"]);
+
+    var pomelo = DataVaultProviderReadStrategyGateEvaluator.EvaluateMySql(
+        KnownProviderNames.MySqlPomelo,
+        request);
+    var oracle = DataVaultProviderReadStrategyGateEvaluator.EvaluateMySql(
+        KnownProviderNames.MySqlOracle,
+        request);
+
+    Assert.True(pomelo.CanRead);
+    Assert.Empty(pomelo.FallbackCauses);
+    Assert.True(oracle.CanRead);
+    Assert.Empty(oracle.FallbackCauses);
+  }
+
+  [Fact]
+  public void MySqlLatestSatelliteReadGateFailsClosedForProviderMismatchUnsupportedParentAndMultiActiveShapes() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var linkParentSatellite = new DataVaultSatelliteMetadata(
+        "Fulfillment",
+        DataVaultMetadataReference.Link("OrderProduct"),
+        ["State"]);
+    var multiActiveSatellite = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["Email"],
+        ["Contact Type"]);
+
+    var supportedRequest = CreateReadRequest(["customer-hk"]);
+    var unsupportedParentRequest = new DataVaultLatestSatelliteReadRequest(linkParentSatellite, ["link-hk"]);
+    var multiActiveRequest = new DataVaultLatestSatelliteReadRequest(multiActiveSatellite, ["customer-hk"]);
+
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateMySql(KnownProviderNames.Sqlite, supportedRequest)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateMySql(KnownProviderNames.MySqlPomelo, unsupportedParentRequest)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluateMySql(KnownProviderNames.MySqlOracle, multiActiveRequest)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
+  }
+
+  [Fact]
   public void Db2LatestSatelliteReadGateAcceptsHubParentOrdinarySatellites() {
     var supported = DataVaultProviderReadStrategyGateEvaluator.EvaluateDb2(
         KnownProviderNames.Db2,

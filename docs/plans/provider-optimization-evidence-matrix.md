@@ -211,9 +211,9 @@ Docs-owned rows use the same shape with `executionStatus=null`, `iterations=null
 - When a follow-up ticket needs a provider-evidence manifest, populate `dvault.provider-evidence.v1` rows from the contract above instead of inventing parallel fields or scraping human-only markdown tables.
 - Cite matrix rows with scenario, provider, baseline, and posture. Do not cite `skipped-placeholder`, `diagnostics-only`, `smoke-only`, or `storage-footprint` rows as measured provider performance.
 - Keep timing claims attached to the artifact triplet, run context, provider filter, load-timestamp storage, iteration count, warmup count, hardware, runtime, dataset size, request shape, provider configuration, and skip/failure rows.
-- SQLite is the only completed optimized latest-satellite timing row in the current baseline.
-- SQL Server, Oracle, and DB2 are diagnostics-gated latest-satellite, PIT, and bridge read-strategy candidates. Their checked-in latest-satellite root rows remain skipped placeholders when provider connection strings are unset and do not claim completed timing.
-- PostgreSQL and MySQL are diagnostics-gated PIT/bridge read-strategy candidates. Their latest-satellite requests remain provider-neutral unless a later ticket adds new benchmark-backed strategy evidence.
+- SQLite remains the only completed-timing optimized latest-satellite provider path in the current baseline.
+- SQL Server, MySQL, Oracle, and DB2 now have diagnostics-gated latest-satellite read-strategy registration; their root optional-provider rows remain skipped placeholders until the corresponding `DVAULT_TEST_*_CONNECTION_STRING` is configured, so no measured non-SQLite latest-satellite timing is claimed here.
+- PostgreSQL latest-satellite requests remain provider-neutral unless a later ticket adds new benchmark-backed strategy evidence. PostgreSQL, SQL Server, MySQL, Oracle, and DB2 remain diagnostics-gated PIT/bridge read-strategy candidates.
 - DB2 evidence includes skipped-placeholder benchmark rows for the existing clean-context save and read guidance lane, diagnostics-gated clean-context save behavior, diagnostics-gated latest-satellite/PIT/bridge read behavior, and opt-in live smoke evidence. Completed DB2 timing evidence, staged DB2 bulk, provider-native chunk execution, and DB2 live-schema reading remain unsupported in the current baseline.
 - Binary-vs-hex storage comparisons are SQLite-local to the checked-in hash-key storage bundle unless a future provider-specific bundle is added.
 
@@ -248,7 +248,7 @@ The root benchmark triplet keeps optional PostgreSQL, SQL Server, MySQL, Oracle,
 | Scenario | Provider | Baseline | Strategy family | Posture | Canonical row source | Claim boundary |
 | --- | --- | --- | --- | --- | --- | --- |
 | `latest-satellite-read` | SQLite local temporary files | `dvault-adddvault-fallback` | `provider-neutral-dvault-fallback` | `completed-timing` | Root benchmark triplet | Provider-neutral latest read over seeded profile states. |
-| `latest-satellite-read` | SQLite local temporary files | `dvault-adddvaultsqlite-optimized` | `sqlite-optimized-dvault` | `completed-timing` | Root benchmark triplet | SQLite optimized latest-satellite read selected `SqliteDataVaultReadStrategy`. This remains the completed timing comparator for provider-specific latest-satellite reads. |
+| `latest-satellite-read` | SQLite local temporary files | `dvault-adddvaultsqlite-optimized` | `sqlite-optimized-dvault` | `completed-timing` | Root benchmark triplet | SQLite optimized latest-satellite read selected `SqliteDataVaultReadStrategy`. This is the only completed-timing optimized latest-satellite provider path. |
 | `pit-as-of-read` | SQLite local temporary files | `dvault-adddvault-fallback` | `provider-neutral-dvault-fallback` | `completed-timing` | Root benchmark triplet | Provider-neutral PIT as-of read over explicitly maintained PIT rows. |
 | `pit-as-of-read` | SQLite local temporary files | `dvault-adddvaultsqlite-optimized` | `sqlite-optimized-dvault` | `completed-timing` | Root benchmark triplet | SQLite optimized PIT read selected `SqliteDataVaultReadStrategy`. |
 | `bridge-traversal-read` | SQLite local temporary files | `dvault-adddvault-fallback` | `provider-neutral-dvault-fallback` | `completed-timing` | Root benchmark triplet | Provider-neutral bridge traversal over explicitly maintained bridge rows. |
@@ -259,7 +259,7 @@ The root benchmark triplet keeps optional PostgreSQL, SQL Server, MySQL, Oracle,
 | `latest-satellite-read` | SQL Server external provider | `dvault-adddvaultsqlserver-optimized` | `sqlserver-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records planned `SqlServerDataVaultReadStrategy` for diagnostics-gated latest-satellite reads. The skipped placeholder is row identity and planned strategy evidence only, not completed SQL Server timing. |
 | `pit-as-of-read` | SQL Server external provider | `dvault-adddvaultsqlserver-optimized` | `sqlserver-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records planned `SqlServerDataVaultReadStrategy` for diagnostics-gated PIT reads. |
 | `bridge-traversal-read` | SQL Server external provider | `dvault-adddvaultsqlserver-optimized` | `sqlserver-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records planned `SqlServerDataVaultReadStrategy` for diagnostics-gated bridge reads. |
-| `latest-satellite-read` | MySQL external provider | `dvault-adddvaultmysql-optimized` | `mysql-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records `providerSpecificReadStrategy=not registered for latest satellite reads`; no MySQL latest-satellite optimization claim. |
+| `latest-satellite-read` | MySQL external provider | `dvault-adddvaultmysql-optimized` | `mysql-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records planned `MySqlDataVaultReadStrategy` for diagnostics-gated latest-satellite reads. No measured MySQL latest-satellite timing is claimed while the optional provider row is skipped. |
 | `pit-as-of-read` | MySQL external provider | `dvault-adddvaultmysql-optimized` | `mysql-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records planned `MySqlDataVaultReadStrategy` for diagnostics-gated PIT reads. |
 | `bridge-traversal-read` | MySQL external provider | `dvault-adddvaultmysql-optimized` | `mysql-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records planned `MySqlDataVaultReadStrategy` for diagnostics-gated bridge reads. |
 | `latest-satellite-read` | Oracle external provider | `dvault-adddvaultoracle-optimized` | `oracle-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records planned `OracleDataVaultReadStrategy` for diagnostics-gated latest-satellite reads. The skipped placeholder is row identity and planned strategy evidence only, not completed Oracle timing. |
@@ -305,7 +305,7 @@ Save claims must stop or fall back when any required benchmark row is skipped, a
 
 Chunked-save claims must also stop or fall back on `RetainedSatelliteSeriesLimitReached` when retained satellite continuity state exceeds the bounded in-memory limit.
 
-Read claims must stop or fall back when PIT or bridge rows are not explicitly maintained before read traffic, required read-shape evidence is missing, diagnostics do not select the expected strategy, PostgreSQL/MySQL latest-satellite optimization is requested, or any of these bounded fallback causes apply:
+Read claims must stop or fall back when PIT or bridge rows are not explicitly maintained before read traffic, required read-shape evidence is missing, diagnostics do not select the expected strategy, unsupported latest-satellite provider optimization is requested, or any of these bounded fallback causes apply:
 
 - `ProviderNameMismatch`
 - `UnknownOrUnregisteredProviderName`

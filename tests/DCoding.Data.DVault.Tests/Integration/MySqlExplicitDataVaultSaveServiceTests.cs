@@ -167,6 +167,108 @@ public sealed class MySqlExplicitDataVaultSaveServiceTests {
     }
   }
 
+  [Fact]
+  public async Task AddDVaultMySqlReadsLatestSatelliteRowsThroughProviderStrategyWhenConfigured() {
+    var configuration = MySqlIntegrationTestConfiguration.FromEnvironment();
+    if (!configuration.IsConfigured) {
+      Assert.Skip(MySqlIntegrationTestConfiguration.MissingConfigurationSkipMessage);
+    }
+
+    var options = CreateMySqlFallbackOptions(configuration.ConnectionString!);
+    var services = new ServiceCollection();
+    services.AddDVaultMySql();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var readService = provider.GetRequiredService<IDataVaultReadService>();
+    var readDiagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
+
+    await using var context = new MySqlFallbackSaveServiceContext(options);
+    await DropFallbackTablesIfExistsAsync(context);
+
+    try {
+      await context.Database.ExecuteSqlRawAsync(context.Database.GenerateCreateScript());
+
+      var hub = new DataVaultHubMetadata(FallbackHubName, [BusinessKeyName]);
+      var satellite = new DataVaultSatelliteMetadata(
+          FallbackSatelliteName,
+          hub.ToReference(),
+          [FallbackPayloadName]);
+      var hubResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              LoadTimestamp,
+              RecordSource,
+              [new DataVaultHubSaveOperation(hub, [new(BusinessKeyName, "MYSQL-READ-C-100")])],
+              []));
+      var parentHashKey = Assert.Single(hubResult.SavedRecords).HashKey;
+      var firstLoadTimestamp = LoadTimestamp.AddMinutes(1);
+      var secondLoadTimestamp = LoadTimestamp.AddMinutes(2);
+
+      await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              firstLoadTimestamp,
+              RecordSource,
+              [],
+              [],
+              [
+                  new DataVaultSatelliteSaveOperation(
+                      satellite,
+                      parentHashKey,
+                      [new(FallbackPayloadName, "Pending")],
+                      "mysql-profile-pending"),
+              ]));
+      await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              secondLoadTimestamp,
+              RecordSource,
+              [],
+              [],
+              [
+                  new DataVaultSatelliteSaveOperation(
+                      satellite,
+                      parentHashKey,
+                      [new(FallbackPayloadName, "Active")],
+                      "mysql-profile-active"),
+              ]));
+
+      context.ChangeTracker.Clear();
+
+      var latestRequest = new DataVaultLatestSatelliteReadRequest(
+          satellite,
+          [parentHashKey, "missing-mysql-parent"]);
+      var readDiagnosticResult = readDiagnostics.Analyze(context, latestRequest);
+
+      Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected, readDiagnosticResult.ReadStrategy.Status);
+      Assert.Equal("MySqlDataVaultReadStrategy", readDiagnosticResult.ReadStrategy.SelectedStrategyName);
+
+      var latestRows = await readService.ReadLatestSatelliteRowsAsync(context, latestRequest);
+      var latestRow = Assert.Single(latestRows);
+
+      Assert.Equal(FallbackSatelliteName, latestRow.MetadataName);
+      Assert.Equal(FallbackSatelliteTableName, latestRow.TableName);
+      Assert.Equal(parentHashKey, latestRow.ParentHashKey);
+      Assert.Equal("mysql-profile-active", latestRow.HashDiff);
+      Assert.Equal(secondLoadTimestamp, latestRow.LoadTimestamp);
+      Assert.Equal(RecordSource, latestRow.RecordSource);
+      Assert.Equal("Active", latestRow.PayloadValues[FallbackPayloadName]);
+
+      var asOfRows = await readService.ReadLatestSatelliteRowsAsync(
+          context,
+          new DataVaultLatestSatelliteReadRequest(satellite, [parentHashKey], firstLoadTimestamp));
+      var asOfRow = Assert.Single(asOfRows);
+
+      Assert.Equal("mysql-profile-pending", asOfRow.HashDiff);
+      Assert.Equal(firstLoadTimestamp, asOfRow.LoadTimestamp);
+      Assert.Equal("Pending", asOfRow.PayloadValues[FallbackPayloadName]);
+    }
+    finally {
+      await DropFallbackTablesIfExistsAsync(context);
+    }
+  }
+
   private static DbContextOptions<MySqlExplicitSaveServiceContext> CreateMySqlOptions(string connectionString) {
     var optionsBuilder = new DbContextOptionsBuilder<MySqlExplicitSaveServiceContext>();
 

@@ -180,7 +180,7 @@ internal static class BenchmarkExecutionDetails {
           "PostgresDataVaultReadStrategy",
       DataVaultBenchmarkHelpers.SqlServerOptimizedStrategyFamily when scenarioName is "latest-satellite-read" or "pit-as-of-read" or "bridge-traversal-read" =>
           "SqlServerDataVaultReadStrategy",
-      DataVaultBenchmarkHelpers.MySqlOptimizedStrategyFamily when scenarioName is "pit-as-of-read" or "bridge-traversal-read" =>
+      DataVaultBenchmarkHelpers.MySqlOptimizedStrategyFamily when scenarioName is "latest-satellite-read" or "pit-as-of-read" or "bridge-traversal-read" =>
           "MySqlDataVaultReadStrategy",
       DataVaultBenchmarkHelpers.OracleOptimizedStrategyFamily when scenarioName is "latest-satellite-read" or "pit-as-of-read" or "bridge-traversal-read" =>
           "OracleDataVaultReadStrategy",

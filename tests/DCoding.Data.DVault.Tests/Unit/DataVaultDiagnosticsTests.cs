@@ -730,7 +730,7 @@ public sealed class DataVaultDiagnosticsTests {
   [InlineData("SqlServerDataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, true, "SQL Server")]
   [InlineData("Db2DataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, true, "DB2")]
   [InlineData("PostgresDataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, false, "PostgreSQL")]
-  [InlineData("MySqlDataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, false, "MySQL")]
+  [InlineData("MySqlDataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, true, "MySQL")]
   [InlineData("OracleDataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, true, "Oracle")]
   [InlineData("PostgresDataVaultReadStrategy", DataVaultReadShapeKind.PitAsOf, true, "PostgreSQL")]
   [InlineData("MySqlDataVaultReadStrategy", DataVaultReadShapeKind.PitAsOf, true, "MySQL")]
@@ -1053,6 +1053,9 @@ public sealed class DataVaultDiagnosticsTests {
             bridge,
             DataVaultBridgeTraversalEndpoint.From,
             ["customer-hk"]));
+    var supportedMySqlLatest = DataVaultProviderReadStrategyGateEvaluator.EvaluateMySql(
+        KnownProviderNames.MySqlPomelo,
+        new DataVaultLatestSatelliteReadRequest(supportedSatellite, ["customer-hk"]));
     var supportedDb2Latest = DataVaultProviderReadStrategyGateEvaluator.EvaluateDb2(
         KnownProviderNames.Db2,
         new DataVaultLatestSatelliteReadRequest(supportedSatellite, ["customer-hk"]));
@@ -1075,6 +1078,8 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Empty(supportedPit.FallbackCauses);
     Assert.True(supportedBridge.CanRead);
     Assert.Empty(supportedBridge.FallbackCauses);
+    Assert.True(supportedMySqlLatest.CanRead);
+    Assert.Empty(supportedMySqlLatest.FallbackCauses);
     Assert.True(supportedDb2Latest.CanRead);
     Assert.Empty(supportedDb2Latest.FallbackCauses);
     Assert.True(supportedDb2Pit.CanRead);
@@ -1105,6 +1110,7 @@ public sealed class DataVaultDiagnosticsTests {
         DataVaultProviderReadStrategyGateEvaluator.GetKnownLatestSatelliteGateRequirements(oracleLatestReadStrategy),
         requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
 
+    IDataVaultProviderReadStrategy mySqlReadStrategy = new MySqlDataVaultReadStrategy();
     IDataVaultProviderPitReadStrategy mySqlPitReadStrategy = new MySqlDataVaultReadStrategy();
     IDataVaultProviderBridgeReadStrategy mySqlBridgeReadStrategy = new MySqlDataVaultReadStrategy();
     IDataVaultProviderPitReadStrategy oraclePitReadStrategy = new OracleDataVaultReadStrategy();
@@ -1112,6 +1118,9 @@ public sealed class DataVaultDiagnosticsTests {
     IDataVaultProviderReadStrategy db2LatestReadStrategy = new Db2DataVaultReadStrategy();
     IDataVaultProviderPitReadStrategy db2PitReadStrategy = new Db2DataVaultReadStrategy();
     IDataVaultProviderBridgeReadStrategy db2BridgeReadStrategy = new Db2DataVaultReadStrategy();
+    Assert.Equal(
+        [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(mySqlReadStrategy));
     Assert.Equal(
         [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
         DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(mySqlPitReadStrategy));
@@ -1133,6 +1142,9 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal(
         [KnownProviderNames.Db2],
         DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(db2BridgeReadStrategy));
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownLatestSatelliteGateRequirements(mySqlReadStrategy),
+        requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
     Assert.Contains(
         DataVaultProviderReadStrategyGateEvaluator.GetKnownPitGateRequirements(mySqlPitReadStrategy),
         requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.IncompleteReadShapeEvidence);
