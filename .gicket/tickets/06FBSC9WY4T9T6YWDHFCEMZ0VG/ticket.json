@@ -3,7 +3,7 @@
   "ticket-id": "06FBSC9WY4T9T6YWDHFCEMZ0VG",
   "ticket-type": "task",
   "title": "Task: Evaluate DB2 bulk strategy gaps",
-  "revision": "06FCWVETQB3KWX252HQ184DWE4",
+  "revision": "06FDR7EFC4H4P601612384PESM",
   "status": "done",
   "labels": [
     "area/benchmarking",
@@ -18,5 +18,5 @@
   "milestone-id": "06FBSB0VYDD4F750GXHCY0J5E0",
   "release-id": "06FBSAX27W6ZCB62YPJZS475E8",
   "created-at": "2026-06-12T16:36:32.7413203Z",
-  "updated-at": "2026-06-16T03:16:06.4581206Z"
+  "updated-at": "2026-06-18T19:03:21.6977046Z"
 }
