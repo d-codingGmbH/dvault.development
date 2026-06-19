@@ -1039,7 +1039,7 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
-  public void ProviderEvidenceMatrixCitesCompletedPostgresSqlServerAndMySqlPitBridgeSmokeReadRows() {
+  public void ProviderEvidenceMatrixCitesCompletedPostgresSqlServerMySqlAndOraclePitBridgeSmokeReadRows() {
     var artifactDirectory = Path.Combine(
         "artifacts",
         "benchmarks",
@@ -1088,6 +1088,16 @@ public sealed class BenchmarkScenarioExecutionTests {
         MySqlProviderName,
         "bridge-traversal-read",
         "dvault-adddvaultmysql-optimized");
+    var oraclePitRow = FindArtifactRow(
+        artifacts,
+        OracleProviderName,
+        "pit-as-of-read",
+        "dvault-adddvaultoracle-optimized");
+    var oracleBridgeRow = FindArtifactRow(
+        artifacts,
+        OracleProviderName,
+        "bridge-traversal-read",
+        "dvault-adddvaultoracle-optimized");
 
     AssertCompletedProviderReadRow(postgresPitRow, "PostgresDataVaultReadStrategy", "PitAsOf", "PostgreSQL");
     AssertCompletedProviderReadRow(postgresBridgeRow, "PostgresDataVaultReadStrategy", "Bridge", "PostgreSQL");
@@ -1095,6 +1105,8 @@ public sealed class BenchmarkScenarioExecutionTests {
     AssertCompletedProviderReadRow(sqlServerBridgeRow, "SqlServerDataVaultReadStrategy", "Bridge", "SQL Server");
     AssertCompletedProviderReadRow(mySqlPitRow, "MySqlDataVaultReadStrategy", "PitAsOf", "MySQL");
     AssertCompletedProviderReadRow(mySqlBridgeRow, "MySqlDataVaultReadStrategy", "Bridge", "MySQL");
+    AssertCompletedProviderReadRow(oraclePitRow, "OracleDataVaultReadStrategy", "PitAsOf", "Oracle");
+    AssertCompletedProviderReadRow(oracleBridgeRow, "OracleDataVaultReadStrategy", "Bridge", "Oracle");
     Assert.Contains(
         "v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.md",
         evidenceMatrix,
@@ -1123,7 +1135,15 @@ public sealed class BenchmarkScenarioExecutionTests {
         "| `bridge-traversal-read` | MySQL external provider | `dvault-adddvaultmysql-optimized` | `mysql-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle |",
         evidenceMatrix,
         StringComparison.Ordinal);
-    Assert.Contains("## Closed PostgreSQL, SQL Server, And MySQL PIT/Bridge Evidence", gapMatrix, StringComparison.Ordinal);
+    Assert.Contains(
+        "| `pit-as-of-read` | Oracle external provider | `dvault-adddvaultoracle-optimized` | `oracle-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle |",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| `bridge-traversal-read` | Oracle external provider | `dvault-adddvaultoracle-optimized` | `oracle-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle |",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains("## Closed PostgreSQL, SQL Server, MySQL, And Oracle PIT/Bridge Evidence", gapMatrix, StringComparison.Ordinal);
     Assert.DoesNotContain(
         "| P2.01 | Evidence gap | PostgreSQL external provider | `pit-as-of-read`",
         gapMatrix,
@@ -1148,8 +1168,16 @@ public sealed class BenchmarkScenarioExecutionTests {
         "| P3.03 | Evidence gap | MySQL external provider | `bridge-traversal-read`",
         gapMatrix,
         StringComparison.Ordinal);
+    Assert.DoesNotContain(
+        "| P2.04 | Evidence gap | Oracle external provider | `pit-as-of-read`",
+        gapMatrix,
+        StringComparison.Ordinal);
+    Assert.DoesNotContain(
+        "| P3.04 | Evidence gap | Oracle external provider | `bridge-traversal-read`",
+        gapMatrix,
+        StringComparison.Ordinal);
     Assert.Contains(
-        "PostgreSQL, SQL Server, and MySQL `pit-as-of-read` and `bridge-traversal-read` are closed evidence rows",
+        "PostgreSQL, SQL Server, MySQL, and Oracle `pit-as-of-read` and `bridge-traversal-read` are closed evidence rows",
         performanceProfiles,
         StringComparison.Ordinal);
   }
@@ -1174,13 +1202,7 @@ public sealed class BenchmarkScenarioExecutionTests {
         ReadRepositoryText("benchmark-summary.json"));
     var activeProviderRows = new[]
     {
-        new ProviderPitBridgeAuditRow(
-            "P2.04",
-            OracleProviderName,
-            "dvault-adddvaultoracle-optimized",
-            "OracleDataVaultReadStrategy",
-            "AddDVaultOracle()",
-            BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable),
+
         new ProviderPitBridgeAuditRow(
             "P2.05",
             Db2ProviderName,
@@ -1275,6 +1297,66 @@ public sealed class BenchmarkScenarioExecutionTests {
         "customer-profile-scale-10000x10",
         "conventional-ef-bulk");
     Assert.Equal("5500.134", highVolumeConventional.MeanMilliseconds);
+  }
+
+  [Fact]
+  public void OracleConfiguredReadArtifactRecordsCompletedPitAndBridgeTimingOnly() {
+    var artifactDirectory = Path.Combine(
+        "artifacts",
+        "benchmarks",
+        "v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607");
+    var markdown = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.md"));
+    var csv = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.csv"));
+    var json = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.json"));
+    var evidenceMatrix = ReadRepositoryText(Path.Combine(
+        "docs",
+        "plans",
+        "provider-optimization-evidence-matrix.md"));
+    var gapMatrix = ReadRepositoryText(Path.Combine(
+        "docs",
+        "plans",
+        "provider-optimization-gap-matrix.md"));
+    var performanceProfiles = ReadRepositoryText(Path.Combine("docs", "performance-profiles.md"));
+
+    var artifacts = VerifyBenchmarkArtifactTriplet(markdown, csv, json);
+
+    Assert.True(
+        artifacts.Context.OptionalProviders.TryGetValue(OracleProviderName, out var oracleProvider),
+        "benchmark-summary.json context is missing optional provider '" + OracleProviderName + "'.");
+    Assert.Equal("completed", oracleProvider.ExecutionStatus);
+    Assert.Equal(string.Empty, oracleProvider.SkipReason);
+
+    AssertCompletedOracleReadArtifactRow(
+        artifacts,
+        "pit-as-of-read",
+        "475.258",
+        "DVault Oracle optimized PIT read path",
+        "PitAsOf");
+    AssertCompletedOracleReadArtifactRow(
+        artifacts,
+        "bridge-traversal-read",
+        "7.388",
+        "DVault Oracle optimized bridge read path",
+        "Bridge");
+
+    var latestSatellite = FindArtifactRow(
+        artifacts,
+        OracleProviderName,
+        "latest-satellite-read",
+        "dvault-adddvaultoracle-optimized");
+
+    Assert.Equal("completed", latestSatellite.ExecutionStatus);
+    Assert.Contains("providerSpecificReadStrategy=not registered for latest satellite reads", latestSatellite.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("readStrategyStatus=ProviderNeutralFallback", latestSatellite.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("fallbackCauses=NoProviderSpecificStrategyRegistered", latestSatellite.ExecutionDetail, StringComparison.Ordinal);
+
+    Assert.Contains("v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.md", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("Oracle configured PIT read completed with `OracleDataVaultReadStrategy`", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("Oracle configured bridge read completed with `OracleDataVaultReadStrategy`", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("Oracle PIT and bridge rows are closed", gapMatrix, StringComparison.Ordinal);
+    Assert.DoesNotContain("| P2.04 | Evidence gap | Oracle external provider | `pit-as-of-read`", gapMatrix, StringComparison.Ordinal);
+    Assert.DoesNotContain("| P3.04 | Evidence gap | Oracle external provider | `bridge-traversal-read`", gapMatrix, StringComparison.Ordinal);
+    Assert.Contains("Oracle PIT/bridge completed timing evidence", performanceProfiles, StringComparison.Ordinal);
   }
 
   [Fact]
@@ -2066,6 +2148,32 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Contains("readShapeFallbackCauses=none", row.ExecutionDetail, StringComparison.Ordinal);
   }
 
+  private static void AssertCompletedOracleReadArtifactRow(
+      VerifiedBenchmarkArtifacts artifacts,
+      string scenarioName,
+      string expectedMeanMilliseconds,
+      string expectedExecutionPath,
+      string expectedReadShape) {
+    var row = FindArtifactRow(
+        artifacts,
+        OracleProviderName,
+        scenarioName,
+        "dvault-adddvaultoracle-optimized");
+    var manifestRow = CreateBenchmarkBackedProviderEvidenceManifestRow(row, "completed-timing");
+
+    AssertCompletedProviderReadRow(row, "OracleDataVaultReadStrategy", expectedReadShape, "Oracle");
+    Assert.Equal(artifacts.Context.Iterations, row.Iterations);
+    Assert.Equal(expectedMeanMilliseconds, row.MeanMilliseconds);
+    Assert.Equal("oracle-optimized-dvault", row.StrategyFamily);
+    Assert.Equal("completed-timing", manifestRow.EvidencePosture);
+    Assert.Equal("present", manifestRow.ResultSummary.MetricState);
+    Assert.Equal(expectedReadShape, manifestRow.ReadShape);
+    Assert.Equal(expectedExecutionPath, manifestRow.SelectedPath);
+    Assert.Null(manifestRow.PlannedPath);
+    Assert.Equal("OracleDataVaultReadStrategy", manifestRow.SelectedStrategy);
+    Assert.Null(manifestRow.PlannedStrategy);
+    Assert.Empty(manifestRow.FallbackCauses);
+  }
   private static void AssertPerformanceGuidanceMatchesArtifacts(
       string guidance,
       VerifiedBenchmarkArtifacts artifacts) {
