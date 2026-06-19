@@ -1039,7 +1039,7 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
-  public void ProviderEvidenceMatrixCitesCompletedPostgresAndSqlServerPitBridgeSmokeReadRows() {
+  public void ProviderEvidenceMatrixCitesCompletedPostgresSqlServerAndMySqlPitBridgeSmokeReadRows() {
     var artifactDirectory = Path.Combine(
         "artifacts",
         "benchmarks",
@@ -1078,11 +1078,23 @@ public sealed class BenchmarkScenarioExecutionTests {
         SqlServerProviderName,
         "bridge-traversal-read",
         "dvault-adddvaultsqlserver-optimized");
+    var mySqlPitRow = FindArtifactRow(
+        artifacts,
+        MySqlProviderName,
+        "pit-as-of-read",
+        "dvault-adddvaultmysql-optimized");
+    var mySqlBridgeRow = FindArtifactRow(
+        artifacts,
+        MySqlProviderName,
+        "bridge-traversal-read",
+        "dvault-adddvaultmysql-optimized");
 
     AssertCompletedProviderReadRow(postgresPitRow, "PostgresDataVaultReadStrategy", "PitAsOf", "PostgreSQL");
     AssertCompletedProviderReadRow(postgresBridgeRow, "PostgresDataVaultReadStrategy", "Bridge", "PostgreSQL");
     AssertCompletedProviderReadRow(sqlServerPitRow, "SqlServerDataVaultReadStrategy", "PitAsOf", "SQL Server");
     AssertCompletedProviderReadRow(sqlServerBridgeRow, "SqlServerDataVaultReadStrategy", "Bridge", "SQL Server");
+    AssertCompletedProviderReadRow(mySqlPitRow, "MySqlDataVaultReadStrategy", "PitAsOf", "MySQL");
+    AssertCompletedProviderReadRow(mySqlBridgeRow, "MySqlDataVaultReadStrategy", "Bridge", "MySQL");
     Assert.Contains(
         "v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.md",
         evidenceMatrix,
@@ -1103,7 +1115,15 @@ public sealed class BenchmarkScenarioExecutionTests {
         "| `bridge-traversal-read` | SQL Server external provider | `dvault-adddvaultsqlserver-optimized` | `sqlserver-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle |",
         evidenceMatrix,
         StringComparison.Ordinal);
-    Assert.Contains("## Closed PostgreSQL And SQL Server PIT/Bridge Evidence", gapMatrix, StringComparison.Ordinal);
+    Assert.Contains(
+        "| `pit-as-of-read` | MySQL external provider | `dvault-adddvaultmysql-optimized` | `mysql-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle |",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| `bridge-traversal-read` | MySQL external provider | `dvault-adddvaultmysql-optimized` | `mysql-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle |",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains("## Closed PostgreSQL, SQL Server, And MySQL PIT/Bridge Evidence", gapMatrix, StringComparison.Ordinal);
     Assert.DoesNotContain(
         "| P2.01 | Evidence gap | PostgreSQL external provider | `pit-as-of-read`",
         gapMatrix,
@@ -1120,8 +1140,16 @@ public sealed class BenchmarkScenarioExecutionTests {
         "| P3.02 | Evidence gap | SQL Server external provider | `bridge-traversal-read`",
         gapMatrix,
         StringComparison.Ordinal);
+    Assert.DoesNotContain(
+        "| P2.03 | Evidence gap | MySQL external provider | `pit-as-of-read`",
+        gapMatrix,
+        StringComparison.Ordinal);
+    Assert.DoesNotContain(
+        "| P3.03 | Evidence gap | MySQL external provider | `bridge-traversal-read`",
+        gapMatrix,
+        StringComparison.Ordinal);
     Assert.Contains(
-        "PostgreSQL and SQL Server `pit-as-of-read` and `bridge-traversal-read` are closed evidence rows",
+        "PostgreSQL, SQL Server, and MySQL `pit-as-of-read` and `bridge-traversal-read` are closed evidence rows",
         performanceProfiles,
         StringComparison.Ordinal);
   }
@@ -1146,14 +1174,6 @@ public sealed class BenchmarkScenarioExecutionTests {
         ReadRepositoryText("benchmark-summary.json"));
     var activeProviderRows = new[]
     {
-
-        new ProviderPitBridgeAuditRow(
-            "P2.03",
-            MySqlProviderName,
-            "dvault-adddvaultmysql-optimized",
-            "MySqlDataVaultReadStrategy",
-            "AddDVaultMySql()",
-            BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable),
         new ProviderPitBridgeAuditRow(
             "P2.04",
             OracleProviderName,
