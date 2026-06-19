@@ -3,22 +3,21 @@
   "ticket-id": "06FBSCHBJEYYERDPA7JN34Y8PG",
   "ticket-type": "task",
   "title": "Task: Document provider read parity outcomes and benchmarks",
-  "revision": "06FBSCHGRQ8DG00B3FRP392BV0",
-  "status": "todo",
+  "revision": "06FDZRT0VKSTRA8FHKDKCS3HSC",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
-    "area/documentation",
     "area/benchmarking",
+    "area/documentation",
     "area/performance",
     "area/provider-support",
-    "area/read-models"
+    "area/read-models",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FBSB108SRM9W6WWHRTADFVVM",
   "release-id": "06FBSAVBYTWWZ3K6NV1XQQJADR",
   "created-at": "2026-06-12T16:37:33.8831256Z",
-  "updated-at": "2026-06-12T16:37:35.0456116Z"
+  "updated-at": "2026-06-19T12:37:52.9883861Z"
 }

@@ -10,7 +10,7 @@ PIT/bridge feature-introduction baseline: [DVault v0.21.0 Release Notes](../rele
 
 DVault v1 treats PIT and bridge tables as explicit read models. Application code owns when those read models are maintained, and `IDataVaultReadService` consumes the already-maintained rows for PIT as-of and bridge traversal reads.
 
-`AddDVaultSqlite()`, `AddDVaultPostgres()`, `AddDVaultSqlServer()`, `AddDVaultMySql()`, `AddDVaultOracle()`, and `AddDVaultDb2()` register repository-proven diagnostics-gated optimized latest-satellite, PIT, and bridge read strategy candidates for their supported shapes. Unsupported providers, declined request shapes, incomplete read-shape evidence, and stale PIT/bridge maintenance evidence keep the provider-neutral read pipelines. Neither read path performs maintenance, schedules background work, updates rows during `SaveChanges`, or turns PIT/bridge metadata into automatic orchestration.
+`AddDVaultSqlite()`, `AddDVaultPostgres()`, `AddDVaultSqlServer()`, `AddDVaultMySql()`, `AddDVaultOracle()`, and `AddDVaultDb2()` register repository-proven diagnostics-gated optimized latest-satellite, PIT, and bridge read strategy candidates for their supported shapes. Strategy registration is a dispatch and diagnostics fact, not a completed timing claim by itself. Unsupported providers, declined request shapes, incomplete read-shape evidence, and stale PIT/bridge maintenance evidence keep the provider-neutral read pipelines. Neither read path performs maintenance, schedules background work, updates rows during `SaveChanges`, or turns PIT/bridge metadata into automatic orchestration.
 
 ## PIT Maintenance Boundary
 
@@ -90,7 +90,7 @@ Benchmark evidence:
 - [artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.csv](../../artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.csv)
 - [artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.json](../../artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.json)
 
-The shared benchmark artifact contract is [Performance Evidence And Benchmark Artifact Contract](../plans/performance-evidence-benchmark-artifact-contract.md). The relevant completed timing rows include SQLite `latest-satellite-read`, `pit-as-of-read`, and `bridge-traversal-read` from the root quick triplet, plus PostgreSQL, SQL Server, MySQL, and Oracle `pit-as-of-read` and `bridge-traversal-read` rows from the provider-configured v0.32.0 smoke-read bundle where `PostgresDataVaultReadStrategy`, `SqlServerDataVaultReadStrategy`, `MySqlDataVaultReadStrategy`, and `OracleDataVaultReadStrategy` were selected for supported maintained shapes. Optional PostgreSQL, SQL Server, MySQL, Oracle, and DB2 root quick read rows remain visible as skipped rows when their connection-string environment variables are unset; those root placeholders preserve row identity and planned strategy facts but are not completed external-provider timing evidence. Latest-satellite timing remains outside this PIT/bridge evidence statement, while DB2 PIT/bridge rows carry `selectedStrategy`/`plannedReadStrategy` guidance until a completed provider-configured artifact lane is cited.
+The shared benchmark artifact contract is [Performance Evidence And Benchmark Artifact Contract](../plans/performance-evidence-benchmark-artifact-contract.md). The relevant completed timing rows include SQLite `latest-satellite-read`, `pit-as-of-read`, and `bridge-traversal-read` from the root quick triplet, plus PostgreSQL, SQL Server, MySQL, and Oracle `pit-as-of-read` and `bridge-traversal-read` rows from the provider-configured v0.32.0 smoke-read bundle where `PostgresDataVaultReadStrategy`, `SqlServerDataVaultReadStrategy`, `MySqlDataVaultReadStrategy`, and `OracleDataVaultReadStrategy` were selected for supported maintained shapes. Optional PostgreSQL, SQL Server, MySQL, Oracle, and DB2 root quick read rows remain visible as skipped rows when their connection-string environment variables are unset; those root placeholders preserve row identity and planned strategy facts but are not completed external-provider timing evidence. Non-SQLite latest-satellite timing remains outside this PIT/bridge evidence statement, while DB2 PIT/bridge rows stay in the defer lane with `selectedStrategy`/`plannedReadStrategy` guidance until a completed provider-configured artifact lane is cited.
 
 Use [Provider Optimization Evidence Matrix](../plans/provider-optimization-evidence-matrix.md) as the canonical read-row lookup for scenario, provider, baseline, evidence posture, authoritative artifact source, and finite stop/fallback conditions. This PIT/bridge boundary remains the behavior contract; the matrix is the citation surface for downstream provider optimization evidence.
 
@@ -106,7 +106,8 @@ Compiled-model, compiled-query, and pooled-context guidance remains in [DVault E
 - Read-time PIT or bridge refresh.
 - Background schedulers, triggers, or implicit EF `SaveChanges` orchestration.
 - Provider-specific PIT or bridge maintenance strategies.
-- Completed PostgreSQL optimized latest-satellite timing claims without a provider-configured benchmark artifact.
+- Completed non-SQLite optimized latest-satellite timing claims without a provider-configured benchmark artifact.
+- Completed DB2 PIT or bridge timing claims without a provider-configured benchmark artifact.
 - Registry-backed PIT as-of read requests.
 - Model-first link-parent PIT artifacts.
 - Link-parent multi-active PITs.
