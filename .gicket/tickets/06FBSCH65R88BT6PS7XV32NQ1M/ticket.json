@@ -3,22 +3,21 @@
   "ticket-id": "06FBSCH65R88BT6PS7XV32NQ1M",
   "ticket-type": "task",
   "title": "Task: Close DB2 PIT and bridge read gaps",
-  "revision": "06FBSD0VB4ZB24TZQAY92QVR5C",
-  "status": "todo",
+  "revision": "06FDY747SA2QV4PJ6B2B4DQRRC",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
     "area/performance",
     "area/provider-support",
     "area/read-models",
     "area/testing",
-    "provider/db2"
+    "automation/bot-ready",
+    "provider/db2",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FBSB0ZHPP00Y6PXHR5YG2DPM",
   "release-id": "06FBSAVBYTWWZ3K6NV1XQQJADR",
   "created-at": "2026-06-12T16:37:32.4492375Z",
-  "updated-at": "2026-06-12T16:39:40.6333635Z"
+  "updated-at": "2026-06-19T09:00:49.4820101Z"
 }
