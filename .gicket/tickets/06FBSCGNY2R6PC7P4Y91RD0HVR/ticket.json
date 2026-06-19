@@ -3,22 +3,22 @@
   "ticket-id": "06FBSCGNY2R6PC7P4Y91RD0HVR",
   "ticket-type": "task",
   "title": "Task: Close SQL Server PIT and bridge read gaps",
-  "revision": "06FBSD0P8FPTETKCXV6XE3TQHG",
-  "status": "todo",
+  "revision": "06FDX898CHBRH3ETRKREPF2J2R",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
     "area/performance",
     "area/provider-support",
     "area/read-models",
     "area/testing",
-    "provider/sqlserver"
+    "automation/bot-ready",
+    "integrator-gate/pending",
+    "provider/sqlserver",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FBSB0ZHPP00Y6PXHR5YG2DPM",
   "release-id": "06FBSAVBYTWWZ3K6NV1XQQJADR",
   "created-at": "2026-06-12T16:37:28.3521556Z",
-  "updated-at": "2026-06-12T16:39:39.3317336Z"
+  "updated-at": "2026-06-19T06:46:04.1320911Z"
 }
