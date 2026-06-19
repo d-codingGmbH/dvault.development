@@ -2,6 +2,19 @@
 
 This changelog summarizes the public release-note trail. The detailed release records remain under [docs/releases/](docs/releases/); those files are the source of truth for scope, evidence, non-goals, and validation notes.
 
+## v0.41.0 - Provider Read Strategy Parity
+
+- Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.41.0` / `net8.0` / EF Core 8 and `10.41.0` / `net10.0` / EF Core 10.
+- Records that the v0.41.0 release label maps to consumer package versions `8.41.0` and `10.41.0`, not to a `0.41.0` package version.
+- Completes diagnostics-gated read strategy parity for supported latest-satellite, PIT, and bridge reads across SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2 provider packages.
+- Hardens SQL Server, Oracle, and DB2 latest-satellite strategy dispatch so DI/interface calls use the intended provider-specific implementations.
+- Fixes provider-specific relational PIT and bridge raw reads to preserve the public lowercase-hex hash-key boundary when generated hash-key columns use binary physical storage.
+- Adds parity coverage that compares provider-specific latest-satellite, PIT, bridge, typed projection, and binary-storage read behavior against the provider-neutral fallback path.
+- Updates README, package compatibility, manual publication, local validation, production adoption, performance, analyzer, and example guidance to the `8.41.0` / `10.41.0` package baseline.
+- Updates package creation and verification so `8.41.0` and `10.41.0` are the expected package outputs and stale `8.40.0` / `10.40.0` install guidance is rejected.
+
+See [DVault v0.41.0 Release Notes](docs/releases/v0.41.0.md).
+
 ## v0.40.0 - Provider Bulk Strategy Expansion
 
 - Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.40.0` / `net8.0` / EF Core 8 and `10.40.0` / `net10.0` / EF Core 10.

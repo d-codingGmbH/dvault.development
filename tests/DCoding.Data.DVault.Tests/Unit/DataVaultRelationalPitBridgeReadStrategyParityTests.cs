@@ -2,12 +2,16 @@ using System.Globalization;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace DCoding.Data.DVault.Tests.Unit;
 
 public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
+  private const string StableHashAlgorithmId = "sha256-v1";
+  private const int StableHashDigestByteLength = 32;
+
   [Fact]
   public async Task RelationalLatestSatelliteCandidatesReturnProviderNeutralRowsAndProjections() {
     var metadata = CreatePitMetadata();
@@ -353,6 +357,103 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
     }
   }
 
+  [Fact]
+  public async Task RelationalPitAndBridgeCandidatesRoundTripBinaryHashKeyStorage() {
+    var metadata = CreatePitMetadata();
+    using var fallbackProvider = CreateFallbackProvider();
+    var fallbackReadService = fallbackProvider.GetRequiredService<IDataVaultReadService>();
+    var postgresPitReadService = CreatePitCandidateReadService(new PostgresDataVaultReadStrategy());
+    var postgresBridgeReadService = CreateBridgeCandidateReadService(new PostgresDataVaultReadStrategy());
+    string customerHashKey;
+
+    using (var pitDatabase = SqliteTestDatabase.CreateTemporaryFile()) {
+      var pitOptions = new DbContextOptionsBuilder<PitReadParityContext>()
+          .UseSqlite("Data Source=" + Assert.IsType<string>(pitDatabase.DatabasePath) + ";Pooling=False")
+          .ReplaceService<IModelCacheKeyFactory, ReadParityModelCacheKeyFactory>()
+          .Options;
+      using var saveProvider = CreateSqliteProvider();
+      var saveService = saveProvider.GetRequiredService<IDataVaultSaveService>();
+
+      await using (var context = new PitReadParityContext(pitOptions, DataVaultHashKeyStorageProfile.Binary)) {
+        await context.Database.EnsureCreatedAsync();
+        customerHashKey = await SaveCustomerAsync(saveService, context, metadata);
+        await SaveProfileAsync(
+            saveService,
+            context,
+            metadata,
+            customerHashKey,
+            Utc(2026, 5, 11, 11, 0),
+            "Alice Binary",
+            "Platinum",
+            "profile-hash-2");
+        await SaveStatusAsync(
+            saveService,
+            context,
+            metadata,
+            customerHashKey,
+            Utc(2026, 5, 11, 10, 30),
+            "Active",
+            "status-hash-1");
+
+        context.Set<Dictionary<string, object>>("PitCustomerProfileStatus").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
+          ["CustomerHashKey"] = customerHashKey,
+          ["LoadTimestamp"] = Utc(2026, 5, 11, 11, 15),
+          ["ProfileLoadTimestamp"] = Utc(2026, 5, 11, 11, 0),
+          ["StatusLoadTimestamp"] = Utc(2026, 5, 11, 10, 30),
+        });
+        await context.SaveChangesAsync();
+      }
+
+      await using (var context = new PitReadParityContext(pitOptions, DataVaultHashKeyStorageProfile.Binary)) {
+        var request = new DataVaultPitAsOfReadRequest(
+            metadata.Pit,
+            [customerHashKey],
+            Utc(2026, 5, 11, 12, 0));
+        var fallbackRows = await fallbackReadService.ReadPitRowsAsync(context, request);
+        var postgresRows = await new PostgresDataVaultReadStrategy().ReadPitRowsAsync(
+            new DataVaultProviderPitReadStrategyContext(context, request));
+        var fallbackProjections = await ProjectPitRowsAsync(fallbackReadService, context, request);
+        var postgresProjections = await ProjectPitRowsAsync(postgresPitReadService, context, request);
+
+        Assert.Equal(FormatPitRows(fallbackRows), FormatPitRows(postgresRows));
+        Assert.Equal(fallbackProjections, postgresProjections);
+      }
+    }
+
+    using (var bridgeDatabase = SqliteTestDatabase.CreateTemporaryFile()) {
+      var bridge = ManyToManyMetadataModel.Bridges.Single();
+      var bridgeOptions = new DbContextOptionsBuilder<BridgeReadParityContext>()
+          .UseSqlite("Data Source=" + Assert.IsType<string>(bridgeDatabase.DatabasePath) + ";Pooling=False")
+          .ReplaceService<IModelCacheKeyFactory, ReadParityModelCacheKeyFactory>()
+          .Options;
+      var orderHashKey = CreateCanonicalHexDigest(seed: 17);
+
+      await using (var context = new BridgeReadParityContext(bridgeOptions, DataVaultHashKeyStorageProfile.Binary)) {
+        await context.Database.EnsureCreatedAsync();
+        context.Set<Dictionary<string, object>>("BridgeCustomerOrder").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
+          ["CustomerHashKey"] = customerHashKey,
+          ["OrderHashKey"] = orderHashKey,
+        });
+        await context.SaveChangesAsync();
+      }
+
+      await using (var context = new BridgeReadParityContext(bridgeOptions, DataVaultHashKeyStorageProfile.Binary)) {
+        var request = new DataVaultBridgeReadRequest(
+            bridge,
+            DataVaultBridgeTraversalEndpoint.From,
+            [customerHashKey]);
+        var fallbackRows = await fallbackReadService.ReadBridgeRowsAsync(context, request);
+        var postgresRows = await new PostgresDataVaultReadStrategy().ReadBridgeRowsAsync(
+            new DataVaultProviderBridgeReadStrategyContext(context, request));
+        var fallbackProjections = await ProjectBridgeRowsAsync(fallbackReadService, context, request);
+        var postgresProjections = await ProjectBridgeRowsAsync(postgresBridgeReadService, context, request);
+
+        Assert.Equal(FormatBridgeRows(fallbackRows), FormatBridgeRows(postgresRows));
+        Assert.Equal(fallbackProjections, postgresProjections);
+      }
+    }
+  }
+
   private static ServiceProvider CreateSqliteProvider() {
     var services = new ServiceCollection();
     services.AddDVaultSqlite();
@@ -638,21 +739,56 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
     return new DataVaultMetadataModel([customer, order], [customerOrder], [], [bridge]);
   }
 
+  private static DataVaultProviderCapabilityProfile CreateSqliteProfile(
+      DataVaultHashKeyStorageProfile storageProfile) {
+    return storageProfile == DataVaultHashKeyStorageProfile.HexString
+        ? DataVaultProviderCapabilityProfiles.Sqlite
+        : DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+            storageProfile,
+            StableHashAlgorithmId,
+            StableHashDigestByteLength);
+  }
+
+  private static string CreateCanonicalHexDigest(int seed) {
+    return Convert.ToHexString(Enumerable
+        .Range(0, StableHashDigestByteLength)
+        .Select(value => (byte)((value + seed) % 256))
+        .ToArray()).ToLowerInvariant();
+  }
+
   private static DateTimeOffset Utc(int year, int month, int day, int hour, int minute) {
     return new DateTimeOffset(year, month, day, hour, minute, 0, TimeSpan.Zero);
   }
 
   private static DataVaultMetadataModel ManyToManyMetadataModel { get; } = CreateManyToManyMetadataModel();
 
-  private sealed class PitReadParityContext(DbContextOptions<PitReadParityContext> options) : DbContext(options) {
+  private sealed class PitReadParityContext(
+      DbContextOptions<PitReadParityContext> options,
+      DataVaultHashKeyStorageProfile storageProfile = DataVaultHashKeyStorageProfile.HexString) : DbContext(options) {
+    public DataVaultHashKeyStorageProfile StorageProfile { get; } = storageProfile;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(CreatePitMetadata().Model, DataVaultProviderCapabilityProfiles.Sqlite);
+      modelBuilder.ApplyDataVaultMetadata(CreatePitMetadata().Model, CreateSqliteProfile(StorageProfile));
     }
   }
 
-  private sealed class BridgeReadParityContext(DbContextOptions<BridgeReadParityContext> options) : DbContext(options) {
+  private sealed class BridgeReadParityContext(
+      DbContextOptions<BridgeReadParityContext> options,
+      DataVaultHashKeyStorageProfile storageProfile = DataVaultHashKeyStorageProfile.HexString) : DbContext(options) {
+    public DataVaultHashKeyStorageProfile StorageProfile { get; } = storageProfile;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(ManyToManyMetadataModel, DataVaultProviderCapabilityProfiles.Sqlite);
+      modelBuilder.ApplyDataVaultMetadata(ManyToManyMetadataModel, CreateSqliteProfile(StorageProfile));
+    }
+  }
+
+  private sealed class ReadParityModelCacheKeyFactory : IModelCacheKeyFactory {
+    public object Create(DbContext context, bool designTime) {
+      return context switch {
+        PitReadParityContext pitContext => (context.GetType(), pitContext.StorageProfile, designTime),
+        BridgeReadParityContext bridgeContext => (context.GetType(), bridgeContext.StorageProfile, designTime),
+        _ => (object)(context.GetType(), designTime),
+      };
     }
   }
 

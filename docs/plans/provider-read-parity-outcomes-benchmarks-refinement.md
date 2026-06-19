@@ -26,7 +26,7 @@ Define the bounded documentation scope for the current provider-read parity base
 
 - `docs/performance-profiles.md`
 - `docs/architecture/dvault-v1-pit-bridge-boundary.md`
-- `docs/releases/v0.40.0.md`
+- `docs/releases/v0.41.0.md`
 
 The evidence matrix and gap matrix remain the row-level fact sources. This ticket should cite them and align the live docs around them, not replace them with copied benchmark prose.
 
@@ -55,7 +55,7 @@ The evidence matrix and gap matrix remain the row-level fact sources. This ticke
 
 - `docs/performance-profiles.md` clearly distinguishes measured provider-read evidence from implemented-but-unmeasured latest-satellite guidance and from DB2 defer-lane posture.
 - `docs/architecture/dvault-v1-pit-bridge-boundary.md` remains aligned with the current provider registrations, explicit-maintenance requirement, and finite provider-neutral fallback causes without implying new public read APIs or automatic maintenance.
-- `docs/releases/v0.40.0.md` records the accepted provider-read posture change set without inventing new benchmark runs or promoting skipped, diagnostics-only, or smoke-only rows into timing claims.
+- `docs/releases/v0.41.0.md` records the accepted provider-read posture change set without inventing new benchmark runs or promoting skipped, diagnostics-only, or smoke-only rows into timing claims.
 - The live docs cite the evidence matrix and gap matrix consistently:
   - PostgreSQL, SQL Server, MySQL, and Oracle PIT or bridge outcomes are documented as completed timing only through the preserved v0.32 smoke-read artifact bundle
   - PostgreSQL, SQL Server, MySQL, Oracle, and DB2 latest-satellite outcomes are documented as strategy-registration or diagnostics-gated parity outcomes unless and until a completed provider-configured timing lane exists

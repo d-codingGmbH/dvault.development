@@ -15,7 +15,7 @@ internal sealed class SqlServerDataVaultReadStrategy :
 
   protected override int MaxCommandParameterCount => SqlServerMaxCommandParameterCount;
 
-  public bool CanReadLatestSatelliteRows(
+  public override bool CanReadLatestSatelliteRows(
       DbContext dbContext,
       DataVaultLatestSatelliteReadRequest request) {
     ArgumentNullException.ThrowIfNull(dbContext);
@@ -42,7 +42,7 @@ internal sealed class SqlServerDataVaultReadStrategy :
     return DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlServer(dbContext, request).CanRead;
   }
 
-  public async Task<IReadOnlyList<DataVaultSatelliteReadRecord>> ReadLatestSatelliteRowsAsync(
+  public override async Task<IReadOnlyList<DataVaultSatelliteReadRecord>> ReadLatestSatelliteRowsAsync(
       DataVaultProviderReadStrategyContext context,
       CancellationToken cancellationToken = default) {
     ArgumentNullException.ThrowIfNull(context);
@@ -58,7 +58,7 @@ internal sealed class SqlServerDataVaultReadStrategy :
         .ToArray();
   }
 
-  public async Task<IReadOnlyList<DataVaultSatelliteProjectionRow>> ReadLatestSatelliteProjectionRowsAsync(
+  public override async Task<IReadOnlyList<DataVaultSatelliteProjectionRow>> ReadLatestSatelliteProjectionRowsAsync(
       DataVaultProviderReadStrategyContext context,
       CancellationToken cancellationToken = default) {
     ArgumentNullException.ThrowIfNull(context);
@@ -207,7 +207,7 @@ internal sealed class SqlServerDataVaultReadStrategy :
     return readRows;
   }
 
-  internal string CreateLatestRowsCommandText(
+  internal override string CreateLatestRowsCommandText(
       DbContext dbContext,
       DataVaultSatelliteReadPipeline.SatelliteReadProjection projection,
       IReadOnlyList<string> selectedColumns,

@@ -3,6 +3,6 @@
   "milestone-id": "06FBSB0Y35J55AMF2F5EKFYGQC",
   "name": "v0.41.0 - Read strategy evidence contract",
   "description": "Define provider read strategy parity criteria for latest-satellite, PIT, and bridge shapes before implementation.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-12T16:30:57.0490610Z"
 }

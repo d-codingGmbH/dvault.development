@@ -26,7 +26,7 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
 
   public abstract bool CanReadBridgeRows(DbContext dbContext, DataVaultBridgeReadRequest request);
 
-  public async Task<IReadOnlyList<DataVaultSatelliteReadRecord>> ReadLatestSatelliteRowsAsync(
+  public virtual async Task<IReadOnlyList<DataVaultSatelliteReadRecord>> ReadLatestSatelliteRowsAsync(
       DataVaultProviderReadStrategyContext context,
       CancellationToken cancellationToken = default) {
     ArgumentNullException.ThrowIfNull(context);
@@ -43,7 +43,7 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
         .ToArray();
   }
 
-  public async Task<IReadOnlyList<DataVaultSatelliteProjectionRow>> ReadLatestSatelliteProjectionRowsAsync(
+  public virtual async Task<IReadOnlyList<DataVaultSatelliteProjectionRow>> ReadLatestSatelliteProjectionRowsAsync(
       DataVaultProviderReadStrategyContext context,
       CancellationToken cancellationToken = default) {
     ArgumentNullException.ThrowIfNull(context);
@@ -299,14 +299,26 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
     for (var index = 0; index < parentHashKeyBatch.Count; index++) {
       var parameter = command.CreateParameter();
       parameter.ParameterName = CreateParameterName(index);
-      parameter.Value = parentHashKeyBatch[index];
+      parameter.Value = DataVaultHashKeyProviderValueConverter.ToProviderParameterValue(
+          context.DbContext,
+          projection.TableName,
+          projection.ParentHashKeyColumnName,
+          parentHashKeyBatch[index]);
       command.Parameters.Add(parameter);
     }
 
-    return await ReadCommandRowsAsync(command, selectedColumns, cancellationToken).ConfigureAwait(false);
+    return await ReadCommandRowsAsync(
+        command,
+        selectedColumns,
+        cancellationToken,
+        (columnName, value) => DataVaultHashKeyProviderValueConverter.ReadProviderValue(
+            context.DbContext,
+            projection.TableName,
+            columnName,
+            value)).ConfigureAwait(false);
   }
 
-  internal string CreateLatestRowsCommandText(
+  internal virtual string CreateLatestRowsCommandText(
       DbContext dbContext,
       DataVaultSatelliteReadPipeline.SatelliteReadProjection projection,
       IReadOnlyList<string> selectedColumns,
@@ -420,7 +432,11 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
     foreach (var endpointHashKey in endpointHashKeyBatch) {
       var parameter = command.CreateParameter();
       parameter.ParameterName = CreateParameterName(parameterIndex);
-      parameter.Value = endpointHashKey;
+      parameter.Value = DataVaultHashKeyProviderValueConverter.ToProviderParameterValue(
+          context.DbContext,
+          projection.TableName,
+          projection.FilterColumnName,
+          endpointHashKey);
       command.Parameters.Add(parameter);
       parameterIndex++;
     }
@@ -436,9 +452,11 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
         command,
         selectedColumns,
         cancellationToken,
-        (columnName, value) => string.Equals(columnName, projection.TraversalDepthColumnName, StringComparison.Ordinal)
-            ? NormalizeTraversalDepth(value)
-            : value).ConfigureAwait(false);
+        (columnName, value) => NormalizeBridgeProviderValue(
+            context.DbContext,
+            projection,
+            columnName,
+            value)).ConfigureAwait(false);
   }
 
   private static async Task<IReadOnlyList<Dictionary<string, object>>> ReadCommandRowsAsync(
@@ -647,5 +665,21 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
       decimal typedValue when typedValue >= int.MinValue && typedValue <= int.MaxValue => (int)typedValue,
       _ => value,
     };
+  }
+
+  private static object NormalizeBridgeProviderValue(
+      DbContext dbContext,
+      DataVaultBridgeReadPipeline.BridgeReadProjection projection,
+      string columnName,
+      object value) {
+    if (string.Equals(columnName, projection.TraversalDepthColumnName, StringComparison.Ordinal)) {
+      return NormalizeTraversalDepth(value);
+    }
+
+    return DataVaultHashKeyProviderValueConverter.ReadProviderValue(
+        dbContext,
+        projection.TableName,
+        columnName,
+        value);
   }
 }
