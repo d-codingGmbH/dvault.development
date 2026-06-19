@@ -1,72 +1,58 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Repository-backed refinement confirms this is a bounded PostgreSQL PIT/bridge evidence-closure task: the runtime candidate already exists, the repo already contains provider-configured smoke-read artifacts for PostgreSQL PIT and bridge rows, and the remaining work is to promote that artifact into the canonical evidence surfaces without widening read-strategy scope.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Live relations are bounded and consistent with the current workflow: `06FBSCGBG8CJ0QNRX4JZJA638G -> 06FBSCGGN528A2NC6TTA5A99X0` (`blocks`) and `06FBSCGGN528A2NC6TTA5A99X0 -> 06FBSCHBJEYYERDPA7JN34Y8PG` (`blocks`); no relation cleanup is indicated by the verified repository state.
 - `AddDVaultPostgres()` already registers `PostgresDataVaultReadStrategy` for PIT and bridge reads, and `tests/DCoding.Data.DVault.Tests/Unit/DataVaultProviderReadStrategyTests.cs` already proves incomplete-read-shape and stale-maintenance fail-closed fallback for PostgreSQL PIT/bridge gates.
-- The checked-in provider-configured artifact bundle `artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.*` already contains completed PostgreSQL `pit-as-of-read` and `bridge-traversal-read` rows selecting `PostgresDataVaultReadStrategy`.
+- The checked-in provider-configured artifact bundle `artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-<redacted>/benchmark-summary.*` already contains completed PostgreSQL `pit-as-of-read` and `bridge-traversal-read` rows selecting `PostgresDataVaultReadStrategy`.
 - The root `benchmark-summary.*` triplet remains the quick baseline with PostgreSQL rows intentionally `skipped` when `DVAULT_TEST_POSTGRES_CONNECTION_STRING` is unset; closing this ticket does not require reinterpreting those skipped root rows as completed timing evidence.
 - No child tickets, relation changes, description updates, attachments, or planning documents were materialized in this refinement run.
 
-### Scope In
+Scope In
 - Ratify the existing PostgreSQL PIT/bridge runtime candidate boundary as the implementation baseline: no new strategy invention, only evidence-gap closure for the already-registered `PostgresDataVaultReadStrategy`.
 - Promote one checked-in provider-configured artifact lane as the canonical completed-evidence source for PostgreSQL `pit-as-of-read` and `bridge-traversal-read` rows.
 - Update canonical evidence/planning surfaces that currently classify PostgreSQL P2.01 and P3.01 as open evidence gaps so they cite the verified completed artifact and claim boundary consistently.
 - Keep repository diagnostics, benchmark-contract, and test expectations aligned with the evidence reclassification so PostgreSQL PIT/bridge rows are treated as completed supported evidence while unsupported shapes and stale/incomplete maintenance still fall back deterministically.
 - Update current guidance surfaces that still describe PostgreSQL PIT/bridge rows as skipped-only or evidence-gap-only when those surfaces are part of the live adopter baseline.
 
-### Scope Out
+Scope Out
 - PostgreSQL latest-satellite optimization remains out of scope; the repository still records that no PostgreSQL provider-specific latest-satellite read strategy is registered.
 - SQL Server, MySQL, Oracle, and DB2 PIT/bridge evidence-gap tickets remain separate work items.
 - New public read APIs, new read-shape semantics, automatic PIT/bridge maintenance, scheduler behavior, or provider-specific strategy invention are out of scope.
 - Do not require the root quick `benchmark-summary.*` triplet to become a completed PostgreSQL timing surface when the checked-in provider-configured artifact bundle already supplies the approved evidence lane.
 - Do not widen provider claims into unsupported latest-satellite, unsupported PIT/bridge shapes, or any behavior beyond the current explicit-maintenance and fail-closed fallback boundary.
 
-## Acceptance Criteria
-- A checked-in provider-configured artifact bundle is cited as the authoritative completed evidence for PostgreSQL `pit-as-of-read` and `bridge-traversal-read`, and both rows show `PostgresDataVaultReadStrategy` selected for supported maintained shapes.
-- The canonical repository evidence surfaces no longer present PostgreSQL P2.01/P3.01 as open timing-evidence gaps once that artifact lane is adopted; they identify the exact PostgreSQL read rows, evidence posture, and artifact source consistently.
-- The root `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` quick baseline may remain skipped for PostgreSQL when connection strings are unset, but repository guidance must clearly distinguish those root placeholders from the completed provider-configured artifact evidence used to close this ticket.
-- Tests and diagnostics continue to prove the existing PostgreSQL PIT/bridge boundary: explicit PIT/bridge maintenance is required, incomplete read-shape evidence fails closed, stale maintenance fails closed, and unsupported shapes fall back through the provider-neutral read pipeline with deterministic causes.
-- No repository surface updated by this ticket claims PostgreSQL latest-satellite optimization, new PIT/bridge shapes, or a broader public API than the already documented v1 PIT/bridge read boundary.
-
-## Definition of Done
-- Evidence, planning, and current guidance documents that are authoritative for the live adopter baseline tell one consistent story about PostgreSQL PIT/bridge completed evidence versus root skipped-placeholder quick-baseline rows.
-- Any touched benchmark-contract, verifier, or test expectations are internally consistent with the adopted PostgreSQL artifact lane and do not leave stale evidence-gap wording for PostgreSQL PIT/bridge rows.
-- PostgreSQL PIT/bridge runtime behavior, diagnostics gates, and provider-neutral fallback boundaries remain unchanged except for bounded proof/alignment work needed to represent the existing completed evidence correctly.
-
-## Implementation Notes
-- Default to the checked-in `artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.*` bundle as the approved PostgreSQL evidence source, because it already carries completed `pit-as-of-read` and `bridge-traversal-read` rows with `PostgresDataVaultReadStrategy` selected.
-- Keep the root quick baseline semantics intact: it is the SQLite-first and skipped-optional-provider surface, not the authoritative completed PostgreSQL timing surface.
-- Use the existing PostgreSQL registration and gate baseline as the v1 default: `AddDVaultPostgres()` registers PIT/bridge candidates only, and `DataVaultProviderReadStrategyGateEvaluator` plus its unit tests already bound fallback to provider mismatch, unsupported shape, incomplete read-shape evidence, and stale maintenance.
-- Update canonical surfaces in the narrowest consistent set: the provider optimization evidence matrix, provider optimization gap matrix, current performance guidance, and any live checklist/architecture text that still says PostgreSQL PIT/bridge evidence is only skipped-placeholder guidance.
-- If benchmark/evidence manifest tests or docs currently assume only SQLite PIT/bridge rows are completed canonical read evidence, adjust those expectations specifically for PostgreSQL PIT/bridge without silently promoting MySQL, Oracle, SQL Server, or DB2 rows in the same step.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After PostgreSQL PIT/bridge rows are reclassified to completed evidence, should the same artifact-citation pattern be applied immediately to the MySQL and Oracle PIT/bridge gap tickets if the same smoke-read bundle is accepted as authoritative for them?
 - Should the downstream documentation ticket `06FBSCHBJEYYERDPA7JN34Y8PG` explicitly restate the PostgreSQL artifact-lane provenance, or should it only reference the canonical evidence matrix once this ticket lands?
 
-## Risks
+Risks
 - Current repository guidance is internally inconsistent: the smoke-read artifact bundle already contains completed PostgreSQL PIT/bridge rows, while the evidence matrix, gap matrix, current checklist, and architecture text still describe PostgreSQL PIT/bridge as skipped/evidence-gap posture. Partial updates would preserve contradictory claims.
 - If implementers try to close the ticket by converting the root quick baseline into a completed PostgreSQL timing surface instead of citing the existing provider-configured artifact bundle, scope may widen into unnecessary benchmark reruns or artifact-contract churn.
 - Because the same smoke-read bundle also contains other provider rows, overly broad documentation edits could accidentally promote MySQL, Oracle, or SQL Server PIT/bridge evidence beyond the exact PostgreSQL rows this ticket owns.
 
-## Split Recommendations
+Split recommendations
 - No split recommended; the verified repository state keeps this as one bounded evidence-closure task covering artifact adoption, evidence/gap-matrix alignment, and preservation of the existing PostgreSQL PIT/bridge fallback boundary.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 3
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Produce provider-configured PIT/bridge timing evidence for the existing PostgreSQL strategy candidates already registered by `AddDVaultPostgres()` and named in benchmark guidance as `PostgresDataVaultReadStrategy`. Acceptance: checked-in evidence covers the PostgreSQL `pit-as-of-read` and `bridge-traversal-read` rows with configured benchmark artifacts or other approved repository evidence; diagnostics, tests, and fallback behavior continue to enforce explicit maintenance plus incomplete/stale evidence fallback boundaries; the ticket does not widen scope into new public API, new read-shape design, or alternative strategy invention.
+Run mode
+- apply: planned updates are applied after this comment

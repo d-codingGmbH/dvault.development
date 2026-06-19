@@ -1039,7 +1039,67 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
-  public void ProviderPitBridgeAuditKeepsProviderSpecificFollowUpSplit() {
+  public void ProviderEvidenceMatrixCitesCompletedPostgresPitBridgeSmokeReadRows() {
+    var artifactDirectory = Path.Combine(
+        "artifacts",
+        "benchmarks",
+        "v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607");
+    var markdown = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.md"));
+    var csv = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.csv"));
+    var json = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.json"));
+    var evidenceMatrix = ReadRepositoryText(Path.Combine(
+        "docs",
+        "plans",
+        "provider-optimization-evidence-matrix.md"));
+    var gapMatrix = ReadRepositoryText(Path.Combine(
+        "docs",
+        "plans",
+        "provider-optimization-gap-matrix.md"));
+    var performanceProfiles = ReadRepositoryText(Path.Combine("docs", "performance-profiles.md"));
+
+    var artifacts = VerifyBenchmarkArtifactTriplet(markdown, csv, json);
+    var postgresPitRow = FindArtifactRow(
+        artifacts,
+        PostgresProviderName,
+        "pit-as-of-read",
+        "dvault-adddvaultpostgres-optimized");
+    var postgresBridgeRow = FindArtifactRow(
+        artifacts,
+        PostgresProviderName,
+        "bridge-traversal-read",
+        "dvault-adddvaultpostgres-optimized");
+
+    AssertPostgresCompletedReadRow(postgresPitRow, "PitAsOf");
+    AssertPostgresCompletedReadRow(postgresBridgeRow, "Bridge");
+    Assert.Contains(
+        "v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.md",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| `pit-as-of-read` | PostgreSQL external provider | `dvault-adddvaultpostgres-optimized` | `postgres-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle |",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| `bridge-traversal-read` | PostgreSQL external provider | `dvault-adddvaultpostgres-optimized` | `postgres-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle |",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains("## Closed PostgreSQL PIT/Bridge Evidence", gapMatrix, StringComparison.Ordinal);
+    Assert.DoesNotContain(
+        "| P2.01 | Evidence gap | PostgreSQL external provider | `pit-as-of-read`",
+        gapMatrix,
+        StringComparison.Ordinal);
+    Assert.DoesNotContain(
+        "| P3.01 | Evidence gap | PostgreSQL external provider | `bridge-traversal-read`",
+        gapMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "PostgreSQL `pit-as-of-read` and `bridge-traversal-read` are closed evidence rows",
+        performanceProfiles,
+        StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void ProviderPitBridgeAuditKeepsRemainingProviderFollowUpSplit() {
     var gapMatrix = ReadRepositoryText(Path.Combine(
         "docs",
         "plans",
@@ -1058,13 +1118,6 @@ public sealed class BenchmarkScenarioExecutionTests {
         ReadRepositoryText("benchmark-summary.json"));
     var activeProviderRows = new[]
     {
-        new ProviderPitBridgeAuditRow(
-            "P2.01",
-            PostgresProviderName,
-            "dvault-adddvaultpostgres-optimized",
-            "PostgresDataVaultReadStrategy",
-            "AddDVaultPostgres()",
-            BenchmarkExternalProviderDefinitions.Postgres.ConnectionStringEnvironmentVariable),
         new ProviderPitBridgeAuditRow(
             "P2.02",
             SqlServerProviderName,
@@ -1086,6 +1139,13 @@ public sealed class BenchmarkScenarioExecutionTests {
             "OracleDataVaultReadStrategy",
             "AddDVaultOracle()",
             BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable),
+        new ProviderPitBridgeAuditRow(
+            "P2.05",
+            Db2ProviderName,
+            "dvault-adddvaultdb2-optimized",
+            "Db2DataVaultReadStrategy",
+            "AddDVaultDb2()",
+            BenchmarkExternalProviderDefinitions.Db2.ConnectionStringEnvironmentVariable),
     };
 
     foreach (var provider in activeProviderRows) {
@@ -1097,25 +1157,12 @@ public sealed class BenchmarkScenarioExecutionTests {
           artifacts);
     }
 
-    Assert.Contains("| P2.05 | Evidence gap | DB2 external provider | `pit-as-of-read`", gapMatrix, StringComparison.Ordinal);
-    Assert.Contains("| P3.05 | Evidence gap | DB2 external provider | `bridge-traversal-read`", gapMatrix, StringComparison.Ordinal);
     Assert.Contains("DB2 rows keep the narrower v0.34.0 boundary", gapMatrix, StringComparison.Ordinal);
     Assert.Contains("no completed DB2 timing", gapMatrix, StringComparison.Ordinal);
-    Assert.Contains("DB2 registers diagnostics-gated PIT/bridge read dispatch", evidenceMatrix, StringComparison.Ordinal);
-
-    var skippedDb2PitRow = FindArtifactRow(
-        artifacts,
-        Db2ProviderName,
-        "pit-as-of-read",
-        "dvault-adddvaultdb2-optimized");
-    var skippedDb2BridgeRow = FindArtifactRow(
-        artifacts,
-        Db2ProviderName,
-        "bridge-traversal-read",
-        "dvault-adddvaultdb2-optimized");
-
-    AssertSkippedDb2ReadPlaceholder(skippedDb2PitRow, "Db2DataVaultReadStrategy");
-    AssertSkippedDb2ReadPlaceholder(skippedDb2BridgeRow, "Db2DataVaultReadStrategy");
+    Assert.Contains(
+        "DB2 registers diagnostics-gated latest-satellite/PIT/bridge read dispatch",
+        evidenceMatrix,
+        StringComparison.Ordinal);
   }
 
   [Fact]
@@ -1958,14 +2005,17 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Contains("plannedReadStrategy=" + strategyName, row.ExecutionDetail, StringComparison.Ordinal);
   }
 
-  private static void AssertSkippedDb2ReadPlaceholder(
-      BenchmarkArtifactRow row,
-      string strategyName) {
-    AssertProviderReadPlaceholder(
-        row,
-        strategyName,
-        row.ScenarioName == "pit-as-of-read" ? "PitAsOf" : "Bridge",
-        BenchmarkExternalProviderDefinitions.Db2.ConnectionStringEnvironmentVariable);
+  private static void AssertPostgresCompletedReadRow(BenchmarkArtifactRow row, string expectedReadShape) {
+    Assert.Equal("completed", row.ExecutionStatus);
+    Assert.Equal(1, row.Iterations);
+    Assert.True(string.IsNullOrEmpty(row.SkipReason), "Completed PostgreSQL read row '" + row.Key + "' has a skip reason.");
+    Assert.Contains("selectedStrategy=PostgresDataVaultReadStrategy", row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("plannedReadStrategy=PostgresDataVaultReadStrategy", row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("readShape=" + expectedReadShape, row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("readStrategyStatus=ProviderStrategySelected", row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("readShapeProviderStatus=ProviderStrategySelected", row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("fallbackCauses=none", row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("readShapeFallbackCauses=none", row.ExecutionDetail, StringComparison.Ordinal);
   }
 
   private static void AssertPerformanceGuidanceMatchesArtifacts(

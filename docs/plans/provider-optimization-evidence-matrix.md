@@ -7,7 +7,7 @@ Ticket: 06FBSC3N7ZFVQW3AV2JJ8T7Q7W
 
 This document is the canonical lookup surface for DVault provider optimization evidence rows. Later tickets should cite these matrix rows by scenario, provider, baseline, and evidence posture instead of restating benchmark notes or mixing measured timing evidence with skipped, diagnostics-only, smoke-only, or storage-footprint evidence.
 
-The matrix reuses the existing benchmark artifact contract vocabulary from [Performance Evidence And Benchmark Artifact Contract](performance-evidence-benchmark-artifact-contract.md). It does not add benchmark fields, change benchmark schemas, rerun benchmarks, add provider implementations, add completed DB2 timing claims, or widen hash-key storage claims beyond the checked-in SQLite-local evidence bundle. DB2 uses the same optional-provider skipped-placeholder lane as the other external providers unless a developer supplies a reachable local DB2 connection string.
+The matrix reuses the existing benchmark artifact contract vocabulary from [Performance Evidence And Benchmark Artifact Contract](performance-evidence-benchmark-artifact-contract.md). It does not add benchmark fields, change benchmark schemas, rerun benchmarks, add provider implementations, add completed DB2 timing claims, or widen hash-key storage claims beyond the checked-in SQLite-local evidence bundle. The root quick benchmark triplet remains the SQLite-local and skipped optional-provider baseline. PostgreSQL PIT/bridge completed timing is cited from the checked-in provider-configured v0.32.0 smoke-read bundle only; PostgreSQL latest-satellite reads remain provider-neutral, and DB2 uses the same optional-provider skipped-placeholder lane as the other external providers unless a developer supplies a reachable local DB2 connection string.
 
 ## Evidence Postures
 
@@ -22,6 +22,7 @@ The matrix reuses the existing benchmark artifact contract vocabulary from [Perf
 ## Authoritative Sources
 
 - Root quick baseline: [benchmark-summary.md](../../benchmark-summary.md), [benchmark-summary.csv](../../benchmark-summary.csv), and [benchmark-summary.json](../../benchmark-summary.json).
+- PostgreSQL provider-configured PIT/bridge read evidence: [benchmark-summary.md](../../artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.md), [benchmark-summary.csv](../../artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.csv), and [benchmark-summary.json](../../artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.json).
 - Benchmark artifact rules: [Performance Evidence And Benchmark Artifact Contract](performance-evidence-benchmark-artifact-contract.md).
 - Save boundary and provider save posture: [DVault V1 Explicit Save Service](../architecture/dvault-v1-explicit-save-service.md).
 - Read boundary and provider read posture: [DVault V1 PIT And Bridge Boundary](../architecture/dvault-v1-pit-bridge-boundary.md).
@@ -211,9 +212,11 @@ Docs-owned rows use the same shape with `executionStatus=null`, `iterations=null
 - When a follow-up ticket needs a provider-evidence manifest, populate `dvault.provider-evidence.v1` rows from the contract above instead of inventing parallel fields or scraping human-only markdown tables.
 - Cite matrix rows with scenario, provider, baseline, and posture. Do not cite `skipped-placeholder`, `diagnostics-only`, `smoke-only`, or `storage-footprint` rows as measured provider performance.
 - Keep timing claims attached to the artifact triplet, run context, provider filter, load-timestamp storage, iteration count, warmup count, hardware, runtime, dataset size, request shape, provider configuration, and skip/failure rows.
-- SQLite remains the only completed-timing optimized latest-satellite provider path in the current baseline.
-- SQL Server, MySQL, Oracle, and DB2 now have diagnostics-gated latest-satellite read-strategy registration; their root optional-provider rows remain skipped placeholders until the corresponding `DVAULT_TEST_*_CONNECTION_STRING` is configured, so no measured non-SQLite latest-satellite timing is claimed here.
-- PostgreSQL latest-satellite requests remain provider-neutral unless a later ticket adds new benchmark-backed strategy evidence. PostgreSQL, SQL Server, MySQL, Oracle, and DB2 remain diagnostics-gated PIT/bridge read-strategy candidates.
+- SQLite is the only completed optimized latest-satellite timing row in the current baseline.
+- SQL Server, MySQL, Oracle, and DB2 have diagnostics-gated latest-satellite read-strategy registration; their root optional-provider latest-satellite rows remain skipped placeholders until the corresponding `DVAULT_TEST_*_CONNECTION_STRING` is configured, so no measured non-SQLite latest-satellite timing is claimed here.
+- PostgreSQL latest-satellite requests remain provider-neutral unless a later ticket adds new benchmark-backed strategy evidence.
+- PostgreSQL PIT/bridge reads have completed provider-configured timing rows in `artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.*` with `PostgresDataVaultReadStrategy` selected for the supported maintained shapes. The root quick triplet still keeps PostgreSQL PIT/bridge rows as skipped placeholders when `DVAULT_TEST_POSTGRES_CONNECTION_STRING` is unset.
+- SQL Server, MySQL, Oracle, and DB2 remain diagnostics-gated PIT/bridge read-strategy candidates in the current canonical matrix unless a separate provider-specific ticket promotes a checked-in provider-configured artifact lane for that provider.
 - DB2 evidence includes skipped-placeholder benchmark rows for the existing clean-context save and read guidance lane, diagnostics-gated clean-context save behavior, diagnostics-gated latest-satellite/PIT/bridge read behavior, and opt-in live smoke evidence. Completed DB2 timing evidence, staged DB2 bulk, provider-native chunk execution, and DB2 live-schema reading remain unsupported in the current baseline.
 - Binary-vs-hex storage comparisons are SQLite-local to the checked-in hash-key storage bundle unless a future provider-specific bundle is added.
 
@@ -254,8 +257,8 @@ The root benchmark triplet keeps optional PostgreSQL, SQL Server, MySQL, Oracle,
 | `bridge-traversal-read` | SQLite local temporary files | `dvault-adddvault-fallback` | `provider-neutral-dvault-fallback` | `completed-timing` | Root benchmark triplet | Provider-neutral bridge traversal over explicitly maintained bridge rows. |
 | `bridge-traversal-read` | SQLite local temporary files | `dvault-adddvaultsqlite-optimized` | `sqlite-optimized-dvault` | `completed-timing` | Root benchmark triplet | SQLite optimized bridge read selected `SqliteDataVaultReadStrategy`. |
 | `latest-satellite-read` | PostgreSQL external provider | `dvault-adddvaultpostgres-optimized` | `postgres-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records `providerSpecificReadStrategy=not registered for latest satellite reads`; no PostgreSQL latest-satellite optimization claim. |
-| `pit-as-of-read` | PostgreSQL external provider | `dvault-adddvaultpostgres-optimized` | `postgres-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records planned `PostgresDataVaultReadStrategy` for diagnostics-gated PIT reads. |
-| `bridge-traversal-read` | PostgreSQL external provider | `dvault-adddvaultpostgres-optimized` | `postgres-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records planned `PostgresDataVaultReadStrategy` for diagnostics-gated bridge reads. |
+| `pit-as-of-read` | PostgreSQL external provider | `dvault-adddvaultpostgres-optimized` | `postgres-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle | Provider-configured row completed with `PostgresDataVaultReadStrategy` selected for a supported maintained PIT shape. The root quick triplet remains a skipped placeholder when `DVAULT_TEST_POSTGRES_CONNECTION_STRING` is unset and is not the completed timing source. |
+| `bridge-traversal-read` | PostgreSQL external provider | `dvault-adddvaultpostgres-optimized` | `postgres-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle | Provider-configured row completed with `PostgresDataVaultReadStrategy` selected for a supported maintained bridge shape. The root quick triplet remains a skipped placeholder when `DVAULT_TEST_POSTGRES_CONNECTION_STRING` is unset and is not the completed timing source. |
 | `latest-satellite-read` | SQL Server external provider | `dvault-adddvaultsqlserver-optimized` | `sqlserver-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records planned `SqlServerDataVaultReadStrategy` for diagnostics-gated latest-satellite reads. The skipped placeholder is row identity and planned strategy evidence only, not completed SQL Server timing. |
 | `pit-as-of-read` | SQL Server external provider | `dvault-adddvaultsqlserver-optimized` | `sqlserver-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records planned `SqlServerDataVaultReadStrategy` for diagnostics-gated PIT reads. |
 | `bridge-traversal-read` | SQL Server external provider | `dvault-adddvaultsqlserver-optimized` | `sqlserver-optimized-dvault` | `skipped-placeholder` | Root benchmark triplet | Guidance row records planned `SqlServerDataVaultReadStrategy` for diagnostics-gated bridge reads. |
@@ -337,4 +340,9 @@ claim: measured SQLite latest-satellite read evidence, valid only with the root 
 ```text
 matrix row: scenario=pit-as-of-read; provider=DB2 external provider; baseline=dvault-adddvaultdb2-optimized; posture=skipped-placeholder
 claim: row identity and planned Db2DataVaultReadStrategy guidance only; not measured DB2 timing evidence from the root baseline
+```
+
+```text
+matrix row: scenario=pit-as-of-read; provider=PostgreSQL external provider; baseline=dvault-adddvaultpostgres-optimized; posture=completed-timing
+claim: measured PostgreSQL PIT read evidence, valid only with artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.* and its run context
 ```
