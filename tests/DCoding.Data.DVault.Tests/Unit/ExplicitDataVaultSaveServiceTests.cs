@@ -243,7 +243,8 @@ public sealed class ExplicitDataVaultSaveServiceTests {
   public void RelationalProviderPackagesRegisterOptimizedReadStrategies() {
     AssertProviderPitBridgeReadRegistration(
         services => services.AddDVaultPostgres(),
-        "PostgresDataVaultReadStrategy");
+        "PostgresDataVaultReadStrategy",
+        expectLatestSatelliteReadRegistration: true);
     AssertProviderPitBridgeReadRegistration(
         services => services.AddDVaultSqlServer(),
         "SqlServerDataVaultReadStrategy",

@@ -218,6 +218,64 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
   }
 
   [Fact]
+  public async Task PostgresLatestSatelliteCandidateReturnsProviderNeutralRowsAndProjections() {
+    var metadata = CreatePitMetadata();
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<PitReadParityContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    using var provider = CreateSqliteProvider();
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    using var fallbackProvider = CreateFallbackProvider();
+    var fallbackReadService = fallbackProvider.GetRequiredService<IDataVaultReadService>();
+    var postgresReadService = CreateLatestCandidateReadService(new PostgresDataVaultReadStrategy());
+    string customerHashKey;
+
+    await using (var context = new PitReadParityContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+      customerHashKey = await SaveCustomerAsync(saveService, context, metadata);
+      await SaveProfileAsync(
+          saveService,
+          context,
+          metadata,
+          customerHashKey,
+          Utc(2026, 5, 11, 10, 0),
+          "Alice Adams",
+          "Gold",
+          "profile-hash-1");
+      await SaveProfileAsync(
+          saveService,
+          context,
+          metadata,
+          customerHashKey,
+          Utc(2026, 5, 11, 11, 0),
+          "Alice Baker",
+          "Platinum",
+          "profile-hash-2");
+    }
+
+    await using (var context = new PitReadParityContext(options)) {
+      var request = new DataVaultLatestSatelliteReadRequest(
+          metadata.Profile,
+          [customerHashKey],
+          Utc(2026, 5, 11, 10, 45));
+
+      Assert.True(DataVaultProviderReadStrategyGateEvaluator
+          .EvaluatePostgres(KnownProviderNames.Postgres, request)
+          .CanRead);
+
+      var fallbackRows = await fallbackReadService.ReadLatestSatelliteRowsAsync(context, request);
+      var postgresRows = await new PostgresDataVaultReadStrategy().ReadLatestSatelliteRowsAsync(
+          new DataVaultProviderReadStrategyContext(context, request));
+      var fallbackProjections = await ProjectLatestRowsAsync(fallbackReadService, context, request);
+      var postgresProjections = await ProjectLatestRowsAsync(postgresReadService, context, request);
+
+      Assert.Equal(FormatLatestRows(fallbackRows), FormatLatestRows(postgresRows));
+      Assert.Equal(fallbackProjections, postgresProjections);
+    }
+  }
+
+  [Fact]
   public async Task RelationalBridgeCandidatesReturnProviderNeutralRowsAndProjections() {
     var bridge = ManyToManyMetadataModel.Bridges.Single();
     using var database = SqliteTestDatabase.CreateTemporaryFile();
@@ -499,6 +557,27 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
         FormatDictionary(snapshot.PayloadValues);
   }
 
+  private static IReadOnlyList<string> FormatLatestRows(IReadOnlyList<DataVaultSatelliteReadRecord> rows) {
+    return rows
+        .Select(row =>
+            row.MetadataName +
+            "|" +
+            row.TableName +
+            "|" +
+            row.ParentHashKey +
+            "|" +
+            FormatDictionary(row.DrivingKeyValues) +
+            "|" +
+            row.HashDiff +
+            "|" +
+            row.LoadTimestamp.ToString("O", CultureInfo.InvariantCulture) +
+            "|" +
+            row.RecordSource +
+            "|" +
+            FormatDictionary(row.PayloadValues))
+        .ToArray();
+  }
+
   private static IReadOnlyList<string> FormatBridgeRows(IReadOnlyList<DataVaultBridgeReadRecord> rows) {
     return rows
         .Select(row =>
@@ -653,4 +732,5 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
       string CustomerName,
       string CustomerTier,
       string StatusCode);
+
 }

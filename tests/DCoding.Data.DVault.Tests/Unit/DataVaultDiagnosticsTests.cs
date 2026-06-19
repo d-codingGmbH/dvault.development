@@ -729,7 +729,7 @@ public sealed class DataVaultDiagnosticsTests {
   [InlineData("SqliteDataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, true, "SQLite")]
   [InlineData("SqlServerDataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, true, "SQL Server")]
   [InlineData("Db2DataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, true, "DB2")]
-  [InlineData("PostgresDataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, false, "PostgreSQL")]
+  [InlineData("PostgresDataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, true, "PostgreSQL")]
   [InlineData("MySqlDataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, true, "MySQL")]
   [InlineData("OracleDataVaultReadStrategy", DataVaultReadShapeKind.LatestSatellite, true, "Oracle")]
   [InlineData("PostgresDataVaultReadStrategy", DataVaultReadShapeKind.PitAsOf, true, "PostgreSQL")]
@@ -1100,11 +1100,16 @@ public sealed class DataVaultDiagnosticsTests {
         cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedPitShape);
 
     var readStrategy = new SqliteDataVaultReadStrategy();
+    IDataVaultProviderReadStrategy postgresLatestReadStrategy = new PostgresDataVaultReadStrategy();
     IDataVaultProviderReadStrategy oracleLatestReadStrategy = new OracleDataVaultReadStrategy();
     Assert.Equal([KnownProviderNames.Sqlite], DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(readStrategy));
+    Assert.Equal([KnownProviderNames.Postgres], DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(postgresLatestReadStrategy));
     Assert.Equal([KnownProviderNames.Oracle], DataVaultProviderReadStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(oracleLatestReadStrategy));
     Assert.Contains(
         DataVaultProviderReadStrategyGateEvaluator.GetKnownLatestSatelliteGateRequirements(readStrategy),
+        requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator.GetKnownLatestSatelliteGateRequirements(postgresLatestReadStrategy),
         requirement => requirement.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
     Assert.Contains(
         DataVaultProviderReadStrategyGateEvaluator.GetKnownLatestSatelliteGateRequirements(oracleLatestReadStrategy),

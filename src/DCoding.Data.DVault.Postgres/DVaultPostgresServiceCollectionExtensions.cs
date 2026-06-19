@@ -8,7 +8,7 @@ namespace DCoding.Data.DVault;
 /// </summary>
 public static class DVaultPostgresServiceCollectionExtensions {
   /// <summary>
-  /// Adds DVault defaults plus the PostgreSQL optimized save and PIT/bridge read strategies.
+  /// Adds DVault defaults plus the PostgreSQL optimized save, latest-satellite read, and PIT/bridge read strategies.
   /// </summary>
   /// <param name="services">The service collection used by the application startup pipeline.</param>
   /// <returns>The same service collection so startup configuration can continue fluently.</returns>
@@ -21,6 +21,7 @@ public static class DVaultPostgresServiceCollectionExtensions {
     services.AddDVault();
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBehavior, PostgresDataVaultProviderBehavior>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, PostgresDataVaultSaveStrategy>());
+    services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderReadStrategy, PostgresDataVaultReadStrategy>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderPitReadStrategy, PostgresDataVaultReadStrategy>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBridgeReadStrategy, PostgresDataVaultReadStrategy>());
 

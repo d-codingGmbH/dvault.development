@@ -17,6 +17,14 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
     return EvaluateSqlite(dbContext.Database.ProviderName, request);
   }
 
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluatePostgres(
+      DbContext dbContext,
+      DataVaultLatestSatelliteReadRequest request) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+
+    return EvaluatePostgres(dbContext.Database.ProviderName, request);
+  }
+
   public static DataVaultProviderReadStrategyGateEvaluation EvaluateSqlite(
       DbContext dbContext,
       DataVaultPitAsOfReadRequest request) {
@@ -263,6 +271,16 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
         supportedProviderNames: [KnownProviderNames.Sqlite],
         hasCompleteReadShapeEvidence: hasCompleteReadShapeEvidence,
         hasStaleReadModelMaintenanceSignal: hasStaleReadModelMaintenanceSignal);
+  }
+
+  public static DataVaultProviderReadStrategyGateEvaluation EvaluatePostgres(
+      string? providerName,
+      DataVaultLatestSatelliteReadRequest request) {
+    return EvaluateLatestSatellite(
+        DataVaultKnownProviderReadStrategy.Postgres,
+        providerName,
+        request,
+        supportedProviderNames: [KnownProviderNames.Postgres]);
   }
 
   public static DataVaultProviderReadStrategyGateEvaluation EvaluatePostgres(
@@ -632,6 +650,7 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
       out DataVaultProviderReadStrategyGateEvaluation evaluation) {
     evaluation = strategy.GetType().Name switch {
       "SqliteDataVaultReadStrategy" => EvaluateSqlite(dbContext, request),
+      "PostgresDataVaultReadStrategy" => EvaluatePostgres(dbContext, request),
       "SqlServerDataVaultReadStrategy" => EvaluateSqlServer(dbContext, request),
       "MySqlDataVaultReadStrategy" => EvaluateMySql(dbContext, request),
       "OracleDataVaultReadStrategy" => EvaluateOracle(dbContext, request),
@@ -702,6 +721,11 @@ internal static class DataVaultProviderReadStrategyGateEvaluator {
 
     return strategy.GetType().Name switch {
       "SqliteDataVaultReadStrategy" => [
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent),
+          new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported),
+      ],
+      "PostgresDataVaultReadStrategy" => [
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch),
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent),
           new DataVaultReadStrategyGateRequirement(DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported),

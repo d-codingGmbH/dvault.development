@@ -153,6 +153,50 @@ public sealed class DataVaultProviderReadStrategyTests {
   }
 
   [Fact]
+  public void PostgresLatestSatelliteReadGateAcceptsPublishedHubParentShape() {
+    var evaluation = DataVaultProviderReadStrategyGateEvaluator.EvaluatePostgres(
+        KnownProviderNames.Postgres,
+        CreateReadRequest(["customer-hk"]));
+
+    Assert.True(evaluation.CanRead);
+    Assert.Empty(evaluation.FallbackCauses);
+  }
+
+  [Fact]
+  public void PostgresLatestSatelliteReadGateFailsClosedForProviderMismatchUnsupportedParentAndMultiActiveShape() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var linkParentSatellite = new DataVaultSatelliteMetadata(
+        "Fulfillment",
+        DataVaultMetadataReference.Link("OrderProduct"),
+        ["State"]);
+    var multiActiveSatellite = new DataVaultSatelliteMetadata(
+        "Contact",
+        customer.ToReference(),
+        ["EmailAddress"],
+        ["ContactType"]);
+
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluatePostgres(KnownProviderNames.Sqlite, CreateReadRequest(["customer-hk"]))
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.ProviderNameMismatch);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluatePostgres(
+                KnownProviderNames.Postgres,
+                new DataVaultLatestSatelliteReadRequest(linkParentSatellite, ["link-hk"]))
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.UnsupportedSatelliteParent);
+    Assert.Contains(
+        DataVaultProviderReadStrategyGateEvaluator
+            .EvaluatePostgres(
+                KnownProviderNames.Postgres,
+                new DataVaultLatestSatelliteReadRequest(multiActiveSatellite, ["customer-hk"]))
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultReadStrategyFallbackCauseKind.MultiActiveSatelliteUnsupported);
+  }
+
+  [Fact]
   public void SqlServerAndOracleLatestSatelliteReadGatesAcceptHubParentOrdinarySatellites() {
     var sqlServerSupported = DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlServer(
         KnownProviderNames.SqlServer,

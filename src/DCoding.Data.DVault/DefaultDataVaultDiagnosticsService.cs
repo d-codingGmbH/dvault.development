@@ -881,7 +881,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         "Read-model heavy",
         "Read diagnostics provide provider-neutral " +
         readShapeKind +
-        " guidance; SQLite, SQL Server, MySQL, Oracle, and DB2 are repository-proven optimized latest-satellite providers for supported shapes, while SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2 are repository-proven optimized PIT/bridge providers when diagnostics select their candidates. Unsupported providers, unsupported shapes, or incomplete read-shape evidence remain fallback guidance.");
+        " guidance; SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2 are repository-proven optimized latest-satellite providers for supported shapes, while SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2 are repository-proven optimized PIT/bridge providers when diagnostics select their candidates. Unsupported providers, unsupported shapes, or incomplete read-shape evidence remain fallback guidance.");
   }
 
   internal static bool IsRepositoryProvenOptimizedReadStrategy(
@@ -889,7 +889,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       DataVaultReadShapeKind readShapeKind) {
     return selectedStrategyName switch {
       "SqliteDataVaultReadStrategy" => true,
-      "PostgresDataVaultReadStrategy" => readShapeKind is DataVaultReadShapeKind.PitAsOf or DataVaultReadShapeKind.Bridge,
+      "PostgresDataVaultReadStrategy" => true,
       "SqlServerDataVaultReadStrategy" => readShapeKind is DataVaultReadShapeKind.LatestSatellite or DataVaultReadShapeKind.PitAsOf or DataVaultReadShapeKind.Bridge,
       "MySqlDataVaultReadStrategy" => true,
       "OracleDataVaultReadStrategy" => readShapeKind is DataVaultReadShapeKind.LatestSatellite or DataVaultReadShapeKind.PitAsOf or DataVaultReadShapeKind.Bridge,

@@ -1,5 +1,6 @@
 using System.Globalization;
 using DCoding.Data.DVault.Modeling;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -15,9 +16,11 @@ public sealed class PostgresProviderCapabilityTests {
 
       using var provider = services.BuildServiceProvider(validateScopes: true);
       var strategies = provider.GetServices<IDataVaultProviderSaveStrategy>().ToArray();
+      var readStrategies = provider.GetServices<IDataVaultProviderReadStrategy>().ToArray();
 
       Assert.Contains(strategies, strategy => strategy is PostgresDataVaultSaveStrategy);
       Assert.Contains(strategies, strategy => strategy is IDataVaultProviderStagedBulkSaveDiagnostics);
+      Assert.Contains(readStrategies, strategy => strategy is PostgresDataVaultReadStrategy);
       Assert.Same(
           DataVaultProviderCapabilityProfiles.Postgres,
           DataVaultProviderCapabilityProfileSelection.Select(PostgresDataVaultSaveStrategy.NpgsqlProviderName));
@@ -93,6 +96,38 @@ public sealed class PostgresProviderCapabilityTests {
     Assert.Equal(
         "DROP TABLE IF EXISTS \"__dvault_stage_1\"",
         dropCommandText);
+  }
+
+  [Fact]
+  public void PostgresStrategyBuildsWindowedLatestSatelliteReadSqlInsideProviderPackage() {
+    using var context = new DbContext(new DbContextOptionsBuilder().Options);
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["Name"]);
+    var projection = DataVaultSatelliteReadPipeline.CreateSatelliteProjection(profile);
+    var commandText = new PostgresDataVaultReadStrategy().CreateLatestRowsCommandText(
+        context,
+        projection,
+        [
+            "CustomerHashKey",
+            "HashDiff",
+            "LoadTimestamp",
+            "RecordSource",
+            "Name",
+        ],
+        parentHashKeyCount: 2,
+        hasAsOf: true);
+
+    Assert.Equal(
+        "SELECT \"CustomerHashKey\", \"HashDiff\", \"LoadTimestamp\", \"RecordSource\", \"Name\" " +
+        "FROM (SELECT \"CustomerHashKey\", \"HashDiff\", \"LoadTimestamp\", \"RecordSource\", \"Name\", " +
+        "ROW_NUMBER() OVER (PARTITION BY \"CustomerHashKey\" ORDER BY \"LoadTimestamp\" DESC) " +
+        "AS \"__dvault_row_number\" FROM \"SatCustomerProfile\" " +
+        "WHERE \"CustomerHashKey\" IN (@p0, @p1) AND \"LoadTimestamp\" <= @p2) AS \"__dvault_latest\" " +
+        "WHERE \"__dvault_row_number\" = 1 ORDER BY \"CustomerHashKey\"",
+        commandText);
   }
 
   [Fact]

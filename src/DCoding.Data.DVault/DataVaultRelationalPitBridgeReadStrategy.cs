@@ -39,6 +39,7 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
         .Where(row => row is not null)
         .Cast<DataVaultSatelliteReadRecord>()
         .OrderBy(row => row.ParentHashKey, StringComparer.Ordinal)
+        .ThenBy(row => string.Join('\u001f', row.DrivingKeyValues.Values), StringComparer.Ordinal)
         .ToArray();
   }
 

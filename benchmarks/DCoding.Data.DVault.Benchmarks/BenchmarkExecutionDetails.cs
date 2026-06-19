@@ -176,7 +176,8 @@ internal static class BenchmarkExecutionDetails {
   private static string? GetReadStrategyName(string strategyFamily, string scenarioName) {
     return strategyFamily switch {
       DataVaultBenchmarkHelpers.SqliteOptimizedStrategyFamily => "SqliteDataVaultReadStrategy",
-      DataVaultBenchmarkHelpers.PostgresOptimizedStrategyFamily when scenarioName is "pit-as-of-read" or "bridge-traversal-read" =>
+      DataVaultBenchmarkHelpers.PostgresOptimizedStrategyFamily
+          when scenarioName is "latest-satellite-read" or "pit-as-of-read" or "bridge-traversal-read" =>
           "PostgresDataVaultReadStrategy",
       DataVaultBenchmarkHelpers.SqlServerOptimizedStrategyFamily when scenarioName is "latest-satellite-read" or "pit-as-of-read" or "bridge-traversal-read" =>
           "SqlServerDataVaultReadStrategy",

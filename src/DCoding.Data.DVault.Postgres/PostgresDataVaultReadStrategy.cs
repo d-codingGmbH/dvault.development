@@ -7,6 +7,15 @@ internal sealed class PostgresDataVaultReadStrategy : DataVaultRelationalPitBrid
 
   protected override int MaxCommandParameterCount => PostgresMaxCommandParameterCount;
 
+  public override bool CanReadLatestSatelliteRows(
+      DbContext dbContext,
+      DataVaultLatestSatelliteReadRequest request) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(request);
+
+    return DataVaultProviderReadStrategyGateEvaluator.EvaluatePostgres(dbContext, request).CanRead;
+  }
+
   public override bool CanReadPitRows(
       DbContext dbContext,
       DataVaultPitAsOfReadRequest request) {

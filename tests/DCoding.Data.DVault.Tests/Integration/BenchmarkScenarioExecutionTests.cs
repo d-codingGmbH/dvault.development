@@ -451,7 +451,7 @@ public sealed class BenchmarkScenarioExecutionTests {
 
   private static readonly ExpectedProviderReadRow[] ExpectedProviderReadRows =
   [
-      new(PostgresProviderName, "latest-satellite-read", "dvault-adddvaultpostgres-optimized", ["readShape=LatestSatellite", "selectedStrategy=<none>", "providerSpecificReadStrategy=not registered for latest satellite reads"]),
+      new(PostgresProviderName, "latest-satellite-read", "dvault-adddvaultpostgres-optimized", ["readShape=LatestSatellite", "selectedStrategy=PostgresDataVaultReadStrategy", "plannedReadStrategy=PostgresDataVaultReadStrategy"]),
       new(PostgresProviderName, "pit-as-of-read", "dvault-adddvaultpostgres-optimized", ["readShape=PitAsOf", "selectedStrategy=PostgresDataVaultReadStrategy", "plannedReadStrategy=PostgresDataVaultReadStrategy"]),
       new(PostgresProviderName, "bridge-traversal-read", "dvault-adddvaultpostgres-optimized", ["readShape=Bridge", "selectedStrategy=PostgresDataVaultReadStrategy", "plannedReadStrategy=PostgresDataVaultReadStrategy"]),
       new(SqlServerProviderName, "latest-satellite-read", "dvault-adddvaultsqlserver-optimized", ["readShape=LatestSatellite", "selectedStrategy=SqlServerDataVaultReadStrategy", "plannedReadStrategy=SqlServerDataVaultReadStrategy"]),
