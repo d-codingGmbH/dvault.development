@@ -1,0 +1,1 @@
+﻿Scope: add diagnostics that describe SQL push-down candidates for PIT rebuilds without executing database writes. Acceptance: unsupported shapes report deterministic stop reasons.

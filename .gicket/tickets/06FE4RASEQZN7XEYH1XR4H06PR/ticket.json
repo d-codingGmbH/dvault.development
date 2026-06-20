@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FE4RASEQZN7XEYH1XR4H06PR",
+  "ticket-type": "task",
+  "title": "Task: Implement provider-neutral encrypted attribute conversion proof",
+  "revision": "06FE4RCS4BHFVEHN221JR0NY28",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/privacy",
+    "area/security",
+    "area/modeling"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FE4PNAYJ8JW25Y0SYFPA90AR",
+  "release-id": "06FE4PMT7V0NN9Y6RKD5WDTY58",
+  "created-at": "2026-06-20T00:14:51.4040606Z",
+  "updated-at": "2026-06-20T00:15:07.5542653Z"
+}

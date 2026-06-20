@@ -1,0 +1,1 @@
+﻿Scope: define v0.42 acceptance gates for provider-configured benchmark evidence, tuning thresholds, fallback behavior, documentation, and package-version expectations. Acceptance: downstream tasks have clear pass/fail criteria and non-goals.

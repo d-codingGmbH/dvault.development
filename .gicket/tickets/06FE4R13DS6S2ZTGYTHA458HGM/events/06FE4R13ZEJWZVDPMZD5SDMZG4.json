@@ -1,0 +1,14 @@
+{
+  "event-id": "06FE4R13ZEJWZVDPMZD5SDMZG4",
+  "occurred-at": "2026-06-20T00:13:32.0274209Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add analyzer guidance for hex storage where binary-first is recommended",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

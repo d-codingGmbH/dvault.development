@@ -1,0 +1,1 @@
+﻿Scope: make the fluent/code-first binary-first setup easier to discover and use for new projects. Acceptance: public API stays focused and legacy defaults remain compatible.

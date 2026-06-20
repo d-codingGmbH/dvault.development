@@ -1,0 +1,14 @@
+{
+  "event-id": "06FE4RJDWJMKZXVT2T6VB23AVG",
+  "occurred-at": "2026-06-20T00:15:53.8287567Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add dry-run SQL shape diagnostics for PIT rebuild candidates",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

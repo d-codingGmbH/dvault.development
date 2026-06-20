@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FE4RAGWXQCQFCTX7QW1T9NAC",
+  "ticket-type": "task",
+  "title": "Task: Create DVault privacy package skeleton",
+  "revision": "06FE4RCPW6R16AH0GR4XYPA8MM",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/privacy",
+    "area/package",
+    "area/security"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FE4PNAYJ8JW25Y0SYFPA90AR",
+  "release-id": "06FE4PMT7V0NN9Y6RKD5WDTY58",
+  "created-at": "2026-06-20T00:14:49.1781044Z",
+  "updated-at": "2026-06-20T00:15:06.9779963Z"
+}

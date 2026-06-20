@@ -1,0 +1,1 @@
+﻿Scope: define v0.43 binary adoption, analyzer ergonomics, and runtime allocation goals. Acceptance: migration guidance remains caller-owned, binary-first recommendations are explicit, and unsupported automation is out of scope.

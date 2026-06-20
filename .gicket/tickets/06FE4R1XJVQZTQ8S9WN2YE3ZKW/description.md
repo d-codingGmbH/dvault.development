@@ -1,0 +1,1 @@
+﻿Scope: profile allocation hotspots in canonicalization, hash generation, hash diff, and save preparation paths. Acceptance: hotspots are ranked with evidence before implementation.

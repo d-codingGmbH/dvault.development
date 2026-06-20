@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FE4RK80ZXGCZ62CMSAYP164W",
+  "ticket-type": "task",
+  "title": "Task: Evaluate bridge rebuild push-down feasibility",
+  "revision": "06FE4RMGBT1P6QC6KH37RGBCG0",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/read-models",
+    "area/performance",
+    "area/architecture"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FE4PNJD7Y5BR7TYCG1VN49ER",
+  "release-id": "06FE4PMVMZM3KKNGEFDB2S3BKG",
+  "created-at": "2026-06-20T00:16:00.6383989Z",
+  "updated-at": "2026-06-20T00:16:10.8468696Z"
+}

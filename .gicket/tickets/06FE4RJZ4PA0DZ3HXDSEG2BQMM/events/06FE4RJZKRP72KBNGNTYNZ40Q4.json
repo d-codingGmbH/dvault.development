@@ -1,0 +1,14 @@
+{
+  "event-id": "06FE4RJZKRP72KBNGNTYNZ40Q4",
+  "occurred-at": "2026-06-20T00:15:58.3664935Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Prototype SQL Server PIT rebuild INSERT SELECT path",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

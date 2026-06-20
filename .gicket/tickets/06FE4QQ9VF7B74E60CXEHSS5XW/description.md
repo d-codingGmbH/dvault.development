@@ -1,0 +1,1 @@
+﻿Scope: use normalized evidence to tune MySQL latest-satellite strategy selection or SQL shape where justified. Acceptance: fallback remains available and docs/diagnostics explain the chosen path.

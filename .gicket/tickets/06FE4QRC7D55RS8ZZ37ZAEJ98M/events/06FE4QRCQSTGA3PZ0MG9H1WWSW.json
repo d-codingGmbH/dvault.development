@@ -1,0 +1,14 @@
+{
+  "event-id": "06FE4QRCQSTGA3PZ0MG9H1WWSW",
+  "occurred-at": "2026-06-20T00:12:20.5420671Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Refine SQL Server bulk thresholds and staged insert evidence",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

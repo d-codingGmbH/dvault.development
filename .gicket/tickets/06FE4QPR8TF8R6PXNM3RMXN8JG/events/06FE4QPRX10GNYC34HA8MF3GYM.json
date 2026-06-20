@@ -1,0 +1,14 @@
+{
+  "event-id": "06FE4QPRX10GNYC34HA8MF3GYM",
+  "occurred-at": "2026-06-20T00:12:07.2725792Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Tune PostgreSQL latest-satellite strategy with evidence",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

@@ -1,0 +1,1 @@
+﻿Scope: implement only evidence-backed low-risk allocation reductions in hash pipeline hot paths. Acceptance: behavior/test vectors remain stable and benchmark evidence is updated.

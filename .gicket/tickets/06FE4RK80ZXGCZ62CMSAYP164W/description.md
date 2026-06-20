@@ -1,0 +1,1 @@
+﻿Scope: evaluate whether bridge rebuild push-down is worthwhile and focused enough after PIT prototypes. Acceptance: recommendation is evidence-backed and unsupported cases are deferred explicitly.

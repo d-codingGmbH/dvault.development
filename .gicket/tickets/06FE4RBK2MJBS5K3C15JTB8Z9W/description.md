@@ -1,0 +1,1 @@
+﻿Scope: add a practical privacy extension example and docs for encrypted personal-data attributes and crypto-shredding posture. Acceptance: docs state limitations, DSGVO wording, provider caveats, and caller responsibilities.

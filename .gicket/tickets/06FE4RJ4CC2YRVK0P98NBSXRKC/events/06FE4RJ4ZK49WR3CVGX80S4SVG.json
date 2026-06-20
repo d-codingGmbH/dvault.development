@@ -1,0 +1,14 @@
+{
+  "event-id": "06FE4RJ4ZK49WR3CVGX80S4SVG",
+  "occurred-at": "2026-06-20T00:15:51.5483369Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define server-side PIT and bridge maintenance push-down boundary",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "release-id": "06FE4PMQ8GNKY6X54F8D16AVGC",
+  "name": "v0.42.0 - Provider Performance Evidence and Tuning",
+  "description": "Provider-configured benchmark evidence and targeted EF Core provider read/save tuning for latest-satellite, Oracle/DB2 hotspots, SQL Server bulk thresholds, and performance documentation. Planning release v0.42.0 maps to package versions 8.42.0 and 10.42.0.",
+  "status": "active",
+  "created-at": "2026-06-20T00:07:28.3248438Z"
+}

@@ -1,0 +1,14 @@
+{
+  "event-id": "06FE4QQJWXH8QYCMZT055KT53G",
+  "occurred-at": "2026-06-20T00:12:13.9272084Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Investigate Oracle latest-satellite evidence and fallback",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

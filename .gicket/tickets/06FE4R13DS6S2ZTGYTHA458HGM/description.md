@@ -1,0 +1,1 @@
+﻿Scope: add high-confidence analyzer guidance for new models that still use hex hash storage when binary-first profile is recommended. Acceptance: existing legacy-compatible profiles are not incorrectly flagged.

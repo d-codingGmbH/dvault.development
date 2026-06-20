@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FE4QP6FB892E7TJMB47A3MSR",
+  "ticket-type": "task",
+  "title": "Task: Normalize provider benchmark lanes for latest-satellite timing",
+  "revision": "06FE4QSXT6ETDZ78V4NKYJRY4C",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/performance",
+    "area/provider-support",
+    "area/benchmarking",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FE4PMXEP9R3PMVZBFC7RT75G",
+  "release-id": "06FE4PMQ8GNKY6X54F8D16AVGC",
+  "created-at": "2026-06-20T00:12:02.6691339Z",
+  "updated-at": "2026-06-20T00:12:33.1058777Z"
+}

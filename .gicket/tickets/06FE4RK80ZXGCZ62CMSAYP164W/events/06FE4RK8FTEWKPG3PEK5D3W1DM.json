@@ -1,0 +1,14 @@
+{
+  "event-id": "06FE4RK8FTEWKPG3PEK5D3W1DM",
+  "occurred-at": "2026-06-20T00:16:00.6383989Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Evaluate bridge rebuild push-down feasibility",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

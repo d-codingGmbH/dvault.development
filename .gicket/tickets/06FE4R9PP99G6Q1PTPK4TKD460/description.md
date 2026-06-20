@@ -1,0 +1,1 @@
+﻿Scope: define an optional DVault privacy add-on for EU/DSGVO-oriented projects. Acceptance: no compliance guarantee, no key-management platform, no automatic deletion workflow, and clear provider-neutral EF Core boundaries.

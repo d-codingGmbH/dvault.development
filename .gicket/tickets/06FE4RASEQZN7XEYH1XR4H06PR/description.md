@@ -1,0 +1,1 @@
+﻿Scope: implement a narrow encrypted attribute conversion proof using EF Core value conversion or equivalent provider-neutral mapping. Acceptance: encryption behavior is explicit and testable without owning keys.

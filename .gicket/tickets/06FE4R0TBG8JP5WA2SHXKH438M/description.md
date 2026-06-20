@@ -1,0 +1,1 @@
+﻿Scope: add a dry-run manifest/report that describes binary storage changes for caller-owned migrations. Acceptance: no database writes occur and output is stable enough for CI review.

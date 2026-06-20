@@ -1,0 +1,1 @@
+﻿Scope: define when DVault may offer explicit server-side PIT/bridge maintenance push-down through EF Core provider libraries. Acceptance: dry-run diagnostics, fallbacks, unsupported shapes, and no deployment/runtime platform behavior are clear.

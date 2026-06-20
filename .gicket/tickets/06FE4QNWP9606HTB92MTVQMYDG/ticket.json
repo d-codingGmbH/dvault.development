@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FE4QNWP9606HTB92MTVQMYDG",
+  "ticket-type": "story",
+  "title": "Story: Define v0.42 provider evidence and tuning gates",
+  "revision": "06FE4QT55TW5BGTG366X58CFSW",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/story",
+    "area/performance",
+    "area/provider-support",
+    "area/benchmarking"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FE4PMXEP9R3PMVZBFC7RT75G",
+  "release-id": "06FE4PMQ8GNKY6X54F8D16AVGC",
+  "created-at": "2026-06-20T00:12:00.2314911Z",
+  "updated-at": "2026-06-20T00:12:34.9909611Z"
+}

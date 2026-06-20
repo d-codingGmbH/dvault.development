@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FE4QQ9VF7B74E60CXEHSS5XW",
+  "ticket-type": "task",
+  "title": "Task: Tune MySQL latest-satellite strategy with evidence",
+  "revision": "06FE4QTBYX4JCN895EPS8BA2XW",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/performance",
+    "area/provider-support",
+    "area/read-models",
+    "provider/mysql"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FE4PMYZ1MAMMK6HWV6VAJMQ4",
+  "release-id": "06FE4PMQ8GNKY6X54F8D16AVGC",
+  "created-at": "2026-06-20T00:12:11.7698457Z",
+  "updated-at": "2026-06-20T00:12:36.7271685Z"
+}

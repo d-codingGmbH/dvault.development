@@ -1,0 +1,1 @@
+﻿Scope: design key provider abstractions and crypto-shredding lifecycle boundaries. Acceptance: callers own key creation, storage, rotation, destruction, and audit responsibility.

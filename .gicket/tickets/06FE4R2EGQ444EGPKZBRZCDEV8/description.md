@@ -1,0 +1,1 @@
+﻿Scope: update binary adoption docs, analyzer docs, performance profiles, and release notes. Acceptance: docs tie v0.43 changes to measured evidence and migration non-goals.

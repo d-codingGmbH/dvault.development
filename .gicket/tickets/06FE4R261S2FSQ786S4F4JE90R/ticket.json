@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FE4R261S2FSQ786S4F4JE90R",
+  "ticket-type": "task",
+  "title": "Task: Implement targeted hash pipeline allocation reductions",
+  "revision": "06FE4R3YSV1A9JHGXTSRGZ9MQC",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/performance",
+    "area/hash-storage"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FE4PN6FS62NVWJNT50X03ZJ4",
+  "release-id": "06FE4PMRTW15865V5XN7C1MZZG",
+  "created-at": "2026-06-20T00:13:40.8650328Z",
+  "updated-at": "2026-06-20T00:13:55.2783611Z"
+}

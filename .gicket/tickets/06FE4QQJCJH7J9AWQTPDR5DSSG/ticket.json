@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FE4QQJCJH7J9AWQTPDR5DSSG",
+  "ticket-type": "task",
+  "title": "Task: Investigate Oracle latest-satellite evidence and fallback",
+  "revision": "06FE4QT2H3HVDNXGQY14YBJGS0",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/performance",
+    "area/provider-support",
+    "area/read-models",
+    "provider/oracle"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FE4PN0ERK3QJ6BXYWECFW0MR",
+  "release-id": "06FE4PMQ8GNKY6X54F8D16AVGC",
+  "created-at": "2026-06-20T00:12:13.9272084Z",
+  "updated-at": "2026-06-20T00:12:34.3126855Z"
+}

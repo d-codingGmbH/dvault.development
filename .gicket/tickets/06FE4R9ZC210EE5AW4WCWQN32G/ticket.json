@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FE4R9ZC210EE5AW4WCWQN32G",
+  "ticket-type": "task",
+  "title": "Task: Design personal-data satellite field metadata contract",
+  "revision": "06FE4RCG3NMWWHV2B9X1J93DTG",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/privacy",
+    "area/modeling",
+    "area/architecture"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FE4PN9EX787F4DHNJVN86YK0",
+  "release-id": "06FE4PMT7V0NN9Y6RKD5WDTY58",
+  "created-at": "2026-06-20T00:14:44.7646803Z",
+  "updated-at": "2026-06-20T00:15:05.2458632Z"
+}

@@ -1,0 +1,1 @@
+﻿Scope: create the optional privacy package structure, target frameworks, package metadata, and dependency boundaries. Acceptance: core DVault packages do not gain mandatory privacy dependencies.

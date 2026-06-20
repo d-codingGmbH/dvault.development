@@ -1,0 +1,14 @@
+{
+  "event-id": "06FE4QNXCYZCDX0NVPMBJP2E38",
+  "occurred-at": "2026-06-20T00:12:00.2314911Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define v0.42 provider evidence and tuning gates",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

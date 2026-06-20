@@ -1,0 +1,1 @@
+﻿Scope: design metadata for identifying personal-data satellite fields and encrypted payload mapping. Acceptance: model stays compatible with DVault history semantics and provider-neutral EF Core mapping.

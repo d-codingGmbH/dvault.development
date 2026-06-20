@@ -1,0 +1,1 @@
+﻿Scope: normalize benchmark lanes for PostgreSQL, SQL Server, MySQL, Oracle, and DB2 latest-satellite timings with optimized/fallback tokens and promoted artifacts. Acceptance: each provider has comparable timing posture or explicit skip/failure rationale.

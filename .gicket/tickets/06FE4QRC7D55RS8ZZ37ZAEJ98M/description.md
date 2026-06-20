@@ -1,0 +1,1 @@
+﻿Scope: revisit SQL Server bulk threshold and staged insert decisions where previous time gains were modest. Acceptance: thresholds are evidence-backed and fallback remains predictable.

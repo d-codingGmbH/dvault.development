@@ -1,0 +1,14 @@
+{
+  "event-id": "06FE4QPFPDRSDSCBYC4EN843RM",
+  "occurred-at": "2026-06-20T00:12:04.9150442Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add DB2 benchmark promotion guardrails",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

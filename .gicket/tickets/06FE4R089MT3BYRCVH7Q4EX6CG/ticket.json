@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FE4R089MT3BYRCVH7Q4EX6CG",
+  "ticket-type": "story",
+  "title": "Story: Define binary adoption and runtime efficiency contract",
+  "revision": "06FE4R3E5W0Y62BBB8MJ3KF0R8",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/story",
+    "area/hash-storage",
+    "area/analyzers",
+    "area/performance"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FE4PN3DF0GFVJMQQKQWQR3FM",
+  "release-id": "06FE4PMRTW15865V5XN7C1MZZG",
+  "created-at": "2026-06-20T00:13:25.1016745Z",
+  "updated-at": "2026-06-20T00:13:51.0238347Z"
+}

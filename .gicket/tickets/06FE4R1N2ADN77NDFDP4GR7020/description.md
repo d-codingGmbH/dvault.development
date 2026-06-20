@@ -1,0 +1,1 @@
+﻿Scope: measure binary-vs-hex storage footprint and timing across supported providers. Acceptance: performance docs identify measured wins, neutral cases, and caveats.

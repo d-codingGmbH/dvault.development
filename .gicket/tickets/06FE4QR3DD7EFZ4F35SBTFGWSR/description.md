@@ -1,0 +1,1 @@
+﻿Scope: complete DB2 save/read strategy evidence and tune only supported provider-specific paths. Acceptance: DB2 benchmarks and diagnostics show supported paths, fallbacks, and any remaining limitations.

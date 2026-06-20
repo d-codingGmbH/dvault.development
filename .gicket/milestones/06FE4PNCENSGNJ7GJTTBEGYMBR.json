@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestone-id": "06FE4PNCENSGNJ7GJTTBEGYMBR",
+  "name": "v0.44.0 - Status tracking and privacy examples",
+  "description": "Evaluate bounded RTS/STS-style metadata and examples that support privacy workflows while preserving Data Vault history semantics.",
+  "status": "planned",
+  "created-at": "2026-06-20T00:07:33.7499767Z"
+}

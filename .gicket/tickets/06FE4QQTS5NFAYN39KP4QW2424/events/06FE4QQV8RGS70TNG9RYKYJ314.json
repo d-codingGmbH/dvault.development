@@ -1,0 +1,14 @@
+{
+  "event-id": "06FE4QQV8RGS70TNG9RYKYJ314",
+  "occurred-at": "2026-06-20T00:12:16.0704467Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Tune Oracle PIT read outlier",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

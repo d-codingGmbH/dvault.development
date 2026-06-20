@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestone-id": "06FE4PMXEP9R3PMVZBFC7RT75G",
+  "name": "v0.42.0 - Provider benchmark acceptance and lanes",
+  "description": "Define provider benchmark acceptance criteria and normalize provider-configured latest-satellite, DB2, and bulk benchmark lanes before tuning work.",
+  "status": "active",
+  "created-at": "2026-06-20T00:07:29.9092947Z"
+}

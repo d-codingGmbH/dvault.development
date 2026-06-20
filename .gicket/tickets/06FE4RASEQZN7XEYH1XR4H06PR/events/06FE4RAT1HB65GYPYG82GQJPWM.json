@@ -1,0 +1,14 @@
+{
+  "event-id": "06FE4RAT1HB65GYPYG82GQJPWM",
+  "occurred-at": "2026-06-20T00:14:51.4040606Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Implement provider-neutral encrypted attribute conversion proof",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

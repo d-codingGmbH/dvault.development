@@ -1,0 +1,1 @@
+﻿Scope: investigate and tune the Oracle PIT read outlier seen in smoke evidence. Acceptance: either a measurable improvement is landed or the documented fallback/limitation is justified.

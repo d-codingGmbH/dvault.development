@@ -1,0 +1,1 @@
+﻿Scope: update performance profiles, gap/evidence matrices, local validation notes, and v0.42 release docs after tuning. Acceptance: docs distinguish measured improvements, deferred gaps, and provider-specific caveats.

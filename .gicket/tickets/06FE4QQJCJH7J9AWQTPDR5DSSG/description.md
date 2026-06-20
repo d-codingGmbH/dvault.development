@@ -1,0 +1,1 @@
+﻿Scope: verify Oracle latest-satellite timing, selected SQL shape, fallback behavior, and diagnostics before PIT tuning. Acceptance: tuning or deferral decision is evidence-backed.

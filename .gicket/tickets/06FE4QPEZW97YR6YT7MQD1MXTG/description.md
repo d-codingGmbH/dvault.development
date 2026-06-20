@@ -1,0 +1,1 @@
+﻿Scope: make DB2 save/latest/PIT/bridge benchmark promotion explicit and conservative. Acceptance: completed, skipped, and failed DB2 evidence is represented without overstating support.

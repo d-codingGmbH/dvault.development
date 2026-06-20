@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FE4QQ0YTHD7624MGVPKKK1C0",
+  "ticket-type": "task",
+  "title": "Task: Tune SQL Server latest-satellite strategy with evidence",
+  "revision": "06FE4QT9PEJDNX57RSKZ0HCBKM",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/performance",
+    "area/provider-support",
+    "area/read-models",
+    "provider/sqlserver"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FE4PMYZ1MAMMK6HWV6VAJMQ4",
+  "release-id": "06FE4PMQ8GNKY6X54F8D16AVGC",
+  "created-at": "2026-06-20T00:12:09.4783378Z",
+  "updated-at": "2026-06-20T00:12:36.1476855Z"
+}

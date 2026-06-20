@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "release-id": "06FE4PMT7V0NN9Y6RKD5WDTY58",
+  "name": "v0.44.0 - Optional Privacy Extension Foundation",
+  "description": "Optional DVault privacy extension foundation for caller-owned crypto-shredding patterns, personal-data satellite metadata, key-provider boundaries, and provider-neutral encrypted payload mapping without compliance guarantees or key-management platform behavior. Planning release v0.44.0 maps to package versions 8.44.0 and 10.44.0.",
+  "status": "planned",
+  "created-at": "2026-06-20T00:07:29.0865617Z"
+}

@@ -1,0 +1,21 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FE4R0TBG8JP5WA2SHXKH438M",
+  "ticket-type": "task",
+  "title": "Task: Add caller-owned binary storage migration manifest dry-run",
+  "revision": "06FE4R3QJW6ZYE4ZM332EKA3N8",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/hash-storage",
+    "area/tooling"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FE4PN3DF0GFVJMQQKQWQR3FM",
+  "release-id": "06FE4PMRTW15865V5XN7C1MZZG",
+  "created-at": "2026-06-20T00:13:29.7214875Z",
+  "updated-at": "2026-06-20T00:13:53.4310639Z"
+}

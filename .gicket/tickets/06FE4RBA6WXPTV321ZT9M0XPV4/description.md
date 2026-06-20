@@ -1,0 +1,1 @@
+﻿Scope: evaluate whether status/effectivity-style satellites help privacy workflows without changing core Data Vault semantics. Acceptance: recommendation is documented and implementation is deferred unless clearly small and focused.

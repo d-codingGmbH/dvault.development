@@ -1,0 +1,14 @@
+{
+  "event-id": "06FE4RA8Q76DC8D116NXJY8H3W",
+  "occurred-at": "2026-06-20T00:14:46.9699246Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Design caller-owned key provider and crypto-shredding lifecycle",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

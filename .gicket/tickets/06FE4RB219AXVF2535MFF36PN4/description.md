@@ -1,0 +1,1 @@
+﻿Scope: add provider mapping tests for encrypted payload column types across supported providers where feasible. Acceptance: provider caveats are explicit and unsupported cases fail with useful diagnostics.

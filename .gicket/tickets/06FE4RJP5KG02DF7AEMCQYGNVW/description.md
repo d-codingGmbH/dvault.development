@@ -1,0 +1,1 @@
+﻿Scope: prototype a bounded PostgreSQL PIT rebuild INSERT SELECT path behind explicit service/diagnostic gates. Acceptance: fallback remains default when criteria are not met.

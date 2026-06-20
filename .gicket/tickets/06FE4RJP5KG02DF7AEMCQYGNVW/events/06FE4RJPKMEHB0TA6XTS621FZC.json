@@ -1,0 +1,14 @@
+{
+  "event-id": "06FE4RJPKMEHB0TA6XTS621FZC",
+  "occurred-at": "2026-06-20T00:15:56.0619155Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Prototype PostgreSQL PIT rebuild INSERT SELECT path",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

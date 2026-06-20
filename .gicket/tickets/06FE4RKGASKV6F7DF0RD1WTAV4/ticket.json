@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FE4RKGASKV6F7DF0RD1WTAV4",
+  "ticket-type": "task",
+  "title": "Task: Update PIT and bridge push-down architecture docs",
+  "revision": "06FE4RKMM23V6N441HVGBF0Z1C",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/read-models",
+    "area/documentation",
+    "area/architecture"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FE4PNJD7Y5BR7TYCG1VN49ER",
+  "release-id": "06FE4PMVMZM3KKNGEFDB2S3BKG",
+  "created-at": "2026-06-20T00:16:02.7704834Z",
+  "updated-at": "2026-06-20T00:16:03.7441952Z"
+}

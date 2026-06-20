@@ -1,0 +1,1 @@
+﻿Scope: document how consumers can plan, validate, and execute their own hex-to-binary hash storage adoption. Acceptance: guidance covers rollback, compatibility checks, and provider caveats without automatic migration execution.

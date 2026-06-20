@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestone-id": "06FE4PN4XSC7T6SF5NKJBDHPMG",
+  "name": "v0.43.0 - Binary-first analyzer and code-first ergonomics",
+  "description": "Improve analyzer and fluent Code-First ergonomics around recommended binary-first new-model usage and legacy hex compatibility.",
+  "status": "planned",
+  "created-at": "2026-06-20T00:07:31.8227630Z"
+}

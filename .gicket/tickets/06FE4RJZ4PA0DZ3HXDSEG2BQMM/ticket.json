@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FE4RJZ4PA0DZ3HXDSEG2BQMM",
+  "ticket-type": "task",
+  "title": "Task: Prototype SQL Server PIT rebuild INSERT SELECT path",
+  "revision": "06FE4RME0GBEY8NCZ8808G8B3R",
+  "status": "todo",
+  "labels": [
+    "automation/bot-ready",
+    "needs-po",
+    "type/task",
+    "area/read-models",
+    "area/performance",
+    "provider/sqlserver"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FE4PNGY15HRQWX7C034RDESG",
+  "release-id": "06FE4PMVMZM3KKNGEFDB2S3BKG",
+  "created-at": "2026-06-20T00:15:58.3664935Z",
+  "updated-at": "2026-06-20T00:16:10.2447080Z"
+}

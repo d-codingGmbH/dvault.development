@@ -1,0 +1,1 @@
+﻿Scope: update PIT/bridge boundary docs, performance profiles, and release notes after push-down exploration. Acceptance: docs separate accepted paths, prototype limits, fallback behavior, and non-goals.
