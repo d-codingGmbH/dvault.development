@@ -41,6 +41,8 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
             [
                 typeof(Db2DataVaultSmokeTests),
                 typeof(Db2IntegrationTestConfigurationTests),
+                typeof(Db2LiveSchemaFixtureContractTests),
+                typeof(Db2LiveSchemaReaderTests),
                 typeof(MySqlExplicitDataVaultSaveServiceTests),
                 typeof(MySqlIntegrationTestConfigurationTests),
                 typeof(MySqlLiveSchemaFixtureContractTests),
@@ -168,6 +170,7 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
   public void LiveDb2IntegrationTestsAreExternalProviderOptInCoverage() {
     foreach (var coverageType in new[] {
         typeof(Db2DataVaultSmokeTests),
+        typeof(Db2LiveSchemaReaderTests),
     }) {
       AssertTrait(
           coverageType,
@@ -254,6 +257,7 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
   [Trait(ProviderTestCategories.CategoryTraitName, ProviderTestCategories.DefaultProviderSmoke)]
   public void LiveSchemaFixtureContractTestsRemainDefaultProviderSmokeCoverage() {
     foreach (var (coverageType, providerName) in new[] {
+        (typeof(Db2LiveSchemaFixtureContractTests), ProviderTestCategories.Db2Provider),
         (typeof(PostgresLiveSchemaFixtureContractTests), ProviderTestCategories.PostgresProvider),
         (typeof(SqlServerLiveSchemaFixtureContractTests), ProviderTestCategories.SqlServerProvider),
         (typeof(OracleLiveSchemaFixtureContractTests), ProviderTestCategories.OracleProvider),

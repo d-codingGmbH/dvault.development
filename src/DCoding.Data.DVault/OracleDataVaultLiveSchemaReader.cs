@@ -41,8 +41,9 @@ internal sealed class OracleDataVaultLiveSchemaReader : CatalogDataVaultLiveSche
 
   protected override async Task<IReadOnlyList<DataVaultLiveSchemaColumn>> ReadColumnsAsync(
       DbConnection connection,
-      LiveSchemaTableIdentifier tableIdentifier,
+      LiveSchemaExpectedTable expectedTable,
       CancellationToken cancellationToken) {
+    var tableIdentifier = expectedTable.Identifier;
     using var command = CreateCommand(
         connection,
         "SELECT column_name, column_id - 1, " +
@@ -74,9 +75,9 @@ internal sealed class OracleDataVaultLiveSchemaReader : CatalogDataVaultLiveSche
 
   protected override async Task<DataVaultLiveSchemaPrimaryKey> ReadPrimaryKeyAsync(
       DbConnection connection,
-      LiveSchemaTableIdentifier tableIdentifier,
-      string? expectedPrimaryKeyName,
+      LiveSchemaExpectedTable expectedTable,
       CancellationToken cancellationToken) {
+    var tableIdentifier = expectedTable.Identifier;
     using var command = CreateCommand(
         connection,
         "SELECT c.constraint_name, cc.column_name " +
@@ -100,8 +101,9 @@ internal sealed class OracleDataVaultLiveSchemaReader : CatalogDataVaultLiveSche
 
   protected override async Task<IReadOnlyList<DataVaultLiveSchemaIndex>> ReadIndexesAsync(
       DbConnection connection,
-      LiveSchemaTableIdentifier tableIdentifier,
+      LiveSchemaExpectedTable expectedTable,
       CancellationToken cancellationToken) {
+    var tableIdentifier = expectedTable.Identifier;
     using var command = CreateCommand(
         connection,
         "SELECT i.index_name, CASE i.uniqueness WHEN 'UNIQUE' THEN 1 ELSE 0 END " +

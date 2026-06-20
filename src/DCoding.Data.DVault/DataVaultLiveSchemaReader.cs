@@ -22,7 +22,7 @@ public static class DataVaultLiveSchemaReader {
   private static readonly IDataVaultLiveSchemaReader PostgresReader = new PostgresDataVaultLiveSchemaReader();
   private static readonly IDataVaultLiveSchemaReader SqlServerReader = new SqlServerDataVaultLiveSchemaReader();
   private static readonly IDataVaultLiveSchemaReader OracleReader = new OracleDataVaultLiveSchemaReader();
-  private static readonly IDataVaultLiveSchemaReader Db2UnsupportedReader = new UnsupportedDataVaultLiveSchemaReader(Db2ProviderName);
+  private static readonly IDataVaultLiveSchemaReader Db2Reader = new Db2DataVaultLiveSchemaReader();
   private static readonly IDataVaultLiveSchemaReader MySqlReader = new MySqlDataVaultLiveSchemaReader();
   private static readonly IReadOnlyDictionary<string, IDataVaultLiveSchemaReader> BuiltInReadersByProviderName =
       new Dictionary<string, IDataVaultLiveSchemaReader>(StringComparer.Ordinal) {
@@ -30,7 +30,7 @@ public static class DataVaultLiveSchemaReader {
         [PostgresProviderName] = PostgresReader,
         [SqlServerProviderName] = SqlServerReader,
         [OracleProviderName] = OracleReader,
-        [Db2ProviderName] = Db2UnsupportedReader,
+        [Db2ProviderName] = Db2Reader,
         [MySqlProviderName] = MySqlReader,
         [PomeloMySqlProviderName] = MySqlReader,
       };

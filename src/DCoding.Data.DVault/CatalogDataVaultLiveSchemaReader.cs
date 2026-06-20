@@ -42,21 +42,21 @@ internal abstract class CatalogDataVaultLiveSchemaReader : IDataVaultLiveSchemaR
           continue;
         }
 
+        var resolvedExpectedTable = expectedTable with { Identifier = tableIdentifier };
         tables.Add(new DataVaultLiveSchemaTable(
             tableIdentifier.TableName,
-            await ReadColumnsAsync(connection, tableIdentifier, cancellationToken).ConfigureAwait(false),
+            await ReadColumnsAsync(connection, resolvedExpectedTable, cancellationToken).ConfigureAwait(false),
             await ReadPrimaryKeyAsync(
                 connection,
-                tableIdentifier,
-                expectedTable.PrimaryKeyName,
+                resolvedExpectedTable,
                 cancellationToken).ConfigureAwait(false),
-            await ReadIndexesAsync(connection, tableIdentifier, cancellationToken).ConfigureAwait(false)));
+            await ReadIndexesAsync(connection, resolvedExpectedTable, cancellationToken).ConfigureAwait(false)));
       }
 
       return DataVaultLiveSchemaReadResult.Success(providerName, new DataVaultLiveSchemaSnapshot(tables));
     }
     catch (Exception exception) when (IsSchemaUnavailableException(exception)) {
-      return DataVaultLiveSchemaReadResult.Unavailable(providerName, exception.Message);
+      return CreateUnavailableResult(providerName, exception);
     }
     finally {
       if (shouldCloseConnection && connection.State != ConnectionState.Closed) {
@@ -79,19 +79,22 @@ internal abstract class CatalogDataVaultLiveSchemaReader : IDataVaultLiveSchemaR
 
   protected abstract Task<IReadOnlyList<DataVaultLiveSchemaColumn>> ReadColumnsAsync(
       DbConnection connection,
-      LiveSchemaTableIdentifier tableIdentifier,
+      LiveSchemaExpectedTable expectedTable,
       CancellationToken cancellationToken);
 
   protected abstract Task<DataVaultLiveSchemaPrimaryKey> ReadPrimaryKeyAsync(
       DbConnection connection,
-      LiveSchemaTableIdentifier tableIdentifier,
-      string? expectedPrimaryKeyName,
+      LiveSchemaExpectedTable expectedTable,
       CancellationToken cancellationToken);
 
   protected abstract Task<IReadOnlyList<DataVaultLiveSchemaIndex>> ReadIndexesAsync(
       DbConnection connection,
-      LiveSchemaTableIdentifier tableIdentifier,
+      LiveSchemaExpectedTable expectedTable,
       CancellationToken cancellationToken);
+
+  protected virtual DataVaultLiveSchemaReadResult CreateUnavailableResult(string? providerName, Exception exception) {
+    return DataVaultLiveSchemaReadResult.Unavailable(providerName, exception.Message);
+  }
 
   protected static async Task<string?> ReadScalarStringAsync(
       DbConnection connection,
@@ -167,12 +170,23 @@ internal abstract class CatalogDataVaultLiveSchemaReader : IDataVaultLiveSchemaR
         continue;
       }
 
+      var schemaName = entityType.GetSchema() ?? dbContext.Model.GetDefaultSchema();
+      var storeObject = StoreObjectIdentifier.Table(tableName, schemaName);
       var identifier = new LiveSchemaTableIdentifier(
           tableName,
-          entityType.GetSchema() ?? dbContext.Model.GetDefaultSchema());
+          schemaName);
       expectedTablesByIdentifier.TryAdd(
           identifier,
-          new LiveSchemaExpectedTable(identifier, entityType.FindPrimaryKey()?.GetName()));
+          new LiveSchemaExpectedTable(
+              identifier,
+              entityType.FindPrimaryKey()?.GetName(),
+              entityType.GetProperties()
+                  .Select(property => property.GetColumnName(storeObject) ?? property.Name)
+                  .ToArray(),
+              entityType.GetIndexes()
+                  .Select(index => index.GetDatabaseName() ?? string.Join("_", index.Properties.Select(property =>
+                      property.GetColumnName(storeObject) ?? property.Name)))
+                  .ToArray()));
     }
 
     return expectedTablesByIdentifier.Values

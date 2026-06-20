@@ -161,7 +161,7 @@ In short:
 - The analyzer package is validated against the `.NET 10 SDK` build-host baseline for both coordinated package lines; pure `.NET 8 SDK` analyzer consumption is not a current compatibility claim.
 - Stored procedures and provider-specific SQL artifacts are not default write paths. Any artifact lane is explicit, design-time, review-owned, and outside normal persistence.
 - Binary hash-key storage is opt-in physical storage. Public hash-key values remain lowercase hexadecimal strings.
-- DB2 live-schema reading is explicitly unsupported until a DB2 catalog reader exists.
+- DB2 live-schema reading is available as external opt-in evidence through `IBM.EntityFrameworkCore`; DB2 databases, credentials, lifecycle cleanup, and CI isolation remain consumer-owned.
 - Live PostgreSQL, SQL Server, Oracle, MySQL, and DB2 integration tests are opt-in behind local `DVAULT_TEST_*` connection strings. Default validation does not require external databases or containers.
 
 ## Layout

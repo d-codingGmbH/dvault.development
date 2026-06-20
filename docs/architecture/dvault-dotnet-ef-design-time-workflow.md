@@ -292,7 +292,7 @@ Live-schema drift is optional and non-default:
 dotnet run --project src/SalesVault/SalesVault.csproj -- drift --artifact src/SalesVault/dvault.model.v1 --live-schema
 ```
 
-Use the live-schema lane only inside the documented boundary. SQLite is the first-class local live-schema reader. PostgreSQL, SQL Server, Oracle, and MySQL have built-in reader dispatch, but their checks require external opt-in evidence with consumer-managed databases, credentials, lifecycle cleanup, and CI isolation rather than a default DVault-provided CI environment.
+Use the live-schema lane only inside the documented boundary. SQLite is the first-class local live-schema reader. PostgreSQL, SQL Server, Oracle, DB2, and MySQL have built-in reader dispatch, but their checks require external opt-in evidence with consumer-managed databases, credentials, lifecycle cleanup, and CI isolation rather than a default DVault-provided CI environment.
 
 ## Idempotency Schema Preflight
 

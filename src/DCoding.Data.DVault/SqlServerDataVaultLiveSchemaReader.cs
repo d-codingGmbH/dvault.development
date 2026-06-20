@@ -44,8 +44,9 @@ internal sealed class SqlServerDataVaultLiveSchemaReader : CatalogDataVaultLiveS
 
   protected override async Task<IReadOnlyList<DataVaultLiveSchemaColumn>> ReadColumnsAsync(
       DbConnection connection,
-      LiveSchemaTableIdentifier tableIdentifier,
+      LiveSchemaExpectedTable expectedTable,
       CancellationToken cancellationToken) {
+    var tableIdentifier = expectedTable.Identifier;
     using var command = CreateCommand(
         connection,
         "SELECT c.name, ROW_NUMBER() OVER (ORDER BY c.column_id) - 1, " +
@@ -80,9 +81,9 @@ internal sealed class SqlServerDataVaultLiveSchemaReader : CatalogDataVaultLiveS
 
   protected override async Task<DataVaultLiveSchemaPrimaryKey> ReadPrimaryKeyAsync(
       DbConnection connection,
-      LiveSchemaTableIdentifier tableIdentifier,
-      string? expectedPrimaryKeyName,
+      LiveSchemaExpectedTable expectedTable,
       CancellationToken cancellationToken) {
+    var tableIdentifier = expectedTable.Identifier;
     using var command = CreateCommand(
         connection,
         "SELECT kc.name, c.name " +
@@ -109,8 +110,9 @@ internal sealed class SqlServerDataVaultLiveSchemaReader : CatalogDataVaultLiveS
 
   protected override async Task<IReadOnlyList<DataVaultLiveSchemaIndex>> ReadIndexesAsync(
       DbConnection connection,
-      LiveSchemaTableIdentifier tableIdentifier,
+      LiveSchemaExpectedTable expectedTable,
       CancellationToken cancellationToken) {
+    var tableIdentifier = expectedTable.Identifier;
     using var command = CreateCommand(
         connection,
         "SELECT i.name, i.is_unique " +

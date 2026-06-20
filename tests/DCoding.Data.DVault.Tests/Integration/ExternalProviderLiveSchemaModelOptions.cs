@@ -70,6 +70,37 @@ internal sealed class ExternalProviderLiveSchemaModelOptions {
         identifierNameOverrides: new Dictionary<string, string>(StringComparer.Ordinal));
   }
 
+  public static ExternalProviderLiveSchemaModelOptions ForDb2(string suffix) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(suffix);
+
+    var tableNameOverrides = new Dictionary<string, string>(StringComparer.Ordinal) {
+      ["HubCustomer"] = "DVHCU" + suffix,
+      ["HubOrder"] = "DVHOR" + suffix,
+      ["LinkCustomerOrder"] = "DVLCO" + suffix,
+      ["SatCustomerContact"] = "DVSCC" + suffix,
+      ["SatCustomerOrderState"] = "DVSCOS" + suffix,
+    };
+    var identifierNameOverrides = new Dictionary<string, string>(StringComparer.Ordinal) {
+      ["PkHubCustomerCustomerHashKey"] = "DPKHC" + suffix,
+      ["IxHubCustomerBusinessKeyCustomerId"] = "DIXHCBK" + suffix,
+      ["PkHubOrderOrderHashKey"] = "DPKHO" + suffix,
+      ["IxHubOrderBusinessKeyOrderId"] = "DIXHOBK" + suffix,
+      ["PkLinkCustomerOrderCustomerOrderHashKey"] = "DPKCO" + suffix,
+      ["IxLinkCustomerOrderRelationshipCustomerHashKeyOrderHashKey"] = "DIXCOREL" + suffix,
+      ["PkSatCustomerContactCustomerHashKeyLoadTimestamp"] = "DPKSCC" + suffix,
+      ["IxSatCustomerContactSatelliteParentCustomerHashKeyLoadTimestamp"] = "DIXSCCP" + suffix,
+      ["PkSatCustomerOrderStateCustomerOrderHashKeyLoadTimestamp"] = "DPKSCOS" + suffix,
+      ["IxSatCustomerOrderStateSatelliteParentCustomerOrderHashKeyLoadTimestamp"] = "DIXSCOSP" + suffix,
+    };
+
+    return new ExternalProviderLiveSchemaModelOptions(
+        DataVaultProviderCapabilityProfiles.Db2,
+        defaultSchema: null,
+        tableNamePrefix: string.Empty,
+        tableNameOverrides,
+        identifierNameOverrides);
+  }
+
   public static ExternalProviderLiveSchemaModelOptions ForOracle(string suffix) {
     ArgumentException.ThrowIfNullOrWhiteSpace(suffix);
 

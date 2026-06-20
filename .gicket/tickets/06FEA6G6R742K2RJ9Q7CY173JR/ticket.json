@@ -3,21 +3,20 @@
   "ticket-id": "06FEA6G6R742K2RJ9Q7CY173JR",
   "ticket-type": "task",
   "title": "Task: Add DB2 live-schema reader for opt-in preflight evidence",
-  "revision": "06FEA6HSZMHD7E8VC1S3KZYCSW",
-  "status": "todo",
+  "revision": "06FECZE75T58DQA8NN2A6A127C",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
-    "area/provider-support",
     "area/design-time",
+    "area/provider-support",
     "area/schema",
-    "provider/db2"
+    "automation/bot-ready",
+    "provider/db2",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PN0ERK3QJ6BXYWECFW0MR",
   "release-id": "06FE4PMQ8GNKY6X54F8D16AVGC",
   "created-at": "2026-06-20T12:55:48.8806428Z",
-  "updated-at": "2026-06-20T12:56:01.7893462Z"
+  "updated-at": "2026-06-20T19:24:23.2149537Z"
 }

@@ -46,8 +46,9 @@ internal sealed class MySqlDataVaultLiveSchemaReader : CatalogDataVaultLiveSchem
 
   protected override async Task<IReadOnlyList<DataVaultLiveSchemaColumn>> ReadColumnsAsync(
       DbConnection connection,
-      LiveSchemaTableIdentifier tableIdentifier,
+      LiveSchemaExpectedTable expectedTable,
       CancellationToken cancellationToken) {
+    var tableIdentifier = expectedTable.Identifier;
     using var command = CreateCommand(
         connection,
         "SELECT COLUMN_NAME, ORDINAL_POSITION - 1, COLUMN_TYPE " +
@@ -71,9 +72,9 @@ internal sealed class MySqlDataVaultLiveSchemaReader : CatalogDataVaultLiveSchem
 
   protected override async Task<DataVaultLiveSchemaPrimaryKey> ReadPrimaryKeyAsync(
       DbConnection connection,
-      LiveSchemaTableIdentifier tableIdentifier,
-      string? expectedPrimaryKeyName,
+      LiveSchemaExpectedTable expectedTable,
       CancellationToken cancellationToken) {
+    var tableIdentifier = expectedTable.Identifier;
     using var command = CreateCommand(
         connection,
         "SELECT tc.CONSTRAINT_NAME, kcu.COLUMN_NAME " +
@@ -98,8 +99,8 @@ internal sealed class MySqlDataVaultLiveSchemaReader : CatalogDataVaultLiveSchem
     }
 
     if (string.Equals(primaryKeyName, "PRIMARY", StringComparison.Ordinal) &&
-        !string.IsNullOrWhiteSpace(expectedPrimaryKeyName)) {
-      primaryKeyName = expectedPrimaryKeyName;
+        !string.IsNullOrWhiteSpace(expectedTable.PrimaryKeyName)) {
+      primaryKeyName = expectedTable.PrimaryKeyName;
     }
 
     return CreatePrimaryKey(primaryKeyName, columnNames);
@@ -107,8 +108,9 @@ internal sealed class MySqlDataVaultLiveSchemaReader : CatalogDataVaultLiveSchem
 
   protected override async Task<IReadOnlyList<DataVaultLiveSchemaIndex>> ReadIndexesAsync(
       DbConnection connection,
-      LiveSchemaTableIdentifier tableIdentifier,
+      LiveSchemaExpectedTable expectedTable,
       CancellationToken cancellationToken) {
+    var tableIdentifier = expectedTable.Identifier;
     using var command = CreateCommand(
         connection,
         "SELECT INDEX_NAME, MAX(CASE NON_UNIQUE WHEN 0 THEN 1 ELSE 0 END) " +

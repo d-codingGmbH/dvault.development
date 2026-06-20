@@ -53,7 +53,7 @@ Apply these tuning boundaries when deciding whether a gap can close:
 - SQL Server save work keeps native bulk at 50-plus total operations and no more than 500 satellite operations.
 - MySQL save work keeps retained multi-row behavior for smaller eligible batches and staged bulk for larger eligible batches, while tiny satellite-history fallback remains provider-neutral.
 - Oracle save work keeps direct optimized batching at 50-plus total operations and no more than 10000 satellite operations; staged Oracle bulk remains unclaimed without new completed evidence.
-- DB2 work stays limited to clean-context set-based save plus diagnostics-gated latest-satellite/PIT/bridge read candidates; staged DB2 bulk, provider-native chunk execution, completed DB2 timing, and DB2 live-schema reading remain outside this matrix until new evidence is checked in.
+- DB2 performance work stays limited to clean-context set-based save plus diagnostics-gated latest-satellite/PIT/bridge read candidates; staged DB2 bulk, provider-native chunk execution, and completed DB2 timing remain outside this matrix until new evidence is checked in. DB2 live-schema checks are separate external opt-in schema evidence, not performance-gap closure.
 
 Provider-neutral fallback remains the public behavior whenever a required `DVAULT_TEST_*` connection string is unset, provider diagnostics do not select the expected strategy, the provider mismatches, the context is dirty for provider save work, a latest-satellite request is outside the supported hub-parent non-multi-active shape, read-shape evidence is incomplete, or PIT/bridge maintenance is stale.
 

@@ -44,8 +44,9 @@ internal sealed class PostgresDataVaultLiveSchemaReader : CatalogDataVaultLiveSc
 
   protected override async Task<IReadOnlyList<DataVaultLiveSchemaColumn>> ReadColumnsAsync(
       DbConnection connection,
-      LiveSchemaTableIdentifier tableIdentifier,
+      LiveSchemaExpectedTable expectedTable,
       CancellationToken cancellationToken) {
+    var tableIdentifier = expectedTable.Identifier;
     using var command = CreateCommand(
         connection,
         "SELECT a.attname, a.attnum - 1, " +
@@ -79,9 +80,9 @@ internal sealed class PostgresDataVaultLiveSchemaReader : CatalogDataVaultLiveSc
 
   protected override async Task<DataVaultLiveSchemaPrimaryKey> ReadPrimaryKeyAsync(
       DbConnection connection,
-      LiveSchemaTableIdentifier tableIdentifier,
-      string? expectedPrimaryKeyName,
+      LiveSchemaExpectedTable expectedTable,
       CancellationToken cancellationToken) {
+    var tableIdentifier = expectedTable.Identifier;
     using var command = CreateCommand(
         connection,
         "SELECT con.conname, a.attname " +
@@ -108,8 +109,9 @@ internal sealed class PostgresDataVaultLiveSchemaReader : CatalogDataVaultLiveSc
 
   protected override async Task<IReadOnlyList<DataVaultLiveSchemaIndex>> ReadIndexesAsync(
       DbConnection connection,
-      LiveSchemaTableIdentifier tableIdentifier,
+      LiveSchemaExpectedTable expectedTable,
       CancellationToken cancellationToken) {
+    var tableIdentifier = expectedTable.Identifier;
     using var command = CreateCommand(
         connection,
         "SELECT ix.relname, i.indisunique " +

@@ -135,6 +135,30 @@ internal sealed class ExternalProviderLiveSchemaFixture : IAsyncDisposable {
     return fixture;
   }
 
+  public static async Task<ExternalProviderLiveSchemaFixture> CreateDb2Async() {
+    var configuration = Db2IntegrationTestConfiguration.FromEnvironment();
+    if (!configuration.IsConfigured) {
+      Assert.Skip(Db2IntegrationTestConfiguration.MissingConfigurationSkipMessage);
+    }
+
+    var suffix = Guid.NewGuid().ToString("N")[..16].ToUpperInvariant();
+    var modelOptions = ExternalProviderLiveSchemaModelOptions.ForDb2(suffix);
+    var optionsBuilder = CreateOptionsBuilder();
+    Db2ProviderReflection.UseDb2(optionsBuilder, configuration.ConnectionString!);
+
+    var fixture = new ExternalProviderLiveSchemaFixture(
+        ProviderTestCategories.Db2Provider,
+        optionsBuilder.Options,
+        modelOptions,
+        DropDb2ObjectsAsync);
+
+    await using var context = fixture.CreateContext();
+    await DropDb2ObjectsAsync(context);
+    await context.GetService<IRelationalDatabaseCreator>().CreateTablesAsync();
+
+    return fixture;
+  }
+
   public async ValueTask DisposeAsync() {
     await using var context = CreateContext();
     await _dropAsync(context).ConfigureAwait(false);
@@ -176,6 +200,16 @@ internal sealed class ExternalProviderLiveSchemaFixture : IAsyncDisposable {
     }
   }
 
+  private static async Task DropDb2ObjectsAsync(ExternalProviderLiveSchemaContext context) {
+    foreach (var table in context.ModelOptions.ExpectedSnapshot.Tables.Reverse()) {
+      try {
+        await context.Database.ExecuteSqlRawAsync("DROP TABLE " + QuoteDb2Identifier(table.TableName));
+      }
+      catch (Exception exception) when (IsUndefinedDb2Object(exception)) {
+      }
+    }
+  }
+
   private static string QuotePostgresIdentifier(string value) {
     return "\"" + value.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
   }
@@ -192,11 +226,24 @@ internal sealed class ExternalProviderLiveSchemaFixture : IAsyncDisposable {
     return "`" + value.Replace("`", "``", StringComparison.Ordinal) + "`";
   }
 
+  private static string QuoteDb2Identifier(string value) {
+    var normalizedValue = value.ToUpperInvariant();
+    return "\"" + normalizedValue.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+  }
+
   private static string SqlServerLiteral(string value) {
     return "N'" + value.Replace("'", "''", StringComparison.Ordinal) + "'";
   }
 
   private static string OracleLiteral(string value) {
     return "'" + value.Replace("'", "''", StringComparison.Ordinal) + "'";
+  }
+
+  private static bool IsUndefinedDb2Object(Exception exception) {
+    var message = exception.ToString();
+
+    return message.Contains("SQLSTATE=42704", StringComparison.OrdinalIgnoreCase) ||
+        message.Contains("SQL0204N", StringComparison.OrdinalIgnoreCase) ||
+        message.Contains("undefined name", StringComparison.OrdinalIgnoreCase);
   }
 }

@@ -88,8 +88,8 @@ The visible built-in provider profile baseline is:
 - `db2-v1`
 - `mysql-pomelo-v1`
 
-DB2 live-schema reading remains unsupported under this ticket and should continue to report an unsupported-provider outcome
-instead of silently passing.
+DB2 live-schema reading is outside this hash-key storage contract. The DB2 catalog reader may expose the storage-type facts
+described here as external opt-in evidence, but this contract does not provision DB2 databases or change live-schema ownership.
 
 ## Non-Goals
 
@@ -100,4 +100,4 @@ This contract does not:
 - add automatic rehashing, repair, backfill, reset, or dual-write migration tooling
 - add provider-side SQL hashing
 - change HashDiff/content-hash storage
-- implement DB2 live-schema catalog reading
+- define DB2 catalog-reader behavior beyond the storage-type facts above

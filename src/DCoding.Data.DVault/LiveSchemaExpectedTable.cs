@@ -7,4 +7,8 @@ using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace DCoding.Data.DVault;
 
-internal sealed record LiveSchemaExpectedTable(LiveSchemaTableIdentifier Identifier, string? PrimaryKeyName);
+internal sealed record LiveSchemaExpectedTable(
+    LiveSchemaTableIdentifier Identifier,
+    string? PrimaryKeyName,
+    IReadOnlyList<string> ColumnNames,
+    IReadOnlyList<string> IndexNames);
