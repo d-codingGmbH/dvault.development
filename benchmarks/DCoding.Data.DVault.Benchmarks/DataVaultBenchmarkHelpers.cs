@@ -129,6 +129,7 @@ internal static class DataVaultBenchmarkHelpers {
         DataVaultBenchmarkStrategy.SqliteOptimized => "SqliteDataVaultReadStrategy",
         DataVaultBenchmarkStrategy.PostgresOptimized => "PostgresDataVaultReadStrategy",
         DataVaultBenchmarkStrategy.SqlServerOptimized => "SqlServerDataVaultReadStrategy",
+        DataVaultBenchmarkStrategy.MySqlOptimized => "MySqlDataVaultReadStrategy",
         DataVaultBenchmarkStrategy.OracleOptimized => "OracleDataVaultReadStrategy",
         DataVaultBenchmarkStrategy.Db2Optimized => "Db2DataVaultReadStrategy",
         _ => null,

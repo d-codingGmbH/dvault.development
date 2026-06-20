@@ -1,0 +1,19 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `2` selected relation flow(s) for source ticket `06FE4QQ9VF7B74E60CXEHSS5XW`.
+- Role `test` completed with outcome `test-workflow-returned` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `1`; dropped obsolete follow-up(s): `1`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `957e6f4ea28c45aaa401881d4fb3f3b5`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06FE4QRMXVGJVA65ZR5MZ817K8` via `blocks` path `06FE4QQ9VF7B74E60CXEHSS5XW -> 06FE4QRMXVGJVA65ZR5MZ817K8`
+- [dropped] `blocked-by-follow-up-comment` -> `06FE4QP6FB892E7TJMB47A3MSR` via `blocks` path `06FE4QQ9VF7B74E60CXEHSS5XW -> 06FE4QP6FB892E7TJMB47A3MSR`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06FE4QQ9VF7B74E60CXEHSS5XW` owner `ticket/06FE4QQ9VF7B74E60CXEHSS5XW-task-tune-mysql-latest-satellite-strategy-with-e` base `develop` source-owner `ticket/06FE4QQ9VF7B74E60CXEHSS5XW-task-tune-mysql-latest-satellite-strategy-with-e`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06FE4QRMXVGJVA65ZR5MZ817K8` owner `ticket/06FE4QRMXVGJVA65ZR5MZ817K8-task-update-provider-performance-matrices-and-v0` base `develop` source-owner `ticket/06FE4QQ9VF7B74E60CXEHSS5XW-task-tune-mysql-latest-satellite-strategy-with-e`: Mutation targets 'ticket/06FE4QRMXVGJVA65ZR5MZ817K8-task-update-provider-performance-matrices-and-v0', not current branch 'ticket/06FE4QQ9VF7B74E60CXEHSS5XW-task-tune-mysql-latest-satellite-strategy-with-e'; queue for target-branch replay.
+- [base-terminal-dropped] `relation-audit-follow-up` `06FE4QP6FB892E7TJMB47A3MSR` owner `develop` base `develop` source-owner `ticket/06FE4QQ9VF7B74E60CXEHSS5XW-task-tune-mysql-latest-satellite-strategy-with-e`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06FE4QRMXVGJVA65ZR5MZ817K8` on owner branch `ticket/06FE4QRMXVGJVA65ZR5MZ817K8-task-update-provider-performance-matrices-and-v0` after that branch is refreshed/rebased.

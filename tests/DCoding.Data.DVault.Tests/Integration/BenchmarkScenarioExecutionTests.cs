@@ -1183,6 +1183,70 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
+  public void MySqlLatestSatelliteEvidenceArtifactRecordsOptimizedReadSelectionWithoutImprovementClaim() {
+    var artifactDirectory = Path.Combine(
+        "artifacts",
+        "benchmarks",
+        "06FE4QQ9VF7B74E60CXEHSS5XW-mysql-latest-satellite-20260620");
+    var markdown = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.md"));
+    var csv = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.csv"));
+    var json = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.json"));
+    var evidenceMatrix = ReadRepositoryText(Path.Combine(
+        "docs",
+        "plans",
+        "provider-optimization-evidence-matrix.md"));
+    var gapMatrix = ReadRepositoryText(Path.Combine(
+        "docs",
+        "plans",
+        "provider-optimization-gap-matrix.md"));
+    var performanceProfiles = ReadRepositoryText(Path.Combine("docs", "performance-profiles.md"));
+    var releaseNotes = ReadRepositoryText(Path.Combine("docs", "releases", "v0.42.0.md"));
+
+    var artifacts = VerifyBenchmarkArtifactTriplet(markdown, csv, json);
+    var latestSatellite = FindArtifactRow(
+        artifacts,
+        MySqlProviderName,
+        "latest-satellite-read",
+        "dvault-adddvaultmysql-optimized");
+    var manifestRow = CreateBenchmarkBackedProviderEvidenceManifestRow(latestSatellite, "completed-timing");
+
+    Assert.Equal(6, artifacts.RowsByKey.Count);
+    AssertCompletedProviderReadRow(latestSatellite, "MySqlDataVaultReadStrategy", "LatestSatellite", "MySQL");
+    Assert.Equal("19.113", latestSatellite.MeanMilliseconds);
+    Assert.Equal("mysql-optimized-dvault", latestSatellite.StrategyFamily);
+    Assert.Equal("100 latest profile satellite rows read from 1000 seeded profile states", latestSatellite.PersistedOutcome);
+    Assert.Equal("completed-timing", manifestRow.EvidencePosture);
+    Assert.Equal("present", manifestRow.ResultSummary.MetricState);
+    Assert.Equal("LatestSatellite", manifestRow.ReadShape);
+    Assert.Equal("DVault MySQL optimized latest satellite read path", manifestRow.SelectedPath);
+    Assert.Null(manifestRow.PlannedPath);
+    Assert.Equal("MySqlDataVaultReadStrategy", manifestRow.SelectedStrategy);
+    Assert.Null(manifestRow.PlannedStrategy);
+    Assert.Empty(manifestRow.FallbackCauses);
+
+    Assert.Contains(
+        "06FE4QQ9VF7B74E60CXEHSS5XW-mysql-latest-satellite-20260620/benchmark-summary.md",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| `latest-satellite-read` | MySQL external provider | `dvault-adddvaultmysql-optimized` | `mysql-optimized-dvault` | `completed-timing` | Ticket `06FE4QQ9VF7B74E60CXEHSS5XW` MySQL latest-satellite bundle |",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| P0.03 | Closed timing baseline | MySQL external provider | `latest-satellite-read` | `completed-timing`",
+        gapMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "not a provider-neutral fallback improvement comparator by itself",
+        performanceProfiles,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "without claiming a provider-neutral fallback improvement comparator",
+        releaseNotes,
+        StringComparison.Ordinal);
+  }
+
+  [Fact]
   public void ProviderPitBridgeAuditKeepsRemainingProviderFollowUpSplit() {
     var gapMatrix = ReadRepositoryText(Path.Combine(
         "docs",
