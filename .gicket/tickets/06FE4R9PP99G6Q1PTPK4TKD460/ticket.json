@@ -3,7 +3,7 @@
   "ticket-id": "06FE4R9PP99G6Q1PTPK4TKD460",
   "ticket-type": "story",
   "title": "Story: Define optional privacy extension and DSGVO boundary",
-  "revision": "06FE4SFFMKK4SAHG0664G9Q4GW",
+  "revision": "06FE4VE315PDY9SJAJD1DNENJM",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
@@ -18,5 +18,5 @@
   "milestone-id": "06FE4PN9EX787F4DHNJVN86YK0",
   "release-id": "06FE4PMT7V0NN9Y6RKD5WDTY58",
   "created-at": "2026-06-20T00:14:42.4678882Z",
-  "updated-at": "2026-06-20T00:19:51.8446251Z"
+  "updated-at": "2026-06-20T00:28:24.7132880Z"
 }

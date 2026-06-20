@@ -3,7 +3,7 @@
   "ticket-id": "06FE4RJ4CC2YRVK0P98NBSXRKC",
   "ticket-type": "story",
   "title": "Story: Define server-side PIT and bridge maintenance push-down boundary",
-  "revision": "06FE4RM4FE5PSF0QDYZ386MX6C",
+  "revision": "06FE4VEPVPZZ97H1HAA5K6WRV8",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
@@ -19,5 +19,5 @@
   "milestone-id": "06FE4PNFD7HR2N2G4GY5XACY3R",
   "release-id": "06FE4PMVMZM3KKNGEFDB2S3BKG",
   "created-at": "2026-06-20T00:15:51.5483369Z",
-  "updated-at": "2026-06-20T00:16:07.8036748Z"
+  "updated-at": "2026-06-20T00:28:29.7896428Z"
 }
