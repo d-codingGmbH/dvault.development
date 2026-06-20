@@ -3,21 +3,20 @@
   "ticket-id": "06FE4QQJCJH7J9AWQTPDR5DSSG",
   "ticket-type": "task",
   "title": "Task: Investigate Oracle latest-satellite evidence and fallback",
-  "revision": "06FE4QT2H3HVDNXGQY14YBJGS0",
-  "status": "todo",
+  "revision": "06FE6M5ZHK92CYRS3M4ZATBX5R",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
     "area/performance",
     "area/provider-support",
     "area/read-models",
-    "provider/oracle"
+    "automation/bot-ready",
+    "provider/oracle",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PN0ERK3QJ6BXYWECFW0MR",
   "release-id": "06FE4PMQ8GNKY6X54F8D16AVGC",
   "created-at": "2026-06-20T00:12:13.9272084Z",
-  "updated-at": "2026-06-20T00:12:34.3126855Z"
+  "updated-at": "2026-06-20T04:36:20.4921423Z"
 }
