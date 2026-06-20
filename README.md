@@ -8,50 +8,50 @@ DVault is a focused .NET library family for Data Vault 2.x-oriented persistence 
 - [Quickstart](#quickstart)
 - [Package Compatibility](#package-compatibility)
 - [Documentation Map](#documentation-map)
-- [Current v0.41.0 Limitations](#current-v0410-limitations)
+- [Current v0.42.0 Limitations](#current-v0420-limitations)
 - [Layout](#layout)
 - [Local Validation](#local-validation)
 - [License](#license)
 
 ## Installation
 
-Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. Use exactly one package line for a consumer project: `8.41.0` for `net8.0` and EF Core 8, or `10.41.0` for `net10.0` and EF Core 10. Do not mix package lines, and do not use a consumer-facing `0.41.0` package version from the v0.41.0 release label. This documentation baseline does not by itself confirm package publication.
+Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. Use exactly one package line for a consumer project: `8.42.0` for `net8.0` and EF Core 8, or `10.42.0` for `net10.0` and EF Core 10. Do not mix package lines, and do not use a consumer-facing `0.42.0` package version from the v0.42.0 release label. This documentation baseline does not by itself confirm package publication.
 
-For `net8.0` projects on EF Core 8, use the `8.41.0` package line:
-
-```sh
-dotnet add package DCoding.Data.DVault --version 8.41.0
-dotnet add package DCoding.Data.DVault.Db2 --version 8.41.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 8.41.0
-dotnet add package DCoding.Data.DVault.Postgres --version 8.41.0
-dotnet add package DCoding.Data.DVault.MySql --version 8.41.0
-dotnet add package DCoding.Data.DVault.Oracle --version 8.41.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 8.41.0
-```
-
-For `net10.0` projects on EF Core 10, use the `10.41.0` package line:
+For `net8.0` projects on EF Core 8, use the `8.42.0` package line:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 10.41.0
-dotnet add package DCoding.Data.DVault.Db2 --version 10.41.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 10.41.0
-dotnet add package DCoding.Data.DVault.Postgres --version 10.41.0
-dotnet add package DCoding.Data.DVault.MySql --version 10.41.0
-dotnet add package DCoding.Data.DVault.Oracle --version 10.41.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 10.41.0
+dotnet add package DCoding.Data.DVault --version 8.42.0
+dotnet add package DCoding.Data.DVault.Db2 --version 8.42.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 8.42.0
+dotnet add package DCoding.Data.DVault.Postgres --version 8.42.0
+dotnet add package DCoding.Data.DVault.MySql --version 8.42.0
+dotnet add package DCoding.Data.DVault.Oracle --version 8.42.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 8.42.0
 ```
 
-Add the analyzer package only to projects that own DVault declarations, compile-time generated row mappings, or generated typed read helpers, and keep it local with `PrivateAssets="all"`. Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.41.0` package line. The current analyzer package carries one `net10.0` analyzer asset for both coordinated package lines; this repository does not validate pure `.NET 8 SDK` analyzer consumption.
+For `net10.0` projects on EF Core 10, use the `10.42.0` package line:
+
+```sh
+dotnet add package DCoding.Data.DVault --version 10.42.0
+dotnet add package DCoding.Data.DVault.Db2 --version 10.42.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 10.42.0
+dotnet add package DCoding.Data.DVault.Postgres --version 10.42.0
+dotnet add package DCoding.Data.DVault.MySql --version 10.42.0
+dotnet add package DCoding.Data.DVault.Oracle --version 10.42.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 10.42.0
+```
+
+Add the analyzer package only to projects that own DVault declarations, compile-time generated row mappings, or generated typed read helpers, and keep it local with `PrivateAssets="all"`. Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.42.0` package line. The current analyzer package carries one `net10.0` analyzer asset for both coordinated package lines; this repository does not validate pure `.NET 8 SDK` analyzer consumption.
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="8.41.0" PrivateAssets="all" />
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="8.42.0" PrivateAssets="all" />
 </ItemGroup>
 ```
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="10.41.0" PrivateAssets="all" />
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="10.42.0" PrivateAssets="all" />
 </ItemGroup>
 ```
 
@@ -122,17 +122,17 @@ await saveService.SaveAsync(
 
 Provider packages can add optimized strategies behind the same public service contract. The shared surface also includes chunked/async saves, latest/as-of satellite reads, PIT and bridge maintenance/read services, diagnostics and explain metadata, support-bundle export, model-first governance, Roslyn analyzers, and opt-in typed read-model generation.
 
-For runnable examples and fuller workflows, see [Getting Started](docs/getting-started.md), [examples/README.md](examples/README.md), and the current [DVault v0.41.0 Release Notes](docs/releases/v0.41.0.md).
+For runnable examples and fuller workflows, see [Getting Started](docs/getting-started.md), [examples/README.md](examples/README.md), and the current [DVault v0.42.0 Release Notes](docs/releases/v0.42.0.md).
 
 ## Package Compatibility
 
-The current coordinated package baseline is documented in [Package Compatibility](docs/package-compatibility.md) and [DVault v0.41.0 Release Notes](docs/releases/v0.41.0.md). DVault has eight packable packages, two visible consumer package lines, target-specific dependency pins, and a local analyzer package boundary.
+The current coordinated package baseline is documented in [Package Compatibility](docs/package-compatibility.md) and [DVault v0.42.0 Release Notes](docs/releases/v0.42.0.md). DVault has eight packable packages, two visible consumer package lines, target-specific dependency pins, and a local analyzer package boundary.
 
 In short:
 
-- `8.41.0` targets `net8.0` and the EF Core 8 dependency line.
-- `10.41.0` targets `net10.0` and the EF Core 10 dependency line.
-- `v0.41.0` is a repository release tag and release-note label, not a NuGet package version.
+- `8.42.0` targets `net8.0` and the EF Core 8 dependency line.
+- `10.42.0` targets `net10.0` and the EF Core 10 dependency line.
+- `v0.42.0` is a repository release tag and release-note label, not a NuGet package version.
 - `DCoding.Data.DVault.Analyzers` remains a local `PrivateAssets="all"` analyzer reference and currently requires a `.NET 10 SDK` build host for both package lines.
 - Hash-key storage guidance from v0.36.0 carries forward: logical public hash keys remain lowercase hexadecimal strings, while binary physical storage remains explicit opt-in.
 
@@ -154,7 +154,7 @@ In short:
 | Analyzer and generator scope | [Analyzer README](src/DCoding.Data.DVault.Analyzers/README.md) |
 | Hashing and hash-key storage contracts | [Stable Hashing Contract](docs/plans/stable-hashing-contract.md) and [Hash-Key Storage Profile Contract](docs/plans/hash-key-storage-profile-contract.md) |
 
-## Current v0.41.0 Limitations
+## Current v0.42.0 Limitations
 
 - DVault is an EF Core library family, not a platform, scheduler, ingestion service, CLI, or provider provisioning tool.
 - Package publication remains a manual release operation; this repository records package creation and verification, not NuGet publication.
@@ -186,7 +186,7 @@ bash tools/verify-packages.sh
 bash tools/check-format.sh
 ```
 
-`bash tools/pack-release-packages.sh` creates the two coordinated package lines under `artifacts/packages/`: eight `8.41.0` packages with `net8.0` assets and EF Core 8 dependency groups, and eight `10.41.0` packages with `net10.0` assets and EF Core 10 dependency groups. `bash tools/verify-packages.sh` inspects those artifacts, expects exactly sixteen DVault `.nupkg` files plus fourteen matching symbol packages for the runtime/provider packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider package depends on the packed `DCoding.Data.DVault` version from the same package line.
+`bash tools/pack-release-packages.sh` creates the two coordinated package lines under `artifacts/packages/`: eight `8.42.0` packages with `net8.0` assets and EF Core 8 dependency groups, and eight `10.42.0` packages with `net10.0` assets and EF Core 10 dependency groups. `bash tools/verify-packages.sh` inspects those artifacts, expects exactly sixteen DVault `.nupkg` files plus fourteen matching symbol packages for the runtime/provider packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider package depends on the packed `DCoding.Data.DVault` version from the same package line.
 
 For provider-specific filters, environment variables, benchmark commands, and package-verification details, see [Local Validation](docs/local-validation.md).
 

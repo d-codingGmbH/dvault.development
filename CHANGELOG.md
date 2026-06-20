@@ -2,6 +2,18 @@
 
 This changelog summarizes the public release-note trail. The detailed release records remain under [docs/releases/](docs/releases/); those files are the source of truth for scope, evidence, non-goals, and validation notes.
 
+## v0.42.0 - Provider Performance Evidence and Tuning
+
+- Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.42.0` / `net8.0` / EF Core 8 and `10.42.0` / `net10.0` / EF Core 10.
+- Records that the v0.42.0 release label maps to consumer package versions `8.42.0` and `10.42.0`, not to a `0.42.0` package version.
+- Fixes the v0.42 provider evidence promotion rules: completed timing requires a provider-configured benchmark artifact triplet with preserved run context; skipped placeholders, diagnostics-only rows, smoke-only rows, storage-footprint rows, and gap-matrix recommendations are not timing evidence.
+- Ratifies the provider tuning starting gates for PostgreSQL direct/UNNEST versus staged COPY, SQL Server native bulk, MySQL retained and staged paths, Oracle direct optimized batching, and DB2 clean-context set-based save only.
+- Keeps latest-satellite tuning limited to PostgreSQL, SQL Server, MySQL, Oracle, and DB2 hub-parent non-multi-active shapes, with provider-neutral fallback for unsupported providers, unsupported shapes, incomplete evidence, stale PIT/bridge maintenance, provider mismatch, or diagnostics that do not select the provider strategy.
+- Updates README, package compatibility, manual publication, local validation, production adoption, performance, evidence matrix, and gap matrix guidance to distinguish measured improvements, deferred gaps, provider-specific caveats, and historical baselines.
+- Updates package creation and verification so `8.42.0` and `10.42.0` are the expected package outputs and stale `8.41.0` / `10.41.0` plus non-package `0.42.0` install guidance is rejected.
+
+See [DVault v0.42.0 Release Notes](docs/releases/v0.42.0.md).
+
 ## v0.41.0 - Provider Read Strategy Parity
 
 - Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.41.0` / `net8.0` / EF Core 8 and `10.41.0` / `net10.0` / EF Core 10.

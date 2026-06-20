@@ -89,7 +89,7 @@ Public API source should include generated XML documentation coverage where the 
 
 ## Current Package Compatibility Contract
 
-The current v0.41.0 package compatibility baseline continues the visible dual consumer package-version contract from v0.36.0, advances the package lines to `8.41.0` and `10.41.0`, carries forward the DB2 provider package baseline, stable hash algorithm-selection guidance, and binary hash-key storage adoption guidance, and aligns target-specific dependency pins and analyzer compatibility documentation. It does not by itself publish packages, provision external databases, add DB2 live-schema reading, create release automation, change the default stable hash algorithm or storage profile, add automatic persisted-hash migration, or split the DVault library into a platform/tool-suite surface. DB2 execution claims stay limited to the registered clean-context save strategy, diagnostics-gated PIT/bridge read strategy, and opt-in live smoke evidence documented for the v0.34.0 DB2 baseline.
+The current v0.42.0 package compatibility baseline continues the visible dual consumer package-version contract from v0.36.0, advances the package lines to `8.42.0` and `10.42.0`, carries forward the DB2 provider package baseline, stable hash algorithm-selection guidance, and binary hash-key storage adoption guidance, and aligns target-specific dependency pins and analyzer compatibility documentation. It does not by itself publish packages, provision external databases, add DB2 live-schema reading, create release automation, change the default stable hash algorithm or storage profile, add automatic persisted-hash migration, or split the DVault library into a platform/tool-suite surface. DB2 execution claims stay limited to the registered clean-context save strategy, diagnostics-gated PIT/bridge read strategy, and opt-in live smoke evidence documented for the v0.34.0 DB2 baseline.
 
 The coordinated package family contains these eight package IDs across all compatibility lines:
 
@@ -108,10 +108,10 @@ The release label is not the consumer-facing NuGet package version. The current 
 
 | Package version line | Target framework | EF Core line |
 | --- | --- | --- |
-| `8.41.0` | `net8.0` | EF Core 8 |
-| `10.41.0` | `net10.0` | EF Core 10 |
+| `8.42.0` | `net8.0` | EF Core 8 |
+| `10.42.0` | `net10.0` | EF Core 10 |
 
-Do not publish or document a consumer-facing `0.41.0` DVault package version from the v0.41.0 release label. Do not combine `8.41.0` and `10.41.0` packages in one published artifact family or consumer example.
+Do not publish or document a consumer-facing `0.42.0` DVault package version from the v0.42.0 release label. Do not combine `8.42.0` and `10.42.0` packages in one published artifact family or consumer example.
 
 Each resolved target must use exactly one compatible EF/provider dependency line. Runtime, provider, integration-test, benchmark, example, and verifier project files may use conditional `PackageReference` entries only for target-framework selection and for the existing opt-in external-provider test switches. A single resolved target must not restore both the 8.x and 10.x dependency lines together. Patch movement is allowed only within the selected target major line and must be reflected together in the project files, matrix tests, package verifier, and current documentation baseline.
 
@@ -130,7 +130,7 @@ Provider-neutral EF Core references, provider packages, integration tests, matri
 
 `DCoding.Data.DVault.Analyzers` remains coordinated family tooling, not a runtime dependency. Consuming projects should keep analyzer/source-generator references local with `PrivateAssets="all"`. Package verification for the analyzer line must prove analyzer assets are present, while runtime package verification must not treat the analyzer as a transitive runtime dependency.
 
-Downstream package verification, matrix tests, release notes, README guidance, and CI documentation are incomplete if they blur release label `v0.41.0` with package versions `8.41.0` and `10.41.0`, omit one of the required EF/provider pins above, omit the DB2 package from the eight-package family, allow a mixed 8.x/10.x restored target, overstate DB2 beyond the registered save and PIT/bridge read strategies, overstate stable hash opt-in ids as security or compliance controls, overstate binary hash-key storage as an automatic migration or public byte-key contract, overstate analyzer support beyond the `.NET 10 SDK` build-host baseline, or export analyzer assets as runtime dependencies.
+Downstream package verification, matrix tests, release notes, README guidance, and CI documentation are incomplete if they blur release label `v0.42.0` with package versions `8.42.0` and `10.42.0`, omit one of the required EF/provider pins above, omit the DB2 package from the eight-package family, allow a mixed 8.x/10.x restored target, overstate DB2 beyond the registered save and PIT/bridge read strategies, overstate stable hash opt-in ids as security or compliance controls, overstate binary hash-key storage as an automatic migration or public byte-key contract, overstate analyzer support beyond the `.NET 10 SDK` build-host baseline, or export analyzer assets as runtime dependencies.
 
 ## V0.33 Compatibility Contract
 
@@ -243,7 +243,7 @@ These decisions are current v1 defaults:
 - Local formatting validation runs with `bash tools/check-format.sh`.
 - Layout follows the README baseline for `DVault.slnx`, `src/DCoding.Data.DVault/`, `tests/DCoding.Data.DVault.Tests/`, `docs/`, `examples/`, `benchmarks/`, and tracked placeholder folders.
 - Current packable runtime/provider projects target `net8.0;net10.0`; analyzer, tooling, benchmark, and repository helper projects may stay on `net10.0` when they are not consumer runtime packages.
-- Release baseline `v0.41.0` uses the dual package-line compatibility contract in this document: `8.41.0` for `net8.0` and EF Core 8, `10.41.0` for `net10.0` and EF Core 10, eight coordinated package IDs including `DCoding.Data.DVault.Db2`, no consumer-facing `0.41.0` package line, no mixed-line restored targets, DB2 execution documented as optimized save plus latest-satellite/PIT/bridge read dispatch without live-schema reading or completed external-provider timing claims, stable hash algorithm selection documented as a caller-owned compatibility decision, binary hash-key storage documented as explicit opt-in physical storage rather than an automatic migration, and analyzer consumption documented against the `.NET 10 SDK` build-host baseline.
+- Release baseline `v0.42.0` uses the dual package-line compatibility contract in this document: `8.42.0` for `net8.0` and EF Core 8, `10.42.0` for `net10.0` and EF Core 10, eight coordinated package IDs including `DCoding.Data.DVault.Db2`, no consumer-facing `0.42.0` package line, no mixed-line restored targets, DB2 execution documented as optimized save plus latest-satellite/PIT/bridge read dispatch without live-schema reading or completed external-provider timing claims, stable hash algorithm selection documented as a caller-owned compatibility decision, binary hash-key storage documented as explicit opt-in physical storage rather than an automatic migration, and analyzer consumption documented against the `.NET 10 SDK` build-host baseline.
 - C# and other brace-based source files use same-line opening braces.
 - Current modeling namespace evidence is `DCoding.Data.DVault.Modeling`.
 - Model table and column naming follows `docs/naming/default-naming-policy.md`.

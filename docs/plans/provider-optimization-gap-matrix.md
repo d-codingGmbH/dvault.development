@@ -39,6 +39,20 @@ Priorities are deterministic and repository-backed:
 
 SQLite completed timing rows are reference baselines, not backlog gaps. Oracle PIT and bridge rows are closed external-provider timing rows, not backlog gaps.
 
+## v0.42 Gap Gate Interpretation
+
+The v0.42 release gate uses this matrix as the deferred-work and stop-condition surface, not as a timing evidence source. A gap row may justify follow-up work only inside the provider and shape shown in the row. It does not promote skipped placeholders, diagnostics-only posture, smoke-only posture, or storage-footprint evidence into measured provider timing.
+
+Apply these tuning boundaries when deciding whether a gap can close:
+
+- PostgreSQL save work keeps the direct or UNNEST path below 60 operations and staged COPY at 60-plus operations.
+- SQL Server save work keeps native bulk at 50-plus total operations and no more than 500 satellite operations.
+- MySQL save work keeps retained multi-row behavior for smaller eligible batches and staged bulk for larger eligible batches, while tiny satellite-history fallback remains provider-neutral.
+- Oracle save work keeps direct optimized batching at 50-plus total operations and no more than 10000 satellite operations; staged Oracle bulk remains unclaimed without new completed evidence.
+- DB2 work stays limited to clean-context set-based save plus diagnostics-gated latest-satellite/PIT/bridge read candidates; staged DB2 bulk, provider-native chunk execution, completed DB2 timing, and DB2 live-schema reading remain outside this matrix until new evidence is checked in.
+
+Provider-neutral fallback remains the public behavior whenever a required `DVAULT_TEST_*` connection string is unset, provider diagnostics do not select the expected strategy, the provider mismatches, the context is dirty for provider save work, a latest-satellite request is outside the supported hub-parent non-multi-active shape, read-shape evidence is incomplete, or PIT/bridge maintenance is stale.
+
 ## SQLite Reference Baselines
 
 | Scenario | Current baseline | Evidence posture | Measured evidence or comparator | Stop condition or fallback boundary | Sources |

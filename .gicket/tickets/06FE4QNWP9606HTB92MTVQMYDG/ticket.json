@@ -3,20 +3,19 @@
   "ticket-id": "06FE4QNWP9606HTB92MTVQMYDG",
   "ticket-type": "story",
   "title": "Story: Define v0.42 provider evidence and tuning gates",
-  "revision": "06FE4VC3M3MEFSGX06ESR95EHM",
-  "status": "todo",
+  "revision": "06FE5JYRV8G6A6F54BWWESB8DM",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/story",
+    "area/benchmarking",
     "area/performance",
     "area/provider-support",
-    "area/benchmarking"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PMXEP9R3PMVZBFC7RT75G",
   "release-id": "06FE4PMQ8GNKY6X54F8D16AVGC",
   "created-at": "2026-06-20T00:12:00.2314911Z",
-  "updated-at": "2026-06-20T00:28:08.4802759Z"
+  "updated-at": "2026-06-20T02:11:10.6826148Z"
 }

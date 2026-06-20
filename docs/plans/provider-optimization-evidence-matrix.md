@@ -19,6 +19,26 @@ The matrix reuses the existing benchmark artifact contract vocabulary from [Perf
 | `smoke-only` | Opt-in live or smoke coverage proves representative execution behavior when configured, but it is not a measured benchmark lane. |
 | `storage-footprint` | SQLite-local hash-key storage sidecars record physical storage footprint facts and scoped benchmark rows for hash-key variants. They are not cross-provider timing claims. |
 
+## v0.42 Promotion Gates
+
+For the v0.42 provider performance evidence and tuning baseline, downstream work must apply these gates before promoting a provider claim:
+
+- Cite the matrix row identity with `scenario`, `provider`, `baseline`, and `posture`.
+- Treat only `completed-timing` rows with a preserved provider-configured artifact triplet and run context as measured timing evidence.
+- Keep `skipped-placeholder`, `diagnostics-only`, `smoke-only`, and `storage-footprint` rows out of measured timing claims.
+- Keep PostgreSQL, SQL Server, MySQL, Oracle, and DB2 latest-satellite tuning limited to the already documented hub-parent, non-multi-active shapes.
+- Fall back to provider-neutral save or read behavior when the matching `DVAULT_TEST_*` connection string is unset, provider diagnostics do not select the expected strategy, the provider mismatches, the context is dirty for provider save work, the read shape is unsupported or incomplete, PIT/bridge maintenance is stale, or the row lacks completed provider-configured benchmark evidence.
+
+Provider-specific tuning thresholds are starting gates, not universal promises:
+
+| Provider | v0.42 starting gate | Promotion boundary |
+| --- | --- | --- |
+| PostgreSQL | Retain direct or UNNEST below 60 operations; use staged COPY at 60-plus operations. | Promote only with completed configured evidence for the cited row; skipped root rows remain row identity and planned-path guidance. |
+| SQL Server | Native bulk starts at 50-plus total operations and no more than 500 satellite operations. | Stop when operation count is below 50, satellite count exceeds 500, the context is dirty, or diagnostics do not select `SqlServerDataVaultSaveStrategy`. |
+| MySQL | Retain multi-row behavior for smaller eligible batches and staged bulk for larger eligible batches; tiny satellite-history fallback remains provider-neutral. | Stop when candidate gates decline, diagnostics do not select the strategy, or the row is only skipped/diagnostics/smoke posture. |
+| Oracle | Direct optimized batching starts at 50-plus total operations and no more than 10000 satellite operations. | Do not claim staged Oracle bulk unless new completed evidence selects it; stop when Oracle operation or satellite gates fail. |
+| DB2 | Clean-context set-based save only. | Do not claim staged DB2 bulk, provider-native chunk execution, completed DB2 timing, or DB2 live-schema reading without new evidence. |
+
 ## Authoritative Sources
 
 - Root quick baseline: [benchmark-summary.md](../../benchmark-summary.md), [benchmark-summary.csv](../../benchmark-summary.csv), and [benchmark-summary.json](../../benchmark-summary.json).
