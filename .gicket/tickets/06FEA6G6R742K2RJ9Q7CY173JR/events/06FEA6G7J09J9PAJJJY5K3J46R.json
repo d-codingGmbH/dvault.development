@@ -1,0 +1,14 @@
+{
+  "event-id": "06FEA6G7J09J9PAJJJY5K3J46R",
+  "occurred-at": "2026-06-20T12:55:48.8806428Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add DB2 live-schema reader for opt-in preflight evidence",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

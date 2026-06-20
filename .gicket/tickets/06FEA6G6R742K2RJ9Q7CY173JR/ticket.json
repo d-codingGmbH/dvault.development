@@ -1,23 +1,23 @@
 ﻿{
   "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
-  "ticket-id": "06FE4QR3DD7EFZ4F35SBTFGWSR",
+  "ticket-id": "06FEA6G6R742K2RJ9Q7CY173JR",
   "ticket-type": "task",
-  "title": "Task: Tune DB2 optimized save and read evidence path",
-  "revision": "06FEA6JM8924GGZKY01EV4R318",
+  "title": "Task: Add DB2 live-schema reader for opt-in preflight evidence",
+  "revision": "06FEA6HSZMHD7E8VC1S3KZYCSW",
   "status": "todo",
   "labels": [
     "automation/bot-ready",
     "needs-po",
     "type/task",
-    "area/performance",
     "area/provider-support",
-    "area/benchmarking",
+    "area/design-time",
+    "area/schema",
     "provider/db2"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PN0ERK3QJ6BXYWECFW0MR",
   "release-id": "06FE4PMQ8GNKY6X54F8D16AVGC",
-  "created-at": "2026-06-20T00:12:18.3175550Z",
-  "updated-at": "2026-06-20T12:56:08.5145937Z"
+  "created-at": "2026-06-20T12:55:48.8806428Z",
+  "updated-at": "2026-06-20T12:56:01.7893462Z"
 }
