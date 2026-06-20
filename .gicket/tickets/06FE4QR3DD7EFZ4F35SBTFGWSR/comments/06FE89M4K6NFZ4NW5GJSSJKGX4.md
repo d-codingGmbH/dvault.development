@@ -1,72 +1,56 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Verified that 06FE4QR3DD7EFZ4F35SBTFGWSR is the materialized downstream owner for provider-configured DB2 hotspot evidence, confirmed the supported DB2 save/read boundaries from the repository and live relation state, and persisted a ticket-bound planning note at docs/plans/db2-hotspot-evidence-refinement-06FE4QR3DD7EFZ4F35SBTFGWSR.md.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The incoming blocks relation from 06FE4QPEZW97YR6YT7MQD1MXTG is historical upstream guardrail context, not an active blocker, because that ticket is done and this ticket's is-blocked flag is false.
 - The live downstream dependency remains the blocks relation from this ticket to 06FE4QRMXVGJVA65ZR5MZ817K8, so this ticket stays the upstream owner for DB2 evidence before v0.42 documentation promotion.
 - The repository already proves AddDVaultDb2 strategy registration, DB2 smoke execution for save/latest-satellite/PIT/bridge, skipped root benchmark row identity when DVAULT_TEST_DB2_CONNECTION_STRING is unset, and explicit DB2 live-schema unsupported status.
 - A planning document was materialized at docs/plans/db2-hotspot-evidence-refinement-06FE4QR3DD7EFZ4F35SBTFGWSR.md; no ticket-description write, child-ticket creation, relation mutation, or attachment write was applied in this pass.
 
-### Scope In
+Scope In
 - Collect provider-configured DB2 benchmark evidence for the already supported provider-specific paths: clean-context optimized save, latest-satellite read on supported hub-parent non-multi-active shapes, PIT as-of read on supported maintained PIT shapes, and bridge traversal read on supported maintained bridge shapes.
 - Keep diagnostics-selected strategy evidence aligned with the benchmark artifact triplet so DB2 selected paths, fallback causes, and supported-shape limits are explicit.
 - Define which DB2 benchmark-backed rows may move from skipped-placeholder to completed-timing once a provider-configured artifact triplet lands.
 - Preserve the existing upstream/downstream dependency boundary where this ticket follows the done DB2 promotion-guardrail task and precedes the v0.42 documentation-update task.
 
-### Scope Out
+Scope Out
 - Adding new DB2 provider capabilities beyond the currently implemented strategy surface.
 - Staged DB2 bulk, provider-native chunk execution, DB2 live-schema reading, automatic PIT or bridge maintenance, or broader latest-satellite shape support.
 - Promoting diagnostics-only, smoke-only, or skipped-placeholder DB2 evidence into measured timing claims without a provider-configured artifact triplet and preserved run context.
 - Coordinated v0.42 documentation and release-note updates already owned by 06FE4QRMXVGJVA65ZR5MZ817K8, except where that downstream ticket cites evidence produced here.
 
-## Acceptance Criteria
-- Any promoted DB2 timing claim cites a provider-configured benchmark artifact triplet with preserved run context and completed DB2 benchmark-backed rows for the exact matrix identity being claimed.
-- DB2 save evidence remains limited to the current clean-context optimized path selected by Db2DataVaultSaveStrategy; dirty contexts or unsupported save shapes continue to fall back to the provider-neutral writer.
-- DB2 latest-satellite evidence remains limited to the current provider-specific path selected by Db2DataVaultReadStrategy for supported hub-parent, non-multi-active shapes; provider mismatch, unsupported parents, or multi-active shapes continue to fall back to provider-neutral reads.
-- DB2 PIT and bridge evidence remains limited to supported maintained shapes with complete read-shape evidence and fresh maintenance signals; stale or incomplete shapes continue to fall back to provider-neutral reads.
-- The benchmark and diagnostics output make supported paths, selected strategies, fallback behavior, and remaining DB2 non-goals explicit without widening public support boundaries.
-- DB2 smoke and diagnostics rows such as AddDVaultDb2 guidance remain non-timing evidence, and DB2 live-schema reading remains unsupported, unless separate future work changes those boundaries.
-
-## Definition of Done
-- Downstream documentation can cite a finite, repository-backed set of DB2 completed-timing rows, if any, without reopening save/read scope decisions.
-- The DB2 benchmark artifact triplet, diagnostics wording, and evidence-matrix posture agree on supported optimized paths, fallback behavior, and remaining non-goals.
-- Only benchmark-backed DB2 rows move to completed-timing; diagnostics-only, smoke-only, skipped-placeholder, and unsupported live-schema boundaries remain explicitly non-promoted where they still apply.
-- No additional PO split or relation rewrite is needed for DB2 hotspot evidence; this ticket remains the bounded owner and the existing downstream docs-update dependency stays intact.
-
-## Implementation Notes
-- Root benchmark artifacts currently keep DB2 provider-native save, latest-satellite, PIT, and bridge rows visible as skipped placeholders with iterations=0 and persistedOutcome=not executed when DVAULT_TEST_DB2_CONNECTION_STRING is unset.
-- Repository code already registers Db2DataVaultSaveStrategy and Db2DataVaultReadStrategy, and Db2DataVaultSmokeTests already prove representative configured save/latest-satellite/PIT/bridge execution with diagnostics selecting those strategies.
-- DataVaultLiveSchemaReader still routes IBM.EntityFrameworkCore to UnsupportedDataVaultLiveSchemaReader, so DB2 live-schema reading must remain out of scope for this ticket.
-- When provider-configured DB2 evidence lands, the benchmark-backed optimized rows for provider-native-bulk-ingestion, latest-satellite-read, pit-as-of-read, and bridge-traversal-read are the rows eligible for completed-timing promotion; diagnostics-only and smoke-only guidance rows remain non-timing supporting evidence.
-- The persisted planning note is docs/plans/db2-hotspot-evidence-refinement-06FE4QR3DD7EFZ4F35SBTFGWSR.md.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - none
 
-## Risks
+Risks
 - Without strict evidence-posture wording, downstream work could overread selectedStrategy or plannedReadStrategy tokens, or smoke-test success, as measured timing evidence.
 - DB2 support remains configuration-sensitive: missing DVAULT_TEST_DB2_CONNECTION_STRING, dirty save contexts, unsupported read shapes, incomplete read-shape evidence, or stale PIT/bridge maintenance all force provider-neutral fallback.
 - This ticket must stay within the already implemented DB2 provider boundary; widening runtime capability and collecting timing evidence are separate concerns and should not be conflated.
 - The downstream docs-update ticket depends on this evidence handoff; partial evidence or ambiguous promotion rules would propagate inconsistent v0.42 documentation claims.
 
-## Split Recommendations
+Split recommendations
 - No additional PO split is recommended. 06FE4QR3DD7EFZ4F35SBTFGWSR already owns the provider-configured DB2 hotspot evidence slice left open by the done guardrail task 06FE4QPEZW97YR6YT7MQD1MXTG.
 - Keep the existing downstream blocks relation to 06FE4QRMXVGJVA65ZR5MZ817K8; documentation and release-surface promotion should remain a separate follow-up that consumes this ticket's evidence output rather than being merged back into this ticket.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Scope: complete DB2 save/read strategy evidence and tune only supported provider-specific paths. Acceptance: DB2 benchmarks and diagnostics show supported paths, fallbacks, and any remaining limitations.
+Run mode
+- apply: planned updates are applied after this comment

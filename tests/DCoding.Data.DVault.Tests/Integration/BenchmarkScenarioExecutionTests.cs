@@ -1247,7 +1247,7 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
-  public void ProviderPitBridgeAuditKeepsRemainingProviderFollowUpSplit() {
+  public void ProviderPitBridgeAuditClosesDb2WithHotspotBundle() {
     var gapMatrix = ReadRepositoryText(Path.Combine(
         "docs",
         "plans",
@@ -1260,37 +1260,129 @@ public sealed class BenchmarkScenarioExecutionTests {
         "docs",
         "architecture",
         "dvault-v1-pit-bridge-boundary.md"));
-    var artifacts = VerifyBenchmarkArtifactTriplet(
+    var rootArtifacts = VerifyBenchmarkArtifactTriplet(
         ReadRepositoryText("benchmark-summary.md"),
         ReadRepositoryText("benchmark-summary.csv"),
         ReadRepositoryText("benchmark-summary.json"));
-    var activeProviderRows = new[]
-    {
+    var artifactDirectory = Path.Combine(
+        "artifacts",
+        "benchmarks",
+        "06FE4QR3DD7EFZ4F35SBTFGWSR-db2-hotspot-evidence-20260620");
+    var markdown = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.md"));
+    var csv = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.csv"));
+    var json = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.json"));
 
-        new ProviderPitBridgeAuditRow(
-            "P2.05",
-            Db2ProviderName,
-            "dvault-adddvaultdb2-optimized",
-            "Db2DataVaultReadStrategy",
-            "AddDVaultDb2()",
-            BenchmarkExternalProviderDefinitions.Db2.ConnectionStringEnvironmentVariable),
-    };
+    var db2Artifacts = VerifyBenchmarkArtifactTriplet(markdown, csv, json);
 
-    foreach (var provider in activeProviderRows) {
-      AssertProviderPitBridgeAuditRow(
-          provider,
-          gapMatrix,
-          evidenceMatrix,
-          pitBridgeBoundary,
-          artifacts);
-    }
+    Assert.Equal("db2", db2Artifacts.Context.ProviderFilter);
+    Assert.Equal(1, db2Artifacts.Context.Iterations);
+    Assert.Contains("DB2 external provider: completed", markdown, StringComparison.Ordinal);
 
-    Assert.Contains("DB2 rows keep the narrower v0.34.0 boundary", gapMatrix, StringComparison.Ordinal);
-    Assert.Contains("no completed DB2 timing", gapMatrix, StringComparison.Ordinal);
+    Assert.Contains(
+        "06FE4QR3DD7EFZ4F35SBTFGWSR-db2-hotspot-evidence-20260620/benchmark-summary.md",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| `provider-native-bulk-ingestion` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `completed-timing` | DB2 hotspot bundle |",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| `latest-satellite-read` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `completed-timing` | DB2 hotspot bundle |",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| `pit-as-of-read` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `completed-timing` | DB2 hotspot bundle |",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| `bridge-traversal-read` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `completed-timing` | DB2 hotspot bundle |",
+        evidenceMatrix,
+        StringComparison.Ordinal);
     Assert.Contains(
         "DB2 registers diagnostics-gated latest-satellite/PIT/bridge read dispatch",
         evidenceMatrix,
         StringComparison.Ordinal);
+
+    Assert.Contains(
+        "DB2 `provider-native-bulk-ingestion`, `latest-satellite-read`, `pit-as-of-read`, and `bridge-traversal-read` rows are closed evidence rows",
+        gapMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| P0.05 | Closed evidence row | DB2 external provider | `latest-satellite-read`",
+        gapMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| P1.05 | Closed evidence row | DB2 external provider | `provider-native-bulk-ingestion`",
+        gapMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| P2.05 | Closed evidence row | DB2 external provider | `pit-as-of-read`",
+        gapMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| P3.05 | Closed evidence row | DB2 external provider | `bridge-traversal-read`",
+        gapMatrix,
+        StringComparison.Ordinal);
+    Assert.DoesNotContain(
+        "| P2.05 | Evidence gap | DB2 external provider | `pit-as-of-read`",
+        gapMatrix,
+        StringComparison.Ordinal);
+    Assert.DoesNotContain(
+        "| P3.05 | Evidence gap | DB2 external provider | `bridge-traversal-read`",
+        gapMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains("AddDVaultDb2()", pitBridgeBoundary, StringComparison.Ordinal);
+
+    var fallbackSaveRow = FindArtifactRow(
+        db2Artifacts,
+        Db2ProviderName,
+        "provider-native-bulk-ingestion",
+        "dvault-adddvault-fallback");
+    Assert.Equal("completed", fallbackSaveRow.ExecutionStatus);
+    Assert.Equal(1, fallbackSaveRow.Iterations);
+    AssertCompletedMetricsPresent(fallbackSaveRow);
+    Assert.Contains("selectedStrategy=<none>", fallbackSaveRow.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("fallbackCauses=NoProviderSpecificStrategyRegistered", fallbackSaveRow.ExecutionDetail, StringComparison.Ordinal);
+
+    var optimizedSaveRow = FindArtifactRow(
+        db2Artifacts,
+        Db2ProviderName,
+        "provider-native-bulk-ingestion",
+        "dvault-adddvaultdb2-optimized");
+    Assert.Equal("completed", optimizedSaveRow.ExecutionStatus);
+    Assert.Equal(1, optimizedSaveRow.Iterations);
+    AssertCompletedMetricsPresent(optimizedSaveRow);
+    Assert.Contains("selectedStrategy=Db2DataVaultSaveStrategy", optimizedSaveRow.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("db2SaveBoundary=clean-context-set-based", optimizedSaveRow.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("stagedBulkBoundary=not-supported", optimizedSaveRow.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("fallbackCauses=none", optimizedSaveRow.ExecutionDetail, StringComparison.Ordinal);
+
+    AssertCompletedProviderReadRow(
+        FindArtifactRow(db2Artifacts, Db2ProviderName, "latest-satellite-read", "dvault-adddvaultdb2-optimized"),
+        "Db2DataVaultReadStrategy",
+        "LatestSatellite",
+        "DB2");
+    AssertCompletedProviderReadRow(
+        FindArtifactRow(db2Artifacts, Db2ProviderName, "pit-as-of-read", "dvault-adddvaultdb2-optimized"),
+        "Db2DataVaultReadStrategy",
+        "PitAsOf",
+        "DB2");
+    AssertCompletedProviderReadRow(
+        FindArtifactRow(db2Artifacts, Db2ProviderName, "bridge-traversal-read", "dvault-adddvaultdb2-optimized"),
+        "Db2DataVaultReadStrategy",
+        "Bridge",
+        "DB2");
+
+    AssertProviderReadPlaceholder(
+        FindArtifactRow(rootArtifacts, Db2ProviderName, "pit-as-of-read", "dvault-adddvaultdb2-optimized"),
+        "Db2DataVaultReadStrategy",
+        "PitAsOf",
+        BenchmarkExternalProviderDefinitions.Db2.ConnectionStringEnvironmentVariable);
+    AssertProviderReadPlaceholder(
+        FindArtifactRow(rootArtifacts, Db2ProviderName, "bridge-traversal-read", "dvault-adddvaultdb2-optimized"),
+        "Db2DataVaultReadStrategy",
+        "Bridge",
+        BenchmarkExternalProviderDefinitions.Db2.ConnectionStringEnvironmentVariable);
   }
 
   [Fact]
