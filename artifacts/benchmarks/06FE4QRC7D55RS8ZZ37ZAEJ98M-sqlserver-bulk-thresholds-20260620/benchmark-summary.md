@@ -1,0 +1,35 @@
+# DVault Benchmark Summary
+
+## Summary
+
+- Benchmark baselines: 5
+- Required provider: SQLite local temporary files
+- Optional PostgreSQL provider: PostgreSQL external provider
+- PostgreSQL execution status: skipped
+- PostgreSQL skip reason: not configured: DVAULT_TEST_POSTGRES_CONNECTION_STRING is not set or empty.
+- Optional provider status:
+  - SQL Server external provider: completed
+
+## Run Context
+
+- Iterations: 1
+- Warmup iterations: 0
+- Load timestamp storage: ProviderDefault
+- Provider filter: sqlserver
+- Hash key variants: sha256-v1-hex
+- OS description: Microsoft Windows 10.0.26200
+- OS architecture: X64
+- Process architecture: X64
+- Processor count: 32
+- .NET runtime description: .NET 10.0.9
+- .NET runtime version: 10.0.9
+
+## Results
+
+| Scenario | Provider | Baseline | Strategy family | Dataset size | Change ratio | Execution status | Skip reason | Iterations | Mean ms | Min ms | Max ms | Mean allocated bytes | Min allocated bytes | Max allocated bytes | Execution detail | Persisted outcome |
+| --- | --- | --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- |
+| provider-native-bulk-ingestion | SQL Server external provider | dvault-adddvault-fallback | provider-neutral-dvault-fallback | 20 order-product pairs, 3 fulfillment satellite operations | provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay | completed |  | 1 | 358.288 | 358.288 | 358.288 | 5943504 | 5943504 | 5943504 | scenario=provider-native-bulk-ingestion; provider=SQL Server external provider; baseline=dvault-adddvault-fallback; strategyFamily=provider-neutral-dvault-fallback; executionPath=DVault provider-neutral fallback path; selectedStrategy=<none>; providerSpecificSaveStrategy=fallback; hashKeyVariant=sha256-v1-hex; stableHashAlgorithm=sha256-v1; digestBytes=32; hashKeyStorage=HexString; hashKeyPayloadBytes=64; saveStrategyStatus=ProviderNeutralFallback; provider=Microsoft.EntityFrameworkCore.SqlServer; selectedStrategy=<none>; candidateStrategies=none; candidates=0; fallbackCauses=NoProviderSpecificStrategyRegistered; requestCount=5; hubOperations=40; linkOperations=20; satelliteOperations=3; nativeBulkGate=clean-context,no-multi-active-satellites,provider-eligible-bulk-request | 20 order hubs, 20 product hubs, 20 order-product links, and 2 fulfillment satellite rows |
+| provider-native-bulk-ingestion | SQL Server external provider | dvault-adddvaultsqlserver-optimized | sqlserver-optimized-dvault | 20 order-product pairs, 3 fulfillment satellite operations | provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay | completed |  | 1 | 139.368 | 139.368 | 139.368 | 656176 | 656176 | 656176 | scenario=provider-native-bulk-ingestion; provider=SQL Server external provider; baseline=dvault-adddvaultsqlserver-optimized; strategyFamily=sqlserver-optimized-dvault; executionPath=DVault SQL Server staged native bulk save path; transfer=SqlBulkCopy; selectedStrategy=SqlServerDataVaultSaveStrategy; nativeBulkBoundary=50-plus-operations; cleanupBoundary=temporary-staging-table; hashKeyVariant=sha256-v1-hex; stableHashAlgorithm=sha256-v1; digestBytes=32; hashKeyStorage=HexString; hashKeyPayloadBytes=64; saveStrategyStatus=ProviderStrategySelected; provider=Microsoft.EntityFrameworkCore.SqlServer; selectedStrategy=SqlServerDataVaultSaveStrategy; candidateStrategies=SqlServerDataVaultSaveStrategy; candidates=1; fallbackCauses=none; requestCount=5; hubOperations=40; linkOperations=20; satelliteOperations=3; nativeBulkGate=clean-context,no-multi-active-satellites,provider-eligible-bulk-request | 20 order hubs, 20 product hubs, 20 order-product links, and 2 fulfillment satellite rows |
+| latest-satellite-read | SQL Server external provider | dvault-adddvaultsqlserver-optimized | sqlserver-optimized-dvault | 100 customers, 10 profile states each | 90% repeat-change history latest read | completed |  | 1 | 34.143 | 34.143 | 34.143 | 614896 | 614896 | 614896 | scenario=latest-satellite-read; provider=SQL Server external provider; baseline=dvault-adddvaultsqlserver-optimized; strategyFamily=sqlserver-optimized-dvault; executionPath=DVault SQL Server optimized latest satellite read path; selectedStrategy=SqlServerDataVaultReadStrategy; plannedReadStrategy=SqlServerDataVaultReadStrategy; readShape=LatestSatellite; hashKeyVariant=sha256-v1-hex; stableHashAlgorithm=sha256-v1; digestBytes=32; hashKeyStorage=HexString; hashKeyPayloadBytes=64; readStrategyStatus=ProviderStrategySelected; provider=Microsoft.EntityFrameworkCore.SqlServer; selectedStrategy=SqlServerDataVaultReadStrategy; candidates=1; fallbackCauses=none; readShape=LatestSatellite; readShapeProviderStatus=ProviderStrategySelected; readShapeFallbackCauses=none | 100 latest profile satellite rows read from 1000 seeded profile states |
+| pit-as-of-read | SQL Server external provider | dvault-adddvaultsqlserver-optimized | sqlserver-optimized-dvault | 100 customers, 100 PIT rows, 2 satellite segments | as-of read after latest profile/status snapshots | completed |  | 1 | 98.864 | 98.864 | 98.864 | 4254112 | 4254112 | 4254112 | scenario=pit-as-of-read; provider=SQL Server external provider; baseline=dvault-adddvaultsqlserver-optimized; strategyFamily=sqlserver-optimized-dvault; executionPath=DVault SQL Server optimized PIT read path; selectedStrategy=SqlServerDataVaultReadStrategy; plannedReadStrategy=SqlServerDataVaultReadStrategy; readShape=PitAsOf; hashKeyVariant=sha256-v1-hex; stableHashAlgorithm=sha256-v1; digestBytes=32; hashKeyStorage=HexString; hashKeyPayloadBytes=64; readStrategyStatus=ProviderStrategySelected; provider=Microsoft.EntityFrameworkCore.SqlServer; selectedStrategy=SqlServerDataVaultReadStrategy; candidates=1; fallbackCauses=none; readShape=PitAsOf; readShapeProviderStatus=ProviderStrategySelected; readShapeFallbackCauses=none | 100 PIT as-of rows read across profile and status satellite snapshots |
+| bridge-traversal-read | SQL Server external provider | dvault-adddvaultsqlserver-optimized | sqlserver-optimized-dvault | 1 hierarchy ancestor with 100 descendant bridge rows | maximum depth 3 of 5 | completed |  | 1 | 20.027 | 20.027 | 20.027 | 242552 | 242552 | 242552 | scenario=bridge-traversal-read; provider=SQL Server external provider; baseline=dvault-adddvaultsqlserver-optimized; strategyFamily=sqlserver-optimized-dvault; executionPath=DVault SQL Server optimized bridge read path; selectedStrategy=SqlServerDataVaultReadStrategy; plannedReadStrategy=SqlServerDataVaultReadStrategy; readShape=Bridge; hashKeyVariant=sha256-v1-hex; stableHashAlgorithm=sha256-v1; digestBytes=32; hashKeyStorage=HexString; hashKeyPayloadBytes=64; readStrategyStatus=ProviderStrategySelected; provider=Microsoft.EntityFrameworkCore.SqlServer; selectedStrategy=SqlServerDataVaultReadStrategy; candidates=1; fallbackCauses=none; readShape=Bridge; readShapeProviderStatus=ProviderStrategySelected; readShapeFallbackCauses=none | 60 bridge traversal rows read from 100 seeded hierarchy rows |
