@@ -3,21 +3,20 @@
   "ticket-id": "06FE4QPEZW97YR6YT7MQD1MXTG",
   "ticket-type": "task",
   "title": "Task: Add DB2 benchmark promotion guardrails",
-  "revision": "06FE4QT03C7BA353D6EA3MC8GW",
-  "status": "todo",
+  "revision": "06FE855D52EC3671P1YQ5WEKCG",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
+    "area/benchmarking",
     "area/performance",
     "area/provider-support",
-    "area/benchmarking",
-    "provider/db2"
+    "automation/bot-ready",
+    "provider/db2",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PMXEP9R3PMVZBFC7RT75G",
   "release-id": "06FE4PMQ8GNKY6X54F8D16AVGC",
   "created-at": "2026-06-20T00:12:04.9150442Z",
-  "updated-at": "2026-06-20T00:12:33.6917258Z"
+  "updated-at": "2026-06-20T08:10:20.8400132Z"
 }
