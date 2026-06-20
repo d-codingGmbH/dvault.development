@@ -3,21 +3,21 @@
   "ticket-id": "06FE4QQTS5NFAYN39KP4QW2424",
   "ticket-type": "task",
   "title": "Task: Tune Oracle PIT read outlier",
-  "revision": "06FE4QTEDPQ7WW948PG948JVB0",
-  "status": "todo",
+  "revision": "06FE7DQWVZ52AT56DQ3HKE8HV4",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
     "area/performance",
     "area/provider-support",
     "area/read-models",
-    "provider/oracle"
+    "automation/bot-ready",
+    "provider/oracle",
+    "type/task",
+    "closure/no-work-required"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PN0ERK3QJ6BXYWECFW0MR",
   "release-id": "06FE4PMQ8GNKY6X54F8D16AVGC",
   "created-at": "2026-06-20T00:12:16.0704467Z",
-  "updated-at": "2026-06-20T00:12:37.3575247Z"
+  "updated-at": "2026-06-20T06:28:00.8630000Z"
 }
