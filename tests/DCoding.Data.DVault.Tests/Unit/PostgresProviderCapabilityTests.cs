@@ -99,7 +99,7 @@ public sealed class PostgresProviderCapabilityTests {
   }
 
   [Fact]
-  public void PostgresStrategyBuildsWindowedLatestSatelliteReadSqlInsideProviderPackage() {
+  public void PostgresStrategyRetainsWindowedLatestSatelliteReadSqlInsideProviderPackage() {
     using var context = new DbContext(new DbContextOptionsBuilder().Options);
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var profile = new DataVaultSatelliteMetadata(

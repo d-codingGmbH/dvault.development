@@ -170,7 +170,15 @@ internal static class BenchmarkExecutionDetails {
     return "DVault " + providerName + " optimized " + GetReadShapeDisplayName(benchmark.ScenarioName) +
         " read path; selectedStrategy=" + strategyName +
         "; plannedReadStrategy=" + strategyName +
-        "; readShape=" + readShape;
+        "; readShape=" + readShape +
+        GetPostgresLatestSatelliteSqlShapeDetail(benchmark);
+  }
+
+  private static string GetPostgresLatestSatelliteSqlShapeDetail(IScenarioBenchmark benchmark) {
+    return benchmark.StrategyFamily == DataVaultBenchmarkHelpers.PostgresOptimizedStrategyFamily &&
+        string.Equals(benchmark.ScenarioName, "latest-satellite-read", StringComparison.Ordinal)
+        ? "; latestSatelliteSqlShape=windowed-row-number"
+        : string.Empty;
   }
 
   private static string? GetReadStrategyName(string strategyFamily, string scenarioName) {

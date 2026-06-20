@@ -3,21 +3,20 @@
   "ticket-id": "06FE4QPR8TF8R6PXNM3RMXN8JG",
   "ticket-type": "task",
   "title": "Task: Tune PostgreSQL latest-satellite strategy with evidence",
-  "revision": "06FE4QT7E75MAQQ7K0BQBSNKVR",
-  "status": "todo",
+  "revision": "06FE9ME02M8S6FFCA835N78RAW",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
     "area/performance",
     "area/provider-support",
     "area/read-models",
-    "provider/postgres"
+    "automation/bot-ready",
+    "provider/postgres",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PMYZ1MAMMK6HWV6VAJMQ4",
   "release-id": "06FE4PMQ8GNKY6X54F8D16AVGC",
   "created-at": "2026-06-20T00:12:07.2725792Z",
-  "updated-at": "2026-06-20T00:12:35.5695824Z"
+  "updated-at": "2026-06-20T11:36:51.9892650Z"
 }

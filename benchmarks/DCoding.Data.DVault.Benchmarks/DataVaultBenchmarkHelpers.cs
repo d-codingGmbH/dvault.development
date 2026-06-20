@@ -127,6 +127,7 @@ internal static class DataVaultBenchmarkHelpers {
     if (string.Equals(scenarioName, "latest-satellite-read", StringComparison.Ordinal)) {
       return strategy switch {
         DataVaultBenchmarkStrategy.SqliteOptimized => "SqliteDataVaultReadStrategy",
+        DataVaultBenchmarkStrategy.PostgresOptimized => "PostgresDataVaultReadStrategy",
         DataVaultBenchmarkStrategy.SqlServerOptimized => "SqlServerDataVaultReadStrategy",
         DataVaultBenchmarkStrategy.OracleOptimized => "OracleDataVaultReadStrategy",
         DataVaultBenchmarkStrategy.Db2Optimized => "Db2DataVaultReadStrategy",

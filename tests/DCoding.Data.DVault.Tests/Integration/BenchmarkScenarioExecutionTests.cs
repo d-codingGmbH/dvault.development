@@ -451,7 +451,7 @@ public sealed class BenchmarkScenarioExecutionTests {
 
   private static readonly ExpectedProviderReadRow[] ExpectedProviderReadRows =
   [
-      new(PostgresProviderName, "latest-satellite-read", "dvault-adddvaultpostgres-optimized", ["readShape=LatestSatellite", "selectedStrategy=PostgresDataVaultReadStrategy", "plannedReadStrategy=PostgresDataVaultReadStrategy"]),
+      new(PostgresProviderName, "latest-satellite-read", "dvault-adddvaultpostgres-optimized", ["readShape=LatestSatellite", "selectedStrategy=PostgresDataVaultReadStrategy", "plannedReadStrategy=PostgresDataVaultReadStrategy", "latestSatelliteSqlShape=windowed-row-number"]),
       new(PostgresProviderName, "pit-as-of-read", "dvault-adddvaultpostgres-optimized", ["readShape=PitAsOf", "selectedStrategy=PostgresDataVaultReadStrategy", "plannedReadStrategy=PostgresDataVaultReadStrategy"]),
       new(PostgresProviderName, "bridge-traversal-read", "dvault-adddvaultpostgres-optimized", ["readShape=Bridge", "selectedStrategy=PostgresDataVaultReadStrategy", "plannedReadStrategy=PostgresDataVaultReadStrategy"]),
       new(SqlServerProviderName, "latest-satellite-read", "dvault-adddvaultsqlserver-optimized", ["readShape=LatestSatellite", "selectedStrategy=SqlServerDataVaultReadStrategy", "plannedReadStrategy=SqlServerDataVaultReadStrategy"]),
@@ -1437,6 +1437,27 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Contains("candidateStrategies=SqlServerDataVaultSaveStrategy", executionDetail);
     Assert.Contains("fallbackCauses=SqlServerMaximumSatelliteOperationThreshold", executionDetail);
     Assert.Contains("satelliteOperations=1000", executionDetail);
+  }
+
+  [Fact]
+  public void PostgresLatestSatelliteBenchmarkDetailsRecordRetainedWindowedSqlShapeAndStrategyGate() {
+    var benchmark = new BenchmarkExecutionDetailTestBenchmark(
+        "latest-satellite-read",
+        PostgresProviderName,
+        "dvault-adddvaultpostgres-optimized",
+        DataVaultBenchmarkHelpers.PostgresOptimizedStrategyFamily);
+
+    var executionDetail = BenchmarkExecutionDetails.CreatePlanned(benchmark);
+
+    Assert.Equal(
+        "PostgresDataVaultReadStrategy",
+        DataVaultBenchmarkHelpers.GetProviderReadStrategyName(
+            DataVaultBenchmarkStrategy.PostgresOptimized,
+            "latest-satellite-read"));
+    Assert.Contains("selectedStrategy=PostgresDataVaultReadStrategy", executionDetail, StringComparison.Ordinal);
+    Assert.Contains("plannedReadStrategy=PostgresDataVaultReadStrategy", executionDetail, StringComparison.Ordinal);
+    Assert.Contains("readShape=LatestSatellite", executionDetail, StringComparison.Ordinal);
+    Assert.Contains("latestSatelliteSqlShape=windowed-row-number", executionDetail, StringComparison.Ordinal);
   }
 
   [Fact]
