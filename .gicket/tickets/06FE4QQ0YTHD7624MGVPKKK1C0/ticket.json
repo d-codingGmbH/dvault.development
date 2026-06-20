@@ -3,21 +3,20 @@
   "ticket-id": "06FE4QQ0YTHD7624MGVPKKK1C0",
   "ticket-type": "task",
   "title": "Task: Tune SQL Server latest-satellite strategy with evidence",
-  "revision": "06FE4QT9PEJDNX57RSKZ0HCBKM",
-  "status": "todo",
+  "revision": "06FEB6YZTE7YTCH4RYRW1A6W24",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
     "area/performance",
     "area/provider-support",
     "area/read-models",
-    "provider/sqlserver"
+    "automation/bot-ready",
+    "provider/sqlserver",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PMYZ1MAMMK6HWV6VAJMQ4",
   "release-id": "06FE4PMQ8GNKY6X54F8D16AVGC",
   "created-at": "2026-06-20T00:12:09.4783378Z",
-  "updated-at": "2026-06-20T00:12:36.1476855Z"
+  "updated-at": "2026-06-20T15:17:38.3872143Z"
 }

@@ -1,70 +1,55 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the SQL Server latest-satellite tuning ticket around the existing SqlServerDataVaultReadStrategy evidence gap. Repository and related-ticket evidence already fix the supported shape, placeholder row identity, and downstream documentation split, so no new child ticket, relation change, description update, attachment, or planning document was materialized.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The root benchmark triplet already contains the SQL Server latest-satellite guidance row `dvault-adddvaultsqlserver-optimized`, but it is still a skipped placeholder with `selectedStrategy=SqlServerDataVaultReadStrategy`, `plannedReadStrategy=SqlServerDataVaultReadStrategy`, `readShape=LatestSatellite`, and `persistedOutcome=not executed` because `DVAULT_TEST_SQLSERVER_CONNECTION_STRING` is unset in the checked-in baseline.
 - SQL Server latest-satellite optimization is already bounded in repository code and tests to hub-parent satellites with no driving-key-based multi-active shape; unsupported parent kinds, multi-active satellites, provider mismatch, or declined diagnostics must stay on the provider-neutral fallback path.
 - SQL Server PIT and bridge timing are already closed elsewhere through the provider-configured v0.32.0 smoke-read bundle, so this ticket is only about latest-satellite tuning evidence and must not reopen PIT/bridge scope.
 - The shared lane-normalization prerequisite is already done in ticket 06FE4QP6FB892E7TJMB47A3MSR, and the broader documentation/release update after tuning already exists as ticket 06FE4QRMXVGJVA65ZR5MZ817K8.
 
-### Scope In
+Scope In
 - Tune or explicitly retain the SQL Server current/as-of latest-satellite read path behind AddDVaultSqlServer for supported hub-parent, non-multi-active satellite requests.
 - Capture provider-configured SQL Server latest-satellite benchmark evidence or equivalent measured validation against the existing provider-neutral fallback, using the current `dvault-adddvaultsqlserver-optimized` row identity.
 - Keep diagnostics and benchmark artifacts clear about when `SqlServerDataVaultReadStrategy` is selected, what read shape it covers, and when fallback is used instead.
 - Preserve correctness parity between optimized SQL Server latest/as-of reads and the provider-neutral read pipeline.
 
-### Scope Out
+Scope Out
 - Changing PIT or bridge read boundaries, evidence posture, or completed timing claims for SQL Server.
 - Widening latest-satellite support to link-parent or multi-active satellite shapes.
 - Promoting measured SQL Server latest-satellite timing from the skipped root placeholder alone without a provider-configured run context.
 - The coordinated post-tuning documentation and release sweep already owned by ticket 06FE4QRMXVGJVA65ZR5MZ817K8.
 
-## Acceptance Criteria
-- A provider-configured SQL Server latest-satellite evidence run is captured for the existing `dvault-adddvaultsqlserver-optimized` lane and shows whether the current SQL shape is retained or a bounded SQL Server change is justified.
-- For supported hub-parent, non-multi-active latest and as-of satellite requests, the chosen SQL Server optimized path returns the same rows or projections as the provider-neutral fallback and remains diagnostics-selectable as `SqlServerDataVaultReadStrategy` only when the gate conditions pass.
-- Provider mismatch, unsupported satellite parents, multi-active driving keys, missing SQL Server configuration, or diagnostics that do not select the provider strategy continue to produce provider-neutral fallback behavior with machine-readable fallback causes.
-- Benchmark artifacts, diagnostics, and tests stay aligned on `readShape=LatestSatellite`, the SQL Server selected or planned strategy tokens, and the explanation of the chosen optimized versus fallback path.
-- This ticket does not change or over-claim SQL Server PIT/bridge evidence; latest-satellite proof stays separately bounded.
-
-## Definition of Done
-- There is one evidence-backed SQL Server latest-satellite decision for the supported shape: keep the current row-number query shape or land a bounded replacement, with preserved rationale and measured context.
-- Current/latest and as-of SQL Server latest-satellite reads on the supported shape still meet existing correctness expectations and parity coverage against the provider-neutral path.
-- Diagnostics and local evidence surfaces make it clear when SQL Server optimization is selected and when fallback remains in force.
-- No artifact produced by this ticket implies completed SQL Server latest-satellite timing without preserved provider-configured run context.
-- Downstream documentation work can consume the result without reopening strategy naming, row identity, or supported-shape rules.
-
-## Implementation Notes
-- `SqlServerDataVaultReadStrategy` already uses a `ROW_NUMBER() OVER (PARTITION BY parent hash key ORDER BY load timestamp DESC)` latest-row query, batches parent hash keys to respect the 2100-parameter SQL Server limit, and adds the as-of cutoff as a final parameter only when present.
-- `DataVaultProviderReadStrategyGateEvaluator.EvaluateSqlServer(...)` already constrains latest-satellite optimization to the SQL Server provider name, hub-parent satellites, and no driving-key-based multi-active shape.
-- Existing coverage already fixes the current baseline that this ticket should build on: `DataVaultRelationalPitBridgeReadStrategyParityTests` checks fallback parity for latest/as-of rows and projections, `SqlServerDataVaultSmokeTests` checks live diagnostics selection plus latest/as-of results when SQL Server is configured, and `BenchmarkScenarioExecutionTests` preserves the SQL Server latest-satellite placeholder row contract.
-- No new child ticket, relation change, description update, attachment, or planning document was materialized in this refinement pass because the current split and documentation follow-up already exist.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After provider-configured SQL Server latest-satellite evidence is collected, should ticket 06FE4QRMXVGJVA65ZR5MZ817K8 promote the result in the coordinated v0.42 documentation sweep even if the decision is to retain the current SQL shape?
 
-## Risks
+Risks
 - If `DVAULT_TEST_SQLSERVER_CONNECTION_STRING` stays unset in local or CI evidence lanes, the repository will still only have the skipped placeholder row and developers may overstate strategy-registration evidence as measured timing.
 - SQL Server latest-satellite tuning can regress correctness or performance differently for current versus as-of reads, or for large parent-hash batches near the parameter ceiling, unless evidence covers both shapes.
 - Because SQL Server PIT and bridge already have completed timing evidence, later documentation or benchmark summaries could accidentally blend that proof into this ticket's latest-satellite claim boundary.
 - If the benchmark row tokens, diagnostics tokens, or fallback causes drift from tests and matrices, the downstream documentation ticket will inherit inconsistent evidence.
 
-## Split Recommendations
+Split recommendations
 - No additional split is recommended. Shared lane normalization is already done in 06FE4QP6FB892E7TJMB47A3MSR, this ticket carries the SQL Server latest-satellite evidence/tuning work, and 06FE4QRMXVGJVA65ZR5MZ817K8 remains the coordinated documentation follow-up.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 5
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Scope: use normalized evidence to tune SQL Server latest-satellite strategy selection or SQL shape where justified. Acceptance: fallback remains available and docs/diagnostics explain the chosen path.
+Run mode
+- apply: planned updates are applied after this comment
