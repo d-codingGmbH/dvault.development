@@ -2,7 +2,7 @@
 
 Status: v1 planning contract
 Ticket: 06F0MEE8T9PKPKQH8EPWNQ2CRW
-Consumers: 06F0MEEGJE9QCHC8YN4FEXYX10, 06F0MEERJ7D5Q4WYBQAJD3GFVC, 06F0MEF08AJ1K52STF42T74B04, 06F0MEGAGJCEHQ8QRHGH8W7804
+Consumers: 06F0MEEGJE9QCHC8YN4FEXYX10, 06F0MEERJ7D5Q4WYBQAJD3GFVC, 06F0MEF08AJ1K52STF42T74B04, 06F0MEGAGJCEHQ8QRHGH8W7804, 06FE4R9ZC210EE5AW4WCWQN32G
 
 ## Purpose
 
@@ -14,6 +14,7 @@ The contract stays provider-neutral except for one explicit load timestamp stora
 
 - No parser, importer, exporter, command-line interface, build integration, code generation, drift tooling, runtime model mutation, or YAML dependency is defined here.
 - No provider-specific DDL, SQL, migration behavior, table name override surface, column name override surface, or provider-specific capability section is defined in v1.
+- No encryption, decryption, pseudonymization, redaction, key-management, runtime save or read behavior, ciphertext store type, migration shape, or provider-specific privacy execution is defined here.
 - No promise is made that existing code-first link APIs can represent repeated same-hub participants with roles. Model-first implementation may add a narrow adapter for that shape.
 
 ## Document Envelope
@@ -43,7 +44,7 @@ The artifact is a JSON object. The only required top-level field is `schemaVersi
 | `loadTimestampStorage` | no | `provider-default` | Supported tokens are `provider-default`, `iso-8601-utc-text`, and `utc-ticks`. |
 | `hubs` | no | `[]` | Ordered hub declarations. |
 | `links` | no | `[]` | Ordered link declarations. |
-| `satellites` | no | `[]` | Ordered hub-parent or link-parent satellite declarations. |
+| `satellites` | no | `[]` | Ordered hub-parent or link-parent satellite declarations. A satellite may add opt-in personal-data field metadata without replacing the ordered `payload` contract. |
 | `pits` | no | `[]` | Ordered point-in-time declarations over one hub and that hub's satellites. |
 | `bridges` | no | `[]` | Ordered many-to-many or hierarchy bridge declarations. |
 
@@ -115,7 +116,7 @@ Projection should map links with distinct hubs and no role-sensitive needs to cu
 
 ## Satellite Declarations
 
-Satellite declarations attach descriptive payload to one hub or one link. A non-empty `drivingKeys` array opts the satellite into multi-active semantics.
+Satellite declarations attach descriptive payload to one hub or one link. A non-empty `drivingKeys` array opts the satellite into multi-active semantics. An optional `personalData` array marks existing payload fields for future opt-in privacy packages; omitting it leaves every payload field as ordinary non-privacy payload.
 
 ```json
 {
@@ -137,8 +138,75 @@ Satellite declarations attach descriptive payload to one hub or one link. A non-
 | `parent.name` | yes | none | Existing declaration name of the referenced kind. |
 | `payload` | yes | none | Non-empty ordered array of non-empty payload names. Duplicate payload names within one satellite are errors. |
 | `drivingKeys` | no | `[]` | Ordered array of non-empty driving-key names. Duplicate driving keys are errors. Any overlap with `payload` is an error. |
+| `personalData` | no | `[]` | Ordered array of personal-data field declarations. Each declaration references an existing `payload` name on the same satellite and assigns one stable logical encrypted-payload alias. |
 
 Projection should map ordinary satellites to `DataVaultSatelliteMetadata`. `drivingKeys` maps to the existing multi-active driving-key metadata and preserves declaration order.
+
+### Personal-Data Satellite Metadata
+
+Personal-data metadata is an additive provider-neutral layer over the existing satellite `payload` declaration. It never replaces the payload array, changes payload ordering, or changes whether an unmarked payload field exists in the baseline model. A satellite with no `personalData` property, or with an empty `personalData` array, has no marked personal-data fields.
+
+```json
+{
+  "name": "CustomerProfile",
+  "parent": {
+    "kind": "hub",
+    "name": "Customer"
+  },
+  "payload": ["Name", "EmailAddress", "PhoneNumber"],
+  "personalData": [
+    {
+      "field": "EmailAddress",
+      "encryptedPayloadAlias": "CustomerProfileEmailEncrypted"
+    },
+    {
+      "field": "PhoneNumber",
+      "encryptedPayloadAlias": "CustomerProfilePhoneEncrypted"
+    }
+  ]
+}
+```
+
+| Field | Required | Default | Contract |
+| --- | --- | --- | --- |
+| `personalData[].field` | yes | none | Exact logical payload name already declared in the same satellite `payload` array. Matching uses ordinal string semantics. |
+| `personalData[].encryptedPayloadAlias` | yes | none | Non-empty stable logical metadata name for the encrypted payload representation of that field. The alias is unique within the same satellite and is not a provider column name, store type, SQL expression, algorithm choice, key id, migration instruction, or DDL promise. |
+
+The encrypted-payload alias is a logical lookup key for downstream privacy packages. It lets model-first parsing, code-first or registry metadata registration, diagnostics, and optional privacy behavior identify one caller-owned encrypted representation for one marked field without hard-coding physical storage. Provider-specific packages may later map the alias to a concrete implementation only through separate opt-in contracts.
+
+Validators must reject personal-data metadata before model application when any of these finite failures is present:
+
+- `personalData[].field` names a value that is not present in the same satellite `payload` array.
+- The same payload field is declared more than once in `personalData`.
+- The same `encryptedPayloadAlias` is declared more than once within one satellite.
+- `personalData[].field` names a satellite driving key, parent hash key, hash diff, load timestamp, record source, PIT field, bridge field, hub business key, link participant reference, generated provider column, or any other non-payload name.
+- A personal-data declaration object contains provider-specific storage, SQL, native type, key-management, algorithm, migration, or execution fields.
+
+Personal-data metadata does not change satellite parent identity, ordinary row history semantics, multi-active driving-key semantics, hash-diff presence, load timestamp, record source, or provider-neutral EF mapping compatibility with the existing payload/logical-property baseline. Unmarked payload fields remain ordinary payload fields. The base provider-neutral projection still maps payload fields as payload properties; optional privacy packages decide in later tickets whether and how to add save, read, diagnostics, or provider-specific behavior.
+
+This negative example is invalid because `ContactType` is a driving key rather than a payload field, and because the alias `ContactEncrypted` is reused within one satellite:
+
+```json
+{
+  "name": "CustomerContactByType",
+  "parent": {
+    "kind": "hub",
+    "name": "Customer"
+  },
+  "drivingKeys": ["ContactType"],
+  "payload": ["ContactValue", "VerifiedAt"],
+  "personalData": [
+    {
+      "field": "ContactType",
+      "encryptedPayloadAlias": "ContactEncrypted"
+    },
+    {
+      "field": "ContactValue",
+      "encryptedPayloadAlias": "ContactEncrypted"
+    }
+  ]
+}
+```
 
 ## PIT Declarations
 
@@ -243,7 +311,7 @@ Unsupported values are provider-choice errors. The document must not contain arb
 
 ## Unknown Field Policy
 
-Unknown fields are errors at every object level. This includes top-level objects, declaration objects, participant objects, parent reference objects, bridge endpoint objects, and nested `naming` objects. Validators must not ignore unknown fields because misspelled model-first artifacts would otherwise drift from intended metadata.
+Unknown fields are errors at every object level. This includes top-level objects, declaration objects, participant objects, parent reference objects, personal-data metadata objects, bridge endpoint objects, and nested `naming` objects. Validators must not ignore unknown fields because misspelled model-first artifacts would otherwise drift from intended metadata.
 
 Externally converted authoring input is subject to the same unknown-field policy after conversion to JSON. YAML comments or YAML-only metadata that do not appear in the converted JSON artifact have no DVault model semantics.
 
@@ -280,6 +348,9 @@ Diagnostics are structured and stable enough for parser and validation tests to 
 | `recursive-participant-binding` | `DMV1601` | Ambiguous bridge endpoint binding or missing role for repeated hub participants. |
 | `recursive-participant-binding` | `DMV1602` | Repeated hub link participant without the roles needed for disambiguation. |
 | `shape` | `DMV1701` | Satellite driving key overlaps payload. |
+| `privacy-metadata` | `DMV1801` | Personal-data field metadata references a name that is not an existing payload field on the same satellite. |
+| `privacy-metadata` | `DMV1802` | Personal-data field metadata repeats a payload field or repeats an encrypted-payload alias within one satellite. |
+| `privacy-metadata` | `DMV1803` | Personal-data field metadata targets a known non-payload name such as a driving key, technical column, generated provider column, hub business key, link participant, PIT field, or bridge field. |
 
 Invalid documents return diagnostics without partial model application. When feasible, `path` is a JSON Pointer to the specific offending value. When a diagnostic covers a cross-document collision or missing reference, `path` should point to the declaration or reference that made the model invalid.
 
@@ -390,6 +461,42 @@ Covers a link with ordered participants, a multi-active satellite with ordered d
 }
 ```
 
+### `valid/customer-personal-data-satellite.json`
+
+Covers opt-in personal-data metadata over existing satellite payload names. The example keeps `Name` as an ordinary unmarked payload field, marks `EmailAddress` and `PhoneNumber` by exact payload name, and assigns one stable logical encrypted-payload alias per marked field without declaring provider storage details.
+
+```json
+{
+  "schemaVersion": "dvault.model.v1",
+  "hubs": [
+    {
+      "name": "Customer",
+      "businessKeys": ["TenantId", "CustomerNumber"]
+    }
+  ],
+  "satellites": [
+    {
+      "name": "CustomerProfile",
+      "parent": {
+        "kind": "hub",
+        "name": "Customer"
+      },
+      "payload": ["Name", "EmailAddress", "PhoneNumber"],
+      "personalData": [
+        {
+          "field": "EmailAddress",
+          "encryptedPayloadAlias": "CustomerProfileEmailEncrypted"
+        },
+        {
+          "field": "PhoneNumber",
+          "encryptedPayloadAlias": "CustomerProfilePhoneEncrypted"
+        }
+      ]
+    }
+  ]
+}
+```
+
 ### `valid/sales-region-hierarchy-utc-ticks.json`
 
 Covers a hierarchy bridge with role-bound recursive participants and `utc-ticks` load timestamp storage.
@@ -460,6 +567,12 @@ Downstream parser and diagnostics tests should assert the primary category and c
 | `invalid/unknown-top-level-field.json` | The document includes an unknown top-level field. | `shape` | `DMV1101` |
 | `invalid/unsupported-provider-field.json` | The document includes a provider-specific section such as `providers` or native store-type options. | `provider-choice` | `DMV1502` |
 | `invalid/unsupported-load-timestamp-storage.json` | `loadTimestampStorage` uses a token outside the supported set. | `provider-choice` | `DMV1502` |
+| `invalid/personal-data-unknown-payload.json` | A satellite personal-data declaration names a field that is not in that satellite's `payload` array. | `privacy-metadata` | `DMV1801` |
+| `invalid/duplicate-personal-data-field.json` | A satellite marks the same payload field more than once. | `privacy-metadata` | `DMV1802` |
+| `invalid/duplicate-encrypted-payload-alias.json` | Two personal-data declarations in one satellite reuse the same `encryptedPayloadAlias`. | `privacy-metadata` | `DMV1802` |
+| `invalid/personal-data-driving-key-reference.json` | A satellite personal-data declaration names a `drivingKeys` value instead of a payload value. | `privacy-metadata` | `DMV1803` |
+| `invalid/personal-data-technical-column-reference.json` | A satellite personal-data declaration attempts to tag a parent hash key, hash diff, load timestamp, record source, PIT field, bridge field, hub business key, or link participant name. | `privacy-metadata` | `DMV1803` |
+| `invalid/personal-data-provider-specific-storage.json` | A personal-data declaration includes provider storage, SQL, algorithm, key-management, migration, or DDL fields. | `provider-choice` | `DMV1502` |
 
 No YAML fixture family is required for v1. If downstream tests cover pre-conversion authoring examples, they should assert only the resulting JSON artifact and the ordinary JSON diagnostics listed above.
 
@@ -469,7 +582,7 @@ No YAML fixture family is required for v1. If downstream tests cover pre-convers
 | --- | --- | --- |
 | Hub | `DataVaultHubMetadata`, ordered business keys, hash key, load timestamp, record source. | Narrow DTO or adapter for parser-owned document projection. |
 | Link | `DataVaultLinkMetadata` for ordinary distinct-hub links. | Role-aware participant metadata for repeated same-hub or role-bound links. |
-| Satellite | `DataVaultSatelliteMetadata`, payload metadata, multi-active driving keys. | Parser DTOs that preserve ordered payload and driving-key names before registry projection. |
+| Satellite | `DataVaultSatelliteMetadata`, payload metadata, multi-active driving keys, and additive personal-data field metadata over exact payload names. | Parser DTOs that preserve ordered payload names, driving-key names, personal-data field declarations, and encrypted-payload aliases before registry projection. |
 | PIT | Existing PIT and point-in-time metadata concepts. | Model-first PIT adapter when exact hub-satellite contract needs a narrower projection type. |
 | Bridge | Existing bridge metadata concepts and bridge planning contract. | Role-aware hierarchy endpoint adapter where current public APIs do not expose recursive role binding. |
 | Naming | Existing default naming policy. | Collision audit helpers that run before provider projection. |
@@ -477,4 +590,4 @@ No YAML fixture family is required for v1. If downstream tests cover pre-convers
 
 ## Completion Boundary
 
-This contract is complete when parser and projection implementers can build against the token registry, declaration shapes, diagnostic taxonomy, fixture expectations, and JSON-first YAML authoring boundary above without reopening top-level field names, compatibility policy, provider-choice policy, direct YAML ingestion, or recursive participant binding rules.
+This contract is complete when parser and projection implementers can build against the token registry, declaration shapes, diagnostic taxonomy, fixture expectations, personal-data satellite metadata rules, and JSON-first YAML authoring boundary above without reopening top-level field names, compatibility policy, provider-choice policy, direct YAML ingestion, additive-versus-replacement privacy metadata, encrypted-payload alias semantics, or recursive participant binding rules.

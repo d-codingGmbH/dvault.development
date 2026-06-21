@@ -17,6 +17,7 @@ A future privacy package may compose with the existing explicit DVault surfaces:
 
 - service registration through a dedicated opt-in extension layered on top of `AddDVault()`;
 - metadata annotations or sidecar metadata that are visible at model-configuration or registry-registration time;
+- satellite payload personal-data metadata that references existing `dvault.model.v1` payload names and declares stable logical encrypted-payload aliases;
 - caller-driven save or read helpers that wrap, prepare, filter, redact, pseudonymize, encrypt, or decrypt data before invoking the existing explicit save and read services;
 - request-bound diagnostics that describe privacy strategy selection without exposing raw hash keys, payload values, provider SQL, connection strings, secrets, or policy decisions;
 - provider-specific implementations registered by provider packages through extension methods and DI-discovered strategies.
@@ -41,6 +42,16 @@ Shared contracts must stay provider-neutral. The shared package may define abstr
 Provider-specific privacy behavior must sit behind provider package seams such as `AddDVaultSqlite()`, `AddDVaultPostgres()`, `AddDVaultSqlServer()`, `AddDVaultMySql()`, `AddDVaultOracle()`, `AddDVaultDb2()`, or later provider-specific extensions. A provider package may optimize eligible privacy work only when it can prove compatibility for that provider and decline unsupported shapes without changing caller-visible semantics.
 
 The core package must not infer privacy capabilities from provider names alone, must not promise provider-specific DDL from the provider-neutral surface, and must not require every provider to implement the same privacy optimization before the shared opt-in contract can exist. Unsupported providers and unsupported shapes must fall back to a bounded provider-neutral behavior or fail with explicit diagnostics, depending on the future capability contract.
+
+## Personal-Data Satellite Metadata
+
+The authoritative model-first shape for personal-data satellite field metadata is the additive `personalData` contract in `docs/plans/dvault-model-v1-schema-contract.md`. That contract marks existing satellite `payload` fields by exact logical name and assigns one stable provider-neutral `encryptedPayloadAlias` per marked field.
+
+This metadata is descriptive unless a later opt-in privacy package consumes it. It does not create encryption behavior by itself, does not replace the base satellite payload declaration, and does not imply any provider column, ciphertext store type, algorithm, key id, generated SQL, migration, or DDL shape. Unmarked payload fields remain ordinary payload fields.
+
+The metadata surface applies only to satellite payload fields. It must not be used to tag hub business keys, link participant references, driving keys, hash keys, hash diffs, load timestamps, record sources, PIT rows, bridge rows, diagnostics payloads, or workflow orchestration state. Validators should reject unknown payload references, duplicate marked fields, duplicate encrypted-payload aliases within one satellite, non-payload targets, and provider-specific storage or execution fields before model application.
+
+Personal-data metadata preserves Data Vault semantics. Satellite parent identity, row history, hash-diff presence, multi-active driving-key behavior, load timestamp, record source, and provider-neutral EF payload/logical-property mapping remain compatible with the existing baseline. Downstream parser, code-first or registry registration, EF translation, optional privacy package behavior, and provider-specific execution lanes must be implemented through follow-on tickets that consume this metadata contract instead of redefining it.
 
 ## Ownership Boundary
 
@@ -93,6 +104,9 @@ Stable hashing and telemetry can inform diagnostics and evidence language, but t
 
 Concrete privacy capabilities must be implemented through separate tickets after this boundary is accepted. Candidate follow-on tickets include:
 
+- model-first parser support for `personalData` satellite field metadata and its validation diagnostics;
+- code-first or registry APIs for registering the same payload-field and encrypted-payload-alias metadata;
+- EF metadata translation or diagnostics that expose provider-neutral personal-data metadata without changing ordinary payload mapping;
 - field-level encryption with caller-owned key-provider integration;
 - pseudonymization helpers for selected hub, link, or satellite fields;
 - redaction or export controls for explicit read paths;
