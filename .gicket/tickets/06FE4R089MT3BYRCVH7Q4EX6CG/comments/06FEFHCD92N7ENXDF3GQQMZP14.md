@@ -1,0 +1,28 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `2` selected relation flow(s) for source ticket `06FE4R089MT3BYRCVH7Q4EX6CG`.
+- Role `dev` completed with outcome `dev-workflow-apply` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `4`; dropped obsolete follow-up(s): `1`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `663acf3a9da54306926ab40dbae95195`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06FE4R0H98K42XJY1NEDQX8KB4` via `blocks` path `06FE4R089MT3BYRCVH7Q4EX6CG -> 06FE4R0H98K42XJY1NEDQX8KB4`
+- [queued] `blocked-follow-up-comment` -> `06FE4R13DS6S2ZTGYTHA458HGM` via `blocks` path `06FE4R089MT3BYRCVH7Q4EX6CG -> 06FE4R13DS6S2ZTGYTHA458HGM`
+- [queued] `blocked-follow-up-comment` -> `06FE4R1N2ADN77NDFDP4GR7020` via `blocks` path `06FE4R089MT3BYRCVH7Q4EX6CG -> 06FE4R1N2ADN77NDFDP4GR7020`
+- [queued] `blocked-follow-up-comment` -> `06FE4R1XJVQZTQ8S9WN2YE3ZKW` via `blocks` path `06FE4R089MT3BYRCVH7Q4EX6CG -> 06FE4R1XJVQZTQ8S9WN2YE3ZKW`
+- [dropped] `blocked-by-follow-up-comment` -> `06FE4QRMXVGJVA65ZR5MZ817K8` via `blocks` path `06FE4R089MT3BYRCVH7Q4EX6CG -> 06FE4QRMXVGJVA65ZR5MZ817K8`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06FE4R089MT3BYRCVH7Q4EX6CG` owner `ticket/06FE4R089MT3BYRCVH7Q4EX6CG-story-define-binary-adoption-and-runtime-efficie` base `develop` source-owner `ticket/06FE4R089MT3BYRCVH7Q4EX6CG-story-define-binary-adoption-and-runtime-efficie`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06FE4R0H98K42XJY1NEDQX8KB4` owner `ticket/06FE4R0H98K42XJY1NEDQX8KB4-task-write-binary-hash-storage-migration-and-val` base `develop` source-owner `ticket/06FE4R089MT3BYRCVH7Q4EX6CG-story-define-binary-adoption-and-runtime-efficie`: Mutation targets 'ticket/06FE4R0H98K42XJY1NEDQX8KB4-task-write-binary-hash-storage-migration-and-val', not current branch 'ticket/06FE4R089MT3BYRCVH7Q4EX6CG-story-define-binary-adoption-and-runtime-efficie'; queue for target-branch replay.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06FE4R13DS6S2ZTGYTHA458HGM` owner `ticket/06FE4R13DS6S2ZTGYTHA458HGM-task-add-analyzer-guidance-for-hex-storage-where` base `develop` source-owner `ticket/06FE4R089MT3BYRCVH7Q4EX6CG-story-define-binary-adoption-and-runtime-efficie`: Mutation targets 'ticket/06FE4R13DS6S2ZTGYTHA458HGM-task-add-analyzer-guidance-for-hex-storage-where', not current branch 'ticket/06FE4R089MT3BYRCVH7Q4EX6CG-story-define-binary-adoption-and-runtime-efficie'; queue for target-branch replay.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06FE4R1N2ADN77NDFDP4GR7020` owner `ticket/06FE4R1N2ADN77NDFDP4GR7020-task-add-provider-binary-vs-hex-benchmark-matrix` base `develop` source-owner `ticket/06FE4R089MT3BYRCVH7Q4EX6CG-story-define-binary-adoption-and-runtime-efficie`: Mutation targets 'ticket/06FE4R1N2ADN77NDFDP4GR7020-task-add-provider-binary-vs-hex-benchmark-matrix', not current branch 'ticket/06FE4R089MT3BYRCVH7Q4EX6CG-story-define-binary-adoption-and-runtime-efficie'; queue for target-branch replay.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06FE4R1XJVQZTQ8S9WN2YE3ZKW` owner `ticket/06FE4R1XJVQZTQ8S9WN2YE3ZKW-task-profile-hash-canonicalization-and-hash-diff` base `develop` source-owner `ticket/06FE4R089MT3BYRCVH7Q4EX6CG-story-define-binary-adoption-and-runtime-efficie`: Mutation targets 'ticket/06FE4R1XJVQZTQ8S9WN2YE3ZKW-task-profile-hash-canonicalization-and-hash-diff', not current branch 'ticket/06FE4R089MT3BYRCVH7Q4EX6CG-story-define-binary-adoption-and-runtime-efficie'; queue for target-branch replay.
+- [base-terminal-dropped] `relation-audit-follow-up` `06FE4QRMXVGJVA65ZR5MZ817K8` owner `develop` base `develop` source-owner `ticket/06FE4R089MT3BYRCVH7Q4EX6CG-story-define-binary-adoption-and-runtime-efficie`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06FE4R0H98K42XJY1NEDQX8KB4` on owner branch `ticket/06FE4R0H98K42XJY1NEDQX8KB4-task-write-binary-hash-storage-migration-and-val` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06FE4R13DS6S2ZTGYTHA458HGM` on owner branch `ticket/06FE4R13DS6S2ZTGYTHA458HGM-task-add-analyzer-guidance-for-hex-storage-where` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06FE4R1N2ADN77NDFDP4GR7020` on owner branch `ticket/06FE4R1N2ADN77NDFDP4GR7020-task-add-provider-binary-vs-hex-benchmark-matrix` after that branch is refreshed/rebased.
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06FE4R1XJVQZTQ8S9WN2YE3ZKW` on owner branch `ticket/06FE4R1XJVQZTQ8S9WN2YE3ZKW-task-profile-hash-canonicalization-and-hash-diff` after that branch is refreshed/rebased.

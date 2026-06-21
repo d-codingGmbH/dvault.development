@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Verified that the v0.43 ticket is already a bounded tracking story over eight downstream tasks; binary-first adoption, analyzer ergonomics, and allocation work now have a finite repository-backed contract with no remaining PO blockers.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Repository evidence dated 2026-06-15 and 2026-06-20 already fixes the baseline: UseBinaryFirstProfile and UseDataVaultBinaryFirstProfile are the recommended new-project path, while AddDVault and UseDataVault keep the compatible HexString default for existing persisted models.
 - Public DVault hash-key values remain canonical lowercase hexadecimal strings even when binary physical storage is selected; changing storage profile, algorithm id, digest length, or truncation after persistence is caller-owned compatibility work with no automatic rehash, backfill, dual-write, repair, or migration.
 - Analyzer ergonomics are bounded to optional local tooling: DCoding.Data.DVault.Analyzers stays PrivateAssets=all, ships one net10.0 analyzer asset for both coordinated package lines, and the repository does not claim pure .NET 8 SDK analyzer-host compatibility.
@@ -16,64 +15,47 @@
 - The live split is already materialized as four outgoing blocks links and eight outgoing relates links across eight downstream tasks; no new child tickets, relation changes, attachments, or planning documents were created in this refinement. The downstream tickets are 06FE4R0H98K42XJY1NEDQX8KB4, 06FE4R0TBG8JP5WA2SHXKH438M, 06FE4R13DS6S2ZTGYTHA458HGM, 06FE4R1C96NBSNMM7AFDTHJ7A4, 06FE4R1N2ADN77NDFDP4GR7020, 06FE4R1XJVQZTQ8S9WN2YE3ZKW, 06FE4R261S2FSQ786S4F4JE90R, and 06FE4R2EGQ444EGPKZBRZCDEV8.
 - The only incoming blocks relation comes from done ticket 06FE4QRMXVGJVA65ZR5MZ817K8; per policy it is historical upstream context, not an active PO blocker.
 
-### Scope In
+Scope In
 - Ratify the v0.43 story-level contract that new projects should adopt the binary-first physical storage profile while the public hash-key boundary remains lowercase hexadecimal strings.
 - Define bounded analyzer guidance for binary-first recommendation versus legacy-compatible HexString usage, including the optional and local analyzer-package posture.
 - Define the evidence-first runtime efficiency boundary for hash canonicalization, hash diff, save preparation, and provider binary-vs-hex measurement work.
 - Coordinate the already-created downstream guide, dry-run tooling, ergonomics, benchmark, hotspot, implementation, and documentation tasks as the delivery path for this story.
 
-### Scope Out
+Scope Out
 - Automatic database migration execution, automatic rehash or backfill, dual-write or repair behavior, or silent conversion of existing persisted hash-key storage.
 - Changing the public DVault hash-key value type from lowercase hexadecimal string to byte array or introducing provider-side SQL hashing.
 - Unmeasured cross-provider timing or allocation claims, performance SLAs, or broad runtime promises beyond preserved benchmark evidence.
 - Analyzer or runtime behavior that treats existing HexString projects as invalid solely because binary-first is recommended for new projects.
 - Broader provider tuning, package-line compatibility, or release-publication work outside the existing downstream tasks.
 
-## Acceptance Criteria
-- The story contract explicitly states that UseBinaryFirstProfile and UseDataVaultBinaryFirstProfile are the recommended new-project setup APIs, while AddDVault and UseDataVault remain the compatible defaults for existing persisted models.
-- The contract explicitly states that logical and public hash-key values stay lowercase hexadecimal strings and that post-persistence storage-profile or hash-algorithm changes are caller-owned migration work with no automatic DVault migration behavior.
-- Analyzer guidance is bounded to high-confidence, project-local tooling: DCoding.Data.DVault.Analyzers remains PrivateAssets=all, uses the .NET 10 SDK build-host baseline, and any binary-first guidance must not falsely flag legacy HexString-compatible configurations.
-- Runtime efficiency work is staged through existing evidence tasks: hotspot profiling precedes targeted allocation reductions, and binary-vs-hex provider comparisons must cite preserved benchmark artifacts before docs or release notes promote any win.
-- The downstream documentation task 06FE4R2EGQ444EGPKZBRZCDEV8 ties v0.43 docs, analyzer guidance, performance profiles, and release notes back to measured evidence and migration non-goals rather than reopening product boundaries.
-- No additional child-ticket split is required because the current live ticket graph already covers migration guidance, dry-run tooling, ergonomics, benchmarking, hotspot profiling, targeted optimization, and documentation.
-
-## Definition of Done
-- The parent story keeps open_questions empty and is ready for PO-critic review because the repository already establishes finite binary-first, analyzer, and benchmark-contract baselines.
-- All already-materialized downstream tickets remain aligned to this parent boundary and no child scope reopens automatic migration, public byte-array hash keys, or unmeasured provider-wide performance claims.
-- Migration guidance, dry-run tooling, analyzer guidance, code-first ergonomics, benchmark evidence, hotspot profiling, targeted allocation reductions, and docs-update work each stay inside their existing bounded tickets.
-- Any eventual implementation or documentation change cites the authoritative repository baselines from docs/releases/v0.38.0.md, hash-key-footprint.md, docs/plans/hash-key-storage-profile-contract.md, src/DCoding.Data.DVault.Analyzers/README.md, and docs/plans/performance-evidence-benchmark-artifact-contract.md.
-- The story closes only after the downstream tasks deliver their bounded outputs and the final docs-update task reflects measured evidence plus caller-owned migration non-goals.
-
-## Implementation Notes
-- The live child and dependency graph is already meaningful: 06FE4R0H98K42XJY1NEDQX8KB4 defines migration guidance, 06FE4R0TBG8JP5WA2SHXKH438M adds a dry-run manifest, 06FE4R13DS6S2ZTGYTHA458HGM covers analyzer guidance, 06FE4R1C96NBSNMM7AFDTHJ7A4 covers code-first ergonomics, 06FE4R1N2ADN77NDFDP4GR7020 covers provider binary-vs-hex benchmarking, 06FE4R1XJVQZTQ8S9WN2YE3ZKW profiles hotspots, 06FE4R261S2FSQ786S4F4JE90R implements evidence-backed reductions, and 06FE4R2EGQ444EGPKZBRZCDEV8 consolidates docs.
-- Current intra-task dependencies already reflect sequencing: migration guide before dry-run tooling, analyzer guidance before code-first ergonomics, hotspot profiling before targeted allocation reductions, and several implementation or evidence tasks feeding the final docs-update ticket.
-- Use the existing repository baselines rather than reopening naming or scope decisions: v0.38.0 already introduced the binary-first profile, hash-key-footprint.md already fixes the public lowercase-hex boundary plus caller-owned migration posture, and the analyzer README already fixes PrivateAssets=all plus .NET 10 SDK host guidance.
-- Treat allocation work as targeted and evidence-first. The benchmark artifact contract already requires completed rows to carry timing and allocation values and says targeted allocation work should improve or hold the targeted metric.
-- Do not broaden the story into automatic migration tooling, provider-specific SQL hashing, or generalized performance guarantees; those remain explicit non-goals in the current repository guidance.
-- The incoming done blocker 06FE4QRMXVGJVA65ZR5MZ817K8 is historical upstream documentation context only and should not re-open v0.42 performance-matrix decisions for this v0.43 story.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Should the live story-to-task relation set be normalized later from mixed blocks and relates links into explicit parentOf links for reporting clarity, or is the current dependency graph the intended long-term representation?
 - After the provider binary-vs-hex matrix lands, do any providers need separate follow-up tickets if the evidence supports materially different adoption guidance instead of one shared v0.43 recommendation?
 - If hotspot profiling shows the dominant allocation cost is outside canonicalization, hash diff, or save preparation, should any broader optimization work move to a fresh post-v0.43 ticket instead of widening this story?
 
-## Risks
+Risks
 - Without disciplined artifact citation, downstream docs could overstate binary-vs-hex wins or allocation reductions beyond the providers and scenarios actually benchmarked.
 - Because the live parent story is currently represented through mixed blocks and relates links rather than explicit parentOf links, reporting or workflow automation may interpret the split less clearly until relations are normalized.
 - Analyzer guidance can regress adoption clarity if it treats legacy-compatible HexString storage as a product error instead of a supported compatibility posture.
 
-## Split Recommendations
+Split recommendations
 - No new split is needed; the migration and adoption lane is already materialized as 06FE4R0H98K42XJY1NEDQX8KB4 and 06FE4R0TBG8JP5WA2SHXKH438M.
 - No new split is needed; the analyzer and ergonomics lane is already materialized as 06FE4R13DS6S2ZTGYTHA458HGM and 06FE4R1C96NBSNMM7AFDTHJ7A4.
 - No new split is needed; the evidence, optimization, and docs lane is already materialized as 06FE4R1N2ADN77NDFDP4GR7020, 06FE4R1XJVQZTQ8S9WN2YE3ZKW, 06FE4R261S2FSQ786S4F4JE90R, and 06FE4R2EGQ444EGPKZBRZCDEV8.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 5
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Scope: define v0.43 binary adoption, analyzer ergonomics, and runtime allocation goals. Acceptance: migration guidance remains caller-owned, binary-first recommendations are explicit, and unsupported automation is out of scope.
+Run mode
+- apply: planned updates are applied after this comment
