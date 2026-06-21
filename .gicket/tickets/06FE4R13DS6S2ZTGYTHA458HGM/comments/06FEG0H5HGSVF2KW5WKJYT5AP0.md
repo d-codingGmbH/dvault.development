@@ -1,71 +1,56 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined this task to a bounded analyzer-guidance slice: add a high-confidence source-visible advisory for new-model HexString defaults where the repository recommends binary-first, while keeping legacy-compatible HexString paths non-diagnostic. No child tickets, relation changes, description updates, attachments, or planning documents were materialized.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Repository evidence already fixes the storage baseline: `services.AddDVault(options => options.UseBinaryFirstProfile())` and `modelBuilder.UseDataVaultBinaryFirstProfile()` are the recommended new-project setup paths, while `AddDVault()` and `UseDataVault()` remain compatible HexString defaults for existing persisted models.
 - Public DVault hash-key values remain lowercase hexadecimal strings even when physical storage is `Binary`; this ticket does not reopen migration, rehash, backfill, dual-write, or public `byte[]` hash-key scope.
 - The analyzer package remains optional local tooling with `PrivateAssets="all"` and the existing `.NET 10 SDK` build-host baseline for both coordinated package lines.
 - Existing analyzer behavior already uses direct source-visible evidence and skips ambiguous cases instead of guessing; this ticket should extend that same high-confidence boundary rather than introduce whole-application or runtime inference.
 - No bounded planning writes were applied during this refinement: no child tickets, relation changes, description updates, attachments, or planning documents were created or queued.
 
-### Scope In
+Scope In
 - Add a high-confidence analyzer advisory for source-visible DVault setup that leaves new-model hash-key storage on the compatible HexString path where the repository now recommends binary-first for new generated schemas.
 - Keep remediation guidance aligned with the documented new-project opt-in APIs on both service-registration and Code-First model-builder surfaces.
 - Document and test that legacy-compatible or ambiguous HexString setups remain supported and non-diagnostic.
 
-### Scope Out
+Scope Out
 - Changing the runtime default storage profile, auto-enabling binary-first, or broadening DVault into automatic migration tooling.
 - Automatic rehash, backfill, dual-write, repair, or public `byte[]` hash-key behavior.
 - Whole-application, cross-assembly, or historical-database inference to guess whether a project is new or existing.
 - Code-first API ergonomics work already bounded by ticket `06FE4R1C96NBSNMM7AFDTHJ7A4`.
 
-## Acceptance Criteria
-- The analyzer package reports guidance only when direct source-visible evidence shows a DVault declaration-owning setup is staying on the compatible HexString path in a lane that should use the repository's binary-first recommendation for new generated schemas.
-- The diagnostic or guidance text points developers to `UseBinaryFirstProfile()` and/or `UseDataVaultBinaryFirstProfile()` as the new-project remediation without implying that existing persisted models must migrate immediately.
-- Ambiguous source, existing/legacy-compatible HexString setups, and already binary-first-configured setups remain non-diagnostic.
-- Tests cover positive and negative cases across the documented DVault setup surfaces so the analyzer does not regress into false positives on compatible defaults.
-- Analyzer documentation and catalog text stay aligned with the optional local analyzer posture, the `.NET 10 SDK` build-host baseline, and the public lowercase-hex hash-key contract.
-
-## Definition of Done
-- A bounded analyzer diagnostic/advisory, its messages, and its regression tests are added within the existing analyzer package conventions without introducing runtime guards or runtime behavior changes.
-- The analyzer README and any touched adopter guidance explain that binary-first is the recommended new-project path while compatible HexString storage remains supported for existing persisted models.
-- Negative coverage proves the analyzer stays silent when the source does not provide enough direct evidence to distinguish a new-model recommendation case from a supported compatible or legacy case.
-- The task closes without changing DVault's public hash-key type, default runtime migration posture, or the separation of this ticket from the adjacent ergonomics and docs-consolidation tickets.
-
-## Implementation Notes
-- Use the existing high-confidence analyzer style as the implementation baseline: direct source-visible facts only, no guessing, and no whole-application DI or runtime inspection.
-- Repository policy is already fixed by `docs/releases/v0.38.0.md`, `README.md`, `docs/getting-started.md`, `docs/plans/hash-key-storage-profile-contract.md`, and `src/DCoding.Data.DVault.Analyzers/README.md`; implementation should cite and align those surfaces rather than redefining product policy.
-- Treat `AddDVault()` and `UseDataVault()` as supported compatible defaults and keep the new rule advisory; the analyzer must not present legacy-compatible HexString storage as a product error.
-- Keep this ticket bounded to analyzer guidance. API discoverability or fluent-surface reshaping belongs to `06FE4R1C96NBSNMM7AFDTHJ7A4`, and broad docs consolidation belongs to `06FE4R2EGQ444EGPKZBRZCDEV8`.
-- No bounded planning materialization was needed for this refinement.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the first source-visible advisory lands, should a later ticket extend comparable high-confidence guidance to metadata-first or model-first setup lanes only if a similarly direct evidence surface becomes available?
 - Once developer feedback exists, should the advisory severity remain informational or suggestion-level, or be revisited in a later release?
 
-## Risks
+Risks
 - Any attempt to infer persisted database history or project age from ambiguous source will create false positives and break the supported legacy-compatible HexString posture.
 - If service-registration guidance and Code-First model-builder guidance drift apart, adopters may receive inconsistent binary-first recommendations for the same product policy.
 - If the analyzer message overstates the recommendation as a mandatory error, it will conflict with the repository's documented compatibility baseline for existing persisted models.
 
-## Split Recommendations
+Split recommendations
 - No new split is needed; this ticket is already the bounded analyzer-guidance slice for the parent story.
 - No new split is needed for API ergonomics or broad docs work because those lanes are already separated into `06FE4R1C96NBSNMM7AFDTHJ7A4` and `06FE4R2EGQ444EGPKZBRZCDEV8`.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Scope: add high-confidence analyzer guidance for new models that still use hex hash storage when binary-first profile is recommended. Acceptance: existing legacy-compatible profiles are not incorrectly flagged.
+Run mode
+- apply: planned updates are applied after this comment

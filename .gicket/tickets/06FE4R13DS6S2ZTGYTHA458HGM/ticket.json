@@ -3,19 +3,19 @@
   "ticket-id": "06FE4R13DS6S2ZTGYTHA458HGM",
   "ticket-type": "task",
   "title": "Task: Add analyzer guidance for hex storage where binary-first is recommended",
-  "revision": "06FE4R3JYX48JF1HFJY1SFGW3G",
-  "status": "todo",
+  "revision": "06FEG5JHANZA2E733ZSN693VKR",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
     "area/analyzers",
-    "area/hash-storage"
+    "area/hash-storage",
+    "automation/bot-ready",
+    "type/task",
+    "closure/no-work-required"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PN4XSC7T6SF5NKJBDHPMG",
   "release-id": "06FE4PMRTW15865V5XN7C1MZZG",
   "created-at": "2026-06-20T00:13:32.0274209Z",
-  "updated-at": "2026-06-20T00:13:52.2471181Z"
+  "updated-at": "2026-06-21T02:50:37.2690000Z"
 }
