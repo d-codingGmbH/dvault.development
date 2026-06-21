@@ -9,10 +9,20 @@ internal sealed class DefaultStableHashNormalizer : IStableHashNormalizer {
   public static DefaultStableHashNormalizer Instance { get; } = new();
 
   public string NormalizeValue(object? value) {
-    return NormalizeValue(value, fieldPath: null);
+    return DataVaultAllocationProfiler.Measure(
+        "stable-hash canonicalization",
+        "DefaultStableHashNormalizer.NormalizeValue",
+        () => NormalizeValue(value, fieldPath: null));
   }
 
   public string NormalizeFields(IEnumerable<KeyValuePair<string, object?>> fields) {
+    return DataVaultAllocationProfiler.Measure(
+        "stable-hash canonicalization",
+        "DefaultStableHashNormalizer.NormalizeFields",
+        () => NormalizeFieldsCore(fields));
+  }
+
+  private static string NormalizeFieldsCore(IEnumerable<KeyValuePair<string, object?>> fields) {
     ArgumentNullException.ThrowIfNull(fields);
 
     var normalizedFields = new List<KeyValuePair<string, string>>();

@@ -68,6 +68,13 @@ internal static class BenchmarkRunner {
     var selectedOptionalProviders = optionalProviders
         .Where(availability => ShouldRunProvider(options, availability.ProviderName))
         .ToArray();
+    if (options.AllocationHotspots) {
+      await AllocationHotspotBenchmarkRunner
+          .RunAsync(options, postgresAvailability, selectedOptionalProviders, cancellationToken)
+          .ConfigureAwait(false);
+      return;
+    }
+
     var sqliteBenchmarks = ShouldRunProvider(options, BenchmarkArtifacts.RequiredProviderName)
         ? options.LatestIndexMatrix
             ? CreateLatestIndexBenchmarks(BenchmarkDatabaseProviders.Sqlite, DataVaultBenchmarkStrategy.SqliteOptimized, options)
@@ -160,6 +167,8 @@ internal static class BenchmarkRunner {
     Console.WriteLine("  --output <dir>    Directory for benchmark-summary.md, benchmark-summary.csv, and benchmark-summary.json.");
     Console.WriteLine("  --scale           Run only customer profile scale scenarios across configured providers.");
     Console.WriteLine("  --latest-indexes  Run only seeded latest-satellite lookup scenarios across index variants.");
+    Console.WriteLine("  --allocation-hotspots");
+    Console.WriteLine("                    Run the SQLite sha256-v1/HexString allocation hotspot profile.");
     Console.WriteLine("  --load-timestamp-storage <provider-default|iso8601-utc-text|utc-ticks>");
     Console.WriteLine("                    Physical Data Vault load-timestamp storage to project. Default: provider-default.");
     Console.WriteLine("  --provider <all|sqlite|postgres|sqlserver|mysql|oracle|db2>");

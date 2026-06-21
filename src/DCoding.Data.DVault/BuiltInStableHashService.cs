@@ -46,6 +46,13 @@ internal sealed class BuiltInStableHashService : IStableHashService {
   }
 
   public StableHashDigest ComputeHash(string normalizedInput) {
+    return DataVaultAllocationProfiler.Measure(
+        "digest generation",
+        "BuiltInStableHashService.ComputeHash",
+        () => ComputeHashCore(normalizedInput));
+  }
+
+  private StableHashDigest ComputeHashCore(string normalizedInput) {
     ArgumentNullException.ThrowIfNull(normalizedInput);
 
     var inputBytes = Utf8NoBom.GetBytes(normalizedInput);

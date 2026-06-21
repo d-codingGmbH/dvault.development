@@ -334,8 +334,14 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       ChunkedSaveContinuityState? continuityState,
       Action<DataVaultSaveTelemetryStrategySelection> observeStrategySelection,
       CancellationToken cancellationToken) {
-    var resolvedRequests = ResolveRequests(requests);
-    var strategySelection = DataVaultTelemetryStrategySelector.SelectSaveStrategy(dbContext, _providerSaveStrategies, requests);
+    var resolvedRequests = DataVaultAllocationProfiler.Measure(
+        "pre-write save preparation",
+        "DefaultDataVaultSaveService.ResolveRequests",
+        () => ResolveRequests(requests));
+    var strategySelection = DataVaultAllocationProfiler.Measure(
+        "pre-write save preparation",
+        "DataVaultTelemetryStrategySelector.SelectSaveStrategy",
+        () => DataVaultTelemetryStrategySelector.SelectSaveStrategy(dbContext, _providerSaveStrategies, requests));
     observeStrategySelection(strategySelection);
 
     if (strategySelection.Strategy is not null) {
@@ -358,10 +364,17 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       CancellationToken cancellationToken) {
     var savedRecords = new List<DataVaultSavedRecord>();
     var rowsWritten = 0;
-    var uniqueResults = await AddUniqueRowsAsync(
-        dbContext,
-        CreateUniqueRowSavePlans(resolvedRequests),
-        cancellationToken).ConfigureAwait(false);
+    var uniquePlans = DataVaultAllocationProfiler.Measure(
+        "pre-write save preparation",
+        "DefaultDataVaultSaveService.CreateUniqueRowSavePlans",
+        () => CreateUniqueRowSavePlans(resolvedRequests));
+    var uniqueResults = await DataVaultAllocationProfiler.MeasureAsync(
+        "pre-write save preparation",
+        "DefaultDataVaultSaveService.AddUniqueRowsAsync",
+        () => AddUniqueRowsAsync(
+            dbContext,
+            uniquePlans,
+            cancellationToken)).ConfigureAwait(false);
 
     foreach (var result in uniqueResults) {
       savedRecords.Add(result.SavedRecord);
@@ -370,11 +383,14 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       }
     }
 
-    var satelliteResults = await AddSatellitesAsync(
-        dbContext,
-        resolvedRequests,
-        continuityState,
-        cancellationToken).ConfigureAwait(false);
+    var satelliteResults = await DataVaultAllocationProfiler.MeasureAsync(
+        "pre-write save preparation",
+        "DefaultDataVaultSaveService.AddSatellitesAsync",
+        () => AddSatellitesAsync(
+            dbContext,
+            resolvedRequests,
+            continuityState,
+            cancellationToken)).ConfigureAwait(false);
     foreach (var result in satelliteResults) {
       savedRecords.Add(result.SavedRecord);
       if (result.RowWritten) {
@@ -382,7 +398,10 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       }
     }
 
-    await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+    await DataVaultAllocationProfiler.MeasureAsync(
+        "database write boundary",
+        "DbContext.SaveChangesAsync",
+        () => dbContext.SaveChangesAsync(cancellationToken)).ConfigureAwait(false);
 
     return new DataVaultSaveResult(rowsWritten, savedRecords);
   }
@@ -601,20 +620,33 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       IReadOnlyList<DataVaultResolvedSaveRequest> requests,
       ChunkedSaveContinuityState? continuityState,
       CancellationToken cancellationToken) {
-    var plans = CreateSatelliteSavePlans(requests);
-    var filteredPlans = await FilterSatellitePlansAsync(
-        dbContext,
-        plans,
-        continuityState,
-        cancellationToken).ConfigureAwait(false);
+    var plans = DataVaultAllocationProfiler.Measure(
+        "pre-write save preparation",
+        "DefaultDataVaultSaveService.CreateSatelliteSavePlans",
+        () => CreateSatelliteSavePlans(requests));
+    var filteredPlans = await DataVaultAllocationProfiler.MeasureAsync(
+        "satellite latest-hash-diff replay filtering",
+        "DefaultDataVaultSaveService.FilterSatellitePlansAsync",
+        () => FilterSatellitePlansAsync(
+            dbContext,
+            plans,
+            continuityState,
+            cancellationToken)).ConfigureAwait(false);
 
-    foreach (var group in filteredPlans.RowsToWrite.GroupBy(plan => plan.Table)) {
-      var rows = dbContext.Set<Dictionary<string, object>>(group.Key.TableName);
-      foreach (var plan in group) {
-        ApplyModelValueFormats(dbContext, group.Key.TableName, plan.Row);
-        rows.Add(plan.Row);
-      }
-    }
+    DataVaultAllocationProfiler.Measure(
+        "pre-write save preparation",
+        "DefaultDataVaultSaveService.StageSatelliteRows",
+        () => {
+          foreach (var group in filteredPlans.RowsToWrite.GroupBy(plan => plan.Table)) {
+            var rows = dbContext.Set<Dictionary<string, object>>(group.Key.TableName);
+            foreach (var plan in group) {
+              ApplyModelValueFormats(dbContext, group.Key.TableName, plan.Row);
+              rows.Add(plan.Row);
+            }
+          }
+
+          return true;
+        });
 
     return filteredPlans.Results;
   }
@@ -636,19 +668,34 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     var rowsToWrite = new List<SatelliteSavePlan>();
 
     foreach (var group in plans.GroupBy(plan => plan.Table)) {
-      var latestHashDiffs = await LoadLatestSatelliteHashDiffsAsync(
-          dbContext,
-          group.Key,
-          group.Select(plan => plan.ParentHashKey),
-          cancellationToken).ConfigureAwait(false);
-      continuityState?.ApplyRetainedState(group.Key, latestHashDiffs);
+      var latestHashDiffs = await DataVaultAllocationProfiler.MeasureAsync(
+          "satellite latest-hash-diff replay filtering",
+          "DefaultDataVaultSaveService.LoadLatestSatelliteHashDiffsAsync",
+          () => LoadLatestSatelliteHashDiffsAsync(
+              dbContext,
+              group.Key,
+              group.Select(plan => plan.ParentHashKey),
+              cancellationToken)).ConfigureAwait(false);
+      DataVaultAllocationProfiler.Measure(
+          "satellite latest-hash-diff replay filtering",
+          "ChunkedSaveContinuityState.ApplyRetainedState",
+          () => {
+            continuityState?.ApplyRetainedState(group.Key, latestHashDiffs);
+            return true;
+          });
 
       foreach (var plan in group) {
         var rowWritten = ShouldWriteSatelliteRow(latestHashDiffs, plan);
         if (rowWritten) {
           rowsToWrite.Add(plan);
           TrackLatestSatelliteHashDiff(latestHashDiffs, plan);
-          continuityState?.TrackLatestSatelliteHashDiff(group.Key, plan);
+          DataVaultAllocationProfiler.Measure(
+              "satellite latest-hash-diff replay filtering",
+              "ChunkedSaveContinuityState.TrackLatestSatelliteHashDiff",
+              () => {
+                continuityState?.TrackLatestSatelliteHashDiff(group.Key, plan);
+                return true;
+              });
         }
 
         results[plan.Ordinal] = new SaveOperationResult(plan.SavedRecord, rowWritten);

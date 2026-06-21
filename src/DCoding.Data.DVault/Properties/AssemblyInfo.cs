@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("DCoding.Data.DVault.Db2")]
+[assembly: InternalsVisibleTo("DCoding.Data.DVault.Benchmarks")]
 [assembly: InternalsVisibleTo("DCoding.Data.DVault.MySql")]
 [assembly: InternalsVisibleTo("DCoding.Data.DVault.Oracle")]
 [assembly: InternalsVisibleTo("DCoding.Data.DVault.Postgres")]

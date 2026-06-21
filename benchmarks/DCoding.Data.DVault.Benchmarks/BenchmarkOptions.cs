@@ -8,7 +8,8 @@ internal sealed record BenchmarkOptions(
     bool LatestIndexMatrix = false,
     DataVaultLoadTimestampStorage LoadTimestampStorage = DataVaultLoadTimestampStorage.ProviderDefault,
     string ProviderFilter = BenchmarkProviderFilters.All,
-    IReadOnlyList<BenchmarkHashKeyVariant>? HashKeyVariants = null) {
+    IReadOnlyList<BenchmarkHashKeyVariant>? HashKeyVariants = null,
+    bool AllocationHotspots = false) {
   private const int DefaultIterations = 5;
   private const int DefaultWarmupIterations = 1;
   private const string DefaultStableHashAlgorithmId = "sha256-v1";
@@ -28,6 +29,7 @@ internal sealed record BenchmarkOptions(
     string? artifactOutputDirectory = null;
     var scaleMatrix = false;
     var latestIndexMatrix = false;
+    var allocationHotspots = false;
     var loadTimestampStorage = DataVaultLoadTimestampStorage.ProviderDefault;
     var providerFilter = BenchmarkProviderFilters.All;
     var hashKeyStorageMatrix = false;
@@ -41,6 +43,9 @@ internal sealed record BenchmarkOptions(
           break;
         case "--latest-indexes":
           latestIndexMatrix = true;
+          break;
+        case "--allocation-hotspots":
+          allocationHotspots = true;
           break;
         case "--iterations":
           iterations = ReadPositiveInt(args, ref index, "--iterations");
@@ -72,8 +77,12 @@ internal sealed record BenchmarkOptions(
       }
     }
 
-    if (scaleMatrix && latestIndexMatrix) {
-      throw new ArgumentException("--scale and --latest-indexes cannot be combined.");
+    var focusedModeCount =
+        (scaleMatrix ? 1 : 0) +
+        (latestIndexMatrix ? 1 : 0) +
+        (allocationHotspots ? 1 : 0);
+    if (focusedModeCount > 1) {
+      throw new ArgumentException("--scale, --latest-indexes, and --allocation-hotspots cannot be combined.");
     }
 
     if (hashKeyStorageMatrix && (stableHashAlgorithmId is not null || hashKeyStorageProfile is not null)) {
@@ -95,7 +104,8 @@ internal sealed record BenchmarkOptions(
                 CreateHashKeyVariant(
                     stableHashAlgorithmId ?? DefaultStableHashAlgorithmId,
                     hashKeyStorageProfile ?? DataVaultHashKeyStorageProfile.HexString),
-            ]);
+            ],
+        allocationHotspots);
   }
 
   private static int ReadPositiveInt(IReadOnlyList<string> args, ref int index, string optionName) {

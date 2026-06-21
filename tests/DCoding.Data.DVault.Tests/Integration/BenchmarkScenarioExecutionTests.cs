@@ -1637,6 +1637,69 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
+  public async Task LocalBenchmarkRunnerCanRunAllocationHotspotProfileForSqlite() {
+    var artifactDirectory = Path.Combine(
+        Path.GetTempPath(),
+        "DVaultAllocationHotspotArtifacts-" + Guid.NewGuid().ToString("N"));
+
+    try {
+      var text = await RunBenchmarkAndCaptureOutputAsync(new BenchmarkOptions(
+          1,
+          0,
+          artifactDirectory,
+          ProviderFilter: BenchmarkProviderFilters.Sqlite,
+          AllocationHotspots: true))
+          .ConfigureAwait(false);
+
+      Assert.Contains("DVault allocation hotspot profile", text, StringComparison.Ordinal);
+      Assert.Contains("stable-hash-canonicalization", text, StringComparison.Ordinal);
+      Assert.Contains("stable-hash-digest-generation", text, StringComparison.Ordinal);
+      Assert.Contains("customer-profile-hub-only-save-prep", text, StringComparison.Ordinal);
+      Assert.Contains("order-product-link-bearing-save-prep", text, StringComparison.Ordinal);
+      Assert.Contains("satellite-unchanged-replay-filter", text, StringComparison.Ordinal);
+      Assert.Contains("satellite-changed-replay-filter", text, StringComparison.Ordinal);
+      Assert.Contains("Recorded 6 allocation hotspot benchmark rows.", text, StringComparison.Ordinal);
+
+      var artifacts = VerifyBenchmarkArtifactTriplet(
+          await File.ReadAllTextAsync(Path.Combine(artifactDirectory, "benchmark-summary.md")).ConfigureAwait(false),
+          await File.ReadAllTextAsync(Path.Combine(artifactDirectory, "benchmark-summary.csv")).ConfigureAwait(false),
+          await File.ReadAllTextAsync(Path.Combine(artifactDirectory, "benchmark-summary.json")).ConfigureAwait(false));
+      Assert.Equal(BenchmarkProviderFilters.Sqlite, artifacts.Context.ProviderFilter);
+      Assert.Equal(6, artifacts.RowsByKey.Count);
+      Assert.Contains(
+          artifacts.RowsByKey.Values,
+          row => row.ScenarioName == "satellite-changed-replay-filter" &&
+              row.ExecutionDetail.Contains("callerHashDiffGeneration=outside-profile", StringComparison.Ordinal));
+
+      var hotspotMarkdown = await File
+          .ReadAllTextAsync(Path.Combine(artifactDirectory, "allocation-hotspots.md"))
+          .ConfigureAwait(false);
+      Assert.Contains("## Ranked Hotspots", hotspotMarkdown, StringComparison.Ordinal);
+      Assert.Contains("DefaultStableHashNormalizer.NormalizeFields", hotspotMarkdown, StringComparison.Ordinal);
+      Assert.Contains("BuiltInStableHashService.ComputeHash", hotspotMarkdown, StringComparison.Ordinal);
+      Assert.Contains("DefaultDataVaultSaveService.LoadLatestSatelliteHashDiffsAsync", hotspotMarkdown, StringComparison.Ordinal);
+      Assert.Contains("Caller-owned satellite `HashDiff` generation is outside the measured operation", hotspotMarkdown, StringComparison.Ordinal);
+
+      using var hotspotDocument = JsonDocument.Parse(
+          await File.ReadAllTextAsync(Path.Combine(artifactDirectory, "allocation-hotspots.json")).ConfigureAwait(false));
+      Assert.Equal("dvault.allocation-hotspots.v1", GetRequiredString(hotspotDocument.RootElement, "schemaVersion"));
+      var rankedHotspots = hotspotDocument.RootElement.GetProperty("rankedHotspots").EnumerateArray().ToArray();
+      Assert.NotEmpty(rankedHotspots);
+      Assert.DoesNotContain(
+          rankedHotspots,
+          row => string.Equals(GetRequiredString(row, "surface"), "database write boundary", StringComparison.Ordinal));
+      Assert.Contains(
+          rankedHotspots,
+          row => string.Equals(GetRequiredString(row, "surface"), "satellite latest-hash-diff replay filtering", StringComparison.Ordinal));
+    }
+    finally {
+      if (Directory.Exists(artifactDirectory)) {
+        Directory.Delete(artifactDirectory, recursive: true);
+      }
+    }
+  }
+
+  [Fact]
   public void BenchmarkOptionsCanSelectBoundedHashKeyStorageMatrix() {
     var options = BenchmarkOptions.Parse(["--hash-key-storage-matrix"]);
 
@@ -1647,6 +1710,15 @@ public sealed class BenchmarkScenarioExecutionTests {
         [DataVaultHashKeyStorageProfile.HexString, DataVaultHashKeyStorageProfile.Binary, DataVaultHashKeyStorageProfile.HexString, DataVaultHashKeyStorageProfile.Binary],
         options.EffectiveHashKeyVariants.Select(variant => variant.StorageProfile));
     Assert.Equal([32, 32, 16, 16], options.EffectiveHashKeyVariants.Select(variant => variant.DigestByteLength));
+  }
+
+  [Fact]
+  public void BenchmarkOptionsCanSelectAllocationHotspotMode() {
+    var options = BenchmarkOptions.Parse(["--allocation-hotspots", "--provider", "sqlite"]);
+
+    Assert.True(options.AllocationHotspots);
+    Assert.Equal(BenchmarkProviderFilters.Sqlite, options.ProviderFilter);
+    Assert.Equal(["sha256-v1-hex"], options.EffectiveHashKeyVariants.Select(variant => variant.Label));
   }
 
   [Fact]

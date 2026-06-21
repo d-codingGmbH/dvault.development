@@ -3,20 +3,19 @@
   "ticket-id": "06FE4R1XJVQZTQ8S9WN2YE3ZKW",
   "ticket-type": "task",
   "title": "Task: Profile hash canonicalization and hash-diff allocation hotspots",
-  "revision": "06FE4R3NA6RXJHX6ZN5Q92VD3C",
-  "status": "todo",
+  "revision": "06FEGWAQBH5F60TE0XP9TGBKNG",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
-    "area/performance",
+    "area/benchmarking",
     "area/hash-storage",
-    "area/benchmarking"
+    "area/performance",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PN6FS62NVWJNT50X03ZJ4",
   "release-id": "06FE4PMRTW15865V5XN7C1MZZG",
   "created-at": "2026-06-20T00:13:38.7527614Z",
-  "updated-at": "2026-06-20T00:13:52.8494637Z"
+  "updated-at": "2026-06-21T04:30:02.5881121Z"
 }

@@ -64,6 +64,14 @@ dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVau
 
 This mode seeds 100 customers with 20 existing profile satellite states each, then compares unchanged replay and changed replay saves across the current model index and explicit index variants. It is intended for tuning the satellite parent/load-timestamp/hash-diff index shape independently from the broader scenario benchmarks.
 
+Use `--allocation-hotspots` to profile DVault-owned allocation hotspots on the default SQLite `sha256-v1`/`HexString` baseline:
+
+```sh
+dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --provider sqlite --allocation-hotspots --iterations 3 --warmup 1 --output artifacts/benchmarks/sqlite-allocation-hotspots
+```
+
+This mode writes the standard `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` triplet plus additive `allocation-hotspots.md`, `allocation-hotspots.csv`, and `allocation-hotspots.json` sidecars. The hotspot report ranks measured DVault-owned allocation surfaces for stable-hash canonicalization, digest generation, provider-neutral pre-write save preparation, and latest-hash-diff replay filtering. SQLite setup, seeding, verification, cleanup, and caller-owned satellite `HashDiff` generation are outside the profiled save actions.
+
 When collecting external-provider comparison rows, set the relevant environment variable before restore/build/run so the benchmark project's conditional provider package references are present. PostgreSQL example:
 
 ```sh
