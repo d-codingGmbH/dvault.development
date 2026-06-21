@@ -72,9 +72,12 @@ The default stable hash algorithm id is `sha256-v1`. Built-in non-default ids su
 
 Hash-key values stay logical lowercase hexadecimal strings in public APIs. `HexString` is the default compatible physical storage profile. `Binary` is an opt-in physical storage profile for generated hash-key columns when the application has planned migration, index, and provider evidence.
 
+For existing persisted databases, use the [Hash-Key Storage Migration Guide](hash-key-storage-migration.md) before changing hash-key storage profile. Binary-first setup for new schemas is not an automatic migration path for existing `HexString` storage.
+
 ## Next Documents
 
 - [Production Adoption Checklist](production-adoption-checklist.md)
+- [Hash-Key Storage Migration Guide](hash-key-storage-migration.md)
 - [Performance Profiles](performance-profiles.md)
 - [Local Validation](local-validation.md)
 - [Manual NuGet Publication Checklist](manual-nuget-publication.md)

@@ -32,3 +32,5 @@ This summary routes v0.36.0 adopter guidance to the checked-in SQLite-local hash
 Logical hash-key values remain canonical lowercase hexadecimal strings at DVault request, save, read, diagnostics, and support-bundle boundaries. `HexString` is the compatible default storage profile. `Binary` is explicit opt-in physical storage only and keeps the EF model and public DVault boundaries on lowercase hexadecimal string values.
 
 Changing the stable hash algorithm, digest length, truncation policy, or hash-key storage profile after persistence is caller-owned compatibility work. DVault does not automatically migrate, backfill, dual-write, repair, reconcile, or rehash persisted keys.
+
+For existing persisted databases, plan and validate hex-to-binary adoption with the [Hash-Key Storage Migration Guide](docs/hash-key-storage-migration.md). Keep storage and performance claims scoped to the SQLite-local evidence bundle unless a future provider-specific bundle is checked in.

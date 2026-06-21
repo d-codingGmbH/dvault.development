@@ -61,7 +61,7 @@ Applications still need their normal Entity Framework Core provider package, suc
 
 Use `AddDVault(options => options.UseBinaryFirstProfile())` plus the provider extension package that matches the configured EF Core provider. For direct Code-First model projection, call `UseDataVaultBinaryFirstProfile()` before applying DVault metadata. DVault persistence stays explicit: generated hub, link, and satellite rows are written through `IDataVaultSaveService`; ordinary EF entity tracking remains under the application's control.
 
-The binary-first profile is the recommended physical storage profile for new projects. Existing databases and configurations are not migrated automatically; `HexString`-compatible setups remain valid until the application owner intentionally plans and executes a separate reviewed migration, reset, or data-move change. Logical and public hash-key values remain lowercase hexadecimal strings even when new projects choose binary physical storage.
+The binary-first profile is the recommended physical storage profile for new projects. Existing databases and configurations are not migrated automatically; `HexString`-compatible setups remain valid until the application owner intentionally plans and executes a separate reviewed migration, reset, or data-move change. Use the [Hash-Key Storage Migration Guide](docs/hash-key-storage-migration.md) before changing persisted hash-key storage. Logical and public hash-key values remain lowercase hexadecimal strings even when new projects choose binary physical storage.
 
 ```csharp
 using DCoding.Data.DVault;
@@ -152,7 +152,7 @@ In short:
 | Typed PIT/bridge helper boundary | [DVault V1 Typed PIT And Bridge Helper Contract](docs/architecture/dvault-v1-typed-pit-bridge-helper-contract.md) |
 | Read-plan diagnostics and redaction | [DVault V2 Redacted Read-Plan Explain Contract](docs/architecture/dvault-v2-redacted-read-plan-explain-contract.md) |
 | Analyzer and generator scope | [Analyzer README](src/DCoding.Data.DVault.Analyzers/README.md) |
-| Hashing and hash-key storage contracts | [Stable Hashing Contract](docs/plans/stable-hashing-contract.md) and [Hash-Key Storage Profile Contract](docs/plans/hash-key-storage-profile-contract.md) |
+| Hashing and hash-key storage contracts | [Stable Hashing Contract](docs/plans/stable-hashing-contract.md), [Hash-Key Storage Profile Contract](docs/plans/hash-key-storage-profile-contract.md), and [Hash-Key Storage Migration Guide](docs/hash-key-storage-migration.md) |
 
 ## Current v0.42.0 Limitations
 
