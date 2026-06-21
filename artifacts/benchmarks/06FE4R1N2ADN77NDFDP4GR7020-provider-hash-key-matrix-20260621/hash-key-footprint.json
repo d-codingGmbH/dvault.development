@@ -1,0 +1,158 @@
+{
+  "context": {
+    "provider": "SQLite local temporary files",
+    "optionalPostgresProvider": "PostgreSQL external provider",
+    "postgresExecutionStatus": "completed",
+    "postgresSkipReason": "",
+    "iterations": 1,
+    "warmupIterations": 0,
+    "loadTimestampStorage": "ProviderDefault",
+    "providerFilter": "all",
+    "osDescription": "Microsoft Windows 10.0.26200",
+    "osArchitecture": "X64",
+    "processArchitecture": "X64",
+    "processorCount": 32,
+    "dotNetRuntimeDescription": ".NET 10.0.9",
+    "dotNetRuntimeVersion": "10.0.9",
+    "hashKeyVariants": [
+      {
+        "label": "sha256-v1-hex",
+        "stableHashAlgorithmId": "sha256-v1",
+        "digestByteLength": 32,
+        "hexCharacterLength": 64,
+        "storageProfile": "HexString",
+        "hashKeyPayloadBytes": 64
+      },
+      {
+        "label": "sha256-v1-binary",
+        "stableHashAlgorithmId": "sha256-v1",
+        "digestByteLength": 32,
+        "hexCharacterLength": 64,
+        "storageProfile": "Binary",
+        "hashKeyPayloadBytes": 32
+      },
+      {
+        "label": "sha256-128-v1-hex",
+        "stableHashAlgorithmId": "sha256-128-v1",
+        "digestByteLength": 16,
+        "hexCharacterLength": 32,
+        "storageProfile": "HexString",
+        "hashKeyPayloadBytes": 32
+      },
+      {
+        "label": "sha256-128-v1-binary",
+        "stableHashAlgorithmId": "sha256-128-v1",
+        "digestByteLength": 16,
+        "hexCharacterLength": 32,
+        "storageProfile": "Binary",
+        "hashKeyPayloadBytes": 16
+      }
+    ],
+    "optionalProviders": [
+      {
+        "providerName": "PostgreSQL external provider",
+        "connectionStringEnvironmentVariable": "DVAULT_TEST_POSTGRES_CONNECTION_STRING",
+        "executionStatus": "completed",
+        "skipReason": ""
+      },
+      {
+        "providerName": "SQL Server external provider",
+        "connectionStringEnvironmentVariable": "DVAULT_TEST_SQLSERVER_CONNECTION_STRING",
+        "executionStatus": "skipped",
+        "skipReason": "connection unreachable: A provider connection could not be opened with DVAULT_TEST_SQLSERVER_CONNECTION_STRING. The instance of SQL Server you attempted to connect to requires encryption but this machine does not support it."
+      },
+      {
+        "providerName": "MySQL external provider",
+        "connectionStringEnvironmentVariable": "DVAULT_TEST_MYSQL_CONNECTION_STRING",
+        "executionStatus": "completed",
+        "skipReason": ""
+      },
+      {
+        "providerName": "Oracle external provider",
+        "connectionStringEnvironmentVariable": "DVAULT_TEST_ORACLE_CONNECTION_STRING",
+        "executionStatus": "completed",
+        "skipReason": ""
+      },
+      {
+        "providerName": "DB2 external provider",
+        "connectionStringEnvironmentVariable": "DVAULT_TEST_DB2_CONNECTION_STRING",
+        "executionStatus": "completed",
+        "skipReason": ""
+      }
+    ]
+  },
+  "rows": [
+    {
+      "variant": "sha256-v1-hex",
+      "provider": "SQLite local temporary files",
+      "stableHashAlgorithmId": "sha256-v1",
+      "digestByteLength": 32,
+      "hexCharacterLength": 64,
+      "storageProfile": "HexString",
+      "hashKeyStoreType": "TEXT",
+      "participantReferenceStoreType": "TEXT",
+      "hashKeyValueFormat": "LowercaseHexText",
+      "participantReferenceValueFormat": "LowercaseHexText",
+      "hashKeyPayloadBytes": 64,
+      "parentHashReferencePayloadBytes": 64,
+      "twoColumnHashReferenceIndexPayloadBytes": 128,
+      "completedRows": 24,
+      "skippedRows": 0,
+      "failedRows": 0
+    },
+    {
+      "variant": "sha256-v1-binary",
+      "provider": "SQLite local temporary files",
+      "stableHashAlgorithmId": "sha256-v1",
+      "digestByteLength": 32,
+      "hexCharacterLength": 64,
+      "storageProfile": "Binary",
+      "hashKeyStoreType": "BLOB",
+      "participantReferenceStoreType": "BLOB",
+      "hashKeyValueFormat": "LowercaseHexBinary",
+      "participantReferenceValueFormat": "LowercaseHexBinary",
+      "hashKeyPayloadBytes": 32,
+      "parentHashReferencePayloadBytes": 32,
+      "twoColumnHashReferenceIndexPayloadBytes": 64,
+      "completedRows": 24,
+      "skippedRows": 0,
+      "failedRows": 0
+    },
+    {
+      "variant": "sha256-128-v1-hex",
+      "provider": "SQLite local temporary files",
+      "stableHashAlgorithmId": "sha256-128-v1",
+      "digestByteLength": 16,
+      "hexCharacterLength": 32,
+      "storageProfile": "HexString",
+      "hashKeyStoreType": "TEXT",
+      "participantReferenceStoreType": "TEXT",
+      "hashKeyValueFormat": "LowercaseHexText",
+      "participantReferenceValueFormat": "LowercaseHexText",
+      "hashKeyPayloadBytes": 32,
+      "parentHashReferencePayloadBytes": 32,
+      "twoColumnHashReferenceIndexPayloadBytes": 64,
+      "completedRows": 24,
+      "skippedRows": 0,
+      "failedRows": 0
+    },
+    {
+      "variant": "sha256-128-v1-binary",
+      "provider": "SQLite local temporary files",
+      "stableHashAlgorithmId": "sha256-128-v1",
+      "digestByteLength": 16,
+      "hexCharacterLength": 32,
+      "storageProfile": "Binary",
+      "hashKeyStoreType": "BLOB",
+      "participantReferenceStoreType": "BLOB",
+      "hashKeyValueFormat": "LowercaseHexBinary",
+      "participantReferenceValueFormat": "LowercaseHexBinary",
+      "hashKeyPayloadBytes": 16,
+      "parentHashReferencePayloadBytes": 16,
+      "twoColumnHashReferenceIndexPayloadBytes": 32,
+      "completedRows": 24,
+      "skippedRows": 0,
+      "failedRows": 0
+    }
+  ]
+}

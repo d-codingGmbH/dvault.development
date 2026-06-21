@@ -154,11 +154,14 @@ evidence only when the selected provider exposes them under the consumer applica
 reading is outside the hash-key storage-profile contract, even though DB2 may expose storage-type facts as external opt-in
 evidence.
 
-The checked-in quantified footprint evidence is SQLite-local. The root [hash-key-footprint.md](../hash-key-footprint.md)
+The checked-in quantified footprint baseline remains SQLite-local. The root [hash-key-footprint.md](../hash-key-footprint.md)
 summary and its artifact bundle record SQLite examples for `sha256-v1` and `sha256-128-v1` in `HexString` and `Binary`
-profiles. Keep storage and lookup/read claims scoped to that bundle unless a future provider-specific evidence bundle is
-checked in. Do not promise provider-specific savings or performance changes for PostgreSQL, SQL Server, Oracle, MySQL, DB2, or
-other providers from the SQLite evidence alone.
+profiles. A provider-configured binary-vs-hex matrix is also checked in under
+[`artifacts/benchmarks/06FE4R1N2ADN77NDFDP4GR7020-provider-hash-key-matrix-20260621/`](../artifacts/benchmarks/06FE4R1N2ADN77NDFDP4GR7020-provider-hash-key-matrix-20260621/).
+Use that provider bundle as compatibility and caveat evidence only with its preserved run context: it contains completed
+PostgreSQL, MySQL, Oracle, and DB2 timing rows, a skipped SQL Server lane for the local TLS/runtime setup, and failed binary
+rows that expose provider-specific storage-profile incompatibilities. Do not promise provider-specific savings or performance
+changes for PostgreSQL, SQL Server, Oracle, MySQL, DB2, or other providers from the SQLite evidence alone.
 
 Provider packages may optimize write transport behind the public save service, but they must not silently replace the
 registered stable hash service or normalizer with provider-side SQL hashing.
