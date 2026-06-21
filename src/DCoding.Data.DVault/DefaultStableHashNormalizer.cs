@@ -27,6 +27,7 @@ internal sealed class DefaultStableHashNormalizer : IStableHashNormalizer {
 
     var normalizedFields = new List<KeyValuePair<string, string>>();
     var fieldPaths = new HashSet<string>(StringComparer.Ordinal);
+    var normalizedLength = 0;
 
     foreach (var field in fields) {
       var fieldPath = RequireFieldPath(field.Key);
@@ -34,14 +35,29 @@ internal sealed class DefaultStableHashNormalizer : IStableHashNormalizer {
         throw new ArgumentException("Stable hash structured fields must not contain duplicate field paths.", nameof(fields));
       }
 
-      normalizedFields.Add(new KeyValuePair<string, string>(fieldPath, NormalizeValue(field.Value, fieldPath)));
+      var normalizedValue = NormalizeValue(field.Value, fieldPath);
+      normalizedLength += fieldPath.Length + 1 + normalizedValue.Length;
+      normalizedFields.Add(new KeyValuePair<string, string>(fieldPath, normalizedValue));
     }
 
     normalizedFields.Sort((left, right) => string.CompareOrdinal(left.Key, right.Key));
+    if (normalizedFields.Count == 0) {
+      return string.Empty;
+    }
 
-    return string.Join(
-        "\n",
-        normalizedFields.Select(field => field.Key + "=" + field.Value));
+    var builder = new StringBuilder(normalizedLength + normalizedFields.Count - 1);
+    for (var index = 0; index < normalizedFields.Count; index++) {
+      if (index > 0) {
+        builder.Append('\n');
+      }
+
+      var field = normalizedFields[index];
+      builder.Append(field.Key);
+      builder.Append('=');
+      builder.Append(field.Value);
+    }
+
+    return builder.ToString();
   }
 
   private static string NormalizeValue(object? value, string? fieldPath) {

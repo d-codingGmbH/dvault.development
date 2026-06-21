@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -8,25 +9,34 @@ internal sealed class BuiltInStableHashService : IStableHashService {
 
   public static IStableHashService Sha256 { get; } = new BuiltInStableHashService(
       "sha256-v1",
-      SHA256.HashData);
+      StableHashAlgorithmKind.Sha256,
+      digestByteLength: 32);
 
   public static IStableHashService Sha1 { get; } = new BuiltInStableHashService(
       "sha1-v1",
-      SHA1.HashData);
+      StableHashAlgorithmKind.Sha1,
+      digestByteLength: 20);
 
   public static IStableHashService Sha256128 { get; } = new BuiltInStableHashService(
       "sha256-128-v1",
-      inputBytes => ComputeTruncatedSha256(inputBytes, 16));
+      StableHashAlgorithmKind.Sha256,
+      digestByteLength: 16);
 
   public static IStableHashService Sha256160 { get; } = new BuiltInStableHashService(
       "sha256-160-v1",
-      inputBytes => ComputeTruncatedSha256(inputBytes, 20));
+      StableHashAlgorithmKind.Sha256,
+      digestByteLength: 20);
 
-  private readonly Func<byte[], byte[]> _computeDigestBytes;
+  private readonly StableHashAlgorithmKind _algorithmKind;
+  private readonly int _digestByteLength;
 
-  private BuiltInStableHashService(string algorithmId, Func<byte[], byte[]> computeDigestBytes) {
+  private BuiltInStableHashService(
+      string algorithmId,
+      StableHashAlgorithmKind algorithmKind,
+      int digestByteLength) {
     AlgorithmId = algorithmId;
-    _computeDigestBytes = computeDigestBytes;
+    _algorithmKind = algorithmKind;
+    _digestByteLength = digestByteLength;
   }
 
   public string AlgorithmId { get; }
@@ -55,14 +65,43 @@ internal sealed class BuiltInStableHashService : IStableHashService {
   private StableHashDigest ComputeHashCore(string normalizedInput) {
     ArgumentNullException.ThrowIfNull(normalizedInput);
 
-    var inputBytes = Utf8NoBom.GetBytes(normalizedInput);
-    var digestBytes = _computeDigestBytes(inputBytes);
-    var digestValue = Convert.ToHexString(digestBytes).ToLowerInvariant();
+    var byteCount = Utf8NoBom.GetByteCount(normalizedInput);
+    var inputBytes = ArrayPool<byte>.Shared.Rent(byteCount);
+    try {
+      var writtenBytes = Utf8NoBom.GetBytes(normalizedInput.AsSpan(), inputBytes);
+      Span<byte> digestBytes = stackalloc byte[32];
+      ComputeDigest(inputBytes.AsSpan(0, writtenBytes), digestBytes);
+      var digestValue = CreateLowerHexString(digestBytes[.._digestByteLength]);
 
-    return new StableHashDigest(AlgorithmId, digestValue);
+      return new StableHashDigest(AlgorithmId, digestValue);
+    }
+    finally {
+      ArrayPool<byte>.Shared.Return(inputBytes);
+    }
   }
 
-  private static byte[] ComputeTruncatedSha256(byte[] inputBytes, int byteLength) {
-    return SHA256.HashData(inputBytes)[..byteLength];
+  private void ComputeDigest(ReadOnlySpan<byte> inputBytes, Span<byte> digestBytes) {
+    _ = _algorithmKind switch {
+      StableHashAlgorithmKind.Sha1 => SHA1.HashData(inputBytes, digestBytes),
+      _ => SHA256.HashData(inputBytes, digestBytes),
+    };
+  }
+
+  private static string CreateLowerHexString(ReadOnlySpan<byte> bytes) {
+    const string LowerHexDigits = "0123456789abcdef";
+
+    Span<char> chars = stackalloc char[bytes.Length * 2];
+    for (var index = 0; index < bytes.Length; index++) {
+      var value = bytes[index];
+      chars[index * 2] = LowerHexDigits[value >> 4];
+      chars[(index * 2) + 1] = LowerHexDigits[value & 0x0f];
+    }
+
+    return new string(chars);
+  }
+
+  private enum StableHashAlgorithmKind {
+    Sha1,
+    Sha256,
   }
 }

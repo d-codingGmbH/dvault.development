@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Diagnostics;
+using System.Text;
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -637,12 +638,15 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         "pre-write save preparation",
         "DefaultDataVaultSaveService.StageSatelliteRows",
         () => {
-          foreach (var group in filteredPlans.RowsToWrite.GroupBy(plan => plan.Table)) {
-            var rows = dbContext.Set<Dictionary<string, object>>(group.Key.TableName);
-            foreach (var plan in group) {
-              ApplyModelValueFormats(dbContext, group.Key.TableName, plan.Row);
-              rows.Add(plan.Row);
+          var rowSetsByTable = new Dictionary<SatelliteTableProjection, DbSet<Dictionary<string, object>>>();
+          foreach (var plan in filteredPlans.RowsToWrite) {
+            if (!rowSetsByTable.TryGetValue(plan.Table, out var rows)) {
+              rows = dbContext.Set<Dictionary<string, object>>(plan.Table.TableName);
+              rowSetsByTable.Add(plan.Table, rows);
             }
+
+            ApplyModelValueFormats(dbContext, plan.Table.TableName, plan.Row);
+            rows.Add(plan.Row);
           }
 
           return true;
@@ -652,11 +656,39 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
   }
 
   private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(IReadOnlyList<DataVaultResolvedSaveRequest> requests) {
-    return requests
-        .SelectMany(request => request.Request.SatelliteOperations
-            .Select(operation => CreateSatelliteSavePlan(request, operation)))
-        .Select((plan, index) => plan with { Ordinal = index })
-        .ToArray();
+    var planCount = 0;
+    foreach (var request in requests) {
+      planCount += request.Request.SatelliteOperations.Count;
+    }
+
+    var plans = new SatelliteSavePlan[planCount];
+    var ordinal = 0;
+    foreach (var request in requests) {
+      foreach (var operation in request.Request.SatelliteOperations) {
+        plans[ordinal] = CreateSatelliteSavePlan(ordinal, request, operation);
+        ordinal++;
+      }
+    }
+
+    return plans;
+  }
+
+  private static IReadOnlyList<SatellitePlanTableGroup> GroupSatellitePlansByTable(
+      IReadOnlyList<SatelliteSavePlan> plans) {
+    var groups = new List<SatellitePlanTableGroup>();
+    var groupsByTable = new Dictionary<SatelliteTableProjection, SatellitePlanTableGroup>();
+
+    foreach (var plan in plans) {
+      if (!groupsByTable.TryGetValue(plan.Table, out var group)) {
+        group = new SatellitePlanTableGroup(plan.Table);
+        groupsByTable.Add(plan.Table, group);
+        groups.Add(group);
+      }
+
+      group.Add(plan);
+    }
+
+    return groups;
   }
 
   private static async Task<FilteredSatelliteSavePlans> FilterSatellitePlansAsync(
@@ -665,26 +697,26 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       ChunkedSaveContinuityState? continuityState,
       CancellationToken cancellationToken) {
     var results = new SaveOperationResult[plans.Count];
-    var rowsToWrite = new List<SatelliteSavePlan>();
+    var rowsToWrite = new List<SatelliteSavePlan>(plans.Count);
 
-    foreach (var group in plans.GroupBy(plan => plan.Table)) {
+    foreach (var group in GroupSatellitePlansByTable(plans)) {
       var latestHashDiffs = await DataVaultAllocationProfiler.MeasureAsync(
           "satellite latest-hash-diff replay filtering",
           "DefaultDataVaultSaveService.LoadLatestSatelliteHashDiffsAsync",
           () => LoadLatestSatelliteHashDiffsAsync(
               dbContext,
-              group.Key,
-              group.Select(plan => plan.ParentHashKey),
+              group.Table,
+              group.ParentHashKeys,
               cancellationToken)).ConfigureAwait(false);
       DataVaultAllocationProfiler.Measure(
           "satellite latest-hash-diff replay filtering",
           "ChunkedSaveContinuityState.ApplyRetainedState",
           () => {
-            continuityState?.ApplyRetainedState(group.Key, latestHashDiffs);
+            continuityState?.ApplyRetainedState(group.Table, latestHashDiffs);
             return true;
           });
 
-      foreach (var plan in group) {
+      foreach (var plan in group.Plans) {
         var rowWritten = ShouldWriteSatelliteRow(latestHashDiffs, plan);
         if (rowWritten) {
           rowsToWrite.Add(plan);
@@ -693,7 +725,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
               "satellite latest-hash-diff replay filtering",
               "ChunkedSaveContinuityState.TrackLatestSatelliteHashDiff",
               () => {
-                continuityState?.TrackLatestSatelliteHashDiff(group.Key, plan);
+                continuityState?.TrackLatestSatelliteHashDiff(group.Table, plan);
                 return true;
               });
         }
@@ -706,6 +738,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
   }
 
   private static SatelliteSavePlan CreateSatelliteSavePlan(
+      int ordinal,
       DataVaultResolvedSaveRequest request,
       DataVaultSatelliteSaveOperation operation) {
     var satellite = operation.Metadata;
@@ -768,7 +801,7 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         drivingKeyFields);
 
     return new SatelliteSavePlan(
-        -1,
+        ordinal,
         table,
         seriesKey,
         operation.ParentHashKey,
@@ -781,22 +814,15 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
   private static async Task<Dictionary<SatelliteSeriesKey, LatestSatelliteHashDiff>> LoadLatestSatelliteHashDiffsAsync(
       DbContext dbContext,
       SatelliteTableProjection table,
-      IEnumerable<string> parentHashKeys,
+      IReadOnlySet<string> parentHashKeys,
       CancellationToken cancellationToken) {
-    var parentHashKeyArray = parentHashKeys.Distinct(StringComparer.Ordinal).ToArray();
-    var latestByParent = GetLatestTrackedSatelliteHashDiffs(dbContext, table, parentHashKeyArray);
-    var persistedHashDiffs = await LoadLatestPersistedSatelliteHashDiffsAsync(
+    var latestByParent = GetLatestTrackedSatelliteHashDiffs(dbContext, table, parentHashKeys);
+    await LoadLatestPersistedSatelliteHashDiffsAsync(
         dbContext,
         table,
-        parentHashKeyArray,
+        parentHashKeys,
+        latestByParent,
         cancellationToken).ConfigureAwait(false);
-
-    foreach (var persistedHashDiff in persistedHashDiffs) {
-      if (!latestByParent.TryGetValue(persistedHashDiff.SeriesKey, out var current) ||
-          persistedHashDiff.LoadTimestamp > current.LoadTimestamp) {
-        latestByParent[persistedHashDiff.SeriesKey] = persistedHashDiff;
-      }
-    }
 
     return latestByParent;
   }
@@ -804,13 +830,12 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
   private static Dictionary<SatelliteSeriesKey, LatestSatelliteHashDiff> GetLatestTrackedSatelliteHashDiffs(
       DbContext dbContext,
       SatelliteTableProjection table,
-      IEnumerable<string> parentHashKeys) {
-    var parentKeySet = parentHashKeys.ToHashSet(StringComparer.Ordinal);
+      IReadOnlySet<string> parentHashKeys) {
     var latestBySeries = new Dictionary<SatelliteSeriesKey, LatestSatelliteHashDiff>();
 
     foreach (var trackedRow in GetTrackedRows(dbContext, table.TableName)) {
       if (!TryCreateLatestSatelliteHashDiff(trackedRow, table, out var current) ||
-          !parentKeySet.Contains(current.SeriesKey.ParentHashKey)) {
+          !parentHashKeys.Contains(current.SeriesKey.ParentHashKey)) {
         continue;
       }
 
@@ -823,36 +848,64 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
     return latestBySeries;
   }
 
-  private static async Task<IReadOnlyList<LatestSatelliteHashDiff>> LoadLatestPersistedSatelliteHashDiffsAsync(
+  private static async Task LoadLatestPersistedSatelliteHashDiffsAsync(
       DbContext dbContext,
       SatelliteTableProjection table,
-      IEnumerable<string> parentHashKeys,
+      IReadOnlyCollection<string> parentHashKeys,
+      Dictionary<SatelliteSeriesKey, LatestSatelliteHashDiff> latestBySeries,
       CancellationToken cancellationToken) {
-    var rows = dbContext.Set<Dictionary<string, object>>(table.TableName);
-    var latestRows = new List<LatestSatelliteHashDiff>();
-
-    foreach (var parentHashKeyBatch in parentHashKeys.Distinct(StringComparer.Ordinal).Chunk(500)) {
-      var persistedRows = await rows
-          .AsNoTracking()
-          .WhereStringPropertyEqualsAny(table.ParentHashKeyColumnName, parentHashKeyBatch)
-          .ToListAsync(cancellationToken)
-          .ConfigureAwait(false);
-      var batchRows = persistedRows
-          .Select(row => TryCreateLatestSatelliteHashDiff(row, table, out var latestHashDiff)
-              ? latestHashDiff
-              : null)
-          .Where(row => row is not null)
-          .Cast<LatestSatelliteHashDiff>()
-          .ToArray();
-
-      var batchLatestRows = batchRows
-          .GroupBy(row => row.SeriesKey)
-          .Select(group => group.OrderByDescending(row => row.LoadTimestamp).First());
-
-      latestRows.AddRange(batchLatestRows);
+    if (parentHashKeys.Count == 0) {
+      return;
     }
 
-    return latestRows;
+    var rows = dbContext.Set<Dictionary<string, object>>(table.TableName);
+    var parentHashKeyBatch = new List<string>(Math.Min(parentHashKeys.Count, 500));
+
+    foreach (var parentHashKey in parentHashKeys) {
+      parentHashKeyBatch.Add(parentHashKey);
+      if (parentHashKeyBatch.Count == 500) {
+        await LoadLatestPersistedSatelliteHashDiffBatchAsync(
+            rows,
+            table,
+            parentHashKeyBatch,
+            latestBySeries,
+            cancellationToken).ConfigureAwait(false);
+        parentHashKeyBatch.Clear();
+      }
+    }
+
+    if (parentHashKeyBatch.Count > 0) {
+      await LoadLatestPersistedSatelliteHashDiffBatchAsync(
+          rows,
+          table,
+          parentHashKeyBatch,
+          latestBySeries,
+          cancellationToken).ConfigureAwait(false);
+    }
+  }
+
+  private static async Task LoadLatestPersistedSatelliteHashDiffBatchAsync(
+      DbSet<Dictionary<string, object>> rows,
+      SatelliteTableProjection table,
+      IReadOnlyCollection<string> parentHashKeys,
+      Dictionary<SatelliteSeriesKey, LatestSatelliteHashDiff> latestBySeries,
+      CancellationToken cancellationToken) {
+    var persistedRows = await rows
+        .AsNoTracking()
+        .WhereStringPropertyEqualsAny(table.ParentHashKeyColumnName, parentHashKeys)
+        .ToListAsync(cancellationToken)
+        .ConfigureAwait(false);
+
+    foreach (var persistedRow in persistedRows) {
+      if (!TryCreateLatestSatelliteHashDiff(persistedRow, table, out var latestHashDiff)) {
+        continue;
+      }
+
+      if (!latestBySeries.TryGetValue(latestHashDiff.SeriesKey, out var current) ||
+          latestHashDiff.LoadTimestamp > current.LoadTimestamp) {
+        latestBySeries[latestHashDiff.SeriesKey] = latestHashDiff;
+      }
+    }
   }
 
   private static bool ShouldWriteSatelliteRow(
@@ -903,6 +956,11 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       Dictionary<string, object> row,
       SatelliteTableProjection table,
       out IReadOnlyList<string> drivingKeyValues) {
+    if (table.DrivingKeyColumnNames.Count == 0) {
+      drivingKeyValues = [];
+      return true;
+    }
+
     var values = new string[table.DrivingKeyColumnNames.Count];
     for (var index = 0; index < table.DrivingKeyColumnNames.Count; index++) {
       if (!row.TryGetValue(table.DrivingKeyColumnNames[index], out var value) ||
@@ -1196,7 +1254,9 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       ParentHashKeyColumnName = parentHashKeyColumnName;
       HashDiffColumnName = hashDiffColumnName;
       LoadTimestampColumnName = loadTimestampColumnName;
-      DrivingKeyColumnNames = drivingKeyColumnNames.ToArray();
+      DrivingKeyColumnNames = drivingKeyColumnNames is IReadOnlyCollection<string> { Count: 0 }
+          ? []
+          : drivingKeyColumnNames.ToArray();
       _drivingKeyColumnSignature = DefaultDataVaultSaveService.CreateOrdinalSignature(DrivingKeyColumnNames);
     }
 
@@ -1243,6 +1303,19 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       Dictionary<string, object> Row,
       DataVaultSavedRecord SavedRecord);
 
+  private sealed class SatellitePlanTableGroup(SatelliteTableProjection table) {
+    public SatelliteTableProjection Table { get; } = table;
+
+    public List<SatelliteSavePlan> Plans { get; } = [];
+
+    public HashSet<string> ParentHashKeys { get; } = new(StringComparer.Ordinal);
+
+    public void Add(SatelliteSavePlan plan) {
+      Plans.Add(plan);
+      ParentHashKeys.Add(plan.ParentHashKey);
+    }
+  }
+
   private sealed record FilteredSatelliteSavePlans(
       IReadOnlyList<SatelliteSavePlan> RowsToWrite,
       IReadOnlyList<SaveOperationResult> Results);
@@ -1257,7 +1330,9 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
 
     public SatelliteSeriesKey(string parentHashKey, IEnumerable<string> drivingKeyValues) {
       ParentHashKey = parentHashKey;
-      DrivingKeyValues = drivingKeyValues.ToArray();
+      DrivingKeyValues = drivingKeyValues is IReadOnlyCollection<string> { Count: 0 }
+          ? []
+          : drivingKeyValues.ToArray();
       _drivingKeyValueSignature = DefaultDataVaultSaveService.CreateOrdinalSignature(DrivingKeyValues);
     }
 
@@ -1283,6 +1358,17 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
   }
 
   private static string CreateOrdinalSignature(IEnumerable<string> values) {
-    return string.Concat(values.Select(value => value.Length.ToString(CultureInfo.InvariantCulture) + ":" + value));
+    if (values is IReadOnlyCollection<string> collection && collection.Count == 0) {
+      return string.Empty;
+    }
+
+    var builder = new StringBuilder();
+    foreach (var value in values) {
+      builder.Append(value.Length.ToString(CultureInfo.InvariantCulture));
+      builder.Append(':');
+      builder.Append(value);
+    }
+
+    return builder.ToString();
   }
 }
