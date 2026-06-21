@@ -3,6 +3,6 @@
   "release-id": "06FE4PMRTW15865V5XN7C1MZZG",
   "name": "v0.43.0 - Binary Adoption, Analyzer DX, and Runtime Efficiency",
   "description": "Binary hash-key adoption guidance, analyzer ergonomics, provider binary-vs-hex evidence, and targeted allocation reductions in DVault hashing/save hot paths. Planning release v0.43.0 maps to package versions 8.43.0 and 10.43.0.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-20T00:07:28.7270942Z"
 }

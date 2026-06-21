@@ -3,6 +3,6 @@
   "milestone-id": "06FE4PNAYJ8JW25Y0SYFPA90AR",
   "name": "v0.44.0 - Crypto-shredding package baseline",
   "description": "Create a narrow optional privacy package baseline with provider-neutral encrypted payload mapping and no automatic key storage or deletion workflow.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-20T00:07:33.3643769Z"
 }

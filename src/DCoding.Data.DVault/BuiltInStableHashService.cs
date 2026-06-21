@@ -76,7 +76,7 @@ internal sealed class BuiltInStableHashService : IStableHashService {
       return new StableHashDigest(AlgorithmId, digestValue);
     }
     finally {
-      ArrayPool<byte>.Shared.Return(inputBytes);
+      ArrayPool<byte>.Shared.Return(inputBytes, clearArray: true);
     }
   }
 

@@ -3,6 +3,6 @@
   "milestone-id": "06FE4PN3DF0GFVJMQQKQWQR3FM",
   "name": "v0.43.0 - Binary adoption guide and migration manifests",
   "description": "Document and prototype caller-owned binary hash storage adoption and dry-run manifest support without automatic migration execution.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-20T00:07:31.4353429Z"
 }

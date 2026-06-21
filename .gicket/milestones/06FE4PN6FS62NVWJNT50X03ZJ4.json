@@ -3,6 +3,6 @@
   "milestone-id": "06FE4PN6FS62NVWJNT50X03ZJ4",
   "name": "v0.43.0 - Hash pipeline allocation tuning",
   "description": "Profile and reduce avoidable allocations in stable hashing, hash diff, and save hot paths using evidence-gated changes.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-20T00:07:32.2222526Z"
 }
