@@ -3,6 +3,6 @@
   "milestone-id": "06FE4PMYZ1MAMMK6HWV6VAJMQ4",
   "name": "v0.42.0 - Latest-satellite provider tuning",
   "description": "Use provider-configured evidence to tune PostgreSQL, SQL Server, MySQL, and Oracle latest-satellite read strategy behavior without widening supported shapes.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-20T00:07:30.2964214Z"
 }

@@ -3,7 +3,7 @@
   "ticket-id": "06FBSCH0M358R5J3RGFB6GRDM4",
   "ticket-type": "task",
   "title": "Task: Close Oracle PIT and bridge read gaps",
-  "revision": "06FDY13ZHZWV1R3T8MABPM3ZK0",
+  "revision": "06FEEYMF47RNJAS15FH5FZA9K0",
   "status": "done",
   "labels": [
     "area/performance",
@@ -11,7 +11,6 @@
     "area/read-models",
     "area/testing",
     "automation/bot-ready",
-    "integrator-gate/pending",
     "provider/oracle",
     "type/task"
   ],
@@ -20,5 +19,5 @@
   "milestone-id": "06FBSB0ZHPP00Y6PXHR5YG2DPM",
   "release-id": "06FBSAVBYTWWZ3K6NV1XQQJADR",
   "created-at": "2026-06-12T16:37:31.1339798Z",
-  "updated-at": "2026-06-19T08:34:34.5114338Z"
+  "updated-at": "2026-06-21T00:00:29.4736252Z"
 }
