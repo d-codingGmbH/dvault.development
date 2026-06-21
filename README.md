@@ -59,7 +59,7 @@ Applications still need their normal Entity Framework Core provider package, suc
 
 ## Quickstart
 
-Use `AddDVault(options => options.UseBinaryFirstProfile())` plus the provider extension package that matches the configured EF Core provider. For direct Code-First model projection, call `UseDataVaultBinaryFirstProfile()` before applying DVault metadata. DVault persistence stays explicit: generated hub, link, and satellite rows are written through `IDataVaultSaveService`; ordinary EF entity tracking remains under the application's control.
+Use `AddDVault(options => options.UseBinaryFirstProfile())` plus the provider extension package that matches the configured EF Core provider. For direct Code-First model projection, call `ApplyDataVaultMetadataWithBinaryFirstProfile(...)` when declaring the fluent model for a new binary-first schema. The existing `UseDataVaultBinaryFirstProfile()` plus `ApplyDataVaultMetadata(...)` setup remains supported. DVault persistence stays explicit: generated hub, link, and satellite rows are written through `IDataVaultSaveService`; ordinary EF entity tracking remains under the application's control.
 
 The binary-first profile is the recommended physical storage profile for new projects. Existing databases and configurations are not migrated automatically; `HexString`-compatible setups remain valid until the application owner intentionally plans and executes a separate reviewed migration, reset, or data-move change. Use the [Hash-Key Storage Migration Guide](docs/hash-key-storage-migration.md) before changing persisted hash-key storage. Logical and public hash-key values remain lowercase hexadecimal strings even when new projects choose binary physical storage.
 
@@ -82,8 +82,7 @@ Declare Data Vault metadata in `OnModelCreating` with Code-First metadata, or pr
 ```csharp
 public sealed class SalesVaultContext(DbContextOptions<SalesVaultContext> options) : DbContext(options) {
   protected override void OnModelCreating(ModelBuilder modelBuilder) {
-    modelBuilder.UseDataVaultBinaryFirstProfile();
-    modelBuilder.ApplyDataVaultMetadata(vault => {
+    modelBuilder.ApplyDataVaultMetadataWithBinaryFirstProfile(vault => {
       vault.Hub<Customer>(hub => {
         hub.BusinessKey(customer => customer.CustomerId);
         hub.Satellite("Profile", satellite => {

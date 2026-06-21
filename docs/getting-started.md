@@ -33,8 +33,7 @@ Provider packages can register provider capability profiles, behavior, diagnosti
 Code-First declarations are additive over EF Core model building. Business keys, participants, driving keys, and payloads use direct scalar member selectors. Composite keys use repeated calls in canonical order.
 
 ```csharp
-modelBuilder.UseDataVaultBinaryFirstProfile();
-modelBuilder.ApplyDataVaultMetadata(vault => {
+modelBuilder.ApplyDataVaultMetadataWithBinaryFirstProfile(vault => {
   vault.Hub<Customer>(hub => {
     hub.BusinessKey(customer => customer.CustomerId);
     hub.Satellite("Profile", satellite => {
@@ -49,6 +48,8 @@ modelBuilder.ApplyDataVaultMetadata(vault => {
   });
 });
 ```
+
+`UseDataVaultBinaryFirstProfile()` followed by `ApplyDataVaultMetadata(...)` remains supported for existing callers that already use the separate prelude. Plain `ApplyDataVaultMetadata(...)` without an explicit binary-first opt-in keeps the compatible `HexString` default.
 
 For shared metadata, build or import a `DataVaultMetadataModel` and register it with EF options through the documented metadata APIs. For reviewed JSON artifacts, use the model-first workflow in [Model-First Governance](model-first-governance.md).
 

@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -8,6 +10,26 @@ using Xunit;
 namespace DCoding.Data.DVault.Tests.Unit;
 
 public sealed class DataVaultCodeFirstMetadataTranslationTests {
+  [Fact]
+  public void ApplyDataVaultMetadataWithBinaryFirstProfileIsExplicitRootNamespaceCodeFirstExtension() {
+    var method = typeof(DCoding.Data.DVault.DataVaultCodeFirstModelBuilderExtensions)
+        .GetMethods(BindingFlags.Public | BindingFlags.Static)
+        .Single(methodInfo =>
+            methodInfo.Name == "ApplyDataVaultMetadataWithBinaryFirstProfile" &&
+            methodInfo.GetParameters().Length == 3 &&
+            methodInfo.GetParameters()[1].ParameterType == typeof(Action<DataVaultCodeFirstModelBuilder>) &&
+            methodInfo.GetParameters()[2].ParameterType == typeof(DataVaultProviderCapabilityProfile));
+    var parameters = method.GetParameters();
+
+    Assert.Equal("DCoding.Data.DVault", method.DeclaringType?.Namespace);
+    Assert.Equal(typeof(ModelBuilder), parameters[0].ParameterType);
+    Assert.Equal(typeof(Action<DataVaultCodeFirstModelBuilder>), parameters[1].ParameterType);
+    Assert.Equal(typeof(DataVaultProviderCapabilityProfile), parameters[2].ParameterType);
+    Assert.True(parameters[2].IsOptional);
+    Assert.Equal(typeof(ModelBuilder), method.ReturnType);
+    Assert.True(method.IsDefined(typeof(ExtensionAttribute), inherit: false));
+  }
+
   [Fact]
   public void ApplyDataVaultMetadataProjectsFluentHubAndSatelliteLikeMetadataBaseline() {
     var metadataModel = new DataVaultMetadataModel(
@@ -152,8 +174,12 @@ public sealed class DataVaultCodeFirstMetadataTranslationTests {
 
     var modelBuilderException = Assert.Throws<ArgumentNullException>(() =>
         modelBuilder!.ApplyDataVaultMetadata(vault => vault.Hub<Customer>()));
+    var binaryFirstModelBuilderException = Assert.Throws<ArgumentNullException>(() =>
+        modelBuilder!.ApplyDataVaultMetadataWithBinaryFirstProfile(vault => vault.Hub<Customer>()));
     var configureException = Assert.Throws<ArgumentNullException>(() =>
         CreateModelBuilder().ApplyDataVaultMetadata(configureModel!));
+    var binaryFirstConfigureException = Assert.Throws<ArgumentNullException>(() =>
+        CreateModelBuilder().ApplyDataVaultMetadataWithBinaryFirstProfile(configureModel!));
     var profileException = Assert.Throws<ArgumentNullException>(() =>
         CreateModelBuilder().ApplyDataVaultMetadata(
             vault => vault.Hub<Customer>(),
@@ -161,7 +187,9 @@ public sealed class DataVaultCodeFirstMetadataTranslationTests {
             DataVaultLoadTimestampStorage.ProviderDefault));
 
     Assert.Equal("modelBuilder", modelBuilderException.ParamName);
+    Assert.Equal("modelBuilder", binaryFirstModelBuilderException.ParamName);
     Assert.Equal("configureModel", configureException.ParamName);
+    Assert.Equal("configureModel", binaryFirstConfigureException.ParamName);
     Assert.Equal("providerCapabilities", profileException.ParamName);
   }
 

@@ -1,0 +1,19 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `2` selected relation flow(s) for source ticket `06FE4R1C96NBSNMM7AFDTHJ7A4`.
+- Role `po-critic` completed with outcome `po-critic-non-blocking-apply` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `1`; dropped obsolete follow-up(s): `1`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `78a0dc3025ce46f3b94a9d9ae2a98c4d`
+
+Action plan
+- [queued] `blocked-follow-up-comment` -> `06FE4R2EGQ444EGPKZBRZCDEV8` via `blocks` path `06FE4R1C96NBSNMM7AFDTHJ7A4 -> 06FE4R2EGQ444EGPKZBRZCDEV8`
+- [dropped] `blocked-by-follow-up-comment` -> `06FE4R13DS6S2ZTGYTHA458HGM` via `blocks` path `06FE4R1C96NBSNMM7AFDTHJ7A4 -> 06FE4R13DS6S2ZTGYTHA458HGM`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06FE4R1C96NBSNMM7AFDTHJ7A4` owner `ticket/06FE4R1C96NBSNMM7AFDTHJ7A4-task-improve-code-first-binary-first-profile-erg` base `develop` source-owner `ticket/06FE4R1C96NBSNMM7AFDTHJ7A4-task-improve-code-first-binary-first-profile-erg`: Source summary is owned by the source ticket branch.
+- [queue-for-owner-branch] `relation-audit-follow-up` `06FE4R2EGQ444EGPKZBRZCDEV8` owner `ticket/06FE4R2EGQ444EGPKZBRZCDEV8-task-update-binary-adoption-analyzer-and-allocat` base `develop` source-owner `ticket/06FE4R1C96NBSNMM7AFDTHJ7A4-task-improve-code-first-binary-first-profile-erg`: Mutation targets 'ticket/06FE4R2EGQ444EGPKZBRZCDEV8-task-update-binary-adoption-analyzer-and-allocat', not current branch 'ticket/06FE4R1C96NBSNMM7AFDTHJ7A4-task-improve-code-first-binary-first-profile-erg'; queue for target-branch replay.
+- [base-terminal-dropped] `relation-audit-follow-up` `06FE4R13DS6S2ZTGYTHA458HGM` owner `develop` base `develop` source-owner `ticket/06FE4R1C96NBSNMM7AFDTHJ7A4-task-improve-code-first-binary-first-profile-erg`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+
+Queued owner-branch tasks
+- `RELATION-AUTOMATION-BRANCH-OWNER-QUEUED`: apply `blocked-follow-up-target` to `06FE4R2EGQ444EGPKZBRZCDEV8` on owner branch `ticket/06FE4R2EGQ444EGPKZBRZCDEV8-task-update-binary-adoption-analyzer-and-allocat` after that branch is refreshed/rebased.

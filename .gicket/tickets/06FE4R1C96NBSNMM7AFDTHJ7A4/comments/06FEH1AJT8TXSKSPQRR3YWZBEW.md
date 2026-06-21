@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined this task to a focused code-first API ergonomics slice: give new projects one obvious binary-first opt-in at the fluent projection call site, preserve legacy-compatible defaults, and leave analyzer/docs work in sibling tickets.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Repository evidence already fixes the policy baseline: AddDVault(options => options.UseBinaryFirstProfile()) and modelBuilder.UseDataVaultBinaryFirstProfile() are the recommended new-project path, while AddDVault() and UseDataVault() remain the compatible HexString defaults for existing persisted models.
 - The current direct code-first path is discoverable but split across two model-builder calls: the docs require UseDataVaultBinaryFirstProfile() before ApplyDataVaultMetadata(vault => ...), which is the bounded ergonomics gap for this ticket.
 - The related story 06FE4R089MT3BYRCVH7Q4EX6CG is done and already treats this ticket as the dedicated code-first ergonomics slice; no additional child split is justified by current evidence.
@@ -16,60 +15,46 @@
 - Public DVault hash-key values stay lowercase hexadecimal strings even when physical storage is Binary; this ticket does not reopen migration, rehash, backfill, dual-write, or public byte[] hash-key scope.
 - No child tickets, relation changes, description updates, attachments, or planning documents were materialized in this refinement.
 
-### Scope In
+Scope In
 - Add one focused direct code-first model-builder convenience so a new project can opt into the recommended binary-first projection at the same call site as fluent ApplyDataVaultMetadata(...) usage instead of relying on an easy-to-miss separate prelude step.
 - Preserve the current provider-aware code-first translation behavior, binary hash-key and participant-reference projection, and binary-first conventions annotation once the focused convenience is used.
 - Keep the existing UseDataVaultBinaryFirstProfile() plus ApplyDataVaultMetadata(...) path supported for compatibility, and keep plain ApplyDataVaultMetadata(...) without explicit binary-first opt-in on the compatible default path.
 - Add the bounded API-surface, projection, and regression coverage needed to make the new code-first entry point discoverable and safe.
 
-### Scope Out
+Scope Out
 - Changing DVault's default storage profile, auto-enabling binary-first for existing code-first models, or implicitly migrating persisted HexString databases.
 - Broad metadata-first, model-first, or registry-backed setup changes; those paths already have their own AddDVault and UseDataVaultMetadata guidance.
 - A general-purpose model-builder conventions DSL or broader stable-hash configuration redesign beyond the binary-first new-project ergonomics slice.
 - Analyzer guidance work already completed in 06FE4R13DS6S2ZTGYTHA458HGM.
 - Broad docs, release-note, and performance-profile consolidation work already bounded by 06FE4R2EGQ444EGPKZBRZCDEV8.
 
-## Acceptance Criteria
-- The direct fluent code-first path offers one obvious focused binary-first opt-in at the projection call site, and that path produces the same binary hash-key and participant-reference projection as the current documented UseDataVaultBinaryFirstProfile() setup.
-- Existing callers can keep using UseDataVaultBinaryFirstProfile() plus ApplyDataVaultMetadata(...), and callers that do not opt into binary-first keep the compatible default behavior.
-- The resulting model still records the binary-first conventions profile and keeps caller-facing hash-key values as lowercase hexadecimal strings rather than introducing a public byte[] model.
-- Regression coverage proves the new convenience and the legacy paths both project the expected storage profile, annotations, and provider-aware metadata.
-- Public API snapshot coverage and any minimal discoverability guidance touched for the new entry point stay aligned with the focused API boundary.
-
-## Definition of Done
-- A focused public code-first convenience and its regression tests are added without changing the legacy-compatible default behavior of existing ApplyDataVaultMetadata(...) usage.
-- The implementation continues to route through the existing code-first-to-metadata translation path rather than creating a separate projection stack with divergent semantics.
-- Any touched API docs or examples needed for discoverability stay limited to this ergonomics change, while broader adopter-document consolidation remains with 06FE4R2EGQ444EGPKZBRZCDEV8.
-- The ticket closes without changing public hash-key value types, default migration posture, analyzer scope, or the already-materialized downstream split.
-
-## Implementation Notes
-- Use the current repository guidance as the authority for the ergonomics gap: README.md, docs/getting-started.md, and docs/hash-key-storage-migration.md all show direct code-first binary-first setup as a separate UseDataVaultBinaryFirstProfile() line before ApplyDataVaultMetadata(...).
-- Keep the change on the ModelBuilder/code-first surface. The metadata-registry and DbContext-options paths already have their own bounded binary-first guidance through AddDVault(...) and UseDataVaultMetadata().
-- Preserve the existing provider-capability selection and translation stack in DataVaultModelBuilderExtensions and DataVaultCodeFirstModelBuilderExtensions instead of inventing a parallel binary-first translator.
-- Regression work should cover the public API snapshot plus the existing projection tests around DataVaultModelBuilderExtensions and DataVaultEfMetadataTranslationTests.
-- Adjacent scope is already separated: 06FE4R13DS6S2ZTGYTHA458HGM handled analyzer guidance, and 06FE4R2EGQ444EGPKZBRZCDEV8 remains the downstream docs-consolidation task.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the binary-first call-site convenience lands, should a later ticket offer an equally focused direct code-first path for non-default stable hash algorithm and digest selections, or keep that strictly on explicit provider-capability profiles?
 - When 06FE4R2EGQ444EGPKZBRZCDEV8 consolidates docs, should older two-step code-first examples be trimmed aggressively to reduce future drift between the legacy-compatible and recommended new-project paths?
 
-## Risks
+Risks
 - If the ergonomics change silently alters default ApplyDataVaultMetadata(...) behavior instead of staying explicit, legacy HexString-compatible code-first models could drift unexpectedly.
 - If the convenience path does not preserve existing conventions annotations and translation semantics, diagnostics, migration guardrails, and docs may disagree about the realized model shape.
 - If the ticket expands into general stable-hash or provider-configuration design, the public API surface will sprawl and overlap with already-bounded adjacent tickets.
 
-## Split Recommendations
+Split recommendations
 - No new split is needed; the done analyzer task 06FE4R13DS6S2ZTGYTHA458HGM already covers guidance, and this ticket remains the dedicated code-first ergonomics slice.
 - No new split is needed for documentation alignment; the existing downstream task 06FE4R2EGQ444EGPKZBRZCDEV8 already owns docs, release-note, and profile-consolidation work.
 - No new split is needed for broader binary-adoption planning because the done story 06FE4R089MT3BYRCVH7Q4EX6CG already materialized the bounded downstream graph.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Scope: make the fluent/code-first binary-first setup easier to discover and use for new projects. Acceptance: public API stays focused and legacy defaults remain compatible.
+Run mode
+- apply: planned updates are applied after this comment

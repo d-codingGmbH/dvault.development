@@ -185,6 +185,7 @@ type public sealed class DCoding.Data.DVault.DataVaultCodeFirstModelBuilder
 type public static class DCoding.Data.DVault.DataVaultCodeFirstModelBuilderExtensions
   method public static Microsoft.EntityFrameworkCore.ModelBuilder ApplyDataVaultMetadata(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, System.Action<DCoding.Data.DVault.DataVaultCodeFirstModelBuilder> configureModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities, DCoding.Data.DVault.DataVaultLoadTimestampStorage loadTimestampStorage)
   method public static Microsoft.EntityFrameworkCore.ModelBuilder ApplyDataVaultMetadata(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, System.Action<DCoding.Data.DVault.DataVaultCodeFirstModelBuilder> configureModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile? providerCapabilities = null)
+  method public static Microsoft.EntityFrameworkCore.ModelBuilder ApplyDataVaultMetadataWithBinaryFirstProfile(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, System.Action<DCoding.Data.DVault.DataVaultCodeFirstModelBuilder> configureModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile? providerCapabilities = null)
 
 type public sealed class DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder
   method public DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TEntity?> DrivingKey<TProperty>(System.Linq.Expressions.Expression<System.Func<TEntity?, TProperty?>> selector)

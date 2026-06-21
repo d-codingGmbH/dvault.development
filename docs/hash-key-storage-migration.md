@@ -14,7 +14,9 @@ For new schemas or new projects, select the binary-first profile before creating
 
 ```csharp
 services.AddDVault(options => options.UseBinaryFirstProfile());
-modelBuilder.UseDataVaultBinaryFirstProfile();
+modelBuilder.ApplyDataVaultMetadataWithBinaryFirstProfile(vault => {
+  // Code-First hub, link, and satellite declarations.
+});
 ```
 
 That new-schema path changes the recommended physical storage for generated hash-key columns, but it does not migrate an

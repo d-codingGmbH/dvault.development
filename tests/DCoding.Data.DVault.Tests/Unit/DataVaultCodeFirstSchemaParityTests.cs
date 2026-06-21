@@ -67,6 +67,37 @@ public sealed class DataVaultCodeFirstSchemaParityTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataWithBinaryFirstProfileMatchesSeparatePreludeForCodeFirstProjection() {
+    var twoStepModelBuilder = CreateModelBuilder();
+    var directModelBuilder = CreateModelBuilder();
+
+    twoStepModelBuilder.UseDataVaultBinaryFirstProfile();
+    twoStepModelBuilder.ApplyDataVaultMetadata(ConfigureCoveredCodeFirstModel, DataVaultProviderCapabilityProfiles.SqlServer);
+    var directResult = directModelBuilder.ApplyDataVaultMetadataWithBinaryFirstProfile(
+        ConfigureCoveredCodeFirstModel,
+        DataVaultProviderCapabilityProfiles.SqlServer);
+
+    Assert.Same(directModelBuilder, directResult);
+    Assert.Equal(RelationalProviderShape(twoStepModelBuilder.Model), RelationalProviderShape(directModelBuilder.Model));
+
+    var directConventions = AnnotationValue<DataVaultConventions>(
+        directModelBuilder.Model,
+        DataVaultAnnotationNames.Conventions);
+
+    Assert.Equal(DataVaultConventions.BinaryFirstProfileName, directConventions.ProfileName);
+    Assert.Equal(DataVaultHashKeyStorageProfile.Binary, directConventions.HashKeyStorageProfile);
+    AssertBinaryFirstHashKeyProperty(
+        FindEntity(directModelBuilder.Model, "HubCustomer").FindProperty("CustomerHashKey"),
+        DataVaultLogicalPropertyKind.HashKey);
+    AssertBinaryFirstHashKeyProperty(
+        FindEntity(directModelBuilder.Model, "LinkCustomerOrder").FindProperty("CustomerHashKey"),
+        DataVaultLogicalPropertyKind.ParticipantReference);
+    AssertBinaryFirstHashKeyProperty(
+        FindEntity(directModelBuilder.Model, "LinkCustomerOrder").FindProperty("OrderHashKey"),
+        DataVaultLogicalPropertyKind.ParticipantReference);
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataCodeFirstMatchesMetadataFirstWhenMySqlTruncatesLongIdentifiers() {
     AssertLongIdentifierProjectionParity(DataVaultProviderCapabilityProfiles.MySql, maximumIdentifierLength: 64);
   }
@@ -243,6 +274,28 @@ public sealed class DataVaultCodeFirstSchemaParityTests {
         property.ClrType.Name,
         property.GetColumnType(),
         AnnotationValue<DataVaultProviderValueFormat>(property, DataVaultAnnotationNames.ProviderValueFormat));
+  }
+
+  private static void AssertBinaryFirstHashKeyProperty(
+      IMutableProperty? property,
+      DataVaultLogicalPropertyKind expectedLogicalPropertyKind) {
+    Assert.NotNull(property);
+    Assert.Equal(typeof(string), property!.ClrType);
+    Assert.Equal("varbinary(32)", property.GetColumnType());
+    Assert.Equal(DataVaultProviderValueFormat.LowercaseHexBinary, AnnotationValue<DataVaultProviderValueFormat>(
+        property,
+        DataVaultAnnotationNames.ProviderValueFormat));
+    Assert.Equal(DataVaultHashKeyStorageProfile.Binary, AnnotationValue<DataVaultHashKeyStorageProfile>(
+        property,
+        DataVaultAnnotationNames.HashKeyStorageProfile));
+    Assert.Equal(expectedLogicalPropertyKind, AnnotationValue<DataVaultLogicalPropertyKind>(
+        property,
+        DataVaultAnnotationNames.ProviderLogicalPropertyKind));
+    Assert.Equal("sha256-v1", AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashAlgorithmId));
+    Assert.Equal(32, AnnotationValue<int>(property, DataVaultAnnotationNames.StableHashDigestByteLength));
+    Assert.Equal("lowercase-hex-no-prefix", AnnotationValue<string>(property, DataVaultAnnotationNames.StableHashDigestEncoding));
+    Assert.Equal("lowercase-hex-string-to-bytes", AnnotationValue<string>(property, DataVaultAnnotationNames.HashKeyConversionBehavior));
+    Assert.NotNull(property.GetValueConverter());
   }
 
   private static string[] RelationalProviderShape(IMutableModel model) {
