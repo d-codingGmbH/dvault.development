@@ -20,6 +20,7 @@ public sealed class DataVaultDesignTimeCommandTests {
     Assert.Contains("Usage: dvault validate", help.Output, StringComparison.Ordinal);
     Assert.Contains("dvault support-bundle", help.Output, StringComparison.Ordinal);
     Assert.Contains("dvault sql-artifact", help.Output, StringComparison.Ordinal);
+    Assert.Contains("dvault hash-key-storage-migration", help.Output, StringComparison.Ordinal);
     Assert.Empty(help.Error);
 
     Assert.Equal(2, unknown.ExitCode);
@@ -268,6 +269,162 @@ public sealed class DataVaultDesignTimeCommandTests {
   }
 
   [Fact]
+  public void HashKeyStorageMigrationWritesDeterministicDryRunManifestForHexToBinaryPreflight() {
+    var metadataModel = CreateHashKeyStorageMigrationCoverageMetadataModel();
+    var sourceDiagnostics = CreateHashKeyStorageMigrationDiagnostics(
+        metadataModel,
+        DataVaultHashKeyStorageProfile.HexString);
+    var targetDiagnostics = CreateHashKeyStorageMigrationDiagnostics(
+        metadataModel,
+        DataVaultHashKeyStorageProfile.Binary);
+    var sourcePath = WriteSupportBundleFile(DataVaultSupportBundleExporter.ExportJson(sourceDiagnostics));
+    var firstPath = WriteHashKeyStorageMigrationManifestFilePath();
+    var secondPath = WriteHashKeyStorageMigrationManifestFilePath();
+    var migrationResolverInvoked = false;
+    var host = CreateHost(
+        contextModel: metadataModel,
+        resolveMigrationOperations: _ => {
+          migrationResolverInvoked = true;
+          return Array.Empty<MigrationOperation>();
+        },
+        createSupportBundleDiagnostics: _ => targetDiagnostics);
+
+    try {
+      var first = Run(
+          host,
+          "hash-key-storage-migration",
+          "--source",
+          sourcePath,
+          "--output",
+          firstPath);
+      var second = Run(
+          host,
+          "hash-key-storage-migration",
+          "-s",
+          sourcePath,
+          "-o",
+          secondPath);
+      var firstJson = File.ReadAllText(firstPath);
+      var secondJson = File.ReadAllText(secondPath);
+
+      Assert.Equal(0, first.ExitCode);
+      Assert.Equal(0, second.ExitCode);
+      Assert.Empty(first.Error);
+      Assert.Empty(second.Error);
+      Assert.Contains("Exported DVault hash-key storage migration dry-run manifest", first.Output, StringComparison.Ordinal);
+      Assert.Equal(firstJson, secondJson);
+      Assert.False(migrationResolverInvoked);
+
+      using var document = JsonDocument.Parse(firstJson);
+      var root = document.RootElement;
+      Assert.Equal("dvault.hash-key-storage-migration.v1", root.GetProperty("schemaVersion").GetString());
+      Assert.True(root.GetProperty("dryRun").GetProperty("enabled").GetBoolean());
+      Assert.Equal("compatible-review-only", root.GetProperty("dryRun").GetProperty("status").GetString());
+      Assert.Equal("none", root.GetProperty("dryRun").GetProperty("databaseMutation").GetString());
+      Assert.Equal("not-run", root.GetProperty("dryRun").GetProperty("migrationApplication").GetString());
+      Assert.Equal("lowercase-hex-no-prefix", root.GetProperty("dryRun").GetProperty("publicHashKeyBoundary").GetString());
+      Assert.Equal("create-support-bundle-diagnostics", root.GetProperty("dryRun").GetProperty("targetDiagnosticsSourceKind").GetString());
+      Assert.Equal("model-metadata", root.GetProperty("source").GetProperty("metadataSourceKind").GetString());
+      Assert.Equal("sqlite-v1", root.GetProperty("source").GetProperty("capabilityProfile").GetString());
+      Assert.Equal("sqlite-v1", root.GetProperty("target").GetProperty("capabilityProfile").GetString());
+
+      var comparison = root.GetProperty("comparison");
+      Assert.Equal("HexString-to-Binary", comparison.GetProperty("intendedChange").GetString());
+      Assert.Equal("compatible-storage-profile-flip", comparison.GetProperty("compatibilityStatus").GetString());
+      Assert.Equal(16, comparison.GetProperty("entryCount").GetInt32());
+      Assert.Equal(8, comparison.GetProperty("hashKeyColumnCount").GetInt32());
+      Assert.Equal(8, comparison.GetProperty("participantReferenceColumnCount").GetInt32());
+
+      var entries = root.GetProperty("entries").EnumerateArray().ToArray();
+      Assert.Equal(Enumerable.Range(0, entries.Length), entries.Select(entry => entry.GetProperty("ordinal").GetInt32()));
+      Assert.Contains(entries, entry => entry.GetProperty("tableKind").GetString() == "Hub");
+      Assert.Contains(entries, entry => entry.GetProperty("tableKind").GetString() == "Link");
+      Assert.Contains(entries, entry => entry.GetProperty("tableKind").GetString() == "Satellite");
+      Assert.Contains(entries, entry => entry.GetProperty("tableKind").GetString() == "Pit");
+      Assert.Contains(entries, entry => entry.GetProperty("tableKind").GetString() == "Bridge");
+
+      Assert.Contains(entries, entry =>
+          entry.GetProperty("tableName").GetString() == "HubCustomer" &&
+          entry.GetProperty("propertyName").GetString() == "CustomerHashKey" &&
+          entry.GetProperty("logicalPropertyKind").GetString() == "HashKey");
+      Assert.Contains(entries, entry =>
+          entry.GetProperty("tableName").GetString() == "LinkCustomerOrder" &&
+          entry.GetProperty("propertyName").GetString() == "OrderHashKey" &&
+          entry.GetProperty("logicalPropertyKind").GetString() == "ParticipantReference");
+      Assert.Contains(entries, entry =>
+          entry.GetProperty("tableName").GetString() == "PitCustomerProfileStatus" &&
+          entry.GetProperty("propertyName").GetString() == "CustomerHashKey" &&
+          entry.GetProperty("logicalPropertyKind").GetString() == "HashKey");
+      Assert.Contains(entries, entry =>
+          entry.GetProperty("tableName").GetString() == "BridgeCustomerOrder" &&
+          entry.GetProperty("propertyName").GetString() == "OrderHashKey" &&
+          entry.GetProperty("logicalPropertyKind").GetString() == "ParticipantReference");
+
+      foreach (var entry in entries) {
+        var source = entry.GetProperty("source");
+        var target = entry.GetProperty("target");
+        Assert.Equal("HexString", source.GetProperty("storageProfile").GetString());
+        Assert.Equal("Binary", target.GetProperty("storageProfile").GetString());
+        Assert.Equal("LowercaseHexText", source.GetProperty("providerValueFormat").GetString());
+        Assert.Equal("LowercaseHexBinary", target.GetProperty("providerValueFormat").GetString());
+        Assert.Equal("System.String", source.GetProperty("efClrModelType").GetString());
+        Assert.Equal("System.String", target.GetProperty("efClrModelType").GetString());
+        Assert.Equal("none-string-model", source.GetProperty("conversionBehavior").GetString());
+        Assert.Equal("lowercase-hex-string-to-bytes", target.GetProperty("conversionBehavior").GetString());
+        Assert.Equal("sha256-v1", source.GetProperty("algorithmId").GetString());
+        Assert.Equal("sha256-v1", target.GetProperty("algorithmId").GetString());
+        Assert.Equal(32, source.GetProperty("digestByteLength").GetInt32());
+        Assert.Equal(32, target.GetProperty("digestByteLength").GetInt32());
+        Assert.Equal("lowercase-hex-no-prefix", source.GetProperty("digestEncoding").GetString());
+        Assert.Equal("lowercase-hex-no-prefix", target.GetProperty("digestEncoding").GetString());
+      }
+    }
+    finally {
+      File.Delete(sourcePath);
+      File.Delete(firstPath);
+      File.Delete(secondPath);
+    }
+  }
+
+  [Fact]
+  public void HashKeyStorageMigrationFailsClosedForAlgorithmAndDigestDrift() {
+    var metadataModel = CreateCustomerMetadataModel();
+    var sourceDiagnostics = CreateHashKeyStorageMigrationDiagnostics(
+        metadataModel,
+        DataVaultHashKeyStorageProfile.HexString);
+    var targetDiagnostics = CreateHashKeyStorageMigrationDiagnostics(
+        metadataModel,
+        DataVaultHashKeyStorageProfile.Binary,
+        stableHashAlgorithmId: "sha256-128-v1");
+    var sourcePath = WriteSupportBundleFile(DataVaultSupportBundleExporter.ExportJson(sourceDiagnostics));
+    var outputPath = WriteHashKeyStorageMigrationManifestFilePath();
+    var host = CreateHost(
+        contextModel: metadataModel,
+        createSupportBundleDiagnostics: _ => targetDiagnostics);
+
+    try {
+      var result = Run(
+          host,
+          "hash-key-storage-migration",
+          "--source",
+          sourcePath,
+          "--output",
+          outputPath);
+
+      Assert.Equal(1, result.ExitCode);
+      Assert.Empty(result.Output);
+      Assert.Contains("DVault hash-key-storage-migration failed:", result.Error, StringComparison.Ordinal);
+      Assert.Contains("changed algorithmId", result.Error, StringComparison.Ordinal);
+      Assert.Contains("changed digestByteLength", result.Error, StringComparison.Ordinal);
+      Assert.False(File.Exists(outputPath));
+    }
+    finally {
+      File.Delete(sourcePath);
+      File.Delete(outputPath);
+    }
+  }
+
+  [Fact]
   public void DriftComparesArtifactAgainstDesignTimeModelByDefault() {
     var artifactJson = DataVaultModelArtifactExporter.ExportJson(CreateCustomerMetadataModel());
     var artifactPath = WriteArtifactFile(artifactJson);
@@ -373,8 +530,17 @@ public sealed class DataVaultDesignTimeCommandTests {
   }
 
   private static ServiceProvider CreateServiceProvider() {
+    return CreateServiceProvider(stableHashAlgorithmId: null);
+  }
+
+  private static ServiceProvider CreateServiceProvider(string? stableHashAlgorithmId) {
     var services = new ServiceCollection();
-    services.AddDVault();
+    if (stableHashAlgorithmId is null) {
+      services.AddDVault();
+    }
+    else {
+      services.AddDVault(options => options.UseStableHashAlgorithm(stableHashAlgorithmId));
+    }
 
     return services.BuildServiceProvider(validateScopes: true);
   }
@@ -402,6 +568,21 @@ public sealed class DataVaultDesignTimeCommandTests {
         "dvault-command-" + Guid.NewGuid().ToString("N") + ".sql-artifact.json");
   }
 
+  private static string WriteSupportBundleFile(string json) {
+    var path = Path.Combine(
+        Path.GetTempPath(),
+        "dvault-command-" + Guid.NewGuid().ToString("N") + ".support-bundle.json");
+    File.WriteAllText(path, json);
+
+    return path;
+  }
+
+  private static string WriteHashKeyStorageMigrationManifestFilePath() {
+    return Path.Combine(
+        Path.GetTempPath(),
+        "dvault-command-" + Guid.NewGuid().ToString("N") + ".hash-key-storage-migration.json");
+  }
+
   private static DataVaultMetadataModel CreateCustomerMetadataModel() {
     var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
     var profile = new DataVaultSatelliteMetadata(
@@ -410,6 +591,71 @@ public sealed class DataVaultDesignTimeCommandTests {
         ["Name"]);
 
     return new DataVaultMetadataModel([customer], [], [profile]);
+  }
+
+  private static DataVaultMetadataModel CreateHashKeyStorageMigrationCoverageMetadataModel() {
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerId"]);
+    var order = new DataVaultHubMetadata("Order", ["OrderId"]);
+    var salesRegion = new DataVaultHubMetadata("SalesRegion", ["RegionCode"]);
+    var customerOrder = new DataVaultLinkMetadata(
+        "CustomerOrder",
+        [customer.ToReference(), order.ToReference()]);
+    var salesRegionParentChild = new DataVaultLinkMetadata(
+        "SalesRegionParentChild",
+        [
+            new DataVaultLinkParticipantMetadata(salesRegion.ToReference(), "ParentRegion"),
+            new DataVaultLinkParticipantMetadata(salesRegion.ToReference(), "ChildRegion"),
+        ]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["Customer Name"]);
+    var status = new DataVaultSatelliteMetadata(
+        "Status",
+        customer.ToReference(),
+        ["Status Code"]);
+    var pit = new DataVaultPitMetadata(customer.ToReference(), ["Profile", "Status"]);
+    var bridge = DataVaultBridgeMetadata.ManyToMany(
+        "CustomerOrder",
+        customer.ToReference(),
+        customerOrder.ToReference(),
+        order.ToReference());
+    var hierarchyBridge = new DataVaultBridgeMetadata(
+        "SalesRegionHierarchy",
+        DataVaultBridgeKind.Hierarchy,
+        DataVaultMetadataReference.Link("SalesRegionParentChild"),
+        [
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.Ancestor,
+                salesRegion.ToReference(),
+                "ParentRegion"),
+            new DataVaultBridgeEndpointMetadata(
+                DataVaultBridgeEndpointRole.Descendant,
+                salesRegion.ToReference(),
+                "ChildRegion"),
+        ]);
+
+    return new DataVaultMetadataModel(
+        [customer, order, salesRegion],
+        [customerOrder, salesRegionParentChild],
+        [profile, status],
+        Array.Empty<DataVaultPointInTimeMetadata>(),
+        [bridge, hierarchyBridge],
+        [pit]);
+  }
+
+  private static DataVaultDiagnosticsResult CreateHashKeyStorageMigrationDiagnostics(
+      DataVaultMetadataModel metadataModel,
+      DataVaultHashKeyStorageProfile storageProfile,
+      string? stableHashAlgorithmId = null) {
+    using var provider = CreateServiceProvider(stableHashAlgorithmId);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    var profile = DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+        storageProfile,
+        "sha256-v1",
+        32);
+
+    return diagnostics.Analyze(metadataModel, profile);
   }
 
   private static DataVaultMetadataModel CreateHubOnlyMetadataModel() {

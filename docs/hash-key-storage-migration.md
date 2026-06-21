@@ -58,6 +58,9 @@ Before scaffolding or applying any migration step:
 - Capture a redacted `dvault.support-bundle.v1` output or equivalent translated EF metadata baseline from the configured
   consumer application. Use live-schema facts only where the selected provider exposes them under the application's normal
   operational controls.
+- For the supported caller-owned design-time path, run the `hash-key-storage-migration` preflight command with the captured
+  source support bundle and review the generated `dvault.hash-key-storage-migration.v1` manifest before applying any schema or
+  data conversion.
 - Identify every DVault-owned `HashKey` and `ParticipantReference` column across generated hubs, links, satellites, PITs, and
   bridges in the model boundary being migrated.
 - Compare the source and target storage profile for every identified property. A storage-only migration should move
@@ -85,16 +88,26 @@ text, credentials, connection strings, provider messages, or diagnostic payload 
    stable-hash algorithm or digest length, stop and plan that separately.
 2. Capture the preflight support bundle or equivalent translated metadata baseline and preserve the source facts with the
    migration change record.
-3. Build a provider-specific consumer migration or data-move script that changes the generated hash-key and
+3. Run the caller-owned dry-run manifest before writing database changes:
+
+   ```sh
+   dotnet run --project src/SalesVault/SalesVault.csproj -- hash-key-storage-migration --source src/SalesVault/artifacts/dvault-source.support-bundle.json --output src/SalesVault/artifacts/dvault-hash-key-storage-migration.json
+   ```
+
+   The command compares the source support-bundle facts against the current design-time model, writes no DDL or DML, and fails
+   closed if any compatibility fact changes outside the intended `HexString` to `Binary` storage-profile flip. The generated
+   manifest is for CI and change-record review; it is not a migration runner, backfill tool, dual-write mode, repair path, or
+   schema synchronizer.
+4. Build a provider-specific consumer migration or data-move script that changes the generated hash-key and
    participant-reference storage from `HexString` to `Binary` and converts each persisted lowercase-hex digest to its byte
    representation.
-4. Include all generated DVault hash-key references in the same planned cutover. Do not leave hub hash keys and link, satellite,
+5. Include all generated DVault hash-key references in the same planned cutover. Do not leave hub hash keys and link, satellite,
    PIT, or bridge references on different physical profiles inside one migrated model boundary.
-5. Dry-run the full change against a restored production-like copy. Validate row counts, relationship checks, representative
+6. Dry-run the full change against a restored production-like copy. Validate row counts, relationship checks, representative
    read paths, and representative save paths before attempting production cutover.
-6. At cutover, freeze writes, take the approved backup or snapshot, apply the schema and data conversion, and run the same
+7. At cutover, freeze writes, take the approved backup or snapshot, apply the schema and data conversion, and run the same
    validation checks before resuming writers.
-7. After cutover, capture a fresh support bundle or equivalent translated metadata output and compare it to the intended target
+8. After cutover, capture a fresh support bundle or equivalent translated metadata output and compare it to the intended target
    facts. Resume writes only after the target profile, algorithm id, digest byte length, provider store type, provider value
    format, and conversion behavior match the plan.
 

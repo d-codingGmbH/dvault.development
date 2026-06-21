@@ -1,72 +1,57 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the ticket around a caller-owned design-time preflight dry-run artifact for HexString-to-Binary hash-key storage migrations, ratified the required manifest facts from existing repository contracts, and kept the work as one bounded task. No child tickets, relation edits, description updates, attachments, or planning documents were materialized in this refinement.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The dry-run belongs in the caller-owned design-time preflight lane documented in docs/architecture/dvault-dotnet-ef-design-time-workflow.md; this ticket does not add a DVault-owned dotnet ef shim, IDesignTimeServices surface, or automatic migration runner.
 - The manifest/report is for adopter-owned compatibility review of an existing persisted HexString-to-Binary storage-profile change; public and EF-boundary hash-key values remain canonical lowercase hexadecimal strings.
 - The visible v1 stable-hash baseline is finite and already documented in repository evidence: sha256-v1, sha1-v1, sha256-128-v1, and sha256-160-v1.
 - No bounded ticket writes were applied; live relations remain an incoming blocks link from 06FE4R0H98K42XJY1NEDQX8KB4, an outgoing blocks link to 06FE4R2EGQ444EGPKZBRZCDEV8, and an incoming relates link from 06FE4R089MT3BYRCVH7Q4EX6CG.
 
-### Scope In
+Scope In
 - Add a dry-run artifact on the caller-owned design-time preflight path that reports planned DVault hash-key storage changes for an existing model moving from HexString to Binary.
 - Enumerate all DVault-owned HashKey and ParticipantReference columns in the selected model boundary across generated hubs, links, satellites, PITs, and bridges.
 - Surface the compatibility facts already defined by the storage-profile contract: storage profile, provider store type, provider value format, EF CLR model type, conversion behavior, algorithmId, digestByteLength, and digest encoding.
 - Fail closed when the comparison detects drift outside the intended storage-profile change.
 - Produce deterministic output suitable for CI review without writing to the database.
 
-### Scope Out
+Scope Out
 - Automatic backfill, dual-write, repair, reconcile, or rehash behavior.
 - Changing stable-hash algorithmId, digest length, truncation, or caller-facing hash-key representation.
 - Adding a DVault-owned dotnet ef shim, IDesignTimeServices package surface, or automatic migration application.
 - Broader provider-expansion or live-schema capture workflows beyond the bounded preflight evidence needed for this dry-run.
 
-## Acceptance Criteria
-- Given a caller-owned migration candidate that changes DVault hash-key storage from HexString to Binary, the supported design-time preflight path emits a dry-run manifest/report and performs no DDL, DML, or migration application.
-- The artifact deterministically lists every DVault-owned HashKey and ParticipantReference column in scope and, for each item, reports source and target storage profile plus provider store type, provider value format, EF CLR model type, conversion behavior, algorithmId, digestByteLength, and digest encoding.
-- The dry-run treats public hash-key values as lowercase hexadecimal strings throughout the report semantics and never redefines caller-facing value types as binary.
-- The dry-run fails closed when it detects compatibility drift outside the intended storage-profile flip, including algorithmId, digest byte length, digest encoding, provider value format or store type, conversion behavior, or equivalent persisted-shape changes.
-- Output ordering and serialization are stable enough for repeatable CI review of the same model and evidence set.
-
-## Definition of Done
-- Automated coverage proves the dry-run path is side-effect free and repeatable for the same input evidence.
-- Automated coverage proves the manifest includes HashKey and ParticipantReference entries across the supported DVault table shapes in scope.
-- Automated coverage proves fail-closed behavior for non-storage compatibility drift such as algorithmId or digest-length changes.
-- Developer-facing docs or ticket-linked notes describe the expected preflight entrypoint boundary and artifact review intent for caller-owned migrations.
-
-## Implementation Notes
-- Use the existing consumer-owned design-time workflow as the composition boundary: the application that owns the DbContext and IDesignTimeDbContextFactory also owns the preflight entrypoint that emits the artifact.
-- Reuse existing DVault metadata facts already represented in annotations such as HashKeyStorageProfile, StableHashAlgorithmId, StableHashDigestByteLength, StableHashDigestEncoding, HashKeyConversionBehavior, ProviderStorageType, and ProviderValueFormat instead of inventing a second incompatible vocabulary.
-- Prefer the reviewed support-bundle or equivalent translated EF metadata baseline described in docs/hash-key-storage-migration.md; live-schema evidence can enrich or validate the report but should not require writes.
-- Keep deterministic ordering explicit, for example by stable table and property ordering, so the artifact can be diffed in CI without provider noise.
-- Treat this as a caller-owned migration review surface, not as automatic migration generation or repair logic.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After this lands, should a later ticket attach the dry-run artifact to support-bundle style diagnostics, or is a standalone preflight output sufficient for v1?
 - When the downstream blocked ticket 06FE4R2EGQ444EGPKZBRZCDEV8 resumes, does it need any additional manifest field beyond the v1 storage-profile contract facts defined here?
 - Should later work add richer provider-specific live-schema evidence for providers whose catalog readers are currently outside the main contract baseline?
 
-## Risks
+Risks
 - If the artifact silently omits any DVault-owned HashKey or ParticipantReference column, application owners could approve an incomplete migration plan; implementation should fail closed on incomplete evidence.
 - Cross-provider CI stability depends on explicit normalization and ordering; otherwise equivalent dry-runs may churn review diffs.
 - Because this ticket sits between an incoming blocks relation from 06FE4R0H98K42XJY1NEDQX8KB4 and an outgoing blocks relation to 06FE4R2EGQ444EGPKZBRZCDEV8, scope drift on adjacent tickets could force a contract adjustment if they redefine the same preflight artifact boundary.
 
-## Split Recommendations
+Split recommendations
 - No split recommended; current repository evidence already bounds this as one preflight-artifact task.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Scope: add a dry-run manifest/report that describes binary storage changes for caller-owned migrations. Acceptance: no database writes occur and output is stable enough for CI review.
+Run mode
+- apply: planned updates are applied after this comment

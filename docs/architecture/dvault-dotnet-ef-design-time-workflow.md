@@ -200,6 +200,29 @@ design-time model. `--live-schema` adds a `DataVaultLiveSchemaReadResult`; with 
 classified live-schema read result. Provider exception text and connection-string fragments are redacted from the exported JSON
 while provider names, profile names, diagnostic codes, and metadata identifiers remain available for troubleshooting.
 
+## Hash-Key Storage Migration Dry-Run
+
+The `hash-key-storage-migration` verb is the caller-owned review lane for an existing persisted model moving DVault hash-key
+storage from `HexString` to `Binary`. It compares a previously captured `dvault.support-bundle.v1` source baseline against the
+current configured design-time model and writes a deterministic review manifest:
+
+```sh
+dotnet run --project src/SalesVault/SalesVault.csproj -- hash-key-storage-migration --source src/SalesVault/artifacts/dvault-source.support-bundle.json --output src/SalesVault/artifacts/dvault-hash-key-storage-migration.json
+```
+
+The manifest schema version is `dvault.hash-key-storage-migration.v1`. It lists every DVault-owned `HashKey` and
+`ParticipantReference` column in the compared model boundary, including generated hubs, links, satellites, PITs, and bridges.
+Each entry reports source and target storage profile, provider store type, provider value format, EF CLR model type, conversion
+behavior, stable-hash `algorithmId`, `digestByteLength`, and digest encoding. Public hash-key semantics remain lowercase
+hexadecimal strings with `lowercase-hex-no-prefix` digest encoding; the command reviews persisted storage shape only.
+
+The command fails closed and does not write a manifest when the comparison is not a storage-only `HexString` to `Binary` flip.
+Blocking drift includes missing or added hash-key columns, changed provider or capability profile, changed metadata source
+fingerprint, changed stable-hash algorithm id, changed digest length, changed digest encoding, changed EF CLR model type, or
+source/target conversion and provider-value facts that do not match the storage-profile contract. It constructs the configured
+`DbContext` and runs diagnostics, but it does not open live-schema evidence, apply migrations, run DDL or DML, backfill data,
+rehash values, or generate repair scripts.
+
 ## Support Bundle Freshness Troubleshooting
 
 Regenerate the support bundle whenever the configured Code-First metadata, metadata registry, reviewed `dvault.model.v1`

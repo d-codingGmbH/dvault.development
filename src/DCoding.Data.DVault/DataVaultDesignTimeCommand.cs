@@ -70,6 +70,11 @@ public static class DataVaultDesignTimeCommand {
             host,
             options.OutputPath,
             options.WorkloadLabel!),
+        "hash-key-storage-migration" => RunHashKeyStorageMigration(
+            output,
+            host,
+            options.SourcePath!,
+            options.OutputPath!),
         "drift" => await RunDriftAsync(
             output,
             error,
@@ -122,6 +127,35 @@ public static class DataVaultDesignTimeCommand {
         diagnosticsSourceKind);
     File.WriteAllText(outputPath, json);
     output.WriteLine("Exported DVault SQL artifact dry-run manifest to '" + outputPath + "'.");
+    return 0;
+  }
+
+  private static int RunHashKeyStorageMigration(
+      TextWriter output,
+      DataVaultDesignTimeCommandHost host,
+      string sourcePath,
+      string outputPath) {
+    var sourceExplain = DataVaultHashKeyStorageMigrationManifestExporter.ImportSourceSupportBundleExplainJson(
+        File.ReadAllText(sourcePath),
+        sourcePath);
+
+    using var dbContext = CreateRequiredDbContext(host);
+    var targetDiagnosticsSourceKind = host.CreateSupportBundleDiagnostics is null
+        ? "diagnostics-service"
+        : "create-support-bundle-diagnostics";
+    var targetDiagnostics = host.CreateSupportBundleDiagnostics is null
+        ? host.Diagnostics.Analyze(dbContext)
+        : host.CreateSupportBundleDiagnostics(dbContext);
+    if (targetDiagnostics is null) {
+      throw new InvalidOperationException("The configured support-bundle diagnostics factory returned null.");
+    }
+
+    var json = DataVaultHashKeyStorageMigrationManifestExporter.ExportDryRunJson(
+        sourceExplain,
+        targetDiagnostics.Explain,
+        targetDiagnosticsSourceKind);
+    File.WriteAllText(outputPath, json);
+    output.WriteLine("Exported DVault hash-key storage migration dry-run manifest to '" + outputPath + "'.");
     return 0;
   }
 
@@ -283,6 +317,7 @@ public static class DataVaultDesignTimeCommand {
       "export" => ParseExport(args, error),
       "support-bundle" => ParseSupportBundle(args, error),
       "sql-artifact" => ParseSqlArtifact(args, error),
+      "hash-key-storage-migration" => ParseHashKeyStorageMigration(args, error),
       "drift" => ParseDrift(args, error),
       "guardrail" => ParseGuardrail(args, error),
       _ => UnknownCommand(verb, error),
@@ -420,6 +455,60 @@ public static class DataVaultDesignTimeCommand {
         WorkloadLabel: workloadLabel);
   }
 
+  private static CommandOptions? ParseHashKeyStorageMigration(string[] args, TextWriter error) {
+    string? sourcePath = null;
+    string? outputPath = null;
+    for (var index = 1; index < args.Length; index++) {
+      var arg = args[index];
+      if (IsHelpOption(arg)) {
+        return CommandOptions.Help;
+      }
+
+      if (string.Equals(arg, "-s", StringComparison.Ordinal) ||
+          string.Equals(arg, "--source", StringComparison.Ordinal)) {
+        if (!TryReadOptionValue(args, ref index, arg, error, out sourcePath)) {
+          return null;
+        }
+      }
+      else if (string.Equals(arg, "-o", StringComparison.Ordinal) ||
+          string.Equals(arg, "--output", StringComparison.Ordinal)) {
+        if (!TryReadOptionValue(args, ref index, arg, error, out outputPath)) {
+          return null;
+        }
+      }
+      else if (arg.StartsWith("-", StringComparison.Ordinal)) {
+        error.WriteLine("Unknown option '" + arg + "'.");
+        WriteUsage(error);
+        return null;
+      }
+      else if (sourcePath is null) {
+        sourcePath = arg;
+      }
+      else {
+        error.WriteLine("Unexpected argument '" + arg + "'.");
+        WriteUsage(error);
+        return null;
+      }
+    }
+
+    if (string.IsNullOrWhiteSpace(sourcePath)) {
+      error.WriteLine("Missing source support-bundle path for hash-key-storage-migration command.");
+      WriteUsage(error);
+      return null;
+    }
+
+    if (string.IsNullOrWhiteSpace(outputPath)) {
+      error.WriteLine("Missing output path for hash-key-storage-migration command.");
+      WriteUsage(error);
+      return null;
+    }
+
+    return new CommandOptions(
+        "hash-key-storage-migration",
+        OutputPath: outputPath,
+        SourcePath: sourcePath);
+  }
+
   private static CommandOptions? ParseDrift(string[] args, TextWriter error) {
     string? artifactPath = null;
     var useLiveSchema = false;
@@ -535,6 +624,7 @@ public static class DataVaultDesignTimeCommand {
     writer.WriteLine("       dvault export [--output <path>]");
     writer.WriteLine("       dvault support-bundle [--output <path>] [--artifact <path>] [--live-schema]");
     writer.WriteLine("       dvault sql-artifact --output <path> [--workload provider-native-bulk-ingestion]");
+    writer.WriteLine("       dvault hash-key-storage-migration --source <support-bundle-path> --output <path>");
     writer.WriteLine("       dvault drift [--live-schema] (--artifact <path>|<path>)");
     writer.WriteLine("       dvault guardrail (--migration <name>|<name>)");
   }
@@ -556,6 +646,7 @@ public static class DataVaultDesignTimeCommand {
       string Verb,
       bool ShowHelp = false,
       string? OutputPath = null,
+      string? SourcePath = null,
       string? ArtifactPath = null,
       bool UseLiveSchema = false,
       string? MigrationName = null,
