@@ -14,8 +14,8 @@ bash tools/check-format.sh
 
 `bash tools/pack-release-packages.sh` clears stale package artifacts and creates the coordinated release package lines under `artifacts/packages/`:
 
-- eight `8.42.0` `.nupkg` files with `net8.0` assets and EF Core 8 dependency groups
-- eight `10.42.0` `.nupkg` files with `net10.0` assets and EF Core 10 dependency groups
+- eight `8.43.0` `.nupkg` files with `net8.0` assets and EF Core 8 dependency groups
+- eight `10.43.0` `.nupkg` files with `net10.0` assets and EF Core 10 dependency groups
 - matching `.snupkg` files for the runtime and provider packages
 
 `bash tools/verify-packages.sh` checks package counts, ids, versions, filenames, metadata, README install guidance, XML documentation, analyzer assets, provider dependencies, DB2 dependency alignment, EF Core dependency lines, symbol packages, and stale package artifacts.
@@ -89,3 +89,5 @@ When DB2 is unset, unavailable, or unreachable, the root benchmark artifact trip
 Pass `--output <directory>` to emit `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json`. Increase `--iterations` and `--warmup` locally when collecting steadier timing numbers.
 
 Use `--hash-key-storage-matrix` to emit the bounded `sha256-v1` hex, `sha256-v1` binary, `sha256-128-v1` hex, and `sha256-128-v1` binary comparison rows. With the default provider filter, SQLite always runs locally and configured PostgreSQL, SQL Server, MySQL, Oracle, and DB2 lanes run, stay visible as skipped placeholders, or preserve failed rows when the selected physical storage profile exposes a provider-specific incompatibility. Set the relevant `DVAULT_TEST_*` values before restore/build/run so conditional provider package references are present in the asset graph.
+
+Use `--allocation-hotspots` for the focused DVault-owned allocation hotspot lane. The emitted `allocation-hotspots.md`, `allocation-hotspots.csv`, and `allocation-hotspots.json` sidecars rank save preparation, latest-hash-diff replay filtering, stable-hash canonicalization, and digest generation while keeping caller-owned `HashDiff` generation and database setup/write work outside the ranked boundary.

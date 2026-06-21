@@ -2,6 +2,18 @@
 
 This changelog summarizes the public release-note trail. The detailed release records remain under [docs/releases/](docs/releases/); those files are the source of truth for scope, evidence, non-goals, and validation notes.
 
+## v0.43.0 - Binary Adoption, Analyzer Guidance, and Allocation Evidence
+
+- Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.43.0` / `net8.0` / EF Core 8 and `10.43.0` / `net10.0` / EF Core 10.
+- Records that the v0.43.0 release label maps to consumer package versions `8.43.0` and `10.43.0`, not to a `0.43.0` package version.
+- Routes new projects to the binary-first profile while keeping public DVault hash-key values as lowercase hexadecimal strings and keeping existing persisted `HexString` setups compatible until a reviewed migration, reset, or data-move plan exists.
+- Cites the checked-in provider binary-vs-hex hash-key matrix, `hash-key-footprint.*` sidecars, and hash-key storage migration guide while preserving completed, skipped, failed, diagnostics-only, and storage-footprint boundaries.
+- Cites the before/after allocation hotspot artifacts and keeps the bounded hotspot story on DVault-owned save preparation, latest-hash-diff replay filtering, stable-hash canonicalization, and digest generation.
+- Keeps analyzer guidance local to source-visible project tooling with `PrivateAssets="all"`, one `net10.0` analyzer asset, and a `.NET 10 SDK` build-host baseline for both package lines.
+- Updates README, package compatibility, manual publication, local validation, production adoption, performance, and analyzer guidance to the v0.43.0 baseline without adding package-publication approval or automatic migration claims.
+
+See [DVault v0.43.0 Release Notes](docs/releases/v0.43.0.md).
+
 ## v0.42.0 - Provider Performance Evidence and Tuning
 
 - Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.42.0` / `net8.0` / EF Core 8 and `10.42.0` / `net10.0` / EF Core 10.

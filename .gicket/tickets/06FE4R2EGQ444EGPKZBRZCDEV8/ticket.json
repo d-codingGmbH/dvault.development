@@ -3,21 +3,20 @@
   "ticket-id": "06FE4R2EGQ444EGPKZBRZCDEV8",
   "ticket-type": "task",
   "title": "Task: Update binary adoption analyzer and allocation docs",
-  "revision": "06FE4RD74NKSJE93RQAZ4MDFTC",
-  "status": "todo",
+  "revision": "06FEQDTTZVPZWV6QE4A27W0XX0",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
+    "area/analyzers",
     "area/documentation",
     "area/hash-storage",
-    "area/analyzers",
-    "area/performance"
+    "area/performance",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PN800KV9Y3089598G9DZ0",
   "release-id": "06FE4PMRTW15865V5XN7C1MZZG",
   "created-at": "2026-06-20T00:13:43.0581066Z",
-  "updated-at": "2026-06-20T00:15:11.1413124Z"
+  "updated-at": "2026-06-21T19:45:22.6862509Z"
 }

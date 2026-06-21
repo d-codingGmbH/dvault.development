@@ -10,13 +10,13 @@ public sealed class PackageVerifierTests {
   private const string CorePackageId = "DCoding.Data.DVault";
   private const string Db2PackageId = "DCoding.Data.DVault.Db2";
   private const string IbmEntityFrameworkCorePackageId = "IBM.EntityFrameworkCore";
-  private const string Net8PackageLineVersion = "8.42.0";
-  private const string Net10PackageLineVersion = "10.42.0";
+  private const string Net8PackageLineVersion = "8.43.0";
+  private const string Net10PackageLineVersion = "10.43.0";
   private const string Net8TargetFramework = "net8.0";
   private const string Net10TargetFramework = "net10.0";
   private const string Authors = "d-coding GmbH";
   private const string RepositoryUrl = "https://github.com/d-codingGmbH/dvault.development.git";
-  private const string ExpectedAnalyzerBuildHostGuidance = "Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.42.0` package line.";
+  private const string ExpectedAnalyzerBuildHostGuidance = "Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.43.0` package line.";
   private static readonly XNamespace NuspecNamespace = "http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd";
   private static readonly PackageLine[] PackageLines = [
       new(Net8PackageLineVersion, Net8TargetFramework, "EF Core 8"),
@@ -282,6 +282,7 @@ public sealed class PackageVerifierTests {
   [InlineData("dotnet add package DCoding.Data.DVault --version 0.40.0\n", "0.40.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 0.41.0\n", "0.41.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 0.42.0\n", "0.42.0")]
+  [InlineData("dotnet add package DCoding.Data.DVault --version 0.43.0\n", "0.43.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 8.37.0\n", "8.37.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 8.38.0\n", "8.38.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 10.38.0\n", "10.38.0")]
@@ -291,6 +292,8 @@ public sealed class PackageVerifierTests {
   [InlineData("dotnet add package DCoding.Data.DVault --version 10.40.0\n", "10.40.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 8.41.0\n", "8.41.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 10.41.0\n", "10.41.0")]
+  [InlineData("dotnet add package DCoding.Data.DVault --version 8.42.0\n", "8.42.0")]
+  [InlineData("dotnet add package DCoding.Data.DVault --version 10.42.0\n", "10.42.0")]
   public void ReadmeMustNotUseStaleOrPlanningReleaseInstallVersions(
       string staleInstallGuidance,
       string expectedFragment) {
