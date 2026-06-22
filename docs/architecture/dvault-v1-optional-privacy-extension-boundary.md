@@ -35,6 +35,14 @@ services
 
 This example is illustrative. It fixes the activation posture only: the caller explicitly references a privacy package, calls an opt-in registration method, and supplies application-owned policy or key material dependencies. It does not define the final API shape for encryption, pseudonymization, redaction, export, or retention metadata.
 
+## Privacy Status And Effectivity Modeling
+
+DVault v1 privacy workflows should model status, consent, relationship validity, and other effectivity-style state through the existing satellite surfaces. Entity-local privacy state belongs in an ordinary hub-parent satellite. Relationship-local state, consent-link state, and other relationship effectivity state belongs in a link-parent satellite declared with the same `Payload(...)` and optional `DrivingKey(...)` semantics used for other satellites. When a privacy workflow needs multiple concurrent status or validity series, it should use the existing multi-active driving-key contract instead of introducing an STS- or RTS-specific table family.
+
+This recommendation follows the shipped v0.13 effectivity baseline: effectivity is caller-owned descriptive state attached to a relationship link, not a separate fluent API, metadata kind, entity family, validation layer, or technical-column family. The visible core model remains finite: produced table kinds are hub, link, satellite, PIT/point-in-time, and bridge, while satellite metadata supports ordinary satellites and multi-active satellites with driving keys. Privacy terminology must not be used to widen those core Data Vault semantics.
+
+Future privacy-specific labels, validation rules, annotations, conventions, or helper APIs may still be added inside the optional privacy extension boundary. They must compile to the existing provider-neutral metadata, save, read, diagnostics, and provider-extension seams instead of adding first-class STS/RTS core entity families or changing default behavior for callers that did not opt in.
+
 ## Provider-Neutral EF Core Boundary
 
 Shared contracts must stay provider-neutral. The shared package may define abstractions, request models, metadata markers, diagnostics facts, validation rules, and fallback behavior that do not depend on one database provider.

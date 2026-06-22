@@ -3,20 +3,19 @@
   "ticket-id": "06FE4RBA6WXPTV321ZT9M0XPV4",
   "ticket-type": "task",
   "title": "Task: Evaluate STS and RTS modeling support for privacy workflows",
-  "revision": "06FE4RCXQEKAAJNCKNQRSEQR20",
-  "status": "todo",
+  "revision": "06FESED17X04S8TW49XG3QRFRG",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
-    "area/privacy",
+    "area/architecture",
     "area/modeling",
-    "area/architecture"
+    "area/privacy",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PNCENSGNJ7GJTTBEGYMBR",
   "release-id": "06FE4PMT7V0NN9Y6RKD5WDTY58",
   "created-at": "2026-06-20T00:14:55.6826062Z",
-  "updated-at": "2026-06-20T00:15:08.7314026Z"
+  "updated-at": "2026-06-22T00:27:28.9593193Z"
 }

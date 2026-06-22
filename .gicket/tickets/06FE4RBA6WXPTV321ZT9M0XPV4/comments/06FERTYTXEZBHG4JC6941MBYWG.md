@@ -1,73 +1,58 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Repository evidence supports a bounded recommendation: keep privacy workflow status/effectivity modeling on existing ordinary or link-parent satellite surfaces, do not add first-class STS/RTS core semantics, and keep this ticket documentation-only. No child tickets, planning documents, attachments, or durable ticket edits were materialized in this pass.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Treat the STS/RTS wording in this ticket as status/effectivity-style satellite patterns only; the current repository baseline does not define separate STS or RTS metadata kinds, table kinds, or builders.
 - The visible core modeling baseline is finite: `DataVaultTableKind` exposes `Hub`, `Link`, `Satellite`, `PointInTime`/`Pit`, and `Bridge`, and `DataVaultSatelliteMetadata` supports ordinary and multi-active satellites only.
 - Current repository guidance already ratifies the default effectivity posture: model relationship status/effectivity as caller-owned link-parent satellite state with optional `DrivingKey(...)`, not as a first-class effectivity-specific entity family.
 - The optional privacy boundary is already defined by done ticket `06FE4R9PP99G6Q1PTPK4TKD460`; privacy behavior remains an opt-in add-on layered on existing metadata, save, read, and provider-extension seams rather than a core semantic change.
 - No child tickets, relation changes, description updates, attachments, or planning documents were materialized in this refinement pass. The live relation graph still shows an incoming `blocks` edge from done ticket `06FE4R9PP99G6Q1PTPK4TKD460`, so treat that edge as stale historical routing rather than an active blocker.
 
-### Scope In
+Scope In
 - Evaluate whether privacy workflows need first-class STS/RTS semantics in DVault core modeling.
 - Ratify the v1 default that privacy status/effectivity state should reuse existing hub-parent satellites, link-parent satellites, and optional multi-active driving-key semantics.
 - Define how any future privacy-specific interpretation or helper layer stays inside the optional privacy add-on boundary without changing core Data Vault semantics.
 - Produce a documentation-level recommendation that downstream privacy documentation or example work can reference without reopening the architecture baseline.
 
-### Scope Out
+Scope Out
 - Introducing a new `DataVaultTableKind`, metadata kind, builder, or technical-column family for STS/RTS.
 - Changing core save, read, PIT, bridge, hashing, or telemetry runtime behavior for this ticket.
 - Implementing provider-native encryption, key lifecycle management, retention engines, deletion orchestration, or compliance guarantees.
 - Broad product-code work beyond a focused recommendation or documentation update.
 
-## Acceptance Criteria
-- The recommendation explicitly states that DVault v1 privacy workflows should stay on existing ordinary satellite and link-parent satellite surfaces, with optional `DrivingKey(...)` for concurrent series, instead of adding first-class STS/RTS core semantics.
-- The recommendation cites the current shipped baseline that effectivity is modeled as caller-owned link-parent satellite state and that no effectivity-specific builder or metadata kind exists in the visible repository contract.
-- The recommendation states that any future privacy-specific metadata, validation, or helpers must remain additive inside the optional privacy extension boundary and compile to existing provider-neutral DVault abstractions rather than new core entity families.
-- The deliverable is documentation or architecture guidance only unless a separate clearly small and focused follow-on change is explicitly approved; this ticket does not widen into product-code delivery.
-- The recommendation is specific enough that downstream privacy example/documentation work can proceed without reopening whether STS/RTS are required as first-class DVault semantics.
-
-## Definition of Done
-- The ticket has an authoritative PO contract that tells downstream work to document 'use existing satellite patterns, not new STS/RTS core semantics' as the baseline recommendation.
-- The contract distinguishes the bounded default use cases well enough for implementation: hub-parent satellite for entity-local privacy state, link-parent satellite for relationship or consent/effectivity state, and multi-active driving keys when concurrent series are required.
-- The contract keeps the privacy extension additive and opt-in and preserves the existing explicit save/read/provider-boundary architecture.
-- No blocking architecture-level questions remain about whether privacy workflows require new core DVault semantics.
-
-## Implementation Notes
-- Prefer a focused documentation amendment to `docs/architecture/dvault-v1-optional-privacy-extension-boundary.md` or a short companion decision note instead of product-code changes.
-- Use the existing repository baseline as evidence: `docs/releases/v0.13.0.md`, `docs/model-first-governance.md`, and `docs/production-adoption-checklist.md` already document effectivity as generic link-parent satellite usage rather than a special effectivity API.
-- If privacy status is attached to a business entity, describe it with an ordinary hub-parent satellite. If it describes a relationship, consent link, or similar effectivity state, describe it with a link-parent satellite. If multiple concurrent series are needed, use existing `DrivingKey(...)` multi-active semantics rather than inventing STS/RTS-specific types.
-- Keep privacy-specific labels, sensitivity interpretation, or workflow conventions in add-on metadata, validation, or helper layers, not in shared `DataVaultTableKind` or `DataVaultSatelliteMetadata` core surfaces.
-- No bounded planning writes were applied in this pass; refinement is based on repository and ticket evidence only.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - If a real privacy use case later cannot be expressed with ordinary or link-parent satellites plus driving keys, what concrete gap justifies reopening core semantics instead of adding add-on metadata or helper behavior?
 - Should the eventual privacy documentation include one small worked example of consent or relationship effectivity modeled as link-parent satellite state so the recommendation is concrete for consumers?
 - If later reader-facing documentation wants stronger STS/RTS terminology, should that remain terminology-only guidance or be backed by a separate add-on helper contract?
 
-## Risks
+Risks
 - Downstream work may over-interpret STS/RTS wording as approval for new core table kinds even though the repository baseline intentionally keeps effectivity generic.
 - Privacy documentation can drift into provider-specific or compliance-guarantee language if it stops anchoring on the optional boundary already defined by done ticket `06FE4R9PP99G6Q1PTPK4TKD460`.
 
-## Split Recommendations
+Split recommendations
 - No split is needed if this ticket remains a documentation/recommendation lane.
 - If future work reopens semantics, split it into one architecture ticket for any add-on metadata/helper contract and separate implementation tickets per provider or documentation lane rather than broadening this evaluation ticket.
 - Do not create a child ticket for first-class STS/RTS core modeling unless a concrete gap is demonstrated beyond the existing ordinary, link-parent, and multi-active satellite surfaces.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Scope: evaluate whether status/effectivity-style satellites help privacy workflows without changing core Data Vault semantics. Acceptance: recommendation is documented and implementation is deferred unless clearly small and focused.
+Run mode
+- apply: planned updates are applied after this comment
