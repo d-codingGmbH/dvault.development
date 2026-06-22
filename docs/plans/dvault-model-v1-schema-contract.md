@@ -2,7 +2,7 @@
 
 Status: v1 planning contract
 Ticket: 06F0MEE8T9PKPKQH8EPWNQ2CRW
-Consumers: 06F0MEEGJE9QCHC8YN4FEXYX10, 06F0MEERJ7D5Q4WYBQAJD3GFVC, 06F0MEF08AJ1K52STF42T74B04, 06F0MEGAGJCEHQ8QRHGH8W7804, 06FE4R9ZC210EE5AW4WCWQN32G
+Consumers: 06F0MEEGJE9QCHC8YN4FEXYX10, 06F0MEERJ7D5Q4WYBQAJD3GFVC, 06F0MEF08AJ1K52STF42T74B04, 06F0MEGAGJCEHQ8QRHGH8W7804, 06FE4R9ZC210EE5AW4WCWQN32G, 06FE4RA88AV7ZRRPMDS8YADEX4
 
 ## Purpose
 
@@ -172,7 +172,7 @@ Personal-data metadata is an additive provider-neutral layer over the existing s
 | `personalData[].field` | yes | none | Exact logical payload name already declared in the same satellite `payload` array. Matching uses ordinal string semantics. |
 | `personalData[].encryptedPayloadAlias` | yes | none | Non-empty stable logical metadata name for the encrypted payload representation of that field. The alias is unique within the same satellite and is not a provider column name, store type, SQL expression, algorithm choice, key id, migration instruction, or DDL promise. |
 
-The encrypted-payload alias is a logical lookup key for downstream privacy packages. It lets model-first parsing, code-first or registry metadata registration, diagnostics, and optional privacy behavior identify one caller-owned encrypted representation for one marked field without hard-coding physical storage. Provider-specific packages may later map the alias to a concrete implementation only through separate opt-in contracts.
+The encrypted-payload alias is the logical lookup key for downstream privacy packages. It lets model-first parsing, code-first or registry metadata registration, diagnostics, optional privacy behavior, and a future caller-owned key-provider seam identify one caller-owned encrypted representation for one marked field without hard-coding physical storage. The alias is the v1 handoff point for resolving caller-owned encryption and decryption policy; it is not itself a key id, secret, provider column, provider capability switch, SQL expression, or DDL instruction. Provider-specific packages may later map the alias to a concrete implementation only through separate opt-in contracts.
 
 Validators must reject personal-data metadata before model application when any of these finite failures is present:
 
@@ -183,6 +183,8 @@ Validators must reject personal-data metadata before model application when any 
 - A personal-data declaration object contains provider-specific storage, SQL, native type, key-management, algorithm, migration, or execution fields.
 
 Personal-data metadata does not change satellite parent identity, ordinary row history semantics, multi-active driving-key semantics, hash-diff presence, load timestamp, record source, or provider-neutral EF mapping compatibility with the existing payload/logical-property baseline. Unmarked payload fields remain ordinary payload fields. The base provider-neutral projection still maps payload fields as payload properties; optional privacy packages decide in later tickets whether and how to add save, read, diagnostics, or provider-specific behavior.
+
+The caller-owned key-provider and crypto-shredding lifecycle boundary for this alias is defined in `docs/architecture/dvault-v1-optional-privacy-extension-boundary.md`. Schema consumers must use that architecture contract for ownership, activation, fail-closed behavior, and redaction rules instead of adding key lifecycle, provider-native encryption, deletion, retention, or compliance workflow fields to `dvault.model.v1`.
 
 This negative example is invalid because `ContactType` is a driving key rather than a payload field, and because the alias `ContactEncrypted` is reused within one satellite:
 
@@ -590,4 +592,4 @@ No YAML fixture family is required for v1. If downstream tests cover pre-convers
 
 ## Completion Boundary
 
-This contract is complete when parser and projection implementers can build against the token registry, declaration shapes, diagnostic taxonomy, fixture expectations, personal-data satellite metadata rules, and JSON-first YAML authoring boundary above without reopening top-level field names, compatibility policy, provider-choice policy, direct YAML ingestion, additive-versus-replacement privacy metadata, encrypted-payload alias semantics, or recursive participant binding rules.
+This contract is complete when parser and projection implementers can build against the token registry, declaration shapes, diagnostic taxonomy, fixture expectations, personal-data satellite metadata rules, and JSON-first YAML authoring boundary above without reopening top-level field names, compatibility policy, provider-choice policy, direct YAML ingestion, additive-versus-replacement privacy metadata, encrypted-payload alias semantics, caller-owned key-provider lookup semantics, or recursive participant binding rules.

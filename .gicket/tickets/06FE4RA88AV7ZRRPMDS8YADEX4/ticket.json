@@ -3,20 +3,19 @@
   "ticket-id": "06FE4RA88AV7ZRRPMDS8YADEX4",
   "ticket-type": "task",
   "title": "Task: Design caller-owned key provider and crypto-shredding lifecycle",
-  "revision": "06FE4RCJAP0ZZ1S4NB3RCHTJBW",
-  "status": "todo",
+  "revision": "06FETAKMFNY9TDVY3EMZ2MCPAW",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
+    "area/architecture",
     "area/privacy",
     "area/security",
-    "area/architecture"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PN9EX787F4DHNJVN86YK0",
   "release-id": "06FE4PMT7V0NN9Y6RKD5WDTY58",
   "created-at": "2026-06-20T00:14:46.9699246Z",
-  "updated-at": "2026-06-20T00:15:05.8138306Z"
+  "updated-at": "2026-06-22T02:30:43.0695470Z"
 }

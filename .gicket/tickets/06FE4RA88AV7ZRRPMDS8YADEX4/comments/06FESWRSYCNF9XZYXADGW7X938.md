@@ -1,27 +1,26 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the ticket to an alias-driven caller-owned key-provider and crypto-shredding boundary; no new child tickets, relation edits, attachments, or planning documents were materialized.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The done parent story `06FE4R9PP99G6Q1PTPK4TKD460` and the done provider-native decision ticket `06FE4SENE1ZV45P8DKRQTMG0A0` already fix the outer boundary: privacy behavior stays explicit, opt-in, provider-neutral in the shared surface, and not a provider-native encryption platform, KMS surface, or automatic workflow engine.
 - The done metadata contract ticket `06FE4R9ZC210EE5AW4WCWQN32G` already ratifies `personalData[].encryptedPayloadAlias` as the stable logical encrypted-payload identifier; this ticket should use that alias as the v1 lookup key for caller-owned key-provider selection instead of reopening naming or provider-column questions.
 - Repository evidence already shows the safe architectural precedent for provider-neutral model/provider conversion without changing caller-facing value types: `DataVaultHashKeyProviderValueConverter` and the EF `LowercaseHexStringToBytesConverter` lane in `DataVaultEfMetadataTranslator`.
 - No child tickets, relation changes, attachments, or planning documents were materialized in this refinement pass; the live graph already contains the done boundary anchors above, the current outgoing `blocks` edge to `06FE4RAGWXQCQFCTX7QW1T9NAC`, and the sibling implementation split from `06FE4SENE1ZV45P8DKRQTMG0A0`.
 
-### Scope In
+Scope In
 - Define the provider-neutral caller-owned key-provider boundary for the privacy extension, including how explicit DVault privacy flows resolve cryptographic behavior without taking ownership of key material or provider-native encryption features.
 - Ratify `encryptedPayloadAlias` as the stable logical lookup key that binds marked satellite payload fields to caller-owned encryption and decryption behavior.
 - Define the explicit activation posture: any future encryption lane is opt-in and reached only through explicit save, read, helper, or value-conversion flows, not through default `SaveChanges`, hidden background jobs, or implicit provider negotiation.
 - Define the ownership split for key creation, storage, lookup policy, rotation, destruction, access control, and audit versus the limited DVault-owned seam, metadata interpretation, and diagnostics responsibilities.
 - Define the v1 meaning of crypto-shredding for this lane: previously stored encrypted payloads become intentionally undecryptable when the caller withdraws or destroys the relevant key material; DVault does not own the operational workflow.
 
-### Scope Out
+Scope Out
 - Implementing the provider-neutral conversion proof; that remains the separate downstream ticket `06FE4RASEQZN7XEYH1XR4H06PR`.
 - Creating the privacy package skeleton or package layout details; that remains the separate downstream ticket `06FE4RAGWXQCQFCTX7QW1T9NAC`.
 - Provider mapping tests and documentation examples; those remain the separate downstream tickets `06FE4RB219AXVF2535MFF36PN4` and `06FE4RBK2MJBS5K3C15JTB8Z9W`.
@@ -29,50 +28,34 @@
 - DVault-owned purge, retention scheduling, row deletion, PIT or bridge cleanup, re-encryption, backfill, migration, or compliance-completion workflow execution.
 - Provider-native encryption DDL, SQL function generation, driver key-store negotiation, or treating stable hashing as a privacy or cryptographic control.
 
-## Acceptance Criteria
-- The ticket defines one explicit v1 caller-owned key-provider seam for privacy flows and states that the seam is resolved by stable logical `encryptedPayloadAlias` values rather than provider-specific column, store-type, SQL, or key-id metadata.
-- The ticket states that all key lifecycle responsibilities remain caller-owned: key creation, storage, version selection, rotation, destruction, access control, escrow decisions, and audit are outside DVault ownership.
-- The ticket fixes the activation boundary so encryption or decryption behavior can occur only through explicit opt-in privacy flows, helpers, or provider-neutral conversion paths and not through default `SaveChanges`, hidden background processing, or automatic provider-feature dispatch.
-- The ticket defines crypto-shredding as caller-owned loss or destruction of the relevant key material for an encrypted payload alias and explicitly says DVault does not guarantee row deletion, historical rewrite, re-encryption, or compliance completion when that happens.
-- The ticket requires fail-closed behavior and redaction-safe observability: missing alias mappings, unsupported shapes, or provider declines must produce explicit diagnostics without leaking plaintext, ciphertext, raw keys, secrets, or policy internals.
-- The ticket keeps downstream work aligned with the existing split so package skeleton, conversion proof, mapping tests, and documentation can proceed without reopening the key-ownership or provider-native-encryption boundary.
-
-## Definition of Done
-- No blocking architecture question remains about the lookup key, explicit activation posture, ownership split, or crypto-shredding meaning for the v1 privacy lane.
-- Downstream tickets `06FE4RAGWXQCQFCTX7QW1T9NAC`, `06FE4RASEQZN7XEYH1XR4H06PR`, `06FE4RB219AXVF2535MFF36PN4`, and `06FE4RBK2MJBS5K3C15JTB8Z9W` can implement against one consistent caller-owned key-provider contract without reopening provider-native scope.
-- The refined contract stays compatible with the existing privacy boundary, personal-data metadata contract, explicit save/read architecture, and redacted diagnostics or support-bundle posture already visible in the repository.
-- No open question remains that would block PO-critic review.
-
-## Implementation Notes
-- Use `personalData[].encryptedPayloadAlias` from `docs/plans/dvault-model-v1-schema-contract.md` as the authoritative logical handle for key-provider lookup; do not invent a second provider-selection naming surface for v1.
-- Follow the existing explicit DVault service posture: any future privacy registration should layer on top of `AddDVault()` and route through explicit save/read/helper or value-conversion flows rather than ordinary EF `SaveChanges` interception or runtime automation.
-- Use the existing `DataVaultHashKeyProviderValueConverter` plus `LowercaseHexStringToBytesConverter` pattern as the architectural precedent for provider-neutral logical values with provider-specific physical storage differences; the privacy proof ticket can mirror that posture without moving key ownership into DVault.
-- Keep DVault-owned diagnostics and support-bundle facts bounded to alias, strategy-selection, fallback, unsupported-shape, and redaction-safe status information. Do not log or export plaintext, ciphertext, raw key material, connection secrets, or operational policy internals.
-- Treat unsupported or missing alias mappings as fail-closed conditions. DVault must not silently persist plaintext, silently bypass privacy behavior, or auto-select provider-native encryption features when the caller-owned key-provider contract is unavailable.
-- Current live relations do not require a new split. The existing outgoing `blocks` edge to `06FE4RAGWXQCQFCTX7QW1T9NAC` remains coherent, and the sibling implementation tickets created from `06FE4SENE1ZV45P8DKRQTMG0A0` stay separate.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the provider-neutral proof lands, does the product want a higher-level helper API over raw alias-based encryption/decryption lookup, or is the lower-level seam enough for the first privacy package wave?
 - Should a later ticket define a recommended alias-to-key-version rollover or re-encryption documentation pattern for adopters, while keeping the operational work caller-owned?
 - If adopters need physical deletion, retention, or compliance workflow guidance in addition to crypto-shredding posture, should that be a separate explicit documentation or architecture ticket rather than an expansion of this boundary?
 
-## Risks
+Risks
 - If fail-closed behavior is not stated explicitly, downstream implementations could silently fall back to plaintext or mismatched alias behavior when a caller-owned mapping is missing.
 - The term crypto-shredding can be overread as DVault-owned deletion or compliance orchestration unless the contract keeps it limited to caller-owned key unavailability and separates it from purge or retention workflows.
 - Diagnostics, support bundles, or exception paths could leak sensitive material if the contract does not preserve the repository's existing redaction posture for secrets and raw business data.
 - A too-generic abstraction could drift into provider-native encryption promises or KMS ownership; keeping the alias-based seam narrow is the main guardrail against scope creep.
 
-## Split Recommendations
+Split recommendations
 - No additional split is needed now; the existing downstream tickets already cover package skeleton, provider-neutral conversion proof, mapping tests, and documentation after this boundary ticket.
 - If future work needs KMS integration, provider-native encryption, re-encryption tooling, or retention or purge orchestration, split that work by exact capability and by provider or operational lane instead of broadening this ticket.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 4
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Scope: design key provider abstractions and crypto-shredding lifecycle boundaries. Acceptance: callers own key creation, storage, rotation, destruction, and audit responsibility.
+Run mode
+- apply: planned updates are applied after this comment

@@ -1,4 +1,4 @@
-﻿# DVault V1 Optional Privacy Extension Boundary
+# DVault V1 Optional Privacy Extension Boundary
 
 Status: v1 contract
 Ticket: 06FE4R9PP99G6Q1PTPK4TKD460
@@ -18,6 +18,7 @@ A future privacy package may compose with the existing explicit DVault surfaces:
 - service registration through a dedicated opt-in extension layered on top of `AddDVault()`;
 - metadata annotations or sidecar metadata that are visible at model-configuration or registry-registration time;
 - satellite payload personal-data metadata that references existing `dvault.model.v1` payload names and declares stable logical encrypted-payload aliases;
+- a caller-owned key-provider seam that resolves encryption and decryption behavior from those stable logical encrypted-payload aliases;
 - caller-driven save or read helpers that wrap, prepare, filter, redact, pseudonymize, encrypt, or decrypt data before invoking the existing explicit save and read services;
 - request-bound diagnostics that describe privacy strategy selection without exposing raw hash keys, payload values, provider SQL, connection strings, secrets, or policy decisions;
 - provider-specific implementations registered by provider packages through extension methods and DI-discovered strategies.
@@ -61,6 +62,30 @@ The metadata surface applies only to satellite payload fields. It must not be us
 
 Personal-data metadata preserves Data Vault semantics. Satellite parent identity, row history, hash-diff presence, multi-active driving-key behavior, load timestamp, record source, and provider-neutral EF payload/logical-property mapping remain compatible with the existing baseline. Downstream parser, code-first or registry registration, EF translation, optional privacy package behavior, and provider-specific execution lanes must be implemented through follow-on tickets that consume this metadata contract instead of redefining it.
 
+## Caller-Owned Key-Provider Seam
+
+The v1 encrypted-payload lookup key is `personalData[].encryptedPayloadAlias`. A future opt-in privacy flow must resolve caller-owned cryptographic behavior by that alias, not by provider-specific column names, native store types, generated SQL, provider feature names, key ids embedded in DVault metadata, migration artifacts, or DDL conventions.
+
+The seam is intentionally narrow. A future privacy package may pass the encrypted-payload alias plus bounded operation context to a caller-supplied dependency that selects or performs encryption and decryption. DVault may own the provider-neutral request shape, metadata lookup, explicit helper or value-conversion invocation, provider-strategy dispatch, and redaction-safe diagnostics. DVault must not own key creation, key storage, key version selection, rotation policy, destruction policy, access-control policy, escrow decisions, cryptographic policy, or audit routing.
+
+Key-provider resolution is active only in explicit opt-in privacy flows. Acceptable activation points include a caller-invoked save helper, read helper, privacy service, or provider-neutral value-conversion lane that was registered through a future privacy extension. Ordinary `AddDVault()` registration, default `IDataVaultSaveService` calls, ordinary `IDataVaultReadService` calls, EF `SaveChanges`, hidden background jobs, and automatic provider-feature negotiation must not invoke encryption or decryption behavior for callers that did not opt in.
+
+The seam must fail closed. Missing alias mappings, duplicate or unsupported personal-data metadata, unsupported payload shapes, provider declines, unavailable key material, or declined caller policy must produce an explicit failure or declined-strategy diagnostic. DVault must not silently persist plaintext, silently return ciphertext as decrypted data, silently bypass privacy behavior, generate a replacement key, fall back to stable hashing as a privacy substitute, or auto-select provider-native encryption features.
+
+Observability for this lane is redaction-safe only. Diagnostics and support-bundle facts may identify the encrypted-payload alias, selected strategy, declined strategy, unsupported shape category, missing-mapping status, key-unavailable status, and fallback status. They must not include plaintext, ciphertext, raw keys, derived secrets, key-store credentials, connection secrets, raw payload values, or caller policy internals. A later ticket may document additional non-secret key-version labels only if that contract proves they are safe to expose.
+
+Provider-specific packages may participate only behind the same alias-driven seam. They can optimize an eligible explicit privacy operation after a separate provider ticket defines the capability, tests provider compatibility, and preserves caller-owned key lifecycle semantics. They must decline unsupported shapes without changing the shared contract or treating provider-native encryption as an implicit default.
+
+## Crypto-Shredding Lifecycle Boundary
+
+For this v1 privacy lane, crypto-shredding means caller-owned loss, withdrawal, or destruction of the key material required to decrypt payloads associated with an `encryptedPayloadAlias`. When the caller-owned key provider can no longer resolve usable key material for that alias and context, previously stored encrypted payload values become intentionally undecryptable through DVault privacy flows.
+
+Crypto-shredding is not a DVault-owned data lifecycle workflow. DVault does not guarantee row deletion, historical rewrite, PIT or bridge cleanup, backup purge, archival purge, re-encryption, backfill, provider migration, retention completion, legal erasure completion, or compliance attestation when caller-owned key material is destroyed or withdrawn. Applications that need those operational outcomes must implement and audit them outside DVault or through separate future tickets that name the exact workflow.
+
+Key rotation and key-version rollover remain caller-owned. A caller may decide that new writes for an alias use new key material while old records remain decryptable through older material, or may intentionally withdraw older material to make older encrypted payloads undecryptable. DVault may route explicit privacy operations by encrypted-payload alias, but it must not choose key versions, schedule re-encryption, decide destruction timing, or infer retention policy.
+
+Read and write behavior after crypto-shredding must stay explicit and fail closed. A privacy read that cannot obtain usable key material for the alias must return an explicit failure or declined diagnostic without leaking ciphertext or policy internals. A privacy write that requires encryption for a marked payload but cannot obtain an approved encryption operation must fail rather than store plaintext or silently downgrade to ordinary payload persistence.
+
 ## Provider-Native Encryption Decision
 
 For the v0.44 privacy-extension baseline, DVault may pursue only caller-invoked, provider-neutral encrypted payload mapping in the shared surface. The approved shared lane is an explicit helper, metadata marker, or EF Core value-conversion proof that stores caller-prepared encrypted payload values through ordinary DVault model mapping. It must keep key material, key lookup, encryption policy, decryption policy, and operation timing owned by the consuming application.
@@ -81,6 +106,7 @@ DVault-owned responsibilities are limited to library behavior that can be implem
 
 - provider-neutral public contracts for opt-in privacy extension points;
 - deterministic metadata interpretation when privacy metadata is supplied;
+- alias-driven key-provider resolution seams for future explicit privacy flows;
 - explicit helper or strategy dispatch for caller-invoked operations;
 - diagnostics that identify selected strategy, fallback, unsupported shape, and redaction-safe evidence;
 - provider package registration seams and provider-owned strategy implementations when later tickets approve them;
@@ -90,7 +116,7 @@ Application and operator responsibilities remain outside DVault:
 
 - compliance interpretation, legal review, data-protection-impact analysis, and controller or processor policy decisions;
 - database provisioning, provider selection, schema deployment, migrations, backups, restore policy, and environment isolation;
-- credentials, secret storage, key lifecycle, key rotation, key escrow, HSM or KMS integration, and access-control policy;
+- credentials, secret storage, key lifecycle, alias-to-key mapping, key-version selection, key rotation, key destruction, key escrow, HSM or KMS integration, and access-control policy;
 - transaction scope, retry policy, operational scheduling, background workers, retention jobs, purge workflows, archival, and audit workflow routing;
 - deciding which fields are personal data, which transformations are appropriate, and how transformed data is presented to users or downstream systems.
 
@@ -102,8 +128,9 @@ This story does not approve:
 
 - a claim that DVault, the privacy add-on, or any provider package makes an application GDPR/DSGVO compliant;
 - legal advice, compliance certification, records-of-processing automation, data-subject workflow orchestration, consent management, breach notification, or policy attestation;
-- a key-management platform, secret vault, HSM abstraction, KMS integration layer, key escrow service, or automatic key rotation orchestration;
-- automatic deletion, retention scheduling, purge orchestration, archival orchestration, backfill orchestration, or background workflow ownership;
+- a key-management platform, secret vault, HSM abstraction, KMS integration layer, key escrow service, alias-to-key registry, or automatic key rotation orchestration;
+- DVault-owned crypto-shredding execution beyond explicit failure when caller-owned key material is unavailable;
+- automatic deletion, retention scheduling, purge orchestration, archival orchestration, re-encryption, historical rewrite, backfill orchestration, or background workflow ownership;
 - default `SaveChanges` interception as the primary privacy behavior path;
 - implicit encryption, pseudonymization, redaction, export filtering, or deletion for callers that did not opt in;
 - provider-native cell, column, row, tablespace, file, or database encryption as a shared v0.44 runtime feature;
