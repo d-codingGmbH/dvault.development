@@ -3,20 +3,19 @@
   "ticket-id": "06FE4RB219AXVF2535MFF36PN4",
   "ticket-type": "task",
   "title": "Task: Add provider mapping tests for encrypted payload storage",
-  "revision": "06FE4RCVED22633AYZTW7J118G",
-  "status": "todo",
+  "revision": "06FEY2QWMR288X62Y09RCTRSR8",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
     "area/privacy",
+    "area/provider-support",
     "area/testing",
-    "area/provider-support"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PNAYJ8JW25Y0SYFPA90AR",
   "release-id": "06FE4PMT7V0NN9Y6RKD5WDTY58",
   "created-at": "2026-06-20T00:14:53.5616070Z",
-  "updated-at": "2026-06-20T00:15:08.1476191Z"
+  "updated-at": "2026-06-22T11:15:35.2068210Z"
 }

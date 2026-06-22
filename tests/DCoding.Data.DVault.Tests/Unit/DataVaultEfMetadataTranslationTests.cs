@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using DCoding.Data.DVault.Modeling;
+using DCoding.Data.DVault.Privacy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -11,6 +13,9 @@ using Xunit;
 namespace DCoding.Data.DVault.Tests.Unit;
 
 public sealed class DataVaultEfMetadataTranslationTests {
+  private const string EncryptedPayloadAlias = "CustomerContactEmailEncrypted";
+  private const string EncryptedPayloadPlaintext = "alice@example.test";
+
   [Fact]
   public void ApplyDataVaultMetadataIsExplicitRootNamespaceTranslationExtension() {
     var method = typeof(DCoding.Data.DVault.DataVaultModelBuilderExtensions)
@@ -695,6 +700,52 @@ public sealed class DataVaultEfMetadataTranslationTests {
         "IxSatCustomerContactSatelliteParentCustomerHashKeyLoadTimestamp",
         ["CustomerHashKey", "LoadTimestamp"],
         isUnique: false);
+  }
+
+  [Theory]
+  [InlineData("sqlite-v1", "TEXT")]
+  [InlineData("postgres-v1", "text")]
+  [InlineData("sqlserver-v1", "nvarchar(max)")]
+  [InlineData("oracle-v1", "CLOB")]
+  [InlineData("db2-v1", "CLOB")]
+  [InlineData("mysql-pomelo-v1", "longtext")]
+  public void EncryptedPayloadValueConverterBackedPayloadUsesOrdinaryPayloadTextStorageForBuiltInProviderUnitMatrix(
+      string profileName,
+      string expectedStorageType) {
+    var payload = CreateEncryptedPayloadTranslatedPayloadProperty(SelectBuiltInProviderCapabilityProfile(profileName));
+
+    AssertEncryptedPayloadProviderProperty(payload, profileName, expectedStorageType);
+
+    var converter = Assert.IsType<DataVaultEncryptedPayloadValueConverter>(payload.GetValueConverter());
+    var providerValue = Assert.IsType<string>(converter.ConvertToProvider(EncryptedPayloadPlaintext));
+
+    Assert.StartsWith("encrypted:" + EncryptedPayloadAlias + ":", providerValue, StringComparison.Ordinal);
+    Assert.DoesNotContain(EncryptedPayloadPlaintext, providerValue, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void EncryptedPayloadValueConverterBackedMySqlProviderNamesShareSinglePomeloProfileMapping() {
+    Assert.Equal(
+        DataVaultProviderCapabilityProfiles.MySql,
+        DataVaultProviderCapabilityProfileSelection.Select("MySql.EntityFrameworkCore"));
+    Assert.Equal(
+        DataVaultProviderCapabilityProfiles.MySql,
+        DataVaultProviderCapabilityProfileSelection.Select("Pomelo.EntityFrameworkCore.MySql"));
+
+    var payload = CreateEncryptedPayloadTranslatedPayloadProperty(DataVaultProviderCapabilityProfiles.MySql);
+
+    AssertEncryptedPayloadProviderProperty(payload, "mysql-pomelo-v1", "longtext");
+  }
+
+  [Fact]
+  public void EncryptedPayloadValueConverterBackedMappingFailsDeterministicallyWhenProfileOmitsPayloadTextCapability() {
+    var providerCapabilities = CreateProfileWithoutPayloadTextMapping();
+
+    var exception = Assert.Throws<NotSupportedException>(() =>
+        CreateModelBuilder().ApplyDataVaultMetadata(CreateMetadataModel(), providerCapabilities));
+
+    Assert.Contains("broken-encrypted-payload-profile", exception.Message, StringComparison.Ordinal);
+    Assert.Contains("type mapping for PayloadText", exception.Message, StringComparison.Ordinal);
   }
 
   [Fact]
@@ -1438,6 +1489,76 @@ public sealed class DataVaultEfMetadataTranslationTests {
     Assert.Equal(typeof(byte[]), converter.ProviderClrType);
   }
 
+  private static IMutableProperty CreateEncryptedPayloadTranslatedPayloadProperty(
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    var modelBuilder = CreateModelBuilder();
+
+    modelBuilder.ApplyDataVaultMetadata(CreateMetadataModel(), providerCapabilities);
+    modelBuilder.SharedTypeEntity<Dictionary<string, object>>("SatCustomerContact", entityBuilder => {
+      entityBuilder.IndexerProperty<string>("EmailAddress")
+          .HasConversion(CreateEncryptedPayloadValueConverter());
+    });
+
+    var payload = FindEntity(modelBuilder.Model, "SatCustomerContact").FindProperty("EmailAddress");
+
+    Assert.NotNull(payload);
+    return payload!;
+  }
+
+  private static DataVaultEncryptedPayloadValueConverter CreateEncryptedPayloadValueConverter() {
+    return new DataVaultEncryptedPayloadValueConverter(
+        new TestPrivacyConfiguration(new TestEncryptedPayloadKeyProvider()),
+        EncryptedPayloadAlias);
+  }
+
+  private static void AssertEncryptedPayloadProviderProperty(
+      IMutableProperty property,
+      string expectedProviderProfile,
+      string expectedStorageType) {
+    Assert.Equal("EmailAddress", AnnotationValue<string>(property, DataVaultAnnotationNames.ProducedName));
+    Assert.Equal("Email Address", AnnotationValue<string>(property, DataVaultAnnotationNames.MetadataName));
+    Assert.Equal(DataVaultPropertyRole.Payload, AnnotationValue<DataVaultPropertyRole>(
+        property,
+        DataVaultAnnotationNames.PropertyRole));
+    Assert.Equal(typeof(string), property.ClrType);
+    Assert.Equal(expectedProviderProfile, AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderProfile));
+    Assert.Equal(DataVaultLogicalPropertyKind.PayloadText, AnnotationValue<DataVaultLogicalPropertyKind>(
+        property,
+        DataVaultAnnotationNames.ProviderLogicalPropertyKind));
+    Assert.Equal(expectedStorageType, AnnotationValue<string>(property, DataVaultAnnotationNames.ProviderStorageType));
+    Assert.Equal(expectedStorageType, property.GetColumnType());
+    Assert.Equal(DataVaultProviderValueFormat.Text, AnnotationValue<DataVaultProviderValueFormat>(
+        property,
+        DataVaultAnnotationNames.ProviderValueFormat));
+    Assert.Null(property.FindAnnotation(DataVaultAnnotationNames.TechnicalColumnRole));
+    AssertHashKeyStorageAnnotations(property, DataVaultLogicalPropertyKind.PayloadText);
+  }
+
+  private static DataVaultProviderCapabilityProfile SelectBuiltInProviderCapabilityProfile(string profileName) {
+    return profileName switch {
+      "sqlite-v1" => DataVaultProviderCapabilityProfiles.Sqlite,
+      "postgres-v1" => DataVaultProviderCapabilityProfiles.Postgres,
+      "sqlserver-v1" => DataVaultProviderCapabilityProfiles.SqlServer,
+      "oracle-v1" => DataVaultProviderCapabilityProfiles.Oracle,
+      "db2-v1" => DataVaultProviderCapabilityProfiles.Db2,
+      "mysql-pomelo-v1" => DataVaultProviderCapabilityProfiles.MySql,
+      _ => throw new ArgumentOutOfRangeException(nameof(profileName), profileName, "Unsupported provider profile."),
+    };
+  }
+
+  private static DataVaultProviderCapabilityProfile CreateProfileWithoutPayloadTextMapping() {
+    var profile = DataVaultProviderCapabilityProfiles.Sqlite;
+
+    return new DataVaultProviderCapabilityProfile(
+        "broken-encrypted-payload-profile",
+        profile.SqlFunctionSupport,
+        profile.ConcurrencySupport,
+        profile.TypeMappings.Where(mapping => mapping.LogicalPropertyKind != DataVaultLogicalPropertyKind.PayloadText),
+        profile.MaximumIdentifierLength,
+        profile.AllowsIndexesCoveredByPrimaryKey,
+        profile.UnsupportedIncludedIndexColumnMode);
+  }
+
   private static void InvokeTranslatorApply(
       ModelBuilder modelBuilder,
       DataVaultMetadataModel metadataModel,
@@ -1517,6 +1638,28 @@ public sealed class DataVaultEfMetadataTranslationTests {
           16);
 
       modelBuilder.ApplyDataVaultMetadata(CreateBridgeMetadataModel(), profile);
+    }
+  }
+
+  private sealed class TestPrivacyConfiguration(IDataVaultPrivacyKeyProvider keyProvider) : IDataVaultPrivacyConfiguration {
+    public IReadOnlyList<string> EncryptedPayloadAliases { get; } = [EncryptedPayloadAlias];
+
+    public IDataVaultPrivacyKeyProvider? KeyProvider { get; } = keyProvider;
+  }
+
+  private sealed class TestEncryptedPayloadKeyProvider : IDataVaultEncryptedPayloadKeyProvider {
+    public DataVaultEncryptedPayloadConversionResult ConvertEncryptedPayload(
+        DataVaultEncryptedPayloadConversionRequest request) {
+      return request.Direction switch {
+        DataVaultEncryptedPayloadConversionDirection.Encrypt => DataVaultEncryptedPayloadConversionResult.Approved(
+            "encrypted:" +
+            request.EncryptedPayloadAlias +
+            ":" +
+            request.Value.Length.ToString(CultureInfo.InvariantCulture)),
+        DataVaultEncryptedPayloadConversionDirection.Decrypt => DataVaultEncryptedPayloadConversionResult.Approved(
+            "decrypted:" + request.EncryptedPayloadAlias),
+        _ => DataVaultEncryptedPayloadConversionResult.Declined("unsupported-conversion-direction"),
+      };
     }
   }
 
