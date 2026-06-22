@@ -20,7 +20,7 @@ The v1 coordinated release family contains exactly these nine packable packages:
 
 Manual publication must not proceed for only a subset of this family. Each package-version line is approved, validated, and published as one synchronized nine-package family.
 
-`DCoding.Data.DVault.Privacy` is optional for consumers and opt-in at runtime. It is a provider-neutral registration and encrypted-payload-alias skeleton, not a compliance feature, automatic encryption/redaction feature, or provider-native encryption feature.
+`DCoding.Data.DVault.Privacy` is optional for consumers and opt-in at runtime. It is a provider-neutral registration and alias-driven encrypted payload conversion proof, not a compliance feature, automatic encryption/redaction feature, or provider-native encryption feature.
 
 The current v0.43.0 documentation baseline uses two consumer package-version lines over these package ids:
 
@@ -35,7 +35,7 @@ The `src/DCoding.Data` project is a non-packable source-root build anchor for th
 
 ## Current Consumer Guidance
 
-Developer and consumer setup is NuGet-based for published releases. The README installation guidance is the current v0.43.0 baseline and should show separate `8.43.0` / `net8.0` / EF Core 8 and `10.43.0` / `net10.0` / EF Core 10 `dotnet add package` commands for `DCoding.Data.DVault` plus the optional provider package family, including `DCoding.Data.DVault.Db2`, and the optional privacy skeleton package. Analyzer examples must stay local with `PrivateAssets="all"` and use the same package-version line selected for the runtime and provider packages. Projects that reference `DCoding.Data.DVault.Analyzers` must build on the `.NET 10 SDK` host baseline for both coordinated package lines; this repository does not validate pure `.NET 8 SDK` analyzer consumption.
+Developer and consumer setup is NuGet-based for published releases. The README installation guidance is the current v0.43.0 baseline and should show separate `8.43.0` / `net8.0` / EF Core 8 and `10.43.0` / `net10.0` / EF Core 10 `dotnet add package` commands for `DCoding.Data.DVault` plus the optional provider package family, including `DCoding.Data.DVault.Db2`, and the optional privacy proof package. Analyzer examples must stay local with `PrivateAssets="all"` and use the same package-version line selected for the runtime and provider packages. Projects that reference `DCoding.Data.DVault.Analyzers` must build on the `.NET 10 SDK` host baseline for both coordinated package lines; this repository does not validate pure `.NET 8 SDK` analyzer consumption.
 
 Source or project-reference consumption remains useful for repository development, debugging, and unpublished local changes, but it is no longer the primary consumer installation path for released packages.
 

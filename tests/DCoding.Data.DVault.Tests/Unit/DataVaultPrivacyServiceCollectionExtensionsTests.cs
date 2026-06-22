@@ -36,6 +36,26 @@ public sealed class DataVaultPrivacyServiceCollectionExtensionsTests {
     Assert.Contains("CustomerProfileEmailEncrypted", exception.Message, StringComparison.Ordinal);
   }
 
+  [Fact]
+  public void AddDVaultPrivacyRegistersEncryptedPayloadKeyProviderInterfaceWhenAvailable() {
+    var keyProvider = new TestEncryptedPayloadKeyProvider();
+    var services = new ServiceCollection();
+
+    services.AddDVaultPrivacy(options => options.UseCallerOwnedKeyProvider(keyProvider));
+
+    using var serviceProvider = services.BuildServiceProvider();
+
+    Assert.Same(keyProvider, serviceProvider.GetRequiredService<IDataVaultPrivacyKeyProvider>());
+    Assert.Same(keyProvider, serviceProvider.GetRequiredService<IDataVaultEncryptedPayloadKeyProvider>());
+  }
+
   private sealed class TestPrivacyKeyProvider : IDataVaultPrivacyKeyProvider {
+  }
+
+  private sealed class TestEncryptedPayloadKeyProvider : IDataVaultEncryptedPayloadKeyProvider {
+    public DataVaultEncryptedPayloadConversionResult ConvertEncryptedPayload(
+        DataVaultEncryptedPayloadConversionRequest request) {
+      return DataVaultEncryptedPayloadConversionResult.Approved("converted:" + request.Value);
+    }
   }
 }

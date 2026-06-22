@@ -8,12 +8,35 @@ type public static class DCoding.Data.DVault.Privacy.DVaultPrivacyServiceCollect
   method public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddDVaultPrivacy(this Microsoft.Extensions.DependencyInjection.IServiceCollection services)
   method public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddDVaultPrivacy(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<DCoding.Data.DVault.Privacy.DataVaultPrivacyOptions> configure)
 
+type public enum DCoding.Data.DVault.Privacy.DataVaultEncryptedPayloadConversionDirection
+  value Encrypt = 0
+  value Decrypt = 1
+
+type public sealed class DCoding.Data.DVault.Privacy.DataVaultEncryptedPayloadConversionRequest
+  ctor public DataVaultEncryptedPayloadConversionRequest(string encryptedPayloadAlias, DCoding.Data.DVault.Privacy.DataVaultEncryptedPayloadConversionDirection direction, string value)
+  property public DCoding.Data.DVault.Privacy.DataVaultEncryptedPayloadConversionDirection Direction { get; }
+  property public string EncryptedPayloadAlias { get; }
+  property public string Value { get; }
+
+type public sealed class DCoding.Data.DVault.Privacy.DataVaultEncryptedPayloadConversionResult
+  property public bool IsApproved { get; }
+  property public string? DeclineReason { get; }
+  property public string? Value { get; }
+  method public static DCoding.Data.DVault.Privacy.DataVaultEncryptedPayloadConversionResult Approved(string value)
+  method public static DCoding.Data.DVault.Privacy.DataVaultEncryptedPayloadConversionResult Declined(string declineReason)
+
+type public sealed class DCoding.Data.DVault.Privacy.DataVaultEncryptedPayloadValueConverter : Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<string, string>
+  ctor public DataVaultEncryptedPayloadValueConverter(DCoding.Data.DVault.Privacy.IDataVaultPrivacyConfiguration configuration, string encryptedPayloadAlias)
+
 type public sealed class DCoding.Data.DVault.Privacy.DataVaultPrivacyOptions
   ctor public DataVaultPrivacyOptions()
   property public DCoding.Data.DVault.Privacy.IDataVaultPrivacyKeyProvider? KeyProvider { get; }
   property public System.Collections.Generic.IReadOnlyList<string> EncryptedPayloadAliases { get; }
   method public DCoding.Data.DVault.Privacy.DataVaultPrivacyOptions RegisterEncryptedPayloadAlias(string encryptedPayloadAlias)
   method public DCoding.Data.DVault.Privacy.DataVaultPrivacyOptions UseCallerOwnedKeyProvider(DCoding.Data.DVault.Privacy.IDataVaultPrivacyKeyProvider provider)
+
+type public interface DCoding.Data.DVault.Privacy.IDataVaultEncryptedPayloadKeyProvider : DCoding.Data.DVault.Privacy.IDataVaultPrivacyKeyProvider
+  method public abstract DCoding.Data.DVault.Privacy.DataVaultEncryptedPayloadConversionResult ConvertEncryptedPayload(DCoding.Data.DVault.Privacy.DataVaultEncryptedPayloadConversionRequest request)
 
 type public interface DCoding.Data.DVault.Privacy.IDataVaultPrivacyConfiguration
   property public DCoding.Data.DVault.Privacy.IDataVaultPrivacyKeyProvider? KeyProvider { get; }

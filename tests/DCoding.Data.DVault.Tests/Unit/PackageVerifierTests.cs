@@ -72,7 +72,7 @@ public sealed class PackageVerifierTests {
       new(
           "DCoding.Data.DVault.Privacy",
           "DVault Privacy Extensions",
-          "Provider-neutral opt-in privacy extension skeleton and alias-driven registration seams for DCoding.Data.DVault.",
+          "Provider-neutral opt-in privacy extension proof and alias-driven encrypted payload conversion seams for DCoding.Data.DVault.",
           ["dvault", "data-vault", "privacy", "security", "gdpr", "dsgvo", "ef-core", "persistence"],
           false,
           false,

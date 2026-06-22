@@ -31,7 +31,7 @@ The coordinated package family contains exactly these packable package ids:
 
 The `src/DCoding.Data` project is a non-packable source-root build anchor and is not a NuGet publication artifact.
 
-`DCoding.Data.DVault.Privacy` is an optional provider-neutral privacy skeleton. Consumers install it only when they explicitly opt into the privacy extension seam; it provides registration, options, and encrypted-payload-alias contracts and does not provide compliance guarantees, automatic encryption/redaction, or provider-native encryption features.
+`DCoding.Data.DVault.Privacy` is an optional provider-neutral privacy proof package. Consumers install it only when they explicitly opt into the privacy extension seam; it provides registration, options, and alias-driven encrypted payload conversion contracts and does not provide compliance guarantees, automatic encryption/redaction, or provider-native encryption features.
 
 ## Dependency Matrix
 

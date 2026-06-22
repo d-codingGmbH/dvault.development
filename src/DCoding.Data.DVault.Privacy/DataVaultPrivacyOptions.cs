@@ -3,24 +3,24 @@ using Microsoft.Extensions.DependencyInjection;
 namespace DCoding.Data.DVault.Privacy;
 
 /// <summary>
-/// Configures the optional privacy extension skeleton without enabling automatic privacy behavior.
+/// Configures the optional privacy extension proof without enabling automatic privacy behavior.
 /// </summary>
 public sealed class DataVaultPrivacyOptions {
   private readonly List<string> encryptedPayloadAliases = [];
   private IDataVaultPrivacyKeyProvider? keyProvider;
 
   /// <summary>
-  /// Gets the provider-neutral encrypted-payload aliases registered for future explicit privacy flows.
+  /// Gets the provider-neutral encrypted-payload aliases registered for explicit privacy flows.
   /// </summary>
   public IReadOnlyList<string> EncryptedPayloadAliases => encryptedPayloadAliases;
 
   /// <summary>
-  /// Gets the caller-owned key-provider placeholder registered for future explicit privacy flows.
+  /// Gets the caller-owned key provider registered for explicit privacy flows.
   /// </summary>
   public IDataVaultPrivacyKeyProvider? KeyProvider => keyProvider;
 
   /// <summary>
-  /// Registers an encrypted-payload alias from model personal-data metadata for future explicit privacy flows.
+  /// Registers an encrypted-payload alias from model personal-data metadata for explicit privacy flows.
   /// </summary>
   /// <param name="encryptedPayloadAlias">The stable provider-neutral encrypted-payload alias.</param>
   /// <returns>The current options instance.</returns>
@@ -38,7 +38,7 @@ public sealed class DataVaultPrivacyOptions {
   }
 
   /// <summary>
-  /// Registers a caller-owned key-provider placeholder without giving DVault ownership of key material or key lifecycle.
+  /// Registers a caller-owned key provider without giving DVault ownership of key material or key lifecycle.
   /// </summary>
   /// <param name="provider">The caller-owned key-provider marker.</param>
   /// <returns>The current options instance.</returns>
@@ -59,6 +59,9 @@ public sealed class DataVaultPrivacyOptions {
 
     if (keyProvider is not null) {
       ReplaceDescriptor(services, ServiceDescriptor.Singleton(keyProvider));
+      if (keyProvider is IDataVaultEncryptedPayloadKeyProvider encryptedPayloadKeyProvider) {
+        ReplaceDescriptor(services, ServiceDescriptor.Singleton(encryptedPayloadKeyProvider));
+      }
     }
   }
 

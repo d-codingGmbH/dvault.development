@@ -8,7 +8,7 @@
     <PackageId>DCoding.Data.DVault.Privacy</PackageId>
     <Title>DVault Privacy Extensions</Title>
     <Authors>d-coding GmbH</Authors>
-    <Description>Provider-neutral opt-in privacy extension skeleton and alias-driven registration seams for DCoding.Data.DVault.</Description>
+    <Description>Provider-neutral opt-in privacy extension proof and alias-driven encrypted payload conversion seams for DCoding.Data.DVault.</Description>
     <PackageTags>dvault;data-vault;privacy;security;gdpr;dsgvo;ef-core;persistence</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

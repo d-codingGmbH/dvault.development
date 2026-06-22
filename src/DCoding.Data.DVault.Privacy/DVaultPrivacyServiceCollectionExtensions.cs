@@ -8,7 +8,7 @@ namespace DCoding.Data.DVault.Privacy;
 /// </summary>
 public static class DVaultPrivacyServiceCollectionExtensions {
   /// <summary>
-  /// Adds the provider-neutral DVault defaults plus the opt-in privacy extension skeleton.
+  /// Adds the provider-neutral DVault defaults plus the opt-in privacy extension proof.
   /// </summary>
   /// <param name="services">The service collection used by the application startup pipeline.</param>
   /// <returns>The same service collection so startup configuration can continue fluently.</returns>
@@ -18,7 +18,7 @@ public static class DVaultPrivacyServiceCollectionExtensions {
   }
 
   /// <summary>
-  /// Adds the provider-neutral DVault defaults plus the opt-in privacy extension skeleton and applies privacy options.
+  /// Adds the provider-neutral DVault defaults plus the opt-in privacy extension proof and applies privacy options.
   /// </summary>
   /// <param name="services">The service collection used by the application startup pipeline.</param>
   /// <param name="configure">The optional privacy configuration callback.</param>

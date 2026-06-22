@@ -90,6 +90,8 @@ Read and write behavior after crypto-shredding must stay explicit and fail close
 
 For the v0.44 privacy-extension baseline, DVault may pursue only caller-invoked, provider-neutral encrypted payload mapping in the shared surface. The approved shared lane is an explicit helper, metadata marker, or EF Core value-conversion proof that stores caller-prepared encrypted payload values through ordinary DVault model mapping. It must keep key material, key lookup, encryption policy, decryption policy, and operation timing owned by the consuming application.
 
+The `DCoding.Data.DVault.Privacy` package exposes the shared proof as explicit alias-driven encrypted payload conversion. A caller registers an encrypted-payload alias and a caller-owned provider that implements `IDataVaultEncryptedPayloadKeyProvider` through the privacy key-provider seam, then applies the value converter to a chosen payload property. Missing aliases, missing key providers, or declined caller-owned conversions must fail before plaintext is stored or ciphertext is treated as decrypted payload data.
+
 The current supported-provider baseline for this decision is finite: SQLite, PostgreSQL, SQL Server, MySQL through `MySql.EntityFrameworkCore` or `Pomelo.EntityFrameworkCore.MySql`, Oracle, and DB2. The baseline does not create a separate MariaDB capability profile or any guarantee for providers outside that set.
 
 Database-native encryption features are guidance-only for v0.44 and are not DVault shared-runtime behavior:
