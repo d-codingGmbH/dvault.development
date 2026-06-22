@@ -31,9 +31,14 @@ internal static class DataVaultActivityTracing {
   public const string ParentKeyCountTag = "dvault.parent_key.count";
   public const string AffectedRowCountTag = "dvault.affected_row.count";
   public const string RebuildScopeTag = "dvault.rebuild.scope";
+  public const string StrategyStatusTag = "dvault.strategy.status";
+  public const string StrategyTypeTag = "dvault.strategy.type";
+  public const string FallbackCauseTag = "dvault.fallback.cause";
 
   public const string MaintenanceNoOpEvent = "dvault.maintenance.noop";
   public const string FailureRecordedEvent = "dvault.failure.recorded";
+  public const string StrategySelectedEvent = "dvault.strategy.selected";
+  public const string FallbackRecordedEvent = "dvault.fallback.recorded";
 
   public const string ReadModeCurrent = "Current";
   public const string ReadModeAsOf = "AsOf";
@@ -275,14 +280,14 @@ internal static class DataVaultActivityTracing {
       activity.SetTag(ProviderTag, providerName);
     }
 
-    activity.SetTag("dvault.strategy.status", strategyStatus);
+    activity.SetTag(StrategyStatusTag, strategyStatus);
     if (!string.IsNullOrWhiteSpace(selectedStrategyName)) {
-      activity.SetTag("dvault.strategy.type", selectedStrategyName);
+      activity.SetTag(StrategyTypeTag, selectedStrategyName);
       activity.AddEvent(new ActivityEvent(
-          "dvault.strategy.selected",
+          StrategySelectedEvent,
           tags: new ActivityTagsCollection {
-            ["dvault.strategy.status"] = strategyStatus,
-            ["dvault.strategy.type"] = selectedStrategyName,
+            [StrategyStatusTag] = strategyStatus,
+            [StrategyTypeTag] = selectedStrategyName,
           }));
     }
 
@@ -307,9 +312,9 @@ internal static class DataVaultActivityTracing {
 
   private static void RecordFallbackCause(Activity activity, string fallbackCause) {
     activity.AddEvent(new ActivityEvent(
-        "dvault.fallback.recorded",
+        FallbackRecordedEvent,
         tags: new ActivityTagsCollection {
-          ["dvault.fallback.cause"] = fallbackCause,
+          [FallbackCauseTag] = fallbackCause,
         }));
   }
 

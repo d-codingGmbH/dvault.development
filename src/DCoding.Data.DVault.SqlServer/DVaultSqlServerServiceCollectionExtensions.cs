@@ -19,6 +19,7 @@ public static class DVaultSqlServerServiceCollectionExtensions {
         SqlServerDataVaultSaveStrategy.SqlServerProviderName,
         DataVaultProviderCapabilityProfiles.SqlServer);
     services.AddDVault();
+    services.Replace(ServiceDescriptor.Singleton<IDataVaultPitMaintenanceService, SqlServerDataVaultPitMaintenanceService>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderBehavior, SqlServerDataVaultProviderBehavior>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderSaveStrategy, SqlServerDataVaultSaveStrategy>());
     services.TryAddEnumerable(ServiceDescriptor.Singleton<IDataVaultProviderReadStrategy, SqlServerDataVaultReadStrategy>());

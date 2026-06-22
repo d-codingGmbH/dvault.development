@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Diagnostics;
+using System.Data;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -256,6 +258,171 @@ public sealed class SqlServerDataVaultSmokeTests {
   }
 
   [Fact]
+  public async Task AddDVaultSqlServerRebuildsOrdinaryPitViaInsertSelectWhenConfigured() {
+    var metadataModel = CreateMetadataModel();
+    var customer = metadataModel.Hubs.Single(hub => hub.Name == "Customer");
+    var contact = metadataModel.Satellites.Single(satellite => satellite.Name == "Contact");
+    var profile = metadataModel.Satellites.Single(satellite => satellite.Name == "Profile");
+    var pit = metadataModel.Pits.Single(current => current.Name == "CustomerContactProfile");
+    var importTimestamp = new DateTimeOffset(2026, 5, 4, 11, 0, 0, TimeSpan.Zero);
+    var contactTimestamp = new DateTimeOffset(2026, 5, 4, 11, 15, 0, TimeSpan.Zero);
+    var profileTimestamp = new DateTimeOffset(2026, 5, 4, 11, 30, 0, TimeSpan.Zero);
+    var secondContactTimestamp = new DateTimeOffset(2026, 5, 4, 11, 45, 0, TimeSpan.Zero);
+    var stalePitTimestamp = new DateTimeOffset(2026, 5, 4, 10, 45, 0, TimeSpan.Zero);
+    await using var database = await SqlServerSmokeDatabase.CreateAsync();
+    using var sqlServerProvider = CreateServiceProvider();
+    using var neutralProvider = CreateNeutralServiceProvider();
+    var saveService = sqlServerProvider.GetRequiredService<IDataVaultSaveService>();
+    var sqlServerMaintenance = sqlServerProvider.GetRequiredService<IDataVaultPitMaintenanceService>();
+    var neutralMaintenance = neutralProvider.GetRequiredService<IDataVaultPitMaintenanceService>();
+    string customerHashKey;
+
+    await using (var context = database.CreateContext()) {
+      customerHashKey = await SavePitCustomerHistoryAsync(
+          saveService,
+          context,
+          customer,
+          contact,
+          profile,
+          importTimestamp,
+          contactTimestamp,
+          profileTimestamp,
+          secondContactTimestamp);
+    }
+
+    await using (var context = database.CreateContext()) {
+      await SeedStalePitRowAsync(context, customerHashKey, stalePitTimestamp);
+      var fallbackResult = await neutralMaintenance.RebuildAsync(context, new DataVaultPitRebuildRequest(pit));
+      var fallbackRows = await ReadPitRowsAsync(context);
+
+      Assert.Equal(1, fallbackResult.ParentHashKeyCount);
+      Assert.Equal(1, fallbackResult.RowsDeleted);
+      Assert.Equal(3, fallbackResult.RowsWritten);
+      Assert.Equal("PitCustomerContactProfile", fallbackResult.TableName);
+
+      await ResetPitToStaleRowAsync(context, customerHashKey, stalePitTimestamp);
+      using var listener = new DataVaultActivityTestListener();
+      var sqlServerResult = await sqlServerMaintenance.RebuildAsync(context, new DataVaultPitRebuildRequest(pit));
+      var sqlServerRows = await ReadPitRowsAsync(context);
+
+      Assert.Equal(fallbackResult.ParentHashKeyCount, sqlServerResult.ParentHashKeyCount);
+      Assert.Equal(fallbackResult.RowsDeleted, sqlServerResult.RowsDeleted);
+      Assert.Equal(fallbackResult.RowsWritten, sqlServerResult.RowsWritten);
+      Assert.Equal(fallbackRows, sqlServerRows);
+
+      var activity = Assert.Single(listener.StoppedActivities);
+      var tags = GetTags(activity);
+      Assert.Equal("dvault.maintenance.pit.rebuild", activity.OperationName);
+      Assert.Equal(ActivityStatusCode.Ok, activity.Status);
+      Assert.Equal("ProviderStrategySelected", tags["dvault.strategy.status"]);
+      Assert.Equal("SqlServerDataVaultPitMaintenanceService", tags["dvault.strategy.type"]);
+      Assert.Contains(
+          activity.Events,
+          current => string.Equals(current.Name, "dvault.strategy.selected", StringComparison.Ordinal));
+    }
+  }
+
+  [Fact]
+  public async Task AddDVaultSqlServerPitRebuildRollsBackWhenInsertSelectFailsWhenConfigured() {
+    var metadataModel = CreateMetadataModel();
+    var customer = metadataModel.Hubs.Single(hub => hub.Name == "Customer");
+    var contact = metadataModel.Satellites.Single(satellite => satellite.Name == "Contact");
+    var profile = metadataModel.Satellites.Single(satellite => satellite.Name == "Profile");
+    var pit = metadataModel.Pits.Single(current => current.Name == "CustomerContactProfile");
+    var importTimestamp = new DateTimeOffset(2026, 5, 4, 12, 0, 0, TimeSpan.Zero);
+    var contactTimestamp = new DateTimeOffset(2026, 5, 4, 12, 15, 0, TimeSpan.Zero);
+    var profileTimestamp = new DateTimeOffset(2026, 5, 4, 12, 30, 0, TimeSpan.Zero);
+    var secondContactTimestamp = new DateTimeOffset(2026, 5, 4, 12, 45, 0, TimeSpan.Zero);
+    var stalePitTimestamp = new DateTimeOffset(2026, 5, 4, 11, 45, 0, TimeSpan.Zero);
+    await using var database = await SqlServerSmokeDatabase.CreateAsync();
+    using var provider = CreateServiceProvider();
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var maintenanceService = provider.GetRequiredService<IDataVaultPitMaintenanceService>();
+    string customerHashKey;
+
+    await using (var context = database.CreateContext()) {
+      customerHashKey = await SavePitCustomerHistoryAsync(
+          saveService,
+          context,
+          customer,
+          contact,
+          profile,
+          importTimestamp,
+          contactTimestamp,
+          profileTimestamp,
+          secondContactTimestamp);
+      await SeedStalePitRowAsync(context, customerHashKey, stalePitTimestamp);
+      await CreatePitInsertFaultTriggerAsync(context);
+    }
+
+    await using (var context = database.CreateContext()) {
+      await Assert.ThrowsAnyAsync<Exception>(() =>
+          maintenanceService.RebuildAsync(context, new DataVaultPitRebuildRequest(pit)));
+
+      var rows = await ReadPitRowsAsync(context);
+      Assert.Equal(
+          [new PitRowSnapshot(customerHashKey, stalePitTimestamp, ContactLoadTimestamp: null, ProfileLoadTimestamp: null)],
+          rows);
+      Assert.Equal(0, await CountSqlServerStagingTablesAsync(context));
+    }
+  }
+
+  [Fact]
+  public async Task AddDVaultSqlServerPitRebuildRollsBackWhenCancellationIsObservedBeforeCommitWhenConfigured() {
+    var metadataModel = CreateMetadataModel();
+    var customer = metadataModel.Hubs.Single(hub => hub.Name == "Customer");
+    var contact = metadataModel.Satellites.Single(satellite => satellite.Name == "Contact");
+    var profile = metadataModel.Satellites.Single(satellite => satellite.Name == "Profile");
+    var pit = metadataModel.Pits.Single(current => current.Name == "CustomerContactProfile");
+    var importTimestamp = new DateTimeOffset(2026, 5, 4, 13, 0, 0, TimeSpan.Zero);
+    var contactTimestamp = new DateTimeOffset(2026, 5, 4, 13, 15, 0, TimeSpan.Zero);
+    var profileTimestamp = new DateTimeOffset(2026, 5, 4, 13, 30, 0, TimeSpan.Zero);
+    var secondContactTimestamp = new DateTimeOffset(2026, 5, 4, 13, 45, 0, TimeSpan.Zero);
+    var stalePitTimestamp = new DateTimeOffset(2026, 5, 4, 12, 45, 0, TimeSpan.Zero);
+    await using var database = await SqlServerSmokeDatabase.CreateAsync();
+    using var provider = CreateServiceProvider();
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var maintenanceService = provider.GetRequiredService<IDataVaultPitMaintenanceService>();
+    using var cancellation = new CancellationTokenSource();
+    string customerHashKey;
+
+    await using (var context = database.CreateContext()) {
+      customerHashKey = await SavePitCustomerHistoryAsync(
+          saveService,
+          context,
+          customer,
+          contact,
+          profile,
+          importTimestamp,
+          contactTimestamp,
+          profileTimestamp,
+          secondContactTimestamp);
+      await SeedStalePitRowAsync(context, customerHashKey, stalePitTimestamp);
+    }
+
+    SqlServerDataVaultPitMaintenanceService.BeforeCommitHookForTestingAsync = _ => {
+      cancellation.Cancel();
+
+      return Task.CompletedTask;
+    };
+
+    try {
+      await using var context = database.CreateContext();
+      await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+          maintenanceService.RebuildAsync(context, new DataVaultPitRebuildRequest(pit), cancellation.Token));
+
+      var rows = await ReadPitRowsAsync(context);
+      Assert.Equal(
+          [new PitRowSnapshot(customerHashKey, stalePitTimestamp, ContactLoadTimestamp: null, ProfileLoadTimestamp: null)],
+          rows);
+      Assert.Equal(0, await CountSqlServerStagingTablesAsync(context));
+    }
+    finally {
+      SqlServerDataVaultPitMaintenanceService.BeforeCommitHookForTestingAsync = null;
+    }
+  }
+
+  [Fact]
   public async Task AddDVaultSqlServerBulkStrategyPersistsOrderedHubLinkAndSatelliteBatchWhenConfigured() {
     await ExternalProviderBulkSaveAssertions.AssertProviderBulkSaveAsync(
         ExternalProviderLiveSchemaFixture.CreateSqlServerAsync,
@@ -395,12 +562,146 @@ public sealed class SqlServerDataVaultSmokeTests {
     return hashService.ComputeHash(normalized).Value;
   }
 
-  private static async Task<int> CountSqlServerStagingTablesAsync(DbContext context) {
-    await using var command = context.Database.GetDbConnection().CreateCommand();
-    command.Transaction = context.Database.CurrentTransaction?.GetDbTransaction();
-    command.CommandText = "SELECT COUNT(1) FROM tempdb.sys.tables WHERE [name] LIKE '#dvault[_]stage[_]%'";
+  private static async Task<string> SavePitCustomerHistoryAsync(
+      IDataVaultSaveService saveService,
+      DbContext context,
+      DataVaultHubMetadata customer,
+      DataVaultSatelliteMetadata contact,
+      DataVaultSatelliteMetadata profile,
+      DateTimeOffset importTimestamp,
+      DateTimeOffset contactTimestamp,
+      DateTimeOffset profileTimestamp,
+      DateTimeOffset secondContactTimestamp) {
+    var hubResult = await saveService.SaveAsync(
+        context,
+        new DataVaultSaveRequest(
+            importTimestamp,
+            "sqlserver-pit-smoke",
+            [new(customer, [new("Customer Id", "C-SQL-PIT")])],
+            []));
+    var customerHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Customer");
 
-    return Convert.ToInt32(await command.ExecuteScalarAsync(), CultureInfo.InvariantCulture);
+    await saveService.SaveAsync(
+        context,
+        new DataVaultSaveRequest(
+            contactTimestamp,
+            "sqlserver-pit-smoke",
+            [],
+            [],
+            [
+                new(contact, customerHashKey, [new("Email Address", "first-pit@example.test")], "contact-hash-pit-1"),
+            ]));
+    await saveService.SaveAsync(
+        context,
+        new DataVaultSaveRequest(
+            profileTimestamp,
+            "sqlserver-pit-smoke",
+            [],
+            [],
+            [
+                new(profile, customerHashKey, [new("Tier", "Gold")], "profile-hash-pit-1"),
+            ]));
+    await saveService.SaveAsync(
+        context,
+        new DataVaultSaveRequest(
+            secondContactTimestamp,
+            "sqlserver-pit-smoke",
+            [],
+            [],
+            [
+                new(contact, customerHashKey, [new("Email Address", "latest-pit@example.test")], "contact-hash-pit-2"),
+            ]));
+
+    return customerHashKey;
+  }
+
+  private static async Task SeedStalePitRowAsync(
+      DbContext context,
+      string customerHashKey,
+      DateTimeOffset loadTimestamp) {
+    context.Set<Dictionary<string, object>>("PitCustomerContactProfile").Add(new Dictionary<string, object> {
+      ["CustomerHashKey"] = customerHashKey,
+      ["LoadTimestamp"] = loadTimestamp,
+      ["ContactLoadTimestamp"] = null!,
+      ["ProfileLoadTimestamp"] = null!,
+    });
+
+    await context.SaveChangesAsync();
+  }
+
+  private static async Task ResetPitToStaleRowAsync(
+      DbContext context,
+      string customerHashKey,
+      DateTimeOffset loadTimestamp) {
+    await context.Set<Dictionary<string, object>>("PitCustomerContactProfile").ExecuteDeleteAsync();
+    await SeedStalePitRowAsync(context, customerHashKey, loadTimestamp);
+  }
+
+  private static async Task<IReadOnlyList<PitRowSnapshot>> ReadPitRowsAsync(DbContext context) {
+    var rows = await context
+        .Set<Dictionary<string, object>>("PitCustomerContactProfile")
+        .AsNoTracking()
+        .ToListAsync();
+
+    return rows
+        .Select(row => new PitRowSnapshot(
+            Assert.IsType<string>(row["CustomerHashKey"]),
+            ReadRequiredTimestamp(row, "LoadTimestamp"),
+            ReadOptionalTimestamp(row, "ContactLoadTimestamp"),
+            ReadOptionalTimestamp(row, "ProfileLoadTimestamp")))
+        .OrderBy(row => row.ParentHashKey, StringComparer.Ordinal)
+        .ThenBy(row => row.LoadTimestamp)
+        .ToArray();
+  }
+
+  private static DateTimeOffset ReadRequiredTimestamp(
+      Dictionary<string, object> row,
+      string columnName) {
+    Assert.True(DataVaultLoadTimestampValueConverter.TryReadProviderValue(row[columnName], out var timestamp));
+
+    return timestamp;
+  }
+
+  private static DateTimeOffset? ReadOptionalTimestamp(
+      Dictionary<string, object> row,
+      string columnName) {
+    if (!row.TryGetValue(columnName, out var value) || value is null or DBNull) {
+      return null;
+    }
+
+    Assert.True(DataVaultLoadTimestampValueConverter.TryReadProviderValue(value, out var timestamp));
+
+    return timestamp;
+  }
+
+  private static async Task CreatePitInsertFaultTriggerAsync(SqlServerSmokeContext context) {
+    await context.Database.ExecuteSqlRawAsync(
+        "CREATE TRIGGER " +
+        QuoteIdentifier(context.SchemaName) +
+        ".[trg_dvault_pit_rebuild_fault] ON " +
+        QuoteIdentifier(context.SchemaName) +
+        ".[PitCustomerContactProfile] AFTER INSERT AS BEGIN THROW 51000, 'DVault PIT rebuild fault injection', 1; END");
+  }
+
+  private static async Task<int> CountSqlServerStagingTablesAsync(DbContext context) {
+    var connection = context.Database.GetDbConnection();
+    var shouldCloseConnection = connection.State != ConnectionState.Open;
+    if (shouldCloseConnection) {
+      await connection.OpenAsync();
+    }
+
+    try {
+      await using var command = connection.CreateCommand();
+      command.Transaction = context.Database.CurrentTransaction?.GetDbTransaction();
+      command.CommandText = "SELECT COUNT(1) FROM tempdb.sys.tables WHERE [name] LIKE '#dvault[_]stage[_]%'";
+
+      return Convert.ToInt32(await command.ExecuteScalarAsync(), CultureInfo.InvariantCulture);
+    }
+    finally {
+      if (shouldCloseConnection) {
+        await connection.CloseAsync();
+      }
+    }
   }
 
   private static ServiceProvider CreateServiceProvider() {
@@ -408,6 +709,17 @@ public sealed class SqlServerDataVaultSmokeTests {
     services.AddDVaultSqlServer();
 
     return services.BuildServiceProvider(validateScopes: true);
+  }
+
+  private static ServiceProvider CreateNeutralServiceProvider() {
+    var services = new ServiceCollection();
+    services.AddDVault();
+
+    return services.BuildServiceProvider(validateScopes: true);
+  }
+
+  private static IReadOnlyDictionary<string, object?> GetTags(Activity activity) {
+    return activity.TagObjects.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.Ordinal);
   }
 
   private static string GetHashKey(DataVaultSaveResult result, DataVaultTableKind kind, string metadataName) {
@@ -431,10 +743,26 @@ public sealed class SqlServerDataVaultSmokeTests {
   }
 
   private static DataVaultMetadataModel CreateMetadataModel() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+    var contact = new DataVaultSatelliteMetadata(
+        "Contact",
+        DataVaultMetadataReference.Hub("Customer"),
+        ["Email Address"]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        DataVaultMetadataReference.Hub("Customer"),
+        ["Tier"]);
+    var state = new DataVaultSatelliteMetadata(
+        "State",
+        DataVaultMetadataReference.Link("CustomerOrder"),
+        ["State Code"]);
+    var customerContactProfile = new DataVaultPitMetadata(customer.ToReference(), ["Contact", "Profile"]);
+
     return new DataVaultMetadataModel(
         [
-            new DataVaultHubMetadata("Customer", ["Customer Id"]),
-            new DataVaultHubMetadata("Order", ["Order Id"]),
+            customer,
+            order,
         ],
         [
             new DataVaultLinkMetadata(
@@ -442,15 +770,11 @@ public sealed class SqlServerDataVaultSmokeTests {
                 [DataVaultMetadataReference.Hub("Customer"), DataVaultMetadataReference.Hub("Order")]),
         ],
         [
-            new DataVaultSatelliteMetadata(
-                "Contact",
-                DataVaultMetadataReference.Hub("Customer"),
-                ["Email Address"]),
-            new DataVaultSatelliteMetadata(
-                "State",
-                DataVaultMetadataReference.Link("CustomerOrder"),
-                ["State Code"]),
-        ]);
+            contact,
+            profile,
+            state,
+        ],
+        [customerContactProfile]);
   }
 
   private static DbContextOptions<SqlServerSmokeContext> CreateSqlServerOptions(string connectionString) {
@@ -470,8 +794,16 @@ public sealed class SqlServerDataVaultSmokeTests {
     return "N'" + value.Replace("'", "''", StringComparison.Ordinal) + "'";
   }
 
+  private sealed record PitRowSnapshot(
+      string ParentHashKey,
+      DateTimeOffset LoadTimestamp,
+      DateTimeOffset? ContactLoadTimestamp,
+      DateTimeOffset? ProfileLoadTimestamp);
+
   private sealed class SqlServerSmokeDatabase : IAsyncDisposable {
     private static readonly string[] ProducedTables = [
+        "PitCustomerContactProfile",
+        "SatCustomerProfile",
         "SatCustomerContact",
         "SatCustomerOrderState",
         "LinkCustomerOrder",

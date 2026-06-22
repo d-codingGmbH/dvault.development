@@ -37,6 +37,40 @@ internal readonly struct DataVaultMaintenanceActivity : IDisposable {
     }
   }
 
+  public void RecordStrategySelected(string strategyName) {
+    if (_activity is null || !_activity.IsAllDataRequested) {
+      return;
+    }
+
+    _activity.SetTag(DataVaultActivityTracing.StrategyStatusTag, "ProviderStrategySelected");
+    _activity.SetTag(DataVaultActivityTracing.StrategyTypeTag, strategyName);
+    _activity.AddEvent(new ActivityEvent(
+        DataVaultActivityTracing.StrategySelectedEvent,
+        tags: new ActivityTagsCollection {
+          [DataVaultActivityTracing.StrategyStatusTag] = "ProviderStrategySelected",
+          [DataVaultActivityTracing.StrategyTypeTag] = strategyName,
+        }));
+  }
+
+  public void RecordStrategyFallback(
+      string strategyName,
+      IEnumerable<string> fallbackCauses) {
+    if (_activity is null || !_activity.IsAllDataRequested) {
+      return;
+    }
+
+    _activity.SetTag(DataVaultActivityTracing.StrategyStatusTag, "ProviderNeutralFallback");
+    _activity.SetTag(DataVaultActivityTracing.StrategyTypeTag, strategyName);
+    foreach (var fallbackCause in fallbackCauses) {
+      _activity.AddEvent(new ActivityEvent(
+          DataVaultActivityTracing.FallbackRecordedEvent,
+          tags: new ActivityTagsCollection {
+            [DataVaultActivityTracing.StrategyTypeTag] = strategyName,
+            [DataVaultActivityTracing.FallbackCauseTag] = fallbackCause,
+          }));
+    }
+  }
+
   public void RecordFailure(Exception exception) {
     if (_activity is null) {
       return;

@@ -53,6 +53,33 @@ internal sealed class DefaultDataVaultPitMaintenanceService : IDataVaultPitMaint
     }
   }
 
+  internal static async Task<DataVaultPitMaintenanceResult> RebuildProviderNeutralCoreAsync(
+      DbContext dbContext,
+      DataVaultPitRebuildRequest request,
+      DataVaultMaintenanceActivity activity,
+      CancellationToken cancellationToken = default) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(request);
+
+    try {
+      var result = await RebuildWithProviderNeutralPipelineAsync(
+          dbContext,
+          request,
+          cancellationToken).ConfigureAwait(false);
+
+      activity.RecordSuccess(
+          result.RowsDeleted + result.RowsWritten,
+          parentKeyCount: null,
+          isNoOp: false);
+
+      return result;
+    }
+    catch (Exception exception) {
+      activity.RecordFailure(exception);
+      throw;
+    }
+  }
+
   private async Task<DataVaultPitMaintenanceResult> RebuildWithSelectedStrategyAsync(
       DbContext dbContext,
       DataVaultPitRebuildRequest request,
@@ -113,6 +140,17 @@ internal sealed class DefaultDataVaultPitMaintenanceService : IDataVaultPitMaint
         DataVaultActivityTracing.PitMaintainParentsMaintenanceKind,
         DataVaultActivityTracing.PitReadModelKind,
         DataVaultActivityTracing.ParentsRebuildScope);
+
+    return await MaintainParentsProviderNeutralCoreAsync(dbContext, request, activity, cancellationToken).ConfigureAwait(false);
+  }
+
+  internal static async Task<DataVaultPitMaintenanceResult> MaintainParentsProviderNeutralCoreAsync(
+      DbContext dbContext,
+      DataVaultPitParentMaintenanceRequest request,
+      DataVaultMaintenanceActivity activity,
+      CancellationToken cancellationToken = default) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(request);
 
     try {
       var tableName = GetPitTableName(request.Pit.Name);
@@ -517,6 +555,12 @@ internal sealed class DefaultDataVaultPitMaintenanceService : IDataVaultPitMaint
     }
 
     return rowsToWrite.Count;
+  }
+
+  internal static void DetachTrackedPitRows(
+      DbContext dbContext,
+      PitMaintenanceProjection projection) {
+    DetachTrackedPitRows(dbContext, projection, parentHashKeys: null);
   }
 
   internal static PitMaintenanceProjection CreatePitProjection(
@@ -956,7 +1000,7 @@ internal sealed class DefaultDataVaultPitMaintenanceService : IDataVaultPitMaint
     return DataVaultLoadTimestampValueConverter.ToProviderValue(property, timestamp);
   }
 
-  private static string GetPitTableName(string pitName) {
+  internal static string GetPitTableName(string pitName) {
     return "Pit" + DefaultNamingPolicy.Instance.NormalizeProducedIdentifier(pitName);
   }
 

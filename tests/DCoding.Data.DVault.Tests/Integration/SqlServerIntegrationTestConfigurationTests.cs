@@ -61,6 +61,9 @@ public sealed class SqlServerIntegrationTestConfigurationTests {
     using var provider = services.BuildServiceProvider(validateScopes: true);
 
     Assert.NotEmpty(provider.GetServices<IDataVaultProviderSaveStrategy>());
+    Assert.Equal(
+        "SqlServerDataVaultPitMaintenanceService",
+        provider.GetRequiredService<IDataVaultPitMaintenanceService>().GetType().Name);
     Assert.Contains(
         provider.GetServices<IDataVaultProviderReadStrategy>(),
         strategy => strategy.GetType().Name == "SqlServerDataVaultReadStrategy");
