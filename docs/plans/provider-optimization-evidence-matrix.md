@@ -28,6 +28,7 @@ For the v0.42 provider performance evidence and tuning baseline, downstream work
 - Keep `skipped-placeholder`, `diagnostics-only`, `smoke-only`, and `storage-footprint` rows out of measured timing claims.
 - Keep PostgreSQL, SQL Server, MySQL, Oracle, and DB2 latest-satellite tuning limited to the already documented hub-parent, non-multi-active shapes.
 - Fall back to provider-neutral save or read behavior when the matching `DVAULT_TEST_*` connection string is unset, provider diagnostics do not select the expected strategy, the provider mismatches, the context is dirty for provider save work, the read shape is unsupported or incomplete, PIT/bridge maintenance is stale, or the row lacks completed provider-configured benchmark evidence.
+- Do not promote maintained-bridge read rows into write-side bridge-maintenance push-down claims. Bridge maintenance push-down needs its own source seam, diagnostics vocabulary, parity coverage, and benchmark artifact lane.
 
 Provider-specific tuning thresholds are starting gates, not universal promises:
 
@@ -329,6 +330,12 @@ The root benchmark triplet keeps optional PostgreSQL, SQL Server, MySQL, Oracle,
 | `pit-as-of-read` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `completed-timing` | DB2 hotspot bundle | Completed DB2 PIT row selected `Db2DataVaultReadStrategy` over a supported maintained PIT shape; incomplete read-shape evidence or stale PIT maintenance remains provider-neutral fallback. |
 | `bridge-traversal-read` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `completed-timing` | DB2 hotspot bundle | Completed DB2 bridge row selected `Db2DataVaultReadStrategy` over a supported maintained bridge shape; incomplete read-shape evidence, stale maintenance, or unsupported bridge shapes remain provider-neutral fallback. |
 | Latest-satellite/PIT/bridge read smoke | DB2 external provider | `AddDVaultDb2()` / `Db2DataVaultReadStrategy` | `db2-optimized-dvault` | `diagnostics-only` and `smoke-only` | DB2 provider registration and DB2 smoke evidence | DB2 registers diagnostics-gated latest-satellite/PIT/bridge read dispatch and opt-in representative smoke coverage. This supports strategy behavior but should not be cited instead of the DB2 hotspot bundle for measured timing. |
+
+## Deferred Bridge Maintenance Push-Down
+
+Bridge maintenance push-down is intentionally not a completed provider-evidence row in this matrix. The completed `bridge-traversal-read` rows prove read-strategy selection over explicitly maintained bridge rows; they do not prove provider-specific execution of `RebuildBridgeAsync(...)` or `MaintainBridgeAsync(...)`.
+
+The current evidence supports a defer recommendation. PostgreSQL has a provider-specific PIT maintenance strategy, while bridge maintenance remains the provider-neutral service surface. A later bridge-maintenance row can be added only after the repository carries a core/provider bridge-maintenance seam, bridge-specific gate and fallback diagnostics, parity tests for the existing many-to-many and hierarchy maintenance semantics, and a preserved provider-configured benchmark artifact triplet. Until then, downstream work should keep bridge push-down out of implementation scope and treat `06FE4RKGASKV6F7DF0RD1WTAV4` as the immediate documentation follow-on.
 
 ## Hash-Key Storage Matrix
 

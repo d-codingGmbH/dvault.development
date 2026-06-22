@@ -49,6 +49,14 @@ The public `dvault.model.v1` PIT artifact shape remains hub-parent-only and cont
 
 `MaintainBridgeAsync(...)` is not delete-aware. For hierarchy bridges it can lower an existing `TraversalDepth` when a newly materialized shorter path is available and leaves equal or longer alternate paths unchanged. It does not remove obsolete rows or increase persisted depths after topology shrinkage. Use `RebuildBridgeAsync(...)` when destructive hierarchy changes require row removal or increased `TraversalDepth`.
 
+## Bridge Maintenance Push-Down Posture
+
+Bridge rebuild and maintenance push-down stays deferred from this boundary. The current provider-specific maintenance seam is the PostgreSQL PIT rebuild strategy; bridge maintenance remains the provider-neutral `IDataVaultBridgeMaintenanceService` surface, and this contract does not expose an `IDataVaultProviderBridgeMaintenanceStrategy` counterpart.
+
+Maintained-bridge read evidence proves provider read-strategy selection over already-maintained bridge rows. It does not prove write-side bridge-maintenance push-down value, SQL shape, fallback vocabulary, or parity with the broader bridge maintenance semantics above. Any later bridge push-down lane would first need new core dispatch, provider registration, bridge-specific gate/fallback diagnostics, parity tests for existing maintenance semantics, and a preserved benchmark artifact triplet before provider SQL can be promoted.
+
+The reopen threshold is concrete hotspot evidence that provider-neutral bridge maintenance, not bridge reads, is a material bottleneck after the PIT provider-maintenance prototype. A first reopened slice should stay limited to PostgreSQL many-to-many full rebuild. Hierarchy rebuild push-down, incremental or delete-aware maintenance, provider expansion beyond the first prototype, deployment artifacts, and support-bundle orchestration remain separate non-goals.
+
 ## Bridge Read Boundary
 
 Bridge reads target one `DataVaultBridgeMetadata` declaration and filter by endpoint hash keys. Many-to-many bridges support `DataVaultBridgeTraversalEndpoint.From` and `DataVaultBridgeTraversalEndpoint.To`. Hierarchy bridges support `DataVaultBridgeTraversalEndpoint.Ancestor` and `DataVaultBridgeTraversalEndpoint.Descendant`, require a bounded `maximumDepth`, and expose `TraversalDepth` on hierarchy rows.
@@ -106,6 +114,7 @@ Compiled-model, compiled-query, and pooled-context guidance remains in [DVault E
 - Read-time PIT or bridge refresh.
 - Background schedulers, triggers, or implicit EF `SaveChanges` orchestration.
 - Provider-specific PIT or bridge maintenance strategies.
+- Bridge maintenance push-down without bridge-maintenance hotspot evidence, a core/provider bridge-maintenance seam, bridge-specific fallback diagnostics, and benchmark-backed parity proof.
 - Completed non-SQLite optimized latest-satellite timing claims without a provider-configured benchmark artifact.
 - Completed DB2 PIT or bridge timing claims without a provider-configured benchmark artifact.
 - Registry-backed PIT as-of read requests.
