@@ -3,20 +3,20 @@
   "ticket-id": "06FE4RJD5Z6MWC2E66YB3EZ5YW",
   "ticket-type": "task",
   "title": "Task: Add dry-run SQL shape diagnostics for PIT rebuild candidates",
-  "revision": "06FE4RM95W2KV0PMETS0M42ZV8",
-  "status": "todo",
+  "revision": "06FF039XM22XMPA6SC7T6HQP5R",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
-    "area/read-models",
     "area/diagnostics",
-    "area/provider-support"
+    "area/provider-support",
+    "area/read-models",
+    "automation/bot-ready",
+    "type/task",
+    "closure/no-work-required"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PNFD7HR2N2G4GY5XACY3R",
   "release-id": "06FE4PMVMZM3KKNGEFDB2S3BKG",
   "created-at": "2026-06-20T00:15:53.8287567Z",
-  "updated-at": "2026-06-20T00:16:09.0075934Z"
+  "updated-at": "2026-06-22T15:57:40.1280000Z"
 }
