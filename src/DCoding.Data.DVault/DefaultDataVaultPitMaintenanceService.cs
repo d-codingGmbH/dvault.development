@@ -8,8 +8,17 @@ namespace DCoding.Data.DVault;
 internal sealed class DefaultDataVaultPitMaintenanceService : IDataVaultPitMaintenanceService {
   private const int ParentHashKeyBatchSize = 500;
   private static readonly IDataVaultNamingPolicy NamingPolicy = DefaultDataVaultNamingPolicy.Instance;
+  private readonly IReadOnlyList<IDataVaultProviderPitMaintenanceStrategy> _providerPitMaintenanceStrategies;
 
-  public DefaultDataVaultPitMaintenanceService() {
+  public DefaultDataVaultPitMaintenanceService()
+      : this([]) {
+  }
+
+  public DefaultDataVaultPitMaintenanceService(
+      IEnumerable<IDataVaultProviderPitMaintenanceStrategy> providerPitMaintenanceStrategies) {
+    ArgumentNullException.ThrowIfNull(providerPitMaintenanceStrategies);
+
+    _providerPitMaintenanceStrategies = OrderByPriority(providerPitMaintenanceStrategies);
   }
 
   public async Task<DataVaultPitMaintenanceResult> RebuildAsync(
@@ -26,27 +35,10 @@ internal sealed class DefaultDataVaultPitMaintenanceService : IDataVaultPitMaint
         DataVaultActivityTracing.FullRebuildScope);
 
     try {
-      var projection = CreatePitProjection(dbContext, request.Pit);
-      var satelliteRows = await ReadSatelliteRowsAsync(
+      var result = await RebuildWithSelectedStrategyAsync(
           dbContext,
-          projection,
-          parentHashKeys: null,
+          request,
           cancellationToken).ConfigureAwait(false);
-      var parentHashKeys = satelliteRows
-          .SelectMany(rows => rows.Select(row => row.ParentHashKey))
-          .Distinct(StringComparer.Ordinal)
-          .Order(StringComparer.Ordinal)
-          .ToArray();
-      var rowsToWrite = CreatePitRows(projection, parentHashKeys, satelliteRows);
-      var rowsDeleted = await DeleteAllPitRowsAsync(dbContext, projection, cancellationToken).ConfigureAwait(false);
-      DetachTrackedPitRows(dbContext, projection, parentHashKeys: null);
-      var rowsWritten = await AddPitRowsAsync(dbContext, projection, rowsToWrite, cancellationToken).ConfigureAwait(false);
-      var result = new DataVaultPitMaintenanceResult(
-          request.Pit,
-          projection.TableName,
-          parentHashKeys.Length,
-          rowsDeleted,
-          rowsWritten);
 
       activity.RecordSuccess(
           result.RowsDeleted + result.RowsWritten,
@@ -59,6 +51,54 @@ internal sealed class DefaultDataVaultPitMaintenanceService : IDataVaultPitMaint
       activity.RecordFailure(exception);
       throw;
     }
+  }
+
+  private async Task<DataVaultPitMaintenanceResult> RebuildWithSelectedStrategyAsync(
+      DbContext dbContext,
+      DataVaultPitRebuildRequest request,
+      CancellationToken cancellationToken) {
+    foreach (var strategy in _providerPitMaintenanceStrategies) {
+      if (!strategy.CanRebuild(dbContext, request)) {
+        continue;
+      }
+
+      return await strategy.RebuildAsync(
+          new DataVaultProviderPitMaintenanceStrategyContext(dbContext, request),
+          cancellationToken).ConfigureAwait(false);
+    }
+
+    return await RebuildWithProviderNeutralPipelineAsync(
+        dbContext,
+        request,
+        cancellationToken).ConfigureAwait(false);
+  }
+
+  private static async Task<DataVaultPitMaintenanceResult> RebuildWithProviderNeutralPipelineAsync(
+      DbContext dbContext,
+      DataVaultPitRebuildRequest request,
+      CancellationToken cancellationToken) {
+    var projection = CreatePitProjection(dbContext, request.Pit);
+    var satelliteRows = await ReadSatelliteRowsAsync(
+        dbContext,
+        projection,
+        parentHashKeys: null,
+        cancellationToken).ConfigureAwait(false);
+    var parentHashKeys = satelliteRows
+        .SelectMany(rows => rows.Select(row => row.ParentHashKey))
+        .Distinct(StringComparer.Ordinal)
+        .Order(StringComparer.Ordinal)
+        .ToArray();
+    var rowsToWrite = CreatePitRows(projection, parentHashKeys, satelliteRows);
+    var rowsDeleted = await DeleteAllPitRowsAsync(dbContext, projection, cancellationToken).ConfigureAwait(false);
+    DetachTrackedPitRows(dbContext, projection, parentHashKeys: null);
+    var rowsWritten = await AddPitRowsAsync(dbContext, projection, rowsToWrite, cancellationToken).ConfigureAwait(false);
+
+    return new DataVaultPitMaintenanceResult(
+        request.Pit,
+        projection.TableName,
+        parentHashKeys.Length,
+        rowsDeleted,
+        rowsWritten);
   }
 
   public async Task<DataVaultPitMaintenanceResult> MaintainParentsAsync(
@@ -427,7 +467,7 @@ internal sealed class DefaultDataVaultPitMaintenanceService : IDataVaultPitMaint
     return rowsDeleted;
   }
 
-  private static void DetachTrackedPitRows(
+  internal static void DetachTrackedPitRows(
       DbContext dbContext,
       PitMaintenanceProjection projection,
       IReadOnlySet<string>? parentHashKeys) {
@@ -479,7 +519,7 @@ internal sealed class DefaultDataVaultPitMaintenanceService : IDataVaultPitMaint
     return rowsToWrite.Count;
   }
 
-  private static PitMaintenanceProjection CreatePitProjection(
+  internal static PitMaintenanceProjection CreatePitProjection(
       DbContext dbContext,
       DataVaultPitMetadata pit) {
     DataVaultPitMaintenanceShapeValidator.ValidateSupportedShape(pit);
@@ -933,7 +973,15 @@ internal sealed class DefaultDataVaultPitMaintenanceService : IDataVaultPitMaint
         innerException);
   }
 
-  private sealed record PitMaintenanceProjection(
+  private static IReadOnlyList<IDataVaultProviderPitMaintenanceStrategy> OrderByPriority(
+      IEnumerable<IDataVaultProviderPitMaintenanceStrategy> strategies) {
+    return strategies
+        .OrderByDescending(strategy => strategy.Priority)
+        .ThenBy(strategy => strategy.GetType().FullName, StringComparer.Ordinal)
+        .ToArray();
+  }
+
+  internal sealed record PitMaintenanceProjection(
       string MetadataName,
       string TableName,
       string ParentHashKeyColumnName,
@@ -943,13 +991,13 @@ internal sealed class DefaultDataVaultPitMaintenanceService : IDataVaultPitMaint
       IProperty LoadTimestampProperty,
       IReadOnlyList<PitSatelliteMaintenanceProjection> Satellites);
 
-  private sealed record PitSatelliteMaintenanceProjection(
+  internal sealed record PitSatelliteMaintenanceProjection(
       string MetadataName,
       string SnapshotReferenceColumnName,
       IProperty SnapshotReferenceProperty,
       SatelliteMaintenanceProjection Satellite);
 
-  private sealed record SatelliteMaintenanceProjection(
+  internal sealed record SatelliteMaintenanceProjection(
       string TableName,
       string ParentHashKeyColumnName,
       string LoadTimestampColumnName,

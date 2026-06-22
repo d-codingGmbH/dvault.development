@@ -42,6 +42,24 @@ public sealed class DataVaultPitMaintenanceServiceTests {
   }
 
   [Fact]
+  public async Task PitRebuildUsesSelectedProviderMaintenanceStrategyBeforeNeutralFallback() {
+    var pit = CreateCustomerProfilePit();
+    var strategy = new RecordingProviderPitMaintenanceStrategy(canRebuild: true);
+    var service = new DefaultDataVaultPitMaintenanceService([strategy]);
+    await using var context = new EmptyPitModelContext(new DbContextOptionsBuilder<EmptyPitModelContext>().Options);
+
+    var result = await service.RebuildAsync(
+        context,
+        new DataVaultPitRebuildRequest(pit));
+
+    Assert.Equal([pit], strategy.RebuildRequests);
+    Assert.Equal("ProviderPitCustomerProfile", result.TableName);
+    Assert.Equal(2, result.ParentHashKeyCount);
+    Assert.Equal(3, result.RowsDeleted);
+    Assert.Equal(5, result.RowsWritten);
+  }
+
+  [Fact]
   public async Task EmptyParentMaintenanceRequestIsNoOpWithoutModelValidation() {
     var service = new DefaultDataVaultPitMaintenanceService();
     await using var context = new EmptyPitModelContext(new DbContextOptionsBuilder<EmptyPitModelContext>().Options);
@@ -271,6 +289,36 @@ public sealed class DataVaultPitMaintenanceServiceTests {
   }
 
   private sealed class EmptyPitModelContext(DbContextOptions<EmptyPitModelContext> options) : DbContext(options) {
+  }
+
+  private sealed class RecordingProviderPitMaintenanceStrategy(bool canRebuild) : IDataVaultProviderPitMaintenanceStrategy {
+    public int Priority => 100;
+
+    public List<DataVaultPitMetadata> RebuildRequests { get; } = [];
+
+    public bool CanRebuild(
+        DbContext dbContext,
+        DataVaultPitRebuildRequest request) {
+      ArgumentNullException.ThrowIfNull(dbContext);
+      ArgumentNullException.ThrowIfNull(request);
+
+      return canRebuild;
+    }
+
+    public Task<DataVaultPitMaintenanceResult> RebuildAsync(
+        DataVaultProviderPitMaintenanceStrategyContext context,
+        CancellationToken cancellationToken = default) {
+      ArgumentNullException.ThrowIfNull(context);
+
+      RebuildRequests.Add(context.Request.Pit);
+
+      return Task.FromResult(new DataVaultPitMaintenanceResult(
+          context.Request.Pit,
+          "ProviderPit" + context.Request.Pit.Name,
+          parentHashKeyCount: 2,
+          rowsDeleted: 3,
+          rowsWritten: 5));
+    }
   }
 
   private sealed class RecordingPitMaintenanceService : IDataVaultPitMaintenanceService {

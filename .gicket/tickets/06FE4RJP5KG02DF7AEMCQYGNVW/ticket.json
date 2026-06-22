@@ -3,20 +3,19 @@
   "ticket-id": "06FE4RJP5KG02DF7AEMCQYGNVW",
   "ticket-type": "task",
   "title": "Task: Prototype PostgreSQL PIT rebuild INSERT SELECT path",
-  "revision": "06FE4RMBMY8EARFXKVKK7R3ZDC",
-  "status": "todo",
+  "revision": "06FF0X9P8C4M5S9HMRH790VJQM",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
-    "area/read-models",
     "area/performance",
-    "provider/postgres"
+    "area/read-models",
+    "automation/bot-ready",
+    "provider/postgres",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PNGY15HRQWX7C034RDESG",
   "release-id": "06FE4PMVMZM3KKNGEFDB2S3BKG",
   "created-at": "2026-06-20T00:15:56.0619155Z",
-  "updated-at": "2026-06-20T00:16:09.6398896Z"
+  "updated-at": "2026-06-22T17:51:13.9871357Z"
 }

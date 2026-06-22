@@ -52,6 +52,7 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
                 typeof(PostgresIntegrationTestConfigurationTests),
                 typeof(PostgresLiveSchemaFixtureContractTests),
                 typeof(PostgresLiveSchemaReaderTests),
+                typeof(PostgresPitMaintenanceServiceTests),
                 typeof(OracleDataVaultSmokeTests),
                 typeof(OracleIntegrationTestConfigurationTests),
                 typeof(OracleLiveSchemaFixtureContractTests),
@@ -99,6 +100,7 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
         typeof(PostgresDataVaultSchemaTests),
         typeof(PostgresOptimizedDataVaultSaveServiceTests),
         typeof(PostgresLiveSchemaReaderTests),
+        typeof(PostgresPitMaintenanceServiceTests),
     }) {
       AssertTrait(
           coverageType,
