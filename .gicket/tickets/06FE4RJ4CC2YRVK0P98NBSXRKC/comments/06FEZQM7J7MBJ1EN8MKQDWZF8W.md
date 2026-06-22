@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined this as a tracking story for explicit PIT and bridge maintenance push-down boundaries: current repo evidence keeps maintenance caller-owned and provider-neutral by default, scopes initial push-down work to redacted dry-run diagnostics plus bounded PIT provider prototypes, and leaves bridge runtime commitment evidence-gated.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Current baseline keeps IDataVaultPitMaintenanceService and IDataVaultBridgeMaintenanceService as explicit caller-invoked maintenance surfaces in AddDVault(), while provider packages currently register save and read strategies only; there is no existing provider-specific maintenance dispatch seam to treat as already approved.
 - The finite provider baseline for any future maintenance push-down discussion stays the existing AddDVaultSqlite, AddDVaultPostgres, AddDVaultSqlServer, AddDVaultMySql, AddDVaultOracle, and AddDVaultDb2 family; this story does not reopen provider naming or add new providers.
 - Any future server-side maintenance push-down must stay opt-in behind provider libraries and diagnostics, preserve the current explicit maintenance entry points, and fall back to the existing provider-neutral maintenance services when provider match, supported shape, or proof is missing.
@@ -16,62 +15,48 @@
 - The existing save-artifact lane remains the comparison pattern for review-only design-time output: no standalone DVault CLI, no automatic migration or deployment sync, no background scheduler, no runtime artifact dispatch, and no automatic PIT or bridge refresh on save, read, or startup.
 - The current context already contains bounded follow-on tickets for PIT dry-run diagnostics, bridge feasibility, PostgreSQL and SQL Server PIT rebuild prototypes, and architecture-doc updates; this parent story should track that decomposition rather than reopen the boundary.
 
-### Scope In
+Scope In
 - Define the explicit boundary for provider-library-owned server-side PIT and bridge maintenance push-down while preserving caller-invoked IDataVaultPitMaintenanceService and IDataVaultBridgeMaintenanceService semantics.
 - Define request-bound, redacted dry-run diagnostics for maintenance candidates, including selected or declined provider path, translated target identity, bounded supported-shape facts, and deterministic stop reasons.
 - Define provider-neutral fallback rules when provider name, maintenance shape, diagnostics evidence, or provider capability is incompatible.
 - Keep initial push-down exploration bounded to the PIT rebuild provider prototypes already present in current context for PostgreSQL and SQL Server.
 - Require bridge maintenance push-down to stay evidence-gated through a separate feasibility decision instead of assuming bridge runtime implementation.
 
-### Scope Out
+Scope Out
 - No automatic PIT or bridge maintenance during reads, saves, EF SaveChanges, startup, or background scheduling.
 - No standalone deployment or runtime platform, no stored-procedure or artifact deployment automation, and no default runtime dispatch of provider-generated SQL.
 - No raw SQL, query-plan, credentials, hash-key, or request-value exposure in diagnostics, telemetry, attachments, or support-bundle outputs.
 - No provider-wide performance guarantee or support claim beyond bounded provider tickets and preserved evidence.
 - No bridge push-down implementation commitment for unsupported or not-yet-evidenced shapes, including delete-aware hierarchy repair beyond explicit rebuild semantics.
 
-## Acceptance Criteria
-- The authoritative boundary states that PIT and bridge maintenance remains explicit caller work through the current maintenance services; any server-side push-down is opt-in, provider-library-owned, and never automatic.
-- A request-bound dry-run diagnostics contract exists for maintenance candidates and reports provider selection or provider-neutral fallback plus deterministic unsupported or stop reasons without executing writes or exposing raw SQL or request values.
-- Fallback rules are explicit for unknown or unsupported providers, incompatible maintenance shapes, missing required diagnostics evidence, and declined provider strategies.
-- The story fixes the initial bounded rollout: PIT rebuild push-down may proceed only through explicit provider prototypes already in scope, while bridge push-down requires separate feasibility evidence before implementation claims.
-- Documentation and non-goals make clear that this story does not add deployment orchestration, runtime artifact dispatch, automatic refresh, or platform behavior outside the DVault library and provider boundary.
-
-## Definition of Done
-- The ticket contract or attached planning surface names the approved boundary, non-goals, fallback posture, and diagnostics redaction rules in language consistent with the existing PIT and bridge boundary, explicit save-service artifact lane, and activity-tracing contract.
-- The parent story references the current bounded decomposition: PIT dry-run diagnostics, bridge feasibility evaluation, provider-specific PIT prototypes, and documentation follow-up.
-- Any implementation ticket that proceeds from this story can do so without reopening provider baseline, fallback posture, or automation non-goals.
-- No remaining blocker asks the developer to invent deployment or runtime platform behavior that the repository explicitly excludes today.
-
-## Implementation Notes
-- Repository evidence shows AddDVault() registers provider-neutral default PIT and bridge maintenance services, while AddDVaultPostgres() and AddDVaultSqlServer() add save and read strategies only; a maintenance push-down seam would be new work, not an existing hidden feature.
-- The current PIT and bridge boundary document already fixes explicit maintenance semantics, stale-maintenance fallback on reads, and the v1 non-goal that provider-specific PIT or bridge maintenance strategies are unsupported today; this story should update that contract rather than create a parallel boundary.
-- Use the existing diagnostics pattern as the redaction model: request-bound facts, deterministic fallback causes, no raw SQL or secret-bearing output, and consumer-owned representative diagnostics when design-time evidence is exported.
-- The existing activity-tracing contract has maintenance spans but no v1 maintenance-specific fallback-cause enum, so any future maintenance diagnostics or telemetry vocabulary must stay finite and aligned with that contract instead of ad hoc string output.
-- No ticket description update, planning-document write, attachment write, or relation write was applied in this pass.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After PIT prototype evidence lands, should the team standardize one shared provider-specific maintenance strategy seam in core, or keep provider-specific maintenance dispatch as a narrower PIT-only extension until bridge evidence exists?
-- If bridge feasibility is positive, which bridge shapes are admitted first: many-to-many only, or hierarchy rebuilds that exclude delete-aware incremental repair?
+- If bridge feasibility is positive, which bridge shapes are admitted first: <redacted> only, or hierarchy rebuilds that exclude delete-aware incremental repair?
 - Should a later design-time artifact lane be introduced for maintenance candidates, or is request-bound dry-run diagnostics sufficient without a separate manifest contract?
 
-## Risks
+Risks
 - If the story blurs diagnostics, prototype, and runtime platform boundaries, downstream work may accidentally promise deployable SQL, stored procedures, or automatic dispatch that the repository explicitly excludes today.
 - If bridge push-down is treated as pre-approved instead of evidence-gated, the team may overcommit to hierarchy and delete-aware semantics that current maintenance behavior does not support.
 - Because provider packages currently expose save and read strategy seams but not maintenance strategy seams, implementation work may expand into shared-core API design unless the child tickets stay tightly bounded.
 - This parent story now depends on the bounded child-ticket outcomes for concrete evidence and doc updates, so it should be treated as a tracking parent rather than direct implementation work.
 
-## Split Recommendations
+Split recommendations
 - Keep the current bounded decomposition visible in current context: 06FE4RJD5Z6MWC2E66YB3EZ5YW for PIT dry-run diagnostics, 06FE4RK80ZXGCZ62CMSAYP164W for bridge feasibility, 06FE4RJP5KG02DF7AEMCQYGNVW for the PostgreSQL PIT rebuild prototype, 06FE4RJZ4PA0DZ3HXDSEG2BQMM for the SQL Server PIT rebuild prototype, and 06FE4RKGASKV6F7DF0RD1WTAV4 for documentation updates.
 - Do not add a separate bridge implementation ticket until the feasibility task decides whether any bounded bridge push-down shape is worth carrying forward.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Scope: define when DVault may offer explicit server-side PIT/bridge maintenance push-down through EF Core provider libraries. Acceptance: dry-run diagnostics, fallbacks, unsupported shapes, and no deployment/runtime platform behavior are clear.
+Run mode
+- apply: planned updates are applied after this comment
