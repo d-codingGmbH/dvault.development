@@ -3,6 +3,6 @@
   "milestone-id": "06FE4PNGY15HRQWX7C034RDESG",
   "name": "v0.45.0 - PostgreSQL and SQL Server push-down prototypes",
   "description": "Prototype bounded PostgreSQL and SQL Server PIT maintenance INSERT SELECT paths behind explicit service/diagnostic boundaries.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-20T00:07:34.8966144Z"
 }

@@ -3,6 +3,6 @@
   "milestone-id": "06FE4PNFD7HR2N2G4GY5XACY3R",
   "name": "v0.45.0 - Push-down maintenance contract",
   "description": "Define server-side PIT/bridge maintenance push-down criteria, diagnostics, dry-run boundaries, and unsupported shape stop conditions.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-20T00:07:34.5056312Z"
 }

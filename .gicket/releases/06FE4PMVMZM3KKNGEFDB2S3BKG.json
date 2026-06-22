@@ -3,6 +3,6 @@
   "release-id": "06FE4PMVMZM3KKNGEFDB2S3BKG",
   "name": "v0.45.0 - Server-Side PIT and Bridge Maintenance Exploration",
   "description": "Evidence-gated server-side PIT and bridge maintenance exploration through EF Core provider libraries, focused on bounded INSERT SELECT push-down candidates, dry-run diagnostics, and explicit fallback/non-goal documentation. Planning release v0.45.0 maps to package versions 8.45.0 and 10.45.0.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-20T00:07:29.4474783Z"
 }

@@ -3,6 +3,6 @@
   "milestone-id": "06FE4PN9EX787F4DHNJVN86YK0",
   "name": "v0.44.0 - Privacy extension contract and compliance boundary",
   "description": "Define the optional privacy extension contract, DSGVO wording, crypto-shredding non-goals, and caller-owned key-management boundary.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-20T00:07:32.9833880Z"
 }

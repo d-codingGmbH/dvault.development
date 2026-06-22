@@ -2,6 +2,18 @@
 
 This changelog summarizes the public release-note trail. The detailed release records remain under [docs/releases/](docs/releases/); those files are the source of truth for scope, evidence, non-goals, and validation notes.
 
+## v0.44.0 - Optional Privacy Extension Foundation
+
+- Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.44.0` / `net8.0` / EF Core 8 and `10.44.0` / `net10.0` / EF Core 10.
+- Records that the v0.44.0 release label maps to consumer package versions `8.44.0` and `10.44.0`, not to a `0.44.0` package version.
+- Adds the optional `DCoding.Data.DVault.Privacy` package as a provider-neutral, opt-in privacy proof package.
+- Introduces explicit registration, encrypted-payload alias configuration, caller-owned key-provider seams, and an EF Core value-converter proof for selected payload properties.
+- Documents fail-closed behavior for missing aliases, missing key providers, marker-only providers, declined conversions, and null conversion outputs.
+- Adds model-first `personalData` metadata guidance and the optional privacy architecture boundary while keeping key material, provider-native encryption, deletion, retention, PIT/bridge cleanup, and compliance workflows outside DVault-owned runtime behavior.
+- Updates README, package compatibility, manual publication, local validation, production adoption, analyzer guidance, and package verification to the v0.44.0 baseline.
+
+See [DVault v0.44.0 Release Notes](docs/releases/v0.44.0.md).
+
 ## v0.43.0 - Binary Adoption, Analyzer Guidance, and Allocation Evidence
 
 - Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.43.0` / `net8.0` / EF Core 8 and `10.43.0` / `net10.0` / EF Core 10.

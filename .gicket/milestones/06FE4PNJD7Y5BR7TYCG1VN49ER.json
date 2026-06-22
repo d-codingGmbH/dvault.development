@@ -3,6 +3,6 @@
   "milestone-id": "06FE4PNJD7Y5BR7TYCG1VN49ER",
   "name": "v0.45.0 - Provider expansion decision and docs",
   "description": "Evaluate bridge and additional-provider push-down feasibility, document outcomes, and defer unsupported paths explicitly.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-20T00:07:35.2737409Z"
 }
