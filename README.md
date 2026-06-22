@@ -125,7 +125,7 @@ await saveService.SaveAsync(
 
 Provider packages can add optimized strategies behind the same public service contract. The shared surface also includes chunked/async saves, latest/as-of satellite reads, PIT and bridge maintenance/read services, diagnostics and explain metadata, support-bundle export, model-first governance, Roslyn analyzers, and opt-in typed read-model generation.
 
-For runnable examples and fuller workflows, see [Getting Started](docs/getting-started.md), [examples/README.md](examples/README.md), and the current [DVault v0.43.0 Release Notes](docs/releases/v0.43.0.md).
+For runnable examples, the optional privacy proof, and fuller workflows, see [Getting Started](docs/getting-started.md), [examples/README.md](examples/README.md), and the current [DVault v0.43.0 Release Notes](docs/releases/v0.43.0.md).
 
 ## Package Compatibility
 
@@ -156,7 +156,7 @@ In short:
 | Typed PIT/bridge helper boundary | [DVault V1 Typed PIT And Bridge Helper Contract](docs/architecture/dvault-v1-typed-pit-bridge-helper-contract.md) |
 | Read-plan diagnostics and redaction | [DVault V2 Redacted Read-Plan Explain Contract](docs/architecture/dvault-v2-redacted-read-plan-explain-contract.md) |
 | Analyzer and generator scope | [Analyzer README](src/DCoding.Data.DVault.Analyzers/README.md) |
-| Optional privacy extension boundary | [DVault V1 Optional Privacy Extension Boundary](docs/architecture/dvault-v1-optional-privacy-extension-boundary.md) |
+| Optional privacy proof and boundary | [Getting Started privacy proof](docs/getting-started.md#optional-privacy-proof), [examples privacy notes](examples/README.md#optional-privacy-proof), and [DVault V1 Optional Privacy Extension Boundary](docs/architecture/dvault-v1-optional-privacy-extension-boundary.md) |
 | Hashing and hash-key storage contracts | [Stable Hashing Contract](docs/plans/stable-hashing-contract.md), [Hash-Key Storage Profile Contract](docs/plans/hash-key-storage-profile-contract.md), and [Hash-Key Storage Migration Guide](docs/hash-key-storage-migration.md) |
 
 ## Current v0.43.0 Limitations

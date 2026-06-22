@@ -3,20 +3,19 @@
   "ticket-id": "06FE4RBK2MJBS5K3C15JTB8Z9W",
   "ticket-type": "task",
   "title": "Task: Add privacy extension example and documentation",
-  "revision": "06FE4RMSPY0FT3A5402YHBC5JG",
-  "status": "todo",
+  "revision": "06FEZDHAVKQJWGPNJH6B0JW2PG",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
-    "area/privacy",
     "area/documentation",
-    "area/security"
+    "area/privacy",
+    "area/security",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PNDXY8XM14HVX1PFZ1ZR8",
   "release-id": "06FE4PMT7V0NN9Y6RKD5WDTY58",
   "created-at": "2026-06-20T00:14:57.9441632Z",
-  "updated-at": "2026-06-20T00:16:13.2397830Z"
+  "updated-at": "2026-06-22T14:22:33.6927972Z"
 }

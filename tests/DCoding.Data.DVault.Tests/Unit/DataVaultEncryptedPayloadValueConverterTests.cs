@@ -70,6 +70,17 @@ public sealed class DataVaultEncryptedPayloadValueConverterTests {
   }
 
   [Fact]
+  public void ExplicitConverterRejectsMarkerOnlyKeyProviderBeforePlaintextCanBeStored() {
+    var configuration = CreateConfiguration(new MarkerOnlyPrivacyKeyProvider(), CustomerEmailAlias);
+
+    var exception = Assert.Throws<InvalidOperationException>(() =>
+        new DataVaultEncryptedPayloadValueConverter(configuration, CustomerEmailAlias));
+
+    Assert.Contains(CustomerEmailAlias, exception.Message, StringComparison.Ordinal);
+    Assert.Contains("encrypted payload key provider", exception.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
   public void ExplicitConverterFailsClosedWhenCallerDeclinesConversion() {
     var configuration = CreateConfiguration(new DecliningPrivacyKeyProvider(), CustomerEmailAlias);
     var converter = new DataVaultEncryptedPayloadValueConverter(configuration, CustomerEmailAlias);
@@ -156,6 +167,9 @@ public sealed class DataVaultEncryptedPayloadValueConverterTests {
       return DataVaultEncryptedPayloadConversionResult.Approved(
           Encoding.UTF8.GetString(Convert.FromBase64String(providerPayload)));
     }
+  }
+
+  private sealed class MarkerOnlyPrivacyKeyProvider : IDataVaultPrivacyKeyProvider {
   }
 
   private sealed class DecliningPrivacyKeyProvider : IDataVaultEncryptedPayloadKeyProvider {

@@ -71,6 +71,14 @@ services.AddDbContext<QuickstartVaultContext>(
 
 The PostgreSQL quickstart uses the same shape with `AddDVaultPostgres()` and `UseNpgsql(connectionString)`. Other provider packages expose the matching `AddDVaultDb2()`, `AddDVaultSqlServer()`, `AddDVaultOracle()`, and `AddDVaultMySql()` startup extensions, but these examples only provide runnable SQLite and PostgreSQL projects.
 
+## Optional Privacy Proof
+
+The optional privacy proof is documented in [Getting Started](../docs/getting-started.md#optional-privacy-proof). It shows the provider-neutral `DCoding.Data.DVault.Privacy` package using `AddDVaultPrivacy(...)`, `RegisterEncryptedPayloadAlias(...)`, a caller-owned provider passed through `UseCallerOwnedKeyProvider(...)`, and `DataVaultEncryptedPayloadValueConverter` on a payload property.
+
+Keep the type boundary explicit when adapting that example: `UseCallerOwnedKeyProvider(...)` accepts `IDataVaultPrivacyKeyProvider`, while encrypted payload conversion requires the configured provider to also implement `IDataVaultEncryptedPayloadKeyProvider`. The alias registered at runtime should match the model-first `personalData[].encryptedPayloadAlias` value for the logical payload. Missing alias registration, missing provider wiring, providers that do not satisfy the encrypted-payload interface, and declined conversions fail closed rather than storing plaintext or treating ciphertext as decrypted payload data.
+
+The quickstart privacy proof is provider-neutral and SQLite-friendly because it uses ordinary EF Core value conversion over a mapped payload property. It is not a GDPR/DSGVO compliance guarantee, automatic encryption or redaction feature, provider-native encryption feature, encrypted-column DDL contract, deletion workflow, PIT or bridge cleanup workflow, backup purge, retention completion, legal-erasure completion, or DVault-owned key lifecycle.
+
 ## Observability Examples
 
 `AddDVault(...)` is telemetry-free by default. It does not add counters, `ActivityListener` instances, exporters, dashboards, collectors, hosting, or OpenTelemetry package requirements. Applications opt into each observability surface they want to own.

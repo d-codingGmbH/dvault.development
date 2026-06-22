@@ -67,6 +67,109 @@ DVault exposes service boundaries for latest/as-of satellite reads, PIT maintena
 
 PIT and bridge maintenance are explicit caller-invoked operations. They are not scheduler-driven, trigger-driven, read-time maintenance, or provider-specific background jobs.
 
+## Optional Privacy Proof
+
+Install `DCoding.Data.DVault.Privacy` only when the application explicitly opts into the provider-neutral privacy proof package. The package provides registration, options, and alias-driven encrypted payload conversion through ordinary EF Core value conversion. It is not a GDPR/DSGVO compliance guarantee, automatic encryption feature, automatic redaction feature, provider-native encryption feature, retention engine, deletion workflow, or key-management platform.
+
+Model-first personal-data metadata uses `personalData[].encryptedPayloadAlias` as the stable logical alias for a marked payload. The runtime privacy proof registers that same alias explicitly; it does not add a new metadata authoring API or infer aliases from database columns.
+
+```json
+{
+  "payload": ["EmailAddress"],
+  "personalData": [
+    {
+      "field": "EmailAddress",
+      "encryptedPayloadAlias": "CustomerProfileEmailEncrypted"
+    }
+  ]
+}
+```
+
+The provider passed to `UseCallerOwnedKeyProvider(...)` is typed as `IDataVaultPrivacyKeyProvider`. Encrypted payload conversion has a narrower runtime requirement: the configured provider must also implement `IDataVaultEncryptedPayloadKeyProvider`, because `DataVaultEncryptedPayloadValueConverter` asks it to approve and perform each conversion.
+
+```csharp
+using System.Text;
+using DCoding.Data.DVault.Privacy;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+var connectionString = "Data Source=customer-privacy.db";
+
+services.AddDVaultPrivacy(options => options
+    .RegisterEncryptedPayloadAlias(PrivacyAliases.CustomerProfileEmail)
+    .UseCallerOwnedKeyProvider(new DemoEncryptedPayloadKeyProvider()));
+
+services.AddDbContext<CustomerPrivacyContext>(options =>
+    options.UseSqlite(connectionString));
+
+public static class PrivacyAliases {
+  public const string CustomerProfileEmail = "CustomerProfileEmailEncrypted";
+}
+
+public sealed class CustomerPrivacyContext(
+    DbContextOptions<CustomerPrivacyContext> options,
+    IDataVaultPrivacyConfiguration privacyConfiguration) : DbContext(options) {
+  public DbSet<CustomerProfileRow> CustomerProfiles => Set<CustomerProfileRow>();
+
+  protected override void OnModelCreating(ModelBuilder modelBuilder) {
+    modelBuilder.Entity<CustomerProfileRow>(entity => {
+      entity.ToTable("CustomerProfilePrivacyProof");
+      entity.HasKey(row => row.Id);
+      entity.Property(row => row.CustomerBusinessKey).IsRequired();
+      entity.Property(row => row.EmailAddress)
+          .IsRequired()
+          .HasConversion(new DataVaultEncryptedPayloadValueConverter(
+              privacyConfiguration,
+              PrivacyAliases.CustomerProfileEmail));
+    });
+  }
+}
+
+public sealed class CustomerProfileRow {
+  public long Id { get; set; }
+
+  public string CustomerBusinessKey { get; set; } = string.Empty;
+
+  public string EmailAddress { get; set; } = string.Empty;
+}
+
+public sealed class DemoEncryptedPayloadKeyProvider : IDataVaultEncryptedPayloadKeyProvider {
+  public DataVaultEncryptedPayloadConversionResult ConvertEncryptedPayload(
+      DataVaultEncryptedPayloadConversionRequest request) {
+    return request.Direction switch {
+      DataVaultEncryptedPayloadConversionDirection.Encrypt => DataVaultEncryptedPayloadConversionResult.Approved(
+          "demo-encrypted:" +
+          request.EncryptedPayloadAlias +
+          ":" +
+          Convert.ToBase64String(Encoding.UTF8.GetBytes(request.Value))),
+      DataVaultEncryptedPayloadConversionDirection.Decrypt => Decrypt(request),
+      _ => DataVaultEncryptedPayloadConversionResult.Declined("unsupported-conversion-direction"),
+    };
+  }
+
+  private static DataVaultEncryptedPayloadConversionResult Decrypt(
+      DataVaultEncryptedPayloadConversionRequest request) {
+    var prefix = "demo-encrypted:" + request.EncryptedPayloadAlias + ":";
+    if (!request.Value.StartsWith(prefix, StringComparison.Ordinal)) {
+      return DataVaultEncryptedPayloadConversionResult.Declined("alias-mismatch");
+    }
+
+    var providerPayload = request.Value[prefix.Length..];
+    return DataVaultEncryptedPayloadConversionResult.Approved(
+        Encoding.UTF8.GetString(Convert.FromBase64String(providerPayload)));
+  }
+}
+```
+
+`DemoEncryptedPayloadKeyProvider` is only a caller-owned proof provider that makes the SQLite-friendly round trip visible. Production applications must replace it with their own cryptography, key lookup, rotation, authorization, diagnostics, and decline policy. DVault does not create, store, rotate, select, escrow, destroy, or recover key material.
+
+The proof fails closed. If the alias is not registered with `RegisterEncryptedPayloadAlias(...)`, no key provider is wired with `UseCallerOwnedKeyProvider(...)`, the provider does not also satisfy `IDataVaultEncryptedPayloadKeyProvider`, or the provider declines a conversion, `DataVaultEncryptedPayloadValueConverter` throws instead of silently storing plaintext or silently treating ciphertext as decrypted payload data.
+
+Crypto-shredding remains caller-owned. Withdrawing, losing, or destroying the caller-owned key material for an `encryptedPayloadAlias` means reads or writes for that alias fail closed. It does not delete rows, rewrite historical satellite values, clean PIT or bridge rows, purge backups, complete retention, or complete legal erasure.
+
+Provider caveats stay bounded to ordinary EF Core mapping. The proof stores the provider value through a normal mapped payload property and is covered by the SQLite-friendly test path; it is not provider-specific encrypted DDL, transparent database encryption, a special encrypted column type, or a claim that any provider package performs native encryption.
+
 ## Hashing And Storage
 
 The default stable hash algorithm id is `sha256-v1`. Built-in non-default ids such as `sha1-v1`, `sha256-128-v1`, and `sha256-160-v1` are explicit opt-in choices for non-adversarial Data Vault identity hashing only.
@@ -80,6 +183,7 @@ For existing persisted databases, use the [Hash-Key Storage Migration Guide](has
 - [Production Adoption Checklist](production-adoption-checklist.md)
 - [Hash-Key Storage Migration Guide](hash-key-storage-migration.md)
 - [Performance Profiles](performance-profiles.md)
+- [DVault V1 Optional Privacy Extension Boundary](architecture/dvault-v1-optional-privacy-extension-boundary.md)
 - [Local Validation](local-validation.md)
 - [Manual NuGet Publication Checklist](manual-nuget-publication.md)
 - [Analyzer README](../src/DCoding.Data.DVault.Analyzers/README.md)
