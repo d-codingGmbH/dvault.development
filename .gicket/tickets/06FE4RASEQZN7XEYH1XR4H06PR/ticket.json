@@ -3,7 +3,7 @@
   "ticket-id": "06FE4RASEQZN7XEYH1XR4H06PR",
   "ticket-type": "task",
   "title": "Task: Implement provider-neutral encrypted attribute conversion proof",
-  "revision": "06FEWS82YSKXJM4JYW057BMNHG",
+  "revision": "06FEWSAVS5VPJMB4A3FEKTKMMR",
   "status": "done",
   "labels": [
     "area/modeling",
@@ -17,5 +17,5 @@
   "milestone-id": "06FE4PNAYJ8JW25Y0SYFPA90AR",
   "release-id": "06FE4PMT7V0NN9Y6RKD5WDTY58",
   "created-at": "2026-06-20T00:14:51.4040606Z",
-  "updated-at": "2026-06-22T08:14:17.8460966Z"
+  "updated-at": "2026-06-22T08:14:40.5857766Z"
 }
