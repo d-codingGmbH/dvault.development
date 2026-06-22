@@ -6,7 +6,7 @@ Publishing remains manual. This document does not introduce release credentials,
 
 ## Package Family
 
-The v1 coordinated release family contains exactly these eight packable packages:
+The v1 coordinated release family contains exactly these nine packable packages:
 
 - `DCoding.Data.DVault`
 - `DCoding.Data.DVault.Analyzers`
@@ -14,10 +14,13 @@ The v1 coordinated release family contains exactly these eight packable packages
 - `DCoding.Data.DVault.MySql`
 - `DCoding.Data.DVault.Oracle`
 - `DCoding.Data.DVault.Postgres`
+- `DCoding.Data.DVault.Privacy`
 - `DCoding.Data.DVault.Sqlite`
 - `DCoding.Data.DVault.SqlServer`
 
-Manual publication must not proceed for only a subset of this family. Each package-version line is approved, validated, and published as one synchronized eight-package family.
+Manual publication must not proceed for only a subset of this family. Each package-version line is approved, validated, and published as one synchronized nine-package family.
+
+`DCoding.Data.DVault.Privacy` is optional for consumers and opt-in at runtime. It is a provider-neutral registration and encrypted-payload-alias skeleton, not a compliance feature, automatic encryption/redaction feature, or provider-native encryption feature.
 
 The current v0.43.0 documentation baseline uses two consumer package-version lines over these package ids:
 
@@ -32,7 +35,7 @@ The `src/DCoding.Data` project is a non-packable source-root build anchor for th
 
 ## Current Consumer Guidance
 
-Developer and consumer setup is NuGet-based for published releases. The README installation guidance is the current v0.43.0 baseline and should show separate `8.43.0` / `net8.0` / EF Core 8 and `10.43.0` / `net10.0` / EF Core 10 `dotnet add package` commands for `DCoding.Data.DVault` plus the optional provider package family, including `DCoding.Data.DVault.Db2`. Analyzer examples must stay local with `PrivateAssets="all"` and use the same package-version line selected for the runtime and provider packages. Projects that reference `DCoding.Data.DVault.Analyzers` must build on the `.NET 10 SDK` host baseline for both coordinated package lines; this repository does not validate pure `.NET 8 SDK` analyzer consumption.
+Developer and consumer setup is NuGet-based for published releases. The README installation guidance is the current v0.43.0 baseline and should show separate `8.43.0` / `net8.0` / EF Core 8 and `10.43.0` / `net10.0` / EF Core 10 `dotnet add package` commands for `DCoding.Data.DVault` plus the optional provider package family, including `DCoding.Data.DVault.Db2`, and the optional privacy skeleton package. Analyzer examples must stay local with `PrivateAssets="all"` and use the same package-version line selected for the runtime and provider packages. Projects that reference `DCoding.Data.DVault.Analyzers` must build on the `.NET 10 SDK` host baseline for both coordinated package lines; this repository does not validate pure `.NET 8 SDK` analyzer consumption.
 
 Source or project-reference consumption remains useful for repository development, debugging, and unpublished local changes, but it is no longer the primary consumer installation path for released packages.
 
@@ -40,8 +43,8 @@ Source or project-reference consumption remains useful for repository developmen
 
 Before final publish approval, the maintainer performing the release must confirm:
 
-- the release covers all eight package ids listed in this document
-- one aligned package version is used for all eight packages in the selected package-version line
+- the release covers all nine package ids listed in this document
+- one aligned package version is used for all nine packages in the selected package-version line
 - the selected package-version line is intentional for the coordinated release and is not being applied to only a provider-specific subset
 - release notes or changelog content has been prepared and reviewed for the coordinated release
 - all required pre-publish validation commands have passed against the same checkout and selected package version
@@ -58,7 +61,7 @@ Minimum auditable release-note content is:
 
 - selected coordinated package-version line
 - release date or intended release date
-- the eight package ids covered by the release
+- the nine package ids covered by the release
 - notable user-facing changes, fixes, documentation changes, packaging changes, and any hash-key storage-profile adoption guidance relevant to the release
 - known limitations or compatibility notes relevant to consumers
 - reviewer or approver identity for the final publish approval
@@ -92,13 +95,13 @@ The analyzer package is a local build-time asset, not a runtime dependency. `DCo
 
 ## Version And Dependency Alignment
 
-Use one aligned package version across all eight packages in the selected package-version line. For the v0.43.0 documentation baseline, validate `8.43.0` and `10.43.0` as separate publish approvals; do not publish `0.43.0` from the release label and do not mix packages from both lines in one consumer example or approval record. The `v0.43.0` Git tag is the release-note tag. Package versions for the visible consumer lines are set explicitly by `bash tools/pack-release-packages.sh` through MinVer version overrides. Before final approval, inspect the package outputs produced by the release pack script through the package verification gate:
+Use one aligned package version across all nine packages in the selected package-version line. For the v0.43.0 documentation baseline, validate `8.43.0` and `10.43.0` as separate publish approvals; do not publish `0.43.0` from the release label and do not mix packages from both lines in one consumer example or approval record. The `v0.43.0` Git tag is the release-note tag. Package versions for the visible consumer lines are set explicitly by `bash tools/pack-release-packages.sh` through MinVer version overrides. Before final approval, inspect the package outputs produced by the release pack script through the package verification gate:
 
 ```sh
 bash tools/verify-packages.sh
 ```
 
-Package verification is the manual dependency-alignment gate. It must confirm the exact sixteen package artifacts across the two package lines, fourteen matching symbol packages for the runtime/provider packages, package README and XML metadata, analyzer assets, provider dependency alignment, and the line-specific `net8.0` or `net10.0` nuspec dependency group for each package version. The core package must expose the expected EF Core, EF Core Relational, and `Microsoft.Extensions.DependencyInjection.Abstractions` versions for its selected target group. Each provider package must depend on the packed `DCoding.Data.DVault` version from the same package line and use the correct target-specific provider dependency, `Microsoft.EntityFrameworkCore.Relational`, and `Microsoft.Extensions.DependencyInjection.Abstractions` versions when those direct dependencies are present. The DB2 provider package must use `IBM.EntityFrameworkCore` `8.0.0.400` for the `net8.0` line and `10.0.0.100` for the `net10.0` line.
+Package verification is the manual dependency-alignment gate. It must confirm the exact eighteen package artifacts across the two package lines, sixteen matching symbol packages for the runtime, provider, and privacy packages, package README and XML metadata, analyzer assets, provider and privacy dependency alignment, and the line-specific `net8.0` or `net10.0` nuspec dependency group for each package version. The core package must expose the expected EF Core, EF Core Relational, and `Microsoft.Extensions.DependencyInjection.Abstractions` versions for its selected target group. Each provider and privacy package must depend on the packed `DCoding.Data.DVault` version from the same package line and use the correct target-specific provider dependency, `Microsoft.EntityFrameworkCore.Relational`, and `Microsoft.Extensions.DependencyInjection.Abstractions` versions when those direct dependencies are present. The DB2 provider package must use `IBM.EntityFrameworkCore` `8.0.0.400` for the `net8.0` line and `10.0.0.100` for the `net10.0` line.
 
 If verification reports that a package is missing a target-framework dependency group, a provider package is missing a `DCoding.Data.DVault` dependency or depends on a different core version, one target group mixes EF Core lines, packaged README guidance is stale or mixed-line, XML docs or analyzer assets are missing, or symbols drift, stop the release. Correct the package inputs, rebuild, repack, and rerun the full required pre-publish evidence before requesting approval again.
 
@@ -106,9 +109,9 @@ If verification reports that a package is missing a target-framework dependency 
 
 Follow this sequence exactly for the coordinated manual release:
 
-1. Confirm the release scope is the full eight-package family.
+1. Confirm the release scope is the full nine-package family.
 2. Select one package-version line for this approval: `8.43.0` for `net8.0` and EF Core 8, or `10.43.0` for `net10.0` and EF Core 10.
-3. Set or confirm that selected aligned package version for all eight packages.
+3. Set or confirm that selected aligned package version for all nine packages.
 4. Prepare and review release notes or changelog content for the coordinated release.
 5. Run `dotnet build DVault.slnx --nologo`.
 6. Run `dotnet test DVault.slnx --nologo`.
@@ -118,14 +121,15 @@ Follow this sequence exactly for the coordinated manual release:
 10. Review the validation evidence, target-framework dependency groups, packaged README guidance, symbols, analyzer assets, XML docs, and provider dependency alignment.
 11. Record final publish approval for the selected package-version line.
 12. Push `DCoding.Data.DVault` first.
-13. Push `DCoding.Data.DVault.Analyzers`.
-14. Push `DCoding.Data.DVault.Db2`.
-15. Push `DCoding.Data.DVault.MySql`.
-16. Push `DCoding.Data.DVault.Oracle`.
-17. Push `DCoding.Data.DVault.Postgres`.
-18. Push `DCoding.Data.DVault.Sqlite`.
-19. Push `DCoding.Data.DVault.SqlServer`.
-20. Record the completed publication outcome for all eight packages in the selected package-version line.
+13. Push `DCoding.Data.DVault.Privacy`.
+14. Push `DCoding.Data.DVault.Analyzers`.
+15. Push `DCoding.Data.DVault.Db2`.
+16. Push `DCoding.Data.DVault.MySql`.
+17. Push `DCoding.Data.DVault.Oracle`.
+18. Push `DCoding.Data.DVault.Postgres`.
+19. Push `DCoding.Data.DVault.Sqlite`.
+20. Push `DCoding.Data.DVault.SqlServer`.
+21. Record the completed publication outcome for all nine packages in the selected package-version line.
 
 The provider publish order is policy for this manual release flow: Db2, MySql, Oracle, Postgres, Sqlite, then SqlServer. Do not infer a different order from project layout or provider dependency shape.
 
@@ -143,7 +147,7 @@ Before the first package push, the final approval record must include:
 
 - coordinated release version
 - selected package-version line and its target framework / EF Core line
-- confirmation that all eight packages are in scope
+- confirmation that all nine packages are in scope
 - location of the reviewed release notes or changelog content
 - validation evidence for the five required commands
 - confirmation that `bash tools/verify-packages.sh` passed line-specific dependency-group checks, packaged README guidance checks, metadata, XML docs, analyzer assets, symbols, and provider dependency alignment against the packed core version

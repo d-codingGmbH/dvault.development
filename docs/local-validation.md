@@ -14,9 +14,9 @@ bash tools/check-format.sh
 
 `bash tools/pack-release-packages.sh` clears stale package artifacts and creates the coordinated release package lines under `artifacts/packages/`:
 
-- eight `8.43.0` `.nupkg` files with `net8.0` assets and EF Core 8 dependency groups
-- eight `10.43.0` `.nupkg` files with `net10.0` assets and EF Core 10 dependency groups
-- matching `.snupkg` files for the runtime and provider packages
+- nine `8.43.0` `.nupkg` files with `net8.0` assets and EF Core 8 dependency groups
+- nine `10.43.0` `.nupkg` files with `net10.0` assets and EF Core 10 dependency groups
+- matching `.snupkg` files for the runtime, provider, and privacy packages
 
 `bash tools/verify-packages.sh` checks package counts, ids, versions, filenames, metadata, README install guidance, XML documentation, analyzer assets, provider dependencies, DB2 dependency alignment, EF Core dependency lines, symbol packages, and stale package artifacts.
 

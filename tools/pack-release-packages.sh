@@ -11,6 +11,7 @@ runtime_projects=(
   "src/DCoding.Data.DVault.MySql/DCoding.Data.DVault.MySql.csproj"
   "src/DCoding.Data.DVault.Oracle/DCoding.Data.DVault.Oracle.csproj"
   "src/DCoding.Data.DVault.Postgres/DCoding.Data.DVault.Postgres.csproj"
+  "src/DCoding.Data.DVault.Privacy/DCoding.Data.DVault.Privacy.csproj"
   "src/DCoding.Data.DVault.Sqlite/DCoding.Data.DVault.Sqlite.csproj"
   "src/DCoding.Data.DVault.SqlServer/DCoding.Data.DVault.SqlServer.csproj"
 )

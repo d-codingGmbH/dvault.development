@@ -19,9 +19,11 @@ Approved baselines are stored per package in `tests/DCoding.Data.DVault.Tests/Un
 - `DCoding.Data.DVault.approved.txt`
 - `DCoding.Data.DVault.Sqlite.approved.txt`
 - `DCoding.Data.DVault.Postgres.approved.txt`
+- `DCoding.Data.DVault.Privacy.approved.txt`
 - `DCoding.Data.DVault.SqlServer.approved.txt`
 - `DCoding.Data.DVault.Oracle.approved.txt`
 - `DCoding.Data.DVault.MySql.approved.txt`
+- `DCoding.Data.DVault.Db2.approved.txt`
 
 When a public type, member, parameter, or constant changes in one package, the matching package snapshot fails while the other package snapshots continue to report their own surfaces separately. This keeps provider package changes from hiding changes in the core package, even though the provider extension classes share the `DCoding.Data.DVault` namespace.
 

@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using DCoding.Data.DVault.Privacy;
 using Xunit;
 
 namespace DCoding.Data.DVault.Tests.Unit;
@@ -63,6 +64,14 @@ public sealed class ApiSurfaceSnapshotTests {
         "DCoding.Data.DVault.Db2",
         typeof(DVaultDb2ServiceCollectionExtensions).Assembly,
         "DCoding.Data.DVault.Db2.approved.txt");
+  }
+
+  [Fact]
+  public void PrivacyPublicApiMatchesApprovedSnapshot() {
+    AssertPublicApiMatchesApprovedSnapshot(
+        "DCoding.Data.DVault.Privacy",
+        typeof(DVaultPrivacyServiceCollectionExtensions).Assembly,
+        "DCoding.Data.DVault.Privacy.approved.txt");
   }
 
   private static void AssertPublicApiMatchesApprovedSnapshot(

@@ -127,6 +127,17 @@ public sealed class PackageVerifier {
           false,
           true),
       new(
+          "DCoding.Data.DVault.Privacy",
+          "DVault Privacy Extensions",
+          "Provider-neutral opt-in privacy extension skeleton and alias-driven registration seams for DCoding.Data.DVault.",
+          ["dvault", "data-vault", "privacy", "security", "gdpr", "dsgvo", "ef-core", "persistence"],
+          false,
+          false,
+          false,
+          false,
+          true,
+          true),
+      new(
           "DCoding.Data.DVault.Sqlite",
           "DVault SQLite Provider Extensions",
           "SQLite provider extensions and optimized write strategies for DCoding.Data.DVault.",
@@ -607,14 +618,16 @@ public sealed class PackageVerifier {
       ExpectedPackageLine packageLine,
       string coreVersion,
       List<PackageVerificationIssue> issues) {
-    if (!expectedPackage.IsProvider && !string.Equals(expectedPackage.Id, CorePackageId, StringComparison.Ordinal)) {
+    var expectedDependencies = GetExpectedDependencies(expectedPackage, packageLine.TargetFramework, coreVersion);
+    if (expectedDependencies.Count == 0) {
       return;
     }
 
-    if (expectedPackage.IsProvider && string.IsNullOrWhiteSpace(coreVersion)) {
+    if ((expectedPackage.IsProvider || expectedPackage.UsesCorePackageDependency) &&
+        string.IsNullOrWhiteSpace(coreVersion)) {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
-          "Cannot verify provider dependency groups because the core package version is unavailable."));
+          "Cannot verify package dependency groups because the core package version is unavailable."));
       return;
     }
 
@@ -659,7 +672,7 @@ public sealed class PackageVerifier {
     ValidateDependencyGroup(
         archive,
         packageLine.TargetFramework,
-        GetExpectedDependencies(expectedPackage, packageLine.TargetFramework, coreVersion),
+        expectedDependencies,
         matchingGroups[0],
         issues);
   }
@@ -748,7 +761,7 @@ public sealed class PackageVerifier {
     if (string.Equals(expectedPackage.Id, CorePackageId, StringComparison.Ordinal)) {
       expectedDependencies.Add(new ExpectedDependency("Microsoft.EntityFrameworkCore", GetEfCoreVersion(targetFramework)));
     }
-    else if (expectedPackage.IsProvider) {
+    else if (expectedPackage.IsProvider || expectedPackage.UsesCorePackageDependency) {
       expectedDependencies.Add(new ExpectedDependency(CorePackageId, coreVersion));
     }
 
@@ -762,7 +775,8 @@ public sealed class PackageVerifier {
     }
 
     if (string.Equals(expectedPackage.Id, CorePackageId, StringComparison.Ordinal) ||
-        expectedPackage.IsProvider) {
+        expectedPackage.IsProvider ||
+        expectedPackage.UsesDependencyInjectionAbstractionsDependency) {
       expectedDependencies.Add(new ExpectedDependency(
           "Microsoft.Extensions.DependencyInjection.Abstractions",
           GetDependencyInjectionAbstractionsVersion(targetFramework)));
@@ -848,7 +862,9 @@ public sealed class PackageVerifier {
       bool IsProvider,
       bool IsAnalyzer,
       bool UsesEfRelationalDependency = false,
-      bool UsesDb2ProviderDependency = false);
+      bool UsesDb2ProviderDependency = false,
+      bool UsesCorePackageDependency = false,
+      bool UsesDependencyInjectionAbstractionsDependency = false);
 
   private sealed record ExpectedPackageLine(string Version, string TargetFramework, string EfCoreLine);
 

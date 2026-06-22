@@ -27,6 +27,7 @@ dotnet add package DCoding.Data.DVault.Postgres --version 8.43.0
 dotnet add package DCoding.Data.DVault.MySql --version 8.43.0
 dotnet add package DCoding.Data.DVault.Oracle --version 8.43.0
 dotnet add package DCoding.Data.DVault.SqlServer --version 8.43.0
+dotnet add package DCoding.Data.DVault.Privacy --version 8.43.0
 ```
 
 For `net10.0` projects on EF Core 10, use the `10.43.0` package line:
@@ -39,7 +40,10 @@ dotnet add package DCoding.Data.DVault.Postgres --version 10.43.0
 dotnet add package DCoding.Data.DVault.MySql --version 10.43.0
 dotnet add package DCoding.Data.DVault.Oracle --version 10.43.0
 dotnet add package DCoding.Data.DVault.SqlServer --version 10.43.0
+dotnet add package DCoding.Data.DVault.Privacy --version 10.43.0
 ```
+
+Install `DCoding.Data.DVault.Privacy` only when the application explicitly opts into the privacy extension seam. The package is a provider-neutral skeleton for registration, options, and encrypted-payload-alias contracts; it does not make an application compliant, enable automatic encryption or redaction, or use provider-native encryption features.
 
 Add the analyzer package only to projects that own DVault declarations, compile-time generated row mappings, or generated typed read helpers, and keep it local with `PrivateAssets="all"`. Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.43.0` package line. The current analyzer package carries one `net10.0` analyzer asset for both coordinated package lines; this repository does not validate pure `.NET 8 SDK` analyzer consumption.
 
@@ -125,7 +129,7 @@ For runnable examples and fuller workflows, see [Getting Started](docs/getting-s
 
 ## Package Compatibility
 
-The current coordinated package baseline is documented in [Package Compatibility](docs/package-compatibility.md) and [DVault v0.43.0 Release Notes](docs/releases/v0.43.0.md). DVault has eight packable packages, two visible consumer package lines, target-specific dependency pins, and a local analyzer package boundary.
+The current coordinated package baseline is documented in [Package Compatibility](docs/package-compatibility.md) and [DVault v0.43.0 Release Notes](docs/releases/v0.43.0.md). DVault has nine packable packages, two visible consumer package lines, target-specific dependency pins, a local analyzer package boundary, and an optional privacy skeleton package.
 
 In short:
 
@@ -133,6 +137,7 @@ In short:
 - `10.43.0` targets `net10.0` and the EF Core 10 dependency line.
 - `v0.43.0` is a repository release tag and release-note label, not a NuGet package version.
 - `DCoding.Data.DVault.Analyzers` remains a local `PrivateAssets="all"` analyzer reference and currently requires a `.NET 10 SDK` build host for both package lines.
+- `DCoding.Data.DVault.Privacy` remains optional and opt-in; it provides registration and alias-driven privacy seams only, not compliance, automatic privacy execution, or provider-native encryption.
 - Hash-key storage guidance now routes new projects to binary-first setup and existing persisted `HexString` setups to the migration guide and dry-run manifest path.
 
 ## Documentation Map
@@ -151,6 +156,7 @@ In short:
 | Typed PIT/bridge helper boundary | [DVault V1 Typed PIT And Bridge Helper Contract](docs/architecture/dvault-v1-typed-pit-bridge-helper-contract.md) |
 | Read-plan diagnostics and redaction | [DVault V2 Redacted Read-Plan Explain Contract](docs/architecture/dvault-v2-redacted-read-plan-explain-contract.md) |
 | Analyzer and generator scope | [Analyzer README](src/DCoding.Data.DVault.Analyzers/README.md) |
+| Optional privacy extension boundary | [DVault V1 Optional Privacy Extension Boundary](docs/architecture/dvault-v1-optional-privacy-extension-boundary.md) |
 | Hashing and hash-key storage contracts | [Stable Hashing Contract](docs/plans/stable-hashing-contract.md), [Hash-Key Storage Profile Contract](docs/plans/hash-key-storage-profile-contract.md), and [Hash-Key Storage Migration Guide](docs/hash-key-storage-migration.md) |
 
 ## Current v0.43.0 Limitations
@@ -167,7 +173,7 @@ In short:
 
 - `DVault.slnx`: root build and test solution.
 - `src/DCoding.Data.DVault/`: provider-neutral runtime package.
-- `src/DCoding.Data.DVault.*`: provider extension packages for DB2, SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, plus the analyzer/source-generator package.
+- `src/DCoding.Data.DVault.*`: provider extension packages for DB2, SQLite, PostgreSQL, SQL Server, Oracle, and MySQL, plus the optional privacy skeleton and analyzer/source-generator packages.
 - `tests/DCoding.Data.DVault.Tests/`: unit, integration, public API, package-verifier, and provider test projects.
 - `examples/`: runnable SQLite and PostgreSQL quickstarts.
 - `benchmarks/`: local benchmark projects.
@@ -185,7 +191,7 @@ bash tools/verify-packages.sh
 bash tools/check-format.sh
 ```
 
-`bash tools/pack-release-packages.sh` creates the two coordinated package lines under `artifacts/packages/`: eight `8.43.0` packages with `net8.0` assets and EF Core 8 dependency groups, and eight `10.43.0` packages with `net10.0` assets and EF Core 10 dependency groups. `bash tools/verify-packages.sh` inspects those artifacts, expects exactly sixteen DVault `.nupkg` files plus fourteen matching symbol packages for the runtime/provider packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider package depends on the packed `DCoding.Data.DVault` version from the same package line.
+`bash tools/pack-release-packages.sh` creates the two coordinated package lines under `artifacts/packages/`: nine `8.43.0` packages with `net8.0` assets and EF Core 8 dependency groups, and nine `10.43.0` packages with `net10.0` assets and EF Core 10 dependency groups. `bash tools/verify-packages.sh` inspects those artifacts, expects exactly eighteen DVault `.nupkg` files plus sixteen matching symbol packages for the runtime, provider, and privacy packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider and privacy package depends on the packed `DCoding.Data.DVault` version from the same package line.
 
 For provider-specific filters, environment variables, benchmark commands, and package-verification details, see [Local Validation](docs/local-validation.md).
 

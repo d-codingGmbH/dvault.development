@@ -25,10 +25,13 @@ The coordinated package family contains exactly these packable package ids:
 - `DCoding.Data.DVault.MySql`
 - `DCoding.Data.DVault.Oracle`
 - `DCoding.Data.DVault.Postgres`
+- `DCoding.Data.DVault.Privacy`
 - `DCoding.Data.DVault.Sqlite`
 - `DCoding.Data.DVault.SqlServer`
 
 The `src/DCoding.Data` project is a non-packable source-root build anchor and is not a NuGet publication artifact.
+
+`DCoding.Data.DVault.Privacy` is an optional provider-neutral privacy skeleton. Consumers install it only when they explicitly opt into the privacy extension seam; it provides registration, options, and encrypted-payload-alias contracts and does not provide compliance guarantees, automatic encryption/redaction, or provider-native encryption features.
 
 ## Dependency Matrix
 

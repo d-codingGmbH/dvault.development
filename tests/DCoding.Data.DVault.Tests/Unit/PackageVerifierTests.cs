@@ -70,6 +70,17 @@ public sealed class PackageVerifierTests {
           false,
           true),
       new(
+          "DCoding.Data.DVault.Privacy",
+          "DVault Privacy Extensions",
+          "Provider-neutral opt-in privacy extension skeleton and alias-driven registration seams for DCoding.Data.DVault.",
+          ["dvault", "data-vault", "privacy", "security", "gdpr", "dsgvo", "ef-core", "persistence"],
+          false,
+          false,
+          false,
+          false,
+          true,
+          true),
+      new(
           "DCoding.Data.DVault.Sqlite",
           "DVault SQLite Provider Extensions",
           "SQLite provider extensions and optimized write strategies for DCoding.Data.DVault.",
@@ -504,6 +515,50 @@ public sealed class PackageVerifierTests {
         !string.Equals(reference, "DCoding.Data.DVault", StringComparison.Ordinal));
   }
 
+  [Fact]
+  public void PrivacyProjectDependsOnlyOnCoreAndDependencyInjectionAbstractions() {
+    var projectPath = GetRepositoryPath(
+        "src/DCoding.Data.DVault.Privacy/DCoding.Data.DVault.Privacy.csproj");
+    var project = XDocument.Load(projectPath);
+    var packageReferences = project
+        .Descendants("PackageReference")
+        .Select(reference => Assert.IsType<string>(reference.Attribute("Include")?.Value))
+        .Distinct(StringComparer.Ordinal)
+        .Order(StringComparer.Ordinal)
+        .ToArray();
+    var projectReferences = project
+        .Descendants("ProjectReference")
+        .Select(reference => Path.GetFileNameWithoutExtension(Assert.IsType<string>(reference.Attribute("Include")?.Value)))
+        .Order(StringComparer.Ordinal)
+        .ToArray();
+
+    Assert.Equal(["Microsoft.Extensions.DependencyInjection.Abstractions"], packageReferences);
+    Assert.Equal([CorePackageId], projectReferences);
+  }
+
+  [Fact]
+  public void ExistingRuntimeAndProviderProjectsDoNotReferencePrivacyPackage() {
+    var projectPaths = new[] {
+        "src/DCoding.Data.DVault/DCoding.Data.DVault.csproj",
+        "src/DCoding.Data.DVault.Db2/DCoding.Data.DVault.Db2.csproj",
+        "src/DCoding.Data.DVault.MySql/DCoding.Data.DVault.MySql.csproj",
+        "src/DCoding.Data.DVault.Oracle/DCoding.Data.DVault.Oracle.csproj",
+        "src/DCoding.Data.DVault.Postgres/DCoding.Data.DVault.Postgres.csproj",
+        "src/DCoding.Data.DVault.Sqlite/DCoding.Data.DVault.Sqlite.csproj",
+        "src/DCoding.Data.DVault.SqlServer/DCoding.Data.DVault.SqlServer.csproj",
+    };
+
+    foreach (var projectPath in projectPaths) {
+      var project = XDocument.Load(GetRepositoryPath(projectPath));
+      var projectReferences = project
+          .Descendants("ProjectReference")
+          .Select(reference => Path.GetFileNameWithoutExtension(Assert.IsType<string>(reference.Attribute("Include")?.Value)))
+          .ToArray();
+
+      Assert.DoesNotContain("DCoding.Data.DVault.Privacy", projectReferences);
+    }
+  }
+
   private static PackageVerificationResult Verify(string packageDirectory) {
     return new PackageVerifier().Verify(new PackageVerificationOptions(packageDirectory));
   }
@@ -739,7 +794,7 @@ public sealed class PackageVerifierTests {
     if (string.Equals(package.Id, CorePackageId, StringComparison.Ordinal)) {
       dependencies.Add(new TestDependency("Microsoft.EntityFrameworkCore", GetEfCoreVersion(packageLine.TargetFramework)));
     }
-    else if (package.IsProvider) {
+    else if (package.IsProvider || package.UsesCorePackageDependency) {
       dependencies.Add(new TestDependency(CorePackageId, options.CoreDependencyVersion ?? packageLine.Version));
     }
 
@@ -753,7 +808,8 @@ public sealed class PackageVerifierTests {
     }
 
     if (string.Equals(package.Id, CorePackageId, StringComparison.Ordinal) ||
-        package.IsProvider) {
+        package.IsProvider ||
+        package.UsesDependencyInjectionAbstractionsDependency) {
       dependencies.Add(new TestDependency(
           "Microsoft.Extensions.DependencyInjection.Abstractions",
           GetDependencyInjectionAbstractionsVersion(packageLine.TargetFramework)));
@@ -843,7 +899,9 @@ public sealed class PackageVerifierTests {
       bool IsProvider,
       bool IsAnalyzer,
       bool UsesEfRelationalDependency = false,
-      bool UsesDb2ProviderDependency = false);
+      bool UsesDb2ProviderDependency = false,
+      bool UsesCorePackageDependency = false,
+      bool UsesDependencyInjectionAbstractionsDependency = false);
 
   private sealed record PackageLine(string Version, string TargetFramework, string EfCoreLine);
 
