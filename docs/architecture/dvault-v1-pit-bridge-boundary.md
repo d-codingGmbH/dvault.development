@@ -2,7 +2,8 @@
 
 Status: v1 implementation note
 Ticket: 06F5Q91M0PM17RP43ZQRPBDXP0
-Current public baseline: [DVault v0.34.0 Release Notes](../releases/v0.34.0.md)
+Current public baseline: [DVault v0.45.0 Release Notes](../releases/v0.45.0.md)
+DB2 provider package baseline: [DVault v0.34.0 Release Notes](../releases/v0.34.0.md)
 Read-optimization expansion baseline: [DVault v0.28.0 Release Notes](../releases/v0.28.0.md)
 PIT/bridge feature-introduction baseline: [DVault v0.21.0 Release Notes](../releases/v0.21.0.md)
 
@@ -22,6 +23,15 @@ DVault v1 treats PIT and bridge tables as explicit read models. Application code
 - Registry-backed callers can use `DataVaultRegistryPitRebuildRequest` and `DataVaultRegistryPitParentMaintenanceRequest` to resolve a PIT by exact logical name or exact `DataVaultMetadataClrMapping.Pit(...)` CLR mapping from `UseDataVaultMetadata()`.
 
 PIT maintenance is explicit caller work after ingestion. Saves, reads, EF `SaveChanges`, provider startup, and background scheduling do not refresh PIT rows implicitly.
+
+The accepted provider push-down baseline is intentionally asymmetric:
+
+- `AddDVaultPostgres()` registers `IDataVaultProviderPitMaintenanceStrategy` through `PostgresDataVaultPitMaintenanceStrategy`. The default PIT maintenance service can select that provider strategy for clean Npgsql-backed full rebuilds of ordinary hub-parent PITs, shared-driving-key multi-active hub-parent PITs, and link-parent non-multi-active PITs.
+- `AddDVaultSqlServer()` replaces `IDataVaultPitMaintenanceService` with `SqlServerDataVaultPitMaintenanceService`. That service selects the SQL Server provider path only for clean full rebuilds of ordinary hub-parent PITs.
+- PostgreSQL and SQL Server provider paths both stay request-gated. Provider-name mismatch, dirty tracked contexts, unsupported PIT shapes, incomplete provider evidence, and provider-specific guard failures fall back to the provider-neutral maintenance implementation.
+- SQL Server `MaintainParentsAsync(...)`, SQL Server multi-active PITs, SQL Server link-parent PITs, and SQL Server caller transactions that cannot provide rollback-clean savepoint behavior use provider-neutral maintenance. SQL Server full-rebuild faults and cancellations preserve the pre-rebuild rows rather than leaving a partially refreshed PIT table.
+
+No provider registration turns PIT maintenance into automatic work. Applications still decide when rebuilds or parent maintenance run, and PIT reads still consume only rows already maintained before the read request.
 
 ## PIT Read Boundary
 
@@ -51,11 +61,11 @@ The public `dvault.model.v1` PIT artifact shape remains hub-parent-only and cont
 
 ## Bridge Maintenance Push-Down Posture
 
-Bridge rebuild and maintenance push-down stays deferred from this boundary. The current provider-specific maintenance seam is the PostgreSQL PIT rebuild strategy; bridge maintenance remains the provider-neutral `IDataVaultBridgeMaintenanceService` surface, and this contract does not expose an `IDataVaultProviderBridgeMaintenanceStrategy` counterpart.
+Bridge rebuild and maintenance push-down stays deferred from this boundary. The current provider-specific maintenance work is limited to PIT maintenance: PostgreSQL contributes `PostgresDataVaultPitMaintenanceStrategy`, while SQL Server replaces `IDataVaultPitMaintenanceService` with `SqlServerDataVaultPitMaintenanceService` for a narrower ordinary hub-parent full-rebuild gate. Bridge maintenance remains the provider-neutral `IDataVaultBridgeMaintenanceService` surface, and this contract does not expose an `IDataVaultProviderBridgeMaintenanceStrategy` counterpart.
 
 Maintained-bridge read evidence proves provider read-strategy selection over already-maintained bridge rows. It does not prove write-side bridge-maintenance push-down value, SQL shape, fallback vocabulary, or parity with the broader bridge maintenance semantics above. Any later bridge push-down lane would first need new core dispatch, provider registration, bridge-specific gate/fallback diagnostics, parity tests for existing maintenance semantics, and a preserved benchmark artifact triplet before provider SQL can be promoted.
 
-The reopen threshold is concrete hotspot evidence that provider-neutral bridge maintenance, not bridge reads, is a material bottleneck after the PIT provider-maintenance prototype. A first reopened slice should stay limited to PostgreSQL many-to-many full rebuild. Hierarchy rebuild push-down, incremental or delete-aware maintenance, provider expansion beyond the first prototype, deployment artifacts, and support-bundle orchestration remain separate non-goals.
+The reopen threshold is concrete hotspot evidence that provider-neutral bridge maintenance, not bridge reads, is a material bottleneck after the bounded PIT provider-maintenance prototypes. A first reopened slice should stay limited to a single many-to-many full rebuild before hierarchy rebuild push-down, incremental or delete-aware maintenance, provider expansion, deployment artifacts, and support-bundle orchestration are considered as separate non-goals.
 
 ## Bridge Read Boundary
 
@@ -77,6 +87,10 @@ Focused integration coverage:
 
 - [DataVaultPitReadServiceSqliteTests.cs](../../tests/DCoding.Data.DVault.Tests/Integration/DataVaultPitReadServiceSqliteTests.cs) covers SQLite PIT as-of reads, provider strategy selection, provider-neutral fallback diagnostics, and PIT read-shape facts.
 - [DataVaultPitMaintenanceServiceSqliteTests.cs](../../tests/DCoding.Data.DVault.Tests/Integration/DataVaultPitMaintenanceServiceSqliteTests.cs) covers PIT rebuild, parent maintenance, late-arriving correction, shared-driving-key multi-active PITs, link-parent runtime PITs, and registry-backed PIT maintenance requests.
+- [PostgresProviderCapabilityTests.cs](../../tests/DCoding.Data.DVault.Tests/Unit/PostgresProviderCapabilityTests.cs) covers PostgreSQL PIT maintenance strategy registration and the approved full-rebuild gate for ordinary hub-parent, shared-driving-key multi-active hub-parent, and link-parent non-multi-active PITs.
+- [PostgresPitMaintenanceServiceTests.cs](../../tests/DCoding.Data.DVault.Tests/Integration/PostgresPitMaintenanceServiceTests.cs) covers configured PostgreSQL full rebuild behavior for the supported PIT shapes.
+- [SqlServerDataVaultPitMaintenanceServiceTests.cs](../../tests/DCoding.Data.DVault.Tests/Unit/SqlServerDataVaultPitMaintenanceServiceTests.cs) covers the SQL Server ordinary hub-parent full-rebuild gate plus provider-neutral fallback for maintain-parents, provider mismatch, dirty contexts, link-parent PITs, multi-active PITs, and no-savepoint caller transactions.
+- [SqlServerDataVaultSmokeTests.cs](../../tests/DCoding.Data.DVault.Tests/Integration/SqlServerDataVaultSmokeTests.cs) covers configured SQL Server ordinary PIT rebuild parity and rollback-clean behavior on failure and cancellation.
 - [DataVaultProviderReadStrategyTests.cs](../../tests/DCoding.Data.DVault.Tests/Unit/DataVaultProviderReadStrategyTests.cs) covers PostgreSQL, SQL Server, MySQL, Oracle, and DB2 latest-satellite candidate gates plus PostgreSQL, SQL Server, MySQL, Oracle, and DB2 PIT/bridge candidate gates for provider match, supported shape selection, unsupported-shape fallback, incomplete-evidence fallback, and stale-maintenance-signal fallback causes.
 - [DataVaultRelationalPitBridgeReadStrategyParityTests.cs](../../tests/DCoding.Data.DVault.Tests/Unit/DataVaultRelationalPitBridgeReadStrategyParityTests.cs) executes PostgreSQL, SQL Server, Oracle, and DB2 latest-satellite candidate reads plus PostgreSQL, SQL Server, MySQL, Oracle, and DB2 PIT/bridge candidate read paths and compares row plus typed projection results with the provider-neutral `AddDVault()` fallback path.
 - [DataVaultBridgeReadServiceSqliteTests.cs](../../tests/DCoding.Data.DVault.Tests/Integration/DataVaultBridgeReadServiceSqliteTests.cs) covers SQLite bridge reads, bounded hierarchy depth, registry-backed bridge read shape, and provider-neutral fallback behavior.
@@ -84,6 +98,8 @@ Focused integration coverage:
 - [DataVaultDiagnosticsIntegrationTests.cs](../../tests/DCoding.Data.DVault.Tests/Integration/DataVaultDiagnosticsIntegrationTests.cs) covers SQLite read strategy diagnostics, read-shape diagnostics, registry-backed read-shape equivalence, and aggregate preflight representative diagnostics.
 - [ExplicitDataVaultSaveServiceTests.cs](../../tests/DCoding.Data.DVault.Tests/Unit/ExplicitDataVaultSaveServiceTests.cs) covers provider package registration for SQLite/PostgreSQL latest-satellite/PIT/bridge read strategies and relational PIT/bridge read strategy registrations.
 - [MySqlProviderCapabilityTests.cs](../../tests/DCoding.Data.DVault.Tests/Unit/MySqlProviderCapabilityTests.cs) covers MySQL latest-satellite read strategy registration and generated window-function SQL shape.
+- [DVaultPostgresServiceCollectionExtensions.cs](../../src/DCoding.Data.DVault.Postgres/DVaultPostgresServiceCollectionExtensions.cs) registers `PostgresDataVaultPitMaintenanceStrategy` as an `IDataVaultProviderPitMaintenanceStrategy`.
+- [DVaultSqlServerServiceCollectionExtensions.cs](../../src/DCoding.Data.DVault.SqlServer/DVaultSqlServerServiceCollectionExtensions.cs) replaces `IDataVaultPitMaintenanceService` with `SqlServerDataVaultPitMaintenanceService`.
 - Provider package service-collection extensions under `src/DCoding.Data.DVault.Sqlite`, `src/DCoding.Data.DVault.Postgres`, `src/DCoding.Data.DVault.SqlServer`, `src/DCoding.Data.DVault.MySql`, `src/DCoding.Data.DVault.Oracle`, and `src/DCoding.Data.DVault.Db2` register the current provider read strategy candidates.
 
 Benchmark evidence:
@@ -98,7 +114,7 @@ Benchmark evidence:
 - [artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.csv](../../artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.csv)
 - [artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.json](../../artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.json)
 
-The shared benchmark artifact contract is [Performance Evidence And Benchmark Artifact Contract](../plans/performance-evidence-benchmark-artifact-contract.md). The relevant completed timing rows include SQLite `latest-satellite-read`, `pit-as-of-read`, and `bridge-traversal-read` from the root quick triplet, MySQL `latest-satellite-read` from the ticket `06FE4QQ9VF7B74E60CXEHSS5XW` provider-configured bundle where `MySqlDataVaultReadStrategy` was selected, plus PostgreSQL, SQL Server, MySQL, and Oracle `pit-as-of-read` and `bridge-traversal-read` rows from the provider-configured v0.32.0 smoke-read bundle where `PostgresDataVaultReadStrategy`, `SqlServerDataVaultReadStrategy`, `MySqlDataVaultReadStrategy`, and `OracleDataVaultReadStrategy` were selected for supported maintained shapes. Optional PostgreSQL, SQL Server, MySQL, Oracle, and DB2 root quick read rows remain visible as skipped rows when their connection-string environment variables are unset; those root placeholders preserve row identity and planned strategy facts but are not completed external-provider timing evidence. MySQL latest-satellite timing is a scoped optimized timing baseline, not a provider-neutral fallback improvement comparator by itself, while DB2 PIT/bridge rows stay in the defer lane with `selectedStrategy`/`plannedReadStrategy` guidance until a completed provider-configured artifact lane is cited.
+The shared benchmark artifact contract is [Performance Evidence And Benchmark Artifact Contract](../plans/performance-evidence-benchmark-artifact-contract.md). The relevant completed timing rows include SQLite `latest-satellite-read`, `pit-as-of-read`, and `bridge-traversal-read` from the root quick triplet, MySQL `latest-satellite-read` from the ticket `06FE4QQ9VF7B74E60CXEHSS5XW` provider-configured bundle where `MySqlDataVaultReadStrategy` was selected, plus PostgreSQL, SQL Server, MySQL, and Oracle `pit-as-of-read` and `bridge-traversal-read` rows from the provider-configured v0.32.0 smoke-read bundle where `PostgresDataVaultReadStrategy`, `SqlServerDataVaultReadStrategy`, `MySqlDataVaultReadStrategy`, and `OracleDataVaultReadStrategy` were selected for supported maintained shapes. DB2 latest-satellite, PIT, and bridge completed timing is scoped to the DB2 hotspot bundle where `Db2DataVaultReadStrategy` was selected for supported maintained shapes. Optional PostgreSQL, SQL Server, MySQL, Oracle, and DB2 root quick read rows remain visible as skipped rows when their connection-string environment variables are unset; those root placeholders preserve row identity and planned strategy facts but are not completed external-provider timing evidence. MySQL latest-satellite timing is a scoped optimized timing baseline, not a provider-neutral fallback improvement comparator by itself.
 
 Use [Provider Optimization Evidence Matrix](../plans/provider-optimization-evidence-matrix.md) as the canonical read-row lookup for scenario, provider, baseline, evidence posture, authoritative artifact source, and finite stop/fallback conditions. This PIT/bridge boundary remains the behavior contract; the matrix is the citation surface for downstream provider optimization evidence.
 
@@ -113,7 +129,7 @@ Compiled-model, compiled-query, and pooled-context guidance remains in [DVault E
 - Automatic PIT or bridge maintenance.
 - Read-time PIT or bridge refresh.
 - Background schedulers, triggers, or implicit EF `SaveChanges` orchestration.
-- Provider-specific PIT or bridge maintenance strategies.
+- Provider-specific PIT maintenance beyond the current PostgreSQL strategy and SQL Server service-replacement gates.
 - Bridge maintenance push-down without bridge-maintenance hotspot evidence, a core/provider bridge-maintenance seam, bridge-specific fallback diagnostics, and benchmark-backed parity proof.
 - Completed non-SQLite optimized latest-satellite timing claims without a provider-configured benchmark artifact.
 - Completed DB2 PIT or bridge timing claims without a provider-configured benchmark artifact.

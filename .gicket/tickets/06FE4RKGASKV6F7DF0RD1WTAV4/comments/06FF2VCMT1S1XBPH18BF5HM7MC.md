@@ -1,14 +1,13 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the docs follow-through ticket around the current branch's two PIT maintenance prototypes, deferred bridge maintenance push-down, and the missing v0.45 release-note/changelog surfaces.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Current branch evidence fixes this as the documentation follow-through ticket for release v0.45.0 - Server-Side PIT and Bridge Maintenance Exploration; docs/releases/v0.45.0.md is not present yet, while the ticket release metadata already names that release.
 - The accepted PIT maintenance baseline is asymmetric and must be documented exactly as implemented: AddDVaultPostgres() adds IDataVaultProviderPitMaintenanceStrategy via PostgresDataVaultPitMaintenanceStrategy, while AddDVaultSqlServer() replaces IDataVaultPitMaintenanceService with SqlServerDataVaultPitMaintenanceService.
 - PostgreSQL full PIT rebuild scope is the supported repository baseline from PostgresProviderCapabilityTests and PostgresPitMaintenanceServiceTests: ordinary hub-parent PITs, shared-driving-key multi-active hub-parent PITs, and link-parent non-multi-active PITs.
@@ -16,59 +15,44 @@
 - Bridge maintenance remains provider-neutral IDataVaultBridgeMaintenanceService; no bridge-provider maintenance seam is present, and maintained-bridge read evidence must stay separate from write-side bridge push-down claims.
 - No ticket description update, relation change, attachment, child ticket, or planning-document write was applied in this refinement pass.
 
-### Scope In
+Scope In
 - Update docs/architecture/dvault-v1-pit-bridge-boundary.md so the authoritative boundary matches the current branch's PIT maintenance implementations, exact fallback posture, and deferred bridge push-down boundary.
 - Update docs/performance-profiles.md so it separates benchmark-backed read evidence from PIT maintenance prototype availability and keeps bridge write-side push-down explicitly deferred.
 - Add docs/releases/v0.45.0.md and a matching top CHANGELOG.md entry for the server-side PIT and bridge maintenance exploration outcome.
 - Cite the current source and test evidence for PostgreSQL PIT maintenance, SQL Server PIT maintenance, and bridge maintenance semantics instead of restating the older exploration plan generically.
 
-### Scope Out
+Scope Out
 - No provider-specific bridge maintenance implementation, no bridge-maintenance benchmark lane, and no bridge runtime commitment beyond the current defer posture.
 - No new PIT maintenance prototype/provider beyond the current PostgreSQL and SQL Server branch evidence.
 - No automatic PIT or bridge maintenance, deployment artifacts, background scheduling, SaveChanges interception, or support-bundle/runtime platform broadening.
 - No README, package-compatibility, manual-publication, local-validation, or package-verifier version-line sweep unless a separate release-alignment ticket is opened.
 
-## Acceptance Criteria
-- docs/architecture/dvault-v1-pit-bridge-boundary.md states the exact accepted PIT push-down paths in the current branch: PostgreSQL via PostgresDataVaultPitMaintenanceStrategy with its supported full-rebuild shape set, and SQL Server via SqlServerDataVaultPitMaintenanceService with its ordinary hub-parent-only full-rebuild gate and rollback-clean fallback behavior.
-- docs/architecture/dvault-v1-pit-bridge-boundary.md states that bridge maintenance push-down remains deferred because the branch still has no bridge-provider maintenance seam and the existing bridge-maintenance semantics remain broader than the PIT prototype lanes.
-- docs/performance-profiles.md distinguishes maintenance prototype availability from measured timing evidence and does not promote PIT maintenance push-down into a benchmark-backed performance claim without a preserved artifact triplet.
-- docs/releases/v0.45.0.md records the v0.45.0 push-down exploration baseline, prototype limits, fallback rules, and non-goals using current branch evidence rather than hypothetical future provider work.
-- CHANGELOG.md adds a v0.45.0 summary entry that points readers to docs/releases/v0.45.0.md.
-- The updated docs keep no-automation and provider-neutral fallback rules explicit: reads do not refresh PIT or bridge rows, unsupported or mismatched maintenance requests fall back, and maintained-bridge read evidence is not treated as bridge-maintenance push-down proof.
-
-## Definition of Done
-- The architecture boundary, performance profile, release note, and changelog surfaces agree on the same v0.45 documentation story for PIT push-down limits, bridge defer posture, fallback behavior, and non-goals.
-- The docs describe current branch behavior, not stale Postgres-only maintenance wording and not speculative bridge/provider expansion.
-- No blocking PO question remains about which PIT maintenance paths are documented, which bridge maintenance claims stay deferred, or which release-note surface carries the exploration outcome.
-- The ticket remains documentation-focused and does not implicitly expand into benchmark reruns, package publication approval, or a full repository-wide package-version guidance sweep.
-
-## Implementation Notes
-- DVaultPostgresServiceCollectionExtensions.cs registers IDataVaultProviderPitMaintenanceStrategy, and PostgresProviderCapabilityTests.cs plus PostgresPitMaintenanceServiceTests.cs prove the bounded PostgreSQL full-rebuild coverage across ordinary hub-parent, shared-driving-key multi-active hub-parent, and link-parent non-multi-active PITs.
-- DVaultSqlServerServiceCollectionExtensions.cs replaces IDataVaultPitMaintenanceService with SqlServerDataVaultPitMaintenanceService; SqlServerDataVaultPitMaintenanceService.cs keeps selection local to clean SQL Server full rebuilds, falls back for MaintainParentsAsync and unsupported shapes, and preserves rollback/savepoint behavior that SqlServerDataVaultSmokeTests.cs verifies.
-- DefaultDataVaultBridgeMaintenanceService.cs plus DataVaultBridgeMaintenanceServiceSqliteTests.cs remain the authoritative bridge semantic baseline: many-to-many rebuild and incremental maintenance, hierarchy shortest-path lowering, topology shrink requiring rebuild, and no delete-aware incremental repair.
-- docs/architecture/dvault-v1-pit-bridge-boundary.md and docs/performance-profiles.md already carry bridge-defer language but still describe PostgreSQL as the only PIT maintenance seam; this ticket should update those docs to the current two-prototype baseline without turning the maintenance story into a measured timing claim.
-- docs/plans/provider-optimization-evidence-matrix.md remains the canonical provider-evidence citation surface; this ticket should cite that matrix where useful rather than copying row prose into the release note.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the v0.45 documentation lands, should a separate ticket add provider-configured PIT maintenance benchmark/artifact lanes before any public performance claim is promoted?
 - If release management wants visible consumer install/version guidance to move from the current v0.44.0 baseline to v0.45.0, should that broader README/package-compatibility/manual-publication sweep stay separate from this bounded push-down documentation ticket?
 
-## Risks
+Risks
 - Until this ticket lands, docs/architecture/dvault-v1-pit-bridge-boundary.md and docs/performance-profiles.md understate the current SQL Server PIT prototype and can mislead readers with stale PostgreSQL-only maintenance wording.
 - If the v0.45 release note blurs architecture/test evidence with benchmark evidence, it will overstate PIT maintenance push-down as a measured performance win that the current branch does not preserve.
 - Broader repository install/version guidance still points at the v0.44.0 baseline; if this ticket is widened informally, it can turn into a full release-version alignment sweep instead of a bounded exploration-doc update.
 
-## Split Recommendations
+Split recommendations
 - Keep the current decomposition unchanged: 06FE4RJD5Z6MWC2E66YB3EZ5YW for dry-run diagnostics context, 06FE4RJP5KG02DF7AEMCQYGNVW for PostgreSQL PIT rebuild, 06FE4RJZ4PA0DZ3HXDSEG2BQMM for SQL Server PIT rebuild, 06FE4RK80ZXGCZ62CMSAYP164W for bridge feasibility, and this ticket for documentation follow-through.
 - If the work expands into README, package-compatibility, manual-publication, local-validation, or package-verifier updates for 8.45.0 / 10.45.0, split that into a separate release-alignment ticket instead of broadening this bounded architecture/performance/release-note task.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Scope: update PIT/bridge boundary docs, performance profiles, and release notes after push-down exploration. Acceptance: docs separate accepted paths, prototype limits, fallback behavior, and non-goals.
+Run mode
+- apply: planned updates are applied after this comment

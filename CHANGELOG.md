@@ -2,6 +2,17 @@
 
 This changelog summarizes the public release-note trail. The detailed release records remain under [docs/releases/](docs/releases/); those files are the source of truth for scope, evidence, non-goals, and validation notes.
 
+## v0.45.0 - Server-Side PIT and Bridge Maintenance Exploration
+
+- Records the current server-side PIT maintenance exploration baseline without widening into package-version guidance or release-publication approval.
+- Documents that `AddDVaultPostgres()` registers `PostgresDataVaultPitMaintenanceStrategy` for clean PostgreSQL full rebuilds of ordinary hub-parent, shared-driving-key multi-active hub-parent, and link-parent non-multi-active PITs.
+- Documents that `AddDVaultSqlServer()` replaces `IDataVaultPitMaintenanceService` with `SqlServerDataVaultPitMaintenanceService` for clean SQL Server full rebuilds of ordinary hub-parent PITs only.
+- Keeps unsupported, mismatched, dirty-context, maintain-parents, SQL Server multi-active, SQL Server link-parent, and SQL Server no-savepoint maintenance requests on provider-neutral fallback paths.
+- Keeps automatic PIT/bridge maintenance, read-time refresh, EF `SaveChanges` interception, background scheduling, bridge maintenance push-down, and benchmark-backed provider-maintenance timing claims outside this baseline.
+- Updates the architecture boundary, performance guidance, and provider evidence matrix so maintained-bridge read evidence is not treated as bridge-maintenance push-down proof.
+
+See [DVault v0.45.0 Release Notes](docs/releases/v0.45.0.md).
+
 ## v0.44.0 - Optional Privacy Extension Foundation
 
 - Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.44.0` / `net8.0` / EF Core 8 and `10.44.0` / `net10.0` / EF Core 10.
