@@ -3,21 +3,20 @@
   "ticket-id": "06FE4SENE1ZV45P8DKRQTMG0A0",
   "ticket-type": "task",
   "title": "Task: Evaluate provider-native encryption capabilities for privacy extension",
-  "revision": "06FE4SFRVWM3ZSREHCQMGED95W",
-  "status": "todo",
+  "revision": "06FESV0J7G4YW5XZMB3P5TJCN4",
+  "status": "done",
   "labels": [
-    "automation/bot-ready",
-    "needs-po",
-    "type/task",
+    "area/architecture",
     "area/privacy",
-    "area/security",
     "area/provider-support",
-    "area/architecture"
+    "area/security",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FE4PN9EX787F4DHNJVN86YK0",
   "release-id": "06FE4PMT7V0NN9Y6RKD5WDTY58",
   "created-at": "2026-06-20T00:19:45.3134575Z",
-  "updated-at": "2026-06-20T00:19:54.2071418Z"
+  "updated-at": "2026-06-22T01:22:34.6843873Z"
 }

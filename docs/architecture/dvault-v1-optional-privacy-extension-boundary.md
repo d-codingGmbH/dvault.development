@@ -1,4 +1,4 @@
-# DVault V1 Optional Privacy Extension Boundary
+﻿# DVault V1 Optional Privacy Extension Boundary
 
 Status: v1 contract
 Ticket: 06FE4R9PP99G6Q1PTPK4TKD460
@@ -61,6 +61,20 @@ The metadata surface applies only to satellite payload fields. It must not be us
 
 Personal-data metadata preserves Data Vault semantics. Satellite parent identity, row history, hash-diff presence, multi-active driving-key behavior, load timestamp, record source, and provider-neutral EF payload/logical-property mapping remain compatible with the existing baseline. Downstream parser, code-first or registry registration, EF translation, optional privacy package behavior, and provider-specific execution lanes must be implemented through follow-on tickets that consume this metadata contract instead of redefining it.
 
+## Provider-Native Encryption Decision
+
+For the v0.44 privacy-extension baseline, DVault may pursue only caller-invoked, provider-neutral encrypted payload mapping in the shared surface. The approved shared lane is an explicit helper, metadata marker, or EF Core value-conversion proof that stores caller-prepared encrypted payload values through ordinary DVault model mapping. It must keep key material, key lookup, encryption policy, decryption policy, and operation timing owned by the consuming application.
+
+The current supported-provider baseline for this decision is finite: SQLite, PostgreSQL, SQL Server, MySQL through `MySql.EntityFrameworkCore` or `Pomelo.EntityFrameworkCore.MySql`, Oracle, and DB2. The baseline does not create a separate MariaDB capability profile or any guarantee for providers outside that set.
+
+Database-native encryption features are guidance-only for v0.44 and are not DVault shared-runtime behavior:
+
+- database-at-rest or deployment features such as SQL Server TDE, PostgreSQL deployment or TDE posture, Oracle TDE, MySQL or MariaDB tablespace or file encryption, SQLite encrypted-file builds, and DB2 native database encryption remain caller, operator, or database-admin responsibilities;
+- application-integrated provider features such as SQL Server Always Encrypted, PostgreSQL `pgcrypto`, Oracle `DBMS_CRYPTO`, MySQL or MariaDB SQL crypto functions, provider driver key-store integration, provider-specific encrypted column DDL, and row or cell encryption functions stay outside the shared v0.44 contract;
+- database-level at-rest encryption must not be documented or diagnosed as equivalent to DVault field-level privacy semantics.
+
+The shared core must not probe for provider-native encryption capabilities, branch on provider-native encryption availability, issue provider-specific encryption DDL or SQL functions, configure provider key stores, or negotiate database encryption modes. A future provider-native encryption lane requires a separate provider-specific ticket that names one provider and one exact capability, owns the provider package surface, defines diagnostics and fallback behavior, supplies tests, and records evidence before DVault can expose it.
+
 ## Ownership Boundary
 
 DVault-owned responsibilities are limited to library behavior that can be implemented and tested inside the package boundary:
@@ -92,6 +106,7 @@ This story does not approve:
 - automatic deletion, retention scheduling, purge orchestration, archival orchestration, backfill orchestration, or background workflow ownership;
 - default `SaveChanges` interception as the primary privacy behavior path;
 - implicit encryption, pseudonymization, redaction, export filtering, or deletion for callers that did not opt in;
+- provider-native cell, column, row, tablespace, file, or database encryption as a shared v0.44 runtime feature;
 - provider-specific DDL, migrations, storage optimizations, generated SQL artifacts, or runtime dispatch unless a later implementation ticket approves the exact provider lane.
 
 For example, a future helper that encrypts a satellite payload when a caller supplies a key provider and invokes an explicit save helper can fit this boundary. A background service that scans all DVault tables nightly, chooses retention policy, deletes rows, rotates keys, and reports compliance status does not fit this boundary.
@@ -116,6 +131,7 @@ Concrete privacy capabilities must be implemented through separate tickets after
 - code-first or registry APIs for registering the same payload-field and encrypted-payload-alias metadata;
 - EF metadata translation or diagnostics that expose provider-neutral personal-data metadata without changing ordinary payload mapping;
 - field-level encryption with caller-owned key-provider integration;
+- provider-neutral encrypted payload value-conversion proof with caller-owned key-provider integration;
 - pseudonymization helpers for selected hub, link, or satellite fields;
 - redaction or export controls for explicit read paths;
 - retention metadata that applications can inspect without DVault owning retention execution;
