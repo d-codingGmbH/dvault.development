@@ -276,12 +276,12 @@ All values in this section are from the evidence baseline above:
 
 | Scenario | Baseline | Mean ms | Evidence posture |
 | --- | --- | ---: | --- |
-| `customer-profile-history` | `dvault-adddvault-fallback` | 93.802 | Provider-neutral explicit save through `AddDVault()`. |
-| `customer-profile-history` | `dvault-adddvaultsqlite-optimized` | 56.761 | SQLite optimized write path selected `SqliteDataVaultSaveStrategy`. |
-| `customer-profile-bulk-insert-only` | `dvault-adddvault-fallback` | 75.338 | Provider-neutral fallback for 100 satellite operations. |
-| `customer-profile-bulk-insert-only` | `dvault-adddvaultsqlite-optimized` | 26.634 | SQLite optimized write path selected for the same logical profile rows. |
-| `customer-profile-bulk-history` | `dvault-adddvault-fallback` | 95.872 | Provider-neutral fallback for 1000 satellite operations across 10 requests. |
-| `customer-profile-bulk-history` | `dvault-adddvaultsqlite-optimized` | 49.600 | SQLite optimized write path selected for the same logical profile history shape. |
+| `customer-profile-history` | `dvault-adddvault-fallback` | 93.779 | Provider-neutral explicit save through `AddDVault()`. |
+| `customer-profile-history` | `dvault-adddvaultsqlite-optimized` | 56.710 | SQLite optimized write path selected `SqliteDataVaultSaveStrategy`. |
+| `customer-profile-bulk-insert-only` | `dvault-adddvault-fallback` | 75.576 | Provider-neutral fallback for 100 satellite operations. |
+| `customer-profile-bulk-insert-only` | `dvault-adddvaultsqlite-optimized` | 24.731 | SQLite optimized write path selected for the same logical profile rows. |
+| `customer-profile-bulk-history` | `dvault-adddvault-fallback` | 87.307 | Provider-neutral fallback for 1000 satellite operations across 10 requests. |
+| `customer-profile-bulk-history` | `dvault-adddvaultsqlite-optimized` | 51.370 | SQLite optimized write path selected for the same logical profile history shape. |
 
 ### Stop Conditions And Rerun Triggers
 
@@ -315,10 +315,10 @@ All values in this section are from the evidence baseline above:
 
 | Scenario | Baseline | Mean ms | Chunk detail |
 | --- | --- | ---: | --- |
-| `customer-profile-streaming-save` | `dvault-adddvault-fallback/materialized-explicit-bulk` | 46.105 | 60 ordered requests in one materialized bulk request. |
-| `customer-profile-streaming-save` | `dvault-adddvault-fallback/chunked-save-bounded-10` | 64.950 | 6 chunks of 10, retained-state high-water 20. |
-| `customer-profile-streaming-save` | `dvault-adddvault-fallback/async-source-bounded-10` | 41.297 | 6 async-yielded chunks of 10, retained-state high-water 20, source shape `IAsyncEnumerable<DataVaultSaveChunk>`. |
-| `customer-profile-streaming-save` | `dvault-adddvault-fallback/chunked-save-bounded-5` | 90.597 | 12 chunks of 5, retained-state high-water 20. |
+| `customer-profile-streaming-save` | `dvault-adddvault-fallback/materialized-explicit-bulk` | 45.681 | 60 ordered requests in one materialized bulk request. |
+| `customer-profile-streaming-save` | `dvault-adddvault-fallback/chunked-save-bounded-10` | 64.856 | 6 chunks of 10, retained-state high-water 20. |
+| `customer-profile-streaming-save` | `dvault-adddvault-fallback/async-source-bounded-10` | 41.511 | 6 async-yielded chunks of 10, retained-state high-water 20, source shape `IAsyncEnumerable<DataVaultSaveChunk>`. |
+| `customer-profile-streaming-save` | `dvault-adddvault-fallback/chunked-save-bounded-5` | 87.305 | 12 chunks of 5, retained-state high-water 20. |
 
 ### Stop Conditions And Rerun Triggers
 
@@ -452,12 +452,12 @@ All values in this quick table are from the root quick benchmark triplet. Extern
 
 | Scenario | Baseline | Mean ms | Evidence posture |
 | --- | --- | ---: | --- |
-| `latest-satellite-read` | `dvault-adddvault-fallback` | 16.460 | Provider-neutral latest read over 100 customers and 1000 seeded profile states. |
-| `latest-satellite-read` | `dvault-adddvaultsqlite-optimized` | 10.709 | SQLite optimized read path selected `SqliteDataVaultReadStrategy`. |
-| `pit-as-of-read` | `dvault-adddvault-fallback` | 48.176 | Provider-neutral PIT as-of read over 100 PIT rows and 2 satellite segments. |
-| `pit-as-of-read` | `dvault-adddvaultsqlite-optimized` | 15.694 | SQLite optimized PIT read path selected `SqliteDataVaultReadStrategy`. |
-| `bridge-traversal-read` | `dvault-adddvault-fallback` | 12.911 | Provider-neutral bridge traversal over 1 ancestor and 100 descendant bridge rows. |
-| `bridge-traversal-read` | `dvault-adddvaultsqlite-optimized` | 5.590 | SQLite optimized bridge read path selected `SqliteDataVaultReadStrategy`. |
+| `latest-satellite-read` | `dvault-adddvault-fallback` | 16.934 | Provider-neutral latest read over 100 customers and 1000 seeded profile states. |
+| `latest-satellite-read` | `dvault-adddvaultsqlite-optimized` | 10.134 | SQLite optimized read path selected `SqliteDataVaultReadStrategy`. |
+| `pit-as-of-read` | `dvault-adddvault-fallback` | 47.382 | Provider-neutral PIT as-of read over 100 PIT rows and 2 satellite segments. |
+| `pit-as-of-read` | `dvault-adddvaultsqlite-optimized` | 16.389 | SQLite optimized PIT read path selected `SqliteDataVaultReadStrategy`. |
+| `bridge-traversal-read` | `dvault-adddvault-fallback` | 13.002 | Provider-neutral bridge traversal over 1 ancestor and 100 descendant bridge rows. |
+| `bridge-traversal-read` | `dvault-adddvaultsqlite-optimized` | 5.596 | SQLite optimized bridge read path selected `SqliteDataVaultReadStrategy`. |
 Provider-configured PostgreSQL, SQL Server, MySQL, and Oracle PIT/bridge rows should cite [the v0.32.0 smoke-read bundle](../artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.md), not the skipped root quick placeholders. DB2 latest-satellite/PIT/bridge rows should cite [the DB2 hotspot bundle](../artifacts/benchmarks/06FE4QR3DD7EFZ4F35SBTFGWSR-db2-hotspot-evidence-20260620/benchmark-summary.md). Oracle PIT/bridge completed timing evidence is limited to the two Oracle rows in the v0.32.0 bundle:
 
 | Provider | Scenario | Baseline | Mean ms | Evidence posture |

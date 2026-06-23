@@ -66,32 +66,47 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
       return [];
     }
 
-    var matchedPitRows = await ReadMatchedPitRowsAsync(
-        context,
-        projection,
-        cancellationToken).ConfigureAwait(false);
-    if (matchedPitRows.Count == 0) {
-      return [];
+    var connection = context.DbContext.Database.GetDbConnection();
+    var shouldCloseConnection = connection.State != ConnectionState.Open;
+    if (shouldCloseConnection) {
+      await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    var satelliteRowsByOrdinal =
-        new Dictionary<int, IReadOnlyDictionary<DataVaultPitReadPipeline.SatelliteSnapshotKey, Dictionary<string, object>>>();
-    for (var index = 0; index < projection.Satellites.Count; index++) {
-      satelliteRowsByOrdinal[index] = await ReadSatelliteRowsAsync(
-          context.DbContext,
+    try {
+      var matchedPitRows = await ReadMatchedPitRowsAsync(
+          context,
           projection,
-          projection.Satellites[index],
-          index,
-          matchedPitRows.Values,
+          connection,
           cancellationToken).ConfigureAwait(false);
-    }
+      if (matchedPitRows.Count == 0) {
+        return [];
+      }
 
-    return matchedPitRows.Values
-        .OrderBy(row => row.ParentHashKey, StringComparer.Ordinal)
-        .ThenBy(row => row.DrivingKeyValueSignature, StringComparer.Ordinal)
-        .ThenBy(row => row.LoadTimestamp)
-        .Select(row => DataVaultPitReadPipeline.CreatePitReadRecord(projection, row, satelliteRowsByOrdinal))
-        .ToArray();
+      var satelliteRowsByOrdinal =
+          new Dictionary<int, IReadOnlyDictionary<DataVaultPitReadPipeline.SatelliteSnapshotKey, Dictionary<string, object>>>();
+      for (var index = 0; index < projection.Satellites.Count; index++) {
+        satelliteRowsByOrdinal[index] = await ReadSatelliteRowsAsync(
+            context.DbContext,
+            projection,
+            projection.Satellites[index],
+            index,
+            matchedPitRows.Values,
+            connection,
+            cancellationToken).ConfigureAwait(false);
+      }
+
+      return matchedPitRows.Values
+          .OrderBy(row => row.ParentHashKey, StringComparer.Ordinal)
+          .ThenBy(row => row.DrivingKeyValueSignature, StringComparer.Ordinal)
+          .ThenBy(row => row.LoadTimestamp)
+          .Select(row => DataVaultPitReadPipeline.CreatePitReadRecord(projection, row, satelliteRowsByOrdinal))
+          .ToArray();
+    }
+    finally {
+      if (shouldCloseConnection) {
+        await connection.CloseAsync().ConfigureAwait(false);
+      }
+    }
   }
 
   public async Task<IReadOnlyList<DataVaultBridgeReadRecord>> ReadBridgeRowsAsync(
@@ -243,6 +258,7 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
       DataVaultPitReadPipeline.PitSatelliteProjection pitSatellite,
       int satelliteOrdinal,
       IEnumerable<DataVaultPitReadPipeline.MatchedPitRow> matchedPitRows,
+      DbConnection connection,
       CancellationToken cancellationToken) {
     var requiredKeys = matchedPitRows
         .Where(row => row.SnapshotLoadTimestamps[satelliteOrdinal].HasValue)
@@ -263,70 +279,57 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
     var selectedColumns = CreateSatelliteSelectedColumns(pitSatellite.Satellite);
     var satelliteRows = new Dictionary<DataVaultPitReadPipeline.SatelliteSnapshotKey, Dictionary<string, object>>();
 
-    var connection = dbContext.Database.GetDbConnection();
-    var shouldCloseConnection = connection.State != ConnectionState.Open;
-    if (shouldCloseConnection) {
-      await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+    var parentBatchSize = Math.Min(
+        DataVaultPitReadPipeline.ParentHashKeyBatchSize,
+        Math.Max(1, MaxCommandParameterCount - 2));
+    foreach (var parentHashKeyBatch in parentHashKeys.Chunk(parentBatchSize)) {
+      var persistedRows = await ExecuteSatelliteRowsBatchAsync(
+          dbContext,
+          pitSatellite,
+          selectedColumns,
+          parentHashKeyBatch,
+          snapshotLoadTimestampRange.Minimum,
+          snapshotLoadTimestampRange.Maximum,
+          connection,
+          cancellationToken).ConfigureAwait(false);
+
+      AddMatchingSatelliteRows(
+          pitProjection.MetadataName,
+          pitSatellite,
+          requiredKeys,
+          satelliteRows,
+          persistedRows);
     }
 
-    try {
-      var parentBatchSize = Math.Min(
+    var missingKeys = requiredKeys
+        .Where(key => !satelliteRows.ContainsKey(key))
+        .ToHashSet();
+    if (missingKeys.Count > 0) {
+      var missingParentHashKeys = missingKeys
+          .Select(key => key.ParentHashKey)
+          .Distinct(StringComparer.Ordinal)
+          .ToArray();
+      var fallbackParentBatchSize = Math.Min(
           DataVaultPitReadPipeline.ParentHashKeyBatchSize,
-          Math.Max(1, MaxCommandParameterCount - 2));
-      foreach (var parentHashKeyBatch in parentHashKeys.Chunk(parentBatchSize)) {
+          Math.Max(1, MaxCommandParameterCount));
+
+      foreach (var parentHashKeyBatch in missingParentHashKeys.Chunk(fallbackParentBatchSize)) {
         var persistedRows = await ExecuteSatelliteRowsBatchAsync(
             dbContext,
             pitSatellite,
             selectedColumns,
             parentHashKeyBatch,
-            snapshotLoadTimestampRange.Minimum,
-            snapshotLoadTimestampRange.Maximum,
+            null,
+            null,
             connection,
             cancellationToken).ConfigureAwait(false);
 
         AddMatchingSatelliteRows(
             pitProjection.MetadataName,
             pitSatellite,
-            requiredKeys,
+            missingKeys,
             satelliteRows,
             persistedRows);
-      }
-
-      var missingKeys = requiredKeys
-          .Where(key => !satelliteRows.ContainsKey(key))
-          .ToHashSet();
-      if (missingKeys.Count > 0) {
-        var missingParentHashKeys = missingKeys
-            .Select(key => key.ParentHashKey)
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
-        var fallbackParentBatchSize = Math.Min(
-            DataVaultPitReadPipeline.ParentHashKeyBatchSize,
-            Math.Max(1, MaxCommandParameterCount));
-
-        foreach (var parentHashKeyBatch in missingParentHashKeys.Chunk(fallbackParentBatchSize)) {
-          var persistedRows = await ExecuteSatelliteRowsBatchAsync(
-              dbContext,
-              pitSatellite,
-              selectedColumns,
-              parentHashKeyBatch,
-              null,
-              null,
-              connection,
-              cancellationToken).ConfigureAwait(false);
-
-          AddMatchingSatelliteRows(
-              pitProjection.MetadataName,
-              pitSatellite,
-              missingKeys,
-              satelliteRows,
-              persistedRows);
-        }
-      }
-    }
-    finally {
-      if (shouldCloseConnection) {
-        await connection.CloseAsync().ConfigureAwait(false);
       }
     }
 
@@ -452,45 +455,33 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
   private async Task<IReadOnlyDictionary<DataVaultPitReadPipeline.PitRowIdentityKey, DataVaultPitReadPipeline.MatchedPitRow>> ReadMatchedPitRowsAsync(
       DataVaultProviderPitReadStrategyContext context,
       DataVaultPitReadPipeline.PitReadProjection projection,
+      DbConnection connection,
       CancellationToken cancellationToken) {
-    var connection = context.DbContext.Database.GetDbConnection();
-    var shouldCloseConnection = connection.State != ConnectionState.Open;
-    if (shouldCloseConnection) {
-      await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-    }
+    var matchedRows = new Dictionary<DataVaultPitReadPipeline.PitRowIdentityKey, DataVaultPitReadPipeline.MatchedPitRow>();
+    var selectedColumns = CreatePitSelectedColumns(projection);
+    foreach (var parentHashKeyBatch in context.Request.ParentHashKeys.Chunk(GetPitParentHashKeyBatchSize())) {
+      var persistedRows = await ExecutePitRowsBatchAsync(
+          context,
+          projection,
+          selectedColumns,
+          parentHashKeyBatch,
+          connection,
+          cancellationToken).ConfigureAwait(false);
 
-    try {
-      var matchedRows = new Dictionary<DataVaultPitReadPipeline.PitRowIdentityKey, DataVaultPitReadPipeline.MatchedPitRow>();
-      var selectedColumns = CreatePitSelectedColumns(projection);
-      foreach (var parentHashKeyBatch in context.Request.ParentHashKeys.Chunk(GetPitParentHashKeyBatchSize())) {
-        var persistedRows = await ExecutePitRowsBatchAsync(
-            context,
-            projection,
-            selectedColumns,
-            parentHashKeyBatch,
-            connection,
-            cancellationToken).ConfigureAwait(false);
+      foreach (var row in persistedRows) {
+        var matchedRow = DataVaultPitReadPipeline.CreateMatchedPitRow(projection, row);
+        if (matchedRow.LoadTimestamp > context.Request.AsOf) {
+          continue;
+        }
 
-        foreach (var row in persistedRows) {
-          var matchedRow = DataVaultPitReadPipeline.CreateMatchedPitRow(projection, row);
-          if (matchedRow.LoadTimestamp > context.Request.AsOf) {
-            continue;
-          }
-
-          if (!matchedRows.TryGetValue(matchedRow.IdentityKey, out var current) ||
-              matchedRow.LoadTimestamp >= current.LoadTimestamp) {
-            matchedRows[matchedRow.IdentityKey] = matchedRow;
-          }
+        if (!matchedRows.TryGetValue(matchedRow.IdentityKey, out var current) ||
+            matchedRow.LoadTimestamp >= current.LoadTimestamp) {
+          matchedRows[matchedRow.IdentityKey] = matchedRow;
         }
       }
+    }
 
-      return matchedRows;
-    }
-    finally {
-      if (shouldCloseConnection) {
-        await connection.CloseAsync().ConfigureAwait(false);
-      }
-    }
+    return matchedRows;
   }
 
   private async Task<IReadOnlyList<Dictionary<string, object>>> ExecutePitRowsBatchAsync(
@@ -508,16 +499,26 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
         selectedColumns,
         parentHashKeyBatch.Count);
 
-    for (var index = 0; index < parentHashKeyBatch.Count; index++) {
+    var parameterIndex = 0;
+    for (; parameterIndex < parentHashKeyBatch.Count; parameterIndex++) {
       var parameter = command.CreateParameter();
-      parameter.ParameterName = CreateParameterName(index);
+      parameter.ParameterName = CreateParameterName(parameterIndex);
       parameter.Value = DataVaultHashKeyProviderValueConverter.ToProviderParameterValue(
           context.DbContext,
           projection.TableName,
           projection.ParentHashKeyColumnName,
-          parentHashKeyBatch[index]);
+          parentHashKeyBatch[parameterIndex]);
       command.Parameters.Add(parameter);
     }
+
+    var asOfParameter = command.CreateParameter();
+    asOfParameter.ParameterName = CreateParameterName(parameterIndex);
+    asOfParameter.Value = DataVaultLoadTimestampValueConverter.ToProviderValue(
+        context.DbContext,
+        projection.TableName,
+        projection.LoadTimestampColumnName,
+        context.Request.AsOf);
+    command.Parameters.Add(asOfParameter);
 
     return await ReadCommandRowsAsync(
         command,
@@ -734,7 +735,11 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
         .Concat(projection.DrivingKeyColumnNames)
         .Append(projection.LoadTimestampColumnName)
         .ToArray();
-    builder.Append(") ORDER BY ");
+    builder.Append(") AND ")
+        .Append(QuoteIdentifier(projection.LoadTimestampColumnName))
+        .Append(" <= ")
+        .Append(CreateParameterPlaceholder(parentHashKeyCount))
+        .Append(" ORDER BY ");
     for (var index = 0; index < orderColumns.Length; index++) {
       if (index > 0) {
         builder.Append(", ");

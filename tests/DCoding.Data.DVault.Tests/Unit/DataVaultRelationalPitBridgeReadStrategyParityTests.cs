@@ -162,6 +162,12 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
         ["ProfileLoadTimestamp"] = Utc(2026, 5, 11, 11, 0),
         ["StatusLoadTimestamp"] = Utc(2026, 5, 11, 10, 30),
       });
+      context.Set<Dictionary<string, object>>("PitCustomerProfileStatus").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
+        ["CustomerHashKey"] = customerHashKey,
+        ["LoadTimestamp"] = Utc(2026, 5, 11, 12, 30),
+        ["ProfileLoadTimestamp"] = Utc(2026, 5, 11, 11, 0),
+        ["StatusLoadTimestamp"] = Utc(2026, 5, 11, 10, 30),
+      });
       await context.SaveChangesAsync();
     }
 
