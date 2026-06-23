@@ -3,13 +3,12 @@
   "ticket-id": "06FE4RJZ4PA0DZ3HXDSEG2BQMM",
   "ticket-type": "task",
   "title": "Task: Prototype SQL Server PIT rebuild INSERT SELECT path",
-  "revision": "06FF2Q34F1QT6P06Z0VVZBN93C",
+  "revision": "06FF3W7X73XBXVWQG4GHXQ8WD0",
   "status": "done",
   "labels": [
     "area/performance",
     "area/read-models",
     "automation/bot-ready",
-    "integrator-gate/pending",
     "provider/sqlserver",
     "type/task"
   ],
@@ -18,5 +17,5 @@
   "milestone-id": "06FE4PNGY15HRQWX7C034RDESG",
   "release-id": "06FE4PMVMZM3KKNGEFDB2S3BKG",
   "created-at": "2026-06-20T00:15:58.3664935Z",
-  "updated-at": "2026-06-22T22:03:44.6320584Z"
+  "updated-at": "2026-06-23T00:46:03.0646996Z"
 }
