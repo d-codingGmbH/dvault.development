@@ -161,6 +161,10 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
     return QuoteIdentifier(tableName);
   }
 
+  protected virtual void ConfigureReadCommand(DbCommand command) {
+    ArgumentNullException.ThrowIfNull(command);
+  }
+
   private async Task<IReadOnlyList<Dictionary<string, object>>> ReadLatestRowsAsync(
       DataVaultProviderReadStrategyContext context,
       DataVaultSatelliteReadPipeline.SatelliteReadProjection projection,
@@ -672,12 +676,13 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
             value)).ConfigureAwait(false);
   }
 
-  private static async Task<IReadOnlyList<Dictionary<string, object>>> ReadCommandRowsAsync(
+  private async Task<IReadOnlyList<Dictionary<string, object>>> ReadCommandRowsAsync(
       DbCommand command,
       IReadOnlyList<string> selectedColumns,
       CancellationToken cancellationToken,
       Func<string, object, object>? normalizeValue = null) {
     var readRows = new List<Dictionary<string, object>>();
+    ConfigureReadCommand(command);
     await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
     while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
       var row = new Dictionary<string, object>(StringComparer.Ordinal);

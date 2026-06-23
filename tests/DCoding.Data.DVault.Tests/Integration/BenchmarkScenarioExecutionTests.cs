@@ -1058,7 +1058,7 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
-  public void ProviderEvidenceMatrixCitesCompletedPostgresSqlServerMySqlAndOraclePitBridgeSmokeReadRows() {
+  public void ProviderEvidenceMatrixCitesProviderOptimizationClosureReadRows() {
     var artifactDirectory = Path.Combine(
         "artifacts",
         "benchmarks",
@@ -1131,38 +1131,54 @@ public sealed class BenchmarkScenarioExecutionTests {
         evidenceMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "| `pit-as-of-read` | PostgreSQL external provider | `dvault-adddvaultpostgres-optimized` | `postgres-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle |",
+        "| `latest-satellite-read` | PostgreSQL external provider | `dvault-adddvaultpostgres-optimized` | `postgres-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
         evidenceMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "| `bridge-traversal-read` | PostgreSQL external provider | `dvault-adddvaultpostgres-optimized` | `postgres-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle |",
+        "| `pit-as-of-read` | PostgreSQL external provider | `dvault-adddvaultpostgres-optimized` | `postgres-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
         evidenceMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "| `pit-as-of-read` | SQL Server external provider | `dvault-adddvaultsqlserver-optimized` | `sqlserver-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle |",
+        "| `bridge-traversal-read` | PostgreSQL external provider | `dvault-adddvaultpostgres-optimized` | `postgres-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
         evidenceMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "| `bridge-traversal-read` | SQL Server external provider | `dvault-adddvaultsqlserver-optimized` | `sqlserver-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle |",
+        "| `latest-satellite-read` | SQL Server external provider | `dvault-adddvaultsqlserver-optimized` | `sqlserver-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
         evidenceMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "| `pit-as-of-read` | MySQL external provider | `dvault-adddvaultmysql-optimized` | `mysql-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle |",
+        "| `pit-as-of-read` | SQL Server external provider | `dvault-adddvaultsqlserver-optimized` | `sqlserver-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
         evidenceMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "| `bridge-traversal-read` | MySQL external provider | `dvault-adddvaultmysql-optimized` | `mysql-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle |",
+        "| `bridge-traversal-read` | SQL Server external provider | `dvault-adddvaultsqlserver-optimized` | `sqlserver-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
         evidenceMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "| `pit-as-of-read` | Oracle external provider | `dvault-adddvaultoracle-optimized` | `oracle-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle |",
+        "| `latest-satellite-read` | MySQL external provider | `dvault-adddvaultmysql-optimized` | `mysql-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
         evidenceMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "| `bridge-traversal-read` | Oracle external provider | `dvault-adddvaultoracle-optimized` | `oracle-optimized-dvault` | `completed-timing` | v0.32.0 smoke-read bundle |",
+        "| `pit-as-of-read` | MySQL external provider | `dvault-adddvaultmysql-optimized` | `mysql-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
         evidenceMatrix,
         StringComparison.Ordinal);
-    Assert.Contains("## Closed PostgreSQL, SQL Server, MySQL, And Oracle PIT/Bridge Evidence", gapMatrix, StringComparison.Ordinal);
+    Assert.Contains(
+        "| `bridge-traversal-read` | MySQL external provider | `dvault-adddvaultmysql-optimized` | `mysql-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| `latest-satellite-read` | Oracle external provider | `dvault-adddvaultoracle-optimized` | `oracle-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| `pit-as-of-read` | Oracle external provider | `dvault-adddvaultoracle-optimized` | `oracle-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains(
+        "| `bridge-traversal-read` | Oracle external provider | `dvault-adddvaultoracle-optimized` | `oracle-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
+        evidenceMatrix,
+        StringComparison.Ordinal);
+    Assert.Contains("## Closed Provider Read Evidence", gapMatrix, StringComparison.Ordinal);
     Assert.DoesNotContain(
         "| P2.01 | Evidence gap | PostgreSQL external provider | `pit-as-of-read`",
         gapMatrix,
@@ -1196,7 +1212,7 @@ public sealed class BenchmarkScenarioExecutionTests {
         gapMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "PostgreSQL, SQL Server, MySQL, and Oracle `pit-as-of-read` and `bridge-traversal-read` are closed evidence rows",
+        "PostgreSQL, SQL Server, MySQL, Oracle, and DB2 provider-native save rows plus latest-satellite, PIT, and bridge read rows",
         performanceProfiles,
         StringComparison.Ordinal);
   }
@@ -1248,15 +1264,15 @@ public sealed class BenchmarkScenarioExecutionTests {
         evidenceMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "| `latest-satellite-read` | MySQL external provider | `dvault-adddvaultmysql-optimized` | `mysql-optimized-dvault` | `completed-timing` | Ticket `06FE4QQ9VF7B74E60CXEHSS5XW` MySQL latest-satellite bundle |",
+        "| `latest-satellite-read` | MySQL external provider | `dvault-adddvaultmysql-optimized` | `mysql-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
         evidenceMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "| P0.03 | Closed timing baseline | MySQL external provider | `latest-satellite-read` | `completed-timing`",
+        "| P0.03 | Closed evidence row | MySQL external provider | `latest-satellite-read` | `completed-timing`",
         gapMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "not a provider-neutral fallback improvement comparator by itself",
+        "The 2026-06-23 closure bundle completed retained multi-row at `15.827` ms, bounded staged bulk at `26.055` ms, and the deliberate large mixed provider-neutral fallback at `145.601` ms.",
         performanceProfiles,
         StringComparison.Ordinal);
     Assert.Contains(
@@ -1266,7 +1282,7 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
-  public void ProviderPitBridgeAuditClosesDb2WithHotspotBundle() {
+  public void ProviderPitBridgeAuditClosesDb2WithProviderOptimizationClosureBundle() {
     var gapMatrix = ReadRepositoryText(Path.Combine(
         "docs",
         "plans",
@@ -1286,7 +1302,8 @@ public sealed class BenchmarkScenarioExecutionTests {
     var artifactDirectory = Path.Combine(
         "artifacts",
         "benchmarks",
-        "06FE4QR3DD7EFZ4F35SBTFGWSR-db2-hotspot-evidence-20260620");
+        "06FF0000000000000000000000-provider-optimization-closure-20260623",
+        "db2-rowcap-1000");
     var markdown = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.md"));
     var csv = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.csv"));
     var json = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.json"));
@@ -1294,27 +1311,27 @@ public sealed class BenchmarkScenarioExecutionTests {
     var db2Artifacts = VerifyBenchmarkArtifactTriplet(markdown, csv, json);
 
     Assert.Equal("db2", db2Artifacts.Context.ProviderFilter);
-    Assert.Equal(1, db2Artifacts.Context.Iterations);
+    Assert.Equal(5, db2Artifacts.Context.Iterations);
     Assert.Contains("DB2 external provider: completed", markdown, StringComparison.Ordinal);
 
     Assert.Contains(
-        "06FE4QR3DD7EFZ4F35SBTFGWSR-db2-hotspot-evidence-20260620/benchmark-summary.md",
+        "06FF0000000000000000000000-provider-optimization-closure-20260623/db2-rowcap-1000/benchmark-summary.md",
         evidenceMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "| `provider-native-bulk-ingestion` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `completed-timing` | DB2 hotspot bundle |",
+        "| `provider-native-bulk-ingestion` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
         evidenceMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "| `latest-satellite-read` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `completed-timing` | DB2 hotspot bundle |",
+        "| `latest-satellite-read` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
         evidenceMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "| `pit-as-of-read` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `completed-timing` | DB2 hotspot bundle |",
+        "| `pit-as-of-read` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
         evidenceMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "| `bridge-traversal-read` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `completed-timing` | DB2 hotspot bundle |",
+        "| `bridge-traversal-read` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |",
         evidenceMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
@@ -1323,7 +1340,7 @@ public sealed class BenchmarkScenarioExecutionTests {
         StringComparison.Ordinal);
 
     Assert.Contains(
-        "DB2 `provider-native-bulk-ingestion`, `latest-satellite-read`, `pit-as-of-read`, and `bridge-traversal-read` rows are closed evidence rows",
+        "PostgreSQL, MySQL, Oracle, SQL Server, and DB2 `provider-native-bulk-ingestion` rows are closed by provider-configured timing rows in the closure bundle",
         gapMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
@@ -1358,7 +1375,7 @@ public sealed class BenchmarkScenarioExecutionTests {
         "provider-native-bulk-ingestion",
         "dvault-adddvault-fallback");
     Assert.Equal("completed", fallbackSaveRow.ExecutionStatus);
-    Assert.Equal(1, fallbackSaveRow.Iterations);
+    Assert.Equal(5, fallbackSaveRow.Iterations);
     AssertCompletedMetricsPresent(fallbackSaveRow);
     Assert.Contains("selectedStrategy=<none>", fallbackSaveRow.ExecutionDetail, StringComparison.Ordinal);
     Assert.Contains("fallbackCauses=NoProviderSpecificStrategyRegistered", fallbackSaveRow.ExecutionDetail, StringComparison.Ordinal);
@@ -1369,7 +1386,7 @@ public sealed class BenchmarkScenarioExecutionTests {
         "provider-native-bulk-ingestion",
         "dvault-adddvaultdb2-optimized");
     Assert.Equal("completed", optimizedSaveRow.ExecutionStatus);
-    Assert.Equal(1, optimizedSaveRow.Iterations);
+    Assert.Equal(5, optimizedSaveRow.Iterations);
     AssertCompletedMetricsPresent(optimizedSaveRow);
     Assert.Contains("selectedStrategy=Db2DataVaultSaveStrategy", optimizedSaveRow.ExecutionDetail, StringComparison.Ordinal);
     Assert.Contains("db2SaveBoundary=clean-context-set-based", optimizedSaveRow.ExecutionDetail, StringComparison.Ordinal);
@@ -1475,11 +1492,12 @@ public sealed class BenchmarkScenarioExecutionTests {
   }
 
   [Fact]
-  public void OracleConfiguredReadArtifactRecordsCompletedPitAndBridgeTimingOnly() {
+  public void OracleConfiguredReadClosureArtifactRecordsCompletedLatestPitAndBridgeTiming() {
     var artifactDirectory = Path.Combine(
         "artifacts",
         "benchmarks",
-        "v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607");
+        "06FF0000000000000000000000-provider-optimization-closure-20260623",
+        "oracle-lob-prefetch");
     var markdown = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.md"));
     var csv = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.csv"));
     var json = ReadRepositoryText(Path.Combine(artifactDirectory, "benchmark-summary.json"));
@@ -1503,35 +1521,31 @@ public sealed class BenchmarkScenarioExecutionTests {
 
     AssertCompletedOracleReadArtifactRow(
         artifacts,
+        "latest-satellite-read",
+        "18.783",
+        "DVault Oracle optimized latest satellite read path",
+        "LatestSatellite");
+    AssertCompletedOracleReadArtifactRow(
+        artifacts,
         "pit-as-of-read",
-        "475.258",
+        "26.857",
         "DVault Oracle optimized PIT read path",
         "PitAsOf");
     AssertCompletedOracleReadArtifactRow(
         artifacts,
         "bridge-traversal-read",
-        "7.388",
+        "3.922",
         "DVault Oracle optimized bridge read path",
         "Bridge");
 
-    var latestSatellite = FindArtifactRow(
-        artifacts,
-        OracleProviderName,
-        "latest-satellite-read",
-        "dvault-adddvaultoracle-optimized");
-
-    Assert.Equal("completed", latestSatellite.ExecutionStatus);
-    Assert.Contains("providerSpecificReadStrategy=not registered for latest satellite reads", latestSatellite.ExecutionDetail, StringComparison.Ordinal);
-    Assert.Contains("readStrategyStatus=ProviderNeutralFallback", latestSatellite.ExecutionDetail, StringComparison.Ordinal);
-    Assert.Contains("fallbackCauses=NoProviderSpecificStrategyRegistered", latestSatellite.ExecutionDetail, StringComparison.Ordinal);
-
-    Assert.Contains("v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.md", evidenceMatrix, StringComparison.Ordinal);
-    Assert.Contains("Oracle configured PIT read completed with `OracleDataVaultReadStrategy`", evidenceMatrix, StringComparison.Ordinal);
-    Assert.Contains("Oracle configured bridge read completed with `OracleDataVaultReadStrategy`", evidenceMatrix, StringComparison.Ordinal);
-    Assert.Contains("Oracle PIT and bridge rows are closed", gapMatrix, StringComparison.Ordinal);
+    Assert.Contains("06FF0000000000000000000000-provider-optimization-closure-20260623/oracle-lob-prefetch/benchmark-summary.md", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("| `latest-satellite-read` | Oracle external provider | `dvault-adddvaultoracle-optimized` | `oracle-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("| `pit-as-of-read` | Oracle external provider | `dvault-adddvaultoracle-optimized` | `oracle-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("| `bridge-traversal-read` | Oracle external provider | `dvault-adddvaultoracle-optimized` | `oracle-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle |", evidenceMatrix, StringComparison.Ordinal);
+    Assert.Contains("| P0.04 | Closed evidence row | Oracle external provider | `latest-satellite-read`", gapMatrix, StringComparison.Ordinal);
     Assert.DoesNotContain("| P2.04 | Evidence gap | Oracle external provider | `pit-as-of-read`", gapMatrix, StringComparison.Ordinal);
     Assert.DoesNotContain("| P3.04 | Evidence gap | Oracle external provider | `bridge-traversal-read`", gapMatrix, StringComparison.Ordinal);
-    Assert.Contains("Oracle PIT/bridge completed timing evidence", performanceProfiles, StringComparison.Ordinal);
+    Assert.Contains("Oracle latest/PIT timings include the ODP.NET LOB-prefetch read-command tuning.", performanceProfiles, StringComparison.Ordinal);
   }
 
   [Fact]
@@ -2340,11 +2354,11 @@ public sealed class BenchmarkScenarioExecutionTests {
       VerifiedBenchmarkArtifacts artifacts) {
     var bridgePriority = "P3" + provider.PitPriority[2..];
     Assert.Contains(
-        "| " + provider.PitPriority + " | Evidence gap | " + provider.ProviderName + " | `pit-as-of-read`",
+        "| " + provider.PitPriority + " | Closed evidence row | " + provider.ProviderName + " | `pit-as-of-read`",
         gapMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
-        "| " + bridgePriority + " | Evidence gap | " + provider.ProviderName + " | `bridge-traversal-read`",
+        "| " + bridgePriority + " | Closed evidence row | " + provider.ProviderName + " | `bridge-traversal-read`",
         gapMatrix,
         StringComparison.Ordinal);
     Assert.Contains(
@@ -2406,7 +2420,9 @@ public sealed class BenchmarkScenarioExecutionTests {
       string expectedReadShape,
       string providerDisplayName) {
     Assert.Equal("completed", row.ExecutionStatus);
-    Assert.Equal(1, row.Iterations);
+    Assert.True(
+        row.Iterations > 0,
+        "Completed " + providerDisplayName + " read row '" + row.Key + "' has no iterations.");
     Assert.True(
         string.IsNullOrEmpty(row.SkipReason),
         "Completed " + providerDisplayName + " read row '" + row.Key + "' has a skip reason.");

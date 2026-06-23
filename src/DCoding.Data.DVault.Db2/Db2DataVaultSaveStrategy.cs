@@ -13,7 +13,7 @@ internal sealed class Db2DataVaultSaveStrategy : IDataVaultProviderSaveStrategy 
   internal const string Db2ProviderName = "IBM.EntityFrameworkCore";
 
   private const int Db2MaxCommandParameterCount = 30000;
-  private const int Db2MaxRowsPerCommand = 250;
+  private const int Db2MaxRowsPerCommand = 1000;
   private const int Db2LatestHashDiffBatchSize = 500;
   private const string Db2DefaultStringParameterCastType = "VARCHAR(32672)";
   private const string Db2OrdinalParameterCastType = "INTEGER";

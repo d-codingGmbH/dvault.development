@@ -82,6 +82,13 @@ internal sealed class OracleDataVaultReadStrategy :
     return "\"" + identifier.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
   }
 
+  protected override void ConfigureReadCommand(DbCommand command) {
+    ArgumentNullException.ThrowIfNull(command);
+
+    SetOracleCommandProperty(command, "InitialLOBFetchSize", -1);
+    SetOracleCommandProperty(command, "FetchSize", 1024L * 1024L);
+  }
+
   private async Task<IReadOnlyList<Dictionary<string, object>>> ReadLatestRowsAsync(
       DataVaultProviderReadStrategyContext context,
       DataVaultSatelliteReadPipeline.SatelliteReadProjection projection,
@@ -171,12 +178,13 @@ internal sealed class OracleDataVaultReadStrategy :
             value)).ConfigureAwait(false);
   }
 
-  private static async Task<IReadOnlyList<Dictionary<string, object>>> ReadCommandRowsAsync(
+  private async Task<IReadOnlyList<Dictionary<string, object>>> ReadCommandRowsAsync(
       DbCommand command,
       IReadOnlyList<string> selectedColumns,
       CancellationToken cancellationToken,
       Func<string, object, object>? normalizeValue = null) {
     var readRows = new List<Dictionary<string, object>>();
+    ConfigureReadCommand(command);
     await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
     while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
       var row = new Dictionary<string, object>(StringComparer.Ordinal);
@@ -306,5 +314,17 @@ internal sealed class OracleDataVaultReadStrategy :
           .Append('.')
           .Append(QuoteIdentifier(columns[index]));
     }
+  }
+
+  private static void SetOracleCommandProperty(
+      DbCommand command,
+      string propertyName,
+      object value) {
+    var property = command.GetType().GetProperty(propertyName);
+    if (property?.CanWrite != true) {
+      return;
+    }
+
+    property.SetValue(command, value);
   }
 }

@@ -1,6 +1,6 @@
 # DB2 Hotspot Evidence Refinement
 
-Status: ticket-bound refinement note
+Status: ticket-bound historical refinement note; current timing superseded by the 2026-06-23 provider optimization closure bundle
 Ticket: `06FE4QR3DD7EFZ4F35SBTFGWSR`
 Title: `Task: Tune DB2 optimized save and read evidence path`
 
@@ -24,7 +24,7 @@ Persist the verified PO refinement baseline for the DB2 hotspot evidence task af
 - `tests/DCoding.Data.DVault.Tests/Integration/Db2DataVaultSmokeTests.cs` proves representative configured DB2 save behavior plus latest-satellite, PIT, and bridge read execution with diagnostics selecting `Db2DataVaultSaveStrategy` and `Db2DataVaultReadStrategy`.
 - `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` still keep DB2 provider-native save, latest-satellite, PIT, and bridge rows as `executionStatus=skipped` with `iterations=0` and `persistedOutcome=not executed` when `DVAULT_TEST_DB2_CONNECTION_STRING` is unset.
 - `artifacts/benchmarks/06FE4QR3DD7EFZ4F35SBTFGWSR-db2-hotspot-evidence-20260620/benchmark-summary.md`, `artifacts/benchmarks/06FE4QR3DD7EFZ4F35SBTFGWSR-db2-hotspot-evidence-20260620/benchmark-summary.csv`, and `artifacts/benchmarks/06FE4QR3DD7EFZ4F35SBTFGWSR-db2-hotspot-evidence-20260620/benchmark-summary.json` are the provider-configured DB2 hotspot artifact triplet for this ticket. They record `Provider filter: db2`, `Iterations: 1`, DB2 provider status `completed`, a provider-neutral save comparison row, a completed clean-context optimized save row selected by `Db2DataVaultSaveStrategy`, and completed latest-satellite/PIT/bridge rows selected by `Db2DataVaultReadStrategy`.
-- `docs/plans/provider-optimization-evidence-matrix.md`, `docs/plans/provider-optimization-gap-matrix.md`, `docs/performance-profiles.md`, and `docs/releases/v0.42.0.md` ratify the finite DB2 baseline: completed timing is limited to the DB2 hotspot artifact triplet for clean-context save and supported latest-satellite/PIT/bridge reads, while staged DB2 bulk, provider-native chunk execution, dirty-context saves, unsupported latest-satellite shapes, stale PIT/bridge maintenance, incomplete read-shape evidence, and DB2 live-schema timing evidence remain outside the current baseline.
+- `docs/plans/provider-optimization-evidence-matrix.md`, `docs/plans/provider-optimization-gap-matrix.md`, and `docs/performance-profiles.md` now cite the 2026-06-23 provider optimization closure bundle as the current DB2 completed-timing source. This ticket remains historical v0.42 DB2 hotspot context; staged DB2 bulk, provider-native chunk execution, dirty-context saves, unsupported latest-satellite shapes, stale PIT/bridge maintenance, and incomplete read-shape evidence remain outside the current baseline.
 - DB2 live-schema reading was out of scope for this hotspot timing ticket and is covered separately by the DB2 catalog-reader follow-up.
 
 ## Scope In
@@ -41,7 +41,7 @@ Persist the verified PO refinement baseline for the DB2 hotspot evidence task af
 ## Scope Out
 
 - New DB2 provider features beyond the currently supported strategy surface.
-- Staged DB2 bulk, provider-native chunk execution, DB2 live-schema timing evidence, automatic PIT or bridge maintenance, or broader latest-satellite shape support.
+- Staged DB2 bulk, provider-native chunk execution, automatic PIT or bridge maintenance, or broader latest-satellite shape support.
 - Documentation/release-note alignment that is already owned downstream by `06FE4QRMXVGJVA65ZR5MZ817K8`, except where this ticket must supply the evidence that those docs cite.
 
 ## Acceptance Boundary
@@ -51,11 +51,11 @@ Persist the verified PO refinement baseline for the DB2 hotspot evidence task af
 - Latest-satellite evidence remains limited to the current DB2 provider strategy for supported hub-parent, non-multi-active shapes; provider mismatch, unsupported parents, or multi-active shapes continue to fall back to the provider-neutral read path.
 - PIT and bridge evidence remains limited to explicitly maintained, supported shapes with complete read-shape evidence and fresh maintenance signals; stale or incomplete shapes continue to fall back to provider-neutral reads.
 - The repository does not promote skipped-placeholder, diagnostics-only, or smoke-only DB2 rows into completed timing evidence without the configured artifact triplet.
-- DB2 live-schema timing evidence remains outside this ticket even when a separate ticket adds and proves a DB2 catalog reader.
+- Current DB2 timing evidence now lives in the 2026-06-23 provider optimization closure bundle; this ticket remains historical context for the v0.42 DB2 hotspot slice.
 
 ## Definition Of Done Boundary
 
-- Downstream docs can cite the finite, repository-backed DB2 completed-timing rows from the DB2 hotspot artifact triplet without reopening save/read scope decisions.
+- Downstream docs can cite this ticket as historical DB2 hotspot context; current completed-timing claims should cite the 2026-06-23 provider optimization closure bundle without reopening save/read scope decisions.
 - The benchmark artifact triplet, diagnostics wording, and evidence-matrix posture agree on supported DB2 optimized paths, fallback behavior, and remaining non-goals.
 - No residual PO split or relation rewrite is needed for DB2 hotspot evidence; this ticket remains the bounded owner and the existing downstream docs-update dependency stays intact.
 

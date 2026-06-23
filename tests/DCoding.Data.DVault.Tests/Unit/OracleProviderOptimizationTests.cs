@@ -197,6 +197,19 @@ public sealed class OracleProviderOptimizationTests {
   }
 
   [Fact]
+  public void OracleReadCommandsPrefetchLobsAndUseLargerFetchBuffer() {
+    var command = new OracleLikeReadCommand();
+    var configureMethod = typeof(OracleDataVaultReadStrategy).GetMethod(
+        "ConfigureReadCommand",
+        BindingFlags.Instance | BindingFlags.NonPublic);
+
+    configureMethod!.Invoke(new OracleDataVaultReadStrategy(), [command]);
+
+    Assert.Equal(-1, command.InitialLOBFetchSize);
+    Assert.Equal(1024L * 1024L, command.FetchSize);
+  }
+
+  [Fact]
   public void OracleChunkSizeUsesLargerCapWhenArrayBindingIsAvailable() {
     var chunkSize = InvokeOracleIntFactory(
         "CalculateOracleInsertChunkSize",
@@ -407,6 +420,61 @@ public sealed class OracleProviderOptimizationTests {
 
       count++;
       searchIndex = matchIndex + searchValue.Length;
+    }
+  }
+
+  private sealed class OracleLikeReadCommand : System.Data.Common.DbCommand {
+    private readonly Microsoft.Data.Sqlite.SqliteCommand _innerCommand = new();
+
+    public int InitialLOBFetchSize { get; set; }
+
+    public long FetchSize { get; set; }
+
+    [System.Diagnostics.CodeAnalysis.AllowNull]
+    public override string CommandText { get; set; } = string.Empty;
+
+    public override int CommandTimeout { get; set; }
+
+    public override System.Data.CommandType CommandType { get; set; }
+
+    public override bool DesignTimeVisible { get; set; }
+
+    public override System.Data.UpdateRowSource UpdatedRowSource { get; set; }
+
+    protected override System.Data.Common.DbConnection? DbConnection { get; set; }
+
+    protected override System.Data.Common.DbParameterCollection DbParameterCollection => _innerCommand.Parameters;
+
+    protected override System.Data.Common.DbTransaction? DbTransaction { get; set; }
+
+    public override void Cancel() {
+    }
+
+    public override int ExecuteNonQuery() {
+      throw new NotSupportedException();
+    }
+
+    public override object? ExecuteScalar() {
+      throw new NotSupportedException();
+    }
+
+    public override void Prepare() {
+    }
+
+    protected override System.Data.Common.DbParameter CreateDbParameter() {
+      return _innerCommand.CreateParameter();
+    }
+
+    protected override System.Data.Common.DbDataReader ExecuteDbDataReader(System.Data.CommandBehavior behavior) {
+      throw new NotSupportedException();
+    }
+
+    protected override void Dispose(bool disposing) {
+      if (disposing) {
+        _innerCommand.Dispose();
+      }
+
+      base.Dispose(disposing);
     }
   }
 
