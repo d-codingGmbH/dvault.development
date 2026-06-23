@@ -33,6 +33,16 @@ The accepted provider push-down baseline is intentionally asymmetric:
 
 No provider registration turns PIT maintenance into automatic work. Applications still decide when rebuilds or parent maintenance run, and PIT reads still consume only rows already maintained before the read request.
 
+### MySQL Full-Rebuild Push-Down Evaluation
+
+Ticket `06FF43CJ9CJMG7J917RW22QKJC` evaluated MySQL PIT maintenance push-down for `IDataVaultPitMaintenanceService.RebuildAsync(...)` full rebuilds only. The current repository baseline proves that `AddDVaultMySql()` registers MySQL save plus latest-satellite, PIT, and bridge read strategy candidates for both supported EF Core provider names, `Pomelo.EntityFrameworkCore.MySql` and `MySql.EntityFrameworkCore`. It does not register `IDataVaultProviderPitMaintenanceStrategy`, does not replace `IDataVaultPitMaintenanceService`, and does not provide MySQL maintenance diagnostics, parity tests, or benchmark-backed maintenance timing. The checked-in MySQL PIT read timing proves optimized reads over already-maintained PIT rows; it is not maintenance push-down evidence.
+
+The feasible next implementation lane is a MySQL `IDataVaultProviderPitMaintenanceStrategy`, not a SQL Server-style service replacement. The existing strategy seam already dispatches only full rebuilds and preserves provider-neutral `MaintainParentsAsync(...)` fallback, which matches the evaluated MySQL scope. A MySQL strategy would still need a core gate evaluator entry like PostgreSQL's so diagnostics can report provider-name mismatch, dirty tracked context, incomplete maintenance-shape evidence, unsupported PIT shape, and rollback-gate fallback causes.
+
+The accepted implementation recommendation is deliberately narrow: implement and validate only clean, ordinary hub-parent MySQL full rebuilds first, using the live `MySql.EntityFrameworkCore` package surface as the repository-proven provider lane. Treat Pomelo as capability/profile-supported but not live-maintenance-proven until a configured Pomelo execution lane exists. Shared-driving-key multi-active hub-parent PIT full rebuilds and link-parent non-multi-active PIT full rebuilds stay deferred for MySQL because only PostgreSQL currently proves those maintenance shapes through source and live integration evidence. MySQL `MaintainParentsAsync(...)`, link-parent multi-active PITs, incompatible driving-key-family PITs, bridge maintenance, automatic maintenance, read-time refresh, dirty contexts, provider mismatches, and caller transactions without a verified rollback-clean savepoint boundary are rejected for the initial MySQL maintenance lane.
+
+Rollback is the decisive gate for any accepted MySQL lane. A provider strategy may preserve pre-rebuild PIT rows when it owns a local transaction and can roll back delete-plus-insert work on fault or cancellation. If a caller transaction is already active, the MySQL path must either prove savepoint support for the active EF Core provider and roll back to a strategy-owned savepoint, or fall back to provider-neutral maintenance. Until that behavior is source-, test-, and live-provider-proven, no MySQL maintenance path may claim SQL Server-style rollback-clean full rebuild semantics.
+
 ## PIT Read Boundary
 
 PIT reads target one `DataVaultPitMetadata` declaration, explicit parent hash keys, and an `asOf` timestamp. `ReadPitRowsAsync(...)` returns raw `DataVaultPitReadRecord` rows. `ReadPitAsync(...)` maps selected rows through a caller-owned projector with exact-name access to `ParentHashKey`, canonical driving-key names when present, `LoadTimestamp`, and declared satellite segments.
@@ -61,7 +71,7 @@ The public `dvault.model.v1` PIT artifact shape remains hub-parent-only and cont
 
 ## Bridge Maintenance Push-Down Posture
 
-Bridge rebuild and maintenance push-down stays deferred from this boundary. The current provider-specific maintenance work is limited to PIT maintenance: PostgreSQL contributes `PostgresDataVaultPitMaintenanceStrategy`, while SQL Server replaces `IDataVaultPitMaintenanceService` with `SqlServerDataVaultPitMaintenanceService` for a narrower ordinary hub-parent full-rebuild gate. Bridge maintenance remains the provider-neutral `IDataVaultBridgeMaintenanceService` surface, and this contract does not expose an `IDataVaultProviderBridgeMaintenanceStrategy` counterpart.
+Bridge rebuild and maintenance push-down stays deferred from this boundary. The current provider-specific maintenance work is limited to PIT maintenance: PostgreSQL contributes `PostgresDataVaultPitMaintenanceStrategy`, while SQL Server replaces `IDataVaultPitMaintenanceService` with `SqlServerDataVaultPitMaintenanceService` for a narrower ordinary hub-parent full-rebuild gate. The MySQL evaluation above recommends only a future PIT full-rebuild strategy lane; it does not add bridge maintenance scope. Bridge maintenance remains the provider-neutral `IDataVaultBridgeMaintenanceService` surface, and this contract does not expose an `IDataVaultProviderBridgeMaintenanceStrategy` counterpart.
 
 Maintained-bridge read evidence proves provider read-strategy selection over already-maintained bridge rows. It does not prove write-side bridge-maintenance push-down value, SQL shape, fallback vocabulary, or parity with the broader bridge maintenance semantics above. Any later bridge push-down lane would first need new core dispatch, provider registration, bridge-specific gate/fallback diagnostics, parity tests for existing maintenance semantics, and a preserved benchmark artifact triplet before provider SQL can be promoted.
 
@@ -100,6 +110,7 @@ Focused integration coverage:
 - [MySqlProviderCapabilityTests.cs](../../tests/DCoding.Data.DVault.Tests/Unit/MySqlProviderCapabilityTests.cs) covers MySQL latest-satellite read strategy registration and generated window-function SQL shape.
 - [DVaultPostgresServiceCollectionExtensions.cs](../../src/DCoding.Data.DVault.Postgres/DVaultPostgresServiceCollectionExtensions.cs) registers `PostgresDataVaultPitMaintenanceStrategy` as an `IDataVaultProviderPitMaintenanceStrategy`.
 - [DVaultSqlServerServiceCollectionExtensions.cs](../../src/DCoding.Data.DVault.SqlServer/DVaultSqlServerServiceCollectionExtensions.cs) replaces `IDataVaultPitMaintenanceService` with `SqlServerDataVaultPitMaintenanceService`.
+- [DVaultMySqlServiceCollectionExtensions.cs](../../src/DCoding.Data.DVault.MySql/DVaultMySqlServiceCollectionExtensions.cs) registers MySQL save and read strategy candidates only; it does not currently register MySQL PIT maintenance.
 - Provider package service-collection extensions under `src/DCoding.Data.DVault.Sqlite`, `src/DCoding.Data.DVault.Postgres`, `src/DCoding.Data.DVault.SqlServer`, `src/DCoding.Data.DVault.MySql`, `src/DCoding.Data.DVault.Oracle`, and `src/DCoding.Data.DVault.Db2` register the current provider read strategy candidates.
 
 Benchmark evidence:
@@ -129,7 +140,7 @@ Compiled-model, compiled-query, and pooled-context guidance remains in [DVault E
 - Automatic PIT or bridge maintenance.
 - Read-time PIT or bridge refresh.
 - Background schedulers, triggers, or implicit EF `SaveChanges` orchestration.
-- Provider-specific PIT maintenance beyond the current PostgreSQL strategy and SQL Server service-replacement gates.
+- Provider-specific PIT maintenance beyond the current PostgreSQL strategy and SQL Server service-replacement gates; MySQL remains an evaluated future implementation lane, not a current runtime behavior.
 - Bridge maintenance push-down without bridge-maintenance hotspot evidence, a core/provider bridge-maintenance seam, bridge-specific fallback diagnostics, and benchmark-backed parity proof.
 - Completed non-SQLite optimized latest-satellite timing claims without a provider-configured benchmark artifact.
 - Completed DB2 PIT or bridge timing claims without a provider-configured benchmark artifact.

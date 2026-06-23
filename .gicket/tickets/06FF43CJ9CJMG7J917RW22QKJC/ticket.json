@@ -3,21 +3,20 @@
   "ticket-id": "06FF43CJ9CJMG7J917RW22QKJC",
   "ticket-type": "task",
   "title": "Task: Evaluate MySQL PIT full-rebuild push-down feasibility",
-  "revision": "06FF44GXRFFH8E1Y0FX3JPRW6R",
-  "status": "todo",
+  "revision": "06FFDT8W21BW1ZRG31F30N8BQG",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/performance",
     "area/provider-support",
     "area/read-models",
-    "provider/mysql"
+    "automation/bot-ready",
+    "provider/mysql",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FF437M4JK4J4JZMQWKAYF9HR",
   "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
   "created-at": "2026-06-23T01:17:18.3345715Z",
-  "updated-at": "2026-06-23T01:22:14.0835258Z"
+  "updated-at": "2026-06-23T23:55:32.7527646Z"
 }

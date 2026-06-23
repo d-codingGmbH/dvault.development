@@ -66,11 +66,14 @@ Use [Provider Optimization Gap Matrix](plans/provider-optimization-gap-matrix.md
 
 The v0.45.0 PIT maintenance prototypes are source and test evidence, not benchmark-backed timing evidence. Do not cite the provider-maintenance work as a performance win unless a later ticket preserves a benchmark artifact triplet for the exact maintenance workload, provider, run context, and fallback rows.
 
-The accepted provider-maintenance baseline is limited to:
+The accepted provider-maintenance baseline and evaluated future lane are limited to:
 
 - PostgreSQL: `AddDVaultPostgres()` registers `PostgresDataVaultPitMaintenanceStrategy` as an `IDataVaultProviderPitMaintenanceStrategy`. The supported full-rebuild shapes are ordinary hub-parent PITs, shared-driving-key multi-active hub-parent PITs, and link-parent non-multi-active PITs.
 - SQL Server: `AddDVaultSqlServer()` replaces `IDataVaultPitMaintenanceService` with `SqlServerDataVaultPitMaintenanceService`. The supported provider full-rebuild shape is a clean ordinary hub-parent PIT. `MaintainParentsAsync(...)`, multi-active PITs, link-parent PITs, provider mismatch, dirty contexts, and no-savepoint caller transactions fall back to provider-neutral maintenance.
+- MySQL: ticket `06FF43CJ9CJMG7J917RW22QKJC` evaluated full-rebuild feasibility and recommends a future `IDataVaultProviderPitMaintenanceStrategy` lane only for clean ordinary hub-parent PITs first. The repository proves MySQL save/read registration for `Pomelo.EntityFrameworkCore.MySql` and `MySql.EntityFrameworkCore`, and live completed save/read timing for `MySql.EntityFrameworkCore`; it does not yet prove any MySQL PIT maintenance strategy, diagnostics, rollback-clean execution, or maintenance timing. Shared-driving-key multi-active hub-parent PITs and link-parent non-multi-active PITs stay deferred for MySQL, and Pomelo maintenance validation stays out of the initial lane until live execution evidence exists.
 - Fallback and rollback remain part of the claim boundary. Unsupported or mismatched maintenance requests fall back through provider-neutral maintenance, and SQL Server full-rebuild faults or cancellations preserve the pre-rebuild rows.
+
+MySQL PIT maintenance claims must not cite the completed MySQL `pit-as-of-read` row as maintenance proof. A future MySQL ordinary hub-parent implementation must prove provider-name gating, clean-context gating, complete maintenance-shape evidence, rollback-clean delete-plus-insert execution when the strategy owns the transaction, and fallback when an ambient caller transaction cannot provide a verified savepoint boundary.
 
 Bridge maintenance push-down remains explicitly deferred. Existing `bridge-traversal-read` timing rows are read-side evidence over already-maintained bridge rows; they are not evidence that provider SQL should execute `RebuildBridgeAsync(...)` or `MaintainBridgeAsync(...)`. A bridge-maintenance claim still needs a core/provider bridge seam, bridge-specific diagnostics, parity coverage for the current many-to-many and hierarchy semantics, and preserved benchmark artifacts.
 
@@ -205,7 +208,7 @@ Answer these questions in order before selecting a read profile:
 
    Confirm the PIT table is explicitly maintained before the read path depends on it. PIT-backed reads consume already-maintained rows; they do not run `IDataVaultPitMaintenanceService`, schedule refresh, or correct stale rows implicitly. Use request-bound `ReadShape` evidence and provider diagnostics before claiming an optimized strategy. Unsupported PIT shapes, unsupported providers, incomplete `ReadShape` evidence, or stale PIT maintenance evidence are explicit fallback or stop conditions.
 
-   PostgreSQL and SQL Server PIT maintenance prototypes can reduce the caller-owned maintenance work for their supported full-rebuild gates, but they do not change the read decision tree and they are not benchmark-backed timing evidence in this guide. Use the architecture boundary for exact maintenance shape support and fallback behavior.
+   PostgreSQL and SQL Server PIT maintenance prototypes can reduce the caller-owned maintenance work for their supported full-rebuild gates, but they do not change the read decision tree and they are not benchmark-backed timing evidence in this guide. MySQL PIT full-rebuild push-down remains an evaluated future lane, limited to an initial ordinary hub-parent recommendation until source, tests, rollback diagnostics, and live provider evidence exist. Use the architecture boundary for exact maintenance shape support and fallback behavior.
 
 4. Is the request a bridge traversal read?
 
