@@ -75,7 +75,7 @@ internal static class BenchmarkExecutionDetails {
       DataVaultBenchmarkHelpers.SqlServerOptimizedStrategyFamily =>
           "DVault SQL Server staged native bulk save path; transfer=SqlBulkCopy; selectedStrategy=SqlServerDataVaultSaveStrategy",
       DataVaultBenchmarkHelpers.MySqlOptimizedStrategyFamily =>
-          "DVault MySQL staged bulk save path; selectedStrategy=MySqlStagedDataVaultSaveStrategy",
+          "DVault MySQL retained multi-row save path; selectedStrategy=MySqlDataVaultSaveStrategy",
       DataVaultBenchmarkHelpers.OracleOptimizedStrategyFamily =>
           "DVault Oracle direct optimized save path; selectedStrategy=OracleDataVaultSaveStrategy; " +
           "oracleBulkBoundary=direct-oracle-batching; stagedOracleBulk=not-selected-no-measured-win",
@@ -109,6 +109,11 @@ internal static class BenchmarkExecutionDetails {
       IScenarioBenchmark benchmark,
       DataVaultDiagnosticsResult diagnostics) {
     if (diagnostics.SaveStrategy.Status == DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback) {
+      var plannedExecutionPath = GetExecutionPath(benchmark);
+      if (plannedExecutionPath.Contains("DVault provider-neutral fallback path", StringComparison.Ordinal)) {
+        return plannedExecutionPath;
+      }
+
       return "DVault provider-neutral fallback path; selectedStrategy=<none>; providerSpecificSaveStrategy=fallback";
     }
 
@@ -120,13 +125,17 @@ internal static class BenchmarkExecutionDetails {
               "selectedStrategy=PostgresDataVaultSaveStrategy; stagedBulkBoundary=below-60-operations; cleanupBoundary=no-staging-table",
       "MySqlStagedDataVaultSaveStrategy" =>
           "DVault MySQL staged bulk save path; selectedStrategy=MySqlStagedDataVaultSaveStrategy; " +
-          "nativeBulkBoundary=50-plus-operations; stagedBulkBoundary=60-plus-operations; cleanupBoundary=temporary-staging-tables",
+          "nativeBulkBoundary=50-plus-operations; " +
+          "stagedBulkBoundary=100-plus-satellite-only-or-100-to-303-mixed-operations; " +
+          "cleanupBoundary=temporary-staging-tables",
       "MySqlDataVaultSaveStrategy" =>
           "DVault MySQL retained multi-row save path; selectedStrategy=MySqlDataVaultSaveStrategy; " +
-          "nativeBulkBoundary=50-plus-operations; stagedBulkBoundary=below-60-operations; cleanupBoundary=no-staging-table",
+          "nativeBulkBoundary=50-plus-operations; " +
+          "stagedBulkBoundary=below-100-mixed-operations; largeMixedBoundary=above-303-provider-neutral; " +
+          "cleanupBoundary=no-staging-table",
       "SqlServerDataVaultSaveStrategy" =>
           "DVault SQL Server staged native bulk save path; transfer=SqlBulkCopy; selectedStrategy=SqlServerDataVaultSaveStrategy; " +
-          "nativeBulkBoundary=50-plus-operations; cleanupBoundary=temporary-staging-table",
+          "nativeBulkBoundary=100-plus-operations; mixedBatchBoundary=900-plus-operations; cleanupBoundary=temporary-staging-table",
       "OracleDataVaultSaveStrategy" =>
           "DVault Oracle direct optimized save path; selectedStrategy=OracleDataVaultSaveStrategy; " +
           "oracleBulkBoundary=direct-oracle-batching; stagedOracleBulk=not-selected-no-measured-win; cleanupBoundary=direct-provider-transaction",

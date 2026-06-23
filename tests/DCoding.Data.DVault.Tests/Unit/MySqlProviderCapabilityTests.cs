@@ -51,6 +51,7 @@ public sealed class MySqlProviderCapabilityTests {
   public void MySqlGateKeepsMultiRowBoundaryBelowStagedBulkBoundary() {
     var midSizedBatch = CreateHubRequest(totalOperationCount: 50);
     var stagedBatch = CreateHubRequest(totalOperationCount: MySqlDataVaultSaveStrategy.MinimumStagedBulkOperationCount);
+    var largeHubBatch = CreateHubRequest(totalOperationCount: MySqlDataVaultSaveStrategy.MaximumStagedBulkMixedOperationCount + 1);
 
     var stagedDecline = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySqlStaged(
         KnownProviderNames.MySqlOracle,
@@ -64,6 +65,14 @@ public sealed class MySqlProviderCapabilityTests {
         KnownProviderNames.MySqlOracle,
         hasPendingTrackedChanges: false,
         stagedBatch);
+    var largeStagedDecline = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySqlStaged(
+        KnownProviderNames.MySqlOracle,
+        hasPendingTrackedChanges: false,
+        largeHubBatch);
+    var largeMultiRowDecline = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySql(
+        KnownProviderNames.MySqlOracle,
+        hasPendingTrackedChanges: false,
+        largeHubBatch);
 
     Assert.False(stagedDecline.CanSave);
     Assert.Contains(
@@ -72,6 +81,21 @@ public sealed class MySqlProviderCapabilityTests {
             cause.Message.Contains("MySQL staged bulk", StringComparison.Ordinal));
     Assert.True(multiRowAccept.CanSave);
     Assert.True(stagedAccept.CanSave);
+    Assert.False(largeStagedDecline.CanSave);
+    Assert.Contains(
+        largeStagedDecline.FallbackCauses,
+        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape &&
+            cause.Message.Contains(
+                MySqlDataVaultSaveStrategy.MaximumStagedBulkMixedOperationCount.ToString(CultureInfo.InvariantCulture),
+                StringComparison.Ordinal));
+    Assert.False(largeMultiRowDecline.CanSave);
+    Assert.Contains(
+        largeMultiRowDecline.FallbackCauses,
+        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlLargeMixedProviderNeutralFallback &&
+            cause.Message.Contains(
+                MySqlDataVaultSaveStrategy.MaximumStagedBulkMixedOperationCount.ToString(CultureInfo.InvariantCulture),
+                StringComparison.Ordinal));
+    Assert.False(MySqlDataVaultSaveStrategy.IsOptimizedBatchShape(largeHubBatch));
   }
 
   [Fact]
@@ -140,6 +164,7 @@ public sealed class MySqlProviderCapabilityTests {
   public void MySqlStagedDiagnosticsDistinguishStagedSelectionFromRetainedMultiRowBoundary() {
     var midSizedBatch = CreateHubRequest(totalOperationCount: 50);
     var stagedBatch = CreateHubRequest(totalOperationCount: MySqlDataVaultSaveStrategy.MinimumStagedBulkOperationCount);
+    var largeHubBatch = CreateHubRequest(totalOperationCount: MySqlDataVaultSaveStrategy.MaximumStagedBulkMixedOperationCount + 1);
 
     var midSizedDiagnostics = MySqlStagedDataVaultSaveStrategy.CreateStagedProviderBulkDiagnostics(
         hasPendingTrackedChanges: false,
@@ -147,6 +172,9 @@ public sealed class MySqlProviderCapabilityTests {
     var stagedDiagnostics = MySqlStagedDataVaultSaveStrategy.CreateStagedProviderBulkDiagnostics(
         hasPendingTrackedChanges: false,
         stagedBatch);
+    var largeDiagnostics = MySqlStagedDataVaultSaveStrategy.CreateStagedProviderBulkDiagnostics(
+        hasPendingTrackedChanges: false,
+        largeHubBatch);
 
     Assert.Equal(DataVaultStagedProviderBulkLifecyclePhase.Declined, midSizedDiagnostics.LifecyclePhase);
     Assert.Equal(DataVaultStagedProviderBulkProviderCaveatKind.UnsupportedShape, midSizedDiagnostics.ProviderCaveatKind);
@@ -159,6 +187,13 @@ public sealed class MySqlProviderCapabilityTests {
     Assert.Equal(DataVaultStagedProviderBulkProviderCaveatKind.None, stagedDiagnostics.ProviderCaveatKind);
     Assert.Equal(MySqlDataVaultSaveStrategy.MinimumStagedBulkOperationCount, stagedDiagnostics.OperationCount);
     Assert.Empty(stagedDiagnostics.FallbackCauseKinds);
+
+    Assert.Equal(DataVaultStagedProviderBulkLifecyclePhase.Declined, largeDiagnostics.LifecyclePhase);
+    Assert.Equal(DataVaultStagedProviderBulkProviderCaveatKind.UnsupportedShape, largeDiagnostics.ProviderCaveatKind);
+    Assert.Equal(MySqlDataVaultSaveStrategy.MaximumStagedBulkMixedOperationCount + 1, largeDiagnostics.OperationCount);
+    Assert.Contains(
+        largeDiagnostics.FallbackCauseKinds,
+        cause => cause == DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape);
   }
 
   [Fact]

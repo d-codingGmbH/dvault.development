@@ -6,14 +6,14 @@ namespace DCoding.Data.DVault.Benchmarks;
 
 internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark, IBenchmarkHashKeyVariantSource {
   private static readonly ProviderNativeBulkIngestionWorkload StagedEligibleWorkload = new(
-      PairCount: 20,
-      DatasetSize: "20 order-product pairs, 3 fulfillment satellite operations",
+      PairCount: 300,
+      DatasetSize: "300 order-product pairs, 3 fulfillment satellite operations",
       ChangeRatio: "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay");
 
   private static readonly ProviderNativeBulkIngestionWorkload StagedIneligibleRetainedPathWorkload = new(
       PairCount: 18,
       DatasetSize: "18 order-product pairs, 3 fulfillment satellite operations",
-      ChangeRatio: "staged-ineligible provider-native batch below the 60-operation staged boundary");
+      ChangeRatio: "staged-ineligible provider-native batch below staged bulk boundary");
 
   private static readonly DateTimeOffset HubLoadTimestamp = new(2026, 5, 18, 10, 0, 0, TimeSpan.Zero);
   private static readonly DateTimeOffset LinkLoadTimestamp = new(2026, 5, 18, 10, 5, 0, TimeSpan.Zero);
@@ -29,6 +29,7 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark,
   private readonly string? _baselineNameOverride;
   private readonly string? _executionPathOverride;
   private readonly string? _expectedProviderSaveStrategyName;
+  private readonly bool _expectProviderSaveStrategySelection;
 
   public ProviderNativeBulkIngestionBenchmark(
       BenchmarkDatabaseProvider provider,
@@ -50,7 +51,8 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark,
           StagedEligibleWorkload,
           baselineNameOverride: null,
           executionPathOverride: null,
-          expectedProviderSaveStrategyName: null) {
+          expectedProviderSaveStrategyName: null,
+          expectProviderSaveStrategySelection: true) {
   }
 
   private ProviderNativeBulkIngestionBenchmark(
@@ -61,7 +63,8 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark,
       ProviderNativeBulkIngestionWorkload workload,
       string? baselineNameOverride,
       string? executionPathOverride,
-      string? expectedProviderSaveStrategyName) {
+      string? expectedProviderSaveStrategyName,
+      bool expectProviderSaveStrategySelection) {
     ArgumentNullException.ThrowIfNull(provider);
     ArgumentNullException.ThrowIfNull(hashKeyVariant);
     ArgumentNullException.ThrowIfNull(workload);
@@ -74,6 +77,7 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark,
     _baselineNameOverride = baselineNameOverride;
     _executionPathOverride = executionPathOverride;
     _expectedProviderSaveStrategyName = expectedProviderSaveStrategyName;
+    _expectProviderSaveStrategySelection = expectProviderSaveStrategySelection;
   }
 
   public string ScenarioName => "provider-native-bulk-ingestion";
@@ -114,7 +118,8 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark,
         "DVault PostgreSQL retained direct or UNNEST save path; transfer=direct-or-UNNEST; " +
         "selectedStrategy=PostgresDataVaultSaveStrategy; stagedBulkBoundary=below-60-operations; " +
         "cleanupBoundary=no-staging-table",
-        "PostgresDataVaultSaveStrategy");
+        "PostgresDataVaultSaveStrategy",
+        expectProviderSaveStrategySelection: true);
   }
 
   public static ProviderNativeBulkIngestionBenchmark CreateMySqlRetainedMultiRow(
@@ -135,8 +140,27 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark,
         StagedIneligibleRetainedPathWorkload,
         "dvault-adddvaultmysql-multi-row",
         "DVault MySQL retained multi-row save path; selectedStrategy=MySqlDataVaultSaveStrategy; " +
-        "nativeBulkBoundary=50-plus-operations; stagedBulkBoundary=below-60-operations; cleanupBoundary=no-staging-table",
-        "MySqlDataVaultSaveStrategy");
+        "nativeBulkBoundary=50-plus-operations; stagedBulkBoundary=below-100-operations; cleanupBoundary=no-staging-table",
+        "MySqlDataVaultSaveStrategy",
+        expectProviderSaveStrategySelection: true);
+  }
+
+  public static ProviderNativeBulkIngestionBenchmark CreateMySqlLargeMixedProviderNeutralFallback(
+      BenchmarkDatabaseProvider provider,
+      DataVaultLoadTimestampStorage loadTimestampStorage,
+      BenchmarkHashKeyVariant hashKeyVariant) {
+    return new ProviderNativeBulkIngestionBenchmark(
+        provider,
+        DataVaultBenchmarkStrategy.MySqlOptimized,
+        loadTimestampStorage,
+        hashKeyVariant,
+        StagedEligibleWorkload,
+        baselineNameOverride: null,
+        executionPathOverride:
+            "DVault provider-neutral fallback path; selectedStrategy=<none>; " +
+            "providerSpecificSaveStrategy=fallback; mysqlMixedBatchBoundary=above-303-provider-neutral",
+        expectedProviderSaveStrategyName: null,
+        expectProviderSaveStrategySelection: false);
   }
 
   public async Task<ScenarioBenchmarkResult> ExecuteAsync(CancellationToken cancellationToken) {
@@ -174,7 +198,8 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark,
 
         BenchmarkAssert.Equal(_workload.ExpectedRowsWritten, result.RowsWritten, "The provider-native bulk benchmark row count drifted.");
         BenchmarkAssert.Equal(_workload.ExpectedSavedRecordCount, result.SavedRecords.Count, "The provider-native bulk benchmark saved-record count drifted.");
-        if (DataVaultBenchmarkHelpers.GetProviderSaveStrategyName(_strategy) is not null) {
+        if (_expectProviderSaveStrategySelection &&
+            (_expectedProviderSaveStrategyName ?? DataVaultBenchmarkHelpers.GetProviderSaveStrategyName(_strategy)) is not null) {
           BenchmarkAssert.Equal(0, context.ChangeTracker.Entries().Count(), "The provider-native bulk benchmark must leave a clean change tracker.");
         }
       }).ConfigureAwait(false);
@@ -198,6 +223,18 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark,
   }
 
   private void AssertStrategySelection(DataVaultDiagnosticsResult diagnostics) {
+    if (!_expectProviderSaveStrategySelection) {
+      BenchmarkAssert.Equal(
+          DataVaultSaveStrategyDiagnosticsStatus.ProviderNeutralFallback,
+          diagnostics.SaveStrategy.Status,
+          "The provider-native bulk benchmark row is expected to use provider-neutral fallback for this bounded shape.");
+      BenchmarkAssert.Equal(
+          null,
+          diagnostics.SaveStrategy.SelectedStrategyName,
+          "The provider-native bulk benchmark fallback row must not select a provider-specific Data Vault save strategy.");
+      return;
+    }
+
     var expectedStrategyName = _expectedProviderSaveStrategyName ?? DataVaultBenchmarkHelpers.GetProviderSaveStrategyName(_strategy);
     if (expectedStrategyName is not null) {
       DataVaultBenchmarkHelpers.AssertProviderSaveStrategySelected(diagnostics, expectedStrategyName);
@@ -426,7 +463,7 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark,
   private string GetDefaultExecutionPathDetail() {
     return _strategy switch {
       DataVaultBenchmarkStrategy.ProviderNeutralFallback =>
-          "DVault provider-neutral fallback path; selectedStrategy=<none>; comparisonBoundary=staged-eligible-63-operations",
+          "DVault provider-neutral fallback path; selectedStrategy=<none>; comparisonBoundary=staged-eligible-903-operations",
       DataVaultBenchmarkStrategy.SqliteOptimized =>
           "DVault SQLite optimized path; selectedStrategy=SqliteDataVaultSaveStrategy",
       DataVaultBenchmarkStrategy.PostgresOptimized =>
@@ -434,10 +471,12 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark,
           "stagedBulkBoundary=60-plus-operations; smallBatchBoundary=direct-or-UNNEST; cleanupBoundary=temporary-staging-table",
       DataVaultBenchmarkStrategy.SqlServerOptimized =>
           "DVault SQL Server staged native bulk save path; transfer=SqlBulkCopy; selectedStrategy=SqlServerDataVaultSaveStrategy; " +
-          "nativeBulkBoundary=50-plus-operations; cleanupBoundary=temporary-staging-table",
+          "nativeBulkBoundary=100-plus-operations; mixedBatchBoundary=900-plus-operations; cleanupBoundary=temporary-staging-table",
       DataVaultBenchmarkStrategy.MySqlOptimized =>
-          "DVault MySQL staged bulk save path; selectedStrategy=MySqlStagedDataVaultSaveStrategy; " +
-          "nativeBulkBoundary=50-plus-operations; stagedBulkBoundary=60-plus-operations; cleanupBoundary=temporary-staging-tables",
+          "DVault MySQL retained multi-row save path; selectedStrategy=MySqlDataVaultSaveStrategy; " +
+          "nativeBulkBoundary=50-plus-operations; " +
+          "stagedBulkBoundary=below-100-mixed-operations; largeMixedBoundary=above-303-provider-neutral; " +
+          "cleanupBoundary=no-staging-table",
       DataVaultBenchmarkStrategy.OracleOptimized =>
           "DVault Oracle direct optimized save path; selectedStrategy=OracleDataVaultSaveStrategy; " +
           "oracleBulkBoundary=direct-oracle-batching; stagedOracleBulk=not-selected-no-measured-win; cleanupBoundary=direct-provider-transaction",

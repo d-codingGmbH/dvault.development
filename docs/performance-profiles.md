@@ -109,11 +109,11 @@ The benchmark runner and artifact rules are documented in [DVault Benchmarks](..
 
 The checked-in root quick baseline used:
 
-- 3 iterations and 1 warmup iteration.
+- 1 iteration and 0 warmup iterations.
 - Load timestamp storage `ProviderDefault`.
 - Provider filter `all`.
-- Debian GNU/Linux 13 (trixie), X64 OS and process architecture, 32 processors.
-- .NET 10.0.8.
+- Microsoft Windows 10.0.26200, X64 OS and process architecture, 32 processors.
+- .NET 10.0.9.
 - Required provider `SQLite local temporary files`.
 - Optional PostgreSQL, SQL Server, MySQL, Oracle, and DB2 rows emitted as `executionStatus=skipped` because `DVAULT_TEST_POSTGRES_CONNECTION_STRING`, `DVAULT_TEST_SQLSERVER_CONNECTION_STRING`, `DVAULT_TEST_MYSQL_CONNECTION_STRING`, `DVAULT_TEST_ORACLE_CONNECTION_STRING`, and `DVAULT_TEST_DB2_CONNECTION_STRING` were unset.
 
@@ -276,12 +276,12 @@ All values in this section are from the evidence baseline above:
 
 | Scenario | Baseline | Mean ms | Evidence posture |
 | --- | --- | ---: | --- |
-| `customer-profile-history` | `dvault-adddvault-fallback` | 3.379 | Provider-neutral explicit save through `AddDVault()`. |
-| `customer-profile-history` | `dvault-adddvaultsqlite-optimized` | 2.229 | SQLite optimized write path selected `SqliteDataVaultSaveStrategy`. |
-| `customer-profile-bulk-insert-only` | `dvault-adddvault-fallback` | 12.886 | Provider-neutral fallback for 100 satellite operations. |
-| `customer-profile-bulk-insert-only` | `dvault-adddvaultsqlite-optimized` | 4.658 | SQLite optimized write path selected for the same logical profile rows. |
-| `customer-profile-bulk-history` | `dvault-adddvault-fallback` | 65.148 | Provider-neutral fallback for 1000 satellite operations across 10 requests. |
-| `customer-profile-bulk-history` | `dvault-adddvaultsqlite-optimized` | 33.372 | SQLite optimized write path selected for the same logical profile history shape. |
+| `customer-profile-history` | `dvault-adddvault-fallback` | 93.802 | Provider-neutral explicit save through `AddDVault()`. |
+| `customer-profile-history` | `dvault-adddvaultsqlite-optimized` | 56.761 | SQLite optimized write path selected `SqliteDataVaultSaveStrategy`. |
+| `customer-profile-bulk-insert-only` | `dvault-adddvault-fallback` | 75.338 | Provider-neutral fallback for 100 satellite operations. |
+| `customer-profile-bulk-insert-only` | `dvault-adddvaultsqlite-optimized` | 26.634 | SQLite optimized write path selected for the same logical profile rows. |
+| `customer-profile-bulk-history` | `dvault-adddvault-fallback` | 95.872 | Provider-neutral fallback for 1000 satellite operations across 10 requests. |
+| `customer-profile-bulk-history` | `dvault-adddvaultsqlite-optimized` | 49.600 | SQLite optimized write path selected for the same logical profile history shape. |
 
 ### Stop Conditions And Rerun Triggers
 
@@ -315,10 +315,10 @@ All values in this section are from the evidence baseline above:
 
 | Scenario | Baseline | Mean ms | Chunk detail |
 | --- | --- | ---: | --- |
-| `customer-profile-streaming-save` | `dvault-adddvault-fallback/materialized-explicit-bulk` | 5.774 | 60 ordered requests in one materialized bulk request. |
-| `customer-profile-streaming-save` | `dvault-adddvault-fallback/chunked-save-bounded-10` | 11.636 | 6 chunks of 10, retained-state high-water 20. |
-| `customer-profile-streaming-save` | `dvault-adddvault-fallback/async-source-bounded-10` | 11.775 | 6 async-yielded chunks of 10, retained-state high-water 20, source shape `IAsyncEnumerable<DataVaultSaveChunk>`. |
-| `customer-profile-streaming-save` | `dvault-adddvault-fallback/chunked-save-bounded-5` | 21.088 | 12 chunks of 5, retained-state high-water 20. |
+| `customer-profile-streaming-save` | `dvault-adddvault-fallback/materialized-explicit-bulk` | 46.105 | 60 ordered requests in one materialized bulk request. |
+| `customer-profile-streaming-save` | `dvault-adddvault-fallback/chunked-save-bounded-10` | 64.950 | 6 chunks of 10, retained-state high-water 20. |
+| `customer-profile-streaming-save` | `dvault-adddvault-fallback/async-source-bounded-10` | 41.297 | 6 async-yielded chunks of 10, retained-state high-water 20, source shape `IAsyncEnumerable<DataVaultSaveChunk>`. |
+| `customer-profile-streaming-save` | `dvault-adddvault-fallback/chunked-save-bounded-5` | 90.597 | 12 chunks of 5, retained-state high-water 20. |
 
 ### Stop Conditions And Rerun Triggers
 
@@ -349,8 +349,8 @@ Use these provider boundaries as starting gates. Timing claims require the linke
 | Provider | Starting gate | Evidence posture |
 | --- | --- | --- |
 | PostgreSQL | Retain direct or UNNEST below 60 operations; use staged COPY at 60-plus operations. | v0.32 local Podman evidence preserves the direct/UNNEST below-threshold path and staged COPY at 60-plus operations. |
-| SQL Server | Native bulk starts at 50-plus total operations and no more than 500 satellite operations. | v0.32 threshold evidence and the configured 2026-06-20 SQL Server bulk-threshold bundle keep the 50 minimum-operation and 500 maximum-satellite-operation gates. |
-| MySQL | Tiny satellite-history batches fall back to provider-neutral behavior; larger eligible ordered batches use the retained multi-row or staged bulk provider paths. | v0.32 local evidence records the tiny satellite-history fallback decision and keeps staged bulk for larger eligible rows. |
+| SQL Server | Native bulk starts at 100-plus total operations; mixed hub/link batches start at 900-plus total operations; no more than 500 satellite operations. | Current mixed-threshold evidence keeps the 100/900/500 gates and avoids the measured small mixed-batch staged outlier. |
+| MySQL | Tiny satellite-history batches fall back to provider-neutral behavior; retained multi-row starts at 50-plus operations for eligible non-large mixed batches; staged bulk is bounded to satellite-only 100-plus batches or mixed 100-to-303-operation batches. | Current MySQL evidence sends large 903-operation mixed batches to provider-neutral fallback after both staged and retained multi-row paths regressed against fallback, while preserving the staged window for measured medium batches. |
 | Oracle | Direct optimized batching starts at 50-plus total operations and no more than 10000 satellite operations. | v0.32 local evidence retains the direct optimized path and records `stagedOracleBulk=not-selected-no-measured-win`. |
 | DB2 | Clean-context hub, link, and ordinary satellite batches can select `Db2DataVaultSaveStrategy`; no staged bulk or provider-native chunk execution is claimed. | The DB2 hotspot bundle completed the optimized clean-context save row and provider-neutral fallback comparison row; the root triplet may still keep DB2 skipped placeholders when `DVAULT_TEST_DB2_CONNECTION_STRING` is unset. |
 
@@ -378,8 +378,8 @@ The v0.32 provider benchmark bundles are the current threshold evidence for Post
 Rows to cite:
 
 - PostgreSQL: `dvault-adddvaultpostgres-direct-or-unnest` for the below-60 retained direct/UNNEST boundary and `dvault-adddvaultpostgres-optimized` for the 60-plus staged COPY boundary.
-- SQL Server: `dvault-adddvaultsqlserver-optimized` in the configured 2026-06-20 bulk-threshold bundle for the completed native bulk boundary, `SqlBulkCopy` transfer, fallback comparator, and unchanged 50/500 gates.
-- MySQL: `dvault-adddvaultmysql-multi-row` for retained provider paths where selected, `dvault-adddvaultmysql-optimized` for staged bulk, and the tiny satellite-history provider-neutral fallback row for the deliberate small-batch exception.
+- SQL Server: `dvault-adddvaultsqlserver-optimized` in the configured mixed-threshold bundle for the completed native bulk boundary, `SqlBulkCopy` transfer, fallback comparator, and current 100/900/500 gates.
+- MySQL: `dvault-adddvaultmysql-multi-row` for retained provider paths where selected, `dvault-adddvaultmysql-optimized` for the large mixed provider-neutral fallback boundary, the bounded staged-bulk evidence for medium mixed batches, and the tiny satellite-history provider-neutral fallback row for the deliberate small-batch exception.
 - Oracle: `dvault-adddvaultoracle-optimized` for retained direct optimized batching and the current no-measured-win staged posture.
 - DB2: `dvault-adddvaultdb2-optimized` in the DB2 hotspot bundle for the completed clean-context optimized save row with `Db2DataVaultSaveStrategy` selected and `stagedBulkBoundary=not-supported`; `dvault-adddvault-fallback` in the same bundle is the provider-neutral fallback comparison row.
 
@@ -452,12 +452,12 @@ All values in this quick table are from the root quick benchmark triplet. Extern
 
 | Scenario | Baseline | Mean ms | Evidence posture |
 | --- | --- | ---: | --- |
-| `latest-satellite-read` | `dvault-adddvault-fallback` | 7.289 | Provider-neutral latest read over 100 customers and 1000 seeded profile states. |
-| `latest-satellite-read` | `dvault-adddvaultsqlite-optimized` | 3.271 | SQLite optimized read path selected `SqliteDataVaultReadStrategy`. |
-| `pit-as-of-read` | `dvault-adddvault-fallback` | 10.240 | Provider-neutral PIT as-of read over 100 PIT rows and 2 satellite segments. |
-| `pit-as-of-read` | `dvault-adddvaultsqlite-optimized` | 10.552 | SQLite optimized PIT read path selected `SqliteDataVaultReadStrategy`. |
-| `bridge-traversal-read` | `dvault-adddvault-fallback` | 1.421 | Provider-neutral bridge traversal over 1 ancestor and 100 descendant bridge rows. |
-| `bridge-traversal-read` | `dvault-adddvaultsqlite-optimized` | 0.720 | SQLite optimized bridge read path selected `SqliteDataVaultReadStrategy`. |
+| `latest-satellite-read` | `dvault-adddvault-fallback` | 16.460 | Provider-neutral latest read over 100 customers and 1000 seeded profile states. |
+| `latest-satellite-read` | `dvault-adddvaultsqlite-optimized` | 10.709 | SQLite optimized read path selected `SqliteDataVaultReadStrategy`. |
+| `pit-as-of-read` | `dvault-adddvault-fallback` | 48.176 | Provider-neutral PIT as-of read over 100 PIT rows and 2 satellite segments. |
+| `pit-as-of-read` | `dvault-adddvaultsqlite-optimized` | 15.694 | SQLite optimized PIT read path selected `SqliteDataVaultReadStrategy`. |
+| `bridge-traversal-read` | `dvault-adddvault-fallback` | 12.911 | Provider-neutral bridge traversal over 1 ancestor and 100 descendant bridge rows. |
+| `bridge-traversal-read` | `dvault-adddvaultsqlite-optimized` | 5.590 | SQLite optimized bridge read path selected `SqliteDataVaultReadStrategy`. |
 Provider-configured PostgreSQL, SQL Server, MySQL, and Oracle PIT/bridge rows should cite [the v0.32.0 smoke-read bundle](../artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.md), not the skipped root quick placeholders. DB2 latest-satellite/PIT/bridge rows should cite [the DB2 hotspot bundle](../artifacts/benchmarks/06FE4QR3DD7EFZ4F35SBTFGWSR-db2-hotspot-evidence-20260620/benchmark-summary.md). Oracle PIT/bridge completed timing evidence is limited to the two Oracle rows in the v0.32.0 bundle:
 
 | Provider | Scenario | Baseline | Mean ms | Evidence posture |

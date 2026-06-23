@@ -13,7 +13,8 @@ namespace DCoding.Data.DVault;
 
 internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStrategy {
   private const int SqlServerMaxCommandParameterCount = 2000;
-  private const int MinimumOptimizedBatchOperationCount = 50;
+  private const int MinimumOptimizedBatchOperationCount = 100;
+  private const int MinimumMixedOptimizedBatchOperationCount = 900;
   private const int MaximumOptimizedSatelliteOperationCount = 500;
   private const int SqlServerOpenJsonInsertMinimumRowCount = 32;
   private const string OrdinalColumnName = "__dvault_ordinal";
@@ -260,13 +261,16 @@ internal sealed class SqlServerDataVaultSaveStrategy : IDataVaultProviderSaveStr
     ArgumentNullException.ThrowIfNull(requests);
 
     var operationCount = 0;
+    var hubAndLinkOperationCount = 0;
     var satelliteOperationCount = 0;
     foreach (var request in requests) {
+      hubAndLinkOperationCount += request.HubOperations.Count + request.LinkOperations.Count;
       operationCount += request.HubOperations.Count + request.LinkOperations.Count + request.SatelliteOperations.Count;
       satelliteOperationCount += request.SatelliteOperations.Count;
     }
 
     return operationCount >= MinimumOptimizedBatchOperationCount &&
+        (hubAndLinkOperationCount == 0 || operationCount >= MinimumMixedOptimizedBatchOperationCount) &&
         satelliteOperationCount <= MaximumOptimizedSatelliteOperationCount;
   }
 

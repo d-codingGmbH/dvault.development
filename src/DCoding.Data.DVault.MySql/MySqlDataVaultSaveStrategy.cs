@@ -19,7 +19,8 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
   private const int MinimumOptimizedBatchOperationCount = 50;
   private const int TinySatelliteHistoryProviderNeutralFallbackSingleRequestMaximumOperationCount = 10;
   private const int TinySatelliteHistoryProviderNeutralFallbackMaximumOperationCount = 100;
-  internal const int MinimumStagedBulkOperationCount = 60;
+  internal const int MinimumStagedBulkOperationCount = 100;
+  internal const int MaximumStagedBulkMixedOperationCount = 303;
   private const string LatestRowsTableAlias = "__dvault_latest";
   private const string RowNumberColumnName = "__dvault_row_number";
   private const string StagingTablePrefix = "__dvault_stage_";
@@ -119,11 +120,15 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     ArgumentNullException.ThrowIfNull(requests);
 
     var operationCount = 0;
+    var hubAndLinkOperationCount = 0;
     foreach (var request in requests) {
-      operationCount += request.HubOperations.Count + request.LinkOperations.Count + request.SatelliteOperations.Count;
+      var hubAndLinkRequestOperationCount = request.HubOperations.Count + request.LinkOperations.Count;
+      hubAndLinkOperationCount += hubAndLinkRequestOperationCount;
+      operationCount += hubAndLinkRequestOperationCount + request.SatelliteOperations.Count;
     }
 
     return operationCount >= MinimumOptimizedBatchOperationCount &&
+        (hubAndLinkOperationCount == 0 || operationCount <= MaximumStagedBulkMixedOperationCount) &&
         !IsTinySatelliteHistoryProviderNeutralFallbackBatch(requests);
   }
 
@@ -131,11 +136,15 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     ArgumentNullException.ThrowIfNull(requests);
 
     var operationCount = 0;
+    var hubAndLinkOperationCount = 0;
     foreach (var request in requests) {
-      operationCount += request.HubOperations.Count + request.LinkOperations.Count + request.SatelliteOperations.Count;
+      var hubAndLinkRequestOperationCount = request.HubOperations.Count + request.LinkOperations.Count;
+      hubAndLinkOperationCount += hubAndLinkRequestOperationCount;
+      operationCount += hubAndLinkRequestOperationCount + request.SatelliteOperations.Count;
     }
 
-    return operationCount >= MinimumStagedBulkOperationCount;
+    return operationCount >= MinimumStagedBulkOperationCount &&
+        (hubAndLinkOperationCount == 0 || operationCount <= MaximumStagedBulkMixedOperationCount);
   }
 
   internal static bool IsTinySatelliteHistoryProviderNeutralFallbackBatch(

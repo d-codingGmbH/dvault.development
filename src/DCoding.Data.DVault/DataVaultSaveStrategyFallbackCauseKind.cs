@@ -38,7 +38,7 @@ public enum DataVaultSaveStrategyFallbackCauseKind {
   MultiActiveSatelliteOperations,
 
   /// <summary>
-  /// SQL Server optimized dispatch requires at least 50 total operations.
+  /// SQL Server optimized dispatch requires the current minimum total operation count for the request shape.
   /// </summary>
   SqlServerMinimumOperationThreshold,
 
@@ -96,4 +96,9 @@ public enum DataVaultSaveStrategyFallbackCauseKind {
   /// MySQL provider-native dispatch deliberately uses provider-neutral fallback for tiny satellite history batches.
   /// </summary>
   MySqlTinySatelliteHistoryProviderNeutralFallback,
+
+  /// <summary>
+  /// MySQL provider-native dispatch deliberately uses provider-neutral fallback for large mixed hub/link batches.
+  /// </summary>
+  MySqlLargeMixedProviderNeutralFallback,
 }

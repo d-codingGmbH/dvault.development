@@ -9,10 +9,13 @@ using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 namespace DCoding.Data.DVault;
 
 internal static class DataVaultProviderSaveStrategyGateEvaluator {
-  private const int MinimumSqlServerOptimizedBatchOperationCount = 50;
+  private const int MinimumSqlServerOptimizedBatchOperationCount = 100;
+  private const int MinimumSqlServerMixedBatchOperationCount = 900;
   private const int MaximumSqlServerOptimizedSatelliteOperationCount = 500;
   private const int MinimumMySqlOptimizedBatchOperationCount = 50;
-  private const int MinimumMySqlStagedBatchOperationCount = 60;
+  private const int MaximumMySqlOptimizedMixedBatchOperationCount = 303;
+  private const int MinimumMySqlStagedBatchOperationCount = 100;
+  private const int MaximumMySqlStagedMixedBatchOperationCount = 303;
   private const int MySqlTinySatelliteHistoryProviderNeutralFallbackSingleRequestMaximumOperationCount = 10;
   private const int MySqlTinySatelliteHistoryProviderNeutralFallbackMaximumOperationCount = 100;
   private const int MinimumOracleOptimizedBatchOperationCount = 50;
@@ -74,14 +77,16 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
       string? providerName,
       bool hasPendingTrackedChanges,
       IReadOnlyList<DataVaultSaveRequest> requests) {
-    return Evaluate(
-        DataVaultKnownProviderSaveStrategy.SqlServer,
-        providerName,
-        hasPendingTrackedChanges,
-        requests,
-        supportedProviderNames: [KnownProviderNames.SqlServer],
-        minimumOperationCount: MinimumSqlServerOptimizedBatchOperationCount,
-        maximumSatelliteOperationCount: MaximumSqlServerOptimizedSatelliteOperationCount);
+    return DeclineSqlServerSmallMixedBatch(
+        Evaluate(
+            DataVaultKnownProviderSaveStrategy.SqlServer,
+            providerName,
+            hasPendingTrackedChanges,
+            requests,
+            supportedProviderNames: [KnownProviderNames.SqlServer],
+            minimumOperationCount: MinimumSqlServerOptimizedBatchOperationCount,
+            maximumSatelliteOperationCount: MaximumSqlServerOptimizedSatelliteOperationCount),
+        requests);
   }
 
   public static DataVaultProviderSaveStrategyGateEvaluation EvaluateMySql(
@@ -96,15 +101,17 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
       string? providerName,
       bool hasPendingTrackedChanges,
       IReadOnlyList<DataVaultSaveRequest> requests) {
-    return DeclineMySqlTinySatelliteHistoryProviderNeutralFallbackBatch(
-        Evaluate(
-            DataVaultKnownProviderSaveStrategy.MySql,
-            providerName,
-            hasPendingTrackedChanges,
-            requests,
-            supportedProviderNames: [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
-            minimumOperationCount: MinimumMySqlOptimizedBatchOperationCount,
-            maximumSatelliteOperationCount: null),
+    return DeclineMySqlLargeMixedProviderNeutralFallbackBatch(
+        DeclineMySqlTinySatelliteHistoryProviderNeutralFallbackBatch(
+            Evaluate(
+                DataVaultKnownProviderSaveStrategy.MySql,
+                providerName,
+                hasPendingTrackedChanges,
+                requests,
+                supportedProviderNames: [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
+                minimumOperationCount: MinimumMySqlOptimizedBatchOperationCount,
+                maximumSatelliteOperationCount: null),
+            requests),
         requests);
   }
 
@@ -120,15 +127,17 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
       string? providerName,
       bool hasPendingTrackedChanges,
       IReadOnlyList<DataVaultSaveRequest> requests) {
-    return DeclineMySqlTinySatelliteHistoryProviderNeutralFallbackBatch(
-        Evaluate(
-            DataVaultKnownProviderSaveStrategy.MySqlStaged,
-            providerName,
-            hasPendingTrackedChanges,
-            requests,
-            supportedProviderNames: [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
-            minimumOperationCount: MinimumMySqlStagedBatchOperationCount,
-            maximumSatelliteOperationCount: null),
+    return DeclineMySqlStagedLargeMixedBatch(
+        DeclineMySqlTinySatelliteHistoryProviderNeutralFallbackBatch(
+            Evaluate(
+                DataVaultKnownProviderSaveStrategy.MySqlStaged,
+                providerName,
+                hasPendingTrackedChanges,
+                requests,
+                supportedProviderNames: [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
+                minimumOperationCount: MinimumMySqlStagedBatchOperationCount,
+                maximumSatelliteOperationCount: null),
+            requests),
         requests);
   }
 
@@ -231,6 +240,9 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
                   DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
                   MinimumTotalOperationCount: MinimumSqlServerOptimizedBatchOperationCount),
               new DataVaultSaveStrategyGateRequirement(
+                  DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
+                  MinimumTotalOperationCount: MinimumSqlServerMixedBatchOperationCount),
+              new DataVaultSaveStrategyGateRequirement(
                   DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold,
                   MaximumSatelliteOperationCount: MaximumSqlServerOptimizedSatelliteOperationCount),
           ])
@@ -241,6 +253,8 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
                   DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold,
                   MinimumTotalOperationCount: MinimumMySqlOptimizedBatchOperationCount),
               new DataVaultSaveStrategyGateRequirement(
+                  DataVaultSaveStrategyFallbackCauseKind.MySqlLargeMixedProviderNeutralFallback),
+              new DataVaultSaveStrategyGateRequirement(
                   DataVaultSaveStrategyFallbackCauseKind.MySqlTinySatelliteHistoryProviderNeutralFallback),
           ])
           .ToArray(),
@@ -249,6 +263,8 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
               new DataVaultSaveStrategyGateRequirement(
                   DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold,
                   MinimumTotalOperationCount: MinimumMySqlStagedBatchOperationCount),
+              new DataVaultSaveStrategyGateRequirement(
+                  DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape),
               new DataVaultSaveStrategyGateRequirement(
                   DataVaultSaveStrategyFallbackCauseKind.MySqlTinySatelliteHistoryProviderNeutralFallback),
           ])
@@ -298,6 +314,17 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
     var operationCount = 0;
     foreach (var request in requests) {
       operationCount += request.SatelliteOperations.Count;
+    }
+
+    return operationCount;
+  }
+
+  public static int CountHubAndLinkOperations(IReadOnlyList<DataVaultSaveRequest> requests) {
+    ArgumentNullException.ThrowIfNull(requests);
+
+    var operationCount = 0;
+    foreach (var request in requests) {
+      operationCount += request.HubOperations.Count + request.LinkOperations.Count;
     }
 
     return operationCount;
@@ -393,6 +420,85 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
     return new DataVaultProviderSaveStrategyGateEvaluation(
         false,
         fallbackCauses);
+  }
+
+  private static DataVaultProviderSaveStrategyGateEvaluation DeclineSqlServerSmallMixedBatch(
+      DataVaultProviderSaveStrategyGateEvaluation evaluation,
+      IReadOnlyList<DataVaultSaveRequest> requests) {
+    var operationCount = CountOperations(requests);
+    if (operationCount < MinimumSqlServerOptimizedBatchOperationCount ||
+        operationCount >= MinimumSqlServerMixedBatchOperationCount ||
+        CountHubAndLinkOperations(requests) == 0) {
+      return evaluation;
+    }
+
+    var fallbackCauses = evaluation.FallbackCauses.ToList();
+    if (fallbackCauses.Any(cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold)) {
+      return new DataVaultProviderSaveStrategyGateEvaluation(false, fallbackCauses);
+    }
+
+    fallbackCauses.Add(
+        new DataVaultSaveStrategyFallbackCause(
+            DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
+            "SQL Server mixed hub/link optimized dispatch requires at least " +
+            MinimumSqlServerMixedBatchOperationCount.ToString(CultureInfo.InvariantCulture) +
+            " total operations; the request batch contains " +
+            operationCount.ToString(CultureInfo.InvariantCulture) +
+            "."));
+
+    return new DataVaultProviderSaveStrategyGateEvaluation(false, fallbackCauses);
+  }
+
+  private static DataVaultProviderSaveStrategyGateEvaluation DeclineMySqlStagedLargeMixedBatch(
+      DataVaultProviderSaveStrategyGateEvaluation evaluation,
+      IReadOnlyList<DataVaultSaveRequest> requests) {
+    var operationCount = CountOperations(requests);
+    if (operationCount <= MaximumMySqlStagedMixedBatchOperationCount ||
+        CountHubAndLinkOperations(requests) == 0) {
+      return evaluation;
+    }
+
+    var fallbackCauses = evaluation.FallbackCauses.ToList();
+    if (fallbackCauses.Any(cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape)) {
+      return new DataVaultProviderSaveStrategyGateEvaluation(false, fallbackCauses);
+    }
+
+    fallbackCauses.Add(
+        new DataVaultSaveStrategyFallbackCause(
+            DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape,
+            "MySQL staged bulk optimized dispatch is limited to at most " +
+            MaximumMySqlStagedMixedBatchOperationCount.ToString(CultureInfo.InvariantCulture) +
+            " total operations for mixed hub/link batches; the request batch contains " +
+            operationCount.ToString(CultureInfo.InvariantCulture) +
+            ". The retained MySQL multi-row path remains eligible above this boundary."));
+
+    return new DataVaultProviderSaveStrategyGateEvaluation(false, fallbackCauses);
+  }
+
+  private static DataVaultProviderSaveStrategyGateEvaluation DeclineMySqlLargeMixedProviderNeutralFallbackBatch(
+      DataVaultProviderSaveStrategyGateEvaluation evaluation,
+      IReadOnlyList<DataVaultSaveRequest> requests) {
+    var operationCount = CountOperations(requests);
+    if (operationCount <= MaximumMySqlOptimizedMixedBatchOperationCount ||
+        CountHubAndLinkOperations(requests) == 0) {
+      return evaluation;
+    }
+
+    var fallbackCauses = evaluation.FallbackCauses.ToList();
+    if (fallbackCauses.Any(cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlLargeMixedProviderNeutralFallback)) {
+      return new DataVaultProviderSaveStrategyGateEvaluation(false, fallbackCauses);
+    }
+
+    fallbackCauses.Add(
+        new DataVaultSaveStrategyFallbackCause(
+            DataVaultSaveStrategyFallbackCauseKind.MySqlLargeMixedProviderNeutralFallback,
+            "MySQL retained multi-row optimized dispatch deliberately uses provider-neutral fallback above " +
+            MaximumMySqlOptimizedMixedBatchOperationCount.ToString(CultureInfo.InvariantCulture) +
+            " total operations for mixed hub/link batches; the request batch contains " +
+            operationCount.ToString(CultureInfo.InvariantCulture) +
+            "."));
+
+    return new DataVaultProviderSaveStrategyGateEvaluation(false, fallbackCauses);
   }
 
   private static bool IsMySqlTinySatelliteHistoryProviderNeutralFallbackBatch(

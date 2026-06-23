@@ -197,7 +197,7 @@ public sealed class BenchmarkScenarioExecutionTests {
           "provider-native-bulk-ingestion",
           "dvault-adddvault-fallback",
           "provider-neutral-dvault-fallback",
-          "20 order-product pairs, 3 fulfillment satellite operations",
+          "300 order-product pairs, 3 fulfillment satellite operations",
           "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
           NotConfiguredSkipReason),
       SkippedExternal(
@@ -206,14 +206,14 @@ public sealed class BenchmarkScenarioExecutionTests {
           "dvault-adddvaultpostgres-direct-or-unnest",
           "postgres-optimized-dvault",
           "18 order-product pairs, 3 fulfillment satellite operations",
-          "staged-ineligible provider-native batch below the 60-operation staged boundary",
+          "staged-ineligible provider-native batch below staged bulk boundary",
           NotConfiguredSkipReason),
       SkippedExternal(
           PostgresProviderName,
           "provider-native-bulk-ingestion",
           "dvault-adddvaultpostgres-optimized",
           "postgres-optimized-dvault",
-          "20 order-product pairs, 3 fulfillment satellite operations",
+          "300 order-product pairs, 3 fulfillment satellite operations",
           "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
           NotConfiguredSkipReason),
       SkippedExternal(
@@ -221,7 +221,7 @@ public sealed class BenchmarkScenarioExecutionTests {
           "provider-native-bulk-ingestion",
           "dvault-adddvault-fallback",
           "provider-neutral-dvault-fallback",
-          "20 order-product pairs, 3 fulfillment satellite operations",
+          "300 order-product pairs, 3 fulfillment satellite operations",
           "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable)),
       SkippedExternal(
@@ -229,7 +229,7 @@ public sealed class BenchmarkScenarioExecutionTests {
           "provider-native-bulk-ingestion",
           "dvault-adddvaultsqlserver-optimized",
           "sqlserver-optimized-dvault",
-          "20 order-product pairs, 3 fulfillment satellite operations",
+          "300 order-product pairs, 3 fulfillment satellite operations",
           "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable)),
       SkippedExternal(
@@ -237,7 +237,7 @@ public sealed class BenchmarkScenarioExecutionTests {
           "provider-native-bulk-ingestion",
           "dvault-adddvault-fallback",
           "provider-neutral-dvault-fallback",
-          "20 order-product pairs, 3 fulfillment satellite operations",
+          "300 order-product pairs, 3 fulfillment satellite operations",
           "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable)),
       SkippedExternal(
@@ -246,14 +246,14 @@ public sealed class BenchmarkScenarioExecutionTests {
           "dvault-adddvaultmysql-multi-row",
           "mysql-optimized-dvault",
           "18 order-product pairs, 3 fulfillment satellite operations",
-          "staged-ineligible provider-native batch below the 60-operation staged boundary",
+          "staged-ineligible provider-native batch below staged bulk boundary",
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable)),
       SkippedExternal(
           MySqlProviderName,
           "provider-native-bulk-ingestion",
           "dvault-adddvaultmysql-optimized",
           "mysql-optimized-dvault",
-          "20 order-product pairs, 3 fulfillment satellite operations",
+          "300 order-product pairs, 3 fulfillment satellite operations",
           "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable)),
       SkippedExternal(
@@ -261,7 +261,7 @@ public sealed class BenchmarkScenarioExecutionTests {
           "provider-native-bulk-ingestion",
           "dvault-adddvault-fallback",
           "provider-neutral-dvault-fallback",
-          "20 order-product pairs, 3 fulfillment satellite operations",
+          "300 order-product pairs, 3 fulfillment satellite operations",
           "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable)),
       SkippedExternal(
@@ -269,7 +269,7 @@ public sealed class BenchmarkScenarioExecutionTests {
           "provider-native-bulk-ingestion",
           "dvault-adddvaultoracle-optimized",
           "oracle-optimized-dvault",
-          "20 order-product pairs, 3 fulfillment satellite operations",
+          "300 order-product pairs, 3 fulfillment satellite operations",
           "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Oracle.ConnectionStringEnvironmentVariable)),
       SkippedExternal(
@@ -277,7 +277,7 @@ public sealed class BenchmarkScenarioExecutionTests {
           "provider-native-bulk-ingestion",
           "dvault-adddvault-fallback",
           "provider-neutral-dvault-fallback",
-          "20 order-product pairs, 3 fulfillment satellite operations",
+          "300 order-product pairs, 3 fulfillment satellite operations",
           "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Db2.ConnectionStringEnvironmentVariable)),
       SkippedExternal(
@@ -285,7 +285,7 @@ public sealed class BenchmarkScenarioExecutionTests {
           "provider-native-bulk-ingestion",
           "dvault-adddvaultdb2-optimized",
           "db2-optimized-dvault",
-          "20 order-product pairs, 3 fulfillment satellite operations",
+          "300 order-product pairs, 3 fulfillment satellite operations",
           "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.Db2.ConnectionStringEnvironmentVariable)),
       SkippedExternal(
@@ -442,9 +442,9 @@ public sealed class BenchmarkScenarioExecutionTests {
   [
       new(PostgresProviderName, "dvault-adddvaultpostgres-direct-or-unnest", ["stagedBulkBoundary=below-60-operations", "cleanupBoundary=no-staging-table"]),
       new(PostgresProviderName, "dvault-adddvaultpostgres-optimized", ["transfer=COPY", "stagedBulkBoundary=60-plus-operations", "smallBatchBoundary=direct-or-UNNEST"]),
-      new(SqlServerProviderName, "dvault-adddvaultsqlserver-optimized", ["transfer=SqlBulkCopy", "nativeBulkBoundary=50-plus-operations"]),
-      new(MySqlProviderName, "dvault-adddvaultmysql-multi-row", ["selectedStrategy=MySqlDataVaultSaveStrategy", "stagedBulkBoundary=below-60-operations"]),
-      new(MySqlProviderName, "dvault-adddvaultmysql-optimized", ["selectedStrategy=MySqlStagedDataVaultSaveStrategy", "stagedBulkBoundary=60-plus-operations"]),
+      new(SqlServerProviderName, "dvault-adddvaultsqlserver-optimized", ["transfer=SqlBulkCopy", "nativeBulkBoundary=100-plus-operations", "mixedBatchBoundary=900-plus-operations"]),
+      new(MySqlProviderName, "dvault-adddvaultmysql-multi-row", ["selectedStrategy=MySqlDataVaultSaveStrategy", "stagedBulkBoundary=below-100-operations"]),
+      new(MySqlProviderName, "dvault-adddvaultmysql-optimized", ["selectedStrategy=<none>", "mysqlMixedBatchBoundary=above-303-provider-neutral"]),
       new(OracleProviderName, "dvault-adddvaultoracle-optimized", ["selectedStrategy=OracleDataVaultSaveStrategy", "stagedOracleBulk=not-selected-no-measured-win"]),
       new(Db2ProviderName, "dvault-adddvaultdb2-optimized", ["selectedStrategy=Db2DataVaultSaveStrategy", "db2SaveBoundary=clean-context-set-based", "stagedBulkBoundary=not-supported"]),
   ];
@@ -728,16 +728,16 @@ public sealed class BenchmarkScenarioExecutionTests {
       var mySqlRetainedPathExecutionDetail = mySqlRetainedPathResult.GetProperty("executionDetail").GetString();
       Assert.Contains("DVault MySQL retained multi-row save path", mySqlRetainedPathExecutionDetail);
       Assert.Contains("selectedStrategy=MySqlDataVaultSaveStrategy", mySqlRetainedPathExecutionDetail);
-      Assert.Contains("stagedBulkBoundary=below-60-operations", mySqlRetainedPathExecutionDetail);
+      Assert.Contains("stagedBulkBoundary=below-100-operations", mySqlRetainedPathExecutionDetail);
 
-      var mySqlStagedBulkResult = Assert.Single(results.Where(result =>
+      var mySqlLargeMixedMultiRowResult = Assert.Single(results.Where(result =>
           result.GetProperty("scenarioName").GetString() == "provider-native-bulk-ingestion" &&
           result.GetProperty("provider").GetString() == MySqlProviderName &&
           result.GetProperty("baselineName").GetString() == "dvault-adddvaultmysql-optimized"));
-      var mySqlStagedBulkExecutionDetail = mySqlStagedBulkResult.GetProperty("executionDetail").GetString();
-      Assert.Contains("DVault MySQL staged bulk save path", mySqlStagedBulkExecutionDetail);
-      Assert.Contains("selectedStrategy=MySqlStagedDataVaultSaveStrategy", mySqlStagedBulkExecutionDetail);
-      Assert.Contains("stagedBulkBoundary=60-plus-operations", mySqlStagedBulkExecutionDetail);
+      var mySqlLargeMixedMultiRowExecutionDetail = mySqlLargeMixedMultiRowResult.GetProperty("executionDetail").GetString();
+      Assert.Contains("DVault provider-neutral fallback path", mySqlLargeMixedMultiRowExecutionDetail);
+      Assert.Contains("selectedStrategy=<none>", mySqlLargeMixedMultiRowExecutionDetail);
+      Assert.Contains("mysqlMixedBatchBoundary=above-303-provider-neutral", mySqlLargeMixedMultiRowExecutionDetail);
 
       var oracleDirectBulkResult = Assert.Single(results.Where(result =>
           result.GetProperty("scenarioName").GetString() == "provider-native-bulk-ingestion" &&
@@ -966,7 +966,7 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Null(completedManifestRow.SkipReason);
     Assert.Null(completedManifestRow.WorkloadShape);
     Assert.Equal("LatestSatellite", completedManifestRow.ReadShape);
-    Assert.Equal("DVault SQLite optimized path", completedManifestRow.SelectedPath);
+    Assert.Equal("DVault SQLite optimized latest satellite read path", completedManifestRow.SelectedPath);
     Assert.Null(completedManifestRow.PlannedPath);
     Assert.Equal("SqliteDataVaultReadStrategy", completedManifestRow.SelectedStrategy);
     Assert.Null(completedManifestRow.PlannedStrategy);
@@ -1524,12 +1524,12 @@ public sealed class BenchmarkScenarioExecutionTests {
 
     var result = await benchmark.ExecuteAsync(CancellationToken.None).ConfigureAwait(false);
 
-    Assert.Contains("20 order hubs, 20 product hubs, 20 order-product links, and 2 fulfillment satellite rows", result.PersistedOutcome);
+    Assert.Contains("300 order hubs, 300 product hubs, 300 order-product links, and 2 fulfillment satellite rows", result.PersistedOutcome);
     Assert.Contains("saveStrategyStatus=ProviderStrategySelected", result.ExecutionDetail);
     Assert.Contains("selectedStrategy=SqliteDataVaultSaveStrategy", result.ExecutionDetail);
     Assert.Contains("requestCount=5", result.ExecutionDetail);
-    Assert.Contains("hubOperations=40", result.ExecutionDetail);
-    Assert.Contains("linkOperations=20", result.ExecutionDetail);
+    Assert.Contains("hubOperations=600", result.ExecutionDetail);
+    Assert.Contains("linkOperations=300", result.ExecutionDetail);
     Assert.Contains("satelliteOperations=3", result.ExecutionDetail);
     Assert.True(result.Elapsed > TimeSpan.Zero);
   }
@@ -1561,7 +1561,10 @@ public sealed class BenchmarkScenarioExecutionTests {
                   [
                       new DataVaultSaveStrategyGateRequirement(
                           DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
-                          MinimumTotalOperationCount: 50),
+                          MinimumTotalOperationCount: 100),
+                      new DataVaultSaveStrategyGateRequirement(
+                          DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
+                          MinimumTotalOperationCount: 900),
                       new DataVaultSaveStrategyGateRequirement(
                           DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold,
                           MaximumSatelliteOperationCount: 500),

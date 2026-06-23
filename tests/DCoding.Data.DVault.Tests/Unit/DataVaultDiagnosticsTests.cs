@@ -775,7 +775,14 @@ public sealed class DataVaultDiagnosticsTests {
             fact.Kind == DataVaultProviderThresholdFactKind.MinimumTotalOperationCount &&
             fact.GateKind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold &&
             fact.ProviderName == KnownProviderNames.SqlServer &&
-            fact.MinimumTotalOperationCount == 50);
+            fact.MinimumTotalOperationCount == 100);
+    Assert.Contains(
+        result.ProviderTuning.Save.ThresholdFacts!,
+        fact =>
+            fact.Kind == DataVaultProviderThresholdFactKind.MinimumTotalOperationCount &&
+            fact.GateKind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold &&
+            fact.ProviderName == KnownProviderNames.SqlServer &&
+            fact.MinimumTotalOperationCount == 900);
     Assert.Contains(
         result.ProviderTuning.Save.ThresholdFacts!,
         fact =>
@@ -788,7 +795,8 @@ public sealed class DataVaultDiagnosticsTests {
 
     Assert.Contains("\"providerTuning\"", json, StringComparison.Ordinal);
     Assert.Contains("\"thresholdFacts\"", json, StringComparison.Ordinal);
-    Assert.Contains("\"minimumTotalOperationCount\": 50", json, StringComparison.Ordinal);
+    Assert.Contains("\"minimumTotalOperationCount\": 100", json, StringComparison.Ordinal);
+    Assert.Contains("\"minimumTotalOperationCount\": 900", json, StringComparison.Ordinal);
     Assert.Contains("\"maximumSatelliteOperationCount\": 500", json, StringComparison.Ordinal);
     Assert.DoesNotContain("unit-test", json, StringComparison.Ordinal);
 
@@ -1174,6 +1182,18 @@ public sealed class DataVaultDiagnosticsTests {
         KnownProviderNames.SqlServer,
         hasPendingTrackedChanges: false,
         smallBatch);
+    var sqlServerMixedTooSmall = DataVaultProviderSaveStrategyGateEvaluator.EvaluateSqlServer(
+        KnownProviderNames.SqlServer,
+        hasPendingTrackedChanges: false,
+        CreateRequests(totalOperationCount: 303, satelliteOperationCount: 3));
+    var sqlServerPureSatelliteSupported = DataVaultProviderSaveStrategyGateEvaluator.EvaluateSqlServer(
+        KnownProviderNames.SqlServer,
+        hasPendingTrackedChanges: false,
+        CreateRequests(totalOperationCount: 100, satelliteOperationCount: 100));
+    var sqlServerMixedSupported = DataVaultProviderSaveStrategyGateEvaluator.EvaluateSqlServer(
+        KnownProviderNames.SqlServer,
+        hasPendingTrackedChanges: false,
+        CreateRequests(totalOperationCount: 903, satelliteOperationCount: 3));
     var mySqlTooSmall = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySql(
         KnownProviderNames.MySqlPomelo,
         hasPendingTrackedChanges: false,
@@ -1182,6 +1202,18 @@ public sealed class DataVaultDiagnosticsTests {
         KnownProviderNames.MySqlPomelo,
         hasPendingTrackedChanges: false,
         CreateRequests(totalOperationCount: 50, satelliteOperationCount: 0));
+    var mySqlStagedSupported = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySqlStaged(
+        KnownProviderNames.MySqlPomelo,
+        hasPendingTrackedChanges: false,
+        CreateRequests(totalOperationCount: 303, satelliteOperationCount: 3));
+    var mySqlStagedLargeMixed = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySqlStaged(
+        KnownProviderNames.MySqlPomelo,
+        hasPendingTrackedChanges: false,
+        CreateRequests(totalOperationCount: 903, satelliteOperationCount: 3));
+    var mySqlLargeMixed = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySql(
+        KnownProviderNames.MySqlPomelo,
+        hasPendingTrackedChanges: false,
+        CreateRequests(totalOperationCount: 903, satelliteOperationCount: 3));
     var mySqlSingleRequestTinySatelliteHistory = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySql(
         KnownProviderNames.MySqlPomelo,
         hasPendingTrackedChanges: false,
@@ -1223,12 +1255,30 @@ public sealed class DataVaultDiagnosticsTests {
         sqlServerTooSmall.FallbackCauses,
         cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold);
     Assert.Contains(
+        sqlServerMixedTooSmall.FallbackCauses,
+        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold &&
+            cause.Message.Contains("900 total operations", StringComparison.Ordinal));
+    Assert.True(sqlServerPureSatelliteSupported.CanSave);
+    Assert.Empty(sqlServerPureSatelliteSupported.FallbackCauses);
+    Assert.True(sqlServerMixedSupported.CanSave);
+    Assert.Empty(sqlServerMixedSupported.FallbackCauses);
+    Assert.Contains(
         mySqlTooSmall.FallbackCauses,
         cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold);
     Assert.Contains(
         mySqlStagedTooSmall.FallbackCauses,
         cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold &&
             cause.Message.Contains("MySQL staged bulk", StringComparison.Ordinal));
+    Assert.True(mySqlStagedSupported.CanSave);
+    Assert.Empty(mySqlStagedSupported.FallbackCauses);
+    Assert.Contains(
+        mySqlStagedLargeMixed.FallbackCauses,
+        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape &&
+            cause.Message.Contains("303 total operations", StringComparison.Ordinal));
+    Assert.Contains(
+        mySqlLargeMixed.FallbackCauses,
+        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlLargeMixedProviderNeutralFallback &&
+            cause.Message.Contains("303 total operations", StringComparison.Ordinal));
     Assert.Contains(
         mySqlSingleRequestTinySatelliteHistory.FallbackCauses,
         cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold);
@@ -1264,11 +1314,27 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains(
         DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(saveStrategy),
         requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold &&
-            requirement.MinimumTotalOperationCount == 50);
+            requirement.MinimumTotalOperationCount == 100);
+    Assert.Contains(
+        DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(saveStrategy),
+        requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold &&
+            requirement.MinimumTotalOperationCount == 900);
     Assert.Contains(
         DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(saveStrategy),
         requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold &&
             requirement.MaximumSatelliteOperationCount == 500);
+
+    var mySqlSaveStrategy = new MySqlDataVaultSaveStrategy();
+    Assert.Equal(
+        [KnownProviderNames.MySqlPomelo, KnownProviderNames.MySqlOracle],
+        DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategySupportedProviderNames(mySqlSaveStrategy));
+    Assert.Contains(
+        DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(mySqlSaveStrategy),
+        requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold &&
+            requirement.MinimumTotalOperationCount == 50);
+    Assert.Contains(
+        DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(mySqlSaveStrategy),
+        requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlLargeMixedProviderNeutralFallback);
 
     var mySqlStagedSaveStrategy = new MySqlStagedDataVaultSaveStrategy();
     Assert.Equal(
@@ -1277,7 +1343,10 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains(
         DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(mySqlStagedSaveStrategy),
         requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlMinimumOperationThreshold &&
-            requirement.MinimumTotalOperationCount == 60);
+            requirement.MinimumTotalOperationCount == 100);
+    Assert.Contains(
+        DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(mySqlStagedSaveStrategy),
+        requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkUnsupportedShape);
     Assert.Contains(
         DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(mySqlStagedSaveStrategy),
         requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlTinySatelliteHistoryProviderNeutralFallback);

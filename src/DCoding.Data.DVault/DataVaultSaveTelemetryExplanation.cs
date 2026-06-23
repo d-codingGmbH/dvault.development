@@ -68,8 +68,8 @@ internal static class DataVaultSaveTelemetryExplanationCatalog {
           "Route this shape through provider-neutral fallback, or split unsupported multi-active satellite work from provider-native eligible hub, link, and ordinary satellite batches."),
       DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold => new(
           kind,
-          "SQL Server provider-native save dispatch is only selected for batches with at least 50 total hub, link, and satellite operations.",
-          "Increase the request or chunk size to meet the 50-operation SQL Server threshold when provider-native dispatch is desired, or accept provider-neutral fallback for small batches."),
+          "SQL Server provider-native save dispatch is only selected for batches with at least 100 total operations; mixed hub/link batches require at least 900 total operations.",
+          "Increase the request or chunk size to meet the SQL Server threshold for the request shape, or accept provider-neutral fallback for smaller mixed batches."),
       DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold => new(
           kind,
           "SQL Server provider-native save dispatch accepts at most 500 satellite operations in one request batch.",
@@ -114,6 +114,10 @@ internal static class DataVaultSaveTelemetryExplanationCatalog {
           kind,
           "MySQL provider-native save dispatch deliberately uses provider-neutral fallback for a tiny satellite-only batch or small satellite history batch.",
           "Keep this shape on the provider-neutral lane, or increase the batch size enough to justify remeasuring MySQL provider-native dispatch."),
+      DataVaultSaveStrategyFallbackCauseKind.MySqlLargeMixedProviderNeutralFallback => new(
+          kind,
+          "MySQL provider-native save dispatch deliberately uses provider-neutral fallback for large mixed hub/link batches above the measured MySQL native window.",
+          "Keep large mixed MySQL hub/link batches on the provider-neutral lane, or remeasure before raising the MySQL mixed-batch boundary."),
       _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Unknown save strategy fallback cause kind."),
     };
   }

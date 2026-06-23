@@ -369,7 +369,12 @@ internal static class BenchmarkRunner {
             variant));
       }
 
-      benchmarks.Add(new ProviderNativeBulkIngestionBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage, variant));
+      benchmarks.Add(optimizedStrategy == DataVaultBenchmarkStrategy.MySqlOptimized
+          ? ProviderNativeBulkIngestionBenchmark.CreateMySqlLargeMixedProviderNeutralFallback(
+              provider,
+              options.LoadTimestampStorage,
+              variant)
+          : new ProviderNativeBulkIngestionBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage, variant));
       benchmarks.Add(new LatestSatelliteReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage, variant));
       benchmarks.Add(new PitAsOfReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage, variant));
       benchmarks.Add(new BridgeTraversalReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage, variant));

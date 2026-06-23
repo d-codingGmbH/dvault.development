@@ -159,6 +159,8 @@ Non-applicable tags must be omitted. Implementations must not fill tags with ad 
 - `StagedProviderBulkTransactionParticipationUnsupported`
 - `StagedProviderBulkCleanupFailed`
 - `StagedProviderBulkProviderLimitation`
+- `MySqlTinySatelliteHistoryProviderNeutralFallback`
+- `MySqlLargeMixedProviderNeutralFallback`
 
 Chunked retained-state fallback values are:
 

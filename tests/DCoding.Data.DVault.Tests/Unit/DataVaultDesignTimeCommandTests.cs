@@ -92,7 +92,7 @@ public sealed class DataVaultDesignTimeCommandTests {
     Assert.Contains("\"maximumIdentifierLength\": 64", first.Output, StringComparison.Ordinal);
     Assert.Contains("\"unsupportedIncludedIndexColumnMode\": \"Ignore\"", first.Output, StringComparison.Ordinal);
     Assert.Contains("\"supportedProviderNames\"", first.Output, StringComparison.Ordinal);
-    Assert.Contains("\"minimumTotalOperationCount\": 50", first.Output, StringComparison.Ordinal);
+    Assert.Contains("\"minimumTotalOperationCount\": 100", first.Output, StringComparison.Ordinal);
     Assert.Contains("\"gateRequirements\"", first.Output, StringComparison.Ordinal);
     Assert.Contains("Password=<redacted>", first.Output, StringComparison.Ordinal);
     Assert.Contains("User Id=<redacted>", first.Output, StringComparison.Ordinal);
@@ -185,16 +185,16 @@ public sealed class DataVaultDesignTimeCommandTests {
 
       var workload = root.GetProperty("workload");
       Assert.Equal("provider-native-bulk-ingestion", workload.GetProperty("label").GetString());
-      Assert.Equal(20, workload.GetProperty("orderProductPairCount").GetInt32());
-      Assert.Equal(40, workload.GetProperty("hubOperationCount").GetInt32());
-      Assert.Equal(20, workload.GetProperty("orderProductLinkCount").GetInt32());
-      Assert.Equal(20, workload.GetProperty("linkOperationCount").GetInt32());
+      Assert.Equal(300, workload.GetProperty("orderProductPairCount").GetInt32());
+      Assert.Equal(600, workload.GetProperty("hubOperationCount").GetInt32());
+      Assert.Equal(300, workload.GetProperty("orderProductLinkCount").GetInt32());
+      Assert.Equal(300, workload.GetProperty("linkOperationCount").GetInt32());
       Assert.Equal(3, workload.GetProperty("fulfillmentSatelliteOperationCount").GetInt32());
       Assert.Equal(3, workload.GetProperty("satelliteOperationCount").GetInt32());
       Assert.Equal(1, workload.GetProperty("unchangedReplayCount").GetInt32());
-      Assert.Equal(63, workload.GetProperty("totalOperationCount").GetInt32());
+      Assert.Equal(903, workload.GetProperty("totalOperationCount").GetInt32());
       Assert.Equal("SqlBulkCopy", workload.GetProperty("transfer").GetString());
-      Assert.Equal("50-plus-operations", workload.GetProperty("nativeBulkBoundary").GetString());
+      Assert.Equal("100-plus-operations; mixedBatchBoundary=900-plus-operations", workload.GetProperty("nativeBulkBoundary").GetString());
       Assert.Equal("temporary-staging-table", workload.GetProperty("cleanupBoundary").GetString());
 
       var evidence = root.GetProperty("evidence");
@@ -748,7 +748,7 @@ public sealed class DataVaultDesignTimeCommandTests {
               GateRequirements = [
                 new DataVaultSaveStrategyGateRequirement(
                     DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
-                    MinimumTotalOperationCount: 50),
+                    MinimumTotalOperationCount: 100),
               ],
             },
             new DataVaultSaveStrategyCandidateDiagnostics(
@@ -821,7 +821,10 @@ public sealed class DataVaultDesignTimeCommandTests {
                   GateRequirements = [
                       new DataVaultSaveStrategyGateRequirement(
                           DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
-                          MinimumTotalOperationCount: 50),
+                          MinimumTotalOperationCount: 100),
+                      new DataVaultSaveStrategyGateRequirement(
+                          DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
+                          MinimumTotalOperationCount: 900),
                       new DataVaultSaveStrategyGateRequirement(
                           DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold,
                           MaximumSatelliteOperationCount: 500),

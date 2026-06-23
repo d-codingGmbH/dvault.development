@@ -57,12 +57,17 @@ public sealed class DataVaultTelemetryTests {
         summary.FallbackExplanations,
         explanation =>
             explanation.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold &&
-            explanation.Remediation.Contains("50-operation", StringComparison.Ordinal));
+            explanation.Remediation.Contains("threshold for the request shape", StringComparison.Ordinal));
     Assert.Contains(
         summary.FallbackExplanations,
         explanation =>
             explanation.Kind == DataVaultSaveStrategyFallbackCauseKind.StagedProviderBulkTransactionParticipationUnsupported &&
             explanation.Remediation.Contains("transaction", StringComparison.OrdinalIgnoreCase));
+    Assert.Contains(
+        summary.FallbackExplanations,
+        explanation =>
+            explanation.Kind == DataVaultSaveStrategyFallbackCauseKind.MySqlLargeMixedProviderNeutralFallback &&
+            explanation.Remediation.Contains("remeasure", StringComparison.OrdinalIgnoreCase));
     Assert.Null(summary.ChunkedTransactionExplanation);
   }
 
