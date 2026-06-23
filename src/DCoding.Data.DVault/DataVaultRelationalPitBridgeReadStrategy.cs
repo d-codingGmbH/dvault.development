@@ -77,7 +77,7 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
     var satelliteRowsByOrdinal =
         new Dictionary<int, IReadOnlyDictionary<DataVaultPitReadPipeline.SatelliteSnapshotKey, Dictionary<string, object>>>();
     for (var index = 0; index < projection.Satellites.Count; index++) {
-      satelliteRowsByOrdinal[index] = await DataVaultPitReadPipeline.ReadSatelliteRowsAsync(
+      satelliteRowsByOrdinal[index] = await ReadSatelliteRowsAsync(
           context.DbContext,
           projection,
           projection.Satellites[index],
@@ -235,6 +235,218 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
             projection.TableName,
             columnName,
             value)).ConfigureAwait(false);
+  }
+
+  private async Task<IReadOnlyDictionary<DataVaultPitReadPipeline.SatelliteSnapshotKey, Dictionary<string, object>>> ReadSatelliteRowsAsync(
+      DbContext dbContext,
+      DataVaultPitReadPipeline.PitReadProjection pitProjection,
+      DataVaultPitReadPipeline.PitSatelliteProjection pitSatellite,
+      int satelliteOrdinal,
+      IEnumerable<DataVaultPitReadPipeline.MatchedPitRow> matchedPitRows,
+      CancellationToken cancellationToken) {
+    var requiredKeys = matchedPitRows
+        .Where(row => row.SnapshotLoadTimestamps[satelliteOrdinal].HasValue)
+        .Select(row => new DataVaultPitReadPipeline.SatelliteSnapshotKey(
+            row.ParentHashKey,
+            GetSatelliteDrivingKeyValueSignature(pitSatellite, row),
+            row.SnapshotLoadTimestamps[satelliteOrdinal]!.Value))
+        .ToHashSet();
+    if (requiredKeys.Count == 0) {
+      return new Dictionary<DataVaultPitReadPipeline.SatelliteSnapshotKey, Dictionary<string, object>>();
+    }
+
+    var parentHashKeys = requiredKeys
+        .Select(key => key.ParentHashKey)
+        .Distinct(StringComparer.Ordinal)
+        .ToArray();
+    var snapshotLoadTimestampRange = CreateSnapshotLoadTimestampRange(requiredKeys.Select(key => key.LoadTimestamp));
+    var selectedColumns = CreateSatelliteSelectedColumns(pitSatellite.Satellite);
+    var satelliteRows = new Dictionary<DataVaultPitReadPipeline.SatelliteSnapshotKey, Dictionary<string, object>>();
+
+    var connection = dbContext.Database.GetDbConnection();
+    var shouldCloseConnection = connection.State != ConnectionState.Open;
+    if (shouldCloseConnection) {
+      await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    try {
+      var parentBatchSize = Math.Min(
+          DataVaultPitReadPipeline.ParentHashKeyBatchSize,
+          Math.Max(1, MaxCommandParameterCount - 2));
+      foreach (var parentHashKeyBatch in parentHashKeys.Chunk(parentBatchSize)) {
+        var persistedRows = await ExecuteSatelliteRowsBatchAsync(
+            dbContext,
+            pitSatellite,
+            selectedColumns,
+            parentHashKeyBatch,
+            snapshotLoadTimestampRange.Minimum,
+            snapshotLoadTimestampRange.Maximum,
+            connection,
+            cancellationToken).ConfigureAwait(false);
+
+        AddMatchingSatelliteRows(
+            pitProjection.MetadataName,
+            pitSatellite,
+            requiredKeys,
+            satelliteRows,
+            persistedRows);
+      }
+
+      var missingKeys = requiredKeys
+          .Where(key => !satelliteRows.ContainsKey(key))
+          .ToHashSet();
+      if (missingKeys.Count > 0) {
+        var missingParentHashKeys = missingKeys
+            .Select(key => key.ParentHashKey)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        var fallbackParentBatchSize = Math.Min(
+            DataVaultPitReadPipeline.ParentHashKeyBatchSize,
+            Math.Max(1, MaxCommandParameterCount));
+
+        foreach (var parentHashKeyBatch in missingParentHashKeys.Chunk(fallbackParentBatchSize)) {
+          var persistedRows = await ExecuteSatelliteRowsBatchAsync(
+              dbContext,
+              pitSatellite,
+              selectedColumns,
+              parentHashKeyBatch,
+              null,
+              null,
+              connection,
+              cancellationToken).ConfigureAwait(false);
+
+          AddMatchingSatelliteRows(
+              pitProjection.MetadataName,
+              pitSatellite,
+              missingKeys,
+              satelliteRows,
+              persistedRows);
+        }
+      }
+    }
+    finally {
+      if (shouldCloseConnection) {
+        await connection.CloseAsync().ConfigureAwait(false);
+      }
+    }
+
+    return satelliteRows;
+  }
+
+  private async Task<IReadOnlyList<Dictionary<string, object>>> ExecuteSatelliteRowsBatchAsync(
+      DbContext dbContext,
+      DataVaultPitReadPipeline.PitSatelliteProjection pitSatellite,
+      IReadOnlyList<string> selectedColumns,
+      IReadOnlyList<string> parentHashKeyBatch,
+      DateTimeOffset? minimumSnapshotLoadTimestamp,
+      DateTimeOffset? maximumSnapshotLoadTimestamp,
+      DbConnection connection,
+      CancellationToken cancellationToken) {
+    if (minimumSnapshotLoadTimestamp.HasValue != maximumSnapshotLoadTimestamp.HasValue) {
+      throw new ArgumentException("Both timestamp range bounds must be provided together.");
+    }
+
+    var applyTimestampRange = minimumSnapshotLoadTimestamp.HasValue;
+    await using var command = connection.CreateCommand();
+    command.Transaction = dbContext.Database.CurrentTransaction?.GetDbTransaction();
+    command.CommandText = CreateSatelliteRowsCommandText(
+        dbContext,
+        pitSatellite.Satellite,
+        selectedColumns,
+        parentHashKeyBatch.Count,
+        applyTimestampRange);
+
+    var parameterIndex = 0;
+    foreach (var parentHashKey in parentHashKeyBatch) {
+      var parameter = command.CreateParameter();
+      parameter.ParameterName = CreateParameterName(parameterIndex);
+      parameter.Value = DataVaultHashKeyProviderValueConverter.ToProviderParameterValue(
+          dbContext,
+          pitSatellite.Satellite.TableName,
+          pitSatellite.Satellite.ParentHashKeyColumnName,
+          parentHashKey);
+      command.Parameters.Add(parameter);
+      parameterIndex++;
+    }
+
+    if (applyTimestampRange) {
+      var minimumTimestampParameter = command.CreateParameter();
+      minimumTimestampParameter.ParameterName = CreateParameterName(parameterIndex);
+      minimumTimestampParameter.Value = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          dbContext,
+          pitSatellite.Satellite.TableName,
+          pitSatellite.Satellite.LoadTimestampColumnName,
+          minimumSnapshotLoadTimestamp!.Value);
+      command.Parameters.Add(minimumTimestampParameter);
+      parameterIndex++;
+
+      var maximumTimestampParameter = command.CreateParameter();
+      maximumTimestampParameter.ParameterName = CreateParameterName(parameterIndex);
+      maximumTimestampParameter.Value = DataVaultLoadTimestampValueConverter.ToProviderValue(
+          dbContext,
+          pitSatellite.Satellite.TableName,
+          pitSatellite.Satellite.LoadTimestampColumnName,
+          maximumSnapshotLoadTimestamp!.Value);
+      command.Parameters.Add(maximumTimestampParameter);
+    }
+
+    return await ReadCommandRowsAsync(
+        command,
+        selectedColumns,
+        cancellationToken,
+        (columnName, value) => DataVaultHashKeyProviderValueConverter.ReadProviderValue(
+            dbContext,
+            pitSatellite.Satellite.TableName,
+            columnName,
+            value)).ConfigureAwait(false);
+  }
+
+  private static void AddMatchingSatelliteRows(
+      string pitMetadataName,
+      DataVaultPitReadPipeline.PitSatelliteProjection pitSatellite,
+      HashSet<DataVaultPitReadPipeline.SatelliteSnapshotKey> requiredKeys,
+      Dictionary<DataVaultPitReadPipeline.SatelliteSnapshotKey, Dictionary<string, object>> satelliteRows,
+      IEnumerable<Dictionary<string, object>> persistedRows) {
+    foreach (var row in persistedRows) {
+      var parentHashKey = ReadRequiredString(
+          pitMetadataName,
+          pitSatellite.Satellite.TableName,
+          row,
+          pitSatellite.Satellite.ParentHashKeyColumnName,
+          "satellite parent hash-key");
+      var loadTimestamp = ReadRequiredTimestamp(
+          pitMetadataName,
+          pitSatellite.Satellite.TableName,
+          row,
+          pitSatellite.Satellite.LoadTimestampColumnName,
+          "satellite load timestamp");
+      var drivingKeyValues = ReadRequiredStringValues(
+          pitMetadataName,
+          pitSatellite.Satellite.TableName,
+          row,
+          pitSatellite.Satellite.DrivingKeyColumnNames,
+          "satellite driving key");
+      var key = new DataVaultPitReadPipeline.SatelliteSnapshotKey(
+          parentHashKey,
+          CreateOrdinalSignature(drivingKeyValues),
+          loadTimestamp);
+      if (!requiredKeys.Contains(key)) {
+        continue;
+      }
+
+      if (!satelliteRows.TryAdd(key, row)) {
+        throw new InvalidOperationException(
+            "DVault PIT read failed: PIT metadata '" +
+            pitMetadataName +
+            "' encountered duplicate satellite row for PIT satellite '" +
+            pitSatellite.MetadataName +
+            "' parent hash key '" +
+            parentHashKey +
+            "' and snapshot load timestamp '" +
+            loadTimestamp.ToString("O", CultureInfo.InvariantCulture) +
+            "'.");
+      }
+    }
   }
 
   private async Task<IReadOnlyDictionary<DataVaultPitReadPipeline.PitRowIdentityKey, DataVaultPitReadPipeline.MatchedPitRow>> ReadMatchedPitRowsAsync(
@@ -534,6 +746,63 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
     return builder.ToString();
   }
 
+  private string CreateSatelliteRowsCommandText(
+      DbContext dbContext,
+      DataVaultPitReadPipeline.SatelliteReadProjection projection,
+      IReadOnlyList<string> selectedColumns,
+      int parentHashKeyCount,
+      bool applyTimestampRange) {
+    ArgumentNullException.ThrowIfNull(projection);
+    ArgumentNullException.ThrowIfNull(selectedColumns);
+    if (parentHashKeyCount <= 0) {
+      throw new ArgumentOutOfRangeException(nameof(parentHashKeyCount));
+    }
+
+    var builder = new StringBuilder();
+    builder.Append("SELECT ");
+    AppendColumnList(builder, selectedColumns);
+    builder.Append(" FROM ")
+        .Append(QuoteTableIdentifier(dbContext, projection.TableName))
+        .Append(" WHERE ")
+        .Append(QuoteIdentifier(projection.ParentHashKeyColumnName))
+        .Append(" IN (");
+
+    for (var index = 0; index < parentHashKeyCount; index++) {
+      if (index > 0) {
+        builder.Append(", ");
+      }
+
+      builder.Append(CreateParameterPlaceholder(index));
+    }
+
+    builder.Append(')');
+    if (applyTimestampRange) {
+      builder.Append(" AND ")
+          .Append(QuoteIdentifier(projection.LoadTimestampColumnName))
+          .Append(" >= ")
+          .Append(CreateParameterPlaceholder(parentHashKeyCount))
+          .Append(" AND ")
+          .Append(QuoteIdentifier(projection.LoadTimestampColumnName))
+          .Append(" <= ")
+          .Append(CreateParameterPlaceholder(parentHashKeyCount + 1));
+    }
+
+    var orderColumns = new[] { projection.ParentHashKeyColumnName }
+        .Concat(projection.DrivingKeyColumnNames)
+        .Append(projection.LoadTimestampColumnName)
+        .ToArray();
+    builder.Append(" ORDER BY ");
+    for (var index = 0; index < orderColumns.Length; index++) {
+      if (index > 0) {
+        builder.Append(", ");
+      }
+
+      builder.Append(QuoteIdentifier(orderColumns[index]));
+    }
+
+    return builder.ToString();
+  }
+
   private string CreateBridgeRowsCommandText(
       DbContext dbContext,
       DataVaultBridgeReadPipeline.BridgeReadProjection projection,
@@ -609,6 +878,18 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
     ];
   }
 
+  private static IReadOnlyList<string> CreateSatelliteSelectedColumns(
+      DataVaultPitReadPipeline.SatelliteReadProjection projection) {
+    return [
+        projection.ParentHashKeyColumnName,
+        projection.HashDiffColumnName,
+        projection.LoadTimestampColumnName,
+        projection.RecordSourceColumnName,
+        .. projection.DrivingKeyColumnNames,
+        .. projection.Payloads.Select(payload => payload.ColumnName),
+    ];
+  }
+
   private static IReadOnlyList<string> CreateBridgeSelectedColumns(
       DataVaultBridgeReadPipeline.BridgeReadProjection projection) {
     return [
@@ -681,5 +962,119 @@ internal abstract class DataVaultRelationalPitBridgeReadStrategy :
         projection.TableName,
         columnName,
         value);
+  }
+
+  private static string GetSatelliteDrivingKeyValueSignature(
+      DataVaultPitReadPipeline.PitSatelliteProjection pitSatellite,
+      DataVaultPitReadPipeline.MatchedPitRow pitRow) {
+    return pitSatellite.Satellite.DrivingKeyNames.Count == 0
+        ? string.Empty
+        : pitRow.DrivingKeyValueSignature;
+  }
+
+  private static string CreateOrdinalSignature(IEnumerable<string> values) {
+    return string.Concat(values.Select(value => value.Length.ToString(CultureInfo.InvariantCulture) + ":" + value));
+  }
+
+  private static (DateTimeOffset Minimum, DateTimeOffset Maximum) CreateSnapshotLoadTimestampRange(
+      IEnumerable<DateTimeOffset> timestamps) {
+    DateTimeOffset? minimum = null;
+    DateTimeOffset? maximum = null;
+    foreach (var timestamp in timestamps) {
+      if (minimum is null || timestamp < minimum.Value) {
+        minimum = timestamp;
+      }
+
+      if (maximum is null || timestamp > maximum.Value) {
+        maximum = timestamp;
+      }
+    }
+
+    if (minimum is null || maximum is null) {
+      throw new ArgumentException("At least one timestamp is required.", nameof(timestamps));
+    }
+
+    return (
+        AddTimestampTolerance(minimum.Value, -TimeSpan.TicksPerSecond),
+        AddTimestampTolerance(maximum.Value, TimeSpan.TicksPerSecond));
+  }
+
+  private static DateTimeOffset AddTimestampTolerance(DateTimeOffset timestamp, long ticks) {
+    try {
+      return timestamp.AddTicks(ticks);
+    }
+    catch (ArgumentOutOfRangeException) {
+      return ticks < 0
+          ? DateTimeOffset.MinValue
+          : DateTimeOffset.MaxValue;
+    }
+  }
+
+  private static string ReadRequiredString(
+      string pitName,
+      string tableName,
+      Dictionary<string, object> row,
+      string columnName,
+      string description) {
+    if (row.TryGetValue(columnName, out var value) && value is string text) {
+      return text;
+    }
+
+    throw new InvalidOperationException(
+        "DVault PIT read failed: PIT metadata '" +
+        pitName +
+        "' expected generated " +
+        description +
+        " property '" +
+        columnName +
+        "' on table/entity '" +
+        tableName +
+        "' to contain a non-null string value.");
+  }
+
+  private static IReadOnlyList<string> ReadRequiredStringValues(
+      string pitName,
+      string tableName,
+      Dictionary<string, object> row,
+      IReadOnlyList<string> columnNames,
+      string description) {
+    if (columnNames.Count == 0) {
+      return Array.Empty<string>();
+    }
+
+    var values = new string[columnNames.Count];
+    for (var index = 0; index < columnNames.Count; index++) {
+      values[index] = ReadRequiredString(
+          pitName,
+          tableName,
+          row,
+          columnNames[index],
+          description);
+    }
+
+    return values;
+  }
+
+  private static DateTimeOffset ReadRequiredTimestamp(
+      string pitName,
+      string tableName,
+      Dictionary<string, object> row,
+      string columnName,
+      string description) {
+    if (row.TryGetValue(columnName, out var value) &&
+        DataVaultLoadTimestampValueConverter.TryReadProviderValue(value, out var timestamp)) {
+      return timestamp;
+    }
+
+    throw new InvalidOperationException(
+        "DVault PIT read failed: PIT metadata '" +
+        pitName +
+        "' expected generated " +
+        description +
+        " property '" +
+        columnName +
+        "' on table/entity '" +
+        tableName +
+        "' to contain a non-null readable load timestamp value.");
   }
 }
