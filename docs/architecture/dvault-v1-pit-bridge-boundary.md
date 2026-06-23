@@ -2,7 +2,7 @@
 
 Status: v1 implementation note
 Ticket: 06F5Q91M0PM17RP43ZQRPBDXP0
-Current public baseline: [DVault v0.45.0 Release Notes](../releases/v0.45.0.md)
+Current public baseline: [DVault v0.46.0 Release Notes](../releases/v0.46.0.md)
 DB2 provider package baseline: [DVault v0.34.0 Release Notes](../releases/v0.34.0.md)
 Read-optimization expansion baseline: [DVault v0.28.0 Release Notes](../releases/v0.28.0.md)
 PIT/bridge feature-introduction baseline: [DVault v0.21.0 Release Notes](../releases/v0.21.0.md)

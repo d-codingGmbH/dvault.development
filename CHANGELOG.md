@@ -2,6 +2,18 @@
 
 This changelog summarizes the public release-note trail. The detailed release records remain under [docs/releases/](docs/releases/); those files are the source of truth for scope, evidence, non-goals, and validation notes.
 
+## v0.46.0 - Reserved Interactive Provider Optimization
+
+- Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.46.0` / `net8.0` / EF Core 8 and `10.46.0` / `net10.0` / EF Core 10.
+- Records that the v0.46.0 release label maps to consumer package versions `8.46.0` and `10.46.0`, not to a `0.46.0` package version.
+- Closes the manual provider optimization pass with checked-in PostgreSQL, SQL Server, MySQL, Oracle, and DB2 benchmark triplets for provider-native save, latest-satellite read, PIT read, and bridge read rows.
+- Tightens the shared relational PIT/bridge read path by keeping one provider connection open, pushing PIT as-of filtering into SQL, narrowing satellite replay reads, and preserving provider-neutral ordinal-signature semantics.
+- Adds Oracle command-level LOB-prefetch/fetch-buffer tuning and records the DB2 1000-row clean-context set-based save cap as the measured boundary.
+- Updates the provider optimization gap matrix and performance profiles so the completed timing rows are closed while fallback boundaries, unsupported shapes, and write-side bridge maintenance push-down remain explicit non-goals.
+- Updates README, package compatibility, manual publication, local validation, production adoption, analyzer guidance, package creation, and package verification to the v0.46.0 baseline.
+
+See [DVault v0.46.0 Release Notes](docs/releases/v0.46.0.md).
+
 ## v0.45.0 - Server-Side PIT and Bridge Maintenance Exploration
 
 - Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.45.0` / `net8.0` / EF Core 8 and `10.45.0` / `net10.0` / EF Core 10.

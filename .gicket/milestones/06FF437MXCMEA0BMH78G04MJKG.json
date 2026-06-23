@@ -3,6 +3,6 @@
   "milestone-id": "06FF437MXCMEA0BMH78G04MJKG",
   "name": "v0.47.0 - Maintenance hardening and docs",
   "description": "Harden selected/fallback diagnostics, transaction behavior, unsupported-shape tests, and release documentation for PIT maintenance providers.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-23T01:16:35.9474521Z"
 }

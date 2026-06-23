@@ -3,6 +3,6 @@
   "milestone-id": "06FF437KCQ2K07C5SMDPXFY7YC",
   "name": "v0.47.0 - Provider PIT maintenance benchmark lanes",
   "description": "Add comparable provider-neutral and provider-specific benchmark lanes for supported PIT full-rebuild shapes.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-23T01:16:35.5570889Z"
 }
