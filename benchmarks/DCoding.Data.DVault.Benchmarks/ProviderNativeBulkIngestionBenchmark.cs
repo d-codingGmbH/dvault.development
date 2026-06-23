@@ -15,6 +15,11 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark,
       DatasetSize: "18 order-product pairs, 3 fulfillment satellite operations",
       ChangeRatio: "staged-ineligible provider-native batch below staged bulk boundary");
 
+  private static readonly ProviderNativeBulkIngestionWorkload MySqlStagedEligibleWorkload = new(
+      PairCount: 50,
+      DatasetSize: "50 order-product pairs, 3 fulfillment satellite operations",
+      ChangeRatio: "staged-eligible MySQL mixed hub/link/satellite bulk batch inside provider window");
+
   private static readonly DateTimeOffset HubLoadTimestamp = new(2026, 5, 18, 10, 0, 0, TimeSpan.Zero);
   private static readonly DateTimeOffset LinkLoadTimestamp = new(2026, 5, 18, 10, 5, 0, TimeSpan.Zero);
   private static readonly DateTimeOffset FirstSatelliteLoadTimestamp = new(2026, 5, 18, 10, 10, 0, TimeSpan.Zero);
@@ -142,6 +147,25 @@ internal sealed class ProviderNativeBulkIngestionBenchmark : IScenarioBenchmark,
         "DVault MySQL retained multi-row save path; selectedStrategy=MySqlDataVaultSaveStrategy; " +
         "nativeBulkBoundary=50-plus-operations; stagedBulkBoundary=below-100-operations; cleanupBoundary=no-staging-table",
         "MySqlDataVaultSaveStrategy",
+        expectProviderSaveStrategySelection: true);
+  }
+
+  public static ProviderNativeBulkIngestionBenchmark CreateMySqlStagedBulk(
+      BenchmarkDatabaseProvider provider,
+      DataVaultLoadTimestampStorage loadTimestampStorage,
+      BenchmarkHashKeyVariant hashKeyVariant) {
+    return new ProviderNativeBulkIngestionBenchmark(
+        provider,
+        DataVaultBenchmarkStrategy.MySqlOptimized,
+        loadTimestampStorage,
+        hashKeyVariant,
+        MySqlStagedEligibleWorkload,
+        "dvault-adddvaultmysql-staged",
+        "DVault MySQL staged bulk save path; selectedStrategy=MySqlStagedDataVaultSaveStrategy; " +
+        "nativeBulkBoundary=50-plus-operations; " +
+        "stagedBulkBoundary=100-plus-satellite-only-or-100-to-303-mixed-operations; " +
+        "cleanupBoundary=temporary-staging-tables",
+        "MySqlStagedDataVaultSaveStrategy",
         expectProviderSaveStrategySelection: true);
   }
 

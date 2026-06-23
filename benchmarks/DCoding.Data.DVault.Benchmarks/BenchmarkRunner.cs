@@ -367,6 +367,10 @@ internal static class BenchmarkRunner {
             provider,
             options.LoadTimestampStorage,
             variant));
+        benchmarks.Add(ProviderNativeBulkIngestionBenchmark.CreateMySqlStagedBulk(
+            provider,
+            options.LoadTimestampStorage,
+            variant));
       }
 
       benchmarks.Add(optimizedStrategy == DataVaultBenchmarkStrategy.MySqlOptimized

@@ -251,6 +251,14 @@ public sealed class BenchmarkScenarioExecutionTests {
       SkippedExternal(
           MySqlProviderName,
           "provider-native-bulk-ingestion",
+          "dvault-adddvaultmysql-staged",
+          "mysql-optimized-dvault",
+          "50 order-product pairs, 3 fulfillment satellite operations",
+          "staged-eligible MySQL mixed hub/link/satellite bulk batch inside provider window",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.MySql.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          MySqlProviderName,
+          "provider-native-bulk-ingestion",
           "dvault-adddvaultmysql-optimized",
           "mysql-optimized-dvault",
           "300 order-product pairs, 3 fulfillment satellite operations",
@@ -444,6 +452,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       new(PostgresProviderName, "dvault-adddvaultpostgres-optimized", ["transfer=COPY", "stagedBulkBoundary=60-plus-operations", "smallBatchBoundary=direct-or-UNNEST"]),
       new(SqlServerProviderName, "dvault-adddvaultsqlserver-optimized", ["transfer=SqlBulkCopy", "nativeBulkBoundary=100-plus-operations", "mixedBatchBoundary=900-plus-operations"]),
       new(MySqlProviderName, "dvault-adddvaultmysql-multi-row", ["selectedStrategy=MySqlDataVaultSaveStrategy", "stagedBulkBoundary=below-100-operations"]),
+      new(MySqlProviderName, "dvault-adddvaultmysql-staged", ["selectedStrategy=MySqlStagedDataVaultSaveStrategy", "stagedBulkBoundary=100-plus-satellite-only-or-100-to-303-mixed-operations", "cleanupBoundary=temporary-staging-tables"]),
       new(MySqlProviderName, "dvault-adddvaultmysql-optimized", ["selectedStrategy=<none>", "mysqlMixedBatchBoundary=above-303-provider-neutral"]),
       new(OracleProviderName, "dvault-adddvaultoracle-optimized", ["selectedStrategy=OracleDataVaultSaveStrategy", "stagedOracleBulk=not-selected-no-measured-win"]),
       new(Db2ProviderName, "dvault-adddvaultdb2-optimized", ["selectedStrategy=Db2DataVaultSaveStrategy", "db2SaveBoundary=clean-context-set-based", "stagedBulkBoundary=not-supported"]),
@@ -729,6 +738,16 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.Contains("DVault MySQL retained multi-row save path", mySqlRetainedPathExecutionDetail);
       Assert.Contains("selectedStrategy=MySqlDataVaultSaveStrategy", mySqlRetainedPathExecutionDetail);
       Assert.Contains("stagedBulkBoundary=below-100-operations", mySqlRetainedPathExecutionDetail);
+
+      var mySqlStagedBulkResult = Assert.Single(results.Where(result =>
+          result.GetProperty("scenarioName").GetString() == "provider-native-bulk-ingestion" &&
+          result.GetProperty("provider").GetString() == MySqlProviderName &&
+          result.GetProperty("baselineName").GetString() == "dvault-adddvaultmysql-staged"));
+      var mySqlStagedBulkExecutionDetail = mySqlStagedBulkResult.GetProperty("executionDetail").GetString();
+      Assert.Contains("DVault MySQL staged bulk save path", mySqlStagedBulkExecutionDetail);
+      Assert.Contains("selectedStrategy=MySqlStagedDataVaultSaveStrategy", mySqlStagedBulkExecutionDetail);
+      Assert.Contains("stagedBulkBoundary=100-plus-satellite-only-or-100-to-303-mixed-operations", mySqlStagedBulkExecutionDetail);
+      Assert.Contains("cleanupBoundary=temporary-staging-tables", mySqlStagedBulkExecutionDetail);
 
       var mySqlLargeMixedMultiRowResult = Assert.Single(results.Where(result =>
           result.GetProperty("scenarioName").GetString() == "provider-native-bulk-ingestion" &&
