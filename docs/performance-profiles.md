@@ -276,12 +276,12 @@ All values in this section are from the evidence baseline above:
 
 | Scenario | Baseline | Mean ms | Evidence posture |
 | --- | --- | ---: | --- |
-| `customer-profile-history` | `dvault-adddvault-fallback` | 56.556533333333334 | Provider-neutral explicit save through `AddDVault()`. |
-| `customer-profile-history` | `dvault-adddvaultsqlite-optimized` | 33.55846666666667 | SQLite optimized write path selected `SqliteDataVaultSaveStrategy`. |
-| `customer-profile-bulk-insert-only` | `dvault-adddvault-fallback` | 51.4255 | Provider-neutral fallback for 100 satellite operations. |
-| `customer-profile-bulk-insert-only` | `dvault-adddvaultsqlite-optimized` | 20.884266666666665 | SQLite optimized write path selected for the same logical profile rows. |
-| `customer-profile-bulk-history` | `dvault-adddvault-fallback` | 103.26526666666666 | Provider-neutral fallback for 1000 satellite operations across 10 requests. |
-| `customer-profile-bulk-history` | `dvault-adddvaultsqlite-optimized` | 70.67453333333333 | SQLite optimized write path selected for the same logical profile history shape. |
+| `customer-profile-history` | `dvault-adddvault-fallback` | 56.557 | Provider-neutral explicit save through `AddDVault()`. |
+| `customer-profile-history` | `dvault-adddvaultsqlite-optimized` | 33.558 | SQLite optimized write path selected `SqliteDataVaultSaveStrategy`. |
+| `customer-profile-bulk-insert-only` | `dvault-adddvault-fallback` | 51.425 | Provider-neutral fallback for 100 satellite operations. |
+| `customer-profile-bulk-insert-only` | `dvault-adddvaultsqlite-optimized` | 20.884 | SQLite optimized write path selected for the same logical profile rows. |
+| `customer-profile-bulk-history` | `dvault-adddvault-fallback` | 103.265 | Provider-neutral fallback for 1000 satellite operations across 10 requests. |
+| `customer-profile-bulk-history` | `dvault-adddvaultsqlite-optimized` | 70.675 | SQLite optimized write path selected for the same logical profile history shape. |
 
 ### Stop Conditions And Rerun Triggers
 
@@ -315,10 +315,10 @@ All values in this section are from the evidence baseline above:
 
 | Scenario | Baseline | Mean ms | Chunk detail |
 | --- | --- | ---: | --- |
-| `customer-profile-streaming-save` | `dvault-adddvault-fallback/materialized-explicit-bulk` | 28.499533333333336 | 60 ordered requests in one materialized bulk request. |
-| `customer-profile-streaming-save` | `dvault-adddvault-fallback/chunked-save-bounded-10` | 51.6336 | 6 chunks of 10, retained-state high-water 20. |
-| `customer-profile-streaming-save` | `dvault-adddvault-fallback/async-source-bounded-10` | 42.11873333333333 | 6 async-yielded chunks of 10, retained-state high-water 20, source shape `IAsyncEnumerable<DataVaultSaveChunk>`. |
-| `customer-profile-streaming-save` | `dvault-adddvault-fallback/chunked-save-bounded-5` | 82.02296666666666 | 12 chunks of 5, retained-state high-water 20. |
+| `customer-profile-streaming-save` | `dvault-adddvault-fallback/materialized-explicit-bulk` | 28.500 | 60 ordered requests in one materialized bulk request. |
+| `customer-profile-streaming-save` | `dvault-adddvault-fallback/chunked-save-bounded-10` | 51.634 | 6 chunks of 10, retained-state high-water 20. |
+| `customer-profile-streaming-save` | `dvault-adddvault-fallback/async-source-bounded-10` | 42.119 | 6 async-yielded chunks of 10, retained-state high-water 20, source shape `IAsyncEnumerable<DataVaultSaveChunk>`. |
+| `customer-profile-streaming-save` | `dvault-adddvault-fallback/chunked-save-bounded-5` | 82.023 | 12 chunks of 5, retained-state high-water 20. |
 
 ### Stop Conditions And Rerun Triggers
 
@@ -452,12 +452,12 @@ All values in this quick table are from the root quick benchmark triplet. Extern
 
 | Scenario | Baseline | Mean ms | Evidence posture |
 | --- | --- | ---: | --- |
-| `latest-satellite-read` | `dvault-adddvault-fallback` | 12.011566666666667 | Provider-neutral latest read over 100 customers and 1000 seeded profile states. |
-| `latest-satellite-read` | `dvault-adddvaultsqlite-optimized` | 7.122866666666667 | SQLite optimized read path selected `SqliteDataVaultReadStrategy`. |
-| `pit-as-of-read` | `dvault-adddvault-fallback` | 29.2159 | Provider-neutral PIT as-of read over 100 PIT rows and 2 satellite segments. |
-| `pit-as-of-read` | `dvault-adddvaultsqlite-optimized` | 15.572633333333334 | SQLite optimized PIT read path selected `SqliteDataVaultReadStrategy`. |
-| `bridge-traversal-read` | `dvault-adddvault-fallback` | 6.1128 | Provider-neutral bridge traversal over 1 ancestor and 100 descendant bridge rows. |
-| `bridge-traversal-read` | `dvault-adddvaultsqlite-optimized` | 3.544233333333333 | SQLite optimized bridge read path selected `SqliteDataVaultReadStrategy`. |
+| `latest-satellite-read` | `dvault-adddvault-fallback` | 12.012 | Provider-neutral latest read over 100 customers and 1000 seeded profile states. |
+| `latest-satellite-read` | `dvault-adddvaultsqlite-optimized` | 7.123 | SQLite optimized read path selected `SqliteDataVaultReadStrategy`. |
+| `pit-as-of-read` | `dvault-adddvault-fallback` | 29.216 | Provider-neutral PIT as-of read over 100 PIT rows and 2 satellite segments. |
+| `pit-as-of-read` | `dvault-adddvaultsqlite-optimized` | 15.573 | SQLite optimized PIT read path selected `SqliteDataVaultReadStrategy`. |
+| `bridge-traversal-read` | `dvault-adddvault-fallback` | 6.113 | Provider-neutral bridge traversal over 1 ancestor and 100 descendant bridge rows. |
+| `bridge-traversal-read` | `dvault-adddvaultsqlite-optimized` | 3.544 | SQLite optimized bridge read path selected `SqliteDataVaultReadStrategy`. |
 Provider-configured PostgreSQL, SQL Server, MySQL, and Oracle PIT/bridge rows should cite [the v0.32.0 smoke-read bundle](../artifacts/benchmarks/v0.32.0-06F9XD26D2MHVAKZ2GCZ67BEFC-smoke-read-20260607/benchmark-summary.md), not the skipped root quick placeholders. DB2 latest-satellite/PIT/bridge rows should cite [the DB2 hotspot bundle](../artifacts/benchmarks/06FE4QR3DD7EFZ4F35SBTFGWSR-db2-hotspot-evidence-20260620/benchmark-summary.md). Oracle PIT/bridge completed timing evidence is limited to the two Oracle rows in the v0.32.0 bundle:
 
 | Provider | Scenario | Baseline | Mean ms | Evidence posture |
