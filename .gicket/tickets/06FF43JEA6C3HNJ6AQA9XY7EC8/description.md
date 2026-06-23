@@ -1,0 +1,1 @@
+﻿Update release notes, performance profiles, provider evidence matrix, package guidance, and changelog for v0.47. Acceptance: docs cite package lines 8.47.0/10.47.0 and do not claim benchmark wins without completed artifacts.

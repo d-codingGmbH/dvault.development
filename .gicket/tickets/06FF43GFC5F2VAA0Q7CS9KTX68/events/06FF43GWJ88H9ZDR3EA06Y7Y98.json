@@ -1,0 +1,14 @@
+{
+  "event-id": "06FF43GWJ88H9ZDR3EA06Y7Y98",
+  "occurred-at": "2026-06-23T01:17:51.6348838Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Review PostgreSQL PIT maintenance transaction and savepoint behavior",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

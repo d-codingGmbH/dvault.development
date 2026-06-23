@@ -1,0 +1,14 @@
+{
+  "event-id": "06FF440RQQKMHZZA2RFJ6QT3VG",
+  "occurred-at": "2026-06-23T01:20:01.7256182Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Evaluate dependent child key modeling contract",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

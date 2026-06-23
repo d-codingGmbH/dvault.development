@@ -1,0 +1,1 @@
+﻿Define how DVault improves first-run adoption while staying a focused EF Core library. Acceptance: chooses examples, analyzer guidance, and docs over a bundled CLI template/tool-suite unless a later separate project owns templates.

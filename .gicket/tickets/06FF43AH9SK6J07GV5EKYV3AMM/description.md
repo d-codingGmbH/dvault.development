@@ -1,0 +1,1 @@
+﻿Add a benchmark lane for PostgreSQL PIT full rebuilds on supported shapes, comparing provider-specific strategy selection with provider-neutral fallback. Acceptance: skipped rows remain visible when the connection string is absent.

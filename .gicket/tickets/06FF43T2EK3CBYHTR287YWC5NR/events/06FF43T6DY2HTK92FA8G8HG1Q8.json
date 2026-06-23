@@ -1,0 +1,14 @@
+{
+  "event-id": "06FF43T6DY2HTK92FA8G8HG1Q8",
+  "occurred-at": "2026-06-23T01:19:07.8872661Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add PostgreSQL binary-first provider quickstart parity notes",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

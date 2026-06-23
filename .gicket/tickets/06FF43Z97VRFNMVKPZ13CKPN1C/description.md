@@ -1,0 +1,1 @@
+﻿Add diagnostics for repeated same-hub mappings that lack explicit roles or otherwise cannot safely generate typed helpers. Acceptance: diagnostics are source-visible, deterministic, and do not infer across assemblies.

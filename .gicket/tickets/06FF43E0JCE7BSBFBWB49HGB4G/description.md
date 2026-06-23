@@ -1,0 +1,1 @@
+﻿Investigate whether DB2 can safely support bounded PIT full-rebuild push-down through EF Core provider APIs and the opt-in DB2 container lane. Acceptance: records supported/unsupported shapes, transaction caveats, SQL shape risks, and explicit implementation/defer recommendation.

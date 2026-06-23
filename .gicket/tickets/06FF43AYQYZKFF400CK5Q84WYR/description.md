@@ -1,0 +1,1 @@
+﻿Add a benchmark lane for SQL Server ordinary hub-parent PIT full rebuilds, comparing provider-specific strategy selection with provider-neutral fallback. Acceptance: connection-string absence produces skipped evidence, not a failed default validation run.

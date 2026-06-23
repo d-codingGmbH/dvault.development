@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF43F283QFQ56290AVJ3AXSM",
+  "ticket-type": "task",
+  "title": "Task: Document provider PIT expansion decision matrix",
+  "revision": "06FF44JT9FTTD2WES9VF2S7GW0",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/architecture",
+    "area/performance",
+    "area/provider-support",
+    "area/documentation"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437M4JK4J4JZMQWKAYF9HR",
+  "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
+  "created-at": "2026-06-23T01:17:36.9640561Z",
+  "updated-at": "2026-06-23T01:22:29.5799173Z"
+}

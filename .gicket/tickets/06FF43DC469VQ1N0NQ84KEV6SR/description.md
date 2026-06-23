@@ -1,0 +1,1 @@
+﻿Investigate whether Oracle can safely support bounded PIT full-rebuild push-down through EF Core provider APIs. Acceptance: records supported/unsupported shapes, transaction caveats, SQL shape risks, and explicit implementation/defer recommendation.

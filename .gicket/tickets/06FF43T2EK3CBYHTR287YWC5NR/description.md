@@ -1,0 +1,1 @@
+﻿Add concise PostgreSQL setup guidance aligned with binary-first profile, package lines, provider registration, and opt-in connection-string testing. Acceptance: no container provisioning or deployment automation is introduced.

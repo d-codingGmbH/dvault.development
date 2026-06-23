@@ -1,0 +1,1 @@
+﻿Update release notes, README links, package compatibility, manual publication, analyzer README, examples README, changelog, and local validation guidance for v0.48 package lines. Acceptance: package guidance uses 8.48.0/10.48.0 and rejects consumer-facing 0.48.0 installs.

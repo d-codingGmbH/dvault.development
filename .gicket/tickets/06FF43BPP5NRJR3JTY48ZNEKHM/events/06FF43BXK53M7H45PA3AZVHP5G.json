@@ -1,0 +1,14 @@
+{
+  "event-id": "06FF43BXK53M7H45PA3AZVHP5G",
+  "occurred-at": "2026-06-23T01:17:10.9372965Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Normalize provider-neutral PIT maintenance comparator rows",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

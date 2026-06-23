@@ -1,0 +1,1 @@
+﻿Evaluate whether dependent child key modeling belongs in the DVault EF Core library surface now. Acceptance: defines accepted/deferred shapes, API impact, migration impact, diagnostics, and non-goals before implementation.

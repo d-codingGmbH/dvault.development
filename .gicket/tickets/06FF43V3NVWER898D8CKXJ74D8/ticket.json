@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF43V3NVWER898D8CKXJ74D8",
+  "ticket-type": "task",
+  "title": "Task: Audit analyzer host options for net8 consumer comfort",
+  "revision": "06FF44P8HTFQCNE4P0RWR12NHW",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/analyzers",
+    "area/compatibility",
+    "area/package"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437Q6BCDT2E67RMFK783NR",
+  "release-id": "06FF437GWAWYQF5HXSRVB09B7R",
+  "created-at": "2026-06-23T01:19:17.3843387Z",
+  "updated-at": "2026-06-23T01:22:57.8062641Z"
+}

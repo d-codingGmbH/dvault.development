@@ -1,0 +1,1 @@
+﻿Review caller-transaction behavior for PostgreSQL PIT full rebuilds. Acceptance: either add safe savepoint/fallback behavior or document and test the declined transaction boundary so partial maintenance cannot be silently claimed as safe.

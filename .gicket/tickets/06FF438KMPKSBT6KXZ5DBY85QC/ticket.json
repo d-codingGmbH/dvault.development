@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF438KMPKSBT6KXZ5DBY85QC",
+  "ticket-type": "task",
+  "title": "Task: Add maintenance timing rows to provider evidence contract",
+  "revision": "06FF44GKKZQ5VZQ14C7G7SFYW0",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/performance",
+    "area/provider-support",
+    "area/diagnostics",
+    "area/documentation"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437JD4M7JV8XD7GB7NBWH0",
+  "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
+  "created-at": "2026-06-23T01:16:44.6068522Z",
+  "updated-at": "2026-06-23T01:22:11.4879502Z"
+}

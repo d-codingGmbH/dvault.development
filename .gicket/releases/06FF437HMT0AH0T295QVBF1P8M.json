@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "release-id": "06FF437HMT0AH0T295QVBF1P8M",
+  "name": "v0.49.0 - Modeling and Generator Parity Refinement",
+  "description": "Focused EF Core modeling and source-generator parity improvements for repeated same-hub mappings, dependent child key feasibility, and effectivity/read-helper gaps while preserving explicit DVault semantics and provider-neutral fallback. Planning release v0.49.0 maps to package versions 8.49.0 and 10.49.0.",
+  "status": "planned",
+  "created-at": "2026-06-23T01:16:35.1102456Z"
+}

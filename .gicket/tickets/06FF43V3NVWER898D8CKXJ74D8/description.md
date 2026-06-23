@@ -1,0 +1,1 @@
+﻿Audit whether DCoding.Data.DVault.Analyzers can reduce the .NET 10 SDK build-host friction for net8 consumers without losing source-generator/analyzer behavior. Acceptance: records viable target assets, blockers, risks, package verification changes, and recommendation.

@@ -1,0 +1,14 @@
+{
+  "event-id": "06FF43CTFVVPG9JC0B8WTDBQ88",
+  "occurred-at": "2026-06-23T01:17:18.3345715Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Evaluate MySQL PIT full-rebuild push-down feasibility",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

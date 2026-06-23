@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "release-id": "06FF437GWAWYQF5HXSRVB09B7R",
+  "name": "v0.48.0 - Privacy Preflight and Adoption Ergonomics",
+  "description": "Narrow optional privacy and adopter-experience improvements inside DVault EF Core libraries, analyzers, examples, and docs. This release improves coverage diagnostics and setup clarity without claiming compliance, key lifecycle management, CLI templates, or a tool suite. Planning release v0.48.0 maps to package versions 8.48.0 and 10.48.0.",
+  "status": "planned",
+  "created-at": "2026-06-23T01:16:34.9147216Z"
+}

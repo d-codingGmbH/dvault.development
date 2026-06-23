@@ -1,0 +1,14 @@
+{
+  "event-id": "06FF43RKS3AMNY4C4MGF0T44M4",
+  "occurred-at": "2026-06-23T01:18:54.9207508Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define library-focused adoption path without template suite",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

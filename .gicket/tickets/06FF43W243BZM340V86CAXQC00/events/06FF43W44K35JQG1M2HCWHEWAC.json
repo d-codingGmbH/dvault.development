@@ -1,0 +1,14 @@
+{
+  "event-id": "06FF43W44K35JQG1M2HCWHEWAC",
+  "occurred-at": "2026-06-23T01:19:23.6842618Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Prototype analyzer package retargeting if audit approves",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

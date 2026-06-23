@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF442BD5V9CTTNXQQAR3EQTW",
+  "ticket-type": "task",
+  "title": "Task: Review effectivity and typed helper gap documentation",
+  "revision": "06FF44S045GTGR51M0BZC1QYWC",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/documentation",
+    "area/modeling",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437TY0PQPPWN5HPE0E0730",
+  "release-id": "06FF437HMT0AH0T295QVBF1P8M",
+  "created-at": "2026-06-23T01:20:16.3128042Z",
+  "updated-at": "2026-06-23T01:23:20.2259932Z"
+}

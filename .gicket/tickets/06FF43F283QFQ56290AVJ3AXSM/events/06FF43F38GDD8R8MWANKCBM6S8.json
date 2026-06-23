@@ -1,0 +1,14 @@
+{
+  "event-id": "06FF43F38GDD8R8MWANKCBM6S8",
+  "occurred-at": "2026-06-23T01:17:36.9640561Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Document provider PIT expansion decision matrix",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

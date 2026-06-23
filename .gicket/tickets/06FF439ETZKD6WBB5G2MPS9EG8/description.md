@@ -1,0 +1,1 @@
+﻿Update performance and architecture guidance so maintained read-model read timings cannot be mistaken for provider-side maintenance timings. Acceptance: docs cite the new maintenance evidence contract and keep bridge maintenance push-down deferred.

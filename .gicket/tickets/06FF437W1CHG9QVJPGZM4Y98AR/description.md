@@ -1,0 +1,1 @@
+﻿Define the v0.47 acceptance contract for provider-specific PIT maintenance evidence. Acceptance: states supported shapes, required diagnostics, required benchmark artifact fields, fallback boundaries, and non-goals; keeps bridge maintenance and scheduling out of scope.

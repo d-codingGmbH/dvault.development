@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF43NJES6S8NBZVWR4FGHWGW",
+  "ticket-type": "task",
+  "title": "Task: Add SQLite privacy quickstart with binary-first setup",
+  "revision": "06FF44PK1JYVKFKWKXKTG2664C",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/examples",
+    "area/privacy",
+    "area/documentation",
+    "provider/sqlite"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437PDFA6MM5ZCKB1P9X26G",
+  "release-id": "06FF437GWAWYQF5HXSRVB09B7R",
+  "created-at": "2026-06-23T01:18:31.3801887Z",
+  "updated-at": "2026-06-23T01:23:00.4929192Z"
+}

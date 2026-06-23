@@ -1,0 +1,14 @@
+{
+  "event-id": "06FF43XTAECHZDC2QXHQEBZVCM",
+  "occurred-at": "2026-06-23T01:19:37.5558968Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Define repeated same-hub generator parity scope",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

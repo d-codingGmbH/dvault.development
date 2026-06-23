@@ -1,0 +1,14 @@
+{
+  "event-id": "06FF43MABMPP16FD2T16E7HWGC",
+  "occurred-at": "2026-06-23T01:18:19.7411596Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add privacy key-alias coverage report",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

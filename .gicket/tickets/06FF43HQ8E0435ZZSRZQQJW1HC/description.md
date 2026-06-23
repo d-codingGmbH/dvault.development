@@ -1,0 +1,1 @@
+﻿Add or consolidate tests for dirty contexts, provider mismatch, unsupported PIT shapes, and no-provider strategy fallback across PostgreSQL and SQL Server PIT maintenance. Acceptance: tests prove fallback remains provider-neutral and explicit.

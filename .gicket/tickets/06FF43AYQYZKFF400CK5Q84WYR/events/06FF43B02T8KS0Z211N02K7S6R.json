@@ -1,0 +1,14 @@
+{
+  "event-id": "06FF43B02T8KS0Z211N02K7S6R",
+  "occurred-at": "2026-06-23T01:17:03.3826006Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add SQL Server PIT full-rebuild benchmark lane",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

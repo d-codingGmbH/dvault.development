@@ -1,0 +1,1 @@
+﻿Prototype dependent child key metadata only for the bounded shapes accepted by the contract ticket. Acceptance: includes schema projection, diagnostics, tests, docs, and clear no-work closure if the contract defers implementation.

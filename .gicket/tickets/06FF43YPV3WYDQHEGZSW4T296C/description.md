@@ -1,0 +1,1 @@
+﻿Add source-generated typed mapper or save helper support for repeated same-hub links where roles are explicit and unambiguous. Acceptance: generated code preserves participant role identity and explicit save-service semantics.

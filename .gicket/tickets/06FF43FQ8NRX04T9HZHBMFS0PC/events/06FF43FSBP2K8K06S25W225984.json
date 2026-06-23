@@ -1,0 +1,14 @@
+{
+  "event-id": "06FF43FSBP2K8K06S25W225984",
+  "occurred-at": "2026-06-23T01:17:42.6215354Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add PostgreSQL PIT maintenance selected/fallback diagnostics",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

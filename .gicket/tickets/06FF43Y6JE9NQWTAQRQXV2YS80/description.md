@@ -1,0 +1,1 @@
+﻿Extend support-bundle or generator input facts so repeated same-hub roles are represented deterministically for typed mapper generation. Acceptance: tests cover role order, logical name stability, and collision handling.

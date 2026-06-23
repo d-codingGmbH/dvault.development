@@ -1,0 +1,1 @@
+﻿Define the bounded generator and typed mapper scope for repeated same-hub role-bearing links. Acceptance: scope requires unambiguous roles, stable metadata, no inferred relationship names, and no provider-specific SQL generation.

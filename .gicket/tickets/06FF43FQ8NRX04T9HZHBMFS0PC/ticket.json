@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF43FQ8NRX04T9HZHBMFS0PC",
+  "ticket-type": "task",
+  "title": "Task: Add PostgreSQL PIT maintenance selected/fallback diagnostics",
+  "revision": "06FF44K140AVCEG0AB901KP138",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/diagnostics",
+    "area/provider-support",
+    "area/read-models",
+    "provider/postgres"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437MXCMEA0BMH78G04MJKG",
+  "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
+  "created-at": "2026-06-23T01:17:42.6215354Z",
+  "updated-at": "2026-06-23T01:22:31.3282366Z"
+}

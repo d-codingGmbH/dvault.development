@@ -1,0 +1,1 @@
+﻿Add a small SQLite example or quickstart slice that combines binary-first DVault setup with explicit privacy registration and encrypted payload conversion. Acceptance: example remains local and library-focused, with no key storage service or compliance workflow.

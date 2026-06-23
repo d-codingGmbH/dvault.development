@@ -1,0 +1,1 @@
+﻿Refresh the shortest documented path for a new binary-first SQLite DVault project. Acceptance: setup uses aligned package lines, AddDVault provider registration, binary-first profile, explicit save/read service calls, and no hidden orchestration.

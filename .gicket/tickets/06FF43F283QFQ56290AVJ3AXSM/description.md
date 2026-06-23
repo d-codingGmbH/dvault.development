@@ -1,0 +1,1 @@
+﻿Summarize MySQL, Oracle, and DB2 PIT maintenance feasibility outcomes. Acceptance: matrix names accepted, deferred, and rejected shapes with evidence status and follow-up tickets only for accepted bounded work.

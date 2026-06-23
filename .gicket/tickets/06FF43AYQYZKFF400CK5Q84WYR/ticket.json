@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF43AYQYZKFF400CK5Q84WYR",
+  "ticket-type": "task",
+  "title": "Task: Add SQL Server PIT full-rebuild benchmark lane",
+  "revision": "06FF44J5PTQ59YJVMPA99HJ540",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/performance",
+    "area/provider-support",
+    "area/read-models",
+    "provider/sqlserver"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437KCQ2K07C5SMDPXFY7YC",
+  "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
+  "created-at": "2026-06-23T01:17:03.3826006Z",
+  "updated-at": "2026-06-23T01:22:24.3106989Z"
+}

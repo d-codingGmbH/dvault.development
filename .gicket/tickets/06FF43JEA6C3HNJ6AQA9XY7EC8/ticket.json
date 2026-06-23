@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF43JEA6C3HNJ6AQA9XY7EC8",
+  "ticket-type": "task",
+  "title": "Task: Update v0.47 provider maintenance release docs",
+  "revision": "06FF43JZ037RZ3KJFYHGHZ4RG8",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/documentation",
+    "area/performance",
+    "area/provider-support",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437MXCMEA0BMH78G04MJKG",
+  "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
+  "created-at": "2026-06-23T01:18:05.4573674Z",
+  "updated-at": "2026-06-23T01:18:08.6404027Z"
+}

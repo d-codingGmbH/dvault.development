@@ -1,0 +1,1 @@
+﻿Document how DVault privacy seams relate to provider-native encryption capabilities for SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2. Acceptance: docs distinguish value converters from cell/column/row encryption and keep provider-native DDL/runtime dispatch out of scope.

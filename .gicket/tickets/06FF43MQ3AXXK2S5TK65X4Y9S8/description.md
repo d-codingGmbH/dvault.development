@@ -1,0 +1,1 @@
+﻿Add diagnostics when model-first or metadata-first personalData markers are present but no matching privacy alias/converter configuration exists. Acceptance: diagnostics are advisory/fail-closed depending on existing privacy registration mode and do not imply automatic encryption.

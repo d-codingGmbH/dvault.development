@@ -1,0 +1,1 @@
+﻿Extend unit coverage for alias coverage output, missing aliases, marker-only providers, declined conversions, null conversion output, and personalData diagnostic cases. Acceptance: tests preserve existing fail-closed behavior.

@@ -1,0 +1,1 @@
+﻿Implement only the analyzer package target/asset change recommended by the audit, if it is proven safe. Acceptance: package verifier, analyzer tests, and docs remain aligned; if audit rejects retargeting, close with documented no-work decision.

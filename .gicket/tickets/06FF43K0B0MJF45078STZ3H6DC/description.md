@@ -1,0 +1,1 @@
+﻿Define a narrow privacy preflight contract for configured encrypted payload aliases and personal-data metadata. Acceptance: contract owns coverage diagnostics only, not key lifecycle, deletion workflow, retention workflow, or compliance guarantees.

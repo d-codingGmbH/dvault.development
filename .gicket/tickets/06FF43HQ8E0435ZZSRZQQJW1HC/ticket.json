@@ -1,0 +1,24 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF43HQ8E0435ZZSRZQQJW1HC",
+  "ticket-type": "task",
+  "title": "Task: Harden PIT maintenance unsupported-shape fallback tests",
+  "revision": "06FF44KFVG9XKJAGAGJG8V8A68",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/tests",
+    "area/provider-support",
+    "area/read-models",
+    "provider/postgres",
+    "provider/sqlserver"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437MXCMEA0BMH78G04MJKG",
+  "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
+  "created-at": "2026-06-23T01:17:59.4909705Z",
+  "updated-at": "2026-06-23T01:22:35.1001015Z"
+}

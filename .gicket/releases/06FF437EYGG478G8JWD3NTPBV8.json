@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "release-id": "06FF437EYGG478G8JWD3NTPBV8",
+  "name": "v0.46.0 - Reserved Interactive Provider Optimization",
+  "description": "Reserved placeholder for the next manually coordinated provider optimization and performance pass. No bot tickets are assigned here; the release number is intentionally skipped for interactive work before the next automated release train. Planning release v0.46.0 maps to package versions 8.46.0 and 10.46.0 when finalized.",
+  "status": "planned",
+  "created-at": "2026-06-23T01:16:34.4200757Z"
+}

@@ -1,0 +1,1 @@
+﻿Extend the provider evidence matrix or supporting contract so PIT maintenance timing rows are distinguishable from PIT/bridge read rows. Acceptance: maintenance rows include scenario, provider, selected strategy, fallback causes, run context, and artifact links.

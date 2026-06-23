@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF43Z97VRFNMVKPZ13CKPN1C",
+  "ticket-type": "task",
+  "title": "Task: Add analyzer diagnostics for ambiguous repeated same-hub mappings",
+  "revision": "06FF44RT6KP1FG0ZGY050BYWTG",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/analyzers",
+    "area/modeling",
+    "area/source-generators"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437S2WWGGY76ZDF58MMSSM",
+  "release-id": "06FF437HMT0AH0T295QVBF1P8M",
+  "created-at": "2026-06-23T01:19:52.2952913Z",
+  "updated-at": "2026-06-23T01:23:18.7081056Z"
+}

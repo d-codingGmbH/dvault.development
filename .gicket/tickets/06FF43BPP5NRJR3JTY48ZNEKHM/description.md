@@ -1,0 +1,1 @@
+﻿Ensure PIT maintenance benchmarks preserve a provider-neutral comparator row with strategy status, fallback causes, and run context. Acceptance: PostgreSQL and SQL Server lanes can cite comparable fallback rows.

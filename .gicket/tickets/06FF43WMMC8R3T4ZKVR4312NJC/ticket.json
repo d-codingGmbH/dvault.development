@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF43WMMC8R3T4ZKVR4312NJC",
+  "ticket-type": "task",
+  "title": "Task: Update v0.48 privacy and adoption release docs",
+  "revision": "06FF43XK1G1NB9AC0HPHYWHC8G",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/documentation",
+    "area/privacy",
+    "area/examples",
+    "area/package"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437R0Z71HZANY20JTEK86M",
+  "release-id": "06FF437GWAWYQF5HXSRVB09B7R",
+  "created-at": "2026-06-23T01:19:29.6206441Z",
+  "updated-at": "2026-06-23T01:19:35.6926286Z"
+}

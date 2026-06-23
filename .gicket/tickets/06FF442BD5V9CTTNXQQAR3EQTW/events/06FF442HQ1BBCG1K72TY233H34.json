@@ -1,0 +1,14 @@
+{
+  "event-id": "06FF442HQ1BBCG1K72TY233H34",
+  "occurred-at": "2026-06-23T01:20:16.3128042Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Review effectivity and typed helper gap documentation",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

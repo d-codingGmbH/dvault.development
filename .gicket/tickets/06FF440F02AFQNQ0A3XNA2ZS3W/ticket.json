@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF440F02AFQNQ0A3XNA2ZS3W",
+  "ticket-type": "task",
+  "title": "Task: Evaluate dependent child key modeling contract",
+  "revision": "06FF44RD6KFXRCCFY9D2V3S3VM",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/modeling",
+    "area/architecture",
+    "area/diagnostics"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437T5VRXH2Z4ED63E0CJ04",
+  "release-id": "06FF437HMT0AH0T295QVBF1P8M",
+  "created-at": "2026-06-23T01:20:01.7256182Z",
+  "updated-at": "2026-06-23T01:23:15.3808464Z"
+}

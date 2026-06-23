@@ -1,0 +1,1 @@
+﻿Review effectivity satellite and typed helper gaps after repeated same-hub/dependent-child decisions. Acceptance: docs distinguish implemented fluent metadata, generated helper coverage, and deferred shapes.

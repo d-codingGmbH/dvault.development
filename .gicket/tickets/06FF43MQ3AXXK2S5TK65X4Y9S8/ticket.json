@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF43MQ3AXXK2S5TK65X4Y9S8",
+  "ticket-type": "task",
+  "title": "Task: Diagnose personalData metadata without configured privacy alias",
+  "revision": "06FF44N6KCXXSX087YR4ZBW0N4",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/privacy",
+    "area/diagnostics",
+    "area/modeling"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437NMW8NENKSMVDBTRQ034",
+  "release-id": "06FF437GWAWYQF5HXSRVB09B7R",
+  "created-at": "2026-06-23T01:18:23.9567230Z",
+  "updated-at": "2026-06-23T01:22:49.1154290Z"
+}

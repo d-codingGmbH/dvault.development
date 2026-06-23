@@ -1,0 +1,1 @@
+﻿Update the production adoption checklist with privacy preflight steps, alias coverage review, personalData caveats, and key-owner responsibilities. Acceptance: wording does not claim GDPR/DSGVO compliance or automatic crypto-shredding.

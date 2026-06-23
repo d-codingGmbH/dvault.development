@@ -1,0 +1,14 @@
+{
+  "event-id": "06FF441NM17F8Y9NAHP38VX4EW",
+  "occurred-at": "2026-06-23T01:20:09.1204603Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Prototype bounded dependent child key metadata if accepted",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

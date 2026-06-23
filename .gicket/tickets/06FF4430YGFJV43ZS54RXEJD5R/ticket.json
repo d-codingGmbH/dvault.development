@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF4430YGFJV43ZS54RXEJD5R",
+  "ticket-type": "task",
+  "title": "Task: Update v0.49 modeling parity release docs",
+  "revision": "06FF443P6J6MFYMD3WJ4SFEMZ0",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/documentation",
+    "area/modeling",
+    "area/source-generators",
+    "area/package"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437TY0PQPPWN5HPE0E0730",
+  "release-id": "06FF437HMT0AH0T295QVBF1P8M",
+  "created-at": "2026-06-23T01:20:21.1486738Z",
+  "updated-at": "2026-06-23T01:20:25.6526471Z"
+}

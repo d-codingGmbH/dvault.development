@@ -1,0 +1,1 @@
+﻿Harden PostgreSQL PIT maintenance observability so selected provider strategy and fallback causes are visible consistently with SQL Server. Acceptance: tests prove selected strategy tags or diagnostics and provider-neutral fallback reasons without leaking SQL, keys, or connection data.

@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF43XM75680ZFRJJKKW2655R",
+  "ticket-type": "story",
+  "title": "Story: Define repeated same-hub generator parity scope",
+  "revision": "06FF45PHYGJDE3XVJYTYDQRG90",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/modeling",
+    "area/source-generators",
+    "area/analyzers"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437S2WWGGY76ZDF58MMSSM",
+  "release-id": "06FF437HMT0AH0T295QVBF1P8M",
+  "created-at": "2026-06-23T01:19:37.5558968Z",
+  "updated-at": "2026-06-23T01:27:22.3561594Z"
+}

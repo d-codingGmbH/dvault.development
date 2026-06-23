@@ -1,0 +1,14 @@
+{
+  "event-id": "06FF43Y945930HE7JMDCPRPP08",
+  "occurred-at": "2026-06-23T01:19:41.3450969Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Add support-bundle facts for repeated same-hub roles",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

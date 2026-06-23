@@ -1,0 +1,14 @@
+{
+  "event-id": "06FF43YQC73HC5XFCWK47NVZ44",
+  "occurred-at": "2026-06-23T01:19:44.9933446Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Generate typed mapper helpers for repeated same-hub links",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

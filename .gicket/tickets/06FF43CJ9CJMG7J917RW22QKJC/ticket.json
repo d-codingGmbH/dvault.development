@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF43CJ9CJMG7J917RW22QKJC",
+  "ticket-type": "task",
+  "title": "Task: Evaluate MySQL PIT full-rebuild push-down feasibility",
+  "revision": "06FF44GXRFFH8E1Y0FX3JPRW6R",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/performance",
+    "area/provider-support",
+    "area/read-models",
+    "provider/mysql"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437M4JK4J4JZMQWKAYF9HR",
+  "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
+  "created-at": "2026-06-23T01:17:18.3345715Z",
+  "updated-at": "2026-06-23T01:22:14.0835258Z"
+}

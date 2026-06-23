@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF43Y6JE9NQWTAQRQXV2YS80",
+  "ticket-type": "task",
+  "title": "Task: Add support-bundle facts for repeated same-hub roles",
+  "revision": "06FF44R63B183R2JJK81KG1QMG",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/source-generators",
+    "area/modeling",
+    "area/diagnostics"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437S2WWGGY76ZDF58MMSSM",
+  "release-id": "06FF437HMT0AH0T295QVBF1P8M",
+  "created-at": "2026-06-23T01:19:41.3450969Z",
+  "updated-at": "2026-06-23T01:23:13.5622807Z"
+}

@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF437W1CHG9QVJPGZM4Y98AR",
+  "ticket-type": "story",
+  "title": "Story: Define provider PIT maintenance evidence contract",
+  "revision": "06FF45MQ12F2YB9GR3RRBT9DT0",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/architecture",
+    "area/performance",
+    "area/provider-support",
+    "area/read-models"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437JD4M7JV8XD7GB7NBWH0",
+  "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
+  "created-at": "2026-06-23T01:16:39.0335261Z",
+  "updated-at": "2026-06-23T01:27:07.2720439Z"
+}

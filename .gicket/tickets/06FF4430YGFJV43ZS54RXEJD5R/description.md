@@ -1,0 +1,1 @@
+﻿Update release notes, README limitations, analyzer README, support-bundle guidance, package compatibility, and changelog for v0.49. Acceptance: package guidance uses 8.49.0/10.49.0 and keeps generator limitations visible.

@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FF43PCN26C70DXX326B9VYA4",
+  "ticket-type": "task",
+  "title": "Task: Document provider-native encryption caveats for privacy extension",
+  "revision": "06FF44PQR817MB5AZE8KSQCP78",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/privacy",
+    "area/provider-support",
+    "area/security",
+    "area/documentation"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FF437PDFA6MM5ZCKB1P9X26G",
+  "release-id": "06FF437GWAWYQF5HXSRVB09B7R",
+  "created-at": "2026-06-23T01:18:39.4162086Z",
+  "updated-at": "2026-06-23T01:23:01.6983222Z"
+}

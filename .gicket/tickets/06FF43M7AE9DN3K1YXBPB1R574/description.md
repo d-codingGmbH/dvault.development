@@ -1,0 +1,1 @@
+﻿Add a provider-neutral report over configured encrypted payload aliases and mapped payload properties. Acceptance: output names aliases and coverage/fallback facts without exposing keys, payload values, or provider-native encryption details.
