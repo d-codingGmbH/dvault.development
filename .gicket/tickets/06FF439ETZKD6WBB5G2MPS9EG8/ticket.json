@@ -3,20 +3,19 @@
   "ticket-id": "06FF439ETZKD6WBB5G2MPS9EG8",
   "ticket-type": "task",
   "title": "Task: Separate read evidence from maintenance evidence in docs",
-  "revision": "06FF44HNJWM5NAF6DDFA4NJBFM",
-  "status": "todo",
+  "revision": "06FFGVFGH4B80SBFE90CJW59HR",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
+    "area/documentation",
     "area/performance",
     "area/read-models",
-    "area/documentation"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FF437JD4M7JV8XD7GB7NBWH0",
   "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
   "created-at": "2026-06-23T01:16:52.3011041Z",
-  "updated-at": "2026-06-23T01:22:20.1833243Z"
+  "updated-at": "2026-06-24T07:00:15.1138729Z"
 }

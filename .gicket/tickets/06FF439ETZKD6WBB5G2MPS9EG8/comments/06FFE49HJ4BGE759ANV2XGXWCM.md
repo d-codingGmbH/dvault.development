@@ -1,67 +1,54 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Fresh repository inspection shows this is a bounded docs-alignment ticket: separate completed PIT/bridge read evidence from PIT maintenance evidence, cite the existing v0.45.0 maintenance contract, and keep bridge maintenance push-down deferred.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The repository already has the maintenance evidence contract: docs/performance-profiles.md treats the v0.45.0 PIT maintenance prototypes as source/test evidence, not benchmark-backed maintenance timing.
 - docs/architecture/dvault-v1-pit-bridge-boundary.md already fixes the behavior boundary that PIT and bridge reads consume already-maintained rows and do not perform maintenance.
 - Maintained bridge read rows remain read-side evidence only; bridge maintenance push-down is still explicitly deferred in the architecture note, performance guide, v0.45.0 release notes, and provider-optimization gap matrix.
 - No child tickets, relation changes, description updates, attachments, or planning documents were materialized in this refinement run.
 
-### Scope In
+Scope In
 - Clarify in docs/performance-profiles.md that completed latest-satellite, PIT, and bridge read timings measure reads over already-maintained read-model rows and must not be cited as provider maintenance timing.
 - Align docs/architecture/dvault-v1-pit-bridge-boundary.md so the read boundary, PIT maintenance evidence boundary, and deferred bridge-maintenance push-down posture tell one consistent story.
 - Cite the existing maintenance evidence contract surfaces instead of inventing new benchmark claims or a parallel evidence taxonomy.
 
-### Scope Out
+Scope Out
 - Any product-code, diagnostics, benchmark, or provider-registration change.
 - Any new PIT or bridge maintenance benchmark lane or new provider-maintenance timing claim.
 - Reopening bridge maintenance push-down, MySQL PIT maintenance implementation, or provider-evidence matrix semantics.
 - Historical release-note rewrites beyond the citations needed to anchor the current docs.
 
-## Acceptance Criteria
-- Performance guidance explicitly distinguishes completed read timing evidence from PIT maintenance prototype availability and states that maintained read-model rows are a prerequisite, not part of the measured read timing.
-- Architecture guidance explicitly states that PIT and bridge reads consume already-maintained rows, and provider read strategy selection or completed read timings do not imply provider-side maintenance execution.
-- Updated docs cite the existing maintenance evidence contract for PIT maintenance and preserve bridge maintenance push-down as deferred.
-- No updated text promotes PIT or bridge read evidence into write-side maintenance timing, maintenance implementation proof, or maintenance push-down approval.
-
-## Definition of Done
-- docs/performance-profiles.md and docs/architecture/dvault-v1-pit-bridge-boundary.md use aligned read-versus-maintenance evidence language.
-- Any added citations point only to already-checked-in repository evidence such as the v0.45.0 PIT maintenance baseline, the Provider Optimization Evidence Matrix, and the existing architecture boundary.
-- No updated document claims benchmark-backed maintenance timing without a preserved maintenance-specific artifact lane.
-- Bridge maintenance push-down remains explicitly deferred and tied to a future separate evidence, diagnostics, parity, and benchmark lane.
-
-## Implementation Notes
-- Reuse the existing v0.45.0 PIT maintenance wording as the maintenance evidence contract; do not create a second contract or a new table of maintenance timings.
-- Put the strongest clarification near the read evidence and read decision-tree sections in docs/performance-profiles.md, because that is where completed PIT/bridge read rows are currently consumed.
-- Keep the architecture note authoritative on behavior: reads are over already-maintained rows, maintenance is explicit caller work, and provider read optimization and provider maintenance are separate seams.
-- If wording references bridge maintenance push-down, mirror the current defer language from docs/architecture/dvault-v1-pit-bridge-boundary.md and docs/plans/provider-optimization-gap-matrix.md rather than reopening scope.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - If a future ticket adds benchmark-backed PIT maintenance timings, which single adopter-facing document should become the canonical maintenance timing citation surface?
 - If bridge-maintenance hotspot evidence appears later, should the first reopened slice stay limited to many-to-many full rebuild push-down before hierarchy or incremental variants?
 
-## Risks
+Risks
 - If only one of the two live docs is updated, the remaining surface can still let readers infer that completed read rows prove provider-maintenance timing.
 - Citing the 2026-06-23 provider optimization closure bundle without the maintained-row disclaimer could reintroduce confusion between read-side evidence and maintenance-side evidence.
 - Expanding wording beyond the existing v0.45.0 maintenance boundary could accidentally imply benchmark-backed PIT maintenance claims that the repository does not currently prove.
 
-## Split Recommendations
+Split recommendations
 - No split recommended; the current branch evidence bounds this to one documentation-alignment task across the performance and architecture surfaces.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 4
+- definition-of-done items: 4
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Update performance and architecture guidance so maintained read-model read timings cannot be mistaken for provider-side maintenance timings. Acceptance: docs cite the new maintenance evidence contract and keep bridge maintenance push-down deferred.
+Run mode
+- apply: planned updates are applied after this comment

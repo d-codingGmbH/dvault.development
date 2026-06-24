@@ -12,7 +12,7 @@ Use the root benchmark artifact triplet as the quick local SQLite and skipped-pr
 - [benchmark-summary.csv](../benchmark-summary.csv)
 - [benchmark-summary.json](../benchmark-summary.json)
 
-Use the 2026-06-23 provider optimization closure bundle as the current provider-configured completed-timing source for PostgreSQL, SQL Server, MySQL, Oracle, and DB2 provider-native save rows plus latest-satellite, PIT, and bridge read rows:
+Use the 2026-06-23 provider optimization closure bundle as the current provider-configured completed-timing source for PostgreSQL, SQL Server, MySQL, Oracle, and DB2 provider-native save rows, latest-satellite read rows, and PIT/bridge read rows over already-maintained read-model rows:
 
 - [README.md](../artifacts/benchmarks/06FF0000000000000000000000-provider-optimization-closure-20260623/README.md)
 - [postgres-podman-live/benchmark-summary.md](../artifacts/benchmarks/06FF0000000000000000000000-provider-optimization-closure-20260623/postgres-podman-live/benchmark-summary.md)
@@ -20,6 +20,8 @@ Use the 2026-06-23 provider optimization closure bundle as the current provider-
 - [mysql-live/benchmark-summary.md](../artifacts/benchmarks/06FF0000000000000000000000-provider-optimization-closure-20260623/mysql-live/benchmark-summary.md)
 - [oracle-lob-prefetch/benchmark-summary.md](../artifacts/benchmarks/06FF0000000000000000000000-provider-optimization-closure-20260623/oracle-lob-prefetch/benchmark-summary.md)
 - [db2-rowcap-1000/benchmark-summary.md](../artifacts/benchmarks/06FF0000000000000000000000-provider-optimization-closure-20260623/db2-rowcap-1000/benchmark-summary.md)
+
+The completed read rows in that bundle do not all have the same prerequisite. Latest-satellite rows time supported satellite reads over seeded satellite history. PIT and bridge rows time `IDataVaultReadService` reads after the PIT or bridge table has already been maintained; maintenance setup is a prerequisite for those rows, not part of the measured read timing. Cite the v0.45.0 PIT maintenance boundary below, [DVault v0.45.0 Release Notes](releases/v0.45.0.md), and [DVault V1 PIT And Bridge Boundary](architecture/dvault-v1-pit-bridge-boundary.md) for source/test-backed maintenance availability and fallback behavior, not the closure bundle as provider maintenance timing.
 
 Use the DB2 hotspot artifact triplet as the provider-configured completed-timing bundle for DB2 clean-context optimized save plus supported latest-satellite, PIT, and bridge reads:
 
@@ -65,6 +67,8 @@ Use [Provider Optimization Gap Matrix](plans/provider-optimization-gap-matrix.md
 ## v0.45.0 PIT Maintenance Prototype Boundary
 
 The v0.45.0 PIT maintenance prototypes are source and test evidence, not benchmark-backed timing evidence. Do not cite the provider-maintenance work as a performance win unless a later ticket preserves a benchmark artifact triplet for the exact maintenance workload, provider, run context, and fallback rows.
+
+This section is the maintenance evidence contract for the performance guide. It complements [DVault v0.45.0 Release Notes](releases/v0.45.0.md) and [DVault V1 PIT And Bridge Boundary](architecture/dvault-v1-pit-bridge-boundary.md); it does not create a parallel maintenance timing table.
 
 The accepted provider-maintenance baseline and evaluated future lane are limited to:
 
@@ -217,6 +221,8 @@ Answer these questions in order before selecting a read profile:
 5. Is the provider claim PIT or bridge optimization?
 
    SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2 are repository-proven diagnostics-gated PIT/bridge read-strategy candidate paths. PostgreSQL, SQL Server, MySQL, Oracle, and DB2 PIT/bridge have completed provider-configured timing in the 2026-06-23 closure bundle. Other external-provider PIT/bridge timing claims need their own completed provider-configured artifact lane. Unsupported providers, provider-name mismatch, missing provider registration, strategy decline, unsupported shapes, incomplete `ReadShape` evidence, and stale read-model maintenance keep the provider-neutral read pipelines.
+
+   Treat those rows as read timing only. PIT and bridge timing assumes the read-model rows were already maintained before the read request; it does not prove `IDataVaultPitMaintenanceService` or `IDataVaultBridgeMaintenanceService` execution time, provider SQL maintenance, or automatic refresh. Use the v0.45.0 PIT maintenance contract above for provider maintenance prototype availability and fallback behavior.
 
 ### Design-Time Typed Helper Branch
 
@@ -462,7 +468,7 @@ Use `IDataVaultReadDiagnosticsService` for request-bound read strategy and read-
 
 ### Supporting Rows
 
-All values in this quick table are from the root quick benchmark triplet. External-provider completed rows should be cited from the 2026-06-23 provider optimization closure bundle with preserved run context instead of copied into this quick table:
+All values in this quick table are from the root quick benchmark triplet. They are read timings: the PIT and bridge rows require maintained read-model rows before the benchmarked read begins, and the mean values do not include rebuild or maintenance service work. External-provider completed rows should be cited from the 2026-06-23 provider optimization closure bundle with preserved run context instead of copied into this quick table:
 
 | Scenario | Baseline | Mean ms | Evidence posture |
 | --- | --- | ---: | --- |
@@ -496,4 +502,4 @@ DB2 completed read evidence is limited to the supported shapes recorded in the c
 
 ### Stop Conditions And Rerun Triggers
 
-Stop using the root read rows as sufficient evidence when latest-satellite reads are not using the completed SQLite timing row or a completed provider-configured artifact lane, PIT/bridge reads target a provider without a matching diagnostics-selected strategy or completed provider-configured artifact lane, read-shape diagnostics report fallback, unsupported shape, or incomplete evidence, PIT or bridge maintenance is not run before reads, bridge hierarchy deletions require full rebuild behavior, or the data shape differs materially from the seeded benchmark. Do not use maintained-bridge read evidence as bridge-maintenance push-down approval; write-side bridge maintenance needs its own source seam, diagnostics, parity coverage, and provider-configured benchmark lane. For PostgreSQL, SQL Server, MySQL, Oracle, and DB2 latest-satellite/PIT/bridge timing claims, cite the 2026-06-23 closure artifact triplet with run context instead of skipped root placeholders. Unsupported latest-satellite shapes, stale read-model maintenance, and incomplete read-shape evidence stay on provider-neutral fallback. Diagnostics-gated latest-satellite strategy registration does not create automatic PIT or bridge maintenance or a universal timing claim outside a recorded run context. Rerun read benchmarks and keep read-shape diagnostics with the result when changing provider, indexes, maintenance cadence, shape, dataset size, or runtime.
+Stop using the root read rows as sufficient evidence when latest-satellite reads are not using the completed SQLite timing row or a completed provider-configured artifact lane, PIT/bridge reads target a provider without a matching diagnostics-selected strategy or completed provider-configured artifact lane, read-shape diagnostics report fallback, unsupported shape, or incomplete evidence, PIT or bridge maintenance is not run before reads, bridge hierarchy deletions require full rebuild behavior, or the data shape differs materially from the seeded benchmark. Do not use maintained PIT/bridge read evidence as PIT or bridge maintenance timing, PIT maintenance throughput proof, or bridge-maintenance push-down approval; maintenance claims need their own source seam where applicable, diagnostics, parity coverage, and preserved provider-configured benchmark lane. For PostgreSQL, SQL Server, MySQL, Oracle, and DB2 latest-satellite/PIT/bridge timing claims, cite the 2026-06-23 closure artifact triplet with run context instead of skipped root placeholders. Unsupported latest-satellite shapes, stale read-model maintenance, and incomplete read-shape evidence stay on provider-neutral fallback. Diagnostics-gated latest-satellite strategy registration does not create automatic PIT or bridge maintenance or a universal timing claim outside a recorded run context. Rerun read benchmarks and keep read-shape diagnostics with the result when changing provider, indexes, maintenance cadence, shape, dataset size, or runtime.
