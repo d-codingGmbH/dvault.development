@@ -3,21 +3,20 @@
   "ticket-id": "06FF43DC469VQ1N0NQ84KEV6SR",
   "ticket-type": "task",
   "title": "Task: Evaluate Oracle PIT full-rebuild push-down feasibility",
-  "revision": "06FF44H5RTK07SDN6N95B0442M",
-  "status": "todo",
+  "revision": "06FFGD383655YAEN94YJA18T5G",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/performance",
     "area/provider-support",
     "area/read-models",
-    "provider/oracle"
+    "automation/bot-ready",
+    "provider/oracle",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FF437M4JK4J4JZMQWKAYF9HR",
   "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
   "created-at": "2026-06-23T01:17:23.5537914Z",
-  "updated-at": "2026-06-23T01:22:16.1341742Z"
+  "updated-at": "2026-06-24T05:57:24.6334238Z"
 }
