@@ -44,6 +44,18 @@ The accepted implementation recommendation is deliberately narrow: implement and
 
 Rollback is the decisive gate for any accepted MySQL lane. A provider strategy may preserve pre-rebuild PIT rows when it owns a local transaction and can roll back delete-plus-insert work on fault or cancellation. If a caller transaction is already active, the MySQL path must either prove savepoint support for the active EF Core provider and roll back to a strategy-owned savepoint, or fall back to provider-neutral maintenance. Until that behavior is source-, test-, and live-provider-proven, no MySQL maintenance path may claim SQL Server-style rollback-clean full rebuild semantics.
 
+### MySQL, Oracle, And DB2 PIT Maintenance Decision Matrix
+
+The current MySQL, Oracle, and DB2 runtime baseline is the same for maintenance: their provider packages register save plus latest-satellite, PIT-read, and bridge-read strategies, but none registers `IDataVaultProviderPitMaintenanceStrategy` or replaces `IDataVaultPitMaintenanceService`. PIT maintenance for all three providers therefore remains provider-neutral until a separate accepted implementation ticket lands. Completed PIT read timing for these providers is read-side evidence over already-maintained PIT rows and is not write-side PIT maintenance proof.
+
+| Provider | Decision | Accepted lane or child | Deferred shapes | Fallback-only or rejected shapes |
+| --- | --- | --- | --- | --- |
+| MySQL | Accept one future ordinary hub-parent full-rebuild lane through `IDataVaultProviderPitMaintenanceStrategy`. | Existing follow-up ticket `06FFDG522514HX2J17GT9VE77W` covers official `MySql.EntityFrameworkCore` ordinary hub-parent `RebuildAsync(...)` push-down. | Pomelo live validation, shared-driving-key multi-active hub-parent full rebuilds, link-parent non-multi-active full rebuilds, and maintenance timing. | `MaintainParentsAsync(...)`, link-parent multi-active PITs, incompatible driving-key-family PITs, bridge maintenance, automatic maintenance, read-time refresh, dirty contexts, provider mismatches, incomplete maintenance-shape evidence, and caller transactions without verified savepoints. |
+| Oracle | Defer provider PIT maintenance. Do not create an Oracle implementation child from this matrix. | No accepted Oracle child now. A future reopen is limited to an ordinary hub-parent full-rebuild-only candidate after Oracle-specific SQL parity plus rollback-clean fault and cancellation proof. | Any future ordinary hub-parent candidate remains deferred until Oracle delete-plus-insert SQL, diagnostics selection, local rollback, and caller-transaction rollback evidence exist. | Multi-active hub-parent full rebuilds, link-parent full rebuilds, `MaintainParentsAsync(...)`, bridge maintenance, automatic maintenance, read-time refresh, dirty contexts, provider mismatches, incomplete maintenance-shape evidence, and caller transactions without proven rollback boundaries. |
+| DB2 | Accept one future ordinary hub-parent full-rebuild lane through `IDataVaultProviderPitMaintenanceStrategy`. | Create one bounded DB2 implementation child for `IBM.EntityFrameworkCore` ordinary hub-parent `RebuildAsync(...)` push-down; until that child lands, DB2 uses provider-neutral PIT maintenance. | Shared-driving-key multi-active hub-parent full rebuilds, link-parent non-multi-active full rebuilds, maintenance timing, staged DB2 bulk, provider-native chunk execution, and binary-storage compatibility remediation. | `MaintainParentsAsync(...)`, link-parent multi-active PITs, incompatible driving-key-family PITs, bridge maintenance, automatic maintenance, read-time refresh, dirty contexts, provider mismatches, incomplete maintenance-shape evidence, and caller transactions without proven IBM savepoint rollback. |
+
+Every accepted future lane must preserve pre-rebuild PIT rows on fault or cancellation. Strategy-owned local transactions are the first permitted rollback boundary. Ambient caller transactions must remain provider-neutral fallback unless the provider-specific implementation proves a strategy-owned savepoint or equivalent rollback boundary in source, tests, and live-provider execution.
+
 ## PIT Read Boundary
 
 PIT reads target one `DataVaultPitMetadata` declaration, explicit parent hash keys, and an `asOf` timestamp. `ReadPitRowsAsync(...)` returns raw `DataVaultPitReadRecord` rows. `ReadPitAsync(...)` maps selected rows through a caller-owned projector with exact-name access to `ParentHashKey`, canonical driving-key names when present, `LoadTimestamp`, and declared satellite segments.
@@ -112,6 +124,8 @@ Focused integration coverage:
 - [DVaultPostgresServiceCollectionExtensions.cs](../../src/DCoding.Data.DVault.Postgres/DVaultPostgresServiceCollectionExtensions.cs) registers `PostgresDataVaultPitMaintenanceStrategy` as an `IDataVaultProviderPitMaintenanceStrategy`.
 - [DVaultSqlServerServiceCollectionExtensions.cs](../../src/DCoding.Data.DVault.SqlServer/DVaultSqlServerServiceCollectionExtensions.cs) replaces `IDataVaultPitMaintenanceService` with `SqlServerDataVaultPitMaintenanceService`.
 - [DVaultMySqlServiceCollectionExtensions.cs](../../src/DCoding.Data.DVault.MySql/DVaultMySqlServiceCollectionExtensions.cs) registers MySQL save and read strategy candidates only; it does not currently register MySQL PIT maintenance.
+- [DVaultOracleServiceCollectionExtensions.cs](../../src/DCoding.Data.DVault.Oracle/DVaultOracleServiceCollectionExtensions.cs) registers Oracle save and read strategy candidates only; it does not currently register Oracle PIT maintenance.
+- [DVaultDb2ServiceCollectionExtensions.cs](../../src/DCoding.Data.DVault.Db2/DVaultDb2ServiceCollectionExtensions.cs) registers DB2 save and read strategy candidates only; it does not currently register DB2 PIT maintenance.
 - Provider package service-collection extensions under `src/DCoding.Data.DVault.Sqlite`, `src/DCoding.Data.DVault.Postgres`, `src/DCoding.Data.DVault.SqlServer`, `src/DCoding.Data.DVault.MySql`, `src/DCoding.Data.DVault.Oracle`, and `src/DCoding.Data.DVault.Db2` register the current provider read strategy candidates.
 
 Benchmark evidence:
@@ -141,7 +155,7 @@ Compiled-model, compiled-query, and pooled-context guidance remains in [DVault E
 - Automatic PIT or bridge maintenance.
 - Read-time PIT or bridge refresh.
 - Background schedulers, triggers, or implicit EF `SaveChanges` orchestration.
-- Provider-specific PIT maintenance beyond the current PostgreSQL strategy and SQL Server service-replacement gates; MySQL remains an evaluated future implementation lane, not a current runtime behavior.
+- Provider-specific PIT maintenance beyond the current PostgreSQL strategy and SQL Server service-replacement gates; MySQL and DB2 remain accepted future ordinary hub-parent implementation lanes, Oracle remains deferred, and none is current runtime behavior.
 - Bridge maintenance push-down without bridge-maintenance hotspot evidence, a core/provider bridge-maintenance seam, bridge-specific fallback diagnostics, and benchmark-backed parity proof.
 - Completed non-SQLite optimized latest-satellite timing claims without a provider-configured benchmark artifact.
 - Completed DB2 PIT or bridge timing claims without a provider-configured benchmark artifact.
