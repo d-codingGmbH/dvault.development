@@ -321,6 +321,22 @@ public sealed class BenchmarkScenarioExecutionTests {
           "maximum depth 3 of 5",
           NotConfiguredSkipReason),
       SkippedExternal(
+          PostgresProviderName,
+          "pit-full-rebuild-maintenance",
+          "dvault-adddvault-fallback",
+          "provider-neutral-dvault-fallback",
+          "3 PIT shapes, 3 parent identities, 10 rebuilt PIT rows",
+          "full rebuild across PostgreSQL supported PIT maintenance shapes",
+          NotConfiguredSkipReason),
+      SkippedExternal(
+          PostgresProviderName,
+          "pit-full-rebuild-maintenance",
+          "dvault-adddvaultpostgres-optimized",
+          "postgres-optimized-dvault",
+          "3 PIT shapes, 3 parent identities, 10 rebuilt PIT rows",
+          "full rebuild across PostgreSQL supported PIT maintenance shapes",
+          NotConfiguredSkipReason),
+      SkippedExternal(
           SqlServerProviderName,
           "latest-satellite-read",
           "dvault-adddvaultsqlserver-optimized",
@@ -493,18 +509,12 @@ public sealed class BenchmarkScenarioExecutionTests {
       new(Db2ProviderName, "bridge-traversal-read", "dvault-adddvaultdb2-optimized", ["readShape=Bridge", "selectedStrategy=Db2DataVaultReadStrategy", "plannedReadStrategy=Db2DataVaultReadStrategy"]),
   ];
 
-  private static readonly ExpectedProviderMaintenanceRow[] ExpectedProviderMaintenanceRows =
+  private static readonly ExpectedProviderPitMaintenanceRow[] ExpectedProviderPitMaintenanceRows =
   [
-      new(SqlServerProviderName, "dvault-adddvault-fallback", [
-          "maintenanceScope=FullRebuild",
-          "selectedStrategy=<none>",
-          "pitShapeBoundary=clean-ordinary-hub-parent",
-      ]),
-      new(SqlServerProviderName, "dvault-adddvaultsqlserver-optimized", [
-          "maintenanceScope=FullRebuild",
-          "selectedStrategy=SqlServerDataVaultPitMaintenanceService",
-          "pitShapeBoundary=clean-ordinary-hub-parent",
-      ]),
+      new(PostgresProviderName, "dvault-adddvault-fallback", ["maintenanceScope=FullRebuild", "selectedStrategy=<none>", "fallbackCauses=NoProviderSpecificStrategyRegistered", "pitShapeBoundary=ordinary-hub-parent|shared-driving-key-multi-active-hub-parent|link-parent-non-multi-active"]),
+      new(PostgresProviderName, "dvault-adddvaultpostgres-optimized", ["maintenanceScope=FullRebuild", "selectedStrategy=PostgresDataVaultPitMaintenanceStrategy", "plannedPitMaintenanceStrategy=PostgresDataVaultPitMaintenanceStrategy", "fallbackCauses=none", "pitShapeBoundary=ordinary-hub-parent|shared-driving-key-multi-active-hub-parent|link-parent-non-multi-active"]),
+      new(SqlServerProviderName, "dvault-adddvault-fallback", ["maintenanceScope=FullRebuild", "selectedStrategy=<none>", "pitShapeBoundary=clean-ordinary-hub-parent"]),
+      new(SqlServerProviderName, "dvault-adddvaultsqlserver-optimized", ["maintenanceScope=FullRebuild", "selectedStrategy=SqlServerDataVaultPitMaintenanceService", "pitShapeBoundary=clean-ordinary-hub-parent"]),
   ];
 
   private static readonly string[] RegressionBudgetRules =
@@ -784,6 +794,33 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.Contains("DVault PostgreSQL retained direct or UNNEST save path", postgresRetainedPathExecutionDetail);
       Assert.Contains("stagedBulkBoundary=below-60-operations", postgresRetainedPathExecutionDetail);
       Assert.Contains("cleanupBoundary=no-staging-table", postgresRetainedPathExecutionDetail);
+
+      var postgresPitMaintenanceFallbackResult = Assert.Single(results.Where(result =>
+          result.GetProperty("scenarioName").GetString() == "pit-full-rebuild-maintenance" &&
+          result.GetProperty("provider").GetString() == PostgresProviderName &&
+          result.GetProperty("baselineName").GetString() == "dvault-adddvault-fallback"));
+      var postgresPitMaintenanceFallbackDetail = postgresPitMaintenanceFallbackResult.GetProperty("executionDetail").GetString();
+      Assert.Contains("maintenanceScope=FullRebuild", postgresPitMaintenanceFallbackDetail);
+      Assert.Contains("selectedStrategy=<none>", postgresPitMaintenanceFallbackDetail);
+      Assert.Contains("fallbackCauses=NoProviderSpecificStrategyRegistered", postgresPitMaintenanceFallbackDetail);
+      Assert.Contains(
+          "pitShapeBoundary=ordinary-hub-parent|shared-driving-key-multi-active-hub-parent|link-parent-non-multi-active",
+          postgresPitMaintenanceFallbackDetail);
+      Assert.Equal(NotConfiguredSkipReason, postgresPitMaintenanceFallbackResult.GetProperty("skipReason").GetString());
+
+      var postgresPitMaintenanceOptimizedResult = Assert.Single(results.Where(result =>
+          result.GetProperty("scenarioName").GetString() == "pit-full-rebuild-maintenance" &&
+          result.GetProperty("provider").GetString() == PostgresProviderName &&
+          result.GetProperty("baselineName").GetString() == "dvault-adddvaultpostgres-optimized"));
+      var postgresPitMaintenanceOptimizedDetail = postgresPitMaintenanceOptimizedResult.GetProperty("executionDetail").GetString();
+      Assert.Contains("maintenanceScope=FullRebuild", postgresPitMaintenanceOptimizedDetail);
+      Assert.Contains("selectedStrategy=PostgresDataVaultPitMaintenanceStrategy", postgresPitMaintenanceOptimizedDetail);
+      Assert.Contains("plannedPitMaintenanceStrategy=PostgresDataVaultPitMaintenanceStrategy", postgresPitMaintenanceOptimizedDetail);
+      Assert.Contains("fallbackCauses=none", postgresPitMaintenanceOptimizedDetail);
+      Assert.Contains(
+          "pitShapeBoundary=ordinary-hub-parent|shared-driving-key-multi-active-hub-parent|link-parent-non-multi-active",
+          postgresPitMaintenanceOptimizedDetail);
+      Assert.Equal(NotConfiguredSkipReason, postgresPitMaintenanceOptimizedResult.GetProperty("skipReason").GetString());
 
       var mySqlRetainedPathResult = Assert.Single(results.Where(result =>
           result.GetProperty("scenarioName").GetString() == "provider-native-bulk-ingestion" &&
@@ -1076,6 +1113,36 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Equal("not-executed", skippedManifestRow.ResultSummary.MetricState);
     Assert.Equal("not executed", skippedManifestRow.ResultSummary.PersistedOutcome);
 
+    var skippedMaintenanceFallbackRow = FindArtifactRow(
+        artifacts,
+        PostgresProviderName,
+        "pit-full-rebuild-maintenance",
+        "dvault-adddvault-fallback");
+    var skippedMaintenanceFallbackManifestRow = CreateBenchmarkBackedProviderEvidenceManifestRow(
+        skippedMaintenanceFallbackRow,
+        "skipped-placeholder");
+
+    Assert.Equal("pit-full-rebuild-maintenance", skippedMaintenanceFallbackManifestRow.Scenario);
+    Assert.Equal("pit-full-rebuild-maintenance", skippedMaintenanceFallbackManifestRow.WorkloadShape);
+    Assert.Null(skippedMaintenanceFallbackManifestRow.ReadShape);
+    Assert.Null(skippedMaintenanceFallbackManifestRow.PlannedStrategy);
+    Assert.Equal(new[] { "NoProviderSpecificStrategyRegistered" }, skippedMaintenanceFallbackManifestRow.FallbackCauses);
+
+    var skippedMaintenanceOptimizedRow = FindArtifactRow(
+        artifacts,
+        PostgresProviderName,
+        "pit-full-rebuild-maintenance",
+        "dvault-adddvaultpostgres-optimized");
+    var skippedMaintenanceOptimizedManifestRow = CreateBenchmarkBackedProviderEvidenceManifestRow(
+        skippedMaintenanceOptimizedRow,
+        "skipped-placeholder");
+
+    Assert.Equal("pit-full-rebuild-maintenance", skippedMaintenanceOptimizedManifestRow.Scenario);
+    Assert.Equal("pit-full-rebuild-maintenance", skippedMaintenanceOptimizedManifestRow.WorkloadShape);
+    Assert.Null(skippedMaintenanceOptimizedManifestRow.ReadShape);
+    Assert.Equal("PostgresDataVaultPitMaintenanceStrategy", skippedMaintenanceOptimizedManifestRow.PlannedStrategy);
+    Assert.Empty(skippedMaintenanceOptimizedManifestRow.FallbackCauses);
+
     var docsOnlyManifestRow = CreateDocsOnlyProviderEvidenceManifestRow();
 
     Assert.Equal("pit-as-of-read", docsOnlyManifestRow.Scenario);
@@ -1131,6 +1198,65 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Equal("SqlServerDataVaultPitMaintenanceService", skippedSqlServerMaintenanceManifestRow.PlannedStrategy);
     Assert.Empty(skippedSqlServerMaintenanceManifestRow.FallbackCauses);
     Assert.Contains("maintenanceScope=FullRebuild", skippedSqlServerMaintenanceManifestRow.ResultSummary.Summary, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void ProviderEvidenceManifestMapsCompletedPostgresPitFullRebuildMaintenanceRows() {
+    var fallbackRow = CreateCompletedPostgresPitMaintenanceRow(
+        "dvault-adddvault-fallback",
+        "provider-neutral-dvault-fallback",
+        "DVault provider-neutral PIT full rebuild path",
+        "<none>",
+        "NoProviderSpecificStrategyRegistered",
+        "ProviderNeutralFallback");
+    var optimizedRow = CreateCompletedPostgresPitMaintenanceRow(
+        "dvault-adddvaultpostgres-optimized",
+        "postgres-optimized-dvault",
+        "DVault PostgreSQL optimized PIT full rebuild path",
+        "PostgresDataVaultPitMaintenanceStrategy",
+        "none",
+        "ProviderStrategySelected");
+
+    AssertCompletedProviderPitMaintenanceRow(
+        fallbackRow,
+        "<none>",
+        "NoProviderSpecificStrategyRegistered",
+        "ProviderNeutralFallback");
+    AssertCompletedProviderPitMaintenanceRow(
+        optimizedRow,
+        "PostgresDataVaultPitMaintenanceStrategy",
+        "none",
+        "ProviderStrategySelected");
+
+    var fallbackManifestRow = CreateBenchmarkBackedProviderEvidenceManifestRow(
+        fallbackRow,
+        "completed-timing");
+    var optimizedManifestRow = CreateBenchmarkBackedProviderEvidenceManifestRow(
+        optimizedRow,
+        "completed-timing");
+
+    Assert.Equal("pit-full-rebuild-maintenance", fallbackManifestRow.WorkloadShape);
+    Assert.Null(fallbackManifestRow.ReadShape);
+    Assert.Equal("DVault provider-neutral PIT full rebuild path", fallbackManifestRow.SelectedPath);
+    Assert.Null(fallbackManifestRow.PlannedPath);
+    Assert.Null(fallbackManifestRow.SelectedStrategy);
+    Assert.Null(fallbackManifestRow.PlannedStrategy);
+    Assert.Equal(new[] { "NoProviderSpecificStrategyRegistered" }, fallbackManifestRow.FallbackCauses);
+    Assert.Equal("present", fallbackManifestRow.ResultSummary.MetricState);
+
+    Assert.Equal("pit-full-rebuild-maintenance", optimizedManifestRow.WorkloadShape);
+    Assert.Null(optimizedManifestRow.ReadShape);
+    Assert.Equal("DVault PostgreSQL optimized PIT full rebuild path", optimizedManifestRow.SelectedPath);
+    Assert.Null(optimizedManifestRow.PlannedPath);
+    Assert.Equal("PostgresDataVaultPitMaintenanceStrategy", optimizedManifestRow.SelectedStrategy);
+    Assert.Null(optimizedManifestRow.PlannedStrategy);
+    Assert.Empty(optimizedManifestRow.FallbackCauses);
+    Assert.Equal("present", optimizedManifestRow.ResultSummary.MetricState);
+    Assert.Contains("maintenanceScope=FullRebuild", optimizedManifestRow.ResultSummary.Summary, StringComparison.Ordinal);
+    Assert.Contains(
+        "pitShapeBoundary=ordinary-hub-parent|shared-driving-key-multi-active-hub-parent|link-parent-non-multi-active",
+        optimizedManifestRow.ResultSummary.Summary,
+        StringComparison.Ordinal);
   }
 
   [Fact]
@@ -1851,8 +1977,8 @@ public sealed class BenchmarkScenarioExecutionTests {
 
       Assert.Contains("Hash key variants: " + expectedVariantLabels, text);
       Assert.Contains(PostgresProviderName + ": skipped - " + NotConfiguredSkipReason, text);
-      Assert.Contains("Recorded 24 benchmark report rows.", text);
-      Assert.Contains("Skipped 24 benchmark report rows.", text);
+      Assert.Contains("Recorded 32 benchmark report rows.", text);
+      Assert.Contains("Skipped 32 benchmark report rows.", text);
       Assert.DoesNotContain("Running " + SqliteProviderName, text);
       Assert.DoesNotContain(SqlServerProviderName + ": skipped", text);
       Assert.DoesNotContain(MySqlProviderName + ": skipped", text);
@@ -1864,7 +1990,7 @@ public sealed class BenchmarkScenarioExecutionTests {
           await File.ReadAllTextAsync(Path.Combine(artifactDirectory, "benchmark-summary.json")).ConfigureAwait(false));
 
       Assert.Equal(BenchmarkProviderFilters.Postgres, artifacts.Context.ProviderFilter);
-      Assert.Equal(24, artifacts.RowsByKey.Count);
+      Assert.Equal(32, artifacts.RowsByKey.Count);
       AssertHashKeyVariantContext(artifacts.Context.HashKeyVariants, BenchmarkHashKeyVariant.BoundedStorageMatrix);
       Assert.Single(artifacts.Context.OptionalProviders);
       AssertOptionalProviderContext(
@@ -2379,7 +2505,7 @@ public sealed class BenchmarkScenarioExecutionTests {
     }
 
     AssertProviderReadRowsStayVisibleAsSkipped(artifacts);
-    AssertProviderMaintenanceRowsStayVisibleAsSkipped(artifacts);
+    AssertProviderPitMaintenanceRowsStayVisibleAsSkipped(artifacts);
     AssertRootHashKeyVariantRowsIncludeExecutionDetail(artifacts);
   }
 
@@ -2423,20 +2549,17 @@ public sealed class BenchmarkScenarioExecutionTests {
     }
   }
 
-  private static void AssertProviderMaintenanceRowsStayVisibleAsSkipped(VerifiedBenchmarkArtifacts artifacts) {
-    foreach (var expectedRow in ExpectedProviderMaintenanceRows) {
+  private static void AssertProviderPitMaintenanceRowsStayVisibleAsSkipped(VerifiedBenchmarkArtifacts artifacts) {
+    foreach (var expectedRow in ExpectedProviderPitMaintenanceRows) {
       var row = FindArtifactRow(
           artifacts,
           expectedRow.ProviderName,
           "pit-full-rebuild-maintenance",
           expectedRow.BaselineName);
-
       Assert.Equal("skipped", row.ExecutionStatus);
       Assert.Equal(0, row.Iterations);
       Assert.Equal("not executed", row.PersistedOutcome);
-      Assert.False(
-          string.IsNullOrWhiteSpace(row.SkipReason),
-          "Provider maintenance row '" + row.Key + "' has no skip reason.");
+      Assert.False(string.IsNullOrWhiteSpace(row.SkipReason), "Provider PIT maintenance row '" + row.Key + "' has no skip reason.");
       AssertSkippedMetricsBlank(row);
       foreach (var fragment in expectedRow.RequiredExecutionDetailFragments) {
         Assert.Contains(fragment, row.ExecutionDetail, StringComparison.Ordinal);
@@ -2531,6 +2654,91 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Contains("readShapeProviderStatus=ProviderStrategySelected", row.ExecutionDetail, StringComparison.Ordinal);
     Assert.Contains("fallbackCauses=none", row.ExecutionDetail, StringComparison.Ordinal);
     Assert.Contains("readShapeFallbackCauses=none", row.ExecutionDetail, StringComparison.Ordinal);
+  }
+
+  private static void AssertCompletedProviderPitMaintenanceRow(
+      BenchmarkArtifactRow row,
+      string expectedSelectedStrategy,
+      string expectedFallbackCauses,
+      string expectedStrategyStatus) {
+    Assert.Equal("completed", row.ExecutionStatus);
+    Assert.True(row.Iterations > 0, "Completed PostgreSQL PIT maintenance row '" + row.Key + "' has no iterations.");
+    Assert.True(
+        string.IsNullOrEmpty(row.SkipReason),
+        "Completed PostgreSQL PIT maintenance row '" + row.Key + "' has a skip reason.");
+    AssertCompletedMetricsPresent(row);
+    Assert.Contains("maintenanceScope=FullRebuild", row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("pitMaintenanceStrategyStatus=" + expectedStrategyStatus, row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("provider=" + KnownProviderNames.Postgres, row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("selectedStrategy=" + expectedSelectedStrategy, row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("fallbackCauses=" + expectedFallbackCauses, row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains(
+        "pitShapeBoundary=ordinary-hub-parent|shared-driving-key-multi-active-hub-parent|link-parent-non-multi-active",
+        row.ExecutionDetail,
+        StringComparison.Ordinal);
+    Assert.Contains("shapeCount=3", row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("parentHashKeys=3", row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("rowsDeleted=2", row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("rowsWritten=10", row.ExecutionDetail, StringComparison.Ordinal);
+    Assert.Contains("10 total PIT rows rebuilt", row.PersistedOutcome, StringComparison.Ordinal);
+  }
+
+  private static BenchmarkArtifactRow CreateCompletedPostgresPitMaintenanceRow(
+      string baselineName,
+      string strategyFamily,
+      string executionPath,
+      string selectedStrategy,
+      string fallbackCauses,
+      string strategyStatus) {
+    var executionDetail =
+        "scenario=pit-full-rebuild-maintenance" +
+        "; provider=" + PostgresProviderName +
+        "; baseline=" + baselineName +
+        "; strategyFamily=" + strategyFamily +
+        "; executionPath=" + executionPath +
+        "; maintenanceScope=FullRebuild" +
+        "; selectedStrategy=" + selectedStrategy +
+        (string.Equals(selectedStrategy, "<none>", StringComparison.Ordinal)
+            ? "; providerSpecificPitMaintenanceStrategy=fallback"
+            : "; plannedPitMaintenanceStrategy=" + selectedStrategy) +
+        "; fallbackCauses=" + fallbackCauses +
+        "; pitShapeBoundary=ordinary-hub-parent|shared-driving-key-multi-active-hub-parent|link-parent-non-multi-active" +
+        "; hashKeyVariant=sha256-v1-hex" +
+        "; stableHashAlgorithm=sha256-v1" +
+        "; digestBytes=32" +
+        "; hashKeyStorage=HexString" +
+        "; hashKeyPayloadBytes=64" +
+        "; pitMaintenanceStrategyStatus=" + strategyStatus +
+        "; provider=" + KnownProviderNames.Postgres +
+        "; selectedStrategy=" + selectedStrategy +
+        "; candidates=" + (string.Equals(selectedStrategy, "<none>", StringComparison.Ordinal) ? "0" : "1") +
+        "; fallbackCauses=" + fallbackCauses +
+        "; shapeCount=3" +
+        "; parentHashKeys=3" +
+        "; rowsDeleted=2" +
+        "; rowsWritten=10";
+
+    return new BenchmarkArtifactRow(
+        "pit-full-rebuild-maintenance",
+        PostgresProviderName,
+        baselineName,
+        strategyFamily,
+        "3 PIT shapes, 3 parent identities, 10 rebuilt PIT rows",
+        "full rebuild across PostgreSQL supported PIT maintenance shapes",
+        "completed",
+        string.Empty,
+        3,
+        "12.345",
+        "11.111",
+        "13.333",
+        "123456",
+        "120000",
+        "130000",
+        executionDetail,
+        "ordinary-hub-parent wrote 3 PIT rows; " +
+            "shared-driving-key-multi-active-hub-parent wrote 4 PIT rows; " +
+            "link-parent-non-multi-active wrote 3 PIT rows; " +
+            "10 total PIT rows rebuilt");
   }
 
   private static void AssertCompletedOracleReadArtifactRow(
@@ -3269,7 +3477,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       string BaselineName,
       string[] RequiredExecutionDetailFragments);
 
-  private sealed record ExpectedProviderMaintenanceRow(
+  private sealed record ExpectedProviderPitMaintenanceRow(
       string ProviderName,
       string BaselineName,
       string[] RequiredExecutionDetailFragments);

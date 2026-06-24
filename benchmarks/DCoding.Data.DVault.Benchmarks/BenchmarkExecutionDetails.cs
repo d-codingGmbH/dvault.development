@@ -55,12 +55,12 @@ internal static class BenchmarkExecutionDetails {
   }
 
   private static string GetExecutionPath(IScenarioBenchmark benchmark) {
-    if (benchmark is ProviderNativeBulkIngestionBenchmark providerNativeBulkIngestionBenchmark) {
-      return providerNativeBulkIngestionBenchmark.ExecutionPathDetail;
-    }
-
     if (benchmark is PitFullRebuildMaintenanceBenchmark pitFullRebuildMaintenanceBenchmark) {
       return pitFullRebuildMaintenanceBenchmark.ExecutionPathDetail;
+    }
+
+    if (benchmark is ProviderNativeBulkIngestionBenchmark providerNativeBulkIngestionBenchmark) {
+      return providerNativeBulkIngestionBenchmark.ExecutionPathDetail;
     }
 
     if (IsReadModelScenario(benchmark.ScenarioName)) {

@@ -1,70 +1,55 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the ticket against current repository contracts: PostgreSQL PIT maintenance already exists as a bounded provider strategy, but the benchmark harness still lacks a `pit-full-rebuild-maintenance` lane, so this ticket is the benchmark and evidence slice for PostgreSQL only. No bounded child tickets, relation writes, description edits, attachments, or planning documents were materialized.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Repository evidence already fixes the maintenance scenario name as `pit-full-rebuild-maintenance`; `pit-as-of-read` and `bridge-traversal-read` must not be reused as PIT maintenance evidence.
 - `AddDVaultPostgres()` already registers `PostgresDataVaultPitMaintenanceStrategy`, and the current supported optimized full-rebuild shapes are ordinary hub-parent, shared-driving-key multi-active hub-parent, and link-parent non-multi-active PITs on clean Npgsql-backed contexts with no ambient caller transaction.
 - The current benchmark harness emits provider-native save plus latest-satellite, PIT, and bridge read rows, but no PIT full-rebuild maintenance rows yet, so this ticket is additive benchmark coverage rather than capability design.
 - No bounded ticket writes were applied during refinement.
 
-### Scope In
+Scope In
 - Add PostgreSQL `pit-full-rebuild-maintenance` benchmark coverage under the existing benchmark triplet and run-context contract.
 - Compare `dvault-adddvault-fallback` provider-neutral full rebuilds with `dvault-adddvaultpostgres-optimized` on the PostgreSQL external-provider lane.
 - Cover the repository-approved PostgreSQL full-rebuild shape boundary: ordinary hub-parent, shared-driving-key multi-active hub-parent, and link-parent non-multi-active PITs.
 - Add verifier and test coverage that preserves both completed-row and skipped-placeholder behavior for the new maintenance lane.
 
-### Scope Out
+Scope Out
 - Any reinterpretation of `pit-as-of-read` or `bridge-traversal-read` as PIT maintenance timing evidence.
 - Ambient-caller-transaction optimization, dirty-context optimization, `MaintainParentsAsync(...)`, automatic PIT refresh, or bridge-maintenance push-down.
 - SQL Server, MySQL, Oracle, or DB2 PIT maintenance benchmark lanes beyond any reusable helper extraction a developer needs internally.
 - New artifact files or benchmark schema changes beyond the existing `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` contract.
 
-## Acceptance Criteria
-- With PostgreSQL configured, benchmark output includes `pit-full-rebuild-maintenance` rows for `PostgreSQL external provider` with baselines `dvault-adddvault-fallback` and `dvault-adddvaultpostgres-optimized`.
-- The PostgreSQL optimized row or rows identify `maintenanceScope=FullRebuild`, `selectedStrategy=PostgresDataVaultPitMaintenanceStrategy`, and deterministic shape identity for the supported PostgreSQL full-rebuild boundary.
-- Provider-neutral comparator or fallback rows keep `selectedStrategy=<none>` and preserve bounded PIT maintenance fallback causes when the PostgreSQL provider path is declined.
-- When `DVAULT_TEST_POSTGRES_CONNECTION_STRING` is absent, the PostgreSQL maintenance rows remain visible in the root artifact triplet as `executionStatus=skipped`, `iterations=0`, blank or null metrics, normalized skip reason, and deterministic planned execution detail.
-- Repository tests or verifiers fail if the new lane disappears, uses the wrong scenario family, drops required execution-detail tokens, or violates the shared benchmark artifact contract.
-
-## Definition of Done
-- Benchmark runner, scenario implementation, and artifact generation emit the new PostgreSQL maintenance lane without introducing a second artifact schema or filename set.
-- Benchmark README and repository-facing guidance list the new PIT full-rebuild maintenance lane consistently with the existing benchmark contract.
-- Automated tests cover both completed selected-strategy behavior and skipped-placeholder behavior for the PostgreSQL maintenance row family.
-- A provider-configured artifact bundle can be generated or checked in for later evidence citation, while the root quick triplet continues to act as the skipped-placeholder baseline when PostgreSQL is not configured.
-
-## Implementation Notes
-- Reuse the existing scenario name `pit-full-rebuild-maintenance` and the shared benchmark triplet; do not add maintenance-specific artifact columns or filenames.
-- Keep the comparison on the PostgreSQL external-provider lane so `dvault-adddvault-fallback` is a true provider-neutral comparator against the same Npgsql-backed workload, not a SQLite surrogate.
-- Encode shape differentiation through bounded row metadata and deterministic `executionDetail` tokens such as `maintenanceScope=FullRebuild` and `pitShapeBoundary=...`, rather than inventing a new artifact schema.
-- Use the existing PostgreSQL fallback vocabulary from `DataVaultPitMaintenanceStrategyFallbackCauseKind`; caller-transaction and unsupported-shape cases remain fallback evidence, not optimized timing claims.
-- No child tickets, relation changes, description updates, attachments, or planning documents were materialized during this refinement pass.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the PostgreSQL lane lands, should the sibling SQL Server PIT maintenance benchmark work reuse the same `pit-full-rebuild-maintenance` scenario family and token contract while keeping its own narrower fallback vocabulary?
 
-## Risks
+Risks
 - Completed timing evidence still depends on an opt-in PostgreSQL environment; absent or unreachable PostgreSQL must yield skipped-placeholder rows rather than omitted rows.
 - If implementation blends caller-transaction fallback cases or unsupported PIT shapes into optimized timing claims, it will violate the current PIT maintenance evidence boundary.
 - Because PostgreSQL supports three approved full-rebuild shapes, row metadata must stay deterministic enough for later evidence citations to distinguish the exercised shape from general provider availability.
 
-## Split Recommendations
+Split recommendations
 - Keep SQL Server PIT maintenance timing as a sibling ticket because it uses a different runtime seam (`SqlServerDataVaultPitMaintenanceService`) and fallback vocabulary from PostgreSQL.
 - Any future MySQL, Oracle, or DB2 PIT maintenance benchmarking should remain separate from this ticket until their runtime maintenance lanes are implemented or explicitly accepted beyond the current repository boundary.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Add a benchmark lane for PostgreSQL PIT full rebuilds on supported shapes, comparing provider-specific strategy selection with provider-neutral fallback. Acceptance: skipped rows remain visible when the connection string is absent.
+Run mode
+- apply: planned updates are applied after this comment

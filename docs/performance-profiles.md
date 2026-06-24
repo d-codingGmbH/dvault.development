@@ -6,7 +6,7 @@ This guide is the detailed performance-profile reference for the current DVault 
 
 ## Evidence Baseline
 
-Use the root benchmark artifact triplet as the quick local SQLite and skipped-provider baseline for the row names and timing values in this guide:
+Use the root benchmark artifact triplet as the quick local SQLite and skipped-provider baseline for the row names and timing values in this guide. It also preserves PostgreSQL `pit-full-rebuild-maintenance` skipped-placeholder row identity for the provider-neutral comparator and optimized provider strategy when `DVAULT_TEST_POSTGRES_CONNECTION_STRING` is unset:
 
 - [benchmark-summary.md](../benchmark-summary.md)
 - [benchmark-summary.csv](../benchmark-summary.csv)
@@ -66,7 +66,7 @@ Use [Provider Optimization Gap Matrix](plans/provider-optimization-gap-matrix.md
 
 ## v0.45.0 PIT Maintenance Prototype Boundary
 
-The v0.45.0 PIT maintenance prototypes are source and test evidence, not benchmark-backed timing evidence. Do not cite the provider-maintenance work as a performance win unless a later ticket preserves a benchmark artifact triplet for the exact maintenance workload, provider, run context, and fallback rows.
+The v0.45.0 PIT maintenance prototypes are source and test evidence, not benchmark-backed timing evidence. The root quick triplet now includes PostgreSQL `pit-full-rebuild-maintenance` skipped placeholders so row identity, fallback vocabulary, `maintenanceScope=FullRebuild`, and the supported PostgreSQL `pitShapeBoundary` stay visible when PostgreSQL is unconfigured. Do not cite the provider-maintenance work as a performance win unless a provider-configured artifact triplet preserves the exact maintenance workload, provider, run context, and fallback rows.
 
 This section is the maintenance evidence contract for the performance guide. It complements [DVault v0.45.0 Release Notes](releases/v0.45.0.md) and [DVault V1 PIT And Bridge Boundary](architecture/dvault-v1-pit-bridge-boundary.md); it does not create a parallel maintenance timing table.
 
@@ -145,7 +145,7 @@ The repository evidence is the artifact triplet plus verifier coverage, not copi
 
 - `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` are emitted from one run and contain the same result rows.
 - The checked-in run keeps the four profile categories visible: `SmallAppLocalVault`, `MediumChunkedIngestion`, `StagedProviderIngestion`, and `ReadModelHeavy`.
-- Provider guidance rows stay visible for PostgreSQL, SQL Server, MySQL, Oracle, and DB2 even when their external provider lanes are skipped, including provider-native ingestion rows and read-model rows.
+- Provider guidance rows stay visible for PostgreSQL, SQL Server, MySQL, Oracle, and DB2 even when their external provider lanes are skipped, including provider-native ingestion rows, read-model rows, and PostgreSQL PIT full-rebuild maintenance rows.
 - Provider-read evidence separates completed SQLite latest-satellite, PIT, and bridge timing rows, completed PostgreSQL, SQL Server, MySQL, Oracle, and DB2 read rows in the 2026-06-23 closure bundle, and root optional-provider read guidance rows that may remain skipped when connection strings are unset.
 - Regression-budget guidance stays attached to the shared artifact contract instead of being inferred from one timing row.
 
