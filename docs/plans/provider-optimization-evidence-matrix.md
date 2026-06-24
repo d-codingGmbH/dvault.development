@@ -5,9 +5,9 @@ Ticket: 06FBSC3N7ZFVQW3AV2JJ8T7Q7W
 
 ## Purpose
 
-This document is the canonical lookup surface for DVault provider optimization evidence rows. Later tickets should cite these matrix rows by scenario, provider, baseline, and evidence posture instead of restating benchmark notes or mixing measured timing evidence with skipped, diagnostics-only, smoke-only, or storage-footprint evidence.
+This document is the canonical lookup surface for DVault provider optimization evidence rows. Later tickets should cite these matrix rows by scenario, provider, baseline, and evidence posture instead of restating benchmark notes or mixing measured timing evidence with skipped, diagnostics-only, smoke-only, storage-footprint, or docs-only contract guidance.
 
-The matrix reuses the existing benchmark artifact contract vocabulary from [Performance Evidence And Benchmark Artifact Contract](performance-evidence-benchmark-artifact-contract.md). It does not add benchmark fields, change benchmark schemas, or widen successful timing claims beyond completed rows in checked-in artifact bundles. The root quick benchmark triplet remains the SQLite-local and skipped optional-provider baseline. The 2026-06-23 provider optimization closure bundle is the current completed-timing source for PostgreSQL, SQL Server, MySQL, Oracle, and DB2 provider-native save rows plus latest-satellite, PIT, and bridge read rows. Earlier v0.32.0 smoke-read, SQL Server bulk-threshold, MySQL latest-satellite, and DB2 hotspot bundles remain historical run-context evidence. Provider binary-vs-hex hash-key storage participation is cited from the checked-in ticket `06FE4R1N2ADN77NDFDP4GR7020` bundle, which preserves completed, skipped, and failed rows in one provider-configured run context. Staged DB2 bulk, provider-native chunk execution, dirty-context saves, unsupported read shapes, write-side bridge-maintenance push-down, and failed binary hash-key storage rows remain outside completed timing evidence.
+The matrix reuses the existing benchmark artifact contract vocabulary from [Performance Evidence And Benchmark Artifact Contract](performance-evidence-benchmark-artifact-contract.md). It does not add benchmark fields, change benchmark schemas, or widen successful timing claims beyond completed rows in checked-in artifact bundles. PIT full-rebuild maintenance rows are a separate row family from `pit-as-of-read` and `bridge-traversal-read`; read rows prove strategy selection over already-maintained read models and cannot be cited as PIT maintenance timing evidence. The root quick benchmark triplet remains the SQLite-local and skipped optional-provider baseline. The 2026-06-23 provider optimization closure bundle is the current completed-timing source for PostgreSQL, SQL Server, MySQL, Oracle, and DB2 provider-native save rows plus latest-satellite, PIT, and bridge read rows. Earlier v0.32.0 smoke-read, SQL Server bulk-threshold, MySQL latest-satellite, and DB2 hotspot bundles remain historical run-context evidence. Provider binary-vs-hex hash-key storage participation is cited from the checked-in ticket `06FE4R1N2ADN77NDFDP4GR7020` bundle, which preserves completed, skipped, and failed rows in one provider-configured run context. Staged DB2 bulk, provider-native chunk execution, dirty-context saves, unsupported read shapes, write-side bridge-maintenance push-down, and failed binary hash-key storage rows remain outside completed timing evidence.
 
 ## Evidence Postures
 
@@ -26,6 +26,8 @@ For the v0.42 provider performance evidence and tuning baseline, downstream work
 - Cite the matrix row identity with `scenario`, `provider`, `baseline`, and `posture`.
 - Treat only `completed-timing` rows with a preserved provider-configured artifact triplet and run context as measured timing evidence.
 - Keep `skipped-placeholder`, `diagnostics-only`, `smoke-only`, and `storage-footprint` rows out of measured timing claims.
+- Treat `pit-full-rebuild-maintenance` rows as the only PIT full-rebuild maintenance timing row family. Do not promote `pit-as-of-read` or `bridge-traversal-read` rows into maintenance evidence.
+- Require every completed PIT maintenance timing claim to cite the scenario, provider, baseline or comparator, selected provider strategy or provider-neutral fallback posture, bounded fallback causes when present, run context, and preserved benchmark artifact triplet.
 - Keep PostgreSQL, SQL Server, MySQL, Oracle, and DB2 latest-satellite tuning limited to the already documented hub-parent, non-multi-active shapes.
 - Fall back to provider-neutral save or read behavior when the matching `DVAULT_TEST_*` connection string is unset, provider diagnostics do not select the expected strategy, the provider mismatches, the context is dirty for provider save work, the read shape is unsupported or incomplete, PIT/bridge maintenance is stale, or the row lacks completed provider-configured benchmark evidence.
 - Do not promote maintained-bridge read rows into write-side bridge-maintenance push-down claims. Bridge maintenance push-down needs its own source seam, diagnostics vocabulary, parity coverage, and benchmark artifact lane.
@@ -59,7 +61,7 @@ Provider-specific tuning thresholds are starting gates, not universal promises:
 - Hash-key storage contract: [Hash Key Storage Profile Contract](hash-key-storage-profile-contract.md).
 - Hash-key storage evidence entry point: [hash-key-footprint.md](../../hash-key-footprint.md), [hash-key-footprint.csv](../../hash-key-footprint.csv), [hash-key-footprint.json](../../hash-key-footprint.json), and the carried-forward [06F9GF66B10J4K7RBDTJ9NQRQC SQLite hash-key storage matrix bundle](../../artifacts/benchmarks/06F9GF66B10J4K7RBDTJ9NQRQC-hash-key-storage-matrix-sqlite-20260612/).
 - Row verifier coverage: [BenchmarkScenarioExecutionTests.cs](../../tests/DCoding.Data.DVault.Tests/Integration/BenchmarkScenarioExecutionTests.cs).
-- Closed fallback vocabularies: [DataVaultSaveStrategyFallbackCauseKind.cs](../../src/DCoding.Data.DVault/DataVaultSaveStrategyFallbackCauseKind.cs), [DataVaultReadStrategyFallbackCauseKind.cs](../../src/DCoding.Data.DVault/DataVaultReadStrategyFallbackCauseKind.cs), and [DataVaultChunkedSaveStateFallbackCauseKind.cs](../../src/DCoding.Data.DVault/DataVaultChunkedSaveStateFallbackCauseKind.cs).
+- Closed fallback vocabularies: [DataVaultSaveStrategyFallbackCauseKind.cs](../../src/DCoding.Data.DVault/DataVaultSaveStrategyFallbackCauseKind.cs), [DataVaultReadStrategyFallbackCauseKind.cs](../../src/DCoding.Data.DVault/DataVaultReadStrategyFallbackCauseKind.cs), [DataVaultChunkedSaveStateFallbackCauseKind.cs](../../src/DCoding.Data.DVault/DataVaultChunkedSaveStateFallbackCauseKind.cs), [DataVaultPitMaintenanceStrategyFallbackCauseKind.cs](../../src/DCoding.Data.DVault/DataVaultPitMaintenanceStrategyFallbackCauseKind.cs), and [SqlServerPitMaintenanceFallbackCauseKind.cs](../../src/DCoding.Data.DVault.SqlServer/SqlServerPitMaintenanceFallbackCauseKind.cs).
 
 ## Provider Evidence Manifest V1
 
@@ -86,13 +88,13 @@ Each `rows[]` item uses deterministic camelCase fields in this order:
 | `evidencePosture` | string | Required. Use one of the closed posture values below. |
 | `executionStatus` | string or null | Required. Use `completed`, `skipped`, or `failed` for benchmark-backed rows. Use `null` for docs-only rows without a benchmark execution. |
 | `skipReason` | string or null | Required. Use the benchmark skip or failure reason for skipped and failed rows; otherwise `null`. |
-| `workloadShape` | string or null | Required. Use a bounded workload label such as `provider-native-bulk-ingestion` for save/workload rows; otherwise `null`. |
-| `readShape` | string or null | Required. Use the closed read-shape vocabulary for read rows; otherwise `null`. |
+| `workloadShape` | string or null | Required. Use a bounded workload label such as `provider-native-bulk-ingestion` for save/workload rows or `pit-full-rebuild-maintenance` for PIT maintenance rows; otherwise `null`. |
+| `readShape` | string or null | Required. Use the closed read-shape vocabulary for read rows. PIT maintenance rows must use `null` because maintenance evidence is not read evidence. |
 | `selectedPath` | string or null | Required. Use the selected `executionPath` only when the row completed or diagnostics selected a provider path; otherwise `null`. |
 | `plannedPath` | string or null | Required. Use the planned `executionPath` for skipped placeholder or docs-only candidate rows; otherwise `null`. |
-| `selectedStrategy` | string or null | Required. Use the selected provider strategy only when the row completed or diagnostics selected it; convert `<none>` to `null`. |
+| `selectedStrategy` | string or null | Required. Use the selected provider strategy only when the row completed or diagnostics selected it; convert `<none>` to `null`. Provider-neutral PIT maintenance comparator rows use `null` and identify the provider-neutral fallback posture through `selectedPath` or `plannedPath`. |
 | `plannedStrategy` | string or null | Required. Use the planned provider strategy for skipped placeholder or docs-only candidate rows; convert `<none>` to `null`. |
-| `fallbackCauses` | array of strings | Required. Use an empty array when no bounded fallback cause applies; never serialize `none` as a cause. |
+| `fallbackCauses` | array of strings | Required. Use an empty array when no bounded fallback cause applies; never serialize `none` as a cause. PIT maintenance rows use bounded PIT maintenance fallback enum names here. |
 | `resultSummary` | object | Required. Use the bounded result summary shape below. |
 
 The `resultSummary` object uses these fields in this order:
@@ -110,7 +112,7 @@ Closed vocabularies:
 - `executionStatus`: `completed`, `skipped`, `failed`, or `null` for docs-only rows.
 - `readShape`: `LatestSatellite`, `PitAsOf`, `Bridge`, or `null`.
 - `metricState`: `present`, `not-executed`, `not-applicable`.
-- `fallbackCauses`: enum names from `DataVaultSaveStrategyFallbackCauseKind`, `DataVaultReadStrategyFallbackCauseKind`, and `DataVaultChunkedSaveStateFallbackCauseKind`; use `[]` when the detail token says `none`.
+- `fallbackCauses`: enum names from `DataVaultSaveStrategyFallbackCauseKind`, `DataVaultReadStrategyFallbackCauseKind`, `DataVaultChunkedSaveStateFallbackCauseKind`, `DataVaultPitMaintenanceStrategyFallbackCauseKind`, and `SqlServerPitMaintenanceFallbackCauseKind`; use `[]` when the detail token says `none`.
 
 ### Source Mapping
 
@@ -135,6 +137,8 @@ Provider facts map from deterministic `executionDetail` tokens emitted by `Bench
 - `readShape` supplies `readShape`.
 - `fallbackCauses`, `readShapeFallbackCauses`, and `stagedProviderBulkFallbackCauses` supply `fallbackCauses`; split pipe-delimited values and treat `none` as `[]`.
 - Boundary tokens such as `transfer`, `nativeBulkBoundary`, `stagedBulkBoundary`, `smallBatchBoundary`, `oracleBulkBoundary`, `stagedOracleBulk`, `db2SaveBoundary`, `cleanupBoundary`, and `providerSpecificReadStrategy` are allowed inputs for `resultSummary.summary` and docs text, but they do not create new top-level manifest fields in v1.
+- PIT maintenance timing rows use `scenario=pit-full-rebuild-maintenance`, `workloadShape=pit-full-rebuild-maintenance`, and `readShape=null`. Their `executionDetail` must include `maintenanceScope=FullRebuild`, a selected provider strategy or `selectedStrategy=<none>` for provider-neutral fallback posture, and `fallbackCauses` populated from the bounded PIT maintenance fallback vocabularies when a provider path is declined.
+- PIT maintenance boundary tokens such as `maintenanceScope` and `pitShapeBoundary` are allowed inputs for `resultSummary.summary` and docs text, but they do not create new top-level manifest fields in v1.
 
 Docs-owned rows use the same shape with `executionStatus=null`, `iterations=null`, `metricState=not-applicable`, and `persistedOutcome=null` unless a checked-in benchmark artifact backs the row. Do not cite docs-owned `diagnostics-only`, `smoke-only`, or `storage-footprint` rows as measured timing evidence.
 
@@ -274,6 +278,7 @@ Docs-owned rows use the same shape with `executionStatus=null`, `iterations=null
 - MySQL evidence includes completed provider-configured timing rows in the 2026-06-23 closure bundle for fallback save, retained multi-row save, bounded staged save, deliberate large mixed provider-neutral fallback, latest-satellite, PIT, and bridge rows.
 - Oracle evidence includes completed provider-configured timing rows in the 2026-06-23 closure bundle for fallback save, direct optimized save, latest-satellite, PIT, and bridge rows. Oracle latest/PIT/bridge timings include the ODP.NET LOB-prefetch read-command tuning.
 - DB2 evidence includes completed provider-configured timing rows in the 2026-06-23 closure bundle for fallback save, clean-context optimized save selected by `Db2DataVaultSaveStrategy`, and supported latest-satellite/PIT/bridge read rows selected by `Db2DataVaultReadStrategy`. DB2 save evidence uses the measured 1000-row command cap and still excludes staged DB2 bulk, provider-native chunk execution, dirty-context save claims, unsupported latest-satellite shapes, stale PIT/bridge maintenance, and incomplete read-shape evidence.
+- PIT full-rebuild maintenance evidence is not completed by read evidence. The row family is limited to the provider-neutral comparator, PostgreSQL, and SQL Server lanes described below until sibling benchmark tickets land preserved artifact triplets.
 - Binary-vs-hex storage comparisons are SQLite-local for the footprint baseline and provider-configured for the ticket `06FE4R1N2ADN77NDFDP4GR7020` bundle. Cite only completed rows as timing evidence, and keep failed or skipped rows as caveats and follow-up signals.
 
 ## Save Matrix
@@ -329,6 +334,20 @@ The root benchmark triplet keeps optional PostgreSQL, SQL Server, MySQL, Oracle,
 | `pit-as-of-read` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle | Completed with mean `27.207` ms, `Db2DataVaultReadStrategy`, `readShape=PitAsOf`, and no fallback causes. |
 | `bridge-traversal-read` | DB2 external provider | `dvault-adddvaultdb2-optimized` | `db2-optimized-dvault` | `completed-timing` | 2026-06-23 closure bundle | Completed with mean `4.831` ms, `Db2DataVaultReadStrategy`, `readShape=Bridge`, and no fallback causes. |
 | Latest-satellite/PIT/bridge read smoke | DB2 external provider | `AddDVaultDb2()` / `Db2DataVaultReadStrategy` | `db2-optimized-dvault` | `diagnostics-only` and `smoke-only` | DB2 provider registration and DB2 smoke evidence | DB2 registers diagnostics-gated latest-satellite/PIT/bridge read dispatch and opt-in representative smoke coverage. This supports strategy behavior but should not be cited instead of the 2026-06-23 closure bundle for measured timing. |
+
+## PIT Full-Rebuild Maintenance Row Contract
+
+The PIT maintenance timing row family uses scenario `pit-full-rebuild-maintenance`. It is distinct from `pit-as-of-read` and `bridge-traversal-read`: PIT and bridge read rows only prove reads over already-maintained rows, while maintenance rows prove execution of `IDataVaultPitMaintenanceService.RebuildAsync(...)` for one generated PIT table.
+
+Completed PIT maintenance timing claims must have `posture=completed-timing`, `workloadShape=pit-full-rebuild-maintenance`, `readShape=null`, `maintenanceScope=FullRebuild` in `executionDetail`, a preserved benchmark artifact triplet, and the same run context required by the shared benchmark artifact contract. Skipped, unconfigured, diagnostics-only, smoke-only, docs-only guidance, or placeholder rows are not maintenance timing claims.
+
+| Lane | Scenario | Provider | Baseline/comparator | Strategy family | Required strategy or fallback posture | Supported shape boundary | Current claim posture |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Provider-neutral comparator | `pit-full-rebuild-maintenance` | Provider-neutral DVault comparator | `dvault-adddvault-fallback` | `provider-neutral-dvault-fallback` | `selectedStrategy=<none>` with selected or planned path identifying provider-neutral full-rebuild maintenance. | Full rebuild through the default provider-neutral `IDataVaultPitMaintenanceService` for repository-supported PIT declarations. | Contract row only until sibling provider-neutral benchmark artifacts land; not timing evidence. |
+| PostgreSQL PIT full rebuild | `pit-full-rebuild-maintenance` | PostgreSQL external provider | `dvault-adddvaultpostgres-optimized` compared with `dvault-adddvault-fallback` | `postgres-optimized-dvault` | `PostgresDataVaultPitMaintenanceStrategy` when selected; otherwise provider-neutral fallback with bounded `DataVaultPitMaintenanceStrategyFallbackCauseKind` causes. | Clean Npgsql-backed full rebuilds of ordinary hub-parent PITs, shared-driving-key multi-active hub-parent PITs, and link-parent non-multi-active PITs. | Contract row only until PostgreSQL benchmark artifacts land; not timing evidence. |
+| SQL Server PIT full rebuild | `pit-full-rebuild-maintenance` | SQL Server external provider | `dvault-adddvaultsqlserver-optimized` compared with `dvault-adddvault-fallback` | `sqlserver-optimized-dvault` | `SqlServerDataVaultPitMaintenanceService` when selected; otherwise provider-neutral fallback with bounded `SqlServerPitMaintenanceFallbackCauseKind` causes. | Clean ordinary hub-parent PIT full rebuilds only; maintain-parents, multi-active PITs, link-parent PITs, dirty contexts, provider mismatch, and no-savepoint caller transactions are fallback or non-goal cases. | Contract row only until SQL Server benchmark artifacts land; not timing evidence. |
+
+The required artifact triplet for each completed row is `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json` under the sibling benchmark ticket's preserved artifact label. The row must preserve scenario identity, provider, baseline/comparator identity, selected strategy or provider-neutral fallback posture, bounded fallback causes when present, dataset and shape context, iteration and warmup counts, provider filter, optional-provider configuration status, runtime and hardware context, timing/allocation metrics, and persisted outcome. A row that lacks the artifact triplet, run context, or bounded execution-detail tokens remains guidance only even when diagnostics prove a strategy candidate.
 
 ## Deferred Bridge Maintenance Push-Down
 
@@ -389,6 +408,22 @@ Read claims must stop or fall back when PIT or bridge rows are not explicitly ma
 - `IncompleteReadShapeEvidence`
 - `StaleReadModelMaintenance`
 
+PIT full-rebuild maintenance claims must stop or fall back when the required artifact row is skipped, the provider connection string is missing, the provider package is not registered, diagnostics do not select the expected PIT maintenance strategy, or any of these bounded fallback causes apply:
+
+- `ProviderNameMismatch`
+- `UnknownOrUnregisteredProviderName`
+- `NoProviderSpecificStrategyRegistered`
+- `DirtyDbContext`
+- `UnsupportedPitShape`
+- `IncompleteMaintenanceShapeEvidence`
+- `StrategyDeclined`
+- `CurrentTransactionSavepointUnavailable`
+- `UnsupportedPitParent`
+- `MultiActivePitUnsupported`
+- `MaintainParentsUnsupported`
+
+`MaintainParentsUnsupported` identifies the SQL Server parent-maintenance fallback path and is not a completed `pit-full-rebuild-maintenance` timing row. PIT `MaintainParentsAsync(...)`, bridge maintenance push-down, and provider expansion beyond PostgreSQL and SQL Server stay outside this matrix slice.
+
 Provider-specific threshold facts remain part of the stop conditions: PostgreSQL staged COPY starts at 60-plus operations, SQL Server native bulk starts at 100-plus operations, mixed SQL Server hub/link batches start at 900-plus operations, SQL Server accepts at most 500 satellite operations, MySQL native multi-row starts at 50-plus operations for eligible batches, MySQL staged bulk starts at 100-plus operations but large hub/link-containing batches above 303 operations return to provider-neutral fallback, Oracle direct optimized batching starts at 50-plus operations and accepts at most 10000 satellite operations, and DB2 has no staged bulk, provider-native chunk execution, dirty-context save support, or unsupported latest-satellite shape support.
 
 ## Citation Examples
@@ -423,4 +458,9 @@ claim: measured DB2 PIT read evidence, valid only with artifacts/benchmarks/06FF
 ```text
 matrix row: scenario=pit-as-of-read; provider=PostgreSQL external provider; baseline=dvault-adddvaultpostgres-optimized; posture=completed-timing
 claim: measured PostgreSQL PIT read evidence, valid only with artifacts/benchmarks/06FF0000000000000000000000-provider-optimization-closure-20260623/postgres-podman-live/benchmark-summary.* and its run context
+```
+
+```text
+matrix row: scenario=pit-full-rebuild-maintenance; provider=PostgreSQL external provider; baseline=dvault-adddvaultpostgres-optimized; posture=completed-timing
+claim: measured PostgreSQL PIT full-rebuild maintenance evidence only after a sibling benchmark ticket preserves a completed artifact triplet with maintenanceScope=FullRebuild, selectedStrategy=PostgresDataVaultPitMaintenanceStrategy, bounded fallbackCauses, and run context; do not cite pit-as-of-read rows for this claim
 ```
