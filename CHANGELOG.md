@@ -2,6 +2,17 @@
 
 This changelog summarizes the public release-note trail. The detailed release records remain under [docs/releases/](docs/releases/); those files are the source of truth for scope, evidence, non-goals, and validation notes.
 
+## v0.47.0 - Provider Maintenance Documentation Baseline
+
+- Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.47.0` / `net8.0` / EF Core 8 and `10.47.0` / `net10.0` / EF Core 10.
+- Records that the v0.47.0 release label maps to consumer package versions `8.47.0` and `10.47.0`, not to a `0.47.0` package version.
+- Aligns provider-maintenance documentation around the current source and test backed boundary: PostgreSQL and SQL Server PIT maintenance remain explicit lanes, MySQL adds the official-provider ordinary hub-parent full-rebuild lane, Oracle remains deferred, DB2 remains future implementation work, and bridge maintenance stays provider-neutral.
+- Preserves the v0.46.0 provider optimization closure bundle as the completed timing source for provider-native save, latest-satellite read, PIT read, and bridge read rows.
+- Updates the performance profiles and provider evidence matrix so `pit-as-of-read` and `bridge-traversal-read` rows remain read evidence only, while completed PIT full-rebuild maintenance timing still requires a dedicated `pit-full-rebuild-maintenance` artifact triplet and run context.
+- Updates README, package compatibility, manual publication, local validation, production adoption, analyzer guidance, package creation, and package verification to the v0.47.0 baseline.
+
+See [DVault v0.47.0 Release Notes](docs/releases/v0.47.0.md).
+
 ## v0.46.0 - Reserved Interactive Provider Optimization
 
 - Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.46.0` / `net8.0` / EF Core 8 and `10.46.0` / `net10.0` / EF Core 10.

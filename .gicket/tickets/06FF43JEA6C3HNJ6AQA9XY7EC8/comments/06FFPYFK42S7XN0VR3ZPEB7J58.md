@@ -1,69 +1,55 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the v0.47 documentation ticket around the current v0.46 baseline: add docs/releases/v0.47.0.md, update CHANGELOG.md, align package-guidance docs to 8.47.0 and 10.47.0, and keep provider-maintenance claims bounded to completed evidence artifacts.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Current repository evidence still stops at the v0.46.0 release-doc baseline: docs/releases has no v0.47.0 note yet, CHANGELOG.md starts with v0.46.0, and docs/performance-profiles.md still declares a v0.46.0 provider-optimization closure baseline with a carried-forward v0.45.0 PIT maintenance overlay.
 - The public release label must continue the established dual package-line model: v0.47.0 maps to 8.47.0 for net8.0 and EF Core 8, and 10.47.0 for net10.0 and EF Core 10; there is no consumer-facing 0.47.0 package version.
 - Maintenance and performance wording must stay inside the current evidence contract: completed benchmark claims require preserved artifact triplets and run context, while PIT maintenance remains source and test backed unless new completed artifacts exist.
 - No bounded write actions were materialized during refinement: no child tickets, relation cleanup, description edits, attachments, or planning documents were added.
 
-### Scope In
+Scope In
 - Create docs/releases/v0.47.0.md using the existing release-note pattern and the v0.47 package-line mapping.
 - Add the matching v0.47.0 summary entry in CHANGELOG.md and link it to the new release note.
 - Update docs/performance-profiles.md and docs/plans/provider-optimization-evidence-matrix.md so the v0.47 documentation baseline and claim boundaries stay aligned with the checked-in evidence sources.
 - Update the versioned package-guidance docs that track the active release line so they consistently cite 8.47.0 and 10.47.0.
 
-### Scope Out
+Scope Out
 - Running new benchmarks, generating new evidence artifacts, or changing benchmark or manifest contracts.
 - Changing product code, provider strategy registrations, or maintenance implementations.
 - Promoting provider-maintenance work to performance-win language without completed checked-in artifacts.
 - Package publishing, signed release approval, release automation, or non-documentation rollout work.
 
-## Acceptance Criteria
-- docs/releases/v0.47.0.md exists and states that the v0.47.0 release label maps to 8.47.0 for net8.0 and EF Core 8, and 10.47.0 for net10.0 and EF Core 10, rather than a 0.47.0 package version.
-- CHANGELOG.md contains a new v0.47.0 entry that summarizes the release-doc update and links to docs/releases/v0.47.0.md.
-- docs/performance-profiles.md and docs/plans/provider-optimization-evidence-matrix.md preserve the canonical evidence posture boundaries so completed timing, skipped placeholder, diagnostics-only, smoke-only, storage-footprint, and source or test backed maintenance statements are not mixed.
-- In-scope package-guidance documents that advertise the active release line are updated to the 8.47.0 and 10.47.0 baseline consistently.
-- No document updated by this ticket claims provider benchmark wins or provider-maintenance timing unless the claim is backed by completed checked-in artifacts and preserved run context.
-
-## Definition of Done
-- All in-scope documentation uses v0.47.0 naming and the 8.47.0 and 10.47.0 package lines consistently, with no stale v0.46.0 release-line references left in the touched surfaces.
-- The new release note, changelog entry, performance profile updates, and evidence-matrix updates cross-reference the existing canonical evidence documents instead of copying raw benchmark tables or inventing new claim vocabulary.
-- Any maintenance-related statement added in this ticket is traceable either to a checked-in evidence source or to the explicit source and test backed fallback boundary already documented in the repository.
-- The ticket remains documentation-scoped; no additional planning artifacts, child tickets, relation mutations, or product-code changes are required to satisfy this refinement.
-
-## Implementation Notes
-- Use docs/releases/v0.46.0.md as the immediate structural template for the new release note and its package-line language.
-- Use the documentation-surface list already called out in the v0.46.0 release note as the default bounded package-guidance sweep for v0.47 rather than reopening which versioned adopter docs need alignment.
-- Treat docs/performance-profiles.md and docs/plans/provider-optimization-evidence-matrix.md as the canonical claim-boundary sources; release notes and changelog text should cite those surfaces instead of restating benchmark tables inline.
-- Live relation state currently shows one parent ticket and eight incoming blocks relations. Treat those as release-coordination context unless later ticket reads show a blocker is reopened or the documentation scope changes.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Once the incoming blocker tickets close, does the team want one final wording sweep to confirm the v0.47 docs describe only landed provider-maintenance and evidence behavior?
 - If the v0.47 package-guidance sweep grows beyond version alignment into broader README or analyzer-installation rewrites, should that stay in this ticket or move to a separate docs cleanup ticket?
 
-## Risks
+Risks
 - Incoming blocker tickets may still shift the exact v0.47 maintenance wording, which can force a final documentation pass even though the refinement boundary is clear.
 - The repository currently advertises v0.46.0 across multiple guidance surfaces, so an incomplete sweep can leave mismatched release-line or package-version references.
 - The existing evidence contract forbids treating source and test backed PIT maintenance work as completed timing evidence, so careless release-note language can create a documentation regression.
 
-## Split Recommendations
+Split recommendations
 - If package-guidance edits expand beyond release-line alignment and evidence-boundary consistency, split broader adopter-document rewrites into a separate docs ticket so this ticket stays bounded to the v0.47 release-doc sweep.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Update release notes, performance profiles, provider evidence matrix, package guidance, and changelog for v0.47. Acceptance: docs cite package lines 8.47.0/10.47.0 and do not claim benchmark wins without completed artifacts.
+Run mode
+- apply: planned updates are applied after this comment

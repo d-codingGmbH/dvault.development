@@ -2,7 +2,7 @@
 
 Status: v1 implementation note
 Ticket: 06F5Q91M0PM17RP43ZQRPBDXP0
-Current public baseline: [DVault v0.46.0 Release Notes](../releases/v0.46.0.md)
+Current public baseline: [DVault v0.47.0 Release Notes](../releases/v0.47.0.md)
 DB2 provider package baseline: [DVault v0.34.0 Release Notes](../releases/v0.34.0.md)
 Read-optimization expansion baseline: [DVault v0.28.0 Release Notes](../releases/v0.28.0.md)
 PIT/bridge feature-introduction baseline: [DVault v0.21.0 Release Notes](../releases/v0.21.0.md)
@@ -58,7 +58,7 @@ MySQL now has the accepted narrow provider-maintenance lane for official `MySql.
 
 Every accepted lane must preserve pre-rebuild PIT rows on fault or cancellation. Strategy-owned local transactions are the first permitted rollback boundary. Ambient caller transactions must remain provider-neutral fallback unless the provider-specific implementation proves a strategy-owned savepoint or equivalent rollback boundary in source, tests, and live-provider execution.
 
-Benchmark evidence for PIT full-rebuild maintenance uses a separate `pit-full-rebuild-maintenance` row family in the provider optimization evidence matrix. `pit-as-of-read` and `bridge-traversal-read` rows remain read evidence only; they do not prove provider-specific PIT rebuild timing. The bounded v1 maintenance timing slice is limited to the provider-neutral full-rebuild comparator plus PostgreSQL and SQL Server full-rebuild lanes under the shape gates above, and completed claims require the shared benchmark artifact triplet and run context.
+Benchmark evidence for PIT full-rebuild maintenance uses a separate `pit-full-rebuild-maintenance` row family in the provider optimization evidence matrix. `pit-as-of-read` and `bridge-traversal-read` rows remain read evidence only; they do not prove provider-specific PIT rebuild timing. The bounded v1 maintenance timing slice is limited to the provider-neutral full-rebuild comparator plus PostgreSQL, SQL Server, and official-provider MySQL full-rebuild lanes under the shape gates above, and completed claims require the shared benchmark artifact triplet and run context.
 
 ## PIT Read Boundary
 
