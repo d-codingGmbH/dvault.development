@@ -1,69 +1,54 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined this as a bounded fallback-test hardening task. Repository evidence already fixes the PIT maintenance boundary: PostgreSQL supports clean full rebuilds for ordinary hub-parent, multi-active hub-parent, and link-parent non-multi-active PITs; SQL Server supports clean full rebuilds for ordinary hub-parent PITs only, with other cases falling back provider-neutrally. Existing coverage already includes Postgres gate assertions, Postgres happy-path integration rebuilds, and SQL Server provider-mismatch and maintain-parents fallback tests, so this ticket should close the remaining fallback matrix rather than reopen architecture or documentation scope.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The supported-shape baseline is already decided by docs/architecture/dvault-v1-pit-bridge-boundary.md: PostgreSQL provider-native PIT rebuilds are limited to clean full rebuilds for ordinary hub-parent, multi-active hub-parent, and link-parent non-multi-active PITs; SQL Server provider-native PIT rebuilds are limited to clean full rebuilds for ordinary hub-parent PITs only.
 - Current repository evidence already covers parts of this matrix in tests/DCoding.Data.DVault.Tests/Unit/PostgresProviderCapabilityTests.cs, tests/DCoding.Data.DVault.Tests/Unit/SqlServerDataVaultPitMaintenanceServiceTests.cs, and tests/DCoding.Data.DVault.Tests/Integration/PostgresPitMaintenanceServiceTests.cs. This ticket is for filling remaining fallback gaps and consolidating assertions, not redefining provider behavior.
 - No child split or ticket write is justified from the current evidence. The related v0.47 documentation task 06FF43JEA6C3HNJ6AQA9XY7EC8 remains downstream and non-blocking.
 
-### Scope In
+Scope In
 - Add or consolidate PIT maintenance tests for provider mismatch fallback on PostgreSQL and SQL Server paths.
 - Add or consolidate PIT maintenance tests for dirty tracked DbContext fallback on PostgreSQL and SQL Server paths.
 - Add or consolidate PIT maintenance tests for unsupported PIT shape fallback using the already documented provider boundaries.
 - Add or consolidate coverage that missing provider-specific PIT maintenance registration still leaves rebuild behavior on the provider-neutral maintenance pipeline.
 - Assert existing explicit fallback evidence where it already exists, such as gate fallback causes and maintenance activity fallback tags, alongside provider-neutral rebuild or no-op results.
 
-### Scope Out
+Scope Out
 - Changing PIT maintenance architecture, supported provider shapes, or provider-native SQL behavior.
 - Bridge maintenance push-down, scheduling, read-path changes, or benchmark evidence work.
 - Broader diagnostics API expansion or new public telemetry contracts beyond what current PIT maintenance surfaces already expose.
 - Release note, changelog, or evidence-matrix documentation updates beyond whatever the existing docs ticket handles later.
 
-## Acceptance Criteria
-- Repository tests prove PostgreSQL PIT maintenance declines to provider-neutral fallback for provider mismatch, dirty tracked context, and unsupported PIT rebuild shapes that fall outside the documented PostgreSQL baseline.
-- Repository tests prove SQL Server PIT maintenance declines to provider-neutral fallback for provider mismatch, dirty tracked context, and unsupported PIT rebuild shapes that fall outside the documented SQL Server baseline.
-- Repository tests prove that omitting provider-specific PIT maintenance registration does not break PIT rebuilds and still executes the provider-neutral path rather than depending on provider-native PIT SQL.
-- Fallback assertions verify both behavioral outcome parity, such as correct rebuilt rows or no-op results, and the existing explicit fallback surface available for that path, such as gate fallback causes or maintenance activity fallback events.
-- Supported happy-path provider tests continue to pass without weakening the current clean-context provider-native coverage.
-
-## Definition of Done
-- The fallback matrix is covered in the existing unit and integration test layout under tests/DCoding.Data.DVault.Tests rather than through new ad hoc harnesses.
-- PostgreSQL-specific fallback coverage is deterministic where possible, with live-provider integration kept only for scenarios that actually require Npgsql execution.
-- SQL Server fallback coverage preserves the current service-level pattern and clearly distinguishes missing-registration, provider-mismatch, dirty-context, and unsupported-shape cases.
-- No production-code scope is added unless a failing test shows the repository already violates the documented provider-neutral fallback contract.
-
-## Implementation Notes
-- Use tests/DCoding.Data.DVault.Tests/Unit/PostgresProviderCapabilityTests.cs as the default place to extend PostgreSQL PIT maintenance gate coverage, and only add companion tests elsewhere if service-level provider-neutral row behavior needs separate proof.
-- Use tests/DCoding.Data.DVault.Tests/Unit/SqlServerDataVaultPitMaintenanceServiceTests.cs as the default place to extend SQL Server rebuild and maintain-parents fallback coverage.
-- Keep tests/DCoding.Data.DVault.Tests/Integration/PostgresPitMaintenanceServiceTests.cs focused on opt-in provider-native happy-path proof unless a specific fallback scenario truly needs a live PostgreSQL context.
-- Reuse existing PIT metadata builders and SQLite-backed provider-neutral verification helpers instead of inventing a new PIT maintenance fixture stack.
-- Treat the unused DataVaultPitMaintenanceStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered enum member as non-authoritative unless an existing PIT maintenance surface already emits it during implementation; this task should primarily prove fallback behavior, not force a new diagnostics contract.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After the fallback matrix lands, should the downstream v0.47 documentation task mention the strengthened PIT maintenance fallback test coverage as supporting evidence for the provider maintenance boundary?
 
-## Risks
+Risks
 - If PostgreSQL fallback proof relies only on opt-in live-provider integration, CI signal will remain weaker than deterministic unit coverage.
 - SQL Server uses service replacement while PostgreSQL uses strategy registration, so missing-registration coverage must be set up deliberately or tests may accidentally recheck provider mismatch instead of the intended registration boundary.
 - The PIT maintenance code exposes fewer established diagnostics hooks for missing registration than save and read flows, so test design should avoid accidental scope creep into new public diagnostics behavior.
 
-## Split Recommendations
+Split recommendations
 - No split recommended; the remaining work is a bounded hardening pass across already-existing PIT maintenance test surfaces.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Add or consolidate tests for dirty contexts, provider mismatch, unsupported PIT shapes, and no-provider strategy fallback across PostgreSQL and SQL Server PIT maintenance. Acceptance: tests prove fallback remains provider-neutral and explicit.
+Run mode
+- apply: planned updates are applied after this comment
