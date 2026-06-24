@@ -345,6 +345,22 @@ public sealed class BenchmarkScenarioExecutionTests {
           "maximum depth 3 of 5",
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable)),
       SkippedExternal(
+          SqlServerProviderName,
+          "pit-full-rebuild-maintenance",
+          "dvault-adddvault-fallback",
+          "provider-neutral-dvault-fallback",
+          "100 customers, 1100 rebuilt PIT rows, 2 satellite segments",
+          "full rebuild after 90% repeat-change history plus status snapshot",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
+          SqlServerProviderName,
+          "pit-full-rebuild-maintenance",
+          "dvault-adddvaultsqlserver-optimized",
+          "sqlserver-optimized-dvault",
+          "100 customers, 1100 rebuilt PIT rows, 2 satellite segments",
+          "full rebuild after 90% repeat-change history plus status snapshot",
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable)),
+      SkippedExternal(
           MySqlProviderName,
           "latest-satellite-read",
           "dvault-adddvaultmysql-optimized",
@@ -475,6 +491,20 @@ public sealed class BenchmarkScenarioExecutionTests {
       new(Db2ProviderName, "latest-satellite-read", "dvault-adddvaultdb2-optimized", ["readShape=LatestSatellite", "selectedStrategy=Db2DataVaultReadStrategy", "plannedReadStrategy=Db2DataVaultReadStrategy"]),
       new(Db2ProviderName, "pit-as-of-read", "dvault-adddvaultdb2-optimized", ["readShape=PitAsOf", "selectedStrategy=Db2DataVaultReadStrategy", "plannedReadStrategy=Db2DataVaultReadStrategy"]),
       new(Db2ProviderName, "bridge-traversal-read", "dvault-adddvaultdb2-optimized", ["readShape=Bridge", "selectedStrategy=Db2DataVaultReadStrategy", "plannedReadStrategy=Db2DataVaultReadStrategy"]),
+  ];
+
+  private static readonly ExpectedProviderMaintenanceRow[] ExpectedProviderMaintenanceRows =
+  [
+      new(SqlServerProviderName, "dvault-adddvault-fallback", [
+          "maintenanceScope=FullRebuild",
+          "selectedStrategy=<none>",
+          "pitShapeBoundary=clean-ordinary-hub-parent",
+      ]),
+      new(SqlServerProviderName, "dvault-adddvaultsqlserver-optimized", [
+          "maintenanceScope=FullRebuild",
+          "selectedStrategy=SqlServerDataVaultPitMaintenanceService",
+          "pitShapeBoundary=clean-ordinary-hub-parent",
+      ]),
   ];
 
   private static readonly string[] RegressionBudgetRules =
@@ -707,6 +737,31 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.Equal(
           NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable),
           sqlServerStagedBulkResult.GetProperty("skipReason").GetString());
+
+      var sqlServerMaintenanceFallbackResult = Assert.Single(results.Where(result =>
+          result.GetProperty("scenarioName").GetString() == "pit-full-rebuild-maintenance" &&
+          result.GetProperty("provider").GetString() == SqlServerProviderName &&
+          result.GetProperty("baselineName").GetString() == "dvault-adddvault-fallback"));
+      var sqlServerMaintenanceFallbackDetail = sqlServerMaintenanceFallbackResult.GetProperty("executionDetail").GetString();
+      Assert.Contains("DVault provider-neutral PIT full-rebuild maintenance path", sqlServerMaintenanceFallbackDetail);
+      Assert.Contains("maintenanceScope=FullRebuild", sqlServerMaintenanceFallbackDetail);
+      Assert.Contains("selectedStrategy=<none>", sqlServerMaintenanceFallbackDetail);
+      Assert.Equal(
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable),
+          sqlServerMaintenanceFallbackResult.GetProperty("skipReason").GetString());
+
+      var sqlServerMaintenanceOptimizedResult = Assert.Single(results.Where(result =>
+          result.GetProperty("scenarioName").GetString() == "pit-full-rebuild-maintenance" &&
+          result.GetProperty("provider").GetString() == SqlServerProviderName &&
+          result.GetProperty("baselineName").GetString() == "dvault-adddvaultsqlserver-optimized"));
+      var sqlServerMaintenanceOptimizedDetail = sqlServerMaintenanceOptimizedResult.GetProperty("executionDetail").GetString();
+      Assert.Contains("DVault SQL Server PIT full-rebuild maintenance path", sqlServerMaintenanceOptimizedDetail);
+      Assert.Contains("maintenanceScope=FullRebuild", sqlServerMaintenanceOptimizedDetail);
+      Assert.Contains("selectedStrategy=SqlServerDataVaultPitMaintenanceService", sqlServerMaintenanceOptimizedDetail);
+      Assert.Contains("pitShapeBoundary=clean-ordinary-hub-parent", sqlServerMaintenanceOptimizedDetail);
+      Assert.Equal(
+          NotConfiguredSkipReasonFor(BenchmarkExternalProviderDefinitions.SqlServer.ConnectionStringEnvironmentVariable),
+          sqlServerMaintenanceOptimizedResult.GetProperty("skipReason").GetString());
 
       var postgresStagedBulkResult = Assert.Single(results.Where(result =>
           result.GetProperty("scenarioName").GetString() == "provider-native-bulk-ingestion" &&
@@ -1055,6 +1110,27 @@ public sealed class BenchmarkScenarioExecutionTests {
     Assert.Equal("PitAsOf", skippedDb2ManifestRow.ReadShape);
     Assert.Equal("DVault DB2 optimized PIT read path", skippedDb2ManifestRow.PlannedPath);
     Assert.Equal("Db2DataVaultReadStrategy", skippedDb2ManifestRow.PlannedStrategy);
+
+    var skippedSqlServerMaintenanceRow = FindArtifactRow(
+        artifacts,
+        SqlServerProviderName,
+        "pit-full-rebuild-maintenance",
+        "dvault-adddvaultsqlserver-optimized");
+    var skippedSqlServerMaintenanceManifestRow = CreateBenchmarkBackedProviderEvidenceManifestRow(
+        skippedSqlServerMaintenanceRow,
+        "skipped-placeholder");
+
+    Assert.Equal("pit-full-rebuild-maintenance", skippedSqlServerMaintenanceManifestRow.Scenario);
+    Assert.Equal(SqlServerProviderName, skippedSqlServerMaintenanceManifestRow.Provider);
+    Assert.Equal("dvault-adddvaultsqlserver-optimized", skippedSqlServerMaintenanceManifestRow.Baseline);
+    Assert.Equal("sqlserver-optimized-dvault", skippedSqlServerMaintenanceManifestRow.StrategyFamily);
+    Assert.Equal("skipped-placeholder", skippedSqlServerMaintenanceManifestRow.EvidencePosture);
+    Assert.Equal("pit-full-rebuild-maintenance", skippedSqlServerMaintenanceManifestRow.WorkloadShape);
+    Assert.Null(skippedSqlServerMaintenanceManifestRow.ReadShape);
+    Assert.Equal("DVault SQL Server PIT full-rebuild maintenance path", skippedSqlServerMaintenanceManifestRow.PlannedPath);
+    Assert.Equal("SqlServerDataVaultPitMaintenanceService", skippedSqlServerMaintenanceManifestRow.PlannedStrategy);
+    Assert.Empty(skippedSqlServerMaintenanceManifestRow.FallbackCauses);
+    Assert.Contains("maintenanceScope=FullRebuild", skippedSqlServerMaintenanceManifestRow.ResultSummary.Summary, StringComparison.Ordinal);
   }
 
   [Fact]
@@ -2303,6 +2379,7 @@ public sealed class BenchmarkScenarioExecutionTests {
     }
 
     AssertProviderReadRowsStayVisibleAsSkipped(artifacts);
+    AssertProviderMaintenanceRowsStayVisibleAsSkipped(artifacts);
     AssertRootHashKeyVariantRowsIncludeExecutionDetail(artifacts);
   }
 
@@ -2339,6 +2416,27 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.Equal(0, row.Iterations);
       Assert.Equal("not executed", row.PersistedOutcome);
       Assert.False(string.IsNullOrWhiteSpace(row.SkipReason), "Provider read row '" + row.Key + "' has no skip reason.");
+      AssertSkippedMetricsBlank(row);
+      foreach (var fragment in expectedRow.RequiredExecutionDetailFragments) {
+        Assert.Contains(fragment, row.ExecutionDetail, StringComparison.Ordinal);
+      }
+    }
+  }
+
+  private static void AssertProviderMaintenanceRowsStayVisibleAsSkipped(VerifiedBenchmarkArtifacts artifacts) {
+    foreach (var expectedRow in ExpectedProviderMaintenanceRows) {
+      var row = FindArtifactRow(
+          artifacts,
+          expectedRow.ProviderName,
+          "pit-full-rebuild-maintenance",
+          expectedRow.BaselineName);
+
+      Assert.Equal("skipped", row.ExecutionStatus);
+      Assert.Equal(0, row.Iterations);
+      Assert.Equal("not executed", row.PersistedOutcome);
+      Assert.False(
+          string.IsNullOrWhiteSpace(row.SkipReason),
+          "Provider maintenance row '" + row.Key + "' has no skip reason.");
       AssertSkippedMetricsBlank(row);
       foreach (var fragment in expectedRow.RequiredExecutionDetailFragments) {
         Assert.Contains(fragment, row.ExecutionDetail, StringComparison.Ordinal);
@@ -2768,6 +2866,8 @@ public sealed class BenchmarkScenarioExecutionTests {
         "db2SaveBoundary",
         "cleanupBoundary",
         "providerSpecificReadStrategy",
+        "maintenanceScope",
+        "pitShapeBoundary",
     };
     var boundaries = boundaryTokens
         .Select(name => detailTokens.TryGetValue(name, out var value) ? name + "=" + value : null)
@@ -3166,6 +3266,11 @@ public sealed class BenchmarkScenarioExecutionTests {
   private sealed record ExpectedProviderReadRow(
       string ProviderName,
       string ScenarioName,
+      string BaselineName,
+      string[] RequiredExecutionDetailFragments);
+
+  private sealed record ExpectedProviderMaintenanceRow(
+      string ProviderName,
       string BaselineName,
       string[] RequiredExecutionDetailFragments);
 

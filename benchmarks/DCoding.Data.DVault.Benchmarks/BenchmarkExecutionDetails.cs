@@ -59,6 +59,10 @@ internal static class BenchmarkExecutionDetails {
       return providerNativeBulkIngestionBenchmark.ExecutionPathDetail;
     }
 
+    if (benchmark is PitFullRebuildMaintenanceBenchmark pitFullRebuildMaintenanceBenchmark) {
+      return pitFullRebuildMaintenanceBenchmark.ExecutionPathDetail;
+    }
+
     if (IsReadModelScenario(benchmark.ScenarioName)) {
       return GetReadExecutionPath(benchmark);
     }

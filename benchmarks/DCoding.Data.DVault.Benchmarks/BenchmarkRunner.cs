@@ -382,6 +382,18 @@ internal static class BenchmarkRunner {
       benchmarks.Add(new LatestSatelliteReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage, variant));
       benchmarks.Add(new PitAsOfReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage, variant));
       benchmarks.Add(new BridgeTraversalReadBenchmark(provider, optimizedStrategy, options.LoadTimestampStorage, variant));
+      if (optimizedStrategy == DataVaultBenchmarkStrategy.SqlServerOptimized) {
+        benchmarks.Add(new PitFullRebuildMaintenanceBenchmark(
+            provider,
+            DataVaultBenchmarkStrategy.ProviderNeutralFallback,
+            options.LoadTimestampStorage,
+            variant));
+        benchmarks.Add(new PitFullRebuildMaintenanceBenchmark(
+            provider,
+            optimizedStrategy,
+            options.LoadTimestampStorage,
+            variant));
+      }
     }
 
     return [.. benchmarks];

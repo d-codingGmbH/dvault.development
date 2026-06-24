@@ -3,21 +3,20 @@
   "ticket-id": "06FF43AYQYZKFF400CK5Q84WYR",
   "ticket-type": "task",
   "title": "Task: Add SQL Server PIT full-rebuild benchmark lane",
-  "revision": "06FF44J5PTQ59YJVMPA99HJ540",
-  "status": "todo",
+  "revision": "06FFNP52KG2JM384RJX83S6RZR",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/performance",
     "area/provider-support",
     "area/read-models",
-    "provider/sqlserver"
+    "automation/bot-ready",
+    "provider/sqlserver",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FF437KCQ2K07C5SMDPXFY7YC",
   "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
   "created-at": "2026-06-23T01:17:03.3826006Z",
-  "updated-at": "2026-06-23T01:22:24.3106989Z"
+  "updated-at": "2026-06-24T18:16:01.9480017Z"
 }
