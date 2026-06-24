@@ -47,6 +47,7 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
                 typeof(MySqlIntegrationTestConfigurationTests),
                 typeof(MySqlLiveSchemaFixtureContractTests),
                 typeof(MySqlLiveSchemaReaderTests),
+                typeof(MySqlPitMaintenanceServiceTests),
                 typeof(PostgresDataVaultSchemaTests),
                 typeof(PostgresOptimizedDataVaultSaveServiceTests),
                 typeof(PostgresIntegrationTestConfigurationTests),
@@ -137,6 +138,7 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
     foreach (var coverageType in new[] {
         typeof(MySqlExplicitDataVaultSaveServiceTests),
         typeof(MySqlLiveSchemaReaderTests),
+        typeof(MySqlPitMaintenanceServiceTests),
     }) {
       AssertTrait(
           coverageType,

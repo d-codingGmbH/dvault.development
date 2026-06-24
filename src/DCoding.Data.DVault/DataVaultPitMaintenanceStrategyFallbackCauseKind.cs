@@ -8,5 +8,6 @@ internal enum DataVaultPitMaintenanceStrategyFallbackCauseKind {
   CurrentTransactionSavepointUnavailable,
   UnsupportedPitShape,
   IncompleteMaintenanceShapeEvidence,
+  RollbackSavepointBoundaryUnavailable,
   StrategyDeclined,
 }

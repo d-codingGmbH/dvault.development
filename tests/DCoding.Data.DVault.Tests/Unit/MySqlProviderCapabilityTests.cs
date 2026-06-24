@@ -18,12 +18,14 @@ public sealed class MySqlProviderCapabilityTests {
 
       using var provider = services.BuildServiceProvider(validateScopes: true);
       var strategies = provider.GetServices<IDataVaultProviderSaveStrategy>().ToArray();
+      var pitMaintenanceStrategies = provider.GetServices<IDataVaultProviderPitMaintenanceStrategy>().ToArray();
 
       Assert.Contains(strategies, strategy => strategy is MySqlStagedDataVaultSaveStrategy and IDataVaultProviderStagedBulkSaveDiagnostics);
       Assert.Contains(strategies, strategy => strategy is MySqlDataVaultSaveStrategy);
       Assert.Contains(provider.GetServices<IDataVaultProviderReadStrategy>(), strategy => strategy is MySqlDataVaultReadStrategy);
       Assert.Contains(provider.GetServices<IDataVaultProviderPitReadStrategy>(), strategy => strategy is MySqlDataVaultReadStrategy);
       Assert.Contains(provider.GetServices<IDataVaultProviderBridgeReadStrategy>(), strategy => strategy is MySqlDataVaultReadStrategy);
+      Assert.Contains(pitMaintenanceStrategies, strategy => strategy is MySqlDataVaultPitMaintenanceStrategy);
       Assert.Same(
           DataVaultProviderCapabilityProfiles.MySql,
           DataVaultProviderCapabilityProfileSelection.Select(MySqlDataVaultSaveStrategy.PomeloProviderName));
@@ -45,6 +47,88 @@ public sealed class MySqlProviderCapabilityTests {
     Assert.True(MySqlDataVaultSaveStrategy.IsSupportedProviderName("MySql.EntityFrameworkCore"));
     Assert.False(MySqlDataVaultSaveStrategy.IsSupportedProviderName("Microsoft.EntityFrameworkCore.Sqlite"));
     Assert.False(MySqlDataVaultSaveStrategy.IsSupportedProviderName(null));
+  }
+
+  [Fact]
+  public async Task AddDVaultMySqlKeepsDefaultPitMaintenanceServiceAndProviderNeutralParentMaintenance() {
+    try {
+      using var provider = new ServiceCollection()
+          .AddDVaultMySql()
+          .BuildServiceProvider(validateScopes: true);
+      var maintenanceService = Assert.IsType<DefaultDataVaultPitMaintenanceService>(
+          provider.GetRequiredService<IDataVaultPitMaintenanceService>());
+      await using var context = new DbContext(new DbContextOptionsBuilder().Options);
+      var pit = new DataVaultPitMetadata(DataVaultMetadataReference.Hub("Customer"), ["Profile"]);
+
+      var result = await maintenanceService.MaintainParentsAsync(
+          context,
+          new DataVaultPitParentMaintenanceRequest(pit, []));
+
+      Assert.Equal("PitCustomerProfile", result.TableName);
+      Assert.True(result.IsNoOp);
+    }
+    finally {
+      DataVaultProviderCapabilityProfileSelection.Reset();
+    }
+  }
+
+  [Fact]
+  public void MySqlPitMaintenanceGateAcceptsOnlyOfficialOrdinaryHubFullRebuildsAndDeclinesFallbackShapes() {
+    var ordinaryHubPit = new DataVaultPitRebuildRequest(new DataVaultPitMetadata(
+        DataVaultMetadataReference.Hub("Customer"),
+        ["Profile", "Status"]));
+    var multiActiveHubPit = new DataVaultPitRebuildRequest(new DataVaultPitMetadata(
+        DataVaultMetadataReference.Hub("Customer"),
+        [
+            new DataVaultPitSatelliteReferenceMetadata("Contact", isMultiActive: true),
+            new DataVaultPitSatelliteReferenceMetadata("Profile"),
+        ]));
+    var linkPit = new DataVaultPitRebuildRequest(new DataVaultPitMetadata(
+        DataVaultMetadataReference.Link("CustomerOrder"),
+        ["State", "Fulfillment"]));
+
+    Assert.True(DataVaultProviderPitMaintenanceStrategyGateEvaluator
+        .EvaluateMySql(KnownProviderNames.MySqlOracle, ordinaryHubPit)
+        .CanRebuild);
+
+    Assert.Contains(
+        DataVaultProviderPitMaintenanceStrategyGateEvaluator
+            .EvaluateMySql(KnownProviderNames.MySqlPomelo, ordinaryHubPit)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultPitMaintenanceStrategyFallbackCauseKind.ProviderNameMismatch);
+    Assert.Contains(
+        DataVaultProviderPitMaintenanceStrategyGateEvaluator
+            .EvaluateMySql("Unknown.Provider", ordinaryHubPit)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultPitMaintenanceStrategyFallbackCauseKind.UnknownOrUnregisteredProviderName);
+    Assert.Contains(
+        DataVaultProviderPitMaintenanceStrategyGateEvaluator
+            .EvaluateMySql(KnownProviderNames.MySqlOracle, ordinaryHubPit, hasPendingTrackedChanges: true)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultPitMaintenanceStrategyFallbackCauseKind.DirtyDbContext);
+    Assert.Contains(
+        DataVaultProviderPitMaintenanceStrategyGateEvaluator
+            .EvaluateMySql(KnownProviderNames.MySqlOracle, ordinaryHubPit, hasCompleteMaintenanceShapeEvidence: false)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultPitMaintenanceStrategyFallbackCauseKind.IncompleteMaintenanceShapeEvidence);
+    Assert.Contains(
+        DataVaultProviderPitMaintenanceStrategyGateEvaluator
+            .EvaluateMySql(
+                KnownProviderNames.MySqlOracle,
+                ordinaryHubPit,
+                hasCurrentTransactionWithoutSavepoints: true)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultPitMaintenanceStrategyFallbackCauseKind.RollbackSavepointBoundaryUnavailable);
+    Assert.Contains(
+        DataVaultProviderPitMaintenanceStrategyGateEvaluator
+            .EvaluateMySql(KnownProviderNames.MySqlOracle, multiActiveHubPit)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultPitMaintenanceStrategyFallbackCauseKind.UnsupportedPitShape);
+    Assert.Contains(
+        DataVaultProviderPitMaintenanceStrategyGateEvaluator
+            .EvaluateMySql(KnownProviderNames.MySqlOracle, linkPit)
+            .FallbackCauses,
+        cause => cause.Kind == DataVaultPitMaintenanceStrategyFallbackCauseKind.UnsupportedPitShape);
   }
 
   [Fact]
@@ -271,6 +355,33 @@ public sealed class MySqlProviderCapabilityTests {
   }
 
   [Fact]
+  public void MySqlPitMaintenanceStrategyBuildsOrdinaryHubInsertSelectSqlInsideProviderPackage() {
+    var metadata = CreatePitMaintenanceMetadata();
+    var options = new DbContextOptionsBuilder<MySqlPitMaintenanceSqlContext>()
+        .UseSqlite("Data Source=:memory:")
+        .Options;
+    using var context = new MySqlPitMaintenanceSqlContext(options);
+    var projection = DefaultDataVaultPitMaintenanceService.CreatePitProjection(context, metadata.Pit);
+
+    var insertCommandText = MySqlDataVaultPitMaintenanceStrategy.CreateMySqlPitRebuildInsertCommandText(
+        context,
+        projection);
+    var parentCountCommandText = MySqlDataVaultPitMaintenanceStrategy.CreateMySqlPitParentCountCommandText(
+        context,
+        projection);
+
+    Assert.Contains("INSERT INTO `PitCustomerProfileStatus`", insertCommandText, StringComparison.Ordinal);
+    Assert.Contains("`ProfileLoadTimestamp`, `StatusLoadTimestamp`", insertCommandText, StringComparison.Ordinal);
+    Assert.Contains("SELECT `source`.`parent_hash_key`, `source`.`load_timestamp`", insertCommandText, StringComparison.Ordinal);
+    Assert.Contains("FROM `SatCustomerProfile` AS `satellite_", insertCommandText, StringComparison.Ordinal);
+    Assert.Contains("ORDER BY `snapshot_0`.`LoadTimestamp` DESC LIMIT 1", insertCommandText, StringComparison.Ordinal);
+    Assert.Contains("ORDER BY `snapshot_1`.`LoadTimestamp` DESC LIMIT 1", insertCommandText, StringComparison.Ordinal);
+    Assert.Contains("ORDER BY `source`.`parent_hash_key`, `source`.`load_timestamp`", insertCommandText, StringComparison.Ordinal);
+    Assert.Contains("SELECT COUNT(DISTINCT `parents`.`parent_hash_key`) FROM", parentCountCommandText, StringComparison.Ordinal);
+    Assert.Contains("UNION", parentCountCommandText, StringComparison.Ordinal);
+  }
+
+  [Fact]
   public void MySqlReadStrategyBuildsWindowFunctionForLatestSatelliteRows() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var profile = new DataVaultSatelliteMetadata(
@@ -365,6 +476,22 @@ public sealed class MySqlProviderCapabilityTests {
         ]);
   }
 
+  private static PitMaintenanceMetadata CreatePitMaintenanceMetadata() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var profile = new DataVaultSatelliteMetadata(
+        "Profile",
+        customer.ToReference(),
+        ["Customer Name"]);
+    var status = new DataVaultSatelliteMetadata(
+        "Status",
+        customer.ToReference(),
+        ["Status Code"]);
+    var pit = new DataVaultPitMetadata(customer.ToReference(), ["Profile", "Status"]);
+    var model = new DataVaultMetadataModel([customer], [], [profile, status], [pit]);
+
+    return new PitMaintenanceMetadata(pit, model);
+  }
+
   private static IReadOnlyList<DataVaultSaveRequest> CreateHubRequest(int totalOperationCount) {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
 
@@ -428,4 +555,15 @@ public sealed class MySqlProviderCapabilityTests {
 
     return Assert.IsType<T>(annotation!.Value);
   }
+
+  private sealed class MySqlPitMaintenanceSqlContext(
+      DbContextOptions<MySqlPitMaintenanceSqlContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(CreatePitMaintenanceMetadata().Model);
+    }
+  }
+
+  private sealed record PitMaintenanceMetadata(
+      DataVaultPitMetadata Pit,
+      DataVaultMetadataModel Model);
 }

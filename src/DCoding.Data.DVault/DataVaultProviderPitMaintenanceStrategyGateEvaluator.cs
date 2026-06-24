@@ -18,6 +18,20 @@ internal static class DataVaultProviderPitMaintenanceStrategyGateEvaluator {
         hasCurrentTransaction: HasCurrentTransaction(dbContext));
   }
 
+  public static DataVaultProviderPitMaintenanceStrategyGateEvaluation EvaluateMySql(
+      DbContext dbContext,
+      DataVaultPitRebuildRequest request) {
+    ArgumentNullException.ThrowIfNull(dbContext);
+    ArgumentNullException.ThrowIfNull(request);
+
+    return EvaluateMySql(
+        dbContext.Database.ProviderName,
+        request,
+        hasCompleteMaintenanceShapeEvidence: HasCompleteMaintenanceShapeEvidence(dbContext, request),
+        hasPendingTrackedChanges: HasPendingTrackedChanges(dbContext),
+        hasCurrentTransactionWithoutSavepoints: HasCurrentTransactionWithoutSavepoints(dbContext));
+  }
+
   public static DataVaultProviderPitMaintenanceStrategyGateEvaluation EvaluatePostgres(
       string? providerName,
       DataVaultPitRebuildRequest request,
@@ -36,6 +50,26 @@ internal static class DataVaultProviderPitMaintenanceStrategyGateEvaluator {
         hasCurrentTransaction: hasCurrentTransaction);
   }
 
+  public static DataVaultProviderPitMaintenanceStrategyGateEvaluation EvaluateMySql(
+      string? providerName,
+      DataVaultPitRebuildRequest request,
+      bool hasCompleteMaintenanceShapeEvidence = true,
+      bool hasPendingTrackedChanges = false,
+      bool hasCurrentTransactionWithoutSavepoints = false) {
+    ArgumentNullException.ThrowIfNull(request);
+
+    return EvaluatePitRebuild(
+        "MySQL",
+        providerName,
+        request,
+        supportedProviderNames: [KnownProviderNames.MySqlOracle],
+        hasCompleteMaintenanceShapeEvidence: hasCompleteMaintenanceShapeEvidence,
+        hasPendingTrackedChanges: hasPendingTrackedChanges,
+        hasCurrentTransactionWithoutSavepoints: hasCurrentTransactionWithoutSavepoints,
+        supportsLinkParent: false,
+        supportsMultiActiveHubParent: false);
+  }
+
   public static bool TryEvaluateKnownStrategy(
       IDataVaultProviderPitMaintenanceStrategy strategy,
       DbContext dbContext,
@@ -47,6 +81,7 @@ internal static class DataVaultProviderPitMaintenanceStrategyGateEvaluator {
 
     evaluation = strategy.GetType().Name switch {
       "PostgresDataVaultPitMaintenanceStrategy" => EvaluatePostgres(dbContext, request),
+      "MySqlDataVaultPitMaintenanceStrategy" => EvaluateMySql(dbContext, request),
       _ => new DataVaultProviderPitMaintenanceStrategyGateEvaluation(
           false,
           Array.Empty<DataVaultPitMaintenanceStrategyFallbackCause>()),
@@ -62,7 +97,10 @@ internal static class DataVaultProviderPitMaintenanceStrategyGateEvaluator {
       IReadOnlyList<string> supportedProviderNames,
       bool hasCompleteMaintenanceShapeEvidence,
       bool hasPendingTrackedChanges,
-      bool hasCurrentTransaction) {
+      bool hasCurrentTransaction = false,
+      bool hasCurrentTransactionWithoutSavepoints = false,
+      bool supportsLinkParent = true,
+      bool supportsMultiActiveHubParent = true) {
     var causes = new List<DataVaultPitMaintenanceStrategyFallbackCause>();
 
     if (!supportedProviderNames.Contains(providerName, StringComparer.Ordinal)) {
@@ -95,7 +133,18 @@ internal static class DataVaultProviderPitMaintenanceStrategyGateEvaluator {
           strategyName + " optimized PIT rebuild requires complete generated PIT and referenced satellite projection evidence in the DbContext model."));
     }
 
-    AddUnsupportedPitShapeCauses(strategyName, request, causes);
+    if (hasCurrentTransactionWithoutSavepoints) {
+      causes.Add(new DataVaultPitMaintenanceStrategyFallbackCause(
+          DataVaultPitMaintenanceStrategyFallbackCauseKind.RollbackSavepointBoundaryUnavailable,
+          strategyName + " optimized PIT rebuild requires the current DbContext transaction to report savepoint support so delete-plus-insert work can roll back cleanly."));
+    }
+
+    AddUnsupportedPitShapeCauses(
+        strategyName,
+        request,
+        causes,
+        supportsLinkParent,
+        supportsMultiActiveHubParent);
 
     return new DataVaultProviderPitMaintenanceStrategyGateEvaluation(causes.Count == 0, causes);
   }
@@ -103,7 +152,9 @@ internal static class DataVaultProviderPitMaintenanceStrategyGateEvaluator {
   private static void AddUnsupportedPitShapeCauses(
       string strategyName,
       DataVaultPitRebuildRequest request,
-      ICollection<DataVaultPitMaintenanceStrategyFallbackCause> causes) {
+      ICollection<DataVaultPitMaintenanceStrategyFallbackCause> causes,
+      bool supportsLinkParent,
+      bool supportsMultiActiveHubParent) {
     var pit = request.Pit;
     if (pit.Parent.Kind != DataVaultMetadataReferenceKind.Hub &&
         pit.Parent.Kind != DataVaultMetadataReferenceKind.Link) {
@@ -112,17 +163,23 @@ internal static class DataVaultProviderPitMaintenanceStrategyGateEvaluator {
           strategyName + " optimized PIT rebuild supports hub- or link-parent PIT declarations only."));
     }
 
+    if (pit.Parent.Kind == DataVaultMetadataReferenceKind.Link && !supportsLinkParent) {
+      causes.Add(new DataVaultPitMaintenanceStrategyFallbackCause(
+          DataVaultPitMaintenanceStrategyFallbackCauseKind.UnsupportedPitShape,
+          strategyName + " optimized PIT rebuild supports ordinary hub-parent PIT declarations only."));
+    }
+
     if (pit.Satellites.Count == 0) {
       causes.Add(new DataVaultPitMaintenanceStrategyFallbackCause(
           DataVaultPitMaintenanceStrategyFallbackCauseKind.UnsupportedPitShape,
           strategyName + " optimized PIT rebuild requires at least one satellite snapshot reference."));
     }
 
-    if (pit.Parent.Kind == DataVaultMetadataReferenceKind.Link &&
+    if ((!supportsMultiActiveHubParent || pit.Parent.Kind == DataVaultMetadataReferenceKind.Link) &&
         pit.Satellites.Any(satellite => satellite.IsMultiActive)) {
       causes.Add(new DataVaultPitMaintenanceStrategyFallbackCause(
           DataVaultPitMaintenanceStrategyFallbackCauseKind.UnsupportedPitShape,
-          strategyName + " optimized link-parent PIT rebuild requires non-multi-active satellite references."));
+          strategyName + " optimized PIT rebuild requires non-multi-active satellite references for this provider lane."));
     }
 
     var duplicateSatelliteName = pit.Satellites
@@ -156,6 +213,12 @@ internal static class DataVaultProviderPitMaintenanceStrategyGateEvaluator {
     catch (Exception exception) when (exception is InvalidOperationException or NotSupportedException) {
       return true;
     }
+  }
+
+  private static bool HasCurrentTransactionWithoutSavepoints(DbContext dbContext) {
+    var currentTransaction = dbContext.Database.CurrentTransaction;
+
+    return currentTransaction is not null && !currentTransaction.SupportsSavepoints;
   }
 
   private static bool CapabilityProfileDefaulted(string? providerName) {
