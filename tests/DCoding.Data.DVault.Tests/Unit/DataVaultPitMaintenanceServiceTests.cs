@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Globalization;
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -57,6 +59,97 @@ public sealed class DataVaultPitMaintenanceServiceTests {
     Assert.Equal(2, result.ParentHashKeyCount);
     Assert.Equal(3, result.RowsDeleted);
     Assert.Equal(5, result.RowsWritten);
+  }
+
+  [Fact]
+  public async Task PitRebuildActivityTracingRecordsSelectedProviderMaintenanceStrategy() {
+    var pit = CreateCustomerProfilePit();
+    var strategy = new RecordingProviderPitMaintenanceStrategy(canRebuild: true);
+    var service = new DefaultDataVaultPitMaintenanceService([strategy]);
+    await using var context = new EmptyPitModelContext(new DbContextOptionsBuilder<EmptyPitModelContext>().Options);
+
+    using var listener = new PitMaintenanceActivityListener();
+    _ = await service.RebuildAsync(
+        context,
+        new DataVaultPitRebuildRequest(pit));
+
+    var activity = Assert.Single(
+        listener.StoppedActivities,
+        current => string.Equals(current.OperationName, DataVaultActivityTracing.PitRebuildOperation, StringComparison.Ordinal));
+    var tags = GetTags(activity);
+    Assert.Equal(ActivityStatusCode.Ok, activity.Status);
+    Assert.Equal("success", tags[DataVaultActivityTracing.OutcomeTag]);
+    Assert.Equal("ProviderStrategySelected", tags[DataVaultActivityTracing.StrategyStatusTag]);
+    Assert.Equal(nameof(RecordingProviderPitMaintenanceStrategy), tags[DataVaultActivityTracing.StrategyTypeTag]);
+    Assert.Contains(activity.Events, current =>
+        string.Equals(current.Name, DataVaultActivityTracing.StrategySelectedEvent, StringComparison.Ordinal) &&
+        string.Equals(
+            Convert.ToString(GetTags(current)[DataVaultActivityTracing.StrategyTypeTag], CultureInfo.InvariantCulture),
+            nameof(RecordingProviderPitMaintenanceStrategy),
+            StringComparison.Ordinal));
+  }
+
+  [Fact]
+  public async Task PitRebuildActivityTracingRecordsNoRegisteredStrategyFallbackBeforeNeutralRebuild() {
+    var pit = CreateCustomerProfilePit();
+    var service = new DefaultDataVaultPitMaintenanceService();
+    await using var context = new EmptyPitModelContext(new DbContextOptionsBuilder<EmptyPitModelContext>().Options);
+
+    using var listener = new PitMaintenanceActivityListener();
+    await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        service.RebuildAsync(
+            context,
+            new DataVaultPitRebuildRequest(pit)));
+
+    var activity = Assert.Single(
+        listener.StoppedActivities,
+        current => string.Equals(current.OperationName, DataVaultActivityTracing.PitRebuildOperation, StringComparison.Ordinal));
+    var tags = GetTags(activity);
+    Assert.Equal(ActivityStatusCode.Error, activity.Status);
+    Assert.Equal("ProviderNeutralFallback", tags[DataVaultActivityTracing.StrategyStatusTag]);
+    Assert.Equal(nameof(DefaultDataVaultPitMaintenanceService), tags[DataVaultActivityTracing.StrategyTypeTag]);
+    Assert.Contains(activity.Events, current =>
+        string.Equals(current.Name, DataVaultActivityTracing.FallbackRecordedEvent, StringComparison.Ordinal) &&
+        string.Equals(
+            Convert.ToString(GetTags(current)[DataVaultActivityTracing.FallbackCauseTag], CultureInfo.InvariantCulture),
+            nameof(DataVaultPitMaintenanceStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered),
+            StringComparison.Ordinal));
+  }
+
+  [Fact]
+  public async Task PitRebuildActivityTracingRecordsKnownStrategyGateFallbackCausesBeforeNeutralRebuild() {
+    var pit = CreateCustomerProfilePit();
+    var service = new DefaultDataVaultPitMaintenanceService([new PostgresDataVaultPitMaintenanceStrategy()]);
+    await using var context = new EmptyPitModelContext(
+        new DbContextOptionsBuilder<EmptyPitModelContext>()
+            .UseSqlite("Data Source=:memory:")
+            .Options);
+
+    using var listener = new PitMaintenanceActivityListener();
+    await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        service.RebuildAsync(
+            context,
+            new DataVaultPitRebuildRequest(pit)));
+
+    var activity = Assert.Single(
+        listener.StoppedActivities,
+        current => string.Equals(current.OperationName, DataVaultActivityTracing.PitRebuildOperation, StringComparison.Ordinal));
+    var tags = GetTags(activity);
+    Assert.Equal(ActivityStatusCode.Error, activity.Status);
+    Assert.Equal("ProviderNeutralFallback", tags[DataVaultActivityTracing.StrategyStatusTag]);
+    Assert.Equal(nameof(PostgresDataVaultPitMaintenanceStrategy), tags[DataVaultActivityTracing.StrategyTypeTag]);
+    Assert.Contains(activity.Events, current =>
+        string.Equals(current.Name, DataVaultActivityTracing.FallbackRecordedEvent, StringComparison.Ordinal) &&
+        string.Equals(
+            Convert.ToString(GetTags(current)[DataVaultActivityTracing.FallbackCauseTag], CultureInfo.InvariantCulture),
+            nameof(DataVaultPitMaintenanceStrategyFallbackCauseKind.ProviderNameMismatch),
+            StringComparison.Ordinal));
+    Assert.Contains(activity.Events, current =>
+        string.Equals(current.Name, DataVaultActivityTracing.FallbackRecordedEvent, StringComparison.Ordinal) &&
+        string.Equals(
+            Convert.ToString(GetTags(current)[DataVaultActivityTracing.FallbackCauseTag], CultureInfo.InvariantCulture),
+            nameof(DataVaultPitMaintenanceStrategyFallbackCauseKind.IncompleteMaintenanceShapeEvidence),
+            StringComparison.Ordinal));
   }
 
   [Fact]
@@ -279,6 +372,14 @@ public sealed class DataVaultPitMaintenanceServiceTests {
         [DataVaultMetadataClrMapping.Pit<CustomerProfileStatusPitMapping>(metadata.Pit.Name)]);
   }
 
+  private static IReadOnlyDictionary<string, object?> GetTags(Activity activity) {
+    return activity.TagObjects.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.Ordinal);
+  }
+
+  private static IReadOnlyDictionary<string, object?> GetTags(ActivityEvent activityEvent) {
+    return activityEvent.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.Ordinal);
+  }
+
   private static EmptyPitModelContext CreateRegistryContext(DataVaultMetadataRegistry registry) {
     var optionsBuilder = new DbContextOptionsBuilder<EmptyPitModelContext>();
     optionsBuilder
@@ -431,4 +532,25 @@ public sealed class DataVaultPitMaintenanceServiceTests {
   private sealed record ParentMaintenanceCall(
       DataVaultPitMetadata Pit,
       IReadOnlyList<string> ParentHashKeys);
+
+  private sealed class PitMaintenanceActivityListener : IDisposable {
+    private readonly ActivityListener _listener;
+    private readonly List<Activity> _stoppedActivities = [];
+
+    public PitMaintenanceActivityListener() {
+      _listener = new ActivityListener {
+        ShouldListenTo = source => string.Equals(source.Name, DataVaultActivityTracing.SourceName, StringComparison.Ordinal),
+        Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+        ActivityStopped = activity => _stoppedActivities.Add(activity),
+      };
+
+      ActivitySource.AddActivityListener(_listener);
+    }
+
+    public IReadOnlyList<Activity> StoppedActivities => _stoppedActivities;
+
+    public void Dispose() {
+      _listener.Dispose();
+    }
+  }
 }

@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Globalization;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +17,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
       "PostgreSQL PIT maintenance expected AddDVaultPostgres to register a compatible provider strategy for a clean Npgsql-backed full rebuild request.";
   private const string PostgresOptimizedPathDiagnostic =
       "PostgreSQL PIT maintenance expected the provider INSERT SELECT path to rebuild without fallback-tracked PIT rows.";
+  private const string PostgresPitMaintenanceStrategyName = "PostgresDataVaultPitMaintenanceStrategy";
 
   [Fact]
   public async Task AddDVaultPostgresPitRebuildsSupportedBaselineShapesWhenConfigured() {
@@ -43,6 +46,59 @@ public sealed class PostgresPitMaintenanceServiceTests {
         async context => await AssertLinkParentPitRebuildAsync(provider, maintenanceService, context));
   }
 
+  [Fact]
+  public async Task PostgresPitRebuildFallsBackWithNoRegisteredStrategyDiagnosticsWhenPostgresStartupIsAbsent() {
+    var configuration = PostgresIntegrationTestConfiguration.FromEnvironment();
+    if (!configuration.IsConfigured) {
+      Assert.Skip(PostgresIntegrationTestConfiguration.MissingConfigurationSkipMessage);
+    }
+
+    var services = new ServiceCollection();
+    services.AddDVault();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var maintenanceService = provider.GetRequiredService<IDataVaultPitMaintenanceService>();
+
+    await WithPostgresSchemaAsync(
+        configuration.ConnectionString!,
+        PostgresPitMaintenanceModelKind.Ordinary,
+        async context => {
+          var metadata = CreateOrdinaryMetadata();
+          var customerHashKey = "customer-hash-fallback";
+          var statusTimestamp = Utc(2026, 5, 12, 9, 0);
+          var profileTimestamp = Utc(2026, 5, 12, 10, 0);
+          var request = new DataVaultPitRebuildRequest(metadata.Pit);
+
+          AddProfileRow(context, customerHashKey, profileTimestamp, "Fallback Name", "Fallback Tier", "fallback-profile");
+          AddStatusRow(context, customerHashKey, statusTimestamp, "Fallback Status", "fallback-status");
+          await context.SaveChangesAsync();
+          context.ChangeTracker.Clear();
+
+          using var listener = new DataVaultActivityTestListener();
+          var result = await maintenanceService.RebuildAsync(context, request);
+
+          Assert.Equal("PitCustomerProfileStatus", result.TableName);
+          Assert.Equal(1, result.ParentHashKeyCount);
+          Assert.Equal(0, result.RowsDeleted);
+          Assert.Equal(2, result.RowsWritten);
+          Assert.Collection(
+              await ReadOrdinaryPitRowsAsync(context),
+              row => AssertOrdinaryPitRow(row, customerHashKey, statusTimestamp, null, statusTimestamp),
+              row => AssertOrdinaryPitRow(row, customerHashKey, profileTimestamp, profileTimestamp, statusTimestamp));
+          AssertPostgresFallbackActivity(
+              listener,
+              nameof(DataVaultPitMaintenanceStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered),
+              [
+                  customerHashKey,
+                  "Fallback Name",
+                  "Fallback Tier",
+                  "Fallback Status",
+                  "fallback-profile",
+                  "fallback-status",
+              ]);
+        });
+  }
+
   private static async Task AssertOrdinaryPitRebuildAsync(
       IServiceProvider provider,
       IDataVaultPitMaintenanceService maintenanceService,
@@ -69,6 +125,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
     await context.SaveChangesAsync();
     context.ChangeTracker.Clear();
 
+    using var listener = new DataVaultActivityTestListener();
     var result = await maintenanceService.RebuildAsync(context, request);
 
     AssertProviderPathObserved(context);
@@ -81,6 +138,18 @@ public sealed class PostgresPitMaintenanceServiceTests {
         row => AssertOrdinaryPitRow(row, customerHashKey, statusTimestamp, null, statusTimestamp),
         row => AssertOrdinaryPitRow(row, customerHashKey, profileTimestamp, profileTimestamp, statusTimestamp),
         row => AssertOrdinaryPitRow(row, customerHashKey, secondStatusTimestamp, profileTimestamp, secondStatusTimestamp));
+    AssertPostgresSelectedActivity(
+        listener,
+        [
+            customerHashKey,
+            "Alice Adams",
+            "Gold",
+            "Active",
+            "Preferred",
+            "profile-1",
+            "status-1",
+            "status-2",
+        ]);
   }
 
   private static async Task AssertMultiActivePitRebuildAsync(
@@ -203,6 +272,84 @@ public sealed class PostgresPitMaintenanceServiceTests {
     Assert.True(
         trackedEntries.Length == 0,
         PostgresOptimizedPathDiagnostic + " Actual tracked entries: " + trackedEntries.Length);
+  }
+
+  private static void AssertPostgresSelectedActivity(
+      DataVaultActivityTestListener listener,
+      IReadOnlyList<string> sensitiveValues) {
+    var activity = Assert.Single(
+        listener.StoppedActivities,
+        current => string.Equals(current.OperationName, DataVaultActivityTracing.PitRebuildOperation, StringComparison.Ordinal));
+    var tags = GetTags(activity);
+
+    Assert.Equal(ActivityStatusCode.Ok, activity.Status);
+    Assert.Equal("success", tags[DataVaultActivityTracing.OutcomeTag]);
+    Assert.Equal(PostgresProviderName, tags[DataVaultActivityTracing.ProviderTag]);
+    Assert.Equal("ProviderStrategySelected", tags[DataVaultActivityTracing.StrategyStatusTag]);
+    Assert.Equal(PostgresPitMaintenanceStrategyName, tags[DataVaultActivityTracing.StrategyTypeTag]);
+    Assert.Contains(activity.Events, current =>
+        string.Equals(current.Name, DataVaultActivityTracing.StrategySelectedEvent, StringComparison.Ordinal) &&
+        string.Equals(
+            Convert.ToString(GetTags(current)[DataVaultActivityTracing.StrategyTypeTag], CultureInfo.InvariantCulture),
+            PostgresPitMaintenanceStrategyName,
+            StringComparison.Ordinal));
+    AssertActivityRedacted(activity, sensitiveValues);
+  }
+
+  private static void AssertPostgresFallbackActivity(
+      DataVaultActivityTestListener listener,
+      string fallbackCause,
+      IReadOnlyList<string> sensitiveValues) {
+    var activity = Assert.Single(
+        listener.StoppedActivities,
+        current => string.Equals(current.OperationName, DataVaultActivityTracing.PitRebuildOperation, StringComparison.Ordinal));
+    var tags = GetTags(activity);
+
+    Assert.Equal(ActivityStatusCode.Ok, activity.Status);
+    Assert.Equal("success", tags[DataVaultActivityTracing.OutcomeTag]);
+    Assert.Equal(PostgresProviderName, tags[DataVaultActivityTracing.ProviderTag]);
+    Assert.Equal("ProviderNeutralFallback", tags[DataVaultActivityTracing.StrategyStatusTag]);
+    Assert.Equal(nameof(DefaultDataVaultPitMaintenanceService), tags[DataVaultActivityTracing.StrategyTypeTag]);
+    Assert.Contains(activity.Events, current =>
+        string.Equals(current.Name, DataVaultActivityTracing.FallbackRecordedEvent, StringComparison.Ordinal) &&
+        string.Equals(
+            Convert.ToString(GetTags(current)[DataVaultActivityTracing.FallbackCauseTag], CultureInfo.InvariantCulture),
+            fallbackCause,
+            StringComparison.Ordinal));
+    AssertActivityRedacted(activity, sensitiveValues);
+  }
+
+  private static void AssertActivityRedacted(
+      Activity activity,
+      IReadOnlyList<string> sensitiveValues) {
+    var telemetryValues = GetTags(activity)
+        .Values
+        .Concat(activity.Events.SelectMany(current => GetTags(current).Values))
+        .Select(value => Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty)
+        .ToArray();
+
+    foreach (var value in telemetryValues) {
+      Assert.DoesNotContain("SELECT ", value, StringComparison.OrdinalIgnoreCase);
+      Assert.DoesNotContain("INSERT ", value, StringComparison.OrdinalIgnoreCase);
+      Assert.DoesNotContain("DELETE ", value, StringComparison.OrdinalIgnoreCase);
+      Assert.DoesNotContain("Host=", value, StringComparison.OrdinalIgnoreCase);
+      Assert.DoesNotContain("Username=", value, StringComparison.OrdinalIgnoreCase);
+      Assert.DoesNotContain("Password=", value, StringComparison.OrdinalIgnoreCase);
+    }
+
+    foreach (var sensitiveValue in sensitiveValues) {
+      Assert.All(
+          telemetryValues,
+          value => Assert.DoesNotContain(sensitiveValue, value, StringComparison.Ordinal));
+    }
+  }
+
+  private static IReadOnlyDictionary<string, object?> GetTags(Activity activity) {
+    return activity.TagObjects.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.Ordinal);
+  }
+
+  private static IReadOnlyDictionary<string, object?> GetTags(ActivityEvent activityEvent) {
+    return activityEvent.Tags.ToDictionary(tag => tag.Key, tag => tag.Value, StringComparer.Ordinal);
   }
 
   private static void AddProfileRow(

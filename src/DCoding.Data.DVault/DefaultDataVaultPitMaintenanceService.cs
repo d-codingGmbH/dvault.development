@@ -38,6 +38,7 @@ internal sealed class DefaultDataVaultPitMaintenanceService : IDataVaultPitMaint
       var result = await RebuildWithSelectedStrategyAsync(
           dbContext,
           request,
+          activity,
           cancellationToken).ConfigureAwait(false);
 
       activity.RecordSuccess(
@@ -83,21 +84,78 @@ internal sealed class DefaultDataVaultPitMaintenanceService : IDataVaultPitMaint
   private async Task<DataVaultPitMaintenanceResult> RebuildWithSelectedStrategyAsync(
       DbContext dbContext,
       DataVaultPitRebuildRequest request,
+      DataVaultMaintenanceActivity activity,
       CancellationToken cancellationToken) {
+    var fallbackCauses = new List<DataVaultPitMaintenanceStrategyFallbackCause>();
+    var attemptedStrategyNames = new List<string>();
+
     foreach (var strategy in _providerPitMaintenanceStrategies) {
+      var strategyName = strategy.GetType().Name;
+      attemptedStrategyNames.Add(strategyName);
       if (!strategy.CanRebuild(dbContext, request)) {
+        fallbackCauses.AddRange(CreateFallbackCauses(strategy, strategyName, dbContext, request));
         continue;
       }
 
+      activity.RecordStrategySelected(strategyName);
       return await strategy.RebuildAsync(
           new DataVaultProviderPitMaintenanceStrategyContext(dbContext, request),
           cancellationToken).ConfigureAwait(false);
     }
 
+    activity.RecordStrategyFallback(
+        GetFallbackStrategyName(attemptedStrategyNames),
+        CompleteFallbackCauses(_providerPitMaintenanceStrategies.Count, fallbackCauses)
+            .Select(cause => cause.Kind.ToString()));
     return await RebuildWithProviderNeutralPipelineAsync(
         dbContext,
         request,
         cancellationToken).ConfigureAwait(false);
+  }
+
+  private static IReadOnlyList<DataVaultPitMaintenanceStrategyFallbackCause> CreateFallbackCauses(
+      IDataVaultProviderPitMaintenanceStrategy strategy,
+      string strategyName,
+      DbContext dbContext,
+      DataVaultPitRebuildRequest request) {
+    return DataVaultProviderPitMaintenanceStrategyGateEvaluator.TryEvaluateKnownStrategy(
+        strategy,
+        dbContext,
+        request,
+        out var evaluation)
+        ? evaluation.FallbackCauses
+        : [new DataVaultPitMaintenanceStrategyFallbackCause(
+            DataVaultPitMaintenanceStrategyFallbackCauseKind.StrategyDeclined,
+            "Provider PIT maintenance strategy '" + strategyName + "' declined the rebuild request.")];
+  }
+
+  private static IReadOnlyList<DataVaultPitMaintenanceStrategyFallbackCause> CompleteFallbackCauses(
+      int strategyCount,
+      List<DataVaultPitMaintenanceStrategyFallbackCause> fallbackCauses) {
+    if (strategyCount == 0) {
+      fallbackCauses.Add(new DataVaultPitMaintenanceStrategyFallbackCause(
+          DataVaultPitMaintenanceStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered,
+          "No provider-specific Data Vault PIT maintenance strategy is registered."));
+    }
+
+    if (fallbackCauses.Count == 0) {
+      fallbackCauses.Add(new DataVaultPitMaintenanceStrategyFallbackCause(
+          DataVaultPitMaintenanceStrategyFallbackCauseKind.StrategyDeclined,
+          "Every registered provider-specific Data Vault PIT maintenance strategy declined the rebuild request."));
+    }
+
+    return fallbackCauses
+        .GroupBy(cause => cause.Kind)
+        .Select(group => group.First())
+        .ToArray();
+  }
+
+  private static string GetFallbackStrategyName(IReadOnlyList<string> attemptedStrategyNames) {
+    return attemptedStrategyNames.Count switch {
+      0 => nameof(DefaultDataVaultPitMaintenanceService),
+      1 => attemptedStrategyNames[0],
+      _ => "MultipleProviderPitMaintenanceStrategies",
+    };
   }
 
   private static async Task<DataVaultPitMaintenanceResult> RebuildWithProviderNeutralPipelineAsync(
