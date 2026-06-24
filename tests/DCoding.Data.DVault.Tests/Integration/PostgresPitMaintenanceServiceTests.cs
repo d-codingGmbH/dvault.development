@@ -88,6 +88,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
           AssertPostgresFallbackActivity(
               listener,
               nameof(DataVaultPitMaintenanceStrategyFallbackCauseKind.NoProviderSpecificStrategyRegistered),
+              nameof(DefaultDataVaultPitMaintenanceService),
               [
                   customerHashKey,
                   "Fallback Name",
@@ -97,6 +98,28 @@ public sealed class PostgresPitMaintenanceServiceTests {
                   "fallback-status",
               ]);
         });
+  }
+
+  [Fact]
+  public async Task AddDVaultPostgresPitRebuildFallsBackInsideAmbientCallerTransactionWhenConfigured() {
+    var configuration = PostgresIntegrationTestConfiguration.FromEnvironment();
+    if (!configuration.IsConfigured) {
+      Assert.Skip(PostgresIntegrationTestConfiguration.MissingConfigurationSkipMessage);
+    }
+
+    var services = new ServiceCollection();
+    services.AddDVaultPostgres();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var maintenanceService = provider.GetRequiredService<IDataVaultPitMaintenanceService>();
+
+    await WithPostgresSchemaAsync(
+        configuration.ConnectionString!,
+        PostgresPitMaintenanceModelKind.Ordinary,
+        async context => await AssertOrdinaryPitRebuildFallbackInsideAmbientTransactionAsync(
+            provider,
+            maintenanceService,
+            context));
   }
 
   private static async Task AssertOrdinaryPitRebuildAsync(
@@ -150,6 +173,58 @@ public sealed class PostgresPitMaintenanceServiceTests {
             "status-1",
             "status-2",
         ]);
+  }
+
+  private static async Task AssertOrdinaryPitRebuildFallbackInsideAmbientTransactionAsync(
+      IServiceProvider provider,
+      IDataVaultPitMaintenanceService maintenanceService,
+      PostgresPitMaintenanceContext context) {
+    var metadata = CreateOrdinaryMetadata();
+    var customerHashKey = "customer-ambient-transaction";
+    var staleTimestamp = Utc(2026, 5, 14, 8, 30);
+    var profileTimestamp = Utc(2026, 5, 14, 10, 0);
+    var statusTimestamp = Utc(2026, 5, 14, 11, 0);
+    var request = new DataVaultPitRebuildRequest(metadata.Pit);
+
+    AddProfileRow(context, customerHashKey, profileTimestamp, "Ambra Allen", "Silver", "profile-ambient");
+    AddStatusRow(context, customerHashKey, statusTimestamp, "Active", "status-ambient");
+    context.Set<Dictionary<string, object>>("PitCustomerProfileStatus").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
+      ["CustomerHashKey"] = customerHashKey,
+      ["LoadTimestamp"] = staleTimestamp,
+      ["ProfileLoadTimestamp"] = null!,
+      ["StatusLoadTimestamp"] = null!,
+    });
+    await context.SaveChangesAsync();
+    context.ChangeTracker.Clear();
+
+    await using var transaction = await context.Database.BeginTransactionAsync();
+    AssertPostgresStrategyDeclinesCurrentTransaction(provider, context, request);
+
+    using var listener = new DataVaultActivityTestListener();
+    var result = await maintenanceService.RebuildAsync(context, request);
+
+    Assert.Equal("PitCustomerProfileStatus", result.TableName);
+    Assert.Equal(1, result.ParentHashKeyCount);
+    Assert.Equal(1, result.RowsDeleted);
+    Assert.Equal(2, result.RowsWritten);
+    Assert.Collection(
+        await ReadOrdinaryPitRowsAsync(context),
+        row => AssertOrdinaryPitRow(row, customerHashKey, profileTimestamp, profileTimestamp, statusSnapshotTimestamp: null),
+        row => AssertOrdinaryPitRow(row, customerHashKey, statusTimestamp, profileTimestamp, statusTimestamp));
+    AssertPostgresFallbackActivity(
+        listener,
+        nameof(DataVaultPitMaintenanceStrategyFallbackCauseKind.CurrentTransactionSavepointUnavailable),
+        PostgresPitMaintenanceStrategyName,
+        [
+            customerHashKey,
+            "Ambra Allen",
+            "Silver",
+            "Active",
+            "profile-ambient",
+            "status-ambient",
+        ]);
+
+    await transaction.RollbackAsync();
   }
 
   private static async Task AssertMultiActivePitRebuildAsync(
@@ -266,6 +341,17 @@ public sealed class PostgresPitMaintenanceServiceTests {
         PostgresStrategyRegistrationDiagnostic);
   }
 
+  private static void AssertPostgresStrategyDeclinesCurrentTransaction(
+      IServiceProvider provider,
+      PostgresPitMaintenanceContext context,
+      DataVaultPitRebuildRequest request) {
+    Assert.False(
+        provider.GetServices<IDataVaultProviderPitMaintenanceStrategy>().Any(strategy => strategy.CanRebuild(context, request)));
+    Assert.Contains(
+        DataVaultProviderPitMaintenanceStrategyGateEvaluator.EvaluatePostgres(context, request).FallbackCauses,
+        cause => cause.Kind == DataVaultPitMaintenanceStrategyFallbackCauseKind.CurrentTransactionSavepointUnavailable);
+  }
+
   private static void AssertProviderPathObserved(PostgresPitMaintenanceContext context) {
     var trackedEntries = context.ChangeTracker.Entries().ToArray();
 
@@ -299,6 +385,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
   private static void AssertPostgresFallbackActivity(
       DataVaultActivityTestListener listener,
       string fallbackCause,
+      string expectedStrategyType,
       IReadOnlyList<string> sensitiveValues) {
     var activity = Assert.Single(
         listener.StoppedActivities,
@@ -309,7 +396,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
     Assert.Equal("success", tags[DataVaultActivityTracing.OutcomeTag]);
     Assert.Equal(PostgresProviderName, tags[DataVaultActivityTracing.ProviderTag]);
     Assert.Equal("ProviderNeutralFallback", tags[DataVaultActivityTracing.StrategyStatusTag]);
-    Assert.Equal(nameof(DefaultDataVaultPitMaintenanceService), tags[DataVaultActivityTracing.StrategyTypeTag]);
+    Assert.Equal(expectedStrategyType, tags[DataVaultActivityTracing.StrategyTypeTag]);
     Assert.Contains(activity.Events, current =>
         string.Equals(current.Name, DataVaultActivityTracing.FallbackRecordedEvent, StringComparison.Ordinal) &&
         string.Equals(
@@ -656,4 +743,5 @@ public sealed class PostgresPitMaintenanceServiceTests {
       DateTimeOffset LoadTimestamp,
       DateTimeOffset? StateSnapshotTimestamp,
       DateTimeOffset? FulfillmentSnapshotTimestamp);
+
 }

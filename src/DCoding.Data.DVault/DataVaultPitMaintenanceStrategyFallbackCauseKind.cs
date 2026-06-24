@@ -5,6 +5,7 @@ internal enum DataVaultPitMaintenanceStrategyFallbackCauseKind {
   UnknownOrUnregisteredProviderName,
   NoProviderSpecificStrategyRegistered,
   DirtyDbContext,
+  CurrentTransactionSavepointUnavailable,
   UnsupportedPitShape,
   IncompleteMaintenanceShapeEvidence,
   StrategyDeclined,

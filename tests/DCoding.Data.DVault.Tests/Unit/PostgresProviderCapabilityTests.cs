@@ -79,6 +79,14 @@ public sealed class PostgresProviderCapabilityTests {
           cause => cause.Kind == DataVaultPitMaintenanceStrategyFallbackCauseKind.DirtyDbContext);
       Assert.Contains(
           DataVaultProviderPitMaintenanceStrategyGateEvaluator
+              .EvaluatePostgres(
+                  KnownProviderNames.Postgres,
+                  ordinaryHubPit,
+                  hasCurrentTransaction: true)
+              .FallbackCauses,
+          cause => cause.Kind == DataVaultPitMaintenanceStrategyFallbackCauseKind.CurrentTransactionSavepointUnavailable);
+      Assert.Contains(
+          DataVaultProviderPitMaintenanceStrategyGateEvaluator
               .EvaluatePostgres(KnownProviderNames.Postgres, linkMultiActivePit)
               .FallbackCauses,
           cause => cause.Kind == DataVaultPitMaintenanceStrategyFallbackCauseKind.UnsupportedPitShape);

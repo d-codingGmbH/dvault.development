@@ -26,6 +26,16 @@ internal sealed class PostgresDataVaultPitMaintenanceStrategy : IDataVaultProvid
     ArgumentNullException.ThrowIfNull(context);
     cancellationToken.ThrowIfCancellationRequested();
 
+    var evaluation = DataVaultProviderPitMaintenanceStrategyGateEvaluator.EvaluatePostgres(
+        context.DbContext,
+        context.Request);
+    if (!evaluation.CanRebuild) {
+      throw new InvalidOperationException(
+          "PostgreSQL PIT maintenance strategy cannot rebuild this request. Fallback causes: " +
+          string.Join(", ", evaluation.FallbackCauses.Select(cause => cause.Kind.ToString())) +
+          ".");
+    }
+
     var projection = DefaultDataVaultPitMaintenanceService.CreatePitProjection(
         context.DbContext,
         context.Request.Pit);

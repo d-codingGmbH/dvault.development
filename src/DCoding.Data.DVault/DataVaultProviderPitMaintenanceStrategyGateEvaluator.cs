@@ -14,14 +14,16 @@ internal static class DataVaultProviderPitMaintenanceStrategyGateEvaluator {
         dbContext.Database.ProviderName,
         request,
         hasCompleteMaintenanceShapeEvidence: HasCompleteMaintenanceShapeEvidence(dbContext, request),
-        hasPendingTrackedChanges: HasPendingTrackedChanges(dbContext));
+        hasPendingTrackedChanges: HasPendingTrackedChanges(dbContext),
+        hasCurrentTransaction: HasCurrentTransaction(dbContext));
   }
 
   public static DataVaultProviderPitMaintenanceStrategyGateEvaluation EvaluatePostgres(
       string? providerName,
       DataVaultPitRebuildRequest request,
       bool hasCompleteMaintenanceShapeEvidence = true,
-      bool hasPendingTrackedChanges = false) {
+      bool hasPendingTrackedChanges = false,
+      bool hasCurrentTransaction = false) {
     ArgumentNullException.ThrowIfNull(request);
 
     return EvaluatePitRebuild(
@@ -30,7 +32,8 @@ internal static class DataVaultProviderPitMaintenanceStrategyGateEvaluator {
         request,
         supportedProviderNames: [KnownProviderNames.Postgres],
         hasCompleteMaintenanceShapeEvidence: hasCompleteMaintenanceShapeEvidence,
-        hasPendingTrackedChanges: hasPendingTrackedChanges);
+        hasPendingTrackedChanges: hasPendingTrackedChanges,
+        hasCurrentTransaction: hasCurrentTransaction);
   }
 
   public static bool TryEvaluateKnownStrategy(
@@ -58,7 +61,8 @@ internal static class DataVaultProviderPitMaintenanceStrategyGateEvaluator {
       DataVaultPitRebuildRequest request,
       IReadOnlyList<string> supportedProviderNames,
       bool hasCompleteMaintenanceShapeEvidence,
-      bool hasPendingTrackedChanges) {
+      bool hasPendingTrackedChanges,
+      bool hasCurrentTransaction) {
     var causes = new List<DataVaultPitMaintenanceStrategyFallbackCause>();
 
     if (!supportedProviderNames.Contains(providerName, StringComparer.Ordinal)) {
@@ -77,6 +81,12 @@ internal static class DataVaultProviderPitMaintenanceStrategyGateEvaluator {
       causes.Add(new DataVaultPitMaintenanceStrategyFallbackCause(
           DataVaultPitMaintenanceStrategyFallbackCauseKind.DirtyDbContext,
           strategyName + " optimized PIT rebuild requires a clean DbContext because pending tracked changes can diverge from persisted satellite history."));
+    }
+
+    if (hasCurrentTransaction) {
+      causes.Add(new DataVaultPitMaintenanceStrategyFallbackCause(
+          DataVaultPitMaintenanceStrategyFallbackCauseKind.CurrentTransactionSavepointUnavailable,
+          strategyName + " optimized PIT rebuild falls back when a caller transaction is already active because this provider path does not implement strategy-owned savepoint rollback for delete-plus-insert maintenance."));
     }
 
     if (!hasCompleteMaintenanceShapeEvidence) {
@@ -151,5 +161,14 @@ internal static class DataVaultProviderPitMaintenanceStrategyGateEvaluator {
   private static bool CapabilityProfileDefaulted(string? providerName) {
     return !string.IsNullOrWhiteSpace(providerName) &&
         !DataVaultProviderCapabilityProfileSelection.TrySelectRegistered(providerName, out _);
+  }
+
+  private static bool HasCurrentTransaction(DbContext dbContext) {
+    try {
+      return dbContext.Database.CurrentTransaction is not null;
+    }
+    catch (Exception exception) when (exception is InvalidOperationException or NotSupportedException) {
+      return true;
+    }
   }
 }
