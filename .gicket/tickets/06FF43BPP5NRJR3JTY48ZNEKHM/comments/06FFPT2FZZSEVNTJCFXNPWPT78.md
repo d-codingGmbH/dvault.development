@@ -1,71 +1,61 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Re-routed the ticket from a closure-only posture to a normal pre-development implementation handoff for PIT maintenance comparator-row normalization and regression coverage. Local repository inspection confirmed existing PIT maintenance provider code/tests but no landed `pit-full-rebuild-maintenance` rows in `benchmark-summary.*` and no benchmark-scenario coverage for that row family. No child tickets, relation changes, attachments, description writes, or planning documents were materialized in this pass.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+PO-critic checklist responses
+- critic-item-1: `answered` - This ticket is re-routed as normal pre-development implementation work, not a closure-only evidence ticket. The contract now stays focused on benchmark generation/normalization and regression coverage for provider-neutral PIT full-rebuild maintenance comparator rows.
+- critic-item-2: `answered` - The ticket remains open because the repository does not yet show landed PIT maintenance comparator-row benchmark outputs or benchmark-output regression coverage. Existing PostgreSQL and SQL Server PIT maintenance implementations/tests are baseline inputs, but this ticket still needs the benchmark row normalization and verification work its own contract describes.
+
+Clarifications
 - This is a developer handoff ticket for benchmark-output implementation and verification, not a closure-only ratification of already-landed evidence.
 - The bounded repository baseline is already fixed: PIT maintenance evidence uses scenario `pit-full-rebuild-maintenance`, not `pit-as-of-read` or `bridge-traversal-read`.
 - The comparator row must preserve provider-neutral fallback posture with `selectedStrategy=<none>`, deterministic execution detail, and bounded fallback-cause tokens when a provider-specific maintenance path is not selected.
 - Existing PostgreSQL and SQL Server PIT maintenance provider implementations are baseline inputs; this ticket adds benchmark comparator-row normalization and artifact/test coverage on top of that baseline.
 - No child tickets, relation changes, description writes, attachments, or planning documents were materialized in this pass.
 
-### Scope In
+Scope In
 - Normalize provider-neutral comparator rows for `pit-full-rebuild-maintenance` in PostgreSQL and SQL Server benchmark outputs.
 - Keep markdown, CSV, and JSON PIT maintenance rows structurally aligned with the shared benchmark artifact contract.
 - Preserve provider-neutral fallback posture, bounded fallback-cause vocabularies, run-context fields, and persisted-outcome semantics needed for later evidence citations.
 - Add regression or contract coverage that locks PIT maintenance comparator-row identity and detail tokens across artifact formats.
 
-### Scope Out
+Scope Out
 - New PostgreSQL or SQL Server PIT maintenance strategies or wider maintenance-shape support.
 - MySQL, Oracle, or DB2 PIT maintenance comparator lanes.
 - Promoting `pit-as-of-read` or `bridge-traversal-read` rows into PIT maintenance evidence.
 - Bridge maintenance, maintain-parents expansion, or unrelated read-optimization work.
 - Introducing a new benchmark schema or ad hoc provider-specific comparator prose outside the shared contract.
 
-## Acceptance Criteria
-- When PIT full-rebuild maintenance benchmark outputs are generated for PostgreSQL or SQL Server, each provider lane keeps a provider-specific row and a structurally comparable provider-neutral comparator row under scenario `pit-full-rebuild-maintenance`.
-- Across markdown, CSV, and JSON, comparator rows preserve `selectedStrategy=<none>`, deterministic execution-path detail, bounded fallback causes when present, required run-context fields, and the existing persisted-outcome rules from the shared artifact contract.
-- Skipped or not-executed PIT maintenance comparator rows remain visible with `iterations=0`, blank or null metrics, deterministic execution detail, and `persistedOutcome=not executed` instead of disappearing or degrading into free-form prose.
-- Automated regression or contract tests fail if PIT maintenance comparator row identity, fallback tokens, or cross-format field parity drifts.
-
-## Definition of Done
-- Benchmark generation or normalization code emits stable provider-neutral PIT maintenance comparator rows for PostgreSQL and SQL Server lanes using the existing shared artifact schema.
-- Automated verification covers `pit-full-rebuild-maintenance` row identity and detail fields across markdown, CSV, and JSON, including provider-neutral fallback posture and bounded fallback-cause tokens.
-- The maintained benchmark harness no longer requires manual interpretation to distinguish provider-neutral PIT maintenance comparator rows from provider-specific PIT maintenance rows.
-- The ticket does not claim closure-only completion; future timing claims remain gated on preserved artifact triplets and run context per the shared evidence contract.
-
-## Implementation Notes
-- Reuse the PIT full-rebuild maintenance row contract already documented in `docs/plans/performance-evidence-benchmark-artifact-contract.md` and `docs/plans/provider-optimization-evidence-matrix.md`.
-- Use the existing bounded fallback vocabularies from `src/DCoding.Data.DVault/DataVaultPitMaintenanceStrategyFallbackCauseKind.cs` and `src/DCoding.Data.DVault.SqlServer/SqlServerPitMaintenanceFallbackCauseKind.cs`.
-- Treat the existing provider baseline as fixed: PostgreSQL uses `PostgresDataVaultPitMaintenanceStrategy`, SQL Server uses `SqlServerDataVaultPitMaintenanceService`, and the benchmark contract should normalize their outputs without reopening maintenance architecture.
-- Keep PIT maintenance evidence bounded to `IDataVaultPitMaintenanceService.RebuildAsync(...)` full rebuilds and do not widen claims to PIT read, bridge read, or non-maintenance scenarios.
-- No persistent planning writes or ticket mutations were applied during this refinement pass.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - After PostgreSQL and SQL Server comparator rows are normalized, should later MySQL, Oracle, or DB2 PIT maintenance tickets adopt the same comparator-row contract from the start?
 - Once provider-configured PIT maintenance artifact triplets land, should downstream docs add one representative comparator-row example to the evidence matrix or release notes?
 
-## Risks
+Risks
 - If comparator rows drift into provider-specific prose or inconsistent tokens, downstream evidence consumers will need brittle special-case parsing.
 - If PIT read or bridge read rows are cited as maintenance evidence, the repository will violate its documented maintenance-evidence boundary.
 - PostgreSQL and SQL Server use different maintenance seams, so normalization must preserve a shared artifact contract without hiding bounded fallback-cause meaning.
 
-## Split Recommendations
+Split recommendations
 - No split recommended; the repository baseline supports one bounded implementation ticket for PostgreSQL and SQL Server PIT maintenance comparator-row normalization and coverage.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 4
+- definition-of-done items: 4
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Ensure PIT maintenance benchmarks preserve a provider-neutral comparator row with strategy status, fallback causes, and run context. Acceptance: PostgreSQL and SQL Server lanes can cite comparable fallback rows.
+Run mode
+- apply: planned updates are applied after this comment

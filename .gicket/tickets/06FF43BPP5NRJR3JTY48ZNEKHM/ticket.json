@@ -3,20 +3,20 @@
   "ticket-id": "06FF43BPP5NRJR3JTY48ZNEKHM",
   "ticket-type": "task",
   "title": "Task: Normalize provider-neutral PIT maintenance comparator rows",
-  "revision": "06FF44JFT18WRDHY3S3X5QQ2EG",
-  "status": "todo",
+  "revision": "06FFPWNEJKMTVMVD32JPHQ1EJ4",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
+    "area/diagnostics",
     "area/performance",
     "area/read-models",
-    "area/diagnostics"
+    "automation/bot-ready",
+    "type/task",
+    "closure/no-work-required"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FF437KCQ2K07C5SMDPXFY7YC",
   "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
   "created-at": "2026-06-23T01:17:10.9372965Z",
-  "updated-at": "2026-06-23T01:22:26.8968784Z"
+  "updated-at": "2026-06-24T21:04:17.5560000Z"
 }
