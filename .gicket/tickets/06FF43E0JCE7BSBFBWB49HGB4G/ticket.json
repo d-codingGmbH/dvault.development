@@ -3,21 +3,20 @@
   "ticket-id": "06FF43E0JCE7BSBFBWB49HGB4G",
   "ticket-type": "task",
   "title": "Task: Evaluate DB2 PIT full-rebuild push-down feasibility",
-  "revision": "06FF44HAE2T2AJD36QW7Q5GTF8",
-  "status": "todo",
+  "revision": "06FFGEYXV43FVM6BEJ8QCECC5C",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/performance",
     "area/provider-support",
     "area/read-models",
-    "provider/db2"
+    "automation/bot-ready",
+    "provider/db2",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FF437M4JK4J4JZMQWKAYF9HR",
   "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
   "created-at": "2026-06-23T01:17:29.4471473Z",
-  "updated-at": "2026-06-23T01:22:17.3281703Z"
+  "updated-at": "2026-06-24T06:05:33.5290425Z"
 }
