@@ -3,7 +3,7 @@
   "ticket-id": "06FF43F283QFQ56290AVJ3AXSM",
   "ticket-type": "task",
   "title": "Task: Document provider PIT expansion decision matrix",
-  "revision": "06FFJ3YQ47BG2GQB0Y5VMH8GEG",
+  "revision": "06FFTX0FWSCWKNK73F25JY75EW",
   "status": "done",
   "labels": [
     "area/architecture",
@@ -11,7 +11,6 @@
     "area/performance",
     "area/provider-support",
     "automation/bot-ready",
-    "integrator-gate/pending",
     "type/task"
   ],
   "assignees": [],
@@ -19,5 +18,5 @@
   "milestone-id": "06FF437M4JK4J4JZMQWKAYF9HR",
   "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
   "created-at": "2026-06-23T01:17:36.9640561Z",
-  "updated-at": "2026-06-24T09:57:05.4411725Z"
+  "updated-at": "2026-06-25T06:25:02.4387449Z"
 }

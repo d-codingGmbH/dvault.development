@@ -3,14 +3,13 @@
   "ticket-id": "06FF43AH9SK6J07GV5EKYV3AMM",
   "ticket-type": "task",
   "title": "Task: Add PostgreSQL PIT full-rebuild benchmark lane",
-  "revision": "06FFP4N5FENMZXXPMMBB4CE7Y0",
+  "revision": "06FFTX04JE9VKJ1Q101YEYM0AC",
   "status": "done",
   "labels": [
     "area/performance",
     "area/provider-support",
     "area/read-models",
     "automation/bot-ready",
-    "integrator-gate/pending",
     "provider/postgres",
     "type/task"
   ],
@@ -19,5 +18,5 @@
   "milestone-id": "06FF437KCQ2K07C5SMDPXFY7YC",
   "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
   "created-at": "2026-06-23T01:16:59.8479677Z",
-  "updated-at": "2026-06-24T19:19:23.7716485Z"
+  "updated-at": "2026-06-25T06:24:59.5390845Z"
 }

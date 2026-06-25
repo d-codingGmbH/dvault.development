@@ -3,6 +3,6 @@
   "milestone-id": "06FF437M4JK4J4JZMQWKAYF9HR",
   "name": "v0.47.0 - Provider PIT expansion feasibility",
   "description": "Evaluate MySQL, Oracle, and DB2 PIT maintenance push-down feasibility with explicit fallback and deferral decisions.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-23T01:16:35.7489316Z"
 }

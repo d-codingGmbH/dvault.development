@@ -3,6 +3,6 @@
   "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
   "name": "v0.47.0 - Provider Maintenance Evidence and Parity",
   "description": "Evidence-gated EF Core provider-library work after the interactive v0.46 optimization pass: PIT maintenance benchmark lanes, provider expansion feasibility, PostgreSQL and SQL Server hardening, and documentation without schedulers, deployment automation, or platform behavior. Planning release v0.47.0 maps to package versions 8.47.0 and 10.47.0.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-23T01:16:34.7215740Z"
 }

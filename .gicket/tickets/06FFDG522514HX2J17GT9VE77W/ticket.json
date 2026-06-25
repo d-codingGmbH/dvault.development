@@ -3,14 +3,13 @@
   "ticket-id": "06FFDG522514HX2J17GT9VE77W",
   "ticket-type": "task",
   "title": "Task: Implement MySQL ordinary hub-parent PIT full-rebuild maintenance strategy",
-  "revision": "06FFMV17VZAK2TK63XD69HMNWR",
+  "revision": "06FFTX10TT3MRG0B4MWT8BNWX8",
   "status": "done",
   "labels": [
     "area/performance",
     "area/provider-support",
     "area/read-models",
     "automation/bot-ready",
-    "integrator-gate/pending",
     "provider/mysql",
     "type/task"
   ],
@@ -19,5 +18,5 @@
   "milestone-id": "06FF437M4JK4J4JZMQWKAYF9HR",
   "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
   "created-at": "2026-06-23T23:11:32.6764038Z",
-  "updated-at": "2026-06-24T16:17:32.6399574Z"
+  "updated-at": "2026-06-25T06:25:06.7748257Z"
 }

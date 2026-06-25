@@ -3,14 +3,13 @@
   "ticket-id": "06FF43GFC5F2VAA0Q7CS9KTX68",
   "ticket-type": "task",
   "title": "Task: Review PostgreSQL PIT maintenance transaction and savepoint behavior",
-  "revision": "06FFHQ4ST8A7KDG0MBHX6HZ3NC",
+  "revision": "06FFTX0RCX3CV00MDXDB4C0P0C",
   "status": "done",
   "labels": [
     "area/performance",
     "area/provider-support",
     "area/read-models",
     "automation/bot-ready",
-    "integrator-gate/pending",
     "provider/postgres",
     "type/task"
   ],
@@ -19,5 +18,5 @@
   "milestone-id": "06FF437MXCMEA0BMH78G04MJKG",
   "release-id": "06FF437G47PSNMPGYAJT5EZWX8",
   "created-at": "2026-06-23T01:17:51.6348838Z",
-  "updated-at": "2026-06-24T09:01:07.4108217Z"
+  "updated-at": "2026-06-25T06:25:04.6158194Z"
 }

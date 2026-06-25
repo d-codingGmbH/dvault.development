@@ -3,6 +3,6 @@
   "milestone-id": "06FF437Q6BCDT2E67RMFK783NR",
   "name": "v0.48.0 - Adoption quickstarts and analyzer ergonomics",
   "description": "Improve library-focused onboarding with binary-first examples, provider setup guidance, and analyzer host compatibility investigation.",
-  "status": "planned",
+  "status": "active",
   "created-at": "2026-06-23T01:16:36.5300618Z"
 }
