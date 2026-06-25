@@ -1,0 +1,10 @@
+{
+  "event-id": "06FFY7K2K1GE9K6FY2QWKVFPJ4",
+  "occurred-at": "2026-06-25T14:10:41.9449972Z",
+  "event-type": "TicketArchived",
+  "actor": {
+    "name": "system",
+    "email": "system@example.invalid"
+  },
+  "payload": {}
+}

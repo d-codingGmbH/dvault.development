@@ -3,13 +3,12 @@
   "ticket-id": "06FF43V3NVWER898D8CKXJ74D8",
   "ticket-type": "task",
   "title": "Task: Audit analyzer host options for net8 consumer comfort",
-  "revision": "06FFY766SXDM0FYJ2YYS0J48Q8",
+  "revision": "06FFY7K2K1GE9K6FY2QWKVFPJ4",
   "status": "done",
   "labels": [
     "area/analyzers",
     "area/compatibility",
     "area/package",
-    "automation/bot-ready",
     "type/task"
   ],
   "assignees": [],
@@ -17,5 +16,5 @@
   "milestone-id": "06FF437Q6BCDT2E67RMFK783NR",
   "release-id": "06FF437GWAWYQF5HXSRVB09B7R",
   "created-at": "2026-06-23T01:19:17.3843387Z",
-  "updated-at": "2026-06-25T14:08:56.5272752Z"
+  "updated-at": "2026-06-25T14:10:41.9449972Z"
 }
