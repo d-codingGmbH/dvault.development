@@ -19,6 +19,7 @@ public sealed class DataVaultModelArtifactExporterTests {
         ["schemaVersion", "naming", "loadTimestampStorage", "hubs", "links", "satellites", "pits", "bridges"],
         TopLevelPropertyNames(json));
     Assert.Contains("\n  \"schemaVersion\": \"dvault.model.v1\"", json, StringComparison.Ordinal);
+    Assert.Contains("\"encryptedPayloadAlias\": \"CustomerProfileEmailEncrypted\"", json, StringComparison.Ordinal);
     Assert.DoesNotContain("pointInTimeTables", json, StringComparison.Ordinal);
 
     var importResult = DataVaultModelArtifactImporter.ImportJson(json);
@@ -30,6 +31,9 @@ public sealed class DataVaultModelArtifactExporterTests {
         ["CustomerOrder", "SalesRegionParentChild"],
         importResult.MetadataModel.Links.Select(link => link.Name));
     Assert.Equal(["CustomerPit"], importResult.MetadataModel.Pits.Select(pit => pit.Name));
+    Assert.Equal(
+        ["CustomerProfileEmailEncrypted"],
+        importResult.MetadataModel.Satellites[0].PersonalDataFields.Select(personalData => personalData.EncryptedPayloadAlias));
     Assert.Equal(
         ["CustomerOrderBridge", "SalesRegionHierarchyBridge"],
         importResult.MetadataModel.Bridges.Select(bridge => bridge.Name));
@@ -222,7 +226,13 @@ public sealed class DataVaultModelArtifactExporterTests {
             new DataVaultSatelliteMetadata(
                 "CustomerProfile",
                 customer.ToReference(),
-                ["Name", "EmailAddress"]),
+                ["Name", "EmailAddress"],
+                Array.Empty<string>(),
+                [
+                    new DataVaultSatellitePersonalDataMetadata(
+                        "EmailAddress",
+                        "CustomerProfileEmailEncrypted"),
+                ]),
             new DataVaultSatelliteMetadata(
                 "CustomerContactByType",
                 customer.ToReference(),

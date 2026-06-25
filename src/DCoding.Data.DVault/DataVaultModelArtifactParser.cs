@@ -47,6 +47,12 @@ internal static class DataVaultModelArtifactParser {
       "parent",
       "payload",
       "drivingKeys",
+      "personalData",
+  };
+
+  private static readonly HashSet<string> PersonalDataProperties = new(StringComparer.Ordinal) {
+      "field",
+      "encryptedPayloadAlias",
   };
 
   private static readonly HashSet<string> ParentProperties = new(StringComparer.Ordinal) {
@@ -383,11 +389,41 @@ internal static class DataVaultModelArtifactParser {
       }
 
       ValidateKnownProperties(satellite, SatelliteProperties, path, diagnostics);
+      var payload = ReadRequiredStringArray(satellite, "payload", path, "A satellite requires at least one payload name.", "DMV1202", diagnostics);
+      var drivingKeys = ReadOptionalStringArray(satellite, "drivingKeys", path, "DMV1202", diagnostics);
       values.Add(new DataVaultModelSatelliteDeclaration(
           ReadRequiredString(satellite, "name", path, "Satellite name", diagnostics),
           ReadParentReference(satellite, path, diagnostics),
-          ReadRequiredStringArray(satellite, "payload", path, "A satellite requires at least one payload name.", "DMV1202", diagnostics),
-          ReadOptionalStringArray(satellite, "drivingKeys", path, "DMV1202", diagnostics),
+          payload,
+          drivingKeys,
+          ReadPersonalData(satellite, path, diagnostics),
+          path));
+    }
+
+    return values;
+  }
+
+  private static IReadOnlyList<DataVaultModelPersonalDataDeclaration> ReadPersonalData(
+      JsonElement satellite,
+      string satellitePath,
+      ICollection<DataVaultModelArtifactDiagnostic> diagnostics) {
+    if (!TryReadOptionalArray(satellite, "personalData", satellitePath, diagnostics, out var personalData)) {
+      return Array.Empty<DataVaultModelPersonalDataDeclaration>();
+    }
+
+    var values = new List<DataVaultModelPersonalDataDeclaration>();
+    var index = 0;
+    foreach (var item in personalData.EnumerateArray()) {
+      var path = IndexPath(PropertyPath(satellitePath, "personalData"), index++);
+      if (item.ValueKind != JsonValueKind.Object) {
+        AddIssue(diagnostics, "DMV1102", "Each personal-data declaration must be an object.", path);
+        continue;
+      }
+
+      ValidateKnownProperties(item, PersonalDataProperties, path, diagnostics);
+      values.Add(new DataVaultModelPersonalDataDeclaration(
+          ReadRequiredString(item, "field", path, "Personal-data field", diagnostics),
+          ReadRequiredString(item, "encryptedPayloadAlias", path, "Encrypted payload alias", diagnostics),
           path));
     }
 
@@ -627,6 +663,55 @@ internal static class DataVaultModelArtifactParser {
               PropertyPath(satellite.Path, "drivingKeys"));
         }
       }
+
+      ValidatePersonalDataDeclarations(satellite, diagnostics);
+    }
+  }
+
+  private static void ValidatePersonalDataDeclarations(
+      DataVaultModelSatelliteDeclaration satellite,
+      ICollection<DataVaultModelArtifactDiagnostic> diagnostics) {
+    var payloadNames = satellite.Payload.ToHashSet(StringComparer.Ordinal);
+    var drivingKeyNames = satellite.DrivingKeys.ToHashSet(StringComparer.Ordinal);
+    var fields = new HashSet<string>(StringComparer.Ordinal);
+    var aliases = new HashSet<string>(StringComparer.Ordinal);
+
+    foreach (var personalData in satellite.PersonalData) {
+      if (!string.IsNullOrWhiteSpace(personalData.Field) && !fields.Add(personalData.Field)) {
+        AddIssue(
+            diagnostics,
+            "DMV1802",
+            "Satellite '" + satellite.Name + "' declares personal-data field '" + personalData.Field + "' more than once.",
+            PropertyPath(personalData.Path, "field"));
+      }
+
+      if (!string.IsNullOrWhiteSpace(personalData.EncryptedPayloadAlias) &&
+          !aliases.Add(personalData.EncryptedPayloadAlias)) {
+        AddIssue(
+            diagnostics,
+            "DMV1802",
+            "Satellite '" + satellite.Name + "' declares encrypted-payload alias '" + personalData.EncryptedPayloadAlias + "' more than once.",
+            PropertyPath(personalData.Path, "encryptedPayloadAlias"));
+      }
+
+      if (string.IsNullOrWhiteSpace(personalData.Field) || payloadNames.Contains(personalData.Field)) {
+        continue;
+      }
+
+      if (drivingKeyNames.Contains(personalData.Field)) {
+        AddIssue(
+            diagnostics,
+            "DMV1803",
+            "Satellite '" + satellite.Name + "' personal-data field '" + personalData.Field + "' references a driving key instead of a payload field.",
+            PropertyPath(personalData.Path, "field"));
+        continue;
+      }
+
+      AddIssue(
+          diagnostics,
+          "DMV1803",
+          "Satellite '" + satellite.Name + "' personal-data field '" + personalData.Field + "' does not match a declared payload field.",
+          PropertyPath(personalData.Path, "field"));
     }
   }
 
@@ -1040,9 +1125,12 @@ internal static class DataVaultModelArtifactParser {
     var parent = string.Equals(satellite.Parent.Kind, "link", StringComparison.Ordinal)
         ? DataVaultMetadataReference.Link(satellite.Parent.Name)
         : DataVaultMetadataReference.Hub(satellite.Parent.Name);
-    return satellite.DrivingKeys.Count == 0
-        ? new DataVaultSatelliteMetadata(satellite.Name, parent, satellite.Payload)
-        : new DataVaultSatelliteMetadata(satellite.Name, parent, satellite.Payload, satellite.DrivingKeys);
+    var personalData = satellite.PersonalData
+        .Select(current => new DataVaultSatellitePersonalDataMetadata(
+            current.Field,
+            current.EncryptedPayloadAlias))
+        .ToArray();
+    return new DataVaultSatelliteMetadata(satellite.Name, parent, satellite.Payload, satellite.DrivingKeys, personalData);
   }
 
   private static DataVaultBridgeMetadata CreateBridgeMetadata(DataVaultModelBridgeDeclaration bridge) {

@@ -147,11 +147,96 @@ public sealed class DataVaultMetadataTests {
   }
 
   [Fact]
+  public void SatelliteMetadataRetainsPersonalDataFieldDeclarations() {
+    var parent = DataVaultMetadataReference.Hub("Customer");
+
+    var satellite = new DataVaultSatelliteMetadata(
+        "CustomerProfile",
+        parent,
+        ["Name", "EmailAddress"],
+        Array.Empty<string>(),
+        [
+            new DataVaultSatellitePersonalDataMetadata(
+                "EmailAddress",
+                "CustomerProfileEmailEncrypted"),
+        ]);
+
+    var personalData = Assert.Single(satellite.PersonalDataFields);
+
+    Assert.Equal("EmailAddress", personalData.FieldName);
+    Assert.Equal("CustomerProfileEmailEncrypted", personalData.EncryptedPayloadAlias);
+    Assert.Equal(["Name", "EmailAddress"], satellite.DescriptiveAttributeNames);
+    Assert.Empty(satellite.DrivingKeyNames);
+  }
+
+  [Fact]
+  public void SatelliteMetadataRejectsInvalidPersonalDataDeclarations() {
+    var parent = DataVaultMetadataReference.Hub("Customer");
+
+    ThrowsArgumentException(() => new DataVaultSatellitePersonalDataMetadata("", "Alias"));
+    ThrowsArgumentException(() => new DataVaultSatellitePersonalDataMetadata("EmailAddress", ""));
+    ThrowsArgumentException(() => new DataVaultSatelliteMetadata(
+        "CustomerProfile",
+        parent,
+        ["EmailAddress"],
+        Array.Empty<string>(),
+        (IEnumerable<DataVaultSatellitePersonalDataMetadata>)null!));
+    ThrowsArgumentException(() => new DataVaultSatelliteMetadata(
+        "CustomerProfile",
+        parent,
+        ["EmailAddress"],
+        Array.Empty<string>(),
+        new DataVaultSatellitePersonalDataMetadata[] { null! }));
+    ThrowsArgumentException(() => new DataVaultSatelliteMetadata(
+        "CustomerProfile",
+        parent,
+        ["EmailAddress"],
+        Array.Empty<string>(),
+        [
+            new DataVaultSatellitePersonalDataMetadata("EmailAddress", "EmailAlias"),
+            new DataVaultSatellitePersonalDataMetadata("EmailAddress", "EmailAlias2"),
+        ]));
+    ThrowsArgumentException(() => new DataVaultSatelliteMetadata(
+        "CustomerProfile",
+        parent,
+        ["EmailAddress", "PhoneNumber"],
+        Array.Empty<string>(),
+        [
+            new DataVaultSatellitePersonalDataMetadata("EmailAddress", "ContactAlias"),
+            new DataVaultSatellitePersonalDataMetadata("PhoneNumber", "ContactAlias"),
+        ]));
+    ThrowsArgumentException(() => new DataVaultSatelliteMetadata(
+        "CustomerProfile",
+        parent,
+        ["EmailAddress"],
+        Array.Empty<string>(),
+        [
+            new DataVaultSatellitePersonalDataMetadata("MissingPayload", "MissingAlias"),
+        ]));
+    ThrowsArgumentException(() => new DataVaultSatelliteMetadata(
+        "CustomerContact",
+        parent,
+        ["ContactValue"],
+        ["ContactType"],
+        [
+            new DataVaultSatellitePersonalDataMetadata("ContactType", "ContactAlias"),
+        ]));
+  }
+
+  [Fact]
   public void SatelliteMetadataRejectsInvalidMultiActiveDrivingKeyDeclarations() {
     var parent = DataVaultMetadataReference.Hub("Customer");
 
-    ThrowsArgumentException(() => new DataVaultSatelliteMetadata("CustomerContact", parent, ["EmailAddress"], null!));
-    ThrowsArgumentException(() => new DataVaultSatelliteMetadata("CustomerContact", parent, ["EmailAddress"], []));
+    ThrowsArgumentException(() => new DataVaultSatelliteMetadata(
+        "CustomerContact",
+        parent,
+        ["EmailAddress"],
+        (IEnumerable<string>)null!));
+    ThrowsArgumentException(() => new DataVaultSatelliteMetadata(
+        "CustomerContact",
+        parent,
+        ["EmailAddress"],
+        Array.Empty<string>()));
     ThrowsArgumentException(() => new DataVaultSatelliteMetadata("CustomerContact", parent, ["EmailAddress"], [""]));
     ThrowsArgumentException(() => new DataVaultSatelliteMetadata("CustomerContact", parent, ["EmailAddress"], ["ContactType", "ContactType"]));
     ThrowsArgumentException(() => new DataVaultSatelliteMetadata("CustomerContact", parent, ["EmailAddress"], ["EmailAddress"]));
@@ -504,12 +589,12 @@ public sealed class DataVaultMetadataTests {
         "CustomerContact",
         DataVaultMetadataReference.Hub("Customer"),
         ["EmailAddress"],
-        null!));
+        (IEnumerable<string>)null!));
     ThrowsArgumentException(() => new DataVaultSatelliteMetadata(
         "CustomerContact",
         DataVaultMetadataReference.Hub("Customer"),
         ["EmailAddress"],
-        []));
+        Array.Empty<string>()));
     Assert.Throws<ArgumentNullException>(() => new DataVaultPointInTimeMetadata(
         "CustomerHistory",
         DataVaultMetadataReference.Hub("Customer"),

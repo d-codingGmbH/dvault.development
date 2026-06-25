@@ -132,6 +132,20 @@ internal static class DataVaultDiagnosticCatalog {
           "Artifact projection failed",
           "Raised when a parsed artifact cannot be projected into Entity Framework metadata after import validation.",
           "Review the projection error, adjust the affected declaration, and retry the import before applying metadata."),
+      new DataVaultDiagnosticDefinition(
+          "DMV1802",
+          ErrorSeverity,
+          "privacy-metadata",
+          "Duplicate personal-data metadata",
+          "Raised when a satellite repeats a personal-data payload field or encrypted-payload alias.",
+          "Declare each personal-data payload field and encrypted-payload alias at most once within the satellite."),
+      new DataVaultDiagnosticDefinition(
+          "DMV1803",
+          ErrorSeverity,
+          "privacy-metadata",
+          "Invalid personal-data payload reference",
+          "Raised when a personal-data declaration targets a driving key, technical field, or another name that is not an existing payload field on the same satellite.",
+          "Point personal-data metadata at an exact payload field declared by the same satellite."),
   ];
 
   private static readonly IReadOnlyDictionary<string, DataVaultDiagnosticDefinition> ModelArtifactSeedDefinitionsByCode =

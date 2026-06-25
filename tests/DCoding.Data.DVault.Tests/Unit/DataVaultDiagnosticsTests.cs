@@ -1,5 +1,6 @@
 using System.Text.Json;
 using DCoding.Data.DVault.Modeling;
+using DCoding.Data.DVault.Privacy;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.Extensions.DependencyInjection;
@@ -310,6 +311,85 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal(
         registryResult.Explain.Entities.Select(entity => entity.TableKind),
         codeFirstResult.Explain.Entities.Select(entity => entity.TableKind));
+  }
+
+  [Fact]
+  public void AnalyzeReportsPersonalDataMarkersAsAdvisoryWithoutPrivacyProof() {
+    using var provider = CreateServiceProvider();
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    var result = diagnostics.Analyze(CreatePersonalDataMetadataModel());
+
+    Assert.True(result.Validation.IsValid);
+    var issue = Assert.Single(result.Issues.Where(issue => issue.Code == "personal-data-privacy-proof-missing"));
+    Assert.Equal(DataVaultDiagnosticsIssueSeverity.Warning, issue.Severity);
+    Assert.Contains("EmailAddress", issue.Message, StringComparison.Ordinal);
+    Assert.Contains("CustomerProfileEmailEncrypted", issue.Message, StringComparison.Ordinal);
+    Assert.Contains("advisory metadata", issue.Message, StringComparison.Ordinal);
+    Assert.Contains("no automatic encryption", issue.Message, StringComparison.Ordinal);
+    Assert.DoesNotContain("column", issue.Message, StringComparison.OrdinalIgnoreCase);
+  }
+
+  [Fact]
+  public void AnalyzeFailsClosedForMarkedPersonalDataWithoutUsablePrivacyCoverage() {
+    var services = new ServiceCollection();
+    services.AddDVaultPrivacy(options => options
+        .RegisterEncryptedPayloadAlias("CustomerProfileEmailEncrypted")
+        .UseCallerOwnedKeyProvider(new DiagnosticsPrivacyKeyProvider()));
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    var result = diagnostics.Analyze(CreatePersonalDataMetadataModel());
+
+    Assert.False(result.Validation.IsValid);
+    var issue = Assert.Single(result.Validation.Issues);
+    Assert.Equal("personal-data-privacy-coverage-unusable", issue.Code);
+    Assert.Equal(DataVaultDiagnosticsIssueSeverity.Error, issue.Severity);
+    Assert.Contains("requires a caller-owned DVault encrypted payload key provider", issue.Message, StringComparison.Ordinal);
+    Assert.Empty(result.Explain.Entities);
+  }
+
+  [Fact]
+  public void AnalyzeFailsClosedForMarkedPersonalDataWithoutFieldLevelEncryptedPayloadConverter() {
+    var services = new ServiceCollection();
+    services.AddDVaultPrivacy(options => options
+        .RegisterEncryptedPayloadAlias("CustomerProfileEmailEncrypted")
+        .UseCallerOwnedKeyProvider(new DiagnosticsEncryptedPayloadKeyProvider()));
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    var result = diagnostics.Analyze(CreatePersonalDataMetadataModel());
+
+    Assert.False(result.Validation.IsValid);
+    var issue = Assert.Single(result.Validation.Issues);
+    Assert.Equal("personal-data-privacy-coverage-unusable", issue.Code);
+    Assert.Equal(DataVaultDiagnosticsIssueSeverity.Error, issue.Severity);
+    Assert.Contains("DataVaultEncryptedPayloadValueConverter", issue.Message, StringComparison.Ordinal);
+    Assert.Contains("metadata-only analysis", issue.Message, StringComparison.Ordinal);
+    Assert.Empty(result.Explain.Entities);
+  }
+
+  [Fact]
+  public void AnalyzeDbContextAcceptsMarkedPersonalDataWithFieldLevelEncryptedPayloadConverter() {
+    var services = new ServiceCollection();
+    services.AddDVaultPrivacy(options => options
+        .RegisterEncryptedPayloadAlias("CustomerProfileEmailEncrypted")
+        .UseCallerOwnedKeyProvider(new DiagnosticsEncryptedPayloadKeyProvider()));
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    var privacyConfiguration = provider.GetRequiredService<IDataVaultPrivacyConfiguration>();
+    var optionsBuilder = new DbContextOptionsBuilder<PersonalDataPrivacyDiagnosticsContext>()
+        .UseSqlite("Data Source=:memory:");
+    optionsBuilder.UseDataVaultMetadata(CreatePersonalDataMetadataModel());
+
+    using var context = new PersonalDataPrivacyDiagnosticsContext(
+        optionsBuilder.Options,
+        privacyConfiguration);
+    var result = diagnostics.Analyze(context);
+
+    Assert.True(result.Validation.IsValid);
+    Assert.DoesNotContain(result.Validation.Issues, issue => issue.Code.StartsWith("personal-data-", StringComparison.Ordinal));
+    Assert.Equal(["HubCustomer", "SatCustomerProfile"], result.Explain.Entities.Select(entity => entity.TableName));
   }
 
   [Fact]
@@ -1423,6 +1503,22 @@ public sealed class DataVaultDiagnosticsTests {
     return new DataVaultMetadataModel([customerHub], [], [customerSatellite]);
   }
 
+  private static DataVaultMetadataModel CreatePersonalDataMetadataModel() {
+    var customerHub = new DataVaultHubMetadata("Customer", ["CustomerNumber"]);
+    var customerSatellite = new DataVaultSatelliteMetadata(
+        "Profile",
+        customerHub.ToReference(),
+        ["Name", "EmailAddress"],
+        Array.Empty<string>(),
+        [
+            new DataVaultSatellitePersonalDataMetadata(
+                "EmailAddress",
+                "CustomerProfileEmailEncrypted"),
+        ]);
+
+    return new DataVaultMetadataModel([customerHub], [], [customerSatellite]);
+  }
+
   private static DataVaultMetadataModel CreateHashKeyReferenceMetadataModel() {
     var customerHub = new DataVaultHubMetadata("Customer", ["CustomerNumber"]);
     var orderHub = new DataVaultHubMetadata("Order", ["OrderNumber"]);
@@ -1811,6 +1907,16 @@ public sealed class DataVaultDiagnosticsTests {
         unsupportedIncludedIndexColumnMode: DataVaultUnsupportedIncludedIndexColumnMode.Ignore);
   }
 
+  private sealed class DiagnosticsPrivacyKeyProvider : IDataVaultPrivacyKeyProvider {
+  }
+
+  private sealed class DiagnosticsEncryptedPayloadKeyProvider : IDataVaultEncryptedPayloadKeyProvider {
+    public DataVaultEncryptedPayloadConversionResult ConvertEncryptedPayload(
+        DataVaultEncryptedPayloadConversionRequest request) {
+      return DataVaultEncryptedPayloadConversionResult.Approved(request.Value);
+    }
+  }
+
   private sealed class Customer {
     public string CustomerNumber { get; set; } = string.Empty;
 
@@ -1848,6 +1954,20 @@ public sealed class DataVaultDiagnosticsTests {
               DataVaultHashKeyStorageProfile.Binary,
               "sha256-v1",
               32));
+    }
+  }
+
+  private sealed class PersonalDataPrivacyDiagnosticsContext(
+      DbContextOptions<PersonalDataPrivacyDiagnosticsContext> options,
+      IDataVaultPrivacyConfiguration privacyConfiguration) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(CreatePersonalDataMetadataModel());
+      modelBuilder.SharedTypeEntity<Dictionary<string, object>>("SatCustomerProfile", entityBuilder => {
+        entityBuilder.IndexerProperty<string>("EmailAddress")
+            .HasConversion(new DataVaultEncryptedPayloadValueConverter(
+                privacyConfiguration,
+                "CustomerProfileEmailEncrypted"));
+      });
     }
   }
 

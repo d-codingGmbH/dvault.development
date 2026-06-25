@@ -124,6 +124,11 @@ internal static class DataVaultMetadataSourceAnnotations {
       AppendReference(builder, satellite.Parent);
       AppendValues(builder, satellite.DescriptiveAttributeNames);
       AppendValues(builder, satellite.DrivingKeyNames);
+      AppendValue(builder, "personal-data");
+      foreach (var personalData in satellite.PersonalDataFields) {
+        AppendValue(builder, personalData.FieldName);
+        AppendValue(builder, personalData.EncryptedPayloadAlias);
+      }
     }
 
     AppendValue(builder, "point-in-time-tables");

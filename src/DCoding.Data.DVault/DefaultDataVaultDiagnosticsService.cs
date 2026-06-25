@@ -9,6 +9,10 @@ using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 namespace DCoding.Data.DVault;
 
 internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnosticsService, IDataVaultReadDiagnosticsService {
+  private const string EncryptedPayloadValueConverterTypeName =
+      "DCoding.Data.DVault.Privacy.DataVaultEncryptedPayloadValueConverter";
+  private const string EncryptedPayloadAliasPropertyName = "EncryptedPayloadAlias";
+
   private static readonly DataVaultSaveStrategyDiagnostics NotEvaluatedStrategy = new(
       DataVaultSaveStrategyDiagnosticsStatus.NotEvaluated,
       ProviderName: null,
@@ -29,6 +33,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
   private readonly IReadOnlyList<IDataVaultProviderPitReadStrategy> _providerPitReadStrategies;
   private readonly IReadOnlyList<IDataVaultProviderReadStrategy> _providerReadStrategies;
   private readonly IReadOnlyList<IDataVaultProviderSaveStrategy> _providerSaveStrategies;
+  private readonly IReadOnlyList<IDataVaultPersonalDataCoverageProof> _personalDataCoverageProofs;
   private readonly IStableHashService _stableHashService;
 
   public DefaultDataVaultDiagnosticsService(
@@ -36,12 +41,14 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       IEnumerable<IDataVaultProviderReadStrategy> providerReadStrategies,
       IEnumerable<IDataVaultProviderPitReadStrategy> providerPitReadStrategies,
       IEnumerable<IDataVaultProviderBridgeReadStrategy> providerBridgeReadStrategies,
+      IEnumerable<IDataVaultPersonalDataCoverageProof> personalDataCoverageProofs,
       IDataVaultProviderBehaviorSelector providerBehaviorSelector,
       IStableHashService stableHashService) {
     ArgumentNullException.ThrowIfNull(providerSaveStrategies);
     ArgumentNullException.ThrowIfNull(providerReadStrategies);
     ArgumentNullException.ThrowIfNull(providerPitReadStrategies);
     ArgumentNullException.ThrowIfNull(providerBridgeReadStrategies);
+    ArgumentNullException.ThrowIfNull(personalDataCoverageProofs);
     ArgumentNullException.ThrowIfNull(providerBehaviorSelector);
     ArgumentNullException.ThrowIfNull(stableHashService);
 
@@ -49,6 +56,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     _providerReadStrategies = providerReadStrategies.ToArray();
     _providerPitReadStrategies = providerPitReadStrategies.ToArray();
     _providerBridgeReadStrategies = providerBridgeReadStrategies.ToArray();
+    _personalDataCoverageProofs = personalDataCoverageProofs.ToArray();
     _providerBehaviorSelector = providerBehaviorSelector;
     _stableHashService = stableHashService;
   }
@@ -260,10 +268,11 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         .Concat(ValidateProviderMappings(metadataModel, providerCapabilities))
         .Concat(DataVaultEfMetadataTranslator.ValidateProviderIdentifiers(metadataModel, providerCapabilities, providerName))
         .ToArray();
-    var issues = validationIssues.ToList();
+    var personalDataIssues = ValidatePersonalDataCoverage(metadataModel, efModel: null).ToArray();
+    var issues = validationIssues.Concat(personalDataIssues).ToList();
 
     ModelBuilder? modelBuilder = null;
-    if (!validationIssues.Any(issue => issue.Severity == DataVaultDiagnosticsIssueSeverity.Error)) {
+    if (!issues.Any(issue => issue.Severity == DataVaultDiagnosticsIssueSeverity.Error)) {
       try {
         modelBuilder = new ModelBuilder(new ConventionSet());
         providerCapabilities = DataVaultModelBuilderExtensions.UseDataVaultCore(
@@ -342,11 +351,14 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
           "provider-behavior"));
     }
 
+    var explainModel = dbContext.GetService<IDesignTimeModel>().Model;
     var extension = DataVaultDbContextMetadataSource.FindExtension(dbContext);
     if (extension is not null) {
       try {
         var source = DataVaultDbContextMetadataSource.Resolve(dbContext, extension);
-        issues.AddRange(ValidateMetadataModel(DataVaultMetadataSourceAnnotations.CreateMetadataModel(source.MetadataRegistry)));
+        var sourceMetadataModel = DataVaultMetadataSourceAnnotations.CreateMetadataModel(source.MetadataRegistry);
+        issues.AddRange(ValidateMetadataModel(sourceMetadataModel));
+        issues.AddRange(ValidatePersonalDataCoverage(sourceMetadataModel, explainModel));
       }
       catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or NotSupportedException) {
         issues.Add(new DataVaultDiagnosticsIssue(
@@ -357,7 +369,6 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       }
     }
 
-    var explainModel = dbContext.GetService<IDesignTimeModel>().Model;
     var explain = CreateExplain(
         explainModel,
         GetStringAnnotation(explainModel, DataVaultAnnotationNames.MetadataSourceKind) ?? "<model>",
@@ -1677,6 +1688,202 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
 
   private static bool IsDataVaultEntity(IReadOnlyEntityType entityType) {
     return entityType.FindAnnotation(DataVaultAnnotationNames.EntityKind)?.Value is DataVaultTableKind;
+  }
+
+  private IEnumerable<DataVaultDiagnosticsIssue> ValidatePersonalDataCoverage(
+      DataVaultMetadataModel metadataModel,
+      IReadOnlyModel? efModel) {
+    var proofs = _personalDataCoverageProofs;
+    foreach (var satellite in metadataModel.Satellites) {
+      foreach (var personalData in satellite.PersonalDataFields) {
+        if (proofs.Count == 0) {
+          yield return CreatePersonalDataCoverageIssue(
+              DataVaultDiagnosticsIssueSeverity.Warning,
+              "personal-data-privacy-proof-missing",
+              satellite,
+              personalData,
+              "No opt-in DVault privacy proof is configured. The marker is advisory metadata only and no automatic encryption is implied.");
+          continue;
+        }
+
+        var evaluations = proofs
+            .Select(proof => EvaluatePersonalDataCoverage(proof, personalData.EncryptedPayloadAlias))
+            .ToArray();
+
+        var usableEvaluation = evaluations.FirstOrDefault(evaluation => evaluation.IsUsableCoverageAvailable);
+        if (usableEvaluation is not null) {
+          var converterCoverage = EvaluatePersonalDataConverterCoverage(efModel, satellite, personalData);
+          if (converterCoverage.IsUsableCoverageAvailable) {
+            continue;
+          }
+
+          yield return CreatePersonalDataCoverageIssue(
+              DataVaultDiagnosticsIssueSeverity.Error,
+              "personal-data-privacy-coverage-unusable",
+              satellite,
+              personalData,
+              converterCoverage.Message);
+          continue;
+        }
+
+        var proofConfigured = evaluations.Any(evaluation => evaluation.IsPrivacyProofConfigured);
+        var message = evaluations
+            .Select(evaluation => evaluation.Message)
+            .FirstOrDefault(current => !string.IsNullOrWhiteSpace(current)) ??
+            "No usable encrypted-payload alias coverage is available.";
+
+        yield return CreatePersonalDataCoverageIssue(
+            proofConfigured ? DataVaultDiagnosticsIssueSeverity.Error : DataVaultDiagnosticsIssueSeverity.Warning,
+            proofConfigured ? "personal-data-privacy-coverage-unusable" : "personal-data-privacy-proof-missing",
+            satellite,
+            personalData,
+            message);
+      }
+    }
+  }
+
+  private static DataVaultPersonalDataCoverageEvaluation EvaluatePersonalDataConverterCoverage(
+      IReadOnlyModel? efModel,
+      DataVaultSatelliteMetadata satellite,
+      DataVaultSatellitePersonalDataMetadata personalData) {
+    if (efModel is null) {
+      return new DataVaultPersonalDataCoverageEvaluation(
+          isPrivacyProofConfigured: true,
+          isUsableCoverageAvailable: false,
+          "no field-level " +
+          EncryptedPayloadValueConverterTypeName +
+          " wiring can be observed during metadata-only analysis. Analyze a DbContext whose marked payload field is configured with " +
+          EncryptedPayloadValueConverterTypeName +
+          " for alias '" +
+          personalData.EncryptedPayloadAlias +
+          "'.");
+    }
+
+    var satelliteEntities = efModel
+        .GetEntityTypes()
+        .Where(entity => IsSatelliteEntity(entity, satellite))
+        .ToArray();
+    if (satelliteEntities.Length == 0) {
+      return new DataVaultPersonalDataCoverageEvaluation(
+          isPrivacyProofConfigured: true,
+          isUsableCoverageAvailable: false,
+          "no EF satellite entity was found for metadata satellite '" +
+          satellite.Name +
+          "' when checking field-level encrypted payload converter coverage.");
+    }
+
+    var payloadProperties = satelliteEntities
+        .SelectMany(entity => entity.GetProperties())
+        .Where(property => IsPayloadProperty(property, personalData.FieldName))
+        .ToArray();
+    if (payloadProperties.Length == 0) {
+      return new DataVaultPersonalDataCoverageEvaluation(
+          isPrivacyProofConfigured: true,
+          isUsableCoverageAvailable: false,
+          "no EF payload property was found for marked personal-data field '" +
+          personalData.FieldName +
+          "' when checking field-level encrypted payload converter coverage.");
+    }
+
+    var observedAliases = new List<string>();
+    foreach (var property in payloadProperties) {
+      var converter = property.GetValueConverter();
+      if (converter is null ||
+          !string.Equals(converter.GetType().FullName, EncryptedPayloadValueConverterTypeName, StringComparison.Ordinal)) {
+        continue;
+      }
+
+      var converterAlias = converter
+          .GetType()
+          .GetProperty(EncryptedPayloadAliasPropertyName)
+          ?.GetValue(converter) as string;
+      if (string.Equals(converterAlias, personalData.EncryptedPayloadAlias, StringComparison.Ordinal)) {
+        return new DataVaultPersonalDataCoverageEvaluation(
+            isPrivacyProofConfigured: true,
+            isUsableCoverageAvailable: true,
+            "marked payload field '" +
+            personalData.FieldName +
+            "' is wired to " +
+            EncryptedPayloadValueConverterTypeName +
+            " for encrypted-payload alias '" +
+            personalData.EncryptedPayloadAlias +
+            "'.");
+      }
+
+      observedAliases.Add(string.IsNullOrWhiteSpace(converterAlias) ? "<unreadable>" : converterAlias);
+    }
+
+    var detail = observedAliases.Count == 0
+        ? "does not have " + EncryptedPayloadValueConverterTypeName + " configured"
+        : "has " + EncryptedPayloadValueConverterTypeName + " configured for alias(es) [" + string.Join(", ", observedAliases) + "]";
+
+    return new DataVaultPersonalDataCoverageEvaluation(
+        isPrivacyProofConfigured: true,
+        isUsableCoverageAvailable: false,
+        "payload field '" +
+        personalData.FieldName +
+        "' " +
+        detail +
+        "; expected encrypted-payload alias '" +
+        personalData.EncryptedPayloadAlias +
+        "'.");
+  }
+
+  private static bool IsSatelliteEntity(
+      IReadOnlyEntityType entity,
+      DataVaultSatelliteMetadata satellite) {
+    return Equals(entity.FindAnnotation(DataVaultAnnotationNames.EntityKind)?.Value, DataVaultTableKind.Satellite) &&
+        string.Equals(GetStringAnnotation(entity, DataVaultAnnotationNames.MetadataName), satellite.Name, StringComparison.Ordinal) &&
+        Equals(entity.FindAnnotation(DataVaultAnnotationNames.ParentReferenceKind)?.Value, satellite.Parent.Kind) &&
+        string.Equals(
+            GetStringAnnotation(entity, DataVaultAnnotationNames.ParentReferenceName),
+            satellite.Parent.Name,
+            StringComparison.Ordinal);
+  }
+
+  private static bool IsPayloadProperty(
+      IReadOnlyProperty property,
+      string metadataName) {
+    return Equals(property.FindAnnotation(DataVaultAnnotationNames.PropertyRole)?.Value, DataVaultPropertyRole.Payload) &&
+        string.Equals(GetStringAnnotation(property, DataVaultAnnotationNames.MetadataName), metadataName, StringComparison.Ordinal);
+  }
+
+  private static DataVaultPersonalDataCoverageEvaluation EvaluatePersonalDataCoverage(
+      IDataVaultPersonalDataCoverageProof proof,
+      string encryptedPayloadAlias) {
+    try {
+      return proof.EvaluateEncryptedPayloadAlias(encryptedPayloadAlias) ??
+          new DataVaultPersonalDataCoverageEvaluation(
+              isPrivacyProofConfigured: true,
+              isUsableCoverageAvailable: false,
+              "Personal-data coverage proof returned no evaluation.");
+    }
+    catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or NotSupportedException) {
+      return new DataVaultPersonalDataCoverageEvaluation(
+          isPrivacyProofConfigured: true,
+          isUsableCoverageAvailable: false,
+          "Personal-data coverage proof evaluation failed: " + exception.Message);
+    }
+  }
+
+  private static DataVaultDiagnosticsIssue CreatePersonalDataCoverageIssue(
+      DataVaultDiagnosticsIssueSeverity severity,
+      string code,
+      DataVaultSatelliteMetadata satellite,
+      DataVaultSatellitePersonalDataMetadata personalData,
+      string detail) {
+    return new DataVaultDiagnosticsIssue(
+        severity,
+        code,
+        "Satellite '" +
+        satellite.Name +
+        "' payload field '" +
+        personalData.FieldName +
+        "' is marked with encrypted payload alias '" +
+        personalData.EncryptedPayloadAlias +
+        "', but " +
+        detail,
+        "metadata.satellites/" + satellite.Name + "/personalData/" + personalData.FieldName);
   }
 
   private static IEnumerable<DataVaultDiagnosticsIssue> ValidateMetadataModel(DataVaultMetadataModel metadataModel) {

@@ -197,6 +197,25 @@ public static class DataVaultModelArtifactExporter {
       writer.WriteEndObject();
       WriteStringArray(writer, "payload", satellite.DescriptiveAttributeNames);
       WriteStringArray(writer, "drivingKeys", satellite.DrivingKeyNames);
+      if (satellite.PersonalDataFields.Count > 0) {
+        WritePersonalData(writer, satellite.PersonalDataFields);
+      }
+
+      writer.WriteEndObject();
+    }
+
+    writer.WriteEndArray();
+  }
+
+  private static void WritePersonalData(
+      Utf8JsonWriter writer,
+      IEnumerable<DataVaultSatellitePersonalDataMetadata> personalDataFields) {
+    writer.WritePropertyName("personalData");
+    writer.WriteStartArray();
+    foreach (var personalData in personalDataFields) {
+      writer.WriteStartObject();
+      writer.WriteString("field", personalData.FieldName);
+      writer.WriteString("encryptedPayloadAlias", personalData.EncryptedPayloadAlias);
       writer.WriteEndObject();
     }
 

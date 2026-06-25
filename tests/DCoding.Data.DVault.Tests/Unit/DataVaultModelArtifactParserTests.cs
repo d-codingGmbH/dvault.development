@@ -174,6 +174,52 @@ public sealed class DataVaultModelArtifactParserTests {
   }
 
   [Fact]
+  public void ValidSatellitePersonalDataProjectsToRuntimeMetadata() {
+    var result = DataVaultModelArtifactParser.Parse(
+        """
+        {
+          "schemaVersion": "dvault.model.v1",
+          "hubs": [
+            {
+              "name": "Customer",
+              "businessKeys": ["CustomerNumber"]
+            }
+          ],
+          "satellites": [
+            {
+              "name": "CustomerProfile",
+              "parent": {
+                "kind": "hub",
+                "name": "Customer"
+              },
+              "payload": ["Name", "EmailAddress", "PhoneNumber"],
+              "personalData": [
+                {
+                  "field": "EmailAddress",
+                  "encryptedPayloadAlias": "CustomerProfileEmailEncrypted"
+                },
+                {
+                  "field": "PhoneNumber",
+                  "encryptedPayloadAlias": "CustomerProfilePhoneEncrypted"
+                }
+              ]
+            }
+          ]
+        }
+        """);
+
+    AssertValid(result);
+
+    var artifactSatellite = Assert.Single(result.Artifact!.Satellites);
+    Assert.Equal(["EmailAddress", "PhoneNumber"], artifactSatellite.PersonalData.Select(personalData => personalData.Field));
+
+    var satellite = Assert.Single(result.MetadataModel!.Satellites);
+    Assert.Equal(
+        ["CustomerProfileEmailEncrypted", "CustomerProfilePhoneEncrypted"],
+        satellite.PersonalDataFields.Select(personalData => personalData.EncryptedPayloadAlias));
+  }
+
+  [Fact]
   public void RejectsSchemaVersionProblemsWithStableDiagnostics() {
     AssertInvalid(
         """
@@ -367,6 +413,82 @@ public sealed class DataVaultModelArtifactParserTests {
         "recursive-participant-binding",
         "DMV1601",
         "/bridges/0/endpoints/from");
+  }
+
+  [Fact]
+  public void RejectsInvalidSatellitePersonalDataDeclarations() {
+    AssertInvalid(
+        """
+        {
+          "schemaVersion": "dvault.model.v1",
+          "hubs": [
+            { "name": "Customer", "businessKeys": ["CustomerNumber"] }
+          ],
+          "satellites": [
+            {
+              "name": "CustomerProfile",
+              "parent": { "kind": "hub", "name": "Customer" },
+              "payload": ["EmailAddress"],
+              "personalData": [
+                { "field": "EmailAddress", "encryptedPayloadAlias": "CustomerProfileEmailEncrypted" },
+                { "field": "EmailAddress", "encryptedPayloadAlias": "CustomerProfileEmailEncrypted2" }
+              ]
+            }
+          ]
+        }
+        """,
+        "privacy-metadata",
+        "DMV1802",
+        "/satellites/0/personalData/1/field");
+    AssertInvalid(
+        """
+        {
+          "schemaVersion": "dvault.model.v1",
+          "hubs": [
+            { "name": "Customer", "businessKeys": ["CustomerNumber"] }
+          ],
+          "satellites": [
+            {
+              "name": "CustomerContact",
+              "parent": { "kind": "hub", "name": "Customer" },
+              "drivingKeys": ["ContactType"],
+              "payload": ["ContactValue"],
+              "personalData": [
+                { "field": "ContactType", "encryptedPayloadAlias": "CustomerContactEncrypted" }
+              ]
+            }
+          ]
+        }
+        """,
+        "privacy-metadata",
+        "DMV1803",
+        "/satellites/0/personalData/0/field");
+    AssertInvalid(
+        """
+        {
+          "schemaVersion": "dvault.model.v1",
+          "hubs": [
+            { "name": "Customer", "businessKeys": ["CustomerNumber"] }
+          ],
+          "satellites": [
+            {
+              "name": "CustomerProfile",
+              "parent": { "kind": "hub", "name": "Customer" },
+              "payload": ["EmailAddress"],
+              "personalData": [
+                {
+                  "field": "EmailAddress",
+                  "encryptedPayloadAlias": "CustomerProfileEmailEncrypted",
+                  "sql": "encrypt"
+                }
+              ]
+            }
+          ]
+        }
+        """,
+        "provider-choice",
+        "DMV1502",
+        "/satellites/0/personalData/0/sql");
   }
 
   [Fact]

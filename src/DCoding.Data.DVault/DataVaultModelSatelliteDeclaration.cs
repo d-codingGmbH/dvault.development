@@ -8,4 +8,5 @@ internal sealed record DataVaultModelSatelliteDeclaration(
     DataVaultModelParentReferenceDeclaration Parent,
     IReadOnlyList<string> Payload,
     IReadOnlyList<string> DrivingKeys,
+    IReadOnlyList<DataVaultModelPersonalDataDeclaration> PersonalData,
     string Path);

@@ -751,6 +751,12 @@ type public enum DCoding.Data.DVault.DataVaultPerformanceProfileCategory
   value StagedProviderIngestion = 2
   value ReadModelHeavy = 3
 
+type public sealed class DCoding.Data.DVault.DataVaultPersonalDataCoverageEvaluation
+  ctor public DataVaultPersonalDataCoverageEvaluation(bool isPrivacyProofConfigured, bool isUsableCoverageAvailable, string message)
+  property public bool IsPrivacyProofConfigured { get; }
+  property public bool IsUsableCoverageAvailable { get; }
+  property public string Message { get; }
+
 type public sealed class DCoding.Data.DVault.DataVaultPitAsOfReadRequest
   ctor public DataVaultPitAsOfReadRequest(DCoding.Data.DVault.Modeling.DataVaultPitMetadata pit, System.Collections.Generic.IEnumerable<string> parentHashKeys, System.DateTimeOffset asOf)
   property public DCoding.Data.DVault.Modeling.DataVaultPitMetadata Pit { get; }
@@ -1779,6 +1785,9 @@ type public interface DCoding.Data.DVault.IDataVaultLiveSchemaReader
 type public interface DCoding.Data.DVault.IDataVaultLoadTimestampResolver
   method public abstract System.DateTimeOffset? ResolveLoadTimestamp(DCoding.Data.DVault.DataVaultLoadTimestampResolutionContext context)
 
+type public interface DCoding.Data.DVault.IDataVaultPersonalDataCoverageProof
+  method public abstract DCoding.Data.DVault.DataVaultPersonalDataCoverageEvaluation EvaluateEncryptedPayloadAlias(string encryptedPayloadAlias)
+
 type public interface DCoding.Data.DVault.IDataVaultPitMaintenanceService
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultPitMaintenanceResult> MaintainParentsAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultPitParentMaintenanceRequest request, System.Threading.CancellationToken cancellationToken = default)
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultPitMaintenanceResult> RebuildAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultPitRebuildRequest request, System.Threading.CancellationToken cancellationToken = default)
@@ -2215,11 +2224,13 @@ type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatelliteBuilder
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata
   ctor public DataVaultSatelliteMetadata(string name, DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, System.Collections.Generic.IEnumerable<string> descriptiveAttributeNames)
   ctor public DataVaultSatelliteMetadata(string name, DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, System.Collections.Generic.IEnumerable<string> descriptiveAttributeNames, System.Collections.Generic.IEnumerable<string> drivingKeyNames)
+  ctor public DataVaultSatelliteMetadata(string name, DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, System.Collections.Generic.IEnumerable<string> descriptiveAttributeNames, System.Collections.Generic.IEnumerable<string> drivingKeyNames, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatellitePersonalDataMetadata> personalDataFields)
   property public DCoding.Data.DVault.Modeling.DataVaultMetadataReference Parent { get; }
   property public DCoding.Data.DVault.TechnicalMetadataColumnContract HashDiffMetadata { get; }
   property public DCoding.Data.DVault.TechnicalMetadataColumnContract LoadTimestampMetadata { get; }
   property public DCoding.Data.DVault.TechnicalMetadataColumnContract RecordSourceMetadata { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultSatellitePayloadMetadata> PayloadColumns { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultSatellitePersonalDataMetadata> PersonalDataFields { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.TechnicalMetadataColumnContract> TechnicalMetadataColumns { get; }
   property public System.Collections.Generic.IReadOnlyList<string> DescriptiveAttributeNames { get; }
   property public System.Collections.Generic.IReadOnlyList<string> DrivingKeyNames { get; }
@@ -2240,6 +2251,11 @@ type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatelliteNameCont
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatellitePayloadMetadata
   ctor public DataVaultSatellitePayloadMetadata(string columnName)
   property public string ColumnName { get; }
+
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatellitePersonalDataMetadata
+  ctor public DataVaultSatellitePersonalDataMetadata(string fieldName, string encryptedPayloadAlias)
+  property public string EncryptedPayloadAlias { get; }
+  property public string FieldName { get; }
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultTable
   ctor public DataVaultTable(string name, DCoding.Data.DVault.Modeling.DataVaultTableKind kind, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultColumn> columns, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultIndex> indexes, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultConstraint> constraints)

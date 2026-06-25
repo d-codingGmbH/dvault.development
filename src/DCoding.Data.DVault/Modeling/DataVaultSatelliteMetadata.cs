@@ -13,7 +13,7 @@ public sealed class DataVaultSatelliteMetadata {
       string name,
       DataVaultMetadataReference parent,
       IEnumerable<string> descriptiveAttributeNames)
-      : this(name, parent, descriptiveAttributeNames, [], requireDrivingKeyNames: false) {
+      : this(name, parent, descriptiveAttributeNames, [], requireDrivingKeyNames: false, []) {
   }
 
   /// <summary>
@@ -24,7 +24,19 @@ public sealed class DataVaultSatelliteMetadata {
       DataVaultMetadataReference parent,
       IEnumerable<string> descriptiveAttributeNames,
       IEnumerable<string> drivingKeyNames)
-      : this(name, parent, descriptiveAttributeNames, drivingKeyNames, requireDrivingKeyNames: true) {
+      : this(name, parent, descriptiveAttributeNames, drivingKeyNames, requireDrivingKeyNames: true, []) {
+  }
+
+  /// <summary>
+  /// Initializes a new satellite metadata declaration with optional driving keys and marked personal-data payload fields.
+  /// </summary>
+  public DataVaultSatelliteMetadata(
+      string name,
+      DataVaultMetadataReference parent,
+      IEnumerable<string> descriptiveAttributeNames,
+      IEnumerable<string> drivingKeyNames,
+      IEnumerable<DataVaultSatellitePersonalDataMetadata> personalDataFields)
+      : this(name, parent, descriptiveAttributeNames, drivingKeyNames, requireDrivingKeyNames: false, personalDataFields) {
   }
 
   private DataVaultSatelliteMetadata(
@@ -32,7 +44,8 @@ public sealed class DataVaultSatelliteMetadata {
       DataVaultMetadataReference parent,
       IEnumerable<string> descriptiveAttributeNames,
       IEnumerable<string> drivingKeyNames,
-      bool requireDrivingKeyNames) {
+      bool requireDrivingKeyNames,
+      IEnumerable<DataVaultSatellitePersonalDataMetadata> personalDataFields) {
     Name = DataVaultMetadataValidation.RequireName(name, nameof(name));
     ArgumentNullException.ThrowIfNull(parent);
 
@@ -41,9 +54,11 @@ public sealed class DataVaultSatelliteMetadata {
         descriptiveAttributeNames,
         nameof(descriptiveAttributeNames),
         "A satellite requires at least one descriptive attribute name.");
-    DrivingKeyNames = requireDrivingKeyNames
-        ? RequireDrivingKeyNames(drivingKeyNames, DescriptiveAttributeNames)
-        : Array.Empty<string>();
+    DrivingKeyNames = ReadDrivingKeyNames(drivingKeyNames, DescriptiveAttributeNames, requireDrivingKeyNames);
+    PersonalDataFields = RequirePersonalDataFields(
+        personalDataFields,
+        DescriptiveAttributeNames,
+        DrivingKeyNames);
     PayloadColumns = DescriptiveAttributeNames
         .Select(columnName => new DataVaultSatellitePayloadMetadata(columnName))
         .ToArray();
@@ -79,6 +94,11 @@ public sealed class DataVaultSatelliteMetadata {
   public IReadOnlyList<string> DrivingKeyNames { get; }
 
   /// <summary>
+  /// Gets marked personal-data payload fields in canonical declaration order.
+  /// </summary>
+  public IReadOnlyList<DataVaultSatellitePersonalDataMetadata> PersonalDataFields { get; }
+
+  /// <summary>
   /// Gets the payload column metadata carried by the satellite.
   /// </summary>
   public IReadOnlyList<DataVaultSatellitePayloadMetadata> PayloadColumns { get; }
@@ -103,13 +123,16 @@ public sealed class DataVaultSatelliteMetadata {
   /// </summary>
   public IReadOnlyList<TechnicalMetadataColumnContract> TechnicalMetadataColumns { get; }
 
-  private static IReadOnlyList<string> RequireDrivingKeyNames(
+  private static IReadOnlyList<string> ReadDrivingKeyNames(
       IEnumerable<string> drivingKeyNames,
-      IReadOnlyList<string> payloadNames) {
-    var values = DataVaultMetadataValidation.RequireNames(
-        drivingKeyNames,
-        nameof(drivingKeyNames),
-        "A multi-active satellite requires at least one driving-key name.");
+      IReadOnlyList<string> payloadNames,
+      bool requireDrivingKeyNames) {
+    var values = requireDrivingKeyNames
+        ? DataVaultMetadataValidation.RequireNames(
+            drivingKeyNames,
+            nameof(drivingKeyNames),
+            "A multi-active satellite requires at least one driving-key name.")
+        : ReadOptionalDrivingKeyNames(drivingKeyNames);
     var drivingKeyNameSet = new HashSet<string>(StringComparer.Ordinal);
     foreach (var value in values) {
       if (!drivingKeyNameSet.Add(value)) {
@@ -126,6 +149,68 @@ public sealed class DataVaultSatelliteMetadata {
             "Multi-active satellite driving-key names must not overlap descriptive attribute names.",
             nameof(drivingKeyNames));
       }
+    }
+
+    return values;
+  }
+
+  private static IReadOnlyList<string> ReadOptionalDrivingKeyNames(IEnumerable<string> drivingKeyNames) {
+    ArgumentNullException.ThrowIfNull(drivingKeyNames);
+
+    var values = drivingKeyNames.ToArray();
+    foreach (var value in values) {
+      ArgumentException.ThrowIfNullOrWhiteSpace(value, nameof(drivingKeyNames));
+    }
+
+    return values;
+  }
+
+  private static IReadOnlyList<DataVaultSatellitePersonalDataMetadata> RequirePersonalDataFields(
+      IEnumerable<DataVaultSatellitePersonalDataMetadata> personalDataFields,
+      IReadOnlyList<string> payloadNames,
+      IReadOnlyList<string> drivingKeyNames) {
+    ArgumentNullException.ThrowIfNull(personalDataFields);
+
+    var values = personalDataFields.ToArray();
+    foreach (var value in values) {
+      if (value is null) {
+        throw new ArgumentException(
+            "Satellite personal-data metadata declarations must not contain null values.",
+            nameof(personalDataFields));
+      }
+    }
+
+    var payloadNameSet = payloadNames.ToHashSet(StringComparer.Ordinal);
+    var drivingKeyNameSet = drivingKeyNames.ToHashSet(StringComparer.Ordinal);
+    var fields = new HashSet<string>(StringComparer.Ordinal);
+    var aliases = new HashSet<string>(StringComparer.Ordinal);
+
+    foreach (var value in values) {
+      if (!fields.Add(value.FieldName)) {
+        throw new ArgumentException(
+            "Satellite personal-data field '" + value.FieldName + "' is declared more than once.",
+            nameof(personalDataFields));
+      }
+
+      if (!aliases.Add(value.EncryptedPayloadAlias)) {
+        throw new ArgumentException(
+            "Satellite encrypted-payload alias '" + value.EncryptedPayloadAlias + "' is declared more than once.",
+            nameof(personalDataFields));
+      }
+
+      if (payloadNameSet.Contains(value.FieldName)) {
+        continue;
+      }
+
+      if (drivingKeyNameSet.Contains(value.FieldName)) {
+        throw new ArgumentException(
+            "Satellite personal-data field '" + value.FieldName + "' references a driving key instead of a payload field.",
+            nameof(personalDataFields));
+      }
+
+      throw new ArgumentException(
+          "Satellite personal-data field '" + value.FieldName + "' does not match a declared payload field.",
+          nameof(personalDataFields));
     }
 
     return values;

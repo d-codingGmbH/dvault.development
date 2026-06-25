@@ -22,6 +22,7 @@ public sealed class DataVaultPrivacyServiceCollectionExtensionsTests {
     Assert.Equal(["CustomerProfileEmailEncrypted"], configuration.EncryptedPayloadAliases);
     Assert.Same(keyProvider, configuration.KeyProvider);
     Assert.Same(keyProvider, serviceProvider.GetRequiredService<IDataVaultPrivacyKeyProvider>());
+    Assert.NotNull(serviceProvider.GetRequiredService<IDataVaultPersonalDataCoverageProof>());
     Assert.Null(serviceProvider.GetService<IDataVaultEncryptedPayloadKeyProvider>());
   }
 

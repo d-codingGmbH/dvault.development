@@ -1,3 +1,4 @@
+using DCoding.Data.DVault;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace DCoding.Data.DVault.Privacy;
@@ -56,6 +57,9 @@ public sealed class DataVaultPrivacyOptions {
         services,
         ServiceDescriptor.Singleton<IDataVaultPrivacyConfiguration>(
             new DefaultDataVaultPrivacyConfiguration([.. encryptedPayloadAliases], keyProvider)));
+    ReplaceDescriptor(
+        services,
+        ServiceDescriptor.Singleton<IDataVaultPersonalDataCoverageProof, DataVaultPrivacyPersonalDataCoverageProof>());
 
     if (keyProvider is not null) {
       ReplaceDescriptor(services, ServiceDescriptor.Singleton(keyProvider));

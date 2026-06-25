@@ -29,6 +29,8 @@ public sealed class DataVaultModelArtifactImporterTests {
       "DMV1602",
       "DMV1701",
       "DMV1801",
+      "DMV1802",
+      "DMV1803",
   ];
 
   private static readonly IReadOnlyDictionary<string, (string Severity, string Category)> ApprovedModelArtifactDiagnosticMetadata =
@@ -51,6 +53,8 @@ public sealed class DataVaultModelArtifactImporterTests {
         ["DMV1602"] = ("error", "recursive-participant-binding"),
         ["DMV1701"] = ("error", "shape"),
         ["DMV1801"] = ("error", "projection"),
+        ["DMV1802"] = ("error", "privacy-metadata"),
+        ["DMV1803"] = ("error", "privacy-metadata"),
       };
 
   [Fact]
