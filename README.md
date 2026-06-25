@@ -65,12 +65,13 @@ Applications still need their normal Entity Framework Core provider package, suc
 
 ## Quickstart
 
-Use `AddDVault(options => options.UseBinaryFirstProfile())` plus the provider extension package that matches the configured EF Core provider. For direct Code-First model projection, call `ApplyDataVaultMetadataWithBinaryFirstProfile(...)` when declaring the fluent model for a new binary-first schema. The existing `UseDataVaultBinaryFirstProfile()` plus `ApplyDataVaultMetadata(...)` setup remains supported. DVault persistence stays explicit: generated hub, link, and satellite rows are written through `IDataVaultSaveService`; ordinary EF entity tracking remains under the application's control.
+The shortest new-project path is SQLite-first and binary-first. Use `AddDVault(options => options.UseBinaryFirstProfile())` plus `AddDVaultSqlite()` alongside the application's ordinary `UseSqlite(...)` `DbContext` configuration. For direct Code-First model projection, call `ApplyDataVaultMetadataWithBinaryFirstProfile(...)` when declaring the fluent model for a new binary-first schema. The existing `UseDataVaultBinaryFirstProfile()` plus `ApplyDataVaultMetadata(...)` setup remains supported. DVault persistence stays explicit: generated hub, link, and satellite rows are written through `IDataVaultSaveService`; ordinary EF entity tracking remains under the application's control.
 
 The binary-first profile is the recommended physical storage profile for new projects. Existing databases and configurations are not migrated automatically; `HexString`-compatible setups remain valid until the application owner intentionally plans and executes a separate reviewed migration, reset, or data-move change. Use the [Hash-Key Storage Migration Guide](docs/hash-key-storage-migration.md) and its `dvault.hash-key-storage-migration.v1` dry-run manifest before changing persisted hash-key storage. Logical and public hash-key values remain lowercase hexadecimal strings even when new projects choose binary physical storage.
 
 ```csharp
 using DCoding.Data.DVault;
+using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -96,33 +97,77 @@ public sealed class SalesVaultContext(DbContextOptions<SalesVaultContext> option
           satellite.Payload(customer => customer.Status);
         });
       });
-
-      vault.Hub<Order>(hub => hub.BusinessKey(order => order.OrderId));
-
-      vault.Link("CustomerOrder", link => {
-        link.Participant<Customer>();
-        link.Participant<Order>();
-      });
     });
   }
 }
 ```
 
-Callers own load timestamps, record sources, ordering, transactions, and the moment a DVault write happens.
+Create or migrate the schema through the application's normal EF Core path. For a minimal disposable quickstart database, `EnsureCreatedAsync(...)` is enough to make the generated DVault tables visible before the first save.
+
+Callers own load timestamps, record sources, ordering, transactions, deterministic satellite hash diffs, and the moment a DVault write happens.
 
 ```csharp
-var saveService = serviceProvider.GetRequiredService<IDataVaultSaveService>();
+using var serviceProvider = services.BuildServiceProvider(validateScopes: true);
+using var scope = serviceProvider.CreateScope();
+
+var context = scope.ServiceProvider.GetRequiredService<SalesVaultContext>();
+var saveService = scope.ServiceProvider.GetRequiredService<IDataVaultSaveService>();
+var readService = scope.ServiceProvider.GetRequiredService<IDataVaultReadService>();
+var loadTimestamp = new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero);
+var customerHub = new DataVaultHubMetadata("Customer", ["CustomerId"]);
+var customerProfile = new DataVaultSatelliteMetadata(
+    "Profile",
+    customerHub.ToReference(),
+    ["Name", "Status"]);
+
+await context.Database.EnsureCreatedAsync(cancellationToken);
+
+var hubResult = await saveService.SaveAsync(
+    context,
+    new DataVaultSaveRequest(
+        loadTimestamp,
+        "crm-import",
+        [
+            new DataVaultHubSaveOperation(
+                customerHub,
+                [new("CustomerId", "C-100")]),
+        ],
+        []),
+    cancellationToken);
+var customerHashKey = hubResult.SavedRecords.Single(record =>
+    record.Kind == DataVaultTableKind.Hub &&
+    record.MetadataName == "Customer").HashKey;
 
 await saveService.SaveAsync(
     context,
     new DataVaultSaveRequest(
-        DateTimeOffset.UtcNow,
+        loadTimestamp,
         "crm-import",
+        [],
+        [],
         [
-            new(new DataVaultHubMetadata("Customer", ["CustomerId"]), [new("CustomerId", "C-100")]),
-        ],
-        []),
+            new DataVaultSatelliteSaveOperation(
+                customerProfile,
+                customerHashKey,
+                [
+                    new("Name", "Alice Adams"),
+                    new("Status", "prospect"),
+                ],
+                "profile-hash-001"),
+        ]),
     cancellationToken);
+
+var latestProfiles = await readService.ReadLatestSatelliteAsync(
+    context,
+    new DataVaultLatestSatelliteReadRequest(customerProfile, [customerHashKey]),
+    row => new {
+      Name = row.RequiredString("Name"),
+      Status = row.RequiredString("Status"),
+      LoadTimestamp = row.RequiredDateTimeOffset("LoadTimestamp"),
+      RecordSource = row.RequiredString("RecordSource"),
+    },
+    cancellationToken);
+var latestProfile = latestProfiles.Single();
 ```
 
 Provider packages can add optimized strategies behind the same public service contract. The shared surface also includes chunked/async saves, latest/as-of satellite reads, PIT and bridge maintenance/read services, diagnostics and explain metadata, support-bundle export, model-first governance, Roslyn analyzers, and opt-in typed read-model generation.

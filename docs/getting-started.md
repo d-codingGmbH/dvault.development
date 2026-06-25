@@ -41,17 +41,26 @@ modelBuilder.ApplyDataVaultMetadataWithBinaryFirstProfile(vault => {
       satellite.Payload(customer => customer.Status);
     });
   });
-
-  vault.Link("CustomerOrder", link => {
-    link.Participant<Customer>();
-    link.Participant<Order>();
-  });
 });
 ```
 
 `UseDataVaultBinaryFirstProfile()` followed by `ApplyDataVaultMetadata(...)` remains supported for existing callers that already use the separate prelude. Plain `ApplyDataVaultMetadata(...)` without an explicit binary-first opt-in keeps the compatible `HexString` default.
 
 For shared metadata, build or import a `DataVaultMetadataModel` and register it with EF options through the documented metadata APIs. For reviewed JSON artifacts, use the model-first workflow in [Model-First Governance](model-first-governance.md).
+
+## Create The Quickstart Schema
+
+DVault projects use the application's normal EF Core schema lifecycle. For a disposable first-run SQLite database, create the configured model before saving rows:
+
+```csharp
+using var serviceProvider = services.BuildServiceProvider(validateScopes: true);
+using var scope = serviceProvider.CreateScope();
+
+var context = scope.ServiceProvider.GetRequiredService<SalesVaultContext>();
+await context.Database.EnsureCreatedAsync(cancellationToken);
+```
+
+Use migrations or a reviewed deployment process instead of `EnsureCreatedAsync(...)` for production-owned schemas.
 
 ## Save Explicitly
 
@@ -60,6 +69,73 @@ For shared metadata, build or import a `DataVaultMetadataModel` and register it 
 Use `DataVaultSaveRequest` for direct ordered writes, `DataVaultBulkSaveRequest` when the full ordered request set is already materialized, `DataVaultChunkedSaveRequest` when the caller has bounded chunks, and async chunk/source helpers when the producer naturally yields bounded chunks asynchronously.
 
 Provider-specific save strategies are optimizations around that same public contract. When a provider strategy cannot safely run, the implementation falls back to a smaller native path or the provider-neutral writer as documented by diagnostics.
+
+The direct save request uses the same logical hub and satellite names declared in `OnModelCreating`. The load timestamp, record source, and satellite hash diff stay caller-owned and visible:
+
+```csharp
+var saveService = scope.ServiceProvider.GetRequiredService<IDataVaultSaveService>();
+var loadTimestamp = new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero);
+var customerHub = new DataVaultHubMetadata("Customer", ["CustomerId"]);
+var customerProfile = new DataVaultSatelliteMetadata(
+    "Profile",
+    customerHub.ToReference(),
+    ["Name", "Status"]);
+
+var hubResult = await saveService.SaveAsync(
+    context,
+    new DataVaultSaveRequest(
+        loadTimestamp,
+        "crm-import",
+        [
+            new DataVaultHubSaveOperation(
+                customerHub,
+                [new("CustomerId", "C-100")]),
+        ],
+        []),
+    cancellationToken);
+var customerHashKey = hubResult.SavedRecords.Single(record =>
+    record.Kind == DataVaultTableKind.Hub &&
+    record.MetadataName == "Customer").HashKey;
+
+await saveService.SaveAsync(
+    context,
+    new DataVaultSaveRequest(
+        loadTimestamp,
+        "crm-import",
+        [],
+        [],
+        [
+            new DataVaultSatelliteSaveOperation(
+                customerProfile,
+                customerHashKey,
+                [
+                    new("Name", "Alice Adams"),
+                    new("Status", "prospect"),
+                ],
+                "profile-hash-001"),
+        ]),
+    cancellationToken);
+```
+
+## Read The Current Row
+
+`IDataVaultReadService` provides latest/current satellite helpers over explicit parent hash keys. The minimal proof can read back the current customer profile without PIT setup, bridge setup, background jobs, or SaveChanges interception:
+
+```csharp
+var readService = scope.ServiceProvider.GetRequiredService<IDataVaultReadService>();
+
+var latestProfiles = await readService.ReadLatestSatelliteAsync(
+    context,
+    new DataVaultLatestSatelliteReadRequest(customerProfile, [customerHashKey]),
+    row => new {
+      Name = row.RequiredString("Name"),
+      Status = row.RequiredString("Status"),
+      LoadTimestamp = row.RequiredDateTimeOffset("LoadTimestamp"),
+      RecordSource = row.RequiredString("RecordSource"),
+    },
+    cancellationToken);
+var latestProfile = latestProfiles.Single();
+```
 
 ## Read And Maintain
 

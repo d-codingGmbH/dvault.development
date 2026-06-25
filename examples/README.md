@@ -1,6 +1,6 @@
 # DVault Quickstart Examples
 
-These examples run the same bounded customer-profile history flow through the public registry-backed metadata path:
+The root [README quickstart](../README.md#quickstart) and [Getting Started](../docs/getting-started.md) page are the shortest SQLite-first path for a new binary-first project. These runnable companion examples run the same bounded customer-profile history flow through the public registry-backed metadata path:
 
 - `DCoding.Data.DVault.SqliteQuickstart` uses SQLite through `AddDVaultSqlite()` and needs no external infrastructure.
 - `DCoding.Data.DVault.PostgresQuickstart` uses PostgreSQL through `AddDVaultPostgres()` and a developer-managed connection string.
@@ -26,44 +26,58 @@ The console output keeps diagnostics sanitized. Diagnostic lines report request-
 
 ## Package And Provider Setup
 
-Consumer applications install the provider-neutral package and exactly one provider package for the database they use. Install `DCoding.Data.DVault.Privacy` only for the explicit privacy proof or a later opt-in privacy flow. Keep every DVault package on one aligned version. Use `8.45.0` for `net8.0` and EF Core 8 projects, or `10.45.0` for `net10.0` and EF Core 10 projects; do not use a consumer-facing `0.45.0` package version. The blocks below list the full coordinated package family so each needed package can be copied from one aligned line.
+Consumer applications install the provider-neutral package and exactly one provider package for the database they use. Install `DCoding.Data.DVault.Privacy` only for the explicit privacy proof or a later opt-in privacy flow. Keep every DVault package on one aligned version. Use `8.47.0` for `net8.0` and EF Core 8 projects, or `10.47.0` for `net10.0` and EF Core 10 projects; do not use a consumer-facing `0.47.0` package version from the v0.47.0 release label. The blocks below list the full coordinated package family so each needed package can be copied from one aligned line.
 
-For `net8.0` projects on EF Core 8, use the `8.45.0` package line:
+For `net8.0` projects on EF Core 8, use the `8.47.0` package line:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 8.45.0
-dotnet add package DCoding.Data.DVault.Db2 --version 8.45.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 8.45.0
-dotnet add package DCoding.Data.DVault.Postgres --version 8.45.0
-dotnet add package DCoding.Data.DVault.MySql --version 8.45.0
-dotnet add package DCoding.Data.DVault.Oracle --version 8.45.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 8.45.0
-dotnet add package DCoding.Data.DVault.Privacy --version 8.45.0
+dotnet add package DCoding.Data.DVault --version 8.47.0
+dotnet add package DCoding.Data.DVault.Db2 --version 8.47.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 8.47.0
+dotnet add package DCoding.Data.DVault.Postgres --version 8.47.0
+dotnet add package DCoding.Data.DVault.MySql --version 8.47.0
+dotnet add package DCoding.Data.DVault.Oracle --version 8.47.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 8.47.0
+dotnet add package DCoding.Data.DVault.Privacy --version 8.47.0
 ```
 
-For `net10.0` projects on EF Core 10, use the `10.45.0` package line:
+For `net10.0` projects on EF Core 10, use the `10.47.0` package line:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 10.45.0
-dotnet add package DCoding.Data.DVault.Db2 --version 10.45.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 10.45.0
-dotnet add package DCoding.Data.DVault.Postgres --version 10.45.0
-dotnet add package DCoding.Data.DVault.MySql --version 10.45.0
-dotnet add package DCoding.Data.DVault.Oracle --version 10.45.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 10.45.0
-dotnet add package DCoding.Data.DVault.Privacy --version 10.45.0
+dotnet add package DCoding.Data.DVault --version 10.47.0
+dotnet add package DCoding.Data.DVault.Db2 --version 10.47.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 10.47.0
+dotnet add package DCoding.Data.DVault.Postgres --version 10.47.0
+dotnet add package DCoding.Data.DVault.MySql --version 10.47.0
+dotnet add package DCoding.Data.DVault.Oracle --version 10.47.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 10.47.0
+dotnet add package DCoding.Data.DVault.Privacy --version 10.47.0
 ```
 
 Applications also need the normal Entity Framework Core provider package for their database, such as `IBM.EntityFrameworkCore`, `Microsoft.EntityFrameworkCore.Sqlite`, `Npgsql.EntityFrameworkCore.PostgreSQL`, `Microsoft.EntityFrameworkCore.SqlServer`, `Oracle.EntityFrameworkCore`, or a MySQL EF Core provider.
 
-The analyzer package is optional and should usually be referenced with `PrivateAssets="all"` in consumer projects that own DVault Code-First declarations or compile-time generated row mapping declarations. Use `8.45.0` or `10.45.0` to match the runtime and provider package line.
+The analyzer package is optional and should usually be referenced with `PrivateAssets="all"` in consumer projects that own DVault Code-First declarations or compile-time generated row mapping declarations. Use `8.47.0` or `10.47.0` to match the runtime and provider package line.
 
-Provider startup is explicit. Register `AddDVault(...)` with the binary-first profile and the shared metadata model for the provider-neutral services, then register the matching provider extension when a provider package is installed:
+Provider startup is explicit. Register `AddDVault(...)` with the binary-first profile and the shared metadata model for the provider-neutral services, then register the matching provider extension when a provider package is installed. The runnable projects keep the metadata model in shared code so SQLite and PostgreSQL use the same scenario; the model shape is:
+
+```csharp
+var customerHub = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+var customerProfile = new DataVaultSatelliteMetadata(
+    "CustomerProfile",
+    customerHub.ToReference(),
+    ["Profile Name", "Customer Status"]);
+var metadataModel = new DataVaultMetadataModel(
+    [customerHub],
+    [],
+    [customerProfile]);
+```
+
+SQLite registration then stays binary-first and provider-explicit:
 
 ```csharp
 services.AddDVault(options => options
     .UseBinaryFirstProfile()
-    .UseMetadataModel(QuickstartHistoryFlow.MetadataModel));
+    .UseMetadataModel(metadataModel));
 services.AddDVaultSqlite();
 services.AddDbContext<QuickstartVaultContext>(
     options => options
@@ -185,6 +199,68 @@ The shared quickstart flow writes through `IDataVaultSaveService` with registry-
 - the second request saves the imported `CustomerProfile` satellite version for the same customer hub;
 - the third request saves the changed `CustomerProfile` satellite version with the later UTC load timestamp and `crm-change` record source;
 - the read step uses `IDataVaultReadService.ReadLatestSatelliteAsync(...)` for both latest and as-of typed projections.
+
+The minimal SQLite proof keeps the schema creation, explicit save, and latest read visible at the service boundary:
+
+```csharp
+var initialLoadTimestamp = new DateTimeOffset(2026, 4, 29, 10, 15, 0, TimeSpan.Zero);
+var customerParent = DataVaultMetadataReference.Hub("Customer");
+
+await context.Database.EnsureCreatedAsync(cancellationToken);
+
+var hubResult = await saveService.SaveAsync(
+    context,
+    new DataVaultRegistrySaveRequest(
+        initialLoadTimestamp,
+        "crm-import",
+        [
+            new DataVaultRegistryHubSaveOperation(
+                "Customer",
+                [new("Customer Id", "C-100")]),
+        ],
+        []),
+    cancellationToken);
+var customerHashKey = hubResult.SavedRecords.Single(record =>
+    record.Kind == DataVaultTableKind.Hub &&
+    record.MetadataName == "Customer").HashKey;
+
+await saveService.SaveAsync(
+    context,
+    new DataVaultRegistrySaveRequest(
+        initialLoadTimestamp,
+        "crm-import",
+        [],
+        [],
+        [
+            new DataVaultRegistrySatelliteSaveOperation(
+                customerParent,
+                "CustomerProfile",
+                customerHashKey,
+                [
+                    new("Profile Name", "Alice Adams"),
+                    new("Customer Status", "prospect"),
+                ],
+                "customer-profile-import"),
+        ]),
+    cancellationToken);
+
+var latestRows = await readService.ReadLatestSatelliteAsync(
+    context,
+    new DataVaultRegistryLatestSatelliteReadRequest(
+        customerParent,
+        "CustomerProfile",
+        [customerHashKey]),
+    row => new {
+      ProfileName = row.RequiredString("Profile Name"),
+      CustomerStatus = row.RequiredString("Customer Status"),
+      LoadTimestamp = row.RequiredDateTimeOffset("LoadTimestamp"),
+      RecordSource = row.RequiredString("RecordSource"),
+    },
+    cancellationToken);
+var latestProfile = latestRows.Single();
+```
+
+The checked-in flow repeats the satellite save with the later `2026-04-29T11:30:00Z` load timestamp and `crm-change` record source, then performs an as-of read by passing that cutoff timestamp to `DataVaultRegistryLatestSatelliteReadRequest`.
 
 This keeps the write boundary explicit. The examples do not rely on ordinary EF entity tracking to create DVault rows, and they do not hide Data Vault persistence behind `SaveChanges`.
 
