@@ -20,6 +20,9 @@ report() {
 
 is_csharp_source_excluded() {
   case "$1" in
+    .git|.git/*|.gicket|.gicket/*|.gicket-bot|.gicket-bot/*)
+      return 0
+      ;;
     */bin/*|*/obj/*)
       return 0
       ;;
@@ -130,6 +133,25 @@ count_top_level_declarations() {
   ' "$1"
 }
 
+list_csharp_source_files() {
+  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    git ls-files -z --cached --others --exclude-standard -- '*.cs'
+    return
+  fi
+
+  find . \
+    \( \
+      -path './.git' -o \
+      -path './.gicket' -o \
+      -path './.gicket-bot' -o \
+      -path './bin' -o \
+      -path './*/bin' -o \
+      -path './obj' -o \
+      -path './*/obj' \
+    \) -prune -o \
+    -type f -name '*.cs' -print0
+}
+
 check_source_file() {
   path=$1
   declaration_count=$(count_top_level_declarations "$path")
@@ -146,13 +168,27 @@ if [ "${BASH_VERSINFO[0]:-0}" -lt 4 ]; then
   exit 2
 fi
 
+source_file_list=$(mktemp "${TMPDIR:-/tmp}/dvault-one-member-files.XXXXXX") || {
+  echo "one-member-per-file check error: unable to create a temporary source list" >&2
+  exit 2
+}
+
+if ! list_csharp_source_files >"$source_file_list"; then
+  rm -f "$source_file_list"
+  echo "one-member-per-file check error: unable to list C# source files" >&2
+  exit 2
+fi
+
 while IFS= read -r -d '' path; do
+  path=${path#./}
   [ -f "$path" ] || continue
   is_csharp_source_excluded "$path" && continue
 
   scanned_files=$((scanned_files + 1))
   check_source_file "$path"
-done < <(git ls-files -z --cached --others --exclude-standard -- '*.cs')
+done < "$source_file_list"
+
+rm -f "$source_file_list"
 
 if [ "$status" -eq 0 ]; then
   echo "One-member-per-file check passed for $scanned_files C# files."

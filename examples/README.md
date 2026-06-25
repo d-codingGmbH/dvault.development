@@ -1,4 +1,4 @@
-﻿# DVault Quickstart Examples
+# DVault Quickstart Examples
 
 The root [README quickstart](../README.md#quickstart) and [Getting Started](../docs/getting-started.md) page are the shortest SQLite-first path for a new binary-first project. These runnable companion examples run the same bounded customer-profile history flow through the public registry-backed metadata path:
 

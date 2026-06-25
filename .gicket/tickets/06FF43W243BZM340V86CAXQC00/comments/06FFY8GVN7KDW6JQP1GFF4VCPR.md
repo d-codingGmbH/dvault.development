@@ -1,61 +1,51 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Audit evidence rejects analyzer package retargeting for the current v0.47.0 baseline, so this ticket should be refined as an audit-backed no-work closure that preserves the existing single net10.0 analyzer asset and .NET 10 SDK build-host baseline for both visible package lines.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The current repository baseline is already bounded: DCoding.Data.DVault.Analyzers packs one net10.0 analyzer asset under analyzers/dotnet/cs/ for both 8.47.0 and 10.47.0 package lines.
 - The audit does not approve retargeting to a net8.0 analyzer asset or claiming pure .NET 8 SDK analyzer consumption, so this ticket should not request a package target or asset change.
 - Referenced repository documents already align on a .NET 10 SDK host requirement for analyzer consumption across both visible package lines, so the safe PO decision is to ratify that baseline rather than reopen it.
 
-### Scope In
+Scope In
 - Record the audit-backed no-work decision for analyzer retargeting on the current v0.47.0 baseline.
 - Keep analyzer compatibility guidance, verifier expectations, and test assumptions aligned with the current single net10.0 analyzer asset.
 - Treat the current repository baseline as authoritative: net8.0 consumer projects may use the 8.47.0 package line, but validated analyzer use stays on a .NET 10 SDK build host.
 
-### Scope Out
+Scope Out
 - Retargeting DCoding.Data.DVault.Analyzers to net8.0 or shipping separate analyzer assets per package line.
 - Claiming or validating pure .NET 8 SDK analyzer consumption for the analyzer package.
 - Broader package-line, EF dependency, or runtime library retargeting outside this analyzer compatibility decision.
 
-## Acceptance Criteria
-- The ticket outcome explicitly records that the audit rejected analyzer package retargeting for the v0.47.0 baseline, so no analyzer target or asset change is performed under this ticket.
-- The refined contract states that both 8.47.0 and 10.47.0 package lines continue to ship the same net10.0 analyzer asset and require a .NET 10 SDK build host for validated analyzer use.
-- Docs, tests, and package verification expectations referenced by this ticket remain consistent with that no-work decision and do not imply a pure .NET 8 SDK analyzer baseline.
-
-## Definition of Done
-- PO handoff text makes docs/plans/analyzer-package-compatibility-audit.md the authoritative basis for closing this ticket without a package retargeting change.
-- No product-code, pack-layout, or analyzer-target edits are required by this ticket unless a reviewer finds a concrete mismatch against the already documented net10.0 analyzer baseline.
-- Any needed follow-up from this ticket is limited to alignment with the ratified baseline, not a new analyzer compatibility expansion.
-
-## Implementation Notes
-- The audit document at docs/plans/analyzer-package-compatibility-audit.md is the authoritative decision record for this ticket.
-- Repository evidence in that audit shows the analyzer project targets only net10.0, the pack script emits the same analyzer binary on both visible package lines, and the integration test lane intentionally compiles net8.0 consumers with the net10.0 analyzer.
-- README and package/publication guidance already treat the .NET 10 SDK as the analyzer build-host baseline, so the bounded implementation outcome here is closure with no analyzer retargeting work.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Does product want a future compatibility commitment for net8.0 consumer projects built on a pure .NET 8 SDK host? If yes, open a separate ticket for analyzer retargeting plus an explicit verification lane.
 - Should release-facing compatibility guidance call out the analyzer build-host requirement even more prominently for adopters who only look at the 8.47.0 package line?
 
-## Risks
+Risks
 - If future docs or release messaging imply that the 8.47.0 analyzer package is validated on a pure .NET 8 SDK host, they will exceed the repository-backed proof accepted here.
 - A later requirement to support pure .NET 8 SDK analyzer consumption will need explicit implementation and verification work; treating it as incidental follow-on to this ticket would under-scope the change.
 
-## Split Recommendations
+Split recommendations
 - No split is recommended; current evidence supports a bounded no-work closure on the existing ticket.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 3
+- definition-of-done items: 3
+- implementation-notes items: 3
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Implement only the analyzer package target/asset change recommended by the audit, if it is proven safe. Acceptance: package verifier, analyzer tests, and docs remain aligned; if audit rejects retargeting, close with documented no-work decision.
+Run mode
+- apply: planned updates are applied after this comment
