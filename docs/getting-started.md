@@ -69,7 +69,7 @@ PIT and bridge maintenance are explicit caller-invoked operations. They are not 
 
 ## Optional Privacy Proof
 
-Install `DCoding.Data.DVault.Privacy` only when the application explicitly opts into the provider-neutral privacy proof package. The package provides registration, options, and alias-driven encrypted payload conversion through ordinary EF Core value conversion. It is not a GDPR/DSGVO compliance guarantee, automatic encryption feature, automatic redaction feature, provider-native encryption feature, retention engine, deletion workflow, or key-management platform.
+Install `DCoding.Data.DVault.Privacy` only when the application explicitly opts into the provider-neutral privacy proof package. The package provides registration, options, and alias-driven encrypted payload conversion on mapped payload properties through ordinary EF Core value conversion. It is not a GDPR/DSGVO compliance guarantee, automatic encryption feature, automatic redaction feature, provider-native encryption feature, retention engine, deletion workflow, or key-management platform.
 
 Model-first personal-data metadata uses `personalData[].encryptedPayloadAlias` as the stable logical alias for a marked payload. The runtime privacy proof registers that same alias explicitly; it does not add a new metadata authoring API or infer aliases from database columns.
 
@@ -169,6 +169,8 @@ The proof fails closed. If the alias is not registered with `RegisterEncryptedPa
 Crypto-shredding remains caller-owned. Withdrawing, losing, or destroying the caller-owned key material for an `encryptedPayloadAlias` means reads or writes for that alias fail closed. It does not delete rows, rewrite historical satellite values, clean PIT or bridge rows, purge backups, complete retention, or complete legal erasure.
 
 Provider caveats stay bounded to ordinary EF Core mapping. The proof stores the provider value through a normal mapped payload property and is covered by the SQLite-friendly test path; it is not provider-specific encrypted DDL, transparent database encryption, a special encrypted column type, or a claim that any provider package performs native encryption.
+
+The finite provider baseline for this caveat is SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2. MySQL follows the repository MySQL profile used for `MySql.EntityFrameworkCore` and Pomelo; it does not create a separate MariaDB capability profile. Provider-native encryption features remain guidance-only: SQL Server TDE or Always Encrypted, PostgreSQL deployment encryption or `pgcrypto`, Oracle TDE or `DBMS_CRYPTO`, MySQL SQL crypto or file or tablespace encryption, SQLite encrypted-file builds, and DB2 native database encryption stay outside the shared privacy runtime. DVault does not emit provider-native encrypted-column DDL, call provider SQL crypto functions, probe provider encryption capabilities, or route runtime behavior based on native encryption availability. Any future provider-native encryption support needs a separate provider-specific ticket or contract.
 
 ## Hashing And Storage
 

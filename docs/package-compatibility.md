@@ -31,7 +31,9 @@ The coordinated package family contains exactly these packable package ids:
 
 The `src/DCoding.Data` project is a non-packable source-root build anchor and is not a NuGet publication artifact.
 
-`DCoding.Data.DVault.Privacy` is an optional provider-neutral privacy proof package. Consumers install it only when they explicitly opt into the privacy extension seam; it provides registration, options, and alias-driven encrypted payload conversion contracts and does not provide compliance guarantees, automatic encryption/redaction, or provider-native encryption features.
+`DCoding.Data.DVault.Privacy` is an optional provider-neutral privacy proof package. Consumers install it only when they explicitly opt into the privacy extension seam; it provides registration, options, and alias-driven encrypted payload conversion contracts for ordinary EF Core mapped payload properties. It does not provide compliance guarantees, automatic encryption/redaction, database-at-rest encryption, provider-native encrypted column/cell/row features, provider SQL crypto calls, provider-native encrypted DDL, encryption-capability probing, or runtime routing based on native encryption availability.
+
+The privacy caveat uses the finite repository-backed provider baseline: SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2. MySQL covers the repository MySQL profile for `MySql.EntityFrameworkCore` and Pomelo rather than a separate MariaDB capability profile. Provider-native encryption examples such as SQL Server TDE or Always Encrypted, PostgreSQL deployment encryption or `pgcrypto`, Oracle TDE or `DBMS_CRYPTO`, MySQL SQL crypto or file or tablespace encryption, SQLite encrypted-file builds, and DB2 native database encryption remain guidance-only unless a later provider-specific ticket owns one exact capability.
 
 ## Dependency Matrix
 

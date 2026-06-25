@@ -88,16 +88,16 @@ Read and write behavior after crypto-shredding must stay explicit and fail close
 
 ## Provider-Native Encryption Decision
 
-For the v0.44 privacy-extension baseline, DVault may pursue only caller-invoked, provider-neutral encrypted payload mapping in the shared surface. The approved shared lane is an explicit helper, metadata marker, or EF Core value-conversion proof that stores caller-prepared encrypted payload values through ordinary DVault model mapping. It must keep key material, key lookup, encryption policy, decryption policy, and operation timing owned by the consuming application.
+For the current v1 privacy lane, DVault may pursue only caller-invoked, provider-neutral encrypted payload mapping in the shared surface. The approved shared lane is an explicit helper, metadata marker, or EF Core value-conversion proof that stores caller-prepared encrypted payload values through ordinary DVault model mapping. It is not database-at-rest encryption, provider-native encrypted column or cell or row support, or a provider-specific storage mode. It must keep key material, key lookup, encryption policy, decryption policy, and operation timing owned by the consuming application.
 
 The `DCoding.Data.DVault.Privacy` package exposes the shared proof as explicit alias-driven encrypted payload conversion. A caller registers an encrypted-payload alias and a caller-owned provider that implements `IDataVaultEncryptedPayloadKeyProvider` through the privacy key-provider seam, then applies the value converter to a chosen payload property. Missing aliases, missing key providers, or declined caller-owned conversions must fail before plaintext is stored or ciphertext is treated as decrypted payload data.
 
 The current supported-provider baseline for this decision is finite: SQLite, PostgreSQL, SQL Server, MySQL through `MySql.EntityFrameworkCore` or `Pomelo.EntityFrameworkCore.MySql`, Oracle, and DB2. The baseline does not create a separate MariaDB capability profile or any guarantee for providers outside that set.
 
-Database-native encryption features are guidance-only for v0.44 and are not DVault shared-runtime behavior:
+Database-native encryption features are guidance-only and are not DVault shared-runtime behavior:
 
 - database-at-rest or deployment features such as SQL Server TDE, PostgreSQL deployment or TDE posture, Oracle TDE, MySQL or MariaDB tablespace or file encryption, SQLite encrypted-file builds, and DB2 native database encryption remain caller, operator, or database-admin responsibilities;
-- application-integrated provider features such as SQL Server Always Encrypted, PostgreSQL `pgcrypto`, Oracle `DBMS_CRYPTO`, MySQL or MariaDB SQL crypto functions, provider driver key-store integration, provider-specific encrypted column DDL, and row or cell encryption functions stay outside the shared v0.44 contract;
+- application-integrated provider features such as SQL Server Always Encrypted, PostgreSQL `pgcrypto`, Oracle `DBMS_CRYPTO`, MySQL or MariaDB SQL crypto functions, provider driver key-store integration, provider-specific encrypted column DDL, and row or cell encryption functions stay outside the shared contract unless a later provider-specific ticket owns one exact provider capability;
 - database-level at-rest encryption must not be documented or diagnosed as equivalent to DVault field-level privacy semantics.
 
 The shared core must not probe for provider-native encryption capabilities, branch on provider-native encryption availability, issue provider-specific encryption DDL or SQL functions, configure provider key stores, or negotiate database encryption modes. A future provider-native encryption lane requires a separate provider-specific ticket that names one provider and one exact capability, owns the provider package surface, defines diagnostics and fallback behavior, supplies tests, and records evidence before DVault can expose it.
@@ -135,7 +135,7 @@ This story does not approve:
 - automatic deletion, retention scheduling, purge orchestration, archival orchestration, re-encryption, historical rewrite, backfill orchestration, or background workflow ownership;
 - default `SaveChanges` interception as the primary privacy behavior path;
 - implicit encryption, pseudonymization, redaction, export filtering, or deletion for callers that did not opt in;
-- provider-native cell, column, row, tablespace, file, or database encryption as a shared v0.44 runtime feature;
+- provider-native cell, column, row, tablespace, file, or database encryption as a shared runtime feature;
 - provider-specific DDL, migrations, storage optimizations, generated SQL artifacts, or runtime dispatch unless a later implementation ticket approves the exact provider lane.
 
 For example, a future helper that encrypts a satellite payload when a caller supplies a key provider and invokes an explicit save helper can fit this boundary. A background service that scans all DVault tables nightly, chooses retention policy, deletes rows, rotates keys, and reports compliance status does not fit this boundary.

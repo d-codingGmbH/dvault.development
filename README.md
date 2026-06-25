@@ -43,7 +43,9 @@ dotnet add package DCoding.Data.DVault.SqlServer --version 10.47.0
 dotnet add package DCoding.Data.DVault.Privacy --version 10.47.0
 ```
 
-Install `DCoding.Data.DVault.Privacy` only when the application explicitly opts into the privacy extension seam. The package is a provider-neutral proof for registration, options, and alias-driven encrypted payload conversion; it does not make an application compliant, enable automatic encryption or redaction, or use provider-native encryption features.
+Install `DCoding.Data.DVault.Privacy` only when the application explicitly opts into the privacy extension seam. The package is a provider-neutral proof for registration, options, and alias-driven encrypted payload conversion over ordinary EF Core mapped payload properties; it does not make an application compliant, enable automatic encryption or redaction, provide database-at-rest encryption, or use provider-native encrypted column/cell/row features.
+
+Privacy provider caveats stay inside the finite repository-backed provider baseline: SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2. MySQL means the repository MySQL profile for `MySql.EntityFrameworkCore` and Pomelo, not a separate MariaDB capability profile. Provider-native features such as SQL Server TDE or Always Encrypted, PostgreSQL deployment encryption or `pgcrypto`, Oracle TDE or `DBMS_CRYPTO`, MySQL SQL crypto or file or tablespace encryption, SQLite encrypted-file builds, and DB2 native database encryption remain guidance-only. DVault does not emit provider-native encrypted DDL, call provider SQL crypto functions, probe provider encryption capabilities, or route runtime behavior based on native encryption availability; future native encryption support needs a separate provider-specific ticket or contract.
 
 Add the analyzer package only to projects that own DVault declarations, compile-time generated row mappings, or generated typed read helpers, and keep it local with `PrivateAssets="all"`. Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.47.0` package line. The current analyzer package carries one `net10.0` analyzer asset for both coordinated package lines; this repository does not validate pure `.NET 8 SDK` analyzer consumption.
 
@@ -137,7 +139,7 @@ In short:
 - `10.47.0` targets `net10.0` and the EF Core 10 dependency line.
 - `v0.47.0` is a repository release tag and release-note label, not a NuGet package version.
 - `DCoding.Data.DVault.Analyzers` remains a local `PrivateAssets="all"` analyzer reference and currently requires a `.NET 10 SDK` build host for both package lines.
-- `DCoding.Data.DVault.Privacy` remains optional and opt-in; it provides registration and alias-driven encrypted payload conversion seams only, not compliance, automatic privacy execution, or provider-native encryption.
+- `DCoding.Data.DVault.Privacy` remains optional and opt-in; it provides registration and alias-driven encrypted payload conversion seams over ordinary EF Core mapped payload properties only, not compliance, automatic privacy execution, database-at-rest encryption, provider-native encrypted column/cell/row features, provider SQL crypto calls, encrypted DDL, capability probing, or runtime routing based on native encryption availability.
 - Hash-key storage guidance now routes new projects to binary-first setup and existing persisted `HexString` setups to the migration guide and dry-run manifest path.
 
 ## Documentation Map
