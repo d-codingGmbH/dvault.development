@@ -84,6 +84,18 @@ services.AddDbContext<SalesVaultContext>(options =>
     options.UseSqlite("Data Source=sales-vault.db"));
 ```
 
+For PostgreSQL, install `DCoding.Data.DVault.Postgres` with the matching DVault package line and the normal EF Core provider package `Npgsql.EntityFrameworkCore.PostgreSQL`, then use the same binary-first posture with `AddDVaultPostgres()` and `UseNpgsql(connectionString)`:
+
+```csharp
+services.AddDVault(options => options.UseBinaryFirstProfile());
+services.AddDVaultPostgres();
+
+services.AddDbContext<SalesVaultContext>(options =>
+    options.UseNpgsql(connectionString));
+```
+
+The runnable PostgreSQL quickstart and live PostgreSQL integration tests are opt-in behind `DVAULT_TEST_POSTGRES_CONNECTION_STRING`. See [examples/README.md](examples/README.md#run-postgresql), [examples/DCoding.Data.DVault.PostgresQuickstart/README.md](examples/DCoding.Data.DVault.PostgresQuickstart/README.md), and [Local Validation](docs/local-validation.md#postgresql) for the existing local fixture and validation flow. DVault does not provision PostgreSQL containers, databases, users, credentials, or deployment infrastructure.
+
 Declare Data Vault metadata in `OnModelCreating` with Code-First metadata, or provide a reviewed `DataVaultMetadataModel` / `DataVaultMetadataRegistry` when metadata should be shared across schema projection, saves, reads, diagnostics, and generated helper surfaces.
 
 ```csharp

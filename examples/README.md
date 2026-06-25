@@ -1,4 +1,4 @@
-# DVault Quickstart Examples
+﻿# DVault Quickstart Examples
 
 The root [README quickstart](../README.md#quickstart) and [Getting Started](../docs/getting-started.md) page are the shortest SQLite-first path for a new binary-first project. These runnable companion examples run the same bounded customer-profile history flow through the public registry-backed metadata path:
 
@@ -26,7 +26,7 @@ The console output keeps diagnostics sanitized. Diagnostic lines report request-
 
 ## Package And Provider Setup
 
-Consumer applications install the provider-neutral package and exactly one provider package for the database they use. Install `DCoding.Data.DVault.Privacy` only for the explicit privacy proof or a later opt-in privacy flow. Keep every DVault package on one aligned version. Use `8.47.0` for `net8.0` and EF Core 8 projects, or `10.47.0` for `net10.0` and EF Core 10 projects; do not use a consumer-facing `0.47.0` package version from the v0.47.0 release label. The blocks below list the full coordinated package family so each needed package can be copied from one aligned line.
+Consumer applications install the provider-neutral package and exactly one provider package for the database they use. For PostgreSQL, install `DCoding.Data.DVault.Postgres` plus the normal EF Core provider package `Npgsql.EntityFrameworkCore.PostgreSQL`. Install `DCoding.Data.DVault.Privacy` only for the explicit privacy proof or a later opt-in privacy flow. Keep every DVault package on one aligned version. Use `8.47.0` for `net8.0` and EF Core 8 projects, or `10.47.0` for `net10.0` and EF Core 10 projects; do not use a consumer-facing `0.47.0` package version from the v0.47.0 release label. The blocks below list the full coordinated package family so each needed package can be copied from one aligned line.
 
 For `net8.0` projects on EF Core 8, use the `8.47.0` package line:
 

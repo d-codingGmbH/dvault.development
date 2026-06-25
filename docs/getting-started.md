@@ -24,6 +24,18 @@ services.AddDbContext<SalesVaultContext>(options =>
     options.UseSqlite(connectionString));
 ```
 
+For PostgreSQL, install `DCoding.Data.DVault.Postgres` and the ordinary EF Core provider package `Npgsql.EntityFrameworkCore.PostgreSQL`, then keep the same binary-first DVault registration while switching the provider extension and DbContext configuration:
+
+```csharp
+services.AddDVault(options => options.UseBinaryFirstProfile());
+services.AddDVaultPostgres();
+
+services.AddDbContext<SalesVaultContext>(options =>
+    options.UseNpgsql(connectionString));
+```
+
+The checked-in PostgreSQL quickstart and live PostgreSQL provider tests are optional local flows gated by `DVAULT_TEST_POSTGRES_CONNECTION_STRING`. Use the existing [PostgreSQL quickstart fixture](../examples/DCoding.Data.DVault.PostgresQuickstart/README.md) and [local validation](local-validation.md#postgresql) notes when you want to run them. DVault does not create PostgreSQL containers, databases, users, credentials, or deployment infrastructure.
+
 The binary-first profile changes the recommended physical hash-key storage for new generated schemas; it does not migrate existing databases or configurations automatically. Existing `HexString`-compatible setups remain valid until the application owner intentionally plans and executes a separate reviewed migration, reset, or data-move change. Logical and public hash-key values stay lowercase hexadecimal strings even when binary physical storage is selected for new projects.
 
 Provider packages can register provider capability profiles, behavior, diagnostics, read strategies, or save strategies behind the shared `IDataVaultSaveService` and `IDataVaultReadService` boundaries. They do not replace the application's normal EF Core provider configuration.
