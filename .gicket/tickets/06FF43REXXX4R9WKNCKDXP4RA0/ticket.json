@@ -3,21 +3,20 @@
   "ticket-id": "06FF43REXXX4R9WKNCKDXP4RA0",
   "ticket-type": "story",
   "title": "Story: Define library-focused adoption path without template suite",
-  "revision": "06FF45NVYMG5QBAZKD7NDNP488",
-  "status": "todo",
+  "revision": "06FFZ9HT7JAQRK9XR5KYCKJYWC",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
+    "area/analyzers",
+    "area/architecture",
     "area/documentation",
     "area/examples",
-    "area/analyzers",
-    "area/architecture"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FF437Q6BCDT2E67RMFK783NR",
   "release-id": "06FF437GWAWYQF5HXSRVB09B7R",
   "created-at": "2026-06-23T01:18:54.9207508Z",
-  "updated-at": "2026-06-23T01:27:16.7257738Z"
+  "updated-at": "2026-06-25T16:39:04.5080444Z"
 }
