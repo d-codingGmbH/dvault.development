@@ -3,20 +3,19 @@
   "ticket-id": "06FF43M7AE9DN3K1YXBPB1R574",
   "ticket-type": "task",
   "title": "Task: Add privacy key-alias coverage report",
-  "revision": "06FF44N1MPXXFRZ0K1CMBEX9AR",
-  "status": "todo",
+  "revision": "06FFVPKEAZRH86EBAMYEM3YB94",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
+    "area/diagnostics",
     "area/privacy",
     "area/security",
-    "area/diagnostics"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FF437NMW8NENKSMVDBTRQ034",
   "release-id": "06FF437GWAWYQF5HXSRVB09B7R",
   "created-at": "2026-06-23T01:18:19.7411596Z",
-  "updated-at": "2026-06-23T01:22:47.8450966Z"
+  "updated-at": "2026-06-25T08:16:51.2876193Z"
 }

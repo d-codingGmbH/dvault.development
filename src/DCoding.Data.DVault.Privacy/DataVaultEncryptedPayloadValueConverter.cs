@@ -30,7 +30,13 @@ public sealed class DataVaultEncryptedPayloadValueConverter : ValueConverter<str
               DataVaultEncryptedPayloadConversionDirection.Decrypt,
               value)) {
     EnsureConversionCanRun(configuration, encryptedPayloadAlias);
+    EncryptedPayloadAlias = encryptedPayloadAlias;
   }
+
+  /// <summary>
+  /// Gets the stable encrypted-payload alias used by this converter.
+  /// </summary>
+  public string EncryptedPayloadAlias { get; }
 
   private static string ConvertPayload(
       IDataVaultPrivacyConfiguration configuration,

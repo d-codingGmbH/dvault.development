@@ -27,6 +27,59 @@ type public sealed class DCoding.Data.DVault.Privacy.DataVaultEncryptedPayloadCo
 
 type public sealed class DCoding.Data.DVault.Privacy.DataVaultEncryptedPayloadValueConverter : Microsoft.EntityFrameworkCore.Storage.ValueConversion.ValueConverter<string, string>
   ctor public DataVaultEncryptedPayloadValueConverter(DCoding.Data.DVault.Privacy.IDataVaultPrivacyConfiguration configuration, string encryptedPayloadAlias)
+  property public string EncryptedPayloadAlias { get; }
+
+type public sealed class DCoding.Data.DVault.Privacy.DataVaultPrivacyAliasCoverage : System.IEquatable<DCoding.Data.DVault.Privacy.DataVaultPrivacyAliasCoverage>
+  ctor public DataVaultPrivacyAliasCoverage(string EncryptedPayloadAlias, DCoding.Data.DVault.Privacy.DataVaultPrivacyAliasCoverageStatus Status, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Privacy.DataVaultPrivacyCoveredProperty> CoveredProperties)
+  property public DCoding.Data.DVault.Privacy.DataVaultPrivacyAliasCoverageStatus Status { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Privacy.DataVaultPrivacyCoveredProperty> CoveredProperties { get; init; }
+  property public string EncryptedPayloadAlias { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.Privacy.DataVaultPrivacyAliasCoverage? left, DCoding.Data.DVault.Privacy.DataVaultPrivacyAliasCoverage? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.Privacy.DataVaultPrivacyAliasCoverage? left, DCoding.Data.DVault.Privacy.DataVaultPrivacyAliasCoverage? right)
+  method public virtual bool Equals(DCoding.Data.DVault.Privacy.DataVaultPrivacyAliasCoverage? other)
+  method public void Deconstruct(out string EncryptedPayloadAlias, out DCoding.Data.DVault.Privacy.DataVaultPrivacyAliasCoverageStatus Status, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Privacy.DataVaultPrivacyCoveredProperty> CoveredProperties)
+
+type public enum DCoding.Data.DVault.Privacy.DataVaultPrivacyAliasCoverageStatus
+  value Covered = 0
+  value RegisteredButUnmapped = 1
+
+type public sealed class DCoding.Data.DVault.Privacy.DataVaultPrivacyCoverageReport : System.IEquatable<DCoding.Data.DVault.Privacy.DataVaultPrivacyCoverageReport>
+  ctor public DataVaultPrivacyCoverageReport(DCoding.Data.DVault.Privacy.DataVaultPrivacyKeyProviderPosture KeyProviderPosture, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Privacy.DataVaultPrivacyAliasCoverage> AliasCoverages)
+  property public DCoding.Data.DVault.Privacy.DataVaultPrivacyKeyProviderPosture KeyProviderPosture { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Privacy.DataVaultPrivacyAliasCoverage> AliasCoverages { get; init; }
+  property public bool HasUnmappedAliases { get; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.Privacy.DataVaultPrivacyCoverageReport? left, DCoding.Data.DVault.Privacy.DataVaultPrivacyCoverageReport? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.Privacy.DataVaultPrivacyCoverageReport? left, DCoding.Data.DVault.Privacy.DataVaultPrivacyCoverageReport? right)
+  method public string ToDisplayString()
+  method public virtual bool Equals(DCoding.Data.DVault.Privacy.DataVaultPrivacyCoverageReport? other)
+  method public void Deconstruct(out DCoding.Data.DVault.Privacy.DataVaultPrivacyKeyProviderPosture KeyProviderPosture, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Privacy.DataVaultPrivacyAliasCoverage> AliasCoverages)
+
+type public static class DCoding.Data.DVault.Privacy.DataVaultPrivacyCoverageReporter
+  method public static DCoding.Data.DVault.Privacy.DataVaultPrivacyCoverageReport Analyze(DCoding.Data.DVault.Privacy.IDataVaultPrivacyConfiguration configuration, Microsoft.EntityFrameworkCore.DbContext context)
+  method public static DCoding.Data.DVault.Privacy.DataVaultPrivacyCoverageReport Analyze(DCoding.Data.DVault.Privacy.IDataVaultPrivacyConfiguration configuration, Microsoft.EntityFrameworkCore.Metadata.IModel model)
+
+type public sealed class DCoding.Data.DVault.Privacy.DataVaultPrivacyCoveredProperty : System.IEquatable<DCoding.Data.DVault.Privacy.DataVaultPrivacyCoveredProperty>
+  ctor public DataVaultPrivacyCoveredProperty(string EntityTypeName, string PropertyName)
+  property public string EntityTypeName { get; init; }
+  property public string PropertyName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.Privacy.DataVaultPrivacyCoveredProperty? left, DCoding.Data.DVault.Privacy.DataVaultPrivacyCoveredProperty? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.Privacy.DataVaultPrivacyCoveredProperty? left, DCoding.Data.DVault.Privacy.DataVaultPrivacyCoveredProperty? right)
+  method public virtual bool Equals(DCoding.Data.DVault.Privacy.DataVaultPrivacyCoveredProperty? other)
+  method public void Deconstruct(out string EntityTypeName, out string PropertyName)
+
+type public enum DCoding.Data.DVault.Privacy.DataVaultPrivacyKeyProviderPosture
+  value None = 0
+  value MarkerOnly = 1
+  value EncryptedPayloadCapable = 2
 
 type public sealed class DCoding.Data.DVault.Privacy.DataVaultPrivacyOptions
   ctor public DataVaultPrivacyOptions()
