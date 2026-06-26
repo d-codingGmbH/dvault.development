@@ -3,6 +3,6 @@
   "milestone-id": "06FF437NMW8NENKSMVDBTRQ034",
   "name": "v0.48.0 - Privacy coverage diagnostics",
   "description": "Add provider-neutral privacy coverage and alias diagnostics without owning keys, deletion workflows, or compliance automation.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-23T01:16:36.1359032Z"
 }

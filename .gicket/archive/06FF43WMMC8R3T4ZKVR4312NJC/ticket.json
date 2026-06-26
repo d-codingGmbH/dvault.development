@@ -3,7 +3,7 @@
   "ticket-id": "06FF43WMMC8R3T4ZKVR4312NJC",
   "ticket-type": "task",
   "title": "Task: Update v0.48 privacy and adoption release docs",
-  "revision": "06FF43XK1G1NB9AC0HPHYWHC8G",
+  "revision": "06FG67BNRQ8BCWTXFXDDCRKGTW",
   "status": "todo",
   "labels": [
     "needs-po",
@@ -19,5 +19,5 @@
   "milestone-id": "06FF437R0Z71HZANY20JTEK86M",
   "release-id": "06FF437GWAWYQF5HXSRVB09B7R",
   "created-at": "2026-06-23T01:19:29.6206441Z",
-  "updated-at": "2026-06-23T01:19:35.6926286Z"
+  "updated-at": "2026-06-26T08:48:10.1812262Z"
 }

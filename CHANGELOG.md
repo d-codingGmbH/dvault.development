@@ -2,6 +2,18 @@
 
 This changelog summarizes the public release-note trail. The detailed release records remain under [docs/releases/](docs/releases/); those files are the source of truth for scope, evidence, non-goals, and validation notes.
 
+## v0.48.0 - Privacy Preflight and Adoption Ergonomics
+
+- Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.48.0` / `net8.0` / EF Core 8 and `10.48.0` / `net10.0` / EF Core 10.
+- Records that the v0.48.0 release label maps to consumer package versions `8.48.0` and `10.48.0`, not to a `0.48.0` package version.
+- Adds deterministic, redaction-safe privacy coverage reporting for registered encrypted-payload aliases, mapped converter coverage, and key-provider posture.
+- Strengthens personal-data diagnostics so missing opt-in proof stays advisory while configured-but-unusable alias, key-provider, proof, or converter coverage fails closed.
+- Extends the SQLite quickstart and adoption checklist with a bounded provider-neutral privacy proof, alias preflight guidance, and explicit provider-native encryption caveats.
+- Ratifies the analyzer package audit decision: one `net10.0` analyzer asset remains the supported package shape for both visible package lines, with a `.NET 10 SDK` build-host baseline.
+- Updates README, package compatibility, manual publication, local validation, production adoption, analyzer guidance, package creation, and package verification to the v0.48.0 baseline.
+
+See [DVault v0.48.0 Release Notes](docs/releases/v0.48.0.md).
+
 ## v0.47.0 - Provider Maintenance Documentation Baseline
 
 - Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.47.0` / `net8.0` / EF Core 8 and `10.47.0` / `net10.0` / EF Core 10.

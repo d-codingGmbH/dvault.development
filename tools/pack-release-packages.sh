@@ -55,5 +55,5 @@ pack_line() {
   pack_analyzer_line "$version"
 }
 
-pack_line "8.47.0" "net8.0"
-pack_line "10.47.0" "net10.0"
+pack_line "8.48.0" "net8.0"
+pack_line "10.48.0" "net10.0"
