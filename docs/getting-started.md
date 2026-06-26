@@ -175,33 +175,42 @@ Model-first personal-data metadata uses `personalData[].encryptedPayloadAlias` a
 
 The provider passed to `UseCallerOwnedKeyProvider(...)` is typed as `IDataVaultPrivacyKeyProvider`. Encrypted payload conversion has a narrower runtime requirement: the configured provider must also implement `IDataVaultEncryptedPayloadKeyProvider`, because `DataVaultEncryptedPayloadValueConverter` asks it to approve and perform each conversion.
 
+The checked-in SQLite quickstart is the local binary-first proof for this shape. It keeps the existing metadata-first DVault registration and SQLite provider setup, adds explicit privacy registration beside it, then writes one ordinary EF Core row whose mapped payload property uses the encrypted-payload converter. The same run still writes and reads the Data Vault history through `IDataVaultSaveService` and `IDataVaultReadService`; privacy conversion is visible only on the opt-in mapped property.
+
 ```csharp
-using System.Text;
+using DCoding.Data.DVault;
 using DCoding.Data.DVault.Privacy;
+using DCoding.Data.DVault.Quickstarts.Shared;
+using DCoding.Data.DVault.SqliteQuickstart;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 var services = new ServiceCollection();
-var connectionString = "Data Source=customer-privacy.db";
 
+services.AddDVault(options => options
+    .UseBinaryFirstProfile()
+    .UseMetadataModel(QuickstartHistoryFlow.MetadataModel));
 services.AddDVaultPrivacy(options => options
-    .RegisterEncryptedPayloadAlias(PrivacyAliases.CustomerProfileEmail)
-    .UseCallerOwnedKeyProvider(new DemoEncryptedPayloadKeyProvider()));
+    .RegisterEncryptedPayloadAlias(SqlitePrivacyQuickstartFlow.CustomerProfileEmailEncryptedPayloadAlias)
+    .UseCallerOwnedKeyProvider(new SqliteDemoEncryptedPayloadKeyProvider()));
+services.AddDVaultSqlite();
 
-services.AddDbContext<CustomerPrivacyContext>(options =>
-    options.UseSqlite(connectionString));
+services.AddDbContext<SqliteQuickstartVaultContext>(options => options
+    .UseSqlite(connectionString)
+    .UseDataVaultMetadata());
+services.AddScoped<QuickstartVaultContext>(
+    provider => provider.GetRequiredService<SqliteQuickstartVaultContext>());
 
-public static class PrivacyAliases {
-  public const string CustomerProfileEmail = "CustomerProfileEmailEncrypted";
-}
-
-public sealed class CustomerPrivacyContext(
-    DbContextOptions<CustomerPrivacyContext> options,
-    IDataVaultPrivacyConfiguration privacyConfiguration) : DbContext(options) {
-  public DbSet<CustomerProfileRow> CustomerProfiles => Set<CustomerProfileRow>();
+public sealed class SqliteQuickstartVaultContext(
+    DbContextOptions<SqliteQuickstartVaultContext> options,
+    IDataVaultPrivacyConfiguration privacyConfiguration) : QuickstartVaultContext(options) {
+  public DbSet<CustomerProfilePrivacyProofRow> CustomerProfilePrivacyProofs =>
+      Set<CustomerProfilePrivacyProofRow>();
 
   protected override void OnModelCreating(ModelBuilder modelBuilder) {
-    modelBuilder.Entity<CustomerProfileRow>(entity => {
+    base.OnModelCreating(modelBuilder);
+
+    modelBuilder.Entity<CustomerProfilePrivacyProofRow>(entity => {
       entity.ToTable("CustomerProfilePrivacyProof");
       entity.HasKey(row => row.Id);
       entity.Property(row => row.CustomerBusinessKey).IsRequired();
@@ -209,48 +218,13 @@ public sealed class CustomerPrivacyContext(
           .IsRequired()
           .HasConversion(new DataVaultEncryptedPayloadValueConverter(
               privacyConfiguration,
-              PrivacyAliases.CustomerProfileEmail));
+              SqlitePrivacyQuickstartFlow.CustomerProfileEmailEncryptedPayloadAlias));
     });
-  }
-}
-
-public sealed class CustomerProfileRow {
-  public long Id { get; set; }
-
-  public string CustomerBusinessKey { get; set; } = string.Empty;
-
-  public string EmailAddress { get; set; } = string.Empty;
-}
-
-public sealed class DemoEncryptedPayloadKeyProvider : IDataVaultEncryptedPayloadKeyProvider {
-  public DataVaultEncryptedPayloadConversionResult ConvertEncryptedPayload(
-      DataVaultEncryptedPayloadConversionRequest request) {
-    return request.Direction switch {
-      DataVaultEncryptedPayloadConversionDirection.Encrypt => DataVaultEncryptedPayloadConversionResult.Approved(
-          "demo-encrypted:" +
-          request.EncryptedPayloadAlias +
-          ":" +
-          Convert.ToBase64String(Encoding.UTF8.GetBytes(request.Value))),
-      DataVaultEncryptedPayloadConversionDirection.Decrypt => Decrypt(request),
-      _ => DataVaultEncryptedPayloadConversionResult.Declined("unsupported-conversion-direction"),
-    };
-  }
-
-  private static DataVaultEncryptedPayloadConversionResult Decrypt(
-      DataVaultEncryptedPayloadConversionRequest request) {
-    var prefix = "demo-encrypted:" + request.EncryptedPayloadAlias + ":";
-    if (!request.Value.StartsWith(prefix, StringComparison.Ordinal)) {
-      return DataVaultEncryptedPayloadConversionResult.Declined("alias-mismatch");
-    }
-
-    var providerPayload = request.Value[prefix.Length..];
-    return DataVaultEncryptedPayloadConversionResult.Approved(
-        Encoding.UTF8.GetString(Convert.FromBase64String(providerPayload)));
   }
 }
 ```
 
-`DemoEncryptedPayloadKeyProvider` is only a caller-owned proof provider that makes the SQLite-friendly round trip visible. Production applications must replace it with their own cryptography, key lookup, rotation, authorization, diagnostics, and decline policy. DVault does not create, store, rotate, select, escrow, destroy, or recover key material.
+`SqliteDemoEncryptedPayloadKeyProvider` is only a caller-owned proof provider that makes the SQLite-friendly round trip visible. The quickstart prints whether the stored provider value uses the demo encrypted prefix and whether the converter returns the original value, without printing raw payload values, ciphertext, key material, connection strings, or provider messages. Production applications must replace the demo provider with their own cryptography, key lookup, rotation, authorization, diagnostics, and decline policy. DVault does not create, store, rotate, select, escrow, destroy, or recover key material.
 
 The proof fails closed. If the alias is not registered with `RegisterEncryptedPayloadAlias(...)`, no key provider is wired with `UseCallerOwnedKeyProvider(...)`, the provider does not also satisfy `IDataVaultEncryptedPayloadKeyProvider`, or the provider declines a conversion, `DataVaultEncryptedPayloadValueConverter` throws instead of silently storing plaintext or silently treating ciphertext as decrypted payload data.
 

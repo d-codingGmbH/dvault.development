@@ -5,5 +5,5 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace DCoding.Data.DVault.Quickstarts.Shared;
 
-public sealed class QuickstartVaultContext(DbContextOptions<QuickstartVaultContext> options) : DbContext(options) {
+public class QuickstartVaultContext(DbContextOptions options) : DbContext(options) {
 }

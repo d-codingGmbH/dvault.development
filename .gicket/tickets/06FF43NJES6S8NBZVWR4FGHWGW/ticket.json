@@ -3,21 +3,20 @@
   "ticket-id": "06FF43NJES6S8NBZVWR4FGHWGW",
   "ticket-type": "task",
   "title": "Task: Add SQLite privacy quickstart with binary-first setup",
-  "revision": "06FF44PK1JYVKFKWKXKTG2664C",
-  "status": "todo",
+  "revision": "06FG3TM2RJJEXB0S2X93TF4E8W",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
+    "area/documentation",
     "area/examples",
     "area/privacy",
-    "area/documentation",
-    "provider/sqlite"
+    "automation/bot-ready",
+    "provider/sqlite",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FF437PDFA6MM5ZCKB1P9X26G",
   "release-id": "06FF437GWAWYQF5HXSRVB09B7R",
   "created-at": "2026-06-23T01:18:31.3801887Z",
-  "updated-at": "2026-06-23T01:23:00.4929192Z"
+  "updated-at": "2026-06-26T03:12:53.9562128Z"
 }

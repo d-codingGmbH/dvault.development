@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../DCoding.Data.DVault.Quickstarts.Shared/DCoding.Data.DVault.Quickstarts.Shared.csproj" />
+    <ProjectReference Include="../../src/DCoding.Data.DVault.Privacy/DCoding.Data.DVault.Privacy.csproj" />
     <ProjectReference Include="../../src/DCoding.Data.DVault.Sqlite/DCoding.Data.DVault.Sqlite.csproj" />
   </ItemGroup>
 </Project>

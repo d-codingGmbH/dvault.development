@@ -92,6 +92,8 @@ For the current v1 privacy lane, DVault may pursue only caller-invoked, provider
 
 The `DCoding.Data.DVault.Privacy` package exposes the shared proof as explicit alias-driven encrypted payload conversion. A caller registers an encrypted-payload alias and a caller-owned provider that implements `IDataVaultEncryptedPayloadKeyProvider` through the privacy key-provider seam, then applies the value converter to a chosen payload property. Missing aliases, missing key providers, or declined caller-owned conversions must fail before plaintext is stored or ciphertext is treated as decrypted payload data.
 
+The checked-in SQLite quickstart demonstrates this approved shared lane through the existing binary-first metadata-first sample: it registers `AddDVaultPrivacy(...)` beside `AddDVault(options => options.UseBinaryFirstProfile().UseMetadataModel(...))`, applies `DataVaultEncryptedPayloadValueConverter` to one ordinary EF Core mapped property, and prints only redaction-safe round-trip status. That example remains a provider-neutral value-converter proof; it is not SQLite encrypted-file guidance, provider-native encrypted DDL, automatic DVault save/read encryption, or a key-lifecycle implementation.
+
 The current supported-provider baseline for this decision is finite: SQLite, PostgreSQL, SQL Server, MySQL through `MySql.EntityFrameworkCore` or `Pomelo.EntityFrameworkCore.MySql`, Oracle, and DB2. The baseline does not create a separate MariaDB capability profile or any guarantee for providers outside that set.
 
 Database-native encryption features are guidance-only and are not DVault shared-runtime behavior:
