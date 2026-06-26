@@ -277,6 +277,7 @@ type public sealed class DCoding.Data.DVault.DataVaultEntityExplain : System.IEq
   property public DCoding.Data.DVault.Modeling.DataVaultTableKind TableKind { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultConstraintExplain> Constraints { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultIndexExplain> Indexes { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultLinkParticipantExplain>? LinkParticipants { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPropertyExplain> Properties { get; init; }
   property public string MetadataName { get; init; }
   property public string ProducedName { get; init; }
@@ -449,6 +450,22 @@ type public sealed class DCoding.Data.DVault.DataVaultLinkParticipantBindingAttr
   property public int Order { get; }
   property public string ParticipantHubName { get; }
   property public string SourceMemberName { get; }
+
+type public sealed class DCoding.Data.DVault.DataVaultLinkParticipantExplain : System.IEquatable<DCoding.Data.DVault.DataVaultLinkParticipantExplain>
+  ctor public DataVaultLinkParticipantExplain(string Hub, string Name, string? Role, string ProducedName, string ColumnName, int Ordinal)
+  property public int Ordinal { get; init; }
+  property public string ColumnName { get; init; }
+  property public string Hub { get; init; }
+  property public string Name { get; init; }
+  property public string ProducedName { get; init; }
+  property public string? Role { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultLinkParticipantExplain? left, DCoding.Data.DVault.DataVaultLinkParticipantExplain? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultLinkParticipantExplain? left, DCoding.Data.DVault.DataVaultLinkParticipantExplain? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultLinkParticipantExplain? other)
+  method public void Deconstruct(out string Hub, out string Name, out string? Role, out string ProducedName, out string ColumnName, out int Ordinal)
 
 type public sealed class DCoding.Data.DVault.DataVaultLinkSaveOperation
   ctor public DataVaultLinkSaveOperation(DCoding.Data.DVault.Modeling.DataVaultLinkMetadata metadata, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> participantHashKeyValues)

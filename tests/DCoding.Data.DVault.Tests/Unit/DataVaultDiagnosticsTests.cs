@@ -52,6 +52,150 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.DoesNotContain("\"providerTuning\"", bundleJson, StringComparison.Ordinal);
   }
 
+  [Fact]
+  public void AnalyzeReportsRepeatedSameHubLinkParticipantsInSupportBundleExplain() {
+    using var provider = CreateServiceProvider();
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    var result = diagnostics.Analyze(CreateRepeatedSameHubLinkMetadataModel());
+
+    Assert.True(result.Validation.IsValid);
+    var link = result.Explain.Entities.Single(entity => entity.MetadataName == "CustomerIdentityMatch");
+    Assert.NotNull(link.LinkParticipants);
+    var participants = link.LinkParticipants;
+    Assert.Collection(
+        participants!,
+        participant => AssertLinkParticipant(
+            participant,
+            "Customer",
+            "SourceCustomer",
+            "SourceCustomer",
+            "SourceCustomerHashKey",
+            "SourceCustomerHashKey",
+            0),
+        participant => AssertLinkParticipant(
+            participant,
+            "Customer",
+            "MatchedCustomer",
+            "MatchedCustomer",
+            "MatchedCustomerHashKey",
+            "MatchedCustomerHashKey",
+            1));
+
+    var bundleJson = DataVaultSupportBundleExporter.ExportJson(result);
+    using var document = JsonDocument.Parse(bundleJson);
+    var bundleLink = document
+        .RootElement
+        .GetProperty("diagnostics")
+        .GetProperty("explain")
+        .GetProperty("entities")
+        .EnumerateArray()
+        .Single(entity => entity.GetProperty("metadataName").GetString() == "CustomerIdentityMatch");
+
+    Assert.Collection(
+        bundleLink.GetProperty("linkParticipants").EnumerateArray().ToArray(),
+        participant => AssertSupportBundleLinkParticipant(
+            participant,
+            "Customer",
+            "SourceCustomer",
+            "SourceCustomer",
+            "SourceCustomerHashKey",
+            "SourceCustomerHashKey",
+            0),
+        participant => AssertSupportBundleLinkParticipant(
+            participant,
+            "Customer",
+            "MatchedCustomer",
+            "MatchedCustomer",
+            "MatchedCustomerHashKey",
+            "MatchedCustomerHashKey",
+            1));
+  }
+
+  [Fact]
+  public void AnalyzeReportsDistinctHubLinkParticipantsAsAdditiveExplainFacts() {
+    using var provider = CreateServiceProvider();
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    var result = diagnostics.Analyze(CreateHashKeyReferenceMetadataModel());
+
+    Assert.True(result.Validation.IsValid);
+    var link = result.Explain.Entities.Single(entity => entity.MetadataName == "CustomerOrder");
+    Assert.Equal(
+        ["CustomerOrderHashKey", "LoadTimestamp", "RecordSource", "CustomerHashKey", "OrderHashKey"],
+        link.Properties.Select(property => property.ProducedName).ToArray());
+    Assert.NotNull(link.LinkParticipants);
+    var participants = link.LinkParticipants;
+    Assert.Collection(
+        participants!,
+        participant => AssertLinkParticipant(
+            participant,
+            "Customer",
+            "Customer",
+            null,
+            "CustomerHashKey",
+            "CustomerHashKey",
+            0),
+        participant => AssertLinkParticipant(
+            participant,
+            "Order",
+            "Order",
+            null,
+            "OrderHashKey",
+            "OrderHashKey",
+            1));
+
+    var bundleJson = DataVaultSupportBundleExporter.ExportJson(result);
+    using var document = JsonDocument.Parse(bundleJson);
+    var bundleLink = document
+        .RootElement
+        .GetProperty("diagnostics")
+        .GetProperty("explain")
+        .GetProperty("entities")
+        .EnumerateArray()
+        .Single(entity => entity.GetProperty("metadataName").GetString() == "CustomerOrder");
+
+    Assert.Collection(
+        bundleLink.GetProperty("linkParticipants").EnumerateArray().ToArray(),
+        participant => AssertSupportBundleLinkParticipant(
+            participant,
+            "Customer",
+            "Customer",
+            null,
+            "CustomerHashKey",
+            "CustomerHashKey",
+            0),
+        participant => AssertSupportBundleLinkParticipant(
+            participant,
+            "Order",
+            "Order",
+            null,
+            "OrderHashKey",
+            "OrderHashKey",
+            1));
+  }
+
+  [Fact]
+  public void AnalyzeMetadataModelReportsAmbiguousRepeatedSameHubLinkParticipants() {
+    using var provider = CreateServiceProvider();
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    var customer = new DataVaultHubMetadata("Customer", ["CustomerNumber"]);
+    var link = new DataVaultLinkMetadata(
+        "CustomerIdentityMatch",
+        [customer.ToReference(), customer.ToReference()]);
+
+    var result = diagnostics.Analyze(new DataVaultMetadataModel([customer], [link], []));
+
+    Assert.False(result.Validation.IsValid);
+    Assert.Contains(result.Validation.Issues, issue =>
+        issue.Code == "duplicate-logical-name" &&
+        issue.Path == "metadata.links/CustomerIdentityMatch/participants");
+    Assert.Contains(result.Validation.Issues, issue =>
+        issue.Code == "ambiguous-link-participant-role" &&
+        issue.Path == "metadata.links/CustomerIdentityMatch/participants");
+    Assert.Empty(result.Explain.Entities);
+  }
+
   [Theory]
   [InlineData("sha256-v1", 32)]
   [InlineData("sha1-v1", 20)]
@@ -1588,6 +1732,18 @@ public sealed class DataVaultDiagnosticsTests {
     return new DataVaultMetadataModel([customerHub, orderHub], [link], []);
   }
 
+  private static DataVaultMetadataModel CreateRepeatedSameHubLinkMetadataModel() {
+    var customerHub = new DataVaultHubMetadata("Customer", ["CustomerNumber"]);
+    var link = new DataVaultLinkMetadata(
+        "CustomerIdentityMatch",
+        [
+            new DataVaultLinkParticipantMetadata(customerHub.ToReference(), "SourceCustomer"),
+            new DataVaultLinkParticipantMetadata(customerHub.ToReference(), "MatchedCustomer"),
+        ]);
+
+    return new DataVaultMetadataModel([customerHub], [link], []);
+  }
+
   private static DataVaultMetadataModel CreateMigrationGuardrailMetadataModel() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var order = new DataVaultHubMetadata("Order", ["Order Id"]);
@@ -1711,6 +1867,44 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal("lowercase-hex-no-prefix", property.DigestEncoding);
     Assert.Equal(expectedConversionBehavior, property.ConversionBehavior);
     Assert.Equal(expectedValueFormat, property.ValueFormat);
+  }
+
+  private static void AssertLinkParticipant(
+      DataVaultLinkParticipantExplain participant,
+      string hub,
+      string name,
+      string? role,
+      string producedName,
+      string columnName,
+      int ordinal) {
+    Assert.Equal(hub, participant.Hub);
+    Assert.Equal(name, participant.Name);
+    Assert.Equal(role, participant.Role);
+    Assert.Equal(producedName, participant.ProducedName);
+    Assert.Equal(columnName, participant.ColumnName);
+    Assert.Equal(ordinal, participant.Ordinal);
+  }
+
+  private static void AssertSupportBundleLinkParticipant(
+      JsonElement participant,
+      string hub,
+      string name,
+      string? role,
+      string producedName,
+      string columnName,
+      int ordinal) {
+    Assert.Equal(hub, participant.GetProperty("hub").GetString());
+    Assert.Equal(name, participant.GetProperty("name").GetString());
+    if (role is null) {
+      Assert.False(participant.TryGetProperty("role", out _));
+    }
+    else {
+      Assert.Equal(role, participant.GetProperty("role").GetString());
+    }
+
+    Assert.Equal(producedName, participant.GetProperty("producedName").GetString());
+    Assert.Equal(columnName, participant.GetProperty("columnName").GetString());
+    Assert.Equal(ordinal, participant.GetProperty("ordinal").GetInt32());
   }
 
   private static void AssertBinaryHashKeyStorageDiagnostics(

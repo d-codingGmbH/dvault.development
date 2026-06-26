@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.Json.Serialization;
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -24,4 +25,10 @@ public sealed record DataVaultEntityExplain(
   /// Gets the provider-neutral produced table name preserved on the EF metadata item.
   /// </summary>
   public string ProducedName { get; init; } = string.Empty;
+
+  /// <summary>
+  /// Gets ordered link participant facts when this explain entry describes a link entity.
+  /// </summary>
+  [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+  public IReadOnlyList<DataVaultLinkParticipantExplain>? LinkParticipants { get; init; }
 }

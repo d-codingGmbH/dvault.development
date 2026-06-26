@@ -234,7 +234,9 @@ internal static class DataVaultEfMetadataTranslator {
           participantHashKeyColumnNames[index],
           DataVaultPropertyRole.ParticipantReference,
           TechnicalMetadataColumnRole.HashKey,
-          participantNames[index]));
+          participantNames[index]) {
+        LinkParticipantHubName = link.Participants[index].HubReference.Name,
+      });
     }
 
     var indexes = new[]
@@ -935,6 +937,12 @@ internal static class DataVaultEfMetadataTranslator {
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProducedName, property.Name);
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.PropertyRole, property.Role);
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.MetadataName, property.MetadataName);
+    if (property.LinkParticipantHubName is not null) {
+      propertyBuilder.Metadata.SetAnnotation(
+          DataVaultInternalAnnotationNames.LinkParticipantHubName,
+          property.LinkParticipantHubName);
+    }
+
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.Ordinal, ordinal);
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProviderProfile, providerCapabilities.ProfileName);
     propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.ProviderLogicalPropertyKind, logicalPropertyKind);
@@ -1038,7 +1046,9 @@ internal static class DataVaultEfMetadataTranslator {
       string Name,
       DataVaultPropertyRole Role,
       TechnicalMetadataColumnRole? TechnicalRole,
-      string MetadataName);
+      string MetadataName) {
+    public string? LinkParticipantHubName { get; init; }
+  }
 
   private sealed record KeyProjection(string Name, IReadOnlyList<string> PropertyNames);
 

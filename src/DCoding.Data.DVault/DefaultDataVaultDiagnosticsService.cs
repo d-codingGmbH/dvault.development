@@ -307,6 +307,9 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
             providerBehaviorProfile,
             capabilityProfileDefaulted,
             providerBehaviorDefaulted);
+    if (modelBuilder is not null) {
+      issues.AddRange(ValidateLinkParticipantExplain(explain));
+    }
 
     return CreateResult(explain, NotEvaluatedStrategy, NotEvaluatedReadStrategy, issues);
   }
@@ -378,6 +381,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         providerBehavior,
         capabilityProfileDefaulted,
         providerBehaviorDefaulted);
+    issues.AddRange(ValidateLinkParticipantExplain(explain));
     var strategy = requests is null
         ? NotEvaluatedStrategy with { ProviderName = providerName }
         : EvaluateSaveStrategy(dbContext, requests, capabilityProfileDefaulted);
@@ -1520,12 +1524,13 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     var parentReference = parentKind.HasValue && parentName is not null
         ? new DataVaultParentReferenceExplain(parentKind.Value, parentName)
         : null;
-    var properties = entityType
+    var propertyProjections = entityType
         .GetProperties()
-        .Select(property => CreatePropertyExplain(property, tableIdentifier))
-        .OrderBy(property => property.Ordinal)
-        .ThenBy(property => property.Name, StringComparer.Ordinal)
+        .Select(property => CreatePropertyExplainProjection(property, tableIdentifier))
+        .OrderBy(projection => projection.Property.Ordinal)
+        .ThenBy(projection => projection.Property.Name, StringComparer.Ordinal)
         .ToArray();
+    var properties = propertyProjections.Select(projection => projection.Property).ToArray();
     var primaryKey = entityType.FindPrimaryKey();
     var primaryKeyExplain = primaryKey is null
         ? new DataVaultKeyExplain("<none>", Array.Empty<string>())
@@ -1554,7 +1559,41 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         indexes,
         constraints) {
       ProducedName = producedName,
+      LinkParticipants = tableKind == DataVaultTableKind.Link
+          ? CreateLinkParticipantExplain(propertyProjections)
+          : null,
     };
+  }
+
+  private static IReadOnlyList<DataVaultLinkParticipantExplain> CreateLinkParticipantExplain(
+      IReadOnlyList<PropertyExplainProjection> propertyProjections) {
+    return propertyProjections
+        .Where(projection => projection.Property.Role == DataVaultPropertyRole.ParticipantReference)
+        .OrderBy(projection => projection.Property.Ordinal)
+        .ThenBy(projection => projection.Property.Name, StringComparer.Ordinal)
+        .Select((projection, participantOrdinal) => {
+          var property = projection.Property;
+          var hubName = projection.LinkParticipantHubName ?? property.MetadataName;
+          var role = string.Equals(property.MetadataName, hubName, StringComparison.Ordinal)
+              ? null
+              : property.MetadataName;
+          return new DataVaultLinkParticipantExplain(
+              hubName,
+              property.MetadataName,
+              role,
+              property.ProducedName,
+              property.Name,
+              participantOrdinal);
+        })
+        .ToArray();
+  }
+
+  private static PropertyExplainProjection CreatePropertyExplainProjection(
+      IReadOnlyProperty property,
+      StoreObjectIdentifier tableIdentifier) {
+    return new PropertyExplainProjection(
+        CreatePropertyExplain(property, tableIdentifier),
+        GetStringAnnotation(property, DataVaultInternalAnnotationNames.LinkParticipantHubName));
   }
 
   private static DataVaultPropertyExplain CreatePropertyExplain(
@@ -1583,6 +1622,10 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       ConversionBehavior = GetStringAnnotation(property, DataVaultAnnotationNames.HashKeyConversionBehavior),
     };
   }
+
+  private sealed record PropertyExplainProjection(
+      DataVaultPropertyExplain Property,
+      string? LinkParticipantHubName);
 
   private static DataVaultKeyExplain CreateKeyExplain(
       IReadOnlyKey key,
@@ -1913,6 +1956,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     }
 
     foreach (var link in metadataModel.Links) {
+      AddLinkParticipantIssues(issues, link);
       foreach (var participant in link.Participants) {
         if (!hubNames.Contains(participant.HubReference.Name)) {
           issues.Add(MissingReferenceIssue(
@@ -1968,6 +2012,84 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     }
 
     return issues;
+  }
+
+  private static void AddLinkParticipantIssues(
+      ICollection<DataVaultDiagnosticsIssue> issues,
+      DataVaultLinkMetadata link) {
+    var duplicateParticipantNames = link.Participants
+        .GroupBy(participant => participant.SourceEndpointName, StringComparer.Ordinal)
+        .Where(group => group.Count() > 1)
+        .Select(group => group.Key)
+        .OrderBy(name => name, StringComparer.Ordinal);
+    foreach (var duplicateName in duplicateParticipantNames) {
+      issues.Add(new DataVaultDiagnosticsIssue(
+          DataVaultDiagnosticsIssueSeverity.Error,
+          "duplicate-logical-name",
+          "Link metadata '" + link.Name + "' declares participant name '" + duplicateName + "' more than once.",
+          "metadata.links/" + link.Name + "/participants"));
+    }
+
+    foreach (var group in link.Participants.GroupBy(participant => participant.HubReference.Name, StringComparer.Ordinal)) {
+      if (group.Count() <= 1) {
+        continue;
+      }
+
+      foreach (var participant in group.Where(participant => string.Equals(
+          participant.SourceEndpointName,
+          participant.HubReference.Name,
+          StringComparison.Ordinal))) {
+        issues.Add(new DataVaultDiagnosticsIssue(
+            DataVaultDiagnosticsIssueSeverity.Error,
+            "ambiguous-link-participant-role",
+            "Link metadata '" +
+            link.Name +
+            "' repeats hub '" +
+            group.Key +
+            "' without role-bearing participant metadata for participant '" +
+            participant.SourceEndpointName +
+            "'.",
+            "metadata.links/" + link.Name + "/participants"));
+      }
+    }
+  }
+
+  private static IEnumerable<DataVaultDiagnosticsIssue> ValidateLinkParticipantExplain(
+      DataVaultExplainDiagnostics explain) {
+    foreach (var entity in explain.Entities.Where(entity => entity.TableKind == DataVaultTableKind.Link)) {
+      var participants = entity.LinkParticipants ?? Array.Empty<DataVaultLinkParticipantExplain>();
+      foreach (var group in participants.GroupBy(participant => participant.Name, StringComparer.Ordinal)) {
+        if (group.Count() > 1) {
+          yield return new DataVaultDiagnosticsIssue(
+              DataVaultDiagnosticsIssueSeverity.Error,
+              "duplicate-link-participant-explain",
+              "Link entity '" +
+              entity.MetadataName +
+              "' explain output contains duplicate participant name '" +
+              group.Key +
+              "'.",
+              "explain.entities/" + entity.MetadataName + "/linkParticipants");
+        }
+      }
+
+      foreach (var group in participants.GroupBy(participant => participant.Hub, StringComparer.Ordinal)) {
+        if (group.Count() <= 1) {
+          continue;
+        }
+
+        foreach (var participant in group.Where(participant => string.IsNullOrWhiteSpace(participant.Role))) {
+          yield return new DataVaultDiagnosticsIssue(
+              DataVaultDiagnosticsIssueSeverity.Error,
+              "ambiguous-link-participant-explain",
+              "Link entity '" +
+              entity.MetadataName +
+              "' explain output repeats hub '" +
+              group.Key +
+              "' without role-bearing participant metadata.",
+              "explain.entities/" + entity.MetadataName + "/linkParticipants");
+        }
+      }
+    }
   }
 
   private static IEnumerable<DataVaultDiagnosticsIssue> ValidateProviderMappings(
