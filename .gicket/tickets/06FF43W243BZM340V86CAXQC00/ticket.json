@@ -3,7 +3,7 @@
   "ticket-id": "06FF43W243BZM340V86CAXQC00",
   "ticket-type": "task",
   "title": "Task: Prototype analyzer package retargeting if audit approves",
-  "revision": "06FFYTAKFT0WR0DP34W03V876G",
+  "revision": "06FG40BYFBHYGK0ECZD3BSPVNC",
   "status": "done",
   "labels": [
     "area/analyzers",
@@ -17,5 +17,5 @@
   "milestone-id": "06FF437Q6BCDT2E67RMFK783NR",
   "release-id": "06FF437GWAWYQF5HXSRVB09B7R",
   "created-at": "2026-06-23T01:19:23.6842618Z",
-  "updated-at": "2026-06-25T15:32:33.2782609Z"
+  "updated-at": "2026-06-26T03:38:00.1863683Z"
 }
