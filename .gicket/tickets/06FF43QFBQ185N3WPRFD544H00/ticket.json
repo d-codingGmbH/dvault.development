@@ -3,20 +3,19 @@
   "ticket-id": "06FF43QFBQ185N3WPRFD544H00",
   "ticket-type": "task",
   "title": "Task: Update production adoption privacy preflight checklist",
-  "revision": "06FF44PV46CJ4CHT9SA4Y74MSR",
-  "status": "todo",
+  "revision": "06FG326X02BYGPF3RP83JVA3N4",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
-    "area/privacy",
     "area/documentation",
-    "area/security"
+    "area/privacy",
+    "area/security",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FF437PDFA6MM5ZCKB1P9X26G",
   "release-id": "06FF437GWAWYQF5HXSRVB09B7R",
   "created-at": "2026-06-23T01:18:45.9668783Z",
-  "updated-at": "2026-06-23T01:23:02.5613272Z"
+  "updated-at": "2026-06-26T01:26:14.5283074Z"
 }
