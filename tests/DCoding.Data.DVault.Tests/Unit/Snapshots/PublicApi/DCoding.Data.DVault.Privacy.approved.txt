@@ -1,4 +1,4 @@
-﻿# DVault public API snapshot
+# DVault public API snapshot
 # Package: DCoding.Data.DVault.Privacy
 # Assembly: DCoding.Data.DVault.Privacy
 # Generated from built assembly output.

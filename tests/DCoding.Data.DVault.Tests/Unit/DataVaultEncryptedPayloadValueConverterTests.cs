@@ -93,6 +93,19 @@ public sealed class DataVaultEncryptedPayloadValueConverterTests {
     Assert.DoesNotContain(CustomerEmailAddress, exception.Message, StringComparison.Ordinal);
   }
 
+  [Fact]
+  public void ExplicitConverterFailsClosedWhenCallerReturnsNoConversionResult() {
+    var configuration = CreateConfiguration(new NullResultPrivacyKeyProvider(), CustomerEmailAlias);
+    var converter = new DataVaultEncryptedPayloadValueConverter(configuration, CustomerEmailAlias);
+    var convertToProvider = converter.ConvertToProviderExpression.Compile();
+
+    var exception = Assert.Throws<InvalidOperationException>(() => convertToProvider(CustomerEmailAddress));
+
+    Assert.Contains(CustomerEmailAlias, exception.Message, StringComparison.Ordinal);
+    Assert.Contains("returned no result", exception.Message, StringComparison.Ordinal);
+    Assert.DoesNotContain(CustomerEmailAddress, exception.Message, StringComparison.Ordinal);
+  }
+
   private static IDataVaultPrivacyConfiguration CreateConfiguration(
       IDataVaultPrivacyKeyProvider? keyProvider,
       params string[] encryptedPayloadAliases) {
@@ -176,6 +189,13 @@ public sealed class DataVaultEncryptedPayloadValueConverterTests {
     public DataVaultEncryptedPayloadConversionResult ConvertEncryptedPayload(
         DataVaultEncryptedPayloadConversionRequest request) {
       return DataVaultEncryptedPayloadConversionResult.Declined("key-unavailable");
+    }
+  }
+
+  private sealed class NullResultPrivacyKeyProvider : IDataVaultEncryptedPayloadKeyProvider {
+    public DataVaultEncryptedPayloadConversionResult ConvertEncryptedPayload(
+        DataVaultEncryptedPayloadConversionRequest request) {
+      return null!;
     }
   }
 }

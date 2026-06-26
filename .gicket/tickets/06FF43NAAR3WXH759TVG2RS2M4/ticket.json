@@ -3,20 +3,19 @@
   "ticket-id": "06FF43NAAR3WXH759TVG2RS2M4",
   "ticket-type": "task",
   "title": "Task: Extend privacy diagnostics and converter tests",
-  "revision": "06FF44PD3A7AEP3YABE2Q608Q8",
-  "status": "todo",
+  "revision": "06FG3514PKTN5ZQ5QAZKDYJZEW",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/privacy",
+    "area/security",
     "area/tests",
-    "area/security"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FF437NMW8NENKSMVDBTRQ034",
   "release-id": "06FF437GWAWYQF5HXSRVB09B7R",
   "created-at": "2026-06-23T01:18:28.1632111Z",
-  "updated-at": "2026-06-23T01:22:58.9706767Z"
+  "updated-at": "2026-06-26T01:38:33.7808218Z"
 }

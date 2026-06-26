@@ -350,6 +350,65 @@ public sealed class DataVaultDiagnosticsTests {
   }
 
   [Fact]
+  public void AnalyzeFailsClosedForMarkedPersonalDataWithUnregisteredEncryptedPayloadAlias() {
+    var services = new ServiceCollection();
+    services.AddDVaultPrivacy(options => options
+        .RegisterEncryptedPayloadAlias("DifferentEncryptedPayloadAlias")
+        .UseCallerOwnedKeyProvider(new DiagnosticsEncryptedPayloadKeyProvider()));
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    var result = diagnostics.Analyze(CreatePersonalDataMetadataModel());
+
+    Assert.False(result.Validation.IsValid);
+    var issue = Assert.Single(result.Validation.Issues);
+    Assert.Equal("personal-data-privacy-coverage-unusable", issue.Code);
+    Assert.Equal(DataVaultDiagnosticsIssueSeverity.Error, issue.Severity);
+    Assert.Contains("CustomerProfileEmailEncrypted", issue.Message, StringComparison.Ordinal);
+    Assert.Contains("has not registered encrypted payload alias", issue.Message, StringComparison.Ordinal);
+    Assert.Empty(result.Explain.Entities);
+  }
+
+  [Fact]
+  public void AnalyzeFailsClosedWhenPersonalDataPrivacyProofReturnsNoEvaluation() {
+    var services = new ServiceCollection();
+    services.AddDVault();
+    services.AddSingleton<IDataVaultPersonalDataCoverageProof>(new NullPersonalDataCoverageProof());
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    var result = diagnostics.Analyze(CreatePersonalDataMetadataModel());
+
+    Assert.False(result.Validation.IsValid);
+    var issue = Assert.Single(result.Validation.Issues);
+    Assert.Equal("personal-data-privacy-coverage-unusable", issue.Code);
+    Assert.Equal(DataVaultDiagnosticsIssueSeverity.Error, issue.Severity);
+    Assert.Contains("CustomerProfileEmailEncrypted", issue.Message, StringComparison.Ordinal);
+    Assert.Contains("returned no evaluation", issue.Message, StringComparison.Ordinal);
+    Assert.Empty(result.Explain.Entities);
+  }
+
+  [Fact]
+  public void AnalyzeFailsClosedWhenPersonalDataPrivacyProofEvaluationFails() {
+    var services = new ServiceCollection();
+    services.AddDVault();
+    services.AddSingleton<IDataVaultPersonalDataCoverageProof>(new ThrowingPersonalDataCoverageProof());
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    var result = diagnostics.Analyze(CreatePersonalDataMetadataModel());
+
+    Assert.False(result.Validation.IsValid);
+    var issue = Assert.Single(result.Validation.Issues);
+    Assert.Equal("personal-data-privacy-coverage-unusable", issue.Code);
+    Assert.Equal(DataVaultDiagnosticsIssueSeverity.Error, issue.Severity);
+    Assert.Contains("CustomerProfileEmailEncrypted", issue.Message, StringComparison.Ordinal);
+    Assert.Contains("evaluation failed", issue.Message, StringComparison.Ordinal);
+    Assert.Contains("proof-provider-offline", issue.Message, StringComparison.Ordinal);
+    Assert.Empty(result.Explain.Entities);
+  }
+
+  [Fact]
   public void AnalyzeFailsClosedForMarkedPersonalDataWithoutFieldLevelEncryptedPayloadConverter() {
     var services = new ServiceCollection();
     services.AddDVaultPrivacy(options => options
@@ -1908,6 +1967,18 @@ public sealed class DataVaultDiagnosticsTests {
   }
 
   private sealed class DiagnosticsPrivacyKeyProvider : IDataVaultPrivacyKeyProvider {
+  }
+
+  private sealed class NullPersonalDataCoverageProof : IDataVaultPersonalDataCoverageProof {
+    public DataVaultPersonalDataCoverageEvaluation EvaluateEncryptedPayloadAlias(string encryptedPayloadAlias) {
+      return null!;
+    }
+  }
+
+  private sealed class ThrowingPersonalDataCoverageProof : IDataVaultPersonalDataCoverageProof {
+    public DataVaultPersonalDataCoverageEvaluation EvaluateEncryptedPayloadAlias(string encryptedPayloadAlias) {
+      throw new NotSupportedException("proof-provider-offline");
+    }
   }
 
   private sealed class DiagnosticsEncryptedPayloadKeyProvider : IDataVaultEncryptedPayloadKeyProvider {
