@@ -3,7 +3,7 @@
   "ticket-id": "06FF43PCN26C70DXX326B9VYA4",
   "ticket-type": "task",
   "title": "Task: Document provider-native encryption caveats for privacy extension",
-  "revision": "06FFWAXHBX0X4078YD56W3KEMG",
+  "revision": "06FG3ZQ4980XYKZ1P9GPN53BS8",
   "status": "done",
   "labels": [
     "area/documentation",
@@ -18,5 +18,5 @@
   "milestone-id": "06FF437PDFA6MM5ZCKB1P9X26G",
   "release-id": "06FF437GWAWYQF5HXSRVB09B7R",
   "created-at": "2026-06-23T01:18:39.4162086Z",
-  "updated-at": "2026-06-25T09:45:36.8637575Z"
+  "updated-at": "2026-06-26T03:35:09.6423378Z"
 }

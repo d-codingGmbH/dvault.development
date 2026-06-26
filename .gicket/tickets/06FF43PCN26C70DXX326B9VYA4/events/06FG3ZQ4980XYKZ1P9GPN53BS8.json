@@ -1,0 +1,15 @@
+{
+  "event-id": "06FG3ZQ4980XYKZ1P9GPN53BS8",
+  "occurred-at": "2026-06-26T03:35:09.6423378Z",
+  "event-type": "TicketRelationRemoved",
+  "actor": {
+    "name": "system",
+    "email": "system@example.invalid"
+  },
+  "payload": {
+    "relation-id": "06FF43PCN26C70DXX326B9VYA4--06FF43WMMC8R3T4ZKVR4312NJC--blocks",
+    "relation-type": "blocks",
+    "source-ticket-id": "06FF43PCN26C70DXX326B9VYA4",
+    "target-ticket-id": "06FF43WMMC8R3T4ZKVR4312NJC"
+  }
+}
