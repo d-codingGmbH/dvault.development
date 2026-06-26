@@ -3,20 +3,19 @@
   "ticket-id": "06FF441DM4F4ZDTHY9ZZD9RA8R",
   "ticket-type": "task",
   "title": "Task: Prototype bounded dependent child key metadata if accepted",
-  "revision": "06FF44RWC25QY0CD8XSR0MKV4G",
-  "status": "todo",
+  "revision": "06FG79QT48PRJA74CRNXQF1REW",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/modeling",
+    "area/schema",
     "area/tests",
-    "area/schema"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FF437T5VRXH2Z4ED63E0CJ04",
   "release-id": "06FF437HMT0AH0T295QVBF1P8M",
   "created-at": "2026-06-23T01:20:09.1204603Z",
-  "updated-at": "2026-06-23T01:23:19.2640178Z"
+  "updated-at": "2026-06-26T11:18:22.4981143Z"
 }

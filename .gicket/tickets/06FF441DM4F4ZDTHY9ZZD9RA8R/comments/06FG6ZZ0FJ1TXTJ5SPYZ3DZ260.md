@@ -1,67 +1,54 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Upstream contract ticket 06FF440F02AFQNQ0A3XNA2ZS3W is done and deferred dependent child key modeling, so this ticket refines to a no-work closure against the current finite DVault baseline rather than a prototype implementation.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The current repository baseline already keeps dependent child key modeling outside the public DVault claim set in docs/model-first-governance.md, docs/production-adoption-checklist.md, and docs/releases/v0.13.0.md.
 - The completed contract ticket 06FF440F02AFQNQ0A3XNA2ZS3W is authoritative for the defer-now decision and does not reopen this feature for implementation.
 - The visible metadata surface remains bounded to existing hub, link, satellite, PIT or point-in-time, and bridge families; src/DCoding.Data.DVault/Modeling/DataVaultTableKind.cs and DataVaultMetadataModel.cs expose no dependent-child concept.
 - git grep over src and tests returned no dependent-child matches, so the current code and test surface does not claim dependent child support.
 
-### Scope In
+Scope In
 - Refine this ticket as the no-work follow-on to the upstream defer-now contract.
 - Record that the accepted baseline remains existing hub, link, satellite, PIT or point-in-time, and bridge concepts plus already documented repeated same-hub roles, link-parent satellites, and multi-active driving keys where those shapes are already supported.
 - State that unsupported dependent-child requests stay on the existing validation or unsupported-capability path, including DMV1501 for out-of-baseline model-first capability requests.
 
-### Scope Out
+Scope Out
 - Adding a dependent-child metadata concept, parent-reference kind, fluent builder verb, dvault.model.v1 token or section, runtime mapper contract, support-bundle shape, or save/read API.
 - Schema projection, diagnostics, tests, docs, or migrations that would prototype dependent child key support.
 - Reopening repeated same-hub, link-parent satellite, multi-active driving-key, PIT, or bridge contracts beyond using them as the bounded current baseline.
 
-## Acceptance Criteria
-- The ticket contract explicitly records that dependent child key modeling was deferred by 06FF440F02AFQNQ0A3XNA2ZS3W and that this ticket therefore closes as no-work rather than implementation.
-- The ticket contract records the finite current baseline and states that no new public API, metadata concept, dvault.model.v1 shape, or diagnostics surface is approved here.
-- The ticket contract states that unsupported dependent-child requests must fail through the existing validation or unsupported-capability boundary instead of being silently projected into existing metadata constructs.
-- The ticket contract records that current repository evidence contains documentation-only references to dependent child modeling and no source or test support surface.
-
-## Definition of Done
-- A PO-facing ticket contract records the no-work closure and the finite baseline it preserves.
-- The contract gives downstream work enough direction to avoid treating this ticket as implicit approval to prototype dependent child support.
-- No blocking PO questions remain for this ticket.
-- No child-ticket split, planning document, or code change is required for this closure path.
-
-## Implementation Notes
-- Use the completed defer-now contract on 06FF440F02AFQNQ0A3XNA2ZS3W as the authoritative decision surface for this ticket.
-- Keep the baseline narrow: hubs, links, satellites, PIT or point-in-time, bridges, repeated same-hub roles where already documented, link-parent satellites, and multi-active driving keys remain the only ratified nearby shapes.
-- If a future artifact or API asks for dependent-child semantics outside that baseline, route it to the existing unsupported capability or validation boundary rather than adding an undocumented adapter.
-- If product later reopens the feature, start from a new follow-on contract before widening APIs, metadata, migrations, or model-first semantics.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - If dependent child support is reconsidered later, should it become a first-class metadata concept or a narrowly bounded extension over existing link and satellite semantics?
 - Should a later cleanup pass explicitly align or remove stale blocking relations that still reflect the superseded if-accepted routing for this ticket?
 - Does the release-documentation stream still need an explicit note for this deferred feature beyond the existing limitations text already present in docs/releases/v0.13.0.md and docs/production-adoption-checklist.md?
 
-## Risks
+Risks
 - The current ticket title and description still read like an implementation ticket, so without the refined contract downstream roles could misread the work as approved prototype scope.
 - Stale blocks relations still point into and out of this ticket in repository state, which can preserve an outdated impression of pending implementation even though the upstream contract deferred the feature.
 - A future developer could overread repeated-role, link-parent-satellite, or multi-active support as precedent for dependent-child parity unless the no-work boundary stays explicit.
 
-## Split Recommendations
+Split recommendations
 - If product later reopens dependent child key modeling, split it into separate follow-on tickets for contract and naming, metadata and model-first schema changes, Code-First API changes, runtime translation and migration behavior, and diagnostics or tooling parity rather than reopening this ticket as one large implementation bucket.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 4
+- definition-of-done items: 4
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Prototype dependent child key metadata only for the bounded shapes accepted by the contract ticket. Acceptance: includes schema projection, diagnostics, tests, docs, and clear no-work closure if the contract defers implementation.
+Run mode
+- apply: planned updates are applied after this comment
