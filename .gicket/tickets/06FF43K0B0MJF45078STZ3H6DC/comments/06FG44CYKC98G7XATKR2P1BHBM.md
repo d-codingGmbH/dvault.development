@@ -1,0 +1,24 @@
+﻿[gicket-bot] relation automation follow-up
+
+Summary
+- Evaluated `1` selected relation flow(s) for source ticket `06FF43K0B0MJF45078STZ3H6DC`.
+- Role `dev` completed with outcome `dev-workflow-apply` under guard profile `community-safe-selected-flows-v1`.
+- Applied `0` follow-up comment(s); queued owner-branch task(s): `0`; dropped obsolete follow-up(s): `6`; blocking diagnostics: `0`; write failures: `0`.
+- run-id: `ae7573d6bae849b6876b5d32e937a5c9`
+
+Action plan
+- [dropped] `child-follow-up-comment` -> `06FF43M7AE9DN3K1YXBPB1R574` via `parentOf` path `06FF43K0B0MJF45078STZ3H6DC -> 06FF43M7AE9DN3K1YXBPB1R574`
+- [dropped] `child-follow-up-comment` -> `06FF43MQ3AXXK2S5TK65X4Y9S8` via `parentOf` path `06FF43K0B0MJF45078STZ3H6DC -> 06FF43MQ3AXXK2S5TK65X4Y9S8`
+- [dropped] `child-follow-up-comment` -> `06FF43NAAR3WXH759TVG2RS2M4` via `parentOf` path `06FF43K0B0MJF45078STZ3H6DC -> 06FF43NAAR3WXH759TVG2RS2M4`
+- [dropped] `child-follow-up-comment` -> `06FF43NJES6S8NBZVWR4FGHWGW` via `parentOf` path `06FF43K0B0MJF45078STZ3H6DC -> 06FF43NJES6S8NBZVWR4FGHWGW`
+- [dropped] `child-follow-up-comment` -> `06FF43PCN26C70DXX326B9VYA4` via `parentOf` path `06FF43K0B0MJF45078STZ3H6DC -> 06FF43PCN26C70DXX326B9VYA4`
+- [dropped] `child-follow-up-comment` -> `06FF43QFBQ185N3WPRFD544H00` via `parentOf` path `06FF43K0B0MJF45078STZ3H6DC -> 06FF43QFBQ185N3WPRFD544H00`
+
+Branch/worktree plan
+- [execute-now] `source-audit-summary` `06FF43K0B0MJF45078STZ3H6DC` owner `ticket/06FF43K0B0MJF45078STZ3H6DC-story-define-privacy-preflight-coverage-contract` base `develop` source-owner `ticket/06FF43K0B0MJF45078STZ3H6DC-story-define-privacy-preflight-coverage-contract`: Source summary is owned by the source ticket branch.
+- [base-terminal-dropped] `relation-audit-follow-up` `06FF43M7AE9DN3K1YXBPB1R574` owner `develop` base `develop` source-owner `ticket/06FF43K0B0MJF45078STZ3H6DC-story-define-privacy-preflight-coverage-contract`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06FF43MQ3AXXK2S5TK65X4Y9S8` owner `develop` base `develop` source-owner `ticket/06FF43K0B0MJF45078STZ3H6DC-story-define-privacy-preflight-coverage-contract`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06FF43NAAR3WXH759TVG2RS2M4` owner `develop` base `develop` source-owner `ticket/06FF43K0B0MJF45078STZ3H6DC-story-define-privacy-preflight-coverage-contract`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06FF43NJES6S8NBZVWR4FGHWGW` owner `develop` base `develop` source-owner `ticket/06FF43K0B0MJF45078STZ3H6DC-story-define-privacy-preflight-coverage-contract`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06FF43PCN26C70DXX326B9VYA4` owner `develop` base `develop` source-owner `ticket/06FF43K0B0MJF45078STZ3H6DC-story-define-privacy-preflight-coverage-contract`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
+- [base-terminal-dropped] `relation-audit-follow-up` `06FF43QFBQ185N3WPRFD544H00` owner `develop` base `develop` source-owner `ticket/06FF43K0B0MJF45078STZ3H6DC-story-define-privacy-preflight-coverage-contract`: Base branch 'develop' already contains ticket status 'done', so the relation follow-up is obsolete.
