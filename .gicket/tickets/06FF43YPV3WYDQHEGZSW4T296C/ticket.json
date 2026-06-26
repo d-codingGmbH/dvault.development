@@ -3,20 +3,19 @@
   "ticket-id": "06FF43YPV3WYDQHEGZSW4T296C",
   "ticket-type": "task",
   "title": "Task: Generate typed mapper helpers for repeated same-hub links",
-  "revision": "06FF44RJZC0DEQ2DQN880A9MFC",
-  "status": "todo",
+  "revision": "06FG8BW9Q9SQCM7WMEZTBVAX6C",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
-    "area/source-generators",
     "area/modeling",
-    "area/tests"
+    "area/source-generators",
+    "area/tests",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FF437S2WWGGY76ZDF58MMSSM",
   "release-id": "06FF437HMT0AH0T295QVBF1P8M",
   "created-at": "2026-06-23T01:19:44.9933446Z",
-  "updated-at": "2026-06-23T01:23:16.8592736Z"
+  "updated-at": "2026-06-26T13:47:32.1543764Z"
 }

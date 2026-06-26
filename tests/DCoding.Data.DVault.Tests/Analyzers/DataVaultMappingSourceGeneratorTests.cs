@@ -60,6 +60,7 @@ public sealed class DataVaultMappingSourceGeneratorTests {
 
     var linkSource = AssertGeneratedSource(result, "CustomerOrderSourceDataVaultLinkMapping.g.cs");
     Assert.Contains("public const string LinkName = \"CustomerOrder\";", linkSource, StringComparison.Ordinal);
+    Assert.Contains("ProducedParticipantNames", linkSource, StringComparison.Ordinal);
     Assert.Contains("ParticipantHubNames", linkSource, StringComparison.Ordinal);
     Assert.Contains("new(\"Customer\", source.CustomerHashKey)", linkSource, StringComparison.Ordinal);
     Assert.Contains("new(\"Order\", source.OrderHashKey)", linkSource, StringComparison.Ordinal);
@@ -80,7 +81,32 @@ public sealed class DataVaultMappingSourceGeneratorTests {
   }
 
   [Fact]
-  public void ReportsRepeatedLinkParticipantDiagnostic() {
+  public void GeneratesRoleBearingSameHubLinkMapperByProducedParticipantNames() {
+    var result = RunGenerator(RuntimeStubs + """
+        namespace ConsumerApp {
+
+        using DCoding.Data.DVault;
+
+        [DataVaultLinkMapping("CustomerIdentityMatch")]
+        [DataVaultLinkParticipantBinding(0, "SourceCustomer", nameof(SourceCustomerHashKey))]
+        [DataVaultLinkParticipantBinding(1, "MatchedCustomer", nameof(MatchedCustomerHashKey))]
+        public sealed record CustomerIdentityMatchSource(string SourceCustomerHashKey, string MatchedCustomerHashKey);
+        }
+        """);
+
+    Assert.Empty(result.CompilationErrors);
+    Assert.Empty(result.GeneratorDiagnostics);
+
+    var source = AssertGeneratedSource(result, "CustomerIdentityMatchSourceDataVaultLinkMapping.g.cs");
+    Assert.Contains("public const string LinkName = \"CustomerIdentityMatch\";", source, StringComparison.Ordinal);
+    Assert.Contains("ProducedParticipantNames", source, StringComparison.Ordinal);
+    Assert.Contains("ParticipantHubNames => ProducedParticipantNames", source, StringComparison.Ordinal);
+    Assert.Contains("new(\"SourceCustomer\", source.SourceCustomerHashKey)", source, StringComparison.Ordinal);
+    Assert.Contains("new(\"MatchedCustomer\", source.MatchedCustomerHashKey)", source, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void ReportsDuplicateLinkProducedParticipantDiagnostic() {
     var result = RunGenerator(RuntimeStubs + """
         namespace ConsumerApp {
 
@@ -95,7 +121,7 @@ public sealed class DataVaultMappingSourceGeneratorTests {
 
     var diagnostic = Assert.Single(result.GeneratorDiagnostics);
     Assert.Equal("DMV1955", diagnostic.Id);
-    Assert.Contains("repeats participant hub name 'Employee'", diagnostic.GetMessage(), StringComparison.Ordinal);
+    Assert.Contains("declares produced participant name 'Employee' more than once", diagnostic.GetMessage(), StringComparison.Ordinal);
     Assert.Empty(result.GeneratedSources);
   }
 

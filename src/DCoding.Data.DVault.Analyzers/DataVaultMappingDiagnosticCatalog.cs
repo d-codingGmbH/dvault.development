@@ -52,10 +52,10 @@ internal static class DataVaultMappingDiagnosticCatalog {
 
   public static readonly DiagnosticDescriptor RepeatedLinkParticipant = new(
       "DMV1955",
-      "Unsupported repeated generated link participant",
+      "Duplicate generated link participant name",
       "{0}",
       Category,
       DiagnosticSeverity.Error,
       isEnabledByDefault: true,
-      description: "V1 generated link mappings support only participant hub names that are unique by StringComparer.Ordinal.");
+      description: "Generated link mappings require produced participant names that are unique by StringComparer.Ordinal.");
 }

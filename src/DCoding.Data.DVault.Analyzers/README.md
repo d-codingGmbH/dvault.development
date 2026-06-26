@@ -9,7 +9,7 @@ Roslyn analyzers and source generators for DVault compile-time metadata declarat
 - `DMV1912` for source-visible caller-owned DVault model-shape variation whose visible model-cache key omits the varying discriminator.
 - `DMV1913` for source-visible `UseModel(...)` compiled-model selection on variable-shape DVault contexts.
 - `DMV1914` for direct `AddDbContextPool<TContext>(...)` registration of variable-shape DVault contexts.
-- `DMV1950` through `DMV1955` for malformed generated mapping declarations, missing generated row bindings, invalid source members, duplicate binding order or names, and repeated link participant hub names.
+- `DMV1950` through `DMV1955` for malformed generated mapping declarations, missing generated row bindings, invalid source members, duplicate binding order or names, and duplicate link produced participant names.
 - `DMV1960` through `DMV1969` for typed read-model generator metadata-source, fingerprint, unsupported-shape, deterministic-name, nullability-fallback, and skipped-helper outcomes.
 
 The package also provides bounded code fixes for DMV1901 anonymous-object direct-member expansion and DMV1902 later-duplicate removal. Its mapping source generator emits registry-backed typed row mappers from the public `DCoding.Data.DVault` compile-time mapping attributes; generated save helpers still require callers to supply load timestamps and record sources through the existing explicit save flow. Its typed read-model source generator is a separate opt-in support-bundle-driven surface for satellite latest/current/as-of helpers, PIT as-of helpers, and bounded bridge traversal helpers.
@@ -67,7 +67,7 @@ The lifecycle diagnostics are intentionally limited to direct syntax and semanti
 The source generator recognizes mapping declarations from `DCoding.Data.DVault` runtime attributes on one source type:
 
 - `DataVaultHubMappingAttribute` plus ordered `DataVaultBusinessKeyBindingAttribute` values.
-- `DataVaultLinkMappingAttribute` plus ordered `DataVaultLinkParticipantBindingAttribute` values whose participant hub names are unique by `StringComparer.Ordinal`.
+- `DataVaultLinkMappingAttribute` plus ordered `DataVaultLinkParticipantBindingAttribute` values whose produced participant names are unique by `StringComparer.Ordinal`; ordinary links use hub names, while repeated same-hub links use explicit role-bearing names such as `SourceCustomer` and `MatchedCustomer`.
 - `DataVaultHubSatelliteMappingAttribute` plus parent hash-key, hash-diff, ordered payload, and optional ordered driving-key bindings.
 
 Generated code implements the existing `IDataVaultHubMapper<TSource>`, `IDataVaultLinkMapper<TSource>`, or `IDataVaultSatelliteMapper<TSource>` contracts and constructs `DataVaultRegistry*SaveOperation` values. It does not execute EF models, register mappings at runtime, derive hash keys or hash diffs, or hide the caller-supplied `loadTimestamp` and `recordSource` boundary.

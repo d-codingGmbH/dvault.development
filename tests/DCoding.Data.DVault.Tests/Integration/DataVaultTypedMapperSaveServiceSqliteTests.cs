@@ -166,6 +166,59 @@ public sealed class DataVaultTypedMapperSaveServiceSqliteTests {
   }
 
   [Fact]
+  public async Task GeneratedSameHubLinkMapperPersistsRoleBearingParticipantsThroughExplicitSaveHelper() {
+    var loadTimestamp = new DateTimeOffset(2026, 6, 26, 9, 0, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var services = new ServiceCollection();
+    services.AddDVault(options => options.UseMetadataModel(CreateMetadataModel()));
+    services.AddDVaultSqlite();
+    services.AddDbContext<TypedMapperSaveServiceContext>(
+        options => options
+            .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+            .UseDataVaultMetadata());
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+    var customerMapper = GeneratedCustomerSourceDataVaultHubMapping.CreateMapper();
+    var sameHubLinkMapper = GeneratedCustomerIdentityMatchSourceDataVaultLinkMapping.CreateMapper();
+
+    using var scope = provider.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<TypedMapperSaveServiceContext>();
+    await context.Database.EnsureCreatedAsync();
+
+    var customerResult = await saveService.SaveHubsAsync(
+        context,
+        [
+            new GeneratedCustomerSource("C-500", "US"),
+            new GeneratedCustomerSource("C-501", "US"),
+        ],
+        customerMapper,
+        loadTimestamp,
+        "generated-same-hub-import");
+    var customerHashKeys = customerResult.SavedRecords.Select(record => record.HashKey).ToArray();
+    var linkSource = new GeneratedCustomerIdentityMatchSource(customerHashKeys[0], customerHashKeys[1]);
+    var linkOperation = sameHubLinkMapper.Map(linkSource);
+
+    var linkResult = await saveService.SaveLinkAsync(
+        context,
+        linkSource,
+        sameHubLinkMapper,
+        loadTimestamp.AddMinutes(1),
+        "generated-same-hub-import");
+    var linkRow = await context.Set<Dictionary<string, object>>("LinkCustomerIdentityMatch").AsNoTracking().SingleAsync();
+
+    Assert.Equal(2, customerResult.RowsWritten);
+    Assert.Equal("CustomerIdentityMatch", linkOperation.LinkName);
+    Assert.Equal(customerHashKeys[0], linkOperation.ParticipantHashKeyValues["SourceCustomer"]);
+    Assert.Equal(customerHashKeys[1], linkOperation.ParticipantHashKeyValues["MatchedCustomer"]);
+    Assert.Equal(1, linkResult.RowsWritten);
+    Assert.Equal("generated-same-hub-import", linkRow["RecordSource"]);
+    Assert.Equal(customerHashKeys[0], linkRow["SourceCustomerHashKey"]);
+    Assert.Equal(customerHashKeys[1], linkRow["MatchedCustomerHashKey"]);
+    Assert.Matches("^[0-9a-f]{64}$", Assert.IsType<string>(linkRow["CustomerIdentityMatchHashKey"]));
+  }
+
+  [Fact]
   public async Task TypedAsyncSaveHelpersPersistSupportedMapperShapesThroughSqlite() {
     var loadTimestamp = new DateTimeOffset(2026, 5, 30, 12, 0, 0, TimeSpan.Zero);
     using var database = SqliteTestDatabase.CreateTemporaryFile();
@@ -257,15 +310,16 @@ public sealed class DataVaultTypedMapperSaveServiceSqliteTests {
   }
 
   private static DataVaultMetadataModel CreateMetadataModel() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id", "Region Code"]);
+    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+
     return new DataVaultMetadataModel(
-        [
-            new DataVaultHubMetadata("Customer", ["Customer Id", "Region Code"]),
-            new DataVaultHubMetadata("Order", ["Order Id"]),
-        ],
+        [customer, order],
         [
             new DataVaultLinkMetadata(
                 "CustomerOrder",
-                [DataVaultMetadataReference.Hub("Customer"), DataVaultMetadataReference.Hub("Order")]),
+                [customer.ToReference(), order.ToReference()]),
+            CreateCustomerIdentityMatchLinkMetadata(),
         ],
         [
             new DataVaultSatelliteMetadata(
@@ -277,6 +331,17 @@ public sealed class DataVaultTypedMapperSaveServiceSqliteTests {
                 DataVaultMetadataReference.Hub("Customer"),
                 ["Email Address"],
                 ["Contact Type", "Region Code"]),
+        ]);
+  }
+
+  private static DataVaultLinkMetadata CreateCustomerIdentityMatchLinkMetadata() {
+    var customer = DataVaultMetadataReference.Hub("Customer");
+
+    return new DataVaultLinkMetadata(
+        "CustomerIdentityMatch",
+        [
+            new DataVaultLinkParticipantMetadata(customer, "SourceCustomer"),
+            new DataVaultLinkParticipantMetadata(customer, "MatchedCustomer"),
         ]);
   }
 

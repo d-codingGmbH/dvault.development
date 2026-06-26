@@ -135,8 +135,8 @@ public sealed class DataVaultMappingSourceGenerator : IIncrementalGenerator {
       return null;
     }
 
-    var rawBindings = GetOrderedBindings(attributes, LinkParticipantBindingAttributeName, "link participant");
-    if (!TryResolveOrderedBindings(sourceType, rawBindings, "link participant", requireAtLeast: 2, checkDuplicateNames: false, context, out var bindings)) {
+    var rawBindings = GetOrderedBindings(attributes, LinkParticipantBindingAttributeName, "link produced participant");
+    if (!TryResolveOrderedBindings(sourceType, rawBindings, "link produced participant", requireAtLeast: 2, checkDuplicateNames: false, context, out var bindings)) {
       return null;
     }
 
@@ -150,7 +150,7 @@ public sealed class DataVaultMappingSourceGenerator : IIncrementalGenerator {
           DataVaultMappingDiagnosticCatalog.RepeatedLinkParticipant,
           sourceType,
           attribute,
-          "Generated link mapping '" + linkName + "' repeats participant hub name '" + repeatedParticipant.Key + "'. V1 generated links support only unique participant hub names by StringComparer.Ordinal.");
+          "Generated link mapping '" + linkName + "' declares produced participant name '" + repeatedParticipant.Key + "' more than once. Repeated same-hub generated links must use distinct explicit participant role names by StringComparer.Ordinal.");
       return null;
     }
 
@@ -483,7 +483,8 @@ public sealed class DataVaultMappingSourceGenerator : IIncrementalGenerator {
     builder.Append("internal static class ");
     builder.AppendLine(declaration.HelperTypeName + " {");
     AppendMetadataConstant(builder, "LinkName", declaration.PrimaryName);
-    AppendNameArray(builder, "ParticipantHubNames", declaration.OrderedBindings.Select(binding => binding.LogicalName));
+    AppendNameArray(builder, "ProducedParticipantNames", declaration.OrderedBindings.Select(binding => binding.LogicalName));
+    builder.AppendLine("  public static global::System.Collections.Generic.IReadOnlyList<string> ParticipantHubNames => ProducedParticipantNames;");
     builder.Append("  public static global::DCoding.Data.DVault.IDataVaultLinkMapper<");
     builder.Append(GetSourceTypeDisplayName(declaration.SourceType));
     builder.Append("> CreateMapper() => new ");

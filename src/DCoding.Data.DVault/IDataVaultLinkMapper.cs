@@ -6,10 +6,10 @@ namespace DCoding.Data.DVault;
 /// <typeparam name="TSource">The source DTO or domain type mapped by the implementation.</typeparam>
 /// <remarks>
 /// Implementations are expected to be side-effect-free, reject null source values immediately, and return link operations
-/// identified by exact logical link metadata name. Participant hash keys are keyed by exact participant hub metadata names.
-/// V1 supports only links whose participant hub metadata names are unique by <c>StringComparer.Ordinal</c>; repeated
-/// same-hub and ordinary self-link typed mappings are unsupported because the registry-backed link operation rejects duplicate
-/// participant names. Load timestamp and record source stay outside row mappers and are supplied when creating
+/// identified by exact logical link metadata name. Participant hash keys are keyed by exact produced participant names: hub
+/// names for ordinary links and explicit role names for repeated same-hub links. V1 supports links whose produced
+/// participant names are unique by <c>StringComparer.Ordinal</c>; ambiguous repeated same-hub mappings that reuse the same
+/// produced participant name remain invalid. Load timestamp and record source stay outside row mappers and are supplied when creating
 /// <see cref="DataVaultRegistrySaveRequest" /> or <see cref="DataVaultRegistryBulkSaveRequest" />.
 /// </remarks>
 public interface IDataVaultLinkMapper<in TSource>
