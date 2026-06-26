@@ -3,7 +3,7 @@
   "ticket-id": "06FF43T2EK3CBYHTR287YWC5NR",
   "ticket-type": "task",
   "title": "Task: Add PostgreSQL binary-first provider quickstart parity notes",
-  "revision": "06FFXHFEBWYBY0M0A1MJKC2RKR",
+  "revision": "06FG406E8V33MY7EZFEMQZM8ZR",
   "status": "done",
   "labels": [
     "area/documentation",
@@ -17,5 +17,5 @@
   "milestone-id": "06FF437Q6BCDT2E67RMFK783NR",
   "release-id": "06FF437GWAWYQF5HXSRVB09B7R",
   "created-at": "2026-06-23T01:19:07.8872661Z",
-  "updated-at": "2026-06-25T12:34:05.0239630Z"
+  "updated-at": "2026-06-26T03:37:15.0784012Z"
 }
