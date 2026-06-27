@@ -1,14 +1,19 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Addressed the PO-critic ledger by making the routing explicit: this is not a closure-only outcome because the branch still lacks landed v0.49 documentation updates, so the ticket remains a bounded developer documentation rollover and the existing delivery contract stays intact.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+PO-critic checklist responses
+- critic-item-1: `answered` - The ticket is handed off as a normal developer documentation task, not as a closure-only outcome. The current delivery contract already frames the work as updating the v0.49 release notes, CHANGELOG, README limitations, analyzer README, package compatibility guidance, and support-bundle guidance to the 8.49.0 / 10.49.0 baseline.
+- critic-item-2: `answered` - Product is not taking a closure-only route here because the current branch does not supply landed v0.49 documentation evidence. The active contract keeps this as unfinished developer documentation work until those named surfaces are actually rolled forward.
+- critic-item-3: `answered` - The existing delivery contract content is kept. It is already bounded, preserves the current shipped same-hub, support-bundle, analyzer, and deferred-scope boundaries, and leaves no blocking PO open questions.
+- critic-item-4: `answered` - Agreed. This cannot be treated as closure-only because the repository evidence still shows the v0.48 documentation baseline and no landed v0.49 release-note file. That finding is resolved by keeping the ticket active as a normal developer documentation task rather than claiming it is already complete.
+
+Clarifications
 - This remains a normal developer documentation ticket because the current branch still lacks landed v0.49 doc-path evidence, including a checked-in docs/releases/v0.49.0.md surface.
 - The analyzer package compatibility audit remains the authoritative compatibility constraint: DCoding.Data.DVault.Analyzers stays one net10.0 analyzer asset and both visible package lines continue to require a .NET 10 SDK build host.
 - Related done ticket 06FF43YPV3WYDQHEGZSW4T296C establishes shipped repeated same-hub generated typed link-mapper parity when produced participant names are explicit, non-blank, and unique by StringComparer.Ordinal; v0.49 docs should describe that supported boundary.
@@ -16,60 +21,45 @@
 - Related done ticket 06FF442BD5V9CTTNXQQAR3EQTW plus the current typed PIT and bridge helper contract keep the generated read-helper baseline support-bundle-driven: one authoritative dvault.support-bundle.v1 input, request-bound ReadShape evidence for PIT or bridge helpers, and no raw dvault.model.v1 direct generation.
 - No child tickets, relation writes, description rewrites, planning documents, or attachments were materialized in this response; this pass answers the PO-critic ledger and preserves the existing bounded contract.
 
-### Scope In
+Scope In
 - Update the v0.49 release notes, CHANGELOG, README limitations, analyzer README, package compatibility guidance, and support-bundle guidance so the visible package lines roll coherently to 8.49.0 and 10.49.0.
 - Document shipped repeated same-hub generated typed link-mapper parity with explicit role-bearing produced participant names and the existing explicit IDataVaultSaveService boundary.
 - Keep current typed read-model generator limits explicit: authoritative dvault.support-bundle.v1 input only, request-bound ReadShape evidence for PIT and bridge helpers, and no raw dvault.model.v1 direct parsing or source-visible direct helper generation.
 - Carry forward effectivity guidance as the already-implemented generic link-parent satellite pattern rather than introducing a new first-class effectivity API claim.
 - Preserve the current analyzer package compatibility and build-host guidance while updating the versioned release baseline.
 
-### Scope Out
+Scope Out
 - Any runtime, generator, analyzer, provider, or package-publication implementation work.
 - Analyzer retargeting or any claim that pure .NET 8 SDK analyzer consumption is supported.
 - New dependent child key modeling, effectivity-specific fluent APIs, or broader modeling-parity claims beyond the repository-backed shipped boundary.
 - Relation cleanup, child-ticket creation, or planning-document materialization unless later evidence shows the documentation slice is no longer bounded.
 
-## Acceptance Criteria
-- Affected release-doc surfaces use 8.49.0 and 10.49.0 consistently and state that v0.49.0 is a release label, not a consumer-facing 0.49.0 package version.
-- README, package compatibility, and analyzer guidance keep the one net10.0 analyzer asset plus .NET 10 SDK build-host baseline explicit for both visible package lines and do not claim pure .NET 8 SDK analyzer support.
-- v0.49 release notes and related docs describe repeated same-hub generated typed link-mapper parity as supported only when produced participant names are explicit and unique, while preserving the existing explicit save-service boundary.
-- Support-bundle and generator guidance continues to state that typed read helpers require exactly one authoritative dvault.support-bundle.v1 input and request-bound ReadShape evidence for PIT or bridge helpers, with no raw dvault.model.v1 or source-visible direct helper generation path.
-- Affected docs keep deferred boundaries explicit for dependent child modeling, effectivity-specific APIs, and other out-of-scope modeling expansions so the v0.49 notes do not overclaim parity.
-
-## Definition of Done
-- All named ticket surfaces are updated or explicitly confirmed aligned to the v0.49 baseline: release notes, README limitations, analyzer README, support-bundle guidance, package compatibility, and CHANGELOG.
-- README limitation text and cross-links still surface the current generator and analyzer caveats after the version rollover instead of silently dropping them.
-- Historical typed-read planning text remains clearly marked as superseded, while the current support-bundle-driven typed helper contract is the cited baseline for shipped behavior.
-- No updated document contradicts the shipped same-hub mapper parity, the deferred dependent-child boundary, or the analyzer build-host baseline proven by the related done tickets and current repository docs.
-
-## Implementation Notes
-- Use the current v0.48 release notes, CHANGELOG, README, package compatibility page, and analyzer README as the direct rollover surfaces; keep edits narrow to the versioned baseline and the shipped boundary statements that actually change for v0.49.
-- Unless branch evidence elsewhere shows dependency-line movement, carry forward the current dependency matrix and analyzer baseline instead of inventing new compatibility claims during this documentation pass.
-- Release wording for same-hub mapper parity should follow ticket 06FF43YPV3WYDQHEGZSW4T296C: explicit role-bearing produced participant names, no inferred relationship names, and no new persistence surface.
-- Release wording for dependent child scope should follow ticket 06FF441DM4F4ZDTHY9ZZD9RA8R: no dependent-child metadata concept, helper surface, or API support is being added here.
-- Support-bundle guidance should cite docs/architecture/dvault-v1-typed-pit-bridge-helper-contract.md and src/DCoding.Data.DVault.Analyzers/README.md as the authoritative current generator baseline; docs/plans/typed-read-model-generator-contract.md remains historical context only.
-- Keep terminology precise throughout the docs: typed read helpers, typed save mappers, same-hub role-bearing links, effectivity-as-link-parent-satellite guidance, and deferred dependent-child work are distinct boundaries and should not be merged into one generic parity claim.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - If product later wants runnable same-hub or effectivity examples, should that land as a separate docs or examples ticket after the v0.49 baseline is published?
 - If product later wants pure .NET 8 SDK analyzer consumption or dependent child modeling, open separate capability tickets rather than widening the v0.49 documentation baseline.
 
-## Risks
+Risks
 - The v0.48 baseline is repeated across multiple docs, so a partial rollover could leave contradictory 8.48.0 and 10.48.0 versus 8.49.0 and 10.49.0 guidance.
 - Readers may conflate typed read helpers with typed save mappers or source-generator parity unless the v0.49 docs keep the support-bundle-driven read-helper limits and the same-hub mapper support clearly separated.
 - If analyzer wording is relaxed beyond the audit evidence, consumers could infer unsupported pure .NET 8 SDK analyzer compatibility.
 - If dependent child and effectivity-specific API caveats are dropped during the refresh, the release could appear to claim broader modeling parity than the repository currently proves.
 
-## Split Recommendations
+Split recommendations
 - none
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 5
+- definition-of-done items: 4
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Update release notes, README limitations, analyzer README, support-bundle guidance, package compatibility, and changelog for v0.49. Acceptance: package guidance uses 8.49.0/10.49.0 and keeps generator limitations visible.
+Run mode
+- apply: planned updates are applied after this comment
