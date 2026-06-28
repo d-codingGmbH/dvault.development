@@ -3,21 +3,20 @@
   "ticket-id": "06FGX5NTKQX87FWCZ2GDDVCXEW",
   "ticket-type": "task",
   "title": "Task: Define provider-native encryption boundary matrix for privacy",
-  "revision": "06FGX6Q1256E0J0DQW84FYZEV4",
-  "status": "todo",
+  "revision": "06FGYCNTMYDRW88YCBNKR3NSBW",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
-    "area/privacy",
     "area/documentation",
+    "area/privacy",
     "area/providers",
-    "area/security"
+    "area/security",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FGX5EE4MKZGBRT6N8WDD1MXR",
   "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
   "created-at": "2026-06-28T14:16:29.6208787Z",
-  "updated-at": "2026-06-28T14:20:59.0256926Z"
+  "updated-at": "2026-06-28T17:06:50.6631207Z"
 }
