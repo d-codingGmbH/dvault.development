@@ -60,6 +60,42 @@ Provider capability profiles and translated EF metadata must expose these facts 
 Diagnostics and `dvault.support-bundle.v1` output must carry the same facts without raw hash-key values or raw business keys.
 The reviewed support bundle is the authoritative preflight baseline when checking algorithm or storage drift.
 
+## Hash-Key Storage Migration Manifests
+
+The storage-profile migration manifest version is `dvault.hash-key-storage-migration.v1`. It is a validation and review
+contract for a selected existing model boundary moving from `HexString` to `Binary`; it is not a generic profile-conversion
+framework and it is not a migration runner.
+
+A valid manifest must declare these top-level facts:
+
+- schema version: `dvault.hash-key-storage-migration.v1`
+- selected model boundary, including metadata source kind and any reviewed metadata source fingerprint
+- reviewed source evidence provenance from a redacted `dvault.support-bundle.v1` or equivalent translated EF metadata baseline
+- provider profile id from the visible built-in baseline
+- model-level `algorithmId`, `digestByteLength`, and `digestEncoding=lowercase-hex-no-prefix`
+- expected source profile `HexString` and expected target profile `Binary`
+- deterministic validation findings grouped as `error`, `warning`, and `info`
+
+The coverage section must include every DVault-owned `HashKey` and `ParticipantReference` column on generated hubs, links,
+satellites, PITs, and bridges in the selected boundary exactly once. Each coverage item must name the table and column and must
+carry the source and target values for storage profile, provider store type, provider value format, EF CLR model type,
+conversion behavior, `algorithmId`, `digestByteLength`, and digest encoding.
+
+Manifest validation is fail-closed. Missing required fields, missing coverage, duplicate coverage, mixed or ambiguous
+source/target storage profiles, unsupported provider/profile values, algorithm drift, digest-length drift, encoding drift, and
+compatibility decisions based only on store type or width are blocking `error` findings. The `sha1-v1` and `sha256-160-v1`
+case is explicitly incompatible even though both algorithms produce 20 digest bytes and 40 lowercase-hex characters.
+
+`warning` findings are reserved for non-blocking evidence gaps, such as unavailable supplemental live-schema checks after the
+reviewed support bundle or translated metadata baseline supplied complete authoritative facts. Structural defects, coverage
+gaps, unsupported values, profile drift, algorithm drift, digest drift, and encoding drift must be `error` findings, not
+warnings. `info` findings summarize recognized baseline facts and coverage totals.
+
+Finding production must be deterministic for the same manifest input. Sort by severity rank (`error`, `warning`, `info`), then
+stable code, table name, column name, and JSON path using ordinal string comparison. A validator must not attempt migration
+execution, SQL generation, data conversion, repair, backfill, dual-write, or rehash work when the manifest is invalid or
+ambiguous.
+
 ## Guardrails
 
 Migration and preflight guardrails must fail closed when a DVault-owned hash-key or hash-key-reference column changes any

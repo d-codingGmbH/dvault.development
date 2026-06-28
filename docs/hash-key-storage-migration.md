@@ -82,6 +82,89 @@ Before scaffolding or applying any migration step:
 Support bundles and diagnostics must stay redacted. Do not put raw hash-key values, raw business keys, request values, SQL
 text, credentials, connection strings, provider messages, or diagnostic payload text into migration records.
 
+## Manifest Validation Contract
+
+The v1 review manifest schema version is `dvault.hash-key-storage-migration.v1`. A validator must treat the manifest as a
+preflight contract for one complete selected model boundary. It must not execute migrations, open a live database by default,
+generate SQL, mutate data, repair schemas, backfill, dual-write, reconcile, or rehash when the manifest is invalid or
+ambiguous.
+
+The required top-level contract facts are:
+
+- `schemaVersion`: exactly `dvault.hash-key-storage-migration.v1`.
+- `selectedModelBoundary`: the adopter-owned boundary being migrated, including the metadata source kind and, when available,
+  the metadata source fingerprint from the reviewed baseline.
+- `reviewedSourceEvidence`: the redacted `dvault.support-bundle.v1` or equivalent translated EF metadata that supplied the
+  source facts. This evidence is authoritative for storage-profile and algorithm drift; live-schema evidence is supplemental.
+- `providerProfileId`: one of the built-in v1 provider capability profile ids: `sqlite-v1`, `oracle-v1`, `postgres-v1`,
+  `sqlserver-v1`, `db2-v1`, or `mysql-pomelo-v1`.
+- `modelHashFacts`: the model-level `algorithmId`, `digestByteLength`, and `digestEncoding`. `digestEncoding` must be
+  `lowercase-hex-no-prefix`.
+- `expectedStorageProfiles`: `source=HexString` and `target=Binary` for v1. Other directions, same-profile audits, and custom
+  profile flows are outside this manifest version.
+- `coverage`: one entry for every in-scope DVault-owned `HashKey` and `ParticipantReference` column in the selected model
+  boundary.
+- `validation`: deterministic `error`, `warning`, and `info` findings for the same manifest input.
+
+Each `coverage` entry must identify the persisted column and repeat the complete compatibility fact set for both the source
+and target shape:
+
+- logical property kind: `HashKey` or `ParticipantReference`
+- table name and column name
+- source and target storage profile
+- provider store type
+- provider value format
+- EF CLR model type
+- conversion behavior
+- `algorithmId`
+- `digestByteLength`
+- digest encoding
+
+Coverage is complete-boundary coverage, not a caller-selected subset. Every generated hub, link, satellite, PIT, and bridge
+hash-key or hash-key-reference column in the reviewed boundary must appear exactly once. The validator must compare coverage by
+stable table and column identity after normalizing provider-specific casing only where the selected provider profile documents
+that normalization.
+
+The validator must emit blocking `error` findings for:
+
+- a missing required top-level field or missing per-column compatibility fact
+- missing or duplicate in-scope `HashKey` or `ParticipantReference` coverage
+- mixed, partial, or ambiguous source or target storage profiles inside the selected boundary
+- an unsupported `providerProfileId`, storage profile, provider value format, conversion behavior, stable-hash algorithm id,
+  digest byte length, or digest encoding
+- changed `algorithmId`, `digestByteLength`, or digest encoding between source and target facts
+- any decision that treats column width, store type, or payload size alone as compatibility proof
+- the `sha1-v1` versus `sha256-160-v1` same-size case, because equal 20-byte digests do not make the algorithms compatible
+- any attempted migration execution, SQL generation, data conversion, repair, or live-schema-only decision while validation has
+  errors
+
+The validator may emit `warning` findings only for non-blocking evidence gaps, such as a provider live-schema reader being
+unavailable or intentionally skipped after the reviewed support bundle or translated metadata supplied the authoritative facts.
+Warnings must not be used for structural manifest defects, coverage gaps, unsupported values, profile drift, algorithm drift,
+digest drift, or encoding drift.
+
+The validator should emit `info` findings for recognized baseline facts and deterministic coverage totals, including the
+provider profile id, stable-hash algorithm id, digest byte length, digest encoding, total coverage count, `HashKey` count, and
+`ParticipantReference` count.
+
+Finding output must be stable for the same manifest input. Sort findings by severity rank (`error`, then `warning`, then
+`info`), then by stable code, table name, column name, and JSON path using ordinal string comparison. Every finding must carry
+a stable severity, code, JSON path, message, and, when applicable, expected and actual values. Messages must stay redacted and
+must not include raw hash-key values, raw business keys, SQL text, credentials, connection strings, or provider exception text.
+
+Use this bounded matrix when reviewing or implementing the v1 validator:
+
+| Scenario | Expected result |
+| --- | --- |
+| Complete `HexString` source to `Binary` target coverage for one supported provider, unchanged hash facts, and redacted reviewed source evidence | Valid; emit `info` baseline and coverage totals. |
+| One hub, link, satellite, PIT, or bridge hash-key/reference column from the reviewed boundary is absent | Invalid; emit `error` for missing coverage. |
+| The same table and column identity appears more than once | Invalid; emit `error` for duplicate coverage. |
+| Source coverage mixes `HexString` and `Binary`, or target coverage mixes profiles inside the selected boundary | Invalid; emit `error` for mixed or ambiguous profile facts. |
+| Provider or provider profile id is not in the built-in v1 baseline | Invalid; emit `error` for unsupported provider/profile values. |
+| Source and target use different `algorithmId`, `digestByteLength`, or digest encoding | Invalid; emit `error` for hash-fact drift. |
+| `sha1-v1` source is compared with `sha256-160-v1` target and both report 20 digest bytes | Invalid; emit `error` for algorithm drift despite equal byte length. |
+| Provider live-schema evidence is unavailable, but reviewed support-bundle or translated metadata facts are complete | Valid with `warning`; treat live-schema evidence as supplemental only. |
+
 ## Execution Sequence
 
 1. Freeze the target model boundary and decide whether this is a storage-only change. If the application also needs a new
