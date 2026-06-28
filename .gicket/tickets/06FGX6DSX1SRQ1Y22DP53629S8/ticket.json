@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FGX6DSX1SRQ1Y22DP53629S8",
+  "ticket-type": "task",
+  "title": "Task: Update v0.50.0 release notes and package validation baselines",
+  "revision": "06FGX6EZJ4CX5YGXHERHJCKTCR",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/documentation",
+    "area/package",
+    "area/release"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FGX5EFRWJ5JTWV0V7YG83380",
+  "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
+  "created-at": "2026-06-28T14:19:46.9432228Z",
+  "updated-at": "2026-06-28T14:19:53.1057546Z"
+}

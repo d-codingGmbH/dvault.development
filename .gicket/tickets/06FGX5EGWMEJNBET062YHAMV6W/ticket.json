@@ -1,0 +1,22 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FGX5EGWMEJNBET062YHAMV6W",
+  "ticket-type": "story",
+  "title": "Story: Make analyzer consumption viable for .NET 8 SDK hosts",
+  "revision": "06FGX6GA4YKD0J81CPRWH2QE64",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/analyzers",
+    "area/package",
+    "area/compatibility"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FGX5EDA7K8EDEMAET71J565G",
+  "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
+  "created-at": "2026-06-28T14:15:29.3389168Z",
+  "updated-at": "2026-06-28T14:20:04.0074208Z"
+}

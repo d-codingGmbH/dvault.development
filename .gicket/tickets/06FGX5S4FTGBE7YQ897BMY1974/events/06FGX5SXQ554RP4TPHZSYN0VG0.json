@@ -1,0 +1,14 @@
+{
+  "event-id": "06FGX5SXQ554RP4TPHZSYN0VG0",
+  "occurred-at": "2026-06-28T14:17:00.6018864Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Align privacy docs with diagnostics and provider boundaries",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

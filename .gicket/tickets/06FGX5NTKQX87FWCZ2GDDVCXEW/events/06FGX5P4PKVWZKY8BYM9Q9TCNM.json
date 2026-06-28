@@ -1,0 +1,14 @@
+{
+  "event-id": "06FGX5P4PKVWZKY8BYM9Q9TCNM",
+  "occurred-at": "2026-06-28T14:16:29.6208787Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Define provider-native encryption boundary matrix for privacy",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

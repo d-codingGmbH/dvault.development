@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FGX5GHPS7DEC3EJPWSKJZH28",
+  "ticket-type": "task",
+  "title": "Task: Audit analyzer Roslyn and SDK dependencies for .NET 8 hosts",
+  "revision": "06FGX6MMFRRJ14AZNWYAVMTE4W",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/analyzers",
+    "area/package",
+    "area/compatibility",
+    "area/tests"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FGX5EDA7K8EDEMAET71J565G",
+  "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
+  "created-at": "2026-06-28T14:15:46.9020840Z",
+  "updated-at": "2026-06-28T14:20:39.4223051Z"
+}

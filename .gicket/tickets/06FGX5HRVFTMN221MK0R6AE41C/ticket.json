@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FGX5HRVFTMN221MK0R6AE41C",
+  "ticket-type": "task",
+  "title": "Task: Retarget or multi-target the analyzer package for supported SDK hosts",
+  "revision": "06FGX6N3J0JGHSH5D3DTR7MQEG",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/analyzers",
+    "area/package",
+    "area/source-generators",
+    "area/tests"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FGX5EDA7K8EDEMAET71J565G",
+  "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
+  "created-at": "2026-06-28T14:15:56.8271965Z",
+  "updated-at": "2026-06-28T14:20:43.2805928Z"
+}

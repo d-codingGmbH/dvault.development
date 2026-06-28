@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FGX69QJYHGNKBV8MJ1HG7MMG",
+  "ticket-type": "task",
+  "title": "Task: Implement hash-key storage migration manifest validator",
+  "revision": "06FGX6RSWR0CRQS7814JTT4PHW",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/hashing",
+    "area/migrations",
+    "area/diagnostics",
+    "area/tests"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FGX5EEYRY1NNVQC0JZJX7398",
+  "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
+  "created-at": "2026-06-28T14:19:12.3218211Z",
+  "updated-at": "2026-06-28T14:21:13.5748155Z"
+}

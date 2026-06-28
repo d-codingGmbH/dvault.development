@@ -1,0 +1,14 @@
+{
+  "event-id": "06FGX5ES79NKD7QDAQ46F68VKC",
+  "occurred-at": "2026-06-28T14:15:29.3389168Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Make analyzer consumption viable for .NET 8 SDK hosts",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

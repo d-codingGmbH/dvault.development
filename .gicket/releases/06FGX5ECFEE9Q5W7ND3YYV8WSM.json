@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/release/v1",
+  "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
+  "name": "v0.50.0 - Analyzer Compatibility and Adoption Hardening",
+  "description": "Focused adoption-hardening release for the EF Core library surface after v0.49.0. Scope: reduce analyzer friction for .NET 8 build hosts where feasible, make the optional privacy extension more practically adoptable without owning compliance or provider-native encryption, and turn the binary hash-key migration manifest into a deterministic validation/preflight aid. Planning release v0.50.0 maps to package versions 8.50.0 and 10.50.0.",
+  "status": "active",
+  "created-at": "2026-06-28T14:15:26.0759773Z"
+}

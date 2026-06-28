@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FGX5VQ9Y665A727EFJ677SBC",
+  "ticket-type": "story",
+  "title": "Story: Make binary hash storage migration manifests verifiable",
+  "revision": "06FGX6M1H06NS5PZGC7NSZ6SRC",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/story",
+    "area/hashing",
+    "area/migrations",
+    "area/diagnostics",
+    "area/ef-core"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FGX5EEYRY1NNVQC0JZJX7398",
+  "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
+  "created-at": "2026-06-28T14:17:17.5989854Z",
+  "updated-at": "2026-06-28T14:20:34.5686945Z"
+}

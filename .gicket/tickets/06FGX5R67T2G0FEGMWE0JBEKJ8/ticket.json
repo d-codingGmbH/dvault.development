@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FGX5R67T2G0FEGMWE0JBEKJ8",
+  "ticket-type": "task",
+  "title": "Task: Add privacy quickstart for caller-owned key provider lifecycle",
+  "revision": "06FGX6QK712Z8XM1KYCT5GQZCG",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/privacy",
+    "area/examples",
+    "area/documentation",
+    "area/tests"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FGX5EE4MKZGBRT6N8WDD1MXR",
+  "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
+  "created-at": "2026-06-28T14:16:49.1000752Z",
+  "updated-at": "2026-06-28T14:21:03.6727698Z"
+}

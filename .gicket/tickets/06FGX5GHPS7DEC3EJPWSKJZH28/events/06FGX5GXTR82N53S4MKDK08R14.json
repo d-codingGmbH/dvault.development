@@ -1,0 +1,14 @@
+{
+  "event-id": "06FGX5GXTR82N53S4MKDK08R14",
+  "occurred-at": "2026-06-28T14:15:46.9020840Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Audit analyzer Roslyn and SDK dependencies for .NET 8 hosts",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

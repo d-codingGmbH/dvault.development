@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FGX5JXRVY9FXDW4D8242XSB4",
+  "ticket-type": "task",
+  "title": "Task: Add analyzer package verifier and SDK-host smoke coverage",
+  "revision": "06FGX6NGSKGYGQY8073FF3S5ZR",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/analyzers",
+    "area/package",
+    "area/tests",
+    "area/compatibility"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FGX5EDA7K8EDEMAET71J565G",
+  "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
+  "created-at": "2026-06-28T14:16:03.5540293Z",
+  "updated-at": "2026-06-28T14:20:46.6684659Z"
+}

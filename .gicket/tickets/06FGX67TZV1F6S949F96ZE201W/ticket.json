@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FGX67TZV1F6S949F96ZE201W",
+  "ticket-type": "task",
+  "title": "Task: Define hash-key storage migration manifest validation contract",
+  "revision": "06FGX6RPV8JTEFNJTMK4N18018",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/hashing",
+    "area/migrations",
+    "area/diagnostics",
+    "area/documentation"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FGX5EEYRY1NNVQC0JZJX7398",
+  "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
+  "created-at": "2026-06-28T14:18:58.3658204Z",
+  "updated-at": "2026-06-28T14:21:12.7941344Z"
+}

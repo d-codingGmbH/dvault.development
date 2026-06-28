@@ -1,0 +1,23 @@
+﻿{
+  "$schema": "https://schemas.d-coding.de/gicket/ticket/v1",
+  "ticket-id": "06FGX5S4FTGBE7YQ897BMY1974",
+  "ticket-type": "task",
+  "title": "Task: Align privacy docs with diagnostics and provider boundaries",
+  "revision": "06FGX6RCVAN25H0SA1EX7RDJGW",
+  "status": "todo",
+  "labels": [
+    "needs-po",
+    "automation/bot-ready",
+    "type/task",
+    "area/privacy",
+    "area/documentation",
+    "area/package",
+    "area/security"
+  ],
+  "assignees": [],
+  "is-blocked": false,
+  "milestone-id": "06FGX5EE4MKZGBRT6N8WDD1MXR",
+  "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
+  "created-at": "2026-06-28T14:17:00.6018864Z",
+  "updated-at": "2026-06-28T14:21:10.2343708Z"
+}

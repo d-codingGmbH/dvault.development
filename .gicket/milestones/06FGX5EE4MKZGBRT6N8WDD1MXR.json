@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestone-id": "06FGX5EE4MKZGBRT6N8WDD1MXR",
+  "name": "v0.50.0 - Privacy adoption hardening",
+  "description": "Improve the optional privacy extension for real EF Core adoption through explicit provider-native encryption boundaries, support-bundle facts, and runnable guidance without claiming compliance automation.",
+  "status": "active",
+  "created-at": "2026-06-28T14:15:26.5012780Z"
+}
