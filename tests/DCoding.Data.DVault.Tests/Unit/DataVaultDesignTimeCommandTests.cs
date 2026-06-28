@@ -378,6 +378,12 @@ public sealed class DataVaultDesignTimeCommandTests {
         Assert.Equal("lowercase-hex-no-prefix", source.GetProperty("digestEncoding").GetString());
         Assert.Equal("lowercase-hex-no-prefix", target.GetProperty("digestEncoding").GetString());
       }
+
+      var validation = DataVaultHashKeyStorageMigrationManifestValidator.ValidateJson(firstJson);
+      Assert.True(validation.IsValid, validation.ToDisplayString());
+      Assert.Contains(validation.Findings, finding =>
+          finding.Severity == DataVaultDiagnosticsIssueSeverity.Info &&
+          finding.Code == "hash-key-migration-manifest-compatible");
     }
     finally {
       File.Delete(sourcePath);

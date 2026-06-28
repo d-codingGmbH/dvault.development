@@ -3,21 +3,20 @@
   "ticket-id": "06FGX69QJYHGNKBV8MJ1HG7MMG",
   "ticket-type": "task",
   "title": "Task: Implement hash-key storage migration manifest validator",
-  "revision": "06FGX6RSWR0CRQS7814JTT4PHW",
-  "status": "todo",
+  "revision": "06FH13FB5R01PDH0MSPBHDB9R8",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
+    "area/diagnostics",
     "area/hashing",
     "area/migrations",
-    "area/diagnostics",
-    "area/tests"
+    "area/tests",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FGX5EEYRY1NNVQC0JZJX7398",
   "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
   "created-at": "2026-06-28T14:19:12.3218211Z",
-  "updated-at": "2026-06-28T14:21:13.5748155Z"
+  "updated-at": "2026-06-28T23:26:04.0784740Z"
 }

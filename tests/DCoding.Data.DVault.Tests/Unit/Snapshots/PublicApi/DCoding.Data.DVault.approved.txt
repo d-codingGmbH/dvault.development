@@ -319,6 +319,33 @@ type public sealed class DCoding.Data.DVault.DataVaultExplainDiagnostics : Syste
   method public virtual bool Equals(DCoding.Data.DVault.DataVaultExplainDiagnostics? other)
   method public void Deconstruct(out string MetadataSourceKind, out string? MetadataSourceFingerprint, out string? ProviderName, out string CapabilityProfileName, out bool CapabilityProfileDefaulted, out DCoding.Data.DVault.DataVaultProviderValueFormat LoadTimestampValueFormat, out string LoadTimestampStoreType, out string ProviderBehaviorProfileName, out bool ProviderBehaviorDefaulted, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultEntityExplain> Entities)
 
+type public static class DCoding.Data.DVault.DataVaultHashKeyStorageMigrationManifestValidator
+  method public static DCoding.Data.DVault.DataVaultHashKeyStorageMigrationValidationResult ValidateJson(string json)
+
+type public sealed class DCoding.Data.DVault.DataVaultHashKeyStorageMigrationValidationFinding : System.IEquatable<DCoding.Data.DVault.DataVaultHashKeyStorageMigrationValidationFinding>
+  ctor public DataVaultHashKeyStorageMigrationValidationFinding(DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity Severity, string Code, string? TableName, string? ColumnName, string Path, string? ExpectedValue, string? ActualValue, string Message)
+  property public DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity Severity { get; init; }
+  property public string Code { get; init; }
+  property public string Message { get; init; }
+  property public string Path { get; init; }
+  property public string? ActualValue { get; init; }
+  property public string? ColumnName { get; init; }
+  property public string? ExpectedValue { get; init; }
+  property public string? TableName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultHashKeyStorageMigrationValidationFinding? left, DCoding.Data.DVault.DataVaultHashKeyStorageMigrationValidationFinding? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultHashKeyStorageMigrationValidationFinding? left, DCoding.Data.DVault.DataVaultHashKeyStorageMigrationValidationFinding? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultHashKeyStorageMigrationValidationFinding? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity Severity, out string Code, out string? TableName, out string? ColumnName, out string Path, out string? ExpectedValue, out string? ActualValue, out string Message)
+
+type public sealed class DCoding.Data.DVault.DataVaultHashKeyStorageMigrationValidationResult
+  ctor public DataVaultHashKeyStorageMigrationValidationResult(System.Collections.Generic.IEnumerable<DCoding.Data.DVault.DataVaultHashKeyStorageMigrationValidationFinding> findings)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultHashKeyStorageMigrationValidationFinding> Findings { get; }
+  property public bool IsValid { get; }
+  method public string ToDisplayString()
+
 type public enum DCoding.Data.DVault.DataVaultHashKeyStorageProfile
   value HexString = 0
   value Binary = 1
