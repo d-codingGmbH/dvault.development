@@ -15,49 +15,49 @@ DVault is a focused .NET library family for Data Vault 2.x-oriented persistence 
 
 ## Installation
 
-Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The blocks below list the full coordinated package family so each needed package can be copied from one aligned line. Use exactly one package line for a consumer project: `8.49.0` for `net8.0` and EF Core 8, or `10.49.0` for `net10.0` and EF Core 10. Do not mix package lines, and do not use a consumer-facing `0.49.0` package version from the v0.49.0 release label. This documentation baseline does not by itself confirm package publication.
+Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The blocks below list the full coordinated package family so each needed package can be copied from one aligned line. Use exactly one package line for a consumer project: `8.50.0` for `net8.0` and EF Core 8, or `10.50.0` for `net10.0` and EF Core 10. Do not mix package lines, and do not use a consumer-facing `0.49.0` package version from the v0.49.0 release label. This documentation baseline does not by itself confirm package publication.
 
-For `net8.0` projects on EF Core 8, use the `8.49.0` package line:
+For `net8.0` projects on EF Core 8, use the `8.50.0` package line:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 8.49.0
-dotnet add package DCoding.Data.DVault.Db2 --version 8.49.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 8.49.0
-dotnet add package DCoding.Data.DVault.Postgres --version 8.49.0
-dotnet add package DCoding.Data.DVault.MySql --version 8.49.0
-dotnet add package DCoding.Data.DVault.Oracle --version 8.49.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 8.49.0
-dotnet add package DCoding.Data.DVault.Privacy --version 8.49.0
+dotnet add package DCoding.Data.DVault --version 8.50.0
+dotnet add package DCoding.Data.DVault.Db2 --version 8.50.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 8.50.0
+dotnet add package DCoding.Data.DVault.Postgres --version 8.50.0
+dotnet add package DCoding.Data.DVault.MySql --version 8.50.0
+dotnet add package DCoding.Data.DVault.Oracle --version 8.50.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 8.50.0
+dotnet add package DCoding.Data.DVault.Privacy --version 8.50.0
 ```
 
-For `net10.0` projects on EF Core 10, use the `10.49.0` package line:
+For `net10.0` projects on EF Core 10, use the `10.50.0` package line:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 10.49.0
-dotnet add package DCoding.Data.DVault.Db2 --version 10.49.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 10.49.0
-dotnet add package DCoding.Data.DVault.Postgres --version 10.49.0
-dotnet add package DCoding.Data.DVault.MySql --version 10.49.0
-dotnet add package DCoding.Data.DVault.Oracle --version 10.49.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 10.49.0
-dotnet add package DCoding.Data.DVault.Privacy --version 10.49.0
+dotnet add package DCoding.Data.DVault --version 10.50.0
+dotnet add package DCoding.Data.DVault.Db2 --version 10.50.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 10.50.0
+dotnet add package DCoding.Data.DVault.Postgres --version 10.50.0
+dotnet add package DCoding.Data.DVault.MySql --version 10.50.0
+dotnet add package DCoding.Data.DVault.Oracle --version 10.50.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 10.50.0
+dotnet add package DCoding.Data.DVault.Privacy --version 10.50.0
 ```
 
 Install `DCoding.Data.DVault.Privacy` only when the application explicitly opts into the privacy extension seam. The package is a provider-neutral proof for registration, options, and alias-driven encrypted payload conversion over ordinary EF Core mapped payload properties; it does not make an application compliant, enable automatic encryption or redaction, provide database-at-rest encryption, or use provider-native encrypted column/cell/row features.
 
 Privacy provider caveats stay inside the finite repository-backed provider baseline: SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2. MySQL means the repository MySQL profile for `MySql.EntityFrameworkCore` and Pomelo, not a separate MariaDB capability profile. Provider-native features such as SQL Server TDE or Always Encrypted, PostgreSQL deployment encryption or `pgcrypto`, Oracle TDE or `DBMS_CRYPTO`, MySQL SQL crypto or file or tablespace encryption, SQLite encrypted-file builds, and DB2 native database encryption remain guidance-only. DVault does not emit provider-native encrypted DDL, call provider SQL crypto functions, probe provider encryption capabilities, or route runtime behavior based on native encryption availability; future native encryption support needs a separate provider-specific ticket or contract.
 
-Add the analyzer package only to projects that own DVault declarations, compile-time generated row mappings, or generated typed read helpers, and keep it local with `PrivateAssets="all"`. Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.49.0` package line. The current analyzer package carries one `net10.0` analyzer asset for both coordinated package lines; this repository does not validate pure `.NET 8 SDK` analyzer consumption.
+Add the analyzer package only to projects that own DVault declarations, compile-time generated row mappings, or generated typed read helpers, and keep it local with `PrivateAssets="all"`. Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.50.0` package line. The current analyzer package carries one `net10.0` analyzer asset for both coordinated package lines; this repository does not validate pure `.NET 8 SDK` analyzer consumption.
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="8.49.0" PrivateAssets="all" />
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="8.50.0" PrivateAssets="all" />
 </ItemGroup>
 ```
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="10.49.0" PrivateAssets="all" />
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="10.50.0" PrivateAssets="all" />
 </ItemGroup>
 ```
 
@@ -192,8 +192,8 @@ The current coordinated package baseline is documented in [Package Compatibility
 
 In short:
 
-- `8.49.0` targets `net8.0` and the EF Core 8 dependency line.
-- `10.49.0` targets `net10.0` and the EF Core 10 dependency line.
+- `8.50.0` targets `net8.0` and the EF Core 8 dependency line.
+- `10.50.0` targets `net10.0` and the EF Core 10 dependency line.
 - `v0.49.0` is a repository release tag and release-note label, not a NuGet package version.
 - `DCoding.Data.DVault.Analyzers` remains a local `PrivateAssets="all"` analyzer reference and currently requires a `.NET 10 SDK` build host for both package lines.
 - `DCoding.Data.DVault.Privacy` remains optional and opt-in; it provides registration and alias-driven encrypted payload conversion seams over ordinary EF Core mapped payload properties only, not compliance, automatic privacy execution, database-at-rest encryption, provider-native encrypted column/cell/row features, provider SQL crypto calls, encrypted DDL, capability probing, or runtime routing based on native encryption availability.
@@ -252,7 +252,7 @@ bash tools/verify-packages.sh
 bash tools/check-format.sh
 ```
 
-`bash tools/pack-release-packages.sh` creates the two coordinated package lines under `artifacts/packages/`: nine `8.49.0` packages with `net8.0` assets and EF Core 8 dependency groups, and nine `10.49.0` packages with `net10.0` assets and EF Core 10 dependency groups. `bash tools/verify-packages.sh` inspects those artifacts, expects exactly eighteen DVault `.nupkg` files plus sixteen matching symbol packages for the runtime, provider, and privacy packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider and privacy package depends on the packed `DCoding.Data.DVault` version from the same package line.
+`bash tools/pack-release-packages.sh` creates the two coordinated package lines under `artifacts/packages/`: nine `8.50.0` packages with `net8.0` assets and EF Core 8 dependency groups, and nine `10.50.0` packages with `net10.0` assets and EF Core 10 dependency groups. `bash tools/verify-packages.sh` inspects those artifacts, expects exactly eighteen DVault `.nupkg` files plus sixteen matching symbol packages for the runtime, provider, and privacy packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider and privacy package depends on the packed `DCoding.Data.DVault` version from the same package line.
 
 For provider-specific filters, environment variables, benchmark commands, and package-verification details, see [Local Validation](docs/local-validation.md).
 

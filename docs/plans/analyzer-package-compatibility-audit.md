@@ -4,7 +4,7 @@ Ticket: `06FGX5GHPS7DEC3EJPWSKJZH28`
 
 ## Decision
 
-Keep `DCoding.Data.DVault.Analyzers` on one `net10.0` analyzer asset for the current v0.49.0 compatibility baseline. Supported analyzer consumption remains a `.NET 10 SDK` build host for both visible package lines, including `net8.0` consumer projects on the `8.49.0` line.
+Keep `DCoding.Data.DVault.Analyzers` on one `net10.0` analyzer asset for the current v0.49.0 compatibility baseline. Supported analyzer consumption remains a `.NET 10 SDK` build host for both visible package lines, including `net8.0` consumer projects on the `8.50.0` line.
 
 Pure `.NET 8 SDK` analyzer consumption is a no-go for the current branch. The repository proves a `net8.0` consumer target compiled with the `net10.0` analyzer asset on the `.NET 10 SDK` host baseline; it does not prove that a `.NET 8 SDK` host can restore, load, or run the analyzer package.
 
@@ -16,7 +16,7 @@ If pure `.NET 8 SDK` consumption becomes required, raise a bounded implementatio
 - The analyzer project sets `IncludeBuildOutput=false`, `SuppressDependenciesWhenPacking=true`, and `DevelopmentDependency=true`, so the package is a local build-time analyzer package and does not publish normal `lib/<tfm>` runtime assets or NuGet dependency groups for the analyzer's Roslyn references.
 - The analyzer project references `Microsoft.CodeAnalysis` and `Microsoft.CodeAnalysis.CSharp` from `$(MSBuildToolsPath)`, then references `Microsoft.CodeAnalysis.Workspaces` and `System.Composition.AttributedModel` from `$(MSBuildToolsPath)/DotnetTools/dotnet-format`.
 - The `AddAnalyzerPackageAssets` target packs `$(TargetPath)` and the generated XML documentation under `analyzers/dotnet/cs/`.
-- `tools/pack-release-packages.sh` calls `pack_analyzer_line` once for `8.49.0` and once for `10.49.0`, but it does not pass a target framework override to the analyzer project. Both package lines therefore receive the same `net10.0` analyzer binary shape with different package versions.
+- `tools/pack-release-packages.sh` calls `pack_analyzer_line` once for `8.50.0` and once for `10.50.0`, but it does not pass a target framework override to the analyzer project. Both package lines therefore receive the same `net10.0` analyzer binary shape with different package versions.
 - `tools/DCoding.Data.DVault.PackageVerification/PackageVerifier.cs` verifies the analyzer README host guidance and analyzer entries under `analyzers/dotnet/cs/`, including the analyzer DLL and XML documentation. It does not require a separate `net8.0` analyzer asset or a pure `.NET 8 SDK` host lane.
 
 ## Dependency Surface By Slice
@@ -57,4 +57,4 @@ If support is required, split the work:
 1. Retarget or split the analyzer package and normalize Roslyn, Workspaces, composition, and JSON dependencies. Treat the code-fix provider as the key coupling point because it is the only production slice requiring Workspaces and `System.Composition`.
 2. Add proof and release-surface updates: `.NET 8 SDK` CI/package-verification lane, analyzer package verifier expectations, `tools/pack-release-packages.sh`, README, `src/DCoding.Data.DVault.Analyzers/README.md`, `docs/package-compatibility.md`, `docs/local-validation.md`, `docs/manual-nuget-publication.md`, and release notes.
 
-Until both follow-ups land, analyzer consumption remains documented on a `.NET 10 SDK` build host for both `8.49.0` and `10.49.0`.
+Until both follow-ups land, analyzer consumption remains documented on a `.NET 10 SDK` build host for both `8.50.0` and `10.50.0`.

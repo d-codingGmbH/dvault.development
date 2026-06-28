@@ -3,21 +3,20 @@
   "ticket-id": "06FGX5HRVFTMN221MK0R6AE41C",
   "ticket-type": "task",
   "title": "Task: Retarget or multi-target the analyzer package for supported SDK hosts",
-  "revision": "06FGX6N3J0JGHSH5D3DTR7MQEG",
-  "status": "todo",
+  "revision": "06FGZ2AV7SA8M2SS8EGF4CXN9W",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/analyzers",
     "area/package",
     "area/source-generators",
-    "area/tests"
+    "area/tests",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FGX5EDA7K8EDEMAET71J565G",
   "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
   "created-at": "2026-06-28T14:15:56.8271965Z",
-  "updated-at": "2026-06-28T14:20:43.2805928Z"
+  "updated-at": "2026-06-28T18:41:27.8702368Z"
 }

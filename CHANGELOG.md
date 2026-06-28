@@ -4,8 +4,8 @@ This changelog summarizes the public release-note trail. The detailed release re
 
 ## v0.49.0 - Modeling and Generator Parity Refinement
 
-- Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.49.0` / `net8.0` / EF Core 8 and `10.49.0` / `net10.0` / EF Core 10.
-- Records that the v0.49.0 release label maps to consumer package versions `8.49.0` and `10.49.0`, not to a `0.49.0` package version.
+- Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.50.0` / `net8.0` / EF Core 8 and `10.50.0` / `net10.0` / EF Core 10.
+- Records that the v0.49.0 release label maps to consumer package versions `8.50.0` and `10.50.0`, not to a `0.49.0` package version.
 - Adds generated link mapper parity for repeated same-hub links when declarations use explicit unique produced participant names.
 - Adds ordered `linkParticipants` support-bundle explain facts so repeated same-hub roles are traceable without raw request values.
 - Keeps dependent child key modeling deferred, keeps effectivity as caller-owned link-parent satellite state, and keeps raw model-first mapper generation outside the current public claim set.

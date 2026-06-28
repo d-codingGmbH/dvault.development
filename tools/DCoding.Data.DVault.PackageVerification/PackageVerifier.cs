@@ -14,7 +14,7 @@ public sealed class PackageVerifier {
   private const string ExpectedRepositoryType = "git";
   private const string ExpectedRepositoryUrl = "https://github.com/d-codingGmbH/dvault.development.git";
   private const string ExpectedReadmeFile = "README.md";
-  private const string ExpectedAnalyzerBuildHostGuidance = "Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.49.0` package line.";
+  private const string ExpectedAnalyzerBuildHostGuidance = "Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.50.0` package line.";
 
   private static readonly string[] DisallowedAnalyzerBuildHostContradictionFragments = [
       "Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 8 SDK` host",
@@ -25,8 +25,8 @@ public sealed class PackageVerifier {
   ];
 
   private static readonly ExpectedPackageLine[] ExpectedPackageLines = [
-      new("8.49.0", Net8TargetFramework, "EF Core 8"),
-      new("10.49.0", Net10TargetFramework, "EF Core 10"),
+      new("8.50.0", Net8TargetFramework, "EF Core 8"),
+      new("10.50.0", Net10TargetFramework, "EF Core 10"),
   ];
 
   private static readonly string[] DisallowedInstallVersionFragments = [
@@ -72,6 +72,8 @@ public sealed class PackageVerifier {
       "--version 10.47.0",
       "--version 8.48.0",
       "--version 10.48.0",
+      "--version 8.49.0",
+      "--version 10.49.0",
       "Version=\"0.32.0\"",
       "Version=\"0.33.0\"",
       "Version=\"0.34.0\"",
@@ -114,6 +116,8 @@ public sealed class PackageVerifier {
       "Version=\"10.47.0\"",
       "Version=\"8.48.0\"",
       "Version=\"10.48.0\"",
+      "Version=\"8.49.0\"",
+      "Version=\"10.49.0\"",
   ];
 
   private static readonly IReadOnlyList<ExpectedPackage> ExpectedPackages = [
@@ -590,7 +594,7 @@ public sealed class PackageVerifier {
       if (archive.ReadmeText?.Contains(disallowedFragment, StringComparison.Ordinal) == true) {
         issues.Add(new PackageVerificationIssue(
             archive.Id,
-            "Packaged README.md must not document stale or planning-release install version fragment '" + disallowedFragment + "'; use separate 8.49.0 and 10.49.0 package-line guidance."));
+            "Packaged README.md must not document stale or planning-release install version fragment '" + disallowedFragment + "'; use separate 8.50.0 and 10.50.0 package-line guidance."));
       }
     }
   }
@@ -601,7 +605,7 @@ public sealed class PackageVerifier {
     if (archive.ReadmeText?.Contains(ExpectedAnalyzerBuildHostGuidance, StringComparison.Ordinal) != true) {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
-          "Packaged README.md must state that DCoding.Data.DVault.Analyzers is supported on the .NET 10 SDK build-host baseline, including net8.0 projects using the 8.49.0 package line."));
+          "Packaged README.md must state that DCoding.Data.DVault.Analyzers is supported on the .NET 10 SDK build-host baseline, including net8.0 projects using the 8.50.0 package line."));
     }
   }
 
