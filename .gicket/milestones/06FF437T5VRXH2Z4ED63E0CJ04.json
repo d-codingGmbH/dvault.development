@@ -3,6 +3,6 @@
   "milestone-id": "06FF437T5VRXH2Z4ED63E0CJ04",
   "name": "v0.49.0 - Dependent child key feasibility",
   "description": "Evaluate and, only if bounded, prototype dependent child key metadata support inside DVault EF Core model declarations.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-23T01:16:37.2940047Z"
 }

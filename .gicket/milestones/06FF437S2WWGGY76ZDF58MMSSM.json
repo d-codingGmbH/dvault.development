@@ -3,6 +3,6 @@
   "milestone-id": "06FF437S2WWGGY76ZDF58MMSSM",
   "name": "v0.49.0 - Repeated same-hub generator parity",
   "description": "Close source-generator and typed mapper gaps for repeated same-hub role-bearing mappings where metadata is unambiguous.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-23T01:16:37.0157255Z"
 }
