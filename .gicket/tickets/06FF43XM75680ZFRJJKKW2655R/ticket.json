@@ -3,20 +3,19 @@
   "ticket-id": "06FF43XM75680ZFRJJKKW2655R",
   "ticket-type": "story",
   "title": "Story: Define repeated same-hub generator parity scope",
-  "revision": "06FF45PHYGJDE3XVJYTYDQRG90",
-  "status": "todo",
+  "revision": "06FGWVWEGBXGH5QHFGE5YJZ5CM",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
+    "area/analyzers",
     "area/modeling",
     "area/source-generators",
-    "area/analyzers"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FF437S2WWGGY76ZDF58MMSSM",
   "release-id": "06FF437HMT0AH0T295QVBF1P8M",
   "created-at": "2026-06-23T01:19:37.5558968Z",
-  "updated-at": "2026-06-23T01:27:22.3561594Z"
+  "updated-at": "2026-06-28T13:33:39.8424072Z"
 }
