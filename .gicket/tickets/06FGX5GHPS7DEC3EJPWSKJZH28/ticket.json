@@ -3,21 +3,20 @@
   "ticket-id": "06FGX5GHPS7DEC3EJPWSKJZH28",
   "ticket-type": "task",
   "title": "Task: Audit analyzer Roslyn and SDK dependencies for .NET 8 hosts",
-  "revision": "06FGX6MMFRRJ14AZNWYAVMTE4W",
-  "status": "todo",
+  "revision": "06FGXQQ39SZ4H3D3KV59Z0CJ18",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/analyzers",
-    "area/package",
     "area/compatibility",
-    "area/tests"
+    "area/package",
+    "area/tests",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FGX5EDA7K8EDEMAET71J565G",
   "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
   "created-at": "2026-06-28T14:15:46.9020840Z",
-  "updated-at": "2026-06-28T14:20:39.4223051Z"
+  "updated-at": "2026-06-28T15:35:16.0465829Z"
 }
