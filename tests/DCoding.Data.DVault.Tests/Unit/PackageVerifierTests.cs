@@ -360,6 +360,36 @@ public sealed class PackageVerifierTests {
   }
 
   [Fact]
+  public void MissingAnalyzerXmlDocumentationFailsWithAnalyzerAssetPath() {
+    using var packageDirectory = PackageDirectory.Create();
+    var options = CreatePackageOptions();
+    options["DCoding.Data.DVault.Analyzers"].IncludeXmlDocumentation = false;
+    WritePackageMatrix(packageDirectory.Path, options);
+
+    var result = Verify(packageDirectory.Path);
+
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == "DCoding.Data.DVault.Analyzers" &&
+            issue.Message.Contains("analyzers/dotnet/cs/DCoding.Data.DVault.Analyzers.xml", StringComparison.Ordinal));
+  }
+
+  [Fact]
+  public void MissingAnalyzerDllFailsWithAnalyzerAssetPath() {
+    using var packageDirectory = PackageDirectory.Create();
+    var options = CreatePackageOptions();
+    options["DCoding.Data.DVault.Analyzers"].IncludeAnalyzerDll = false;
+    WritePackageMatrix(packageDirectory.Path, options);
+
+    var result = Verify(packageDirectory.Path);
+
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == "DCoding.Data.DVault.Analyzers" &&
+            issue.Message.Contains("analyzers/dotnet/cs/DCoding.Data.DVault.Analyzers.dll", StringComparison.Ordinal));
+  }
+
+  [Fact]
   public void MissingSymbolPdbFailsWithPackageName() {
     using var packageDirectory = PackageDirectory.Create();
     var options = CreatePackageOptions();
@@ -721,7 +751,7 @@ public sealed class PackageVerifierTests {
       WriteTextEntry(archive, xmlPath, "<doc />\n");
     }
 
-    if (package.IsAnalyzer) {
+    if (package.IsAnalyzer && options.IncludeAnalyzerDll) {
       WriteBinaryEntry(archive, "analyzers/dotnet/cs/" + package.Id + ".dll", [1, 2, 3]);
     }
   }
@@ -937,6 +967,8 @@ public sealed class PackageVerifierTests {
     public bool IncludeReadme { get; set; } = true;
 
     public bool IncludeXmlDocumentation { get; set; } = true;
+
+    public bool IncludeAnalyzerDll { get; set; } = true;
 
     public bool IncludeSymbolPdb { get; set; } = true;
 

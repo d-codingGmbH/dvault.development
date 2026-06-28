@@ -9,6 +9,7 @@ public sealed class ProviderIntegrationCategoryDiscoveryTests {
 #if NET10_0
       typeof(BenchmarkScenarioExecutionTests),
 #endif
+      typeof(AnalyzerSdkHostSmokeTests),
       typeof(DataVaultBridgeMaintenanceServiceSqliteTests),
       typeof(DataVaultBridgeReadServiceSqliteTests),
       typeof(DataVaultCompiledCompatibilitySqliteTests),

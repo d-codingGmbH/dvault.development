@@ -66,6 +66,27 @@ public sealed class EfCoreProviderVersionMatrixTests {
   }
 
   [Fact]
+  public void IntegrationProjectPinsNet10AnalyzerAssetForNet8ConsumerSmokeLane() {
+    var project = LoadProject("tests/DCoding.Data.DVault.Tests/Integration/DCoding.Data.DVault.Tests.Integration.csproj");
+    var analyzerReference = GetProjectReference(
+        project,
+        "../../../src/DCoding.Data.DVault.Analyzers/DCoding.Data.DVault.Analyzers.csproj");
+
+    AssertTargetFrameworks(project, ["net8.0", "net10.0"]);
+    AssertPropertyValue(project, "RunAnalyzers", "true");
+    Assert.Equal("Analyzer", analyzerReference.Attribute("OutputItemType")?.Value ?? string.Empty);
+    Assert.Equal("false", analyzerReference.Attribute("ReferenceOutputAssembly")?.Value ?? string.Empty);
+    Assert.Equal("all", analyzerReference.Attribute("PrivateAssets")?.Value ?? string.Empty);
+    Assert.Equal("TargetFramework=net10.0", analyzerReference.Attribute("SetTargetFramework")?.Value ?? string.Empty);
+    AssertFileContains(
+        "tests/DCoding.Data.DVault.Tests/Integration/AnalyzerSdkHostSmokeTests.cs",
+        "Net8ConsumerTargetCompilesGeneratedMapperOutputFromNet10AnalyzerAsset");
+    AssertFileContains(
+        "tests/DCoding.Data.DVault.Tests/Integration/AnalyzerSdkHostSmokeTests.cs",
+        "GeneratedCustomerSourceDataVaultHubMapping.CreateMapper()");
+  }
+
+  [Fact]
   public void UnitProjectPinsSqliteMatrixAndKeepsPackageVerifierOffNet8CompilePath() {
     var project = LoadProject("tests/DCoding.Data.DVault.Tests/Unit/DCoding.Data.DVault.Tests.Unit.csproj");
 
@@ -177,12 +198,35 @@ public sealed class EfCoreProviderVersionMatrixTests {
       XDocument project,
       string expectedInclude,
       string expectedCondition) {
+    var projectReference = GetProjectReference(project, expectedInclude);
+
+    Assert.Equal(expectedCondition, projectReference.Attribute("Condition")?.Value ?? string.Empty);
+  }
+
+  private static XElement GetProjectReference(XDocument project, string expectedInclude) {
     var projectReference = project
         .Descendants("ProjectReference")
         .SingleOrDefault(reference => string.Equals(reference.Attribute("Include")?.Value, expectedInclude, StringComparison.Ordinal));
 
     Assert.True(projectReference is not null, "Missing ProjectReference '" + expectedInclude + "'.");
-    Assert.Equal(expectedCondition, projectReference!.Attribute("Condition")?.Value ?? string.Empty);
+    return projectReference!;
+  }
+
+  private static void AssertPropertyValue(XDocument project, string propertyName, string expectedValue) {
+    var actualValue = project
+        .Root!
+        .Elements("PropertyGroup")
+        .Elements(propertyName)
+        .SingleOrDefault()?
+        .Value;
+
+    Assert.Equal(expectedValue, actualValue);
+  }
+
+  private static void AssertFileContains(string repositoryRelativePath, string expectedContent) {
+    var content = File.ReadAllText(GetRepositoryPath(repositoryRelativePath));
+
+    Assert.Contains(expectedContent, content, StringComparison.Ordinal);
   }
 
   private static IReadOnlyList<ProjectPackageReference> GetPackageReferences(
