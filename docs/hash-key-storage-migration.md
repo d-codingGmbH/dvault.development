@@ -59,8 +59,8 @@ Before scaffolding or applying any migration step:
   consumer application. Use live-schema facts only where the selected provider exposes them under the application's normal
   operational controls.
 - For the supported caller-owned design-time path, run the `hash-key-storage-migration` preflight command with the captured
-  source support bundle and review the generated `dvault.hash-key-storage-migration.v1` manifest before applying any schema or
-  data conversion.
+  source support bundle, then validate and review the generated `dvault.hash-key-storage-migration.v1` manifest before
+  applying any schema or data conversion.
 - Identify every DVault-owned `HashKey` and `ParticipantReference` column across generated hubs, links, satellites, PITs, and
   bridges in the model boundary being migrated.
 - Compare the source and target storage profile for every identified property. A storage-only migration should move
@@ -84,86 +84,82 @@ text, credentials, connection strings, provider messages, or diagnostic payload 
 
 ## Manifest Validation Contract
 
-The v1 review manifest schema version is `dvault.hash-key-storage-migration.v1`. A validator must treat the manifest as a
-preflight contract for one complete selected model boundary. It must not execute migrations, open a live database by default,
-generate SQL, mutate data, repair schemas, backfill, dual-write, reconcile, or rehash when the manifest is invalid or
-ambiguous.
+The v1 review manifest schema version is `dvault.hash-key-storage-migration.v1`. The design-time
+`hash-key-storage-migration` command produces this manifest from a reviewed source `dvault.support-bundle.v1` and the current
+configured design-time model. The lower-level machine-checkable validation surface is
+`DataVaultHashKeyStorageMigrationManifestValidator.ValidateJson(...)`; applications that want one consumer-owned preflight
+entrypoint can pass the serialized manifest through `DataVaultPreflightRequest.HashKeyStorageMigrationManifestJson` and run
+`DataVaultPreflight.Run(...)`.
 
-The required top-level contract facts are:
+Both validation surfaces treat the manifest as a review artifact for one complete selected model boundary. They do not execute
+migrations, open a live database by default, generate SQL, mutate data, repair schemas, backfill, dual-write, reconcile, or
+rehash when the manifest is invalid or ambiguous.
+
+The implemented top-level manifest shape is:
 
 - `schemaVersion`: exactly `dvault.hash-key-storage-migration.v1`.
-- `selectedModelBoundary`: the adopter-owned boundary being migrated, including the metadata source kind and, when available,
-  the metadata source fingerprint from the reviewed baseline.
-- `reviewedSourceEvidence`: the redacted `dvault.support-bundle.v1` or equivalent translated EF metadata that supplied the
-  source facts. This evidence is authoritative for storage-profile and algorithm drift; live-schema evidence is supplemental.
-- `providerProfileId`: one of the built-in v1 provider capability profile ids: `sqlite-v1`, `oracle-v1`, `postgres-v1`,
-  `sqlserver-v1`, `db2-v1`, or `mysql-pomelo-v1`.
-- `modelHashFacts`: the model-level `algorithmId`, `digestByteLength`, and `digestEncoding`. `digestEncoding` must be
-  `lowercase-hex-no-prefix`.
-- `expectedStorageProfiles`: `source=HexString` and `target=Binary` for v1. Other directions, same-profile audits, and custom
-  profile flows are outside this manifest version.
-- `coverage`: one entry for every in-scope DVault-owned `HashKey` and `ParticipantReference` column in the selected model
-  boundary.
-- `validation`: deterministic `error`, `warning`, and `info` findings for the same manifest input.
+- `dryRun`: `enabled=true`, `status=compatible-review-only`, `databaseMutation=none`, `migrationApplication=not-run`,
+  `publicHashKeyBoundary=lowercase-hex-no-prefix`, and the `targetDiagnosticsSourceKind` used for the current model facts.
+- `source` and `target`: endpoint metadata for the reviewed source baseline and current design-time target, including
+  `metadataSourceKind`, `metadataSourceFingerprint`, `providerName`, `capabilityProfile`, and
+  `capabilityProfileDefaulted`.
+- `comparison`: `intendedChange=HexString-to-Binary`, `compatibilityStatus=compatible-storage-profile-flip`, deterministic
+  `entryCount`, `hashKeyColumnCount`, `participantReferenceColumnCount`, and `ordering=ordinal by tableName then propertyName`.
+- `entries`: one ordered entry for every in-scope DVault-owned `HashKey` and `ParticipantReference` column in the compared
+  model boundary.
 
-Each `coverage` entry must identify the persisted column and repeat the complete compatibility fact set for both the source
-and target shape:
+Each `entries` item identifies the persisted column and repeats the complete compatibility fact set for both `source` and
+`target`:
 
-- logical property kind: `HashKey` or `ParticipantReference`
-- table name and column name
-- source and target storage profile
-- provider store type
-- provider value format
-- EF CLR model type
-- conversion behavior
-- `algorithmId`
-- `digestByteLength`
-- digest encoding
+- `ordinal`, `tableName`, `tableKind`, `entityMetadataName`, `propertyName`, `propertyRole`, `technicalRole`,
+  `logicalPropertyKind`, and `propertyMetadataName`.
+- `storageProfile`: `HexString` for the source facts and `Binary` for the target facts.
+- `providerStoreType` and `providerValueFormat`: `LowercaseHexText` for source provider values and `LowercaseHexBinary` for
+  target provider values.
+- `efClrModelType`: `System.String` for both source and target, because public and EF model hash-key values remain strings.
+- `conversionBehavior`: `none-string-model` for source and `lowercase-hex-string-to-bytes` for target.
+- `algorithmId`, `digestByteLength`, and `digestEncoding`; digest encoding must stay `lowercase-hex-no-prefix`.
 
 Coverage is complete-boundary coverage, not a caller-selected subset. Every generated hub, link, satellite, PIT, and bridge
-hash-key or hash-key-reference column in the reviewed boundary must appear exactly once. The validator must compare coverage by
-stable table and column identity after normalizing provider-specific casing only where the selected provider profile documents
-that normalization.
+hash-key or hash-key-reference column in the reviewed boundary must appear exactly once. The visible built-in v1 capability
+profile baseline is finite: `sqlite-v1`, `oracle-v1`, `postgres-v1`, `sqlserver-v1`, `db2-v1`, and `mysql-pomelo-v1`.
 
-The validator must emit blocking `error` findings for:
+The validator emits blocking `error` findings for:
 
-- a missing required top-level field or missing per-column compatibility fact
-- missing or duplicate in-scope `HashKey` or `ParticipantReference` coverage
+- a missing required top-level section or missing per-column compatibility fact
+- malformed `dryRun`, `source`, `target`, `comparison`, or `entries` values
+- missing, duplicate, non-contiguous, or count-mismatched `HashKey` or `ParticipantReference` coverage
 - mixed, partial, or ambiguous source or target storage profiles inside the selected boundary
-- an unsupported `providerProfileId`, storage profile, provider value format, conversion behavior, stable-hash algorithm id,
-  digest byte length, or digest encoding
-- changed `algorithmId`, `digestByteLength`, or digest encoding between source and target facts
-- any decision that treats column width, store type, or payload size alone as compatibility proof
+- an unsupported provider, capability profile, storage profile, provider value format, conversion behavior, stable-hash
+  algorithm id, digest byte length, or digest encoding
+- changed provider, capability profile, metadata source fingerprint, `algorithmId`, `digestByteLength`, or digest encoding
+  between source and target facts
+- a target provider store type that has not changed for the `HexString` to `Binary` storage-profile flip
 - the `sha1-v1` versus `sha256-160-v1` same-size case, because equal 20-byte digests do not make the algorithms compatible
-- any attempted migration execution, SQL generation, data conversion, repair, or live-schema-only decision while validation has
-  errors
 
-The validator may emit `warning` findings only for non-blocking evidence gaps, such as a provider live-schema reader being
-unavailable or intentionally skipped after the reviewed support bundle or translated metadata supplied the authoritative facts.
-Warnings must not be used for structural manifest defects, coverage gaps, unsupported values, profile drift, algorithm drift,
-digest drift, or encoding drift.
+Warnings are non-structural only and do not block `DataVaultPreflight.Run(...)`. The visible warning lane is a defaulted
+endpoint capability profile (`capabilityProfileDefaulted=true`), which should be reviewed for provider provenance before
+planning a cutover. Warnings must not be used for structural manifest defects, coverage gaps, unsupported values, profile
+drift, algorithm drift, digest drift, or encoding drift.
 
-The validator should emit `info` findings for recognized baseline facts and deterministic coverage totals, including the
-provider profile id, stable-hash algorithm id, digest byte length, digest encoding, total coverage count, `HashKey` count, and
-`ParticipantReference` count.
+The validator emits `info` findings for recognized compatible manifests and keeps output deterministic for the same input. It
+sorts findings by severity rank (`error`, then `warning`, then `info`), stable code, table name, column name, and JSON path
+using ordinal string comparison. Every finding carries a stable severity, code, JSON path, message, and, when applicable,
+expected and actual values. Messages stay redacted and do not include raw hash-key values, raw business keys, SQL text,
+credentials, connection strings, or provider exception text.
 
-Finding output must be stable for the same manifest input. Sort findings by severity rank (`error`, then `warning`, then
-`info`), then by stable code, table name, column name, and JSON path using ordinal string comparison. Every finding must carry
-a stable severity, code, JSON path, message, and, when applicable, expected and actual values. Messages must stay redacted and
-must not include raw hash-key values, raw business keys, SQL text, credentials, connection strings, or provider exception text.
-
-Use this bounded matrix when reviewing or implementing the v1 validator:
+Use this bounded matrix when reviewing the v1 validator result:
 
 | Scenario | Expected result |
 | --- | --- |
-| Complete `HexString` source to `Binary` target coverage for one supported provider, unchanged hash facts, and redacted reviewed source evidence | Valid; emit `info` baseline and coverage totals. |
-| One hub, link, satellite, PIT, or bridge hash-key/reference column from the reviewed boundary is absent | Invalid; emit `error` for missing coverage. |
-| The same table and column identity appears more than once | Invalid; emit `error` for duplicate coverage. |
-| Source coverage mixes `HexString` and `Binary`, or target coverage mixes profiles inside the selected boundary | Invalid; emit `error` for mixed or ambiguous profile facts. |
-| Provider or provider profile id is not in the built-in v1 baseline | Invalid; emit `error` for unsupported provider/profile values. |
+| Complete `HexString` source to `Binary` target entries for one supported provider, unchanged hash facts, and reviewed source support-bundle facts | Valid; emit `info` compatibility finding. |
+| One hub, link, satellite, PIT, or bridge hash-key/reference column from the reviewed boundary is absent or the comparison counts do not match the entries | Invalid; emit `error` for missing or count-mismatched coverage. |
+| The same `tableName` and `propertyName` identity appears more than once | Invalid; emit `error` for duplicate coverage. |
+| Source entries mix `HexString` and `Binary`, or target entries mix profiles inside the selected boundary | Invalid; emit `error` for mixed profile facts. |
+| Provider or capability profile is not in the built-in v1 baseline | Invalid; emit `error` for unsupported provider or profile values. |
 | Source and target use different `algorithmId`, `digestByteLength`, or digest encoding | Invalid; emit `error` for hash-fact drift. |
 | `sha1-v1` source is compared with `sha256-160-v1` target and both report 20 digest bytes | Invalid; emit `error` for algorithm drift despite equal byte length. |
-| Provider live-schema evidence is unavailable, but reviewed support-bundle or translated metadata facts are complete | Valid with `warning`; treat live-schema evidence as supplemental only. |
+| A source or target endpoint has `capabilityProfileDefaulted=true`, while the rest of the manifest is structurally valid | Valid with `warning`; review provider provenance before cutover planning. |
 
 ## Execution Sequence
 
@@ -181,16 +177,20 @@ Use this bounded matrix when reviewing or implementing the v1 validator:
    closed if any compatibility fact changes outside the intended `HexString` to `Binary` storage-profile flip. The generated
    manifest is for CI and change-record review; it is not a migration runner, backfill tool, dual-write mode, repair path, or
    schema synchronizer.
-4. Build a provider-specific consumer migration or data-move script that changes the generated hash-key and
+4. Validate and review the generated manifest before building migration work. Use
+   `DataVaultHashKeyStorageMigrationManifestValidator.ValidateJson(...)` directly, or pass the manifest JSON to
+   `DataVaultPreflight.Run(...)` through `DataVaultPreflightRequest.HashKeyStorageMigrationManifestJson`. Treat any error
+   finding as a failed pre-change gate. Warning-only manifests are non-blocking but still require review.
+5. Build a provider-specific consumer migration or data-move script that changes the generated hash-key and
    participant-reference storage from `HexString` to `Binary` and converts each persisted lowercase-hex digest to its byte
    representation.
-5. Include all generated DVault hash-key references in the same planned cutover. Do not leave hub hash keys and link, satellite,
+6. Include all generated DVault hash-key references in the same planned cutover. Do not leave hub hash keys and link, satellite,
    PIT, or bridge references on different physical profiles inside one migrated model boundary.
-6. Dry-run the full change against a restored production-like copy. Validate row counts, relationship checks, representative
+7. Dry-run the full change against a restored production-like copy. Validate row counts, relationship checks, representative
    read paths, and representative save paths before attempting production cutover.
-7. At cutover, freeze writes, take the approved backup or snapshot, apply the schema and data conversion, and run the same
+8. At cutover, freeze writes, take the approved backup or snapshot, apply the schema and data conversion, and run the same
    validation checks before resuming writers.
-8. After cutover, capture a fresh support bundle or equivalent translated metadata output and compare it to the intended target
+9. After cutover, capture a fresh support bundle or equivalent translated metadata output and compare it to the intended target
    facts. Resume writes only after the target profile, algorithm id, digest byte length, provider store type, provider value
    format, and conversion behavior match the plan.
 
@@ -221,6 +221,7 @@ Use concrete checkpoints before, during, and after cutover:
 | Before migration | Source support-bundle or translated metadata facts are captured for every `HashKey` and `ParticipantReference`. |
 | Before migration | `algorithmId`, `digestByteLength`, and `lowercase-hex-no-prefix` encoding are unchanged from the approved source baseline. |
 | Before migration | Target provider store type, value format, and conversion behavior are explicitly reviewed for the selected provider profile. |
+| Before migration | The `dvault.hash-key-storage-migration.v1` manifest validates without error findings through the direct validator or the aggregate preflight lane. |
 | Dry run | All generated hash-key and reference columns are converted together on a restored copy, with application-owned row-count and relationship checks passing. |
 | Cutover | Writers are frozen, backup or snapshot is complete, schema and data conversion run in the approved order, and validation passes before writers resume. |
 | After cutover | Fresh support-bundle or translated metadata facts show `Binary`, the same `algorithmId`, the same digest byte length, expected provider store types, expected provider value formats, and `lowercase-hex-string-to-bytes` conversion behavior. |
