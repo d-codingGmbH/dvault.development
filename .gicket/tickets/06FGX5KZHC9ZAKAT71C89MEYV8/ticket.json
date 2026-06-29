@@ -3,21 +3,20 @@
   "ticket-id": "06FGX5KZHC9ZAKAT71C89MEYV8",
   "ticket-type": "story",
   "title": "Story: Harden optional privacy adoption without owning compliance",
-  "revision": "06FGX6J3K79E36SWNB1T47TBY4",
-  "status": "todo",
+  "revision": "06FH5A7PZXS7WE52A2DPTAZC60",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
-    "area/privacy",
-    "area/documentation",
     "area/diagnostics",
-    "area/ef-core"
+    "area/documentation",
+    "area/ef-core",
+    "area/privacy",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FGX5EE4MKZGBRT6N8WDD1MXR",
   "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
   "created-at": "2026-06-28T14:16:16.2542623Z",
-  "updated-at": "2026-06-28T14:20:18.7133416Z"
+  "updated-at": "2026-06-29T09:14:51.0071784Z"
 }
