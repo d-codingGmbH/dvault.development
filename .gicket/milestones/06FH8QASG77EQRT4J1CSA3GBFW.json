@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestone-id": "06FH8QASG77EQRT4J1CSA3GBFW",
+  "name": "v0.51.0 - Provider-native privacy crypto capabilities",
+  "description": "Expose optional provider-native crypto capability facts and privacy integration hooks so consumers can opt into native database crypto functions while keeping custom privacy implementations supported.",
+  "status": "active",
+  "created-at": "2026-06-29T17:11:29.9214872Z"
+}

@@ -1,0 +1,1 @@
+﻿Add static provider capability reporting for SQL Server, PostgreSQL, MySQL, Oracle, DB2, and SQLite. Record supported, conditional, and unsupported DB-native crypto functions without probing live databases by default. Ensure diagnostics/support bundles expose redacted capability facts and do not leak keys, payload values, SQL secrets, or connection strings.

@@ -1,0 +1,14 @@
+{
+  "event-id": "06FH8RBFKWPKP7WRAVF4JC0YGG",
+  "occurred-at": "2026-06-29T17:15:57.7279631Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Refresh provider benchmark gap matrix and choose actionable parity gaps",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

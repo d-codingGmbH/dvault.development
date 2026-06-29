@@ -1,0 +1,1 @@
+﻿Implement selected save-path improvements from the refreshed gap matrix. Scope includes provider-specific bulk/staged/direct strategy fixes, threshold tuning, diagnostics/fallback behavior, and tests. Do not add deployment automation, stored-procedure default dispatch, or provider behavior without evidence.

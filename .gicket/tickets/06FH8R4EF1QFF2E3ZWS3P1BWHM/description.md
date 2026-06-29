@@ -1,0 +1,1 @@
+﻿Add deterministic proof that a net8.0 consumer project can restore, build, and run DVault analyzers with a .NET 8 SDK host. Update CI or local validation lanes, package verifier checks, analyzer package tests, and stale-guidance guards so unsupported net10-only analyzer assets cannot regress the 8.51.0 line.

@@ -1,0 +1,14 @@
+{
+  "event-id": "06FH8RJKZRJS9N9JBE7E9SXJCG",
+  "occurred-at": "2026-06-29T17:16:56.1905623Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Expose provider crypto capability facts from supported provider packages",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

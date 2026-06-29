@@ -1,0 +1,1 @@
+﻿Update README, analyzer README, package compatibility, local validation, manual publication, and release notes after the analyzer implementation and proof land. Remove the v0.50 pure-.NET-8 no-go wording only where evidence now proves support, and keep exact boundaries for supported SDK hosts and package lines.

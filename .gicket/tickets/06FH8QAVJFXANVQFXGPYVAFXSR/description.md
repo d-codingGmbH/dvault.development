@@ -1,0 +1,1 @@
+﻿Implement real analyzer host compatibility for both supported package lines. The 8.51.0 analyzer package must be usable from a pure .NET 8 SDK build host, while 10.51.0 keeps the existing .NET 10 path. Preserve PrivateAssets analyzer semantics, no runtime dependency leakage, and no unsupported broad compiler-version claims.

@@ -1,0 +1,14 @@
+{
+  "event-id": "06FH8RHDB07ZTHND96NTSB86NM",
+  "occurred-at": "2026-06-29T17:16:46.2961171Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Define provider-native crypto capability contract and privacy boundary",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

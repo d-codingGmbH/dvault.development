@@ -1,0 +1,14 @@
+{
+  "event-id": "06FH8RPWVBPSYFB14GTMF6WF0C",
+  "occurred-at": "2026-06-29T17:17:31.2262258Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Update v0.51.0 release notes and package validation baselines",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

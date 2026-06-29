@@ -1,0 +1,1 @@
+﻿Apply the selected analyzer target and package layout so the analyzer can load under a pure .NET 8 SDK host. Normalize Roslyn/Workspaces/composition references or split code-fix assets as needed. Preserve analyzer/source-generator behavior, XML docs, PrivateAssets guidance, and no runtime lib dependency leakage.

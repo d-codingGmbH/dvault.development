@@ -1,0 +1,1 @@
+﻿Add an opt-in privacy configuration surface that lets consumers keep custom encrypted payload implementations or select a provider-native crypto capability when available. The API must fail closed when requested native support is unavailable, keep custom implementations supported, avoid implicit provider behavior, and remain compatible with EF Core mapping constraints.

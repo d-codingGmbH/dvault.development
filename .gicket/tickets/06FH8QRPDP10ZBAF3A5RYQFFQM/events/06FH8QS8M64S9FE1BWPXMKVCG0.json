@@ -1,0 +1,14 @@
+{
+  "event-id": "06FH8QS8M64S9FE1BWPXMKVCG0",
+  "occurred-at": "2026-06-29T17:13:28.4819457Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Design analyzer asset and dependency strategy for .NET 8 hosts",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

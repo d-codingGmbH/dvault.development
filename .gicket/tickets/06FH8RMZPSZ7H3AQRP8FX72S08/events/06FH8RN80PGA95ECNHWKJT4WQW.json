@@ -1,0 +1,14 @@
+{
+  "event-id": "06FH8RN80PGA95ECNHWKJT4WQW",
+  "occurred-at": "2026-06-29T17:17:17.7016453Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Document provider-native crypto capabilities and adoption caveats",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

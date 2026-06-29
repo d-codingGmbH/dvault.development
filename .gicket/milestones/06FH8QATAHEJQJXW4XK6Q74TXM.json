@@ -1,0 +1,8 @@
+{
+  "$schema": "https://schemas.d-coding.de/gicket/milestone/v1",
+  "milestone-id": "06FH8QATAHEJQJXW4XK6Q74TXM",
+  "name": "v0.51.0 - Release docs and package validation",
+  "description": "Align release notes, package versions, package verification, adoption docs, and compatibility guidance for the v0.51.0 / 8.51.0 / 10.51.0 release.",
+  "status": "active",
+  "created-at": "2026-06-29T17:11:30.1322194Z"
+}

@@ -1,0 +1,1 @@
+﻿Design the provider-native crypto capability model. Cover provider capability facts, function families, encryption/decryption direction, key ownership, migrations/schema implications, unsupported/conditional states, diagnostics, and non-goals. Preserve existing custom encrypted payload providers and avoid claiming DSGVO/GDPR compliance or managed key lifecycle.

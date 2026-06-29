@@ -1,0 +1,1 @@
+﻿Review current benchmark artifacts and rerun targeted benchmark lanes where available. Produce or update a provider optimization gap matrix that identifies concrete gaps by provider and path: save, latest-satellite read, PIT read, bridge read, and PIT/bridge maintenance. Mark each gap as implement-now, evidence-only, or defer with reason.

@@ -1,0 +1,14 @@
+{
+  "event-id": "06FH8R3BBJ971CY73WT3GC2XNG",
+  "occurred-at": "2026-06-29T17:14:51.1005028Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Implement analyzer .NET 8 host asset layout and Roslyn dependency normalization",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

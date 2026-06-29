@@ -1,0 +1,1 @@
+﻿Bring supported provider packages closer to parity where benchmark evidence shows meaningful save/read/PIT/bridge gaps. Keep changes inside EF Core provider libraries, retain provider-neutral fallback, and document any gap that remains due to provider limits or missing live infrastructure.

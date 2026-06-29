@@ -1,0 +1,14 @@
+{
+  "event-id": "06FH8R7S7737SYJGEN1C0ZRD8C",
+  "occurred-at": "2026-06-29T17:15:27.4175596Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Update analyzer compatibility docs for true .NET 8 and .NET 10 support",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

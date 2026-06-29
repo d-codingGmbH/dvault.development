@@ -1,0 +1,1 @@
+﻿Enable privacy adopters to discover and opt into provider-native database crypto capabilities where a provider package can support them, while keeping caller-owned custom encryption/key-provider implementations first-class and preserving DVault privacy non-goals.

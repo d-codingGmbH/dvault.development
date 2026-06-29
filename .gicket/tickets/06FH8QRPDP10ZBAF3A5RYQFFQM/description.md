@@ -1,0 +1,1 @@
+﻿Turn the v0.50 analyzer audit into a concrete implementation plan. Decide whether the supported package shape is netstandard2.0, net8.0 plus net10.0, or split analyzer/code-fix assets. Cover Roslyn, Workspaces, System.Composition, System.Text.Json, analyzer package paths, and package-verifier expectations. Non-goal: silently keeping the v0.50 net10-only baseline.

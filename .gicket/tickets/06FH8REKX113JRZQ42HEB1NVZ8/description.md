@@ -1,0 +1,1 @@
+﻿Run or collect the benchmark evidence for the implemented provider parity changes. Update artifacts, performance profiles, provider optimization matrices, and caveats. Document remaining provider gaps explicitly rather than implying equal performance across all databases.

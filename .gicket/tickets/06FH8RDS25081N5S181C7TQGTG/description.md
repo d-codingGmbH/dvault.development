@@ -1,0 +1,1 @@
+﻿Implement selected read-path improvements from the refreshed gap matrix for latest-satellite, PIT, bridge, or maintenance-read shapes. Keep provider-specific SQL behind existing diagnostics-gated strategy selection and provider-neutral fallback. Add parity tests and skipped-provider evidence where live infrastructure is unavailable.

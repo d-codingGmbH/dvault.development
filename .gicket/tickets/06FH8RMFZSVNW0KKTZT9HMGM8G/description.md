@@ -1,0 +1,1 @@
+﻿Add a bounded provider-native crypto usage proof for the most feasible provider path plus fallback and unsupported-provider tests for the rest. Use live-provider tests only behind DVAULT_TEST_* gates. Prove that native selection is explicit, custom implementations still work, unsupported capabilities fail closed, and diagnostics remain redacted.

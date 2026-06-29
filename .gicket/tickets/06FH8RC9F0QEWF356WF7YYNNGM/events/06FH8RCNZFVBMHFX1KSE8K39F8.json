@@ -1,0 +1,14 @@
+{
+  "event-id": "06FH8RCNZFVBMHFX1KSE8K39F8",
+  "occurred-at": "2026-06-29T17:16:07.5477054Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Task: Close selected provider save-strategy parity gaps",
+    "status": "todo",
+    "ticket-type": "task"
+  }
+}

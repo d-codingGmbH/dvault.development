@@ -1,0 +1,14 @@
+{
+  "event-id": "06FH8R9NMV0Z3F0PTVN1F0NXNR",
+  "occurred-at": "2026-06-29T17:15:42.8865510Z",
+  "event-type": "TicketCreated",
+  "actor": {
+    "name": "David Ullrich",
+    "email": "david.ullrich@d-coding.de"
+  },
+  "payload": {
+    "title": "Story: Close provider optimization parity gaps from benchmark evidence",
+    "status": "todo",
+    "ticket-type": "story"
+  }
+}

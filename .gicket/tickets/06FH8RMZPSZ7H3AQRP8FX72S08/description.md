@@ -1,0 +1,1 @@
+﻿Update privacy docs, getting started, adoption checklist, provider compatibility docs, and release notes for optional provider-native crypto capabilities. Explain supported and conditional provider functions, custom implementation coexistence, key-ownership boundaries, migration caveats, and non-goals around compliance, deletion, backup shredding, and provider provisioning.
