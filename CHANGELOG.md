@@ -2,21 +2,22 @@
 
 This changelog summarizes the public release-note trail. The detailed release records remain under [docs/releases/](docs/releases/); those files are the source of truth for scope, evidence, non-goals, and validation notes.
 
-## v0.50.0 - Release Notes and Package Validation Baseline
+## v0.50.0 - Analyzer Compatibility and Adoption Hardening
 
 - Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.50.0` / `net8.0` / EF Core 8 and `10.50.0` / `net10.0` / EF Core 10.
 - Records that the v0.50.0 release label maps to consumer package versions `8.50.0` and `10.50.0`, not to a `0.50.0` package version.
-- Adds the v0.50.0 release-note artifact as the public release-note target, replacing the previous temporary v0.49.0 release-note links.
+- Audits the analyzer package for .NET 8 SDK-host viability and keeps the supported analyzer baseline on a `.NET 10 SDK` host with explicit package-verifier and smoke-test guardrails.
+- Adds privacy alias coverage reporting and provider-native encryption boundary facts without claiming compliance automation, key lifecycle ownership, provider probing, or encrypted DDL generation.
+- Adds machine-checkable `dvault.hash-key-storage-migration.v1` manifest validation and wires it into preflight as a review-only migration planning lane.
 - Aligns README, package compatibility, manual publication, local validation, package verification, and shared implementation standards around the v0.50.0 documentation baseline.
-- Preserves the `.NET 10 SDK` analyzer build-host baseline, separate `8.50.0` and `10.50.0` package-line guidance, and stale-version package-verifier guardrails.
-- Keeps provider performance claims, package publication, package signing, and broader analyzer-host compatibility outside the current release claim set.
+- Keeps provider performance claims, package publication, package signing, pure `.NET 8 SDK` analyzer support, provider-native encryption behavior, and automatic hash-key migration execution outside the current release claim set.
 
 See [DVault v0.50.0 Release Notes](docs/releases/v0.50.0.md).
 
 ## v0.49.0 - Modeling and Generator Parity Refinement
 
-- Defined the v0.49.0 coordinated package and documentation baseline for the visible consumer package lines: `8.50.0` / `net8.0` / EF Core 8 and `10.50.0` / `net10.0` / EF Core 10.
-- Recorded that the v0.49.0 release label maps to consumer package versions `8.50.0` and `10.50.0`, not to a `0.49.0` package version.
+- Defined the v0.49.0 coordinated package and documentation baseline for the visible consumer package lines: `8.49.0` / `net8.0` / EF Core 8 and `10.49.0` / `net10.0` / EF Core 10.
+- Recorded that the v0.49.0 release label maps to consumer package versions `8.49.0` and `10.49.0`, not to a `0.49.0` package version.
 - Adds generated link mapper parity for repeated same-hub links when declarations use explicit unique produced participant names.
 - Adds ordered `linkParticipants` support-bundle explain facts so repeated same-hub roles are traceable without raw request values.
 - Keeps dependent child key modeling deferred, keeps effectivity as caller-owned link-parent satellite state, and keeps raw model-first mapper generation outside the current public claim set.

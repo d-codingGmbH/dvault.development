@@ -3,6 +3,6 @@
   "milestone-id": "06FGX5EFRWJ5JTWV0V7YG83380",
   "name": "v0.50.0 - Release docs and package validation",
   "description": "Align release notes, package verifier expectations, README guidance, and compatibility documentation for the v0.50.0 / 8.50.0 / 10.50.0 release.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-28T14:15:26.9197347Z"
 }

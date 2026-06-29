@@ -3,6 +3,6 @@
   "milestone-id": "06FGX5EDA7K8EDEMAET71J565G",
   "name": "v0.50.0 - Analyzer .NET 8 build-host compatibility",
   "description": "Evaluate and, if feasible, deliver analyzer package support for pure .NET 8 SDK build hosts while preserving the analyzer as a local PrivateAssets build-time package.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-28T14:15:26.2892299Z"
 }

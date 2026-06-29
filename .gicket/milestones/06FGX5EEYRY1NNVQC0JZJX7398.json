@@ -3,6 +3,6 @@
   "milestone-id": "06FGX5EEYRY1NNVQC0JZJX7398",
   "name": "v0.50.0 - Binary migration manifest validation",
   "description": "Make the existing hash-key storage migration manifest path machine-checkable so consumers can dry-run HexString-to-Binary migration plans before changing EF migrations or data.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-28T14:15:26.7101563Z"
 }
