@@ -66,15 +66,20 @@ The storage-profile migration manifest version is `dvault.hash-key-storage-migra
 contract for a selected existing model boundary moving from `HexString` to `Binary`; it is not a generic profile-conversion
 framework and it is not a migration runner.
 
-A valid manifest must declare these top-level facts:
+A valid manifest has exactly these top-level sections:
 
-- schema version: `dvault.hash-key-storage-migration.v1`
-- selected model boundary, including metadata source kind and any reviewed metadata source fingerprint
-- reviewed source evidence provenance from a redacted `dvault.support-bundle.v1` or equivalent translated EF metadata baseline
-- provider profile id from the visible built-in baseline
-- model-level `algorithmId`, `digestByteLength`, and `digestEncoding=lowercase-hex-no-prefix`
-- expected source profile `HexString` and expected target profile `Binary`
-- deterministic validation findings grouped as `error`, `warning`, and `info`
+- `schemaVersion`: exactly `dvault.hash-key-storage-migration.v1`
+- `dryRun`: review-only execution metadata, including the public hash-key boundary and target diagnostics source kind
+- `source`: endpoint metadata for the reviewed source baseline, including metadata source kind, optional reviewed
+  metadata source fingerprint, provider name, capability profile, and whether the capability profile was defaulted
+- `target`: endpoint metadata for the current design-time target with the same endpoint fact shape as `source`
+- `comparison`: the intended `HexString` to `Binary` change, compatibility status, deterministic counts, and ordering contract
+- `entries`: one ordered compatibility entry for every in-scope DVault-owned `HashKey` and `ParticipantReference`
+  column in the compared boundary
+
+Validation findings are not serialized manifest input. They are deterministic output from
+`DataVaultHashKeyStorageMigrationManifestValidator.ValidateJson(...)` or the aggregate
+`DataVaultPreflight.Run(...)` lane after the manifest is parsed.
 
 The coverage section must include every DVault-owned `HashKey` and `ParticipantReference` column on generated hubs, links,
 satellites, PITs, and bridges in the selected boundary exactly once. Each coverage item must name the table and column and must
@@ -91,7 +96,7 @@ reviewed support bundle or translated metadata baseline supplied complete author
 gaps, unsupported values, profile drift, algorithm drift, digest drift, and encoding drift must be `error` findings, not
 warnings. `info` findings summarize recognized baseline facts and coverage totals.
 
-Finding production must be deterministic for the same manifest input. Sort by severity rank (`error`, `warning`, `info`), then
+Validator finding production must be deterministic for the same manifest input. Sort by severity rank (`error`, `warning`, `info`), then
 stable code, table name, column name, and JSON path using ordinal string comparison. A validator must not attempt migration
 execution, SQL generation, data conversion, repair, backfill, dual-write, or rehash work when the manifest is invalid or
 ambiguous.

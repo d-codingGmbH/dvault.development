@@ -3,21 +3,20 @@
   "ticket-id": "06FGX5VQ9Y665A727EFJ677SBC",
   "ticket-type": "story",
   "title": "Story: Make binary hash storage migration manifests verifiable",
-  "revision": "06FGX6M1H06NS5PZGC7NSZ6SRC",
-  "status": "todo",
+  "revision": "06FH6NF7GF39N0K9SY24VBQ71R",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
+    "area/diagnostics",
+    "area/ef-core",
     "area/hashing",
     "area/migrations",
-    "area/diagnostics",
-    "area/ef-core"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FGX5EEYRY1NNVQC0JZJX7398",
   "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
   "created-at": "2026-06-28T14:17:17.5989854Z",
-  "updated-at": "2026-06-28T14:20:34.5686945Z"
+  "updated-at": "2026-06-29T12:23:44.7713577Z"
 }
