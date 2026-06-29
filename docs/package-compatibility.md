@@ -54,9 +54,9 @@ The analyzer package currently ships one `net10.0` analyzer asset for both coord
 
 ## Related Guidance
 
-Release-note and changelog cross-references intentionally remain on the current v0.49.0 artifacts until the v0.50.0 release-note and changelog update lands.
+Release-note and changelog cross-references point to the current v0.50.0 release-note artifact for this package baseline.
 
-- [DVault v0.49.0 Release Notes](releases/v0.49.0.md)
+- [DVault v0.50.0 Release Notes](releases/v0.50.0.md)
 - [Manual NuGet Publication Checklist](manual-nuget-publication.md)
 - [Local Validation](local-validation.md)
 - [Analyzer Package Compatibility Audit](plans/analyzer-package-compatibility-audit.md)

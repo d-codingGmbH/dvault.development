@@ -95,7 +95,7 @@ The analyzer package is a local build-time asset, not a runtime dependency. `DCo
 
 ## Version And Dependency Alignment
 
-Use one aligned package version across all nine packages in the selected package-version line. For the v0.50.0 documentation baseline, validate `8.50.0` and `10.50.0` as separate publish approvals; do not publish `0.50.0` from the release label and do not mix packages from both lines in one consumer example or approval record. Release-note and changelog cross-references intentionally remain on the current v0.49.0 artifacts until the v0.50.0 release-note and changelog update lands. Package versions for the visible consumer lines are set explicitly by `bash tools/pack-release-packages.sh` through MinVer version overrides. Before final approval, inspect the package outputs produced by the release pack script through the package verification gate:
+Use one aligned package version across all nine packages in the selected package-version line. For the v0.50.0 documentation baseline, validate `8.50.0` and `10.50.0` as separate publish approvals; do not publish `0.50.0` from the release label and do not mix packages from both lines in one consumer example or approval record. Release-note and changelog cross-references point to the current v0.50.0 release-note artifact for this package baseline. Package versions for the visible consumer lines are set explicitly by `bash tools/pack-release-packages.sh` through MinVer version overrides. Before final approval, inspect the package outputs produced by the release pack script through the package verification gate:
 
 ```sh
 bash tools/verify-packages.sh

@@ -184,17 +184,17 @@ var latestProfile = latestProfiles.Single();
 
 Provider packages can add optimized strategies behind the same public service contract. The shared surface also includes chunked/async saves, latest/as-of satellite reads, PIT and bridge maintenance/read services, diagnostics and explain metadata, support-bundle export, model-first governance, Roslyn analyzers, and opt-in typed read-model generation.
 
-For runnable examples, the optional privacy proof, and fuller workflows, see [Getting Started](docs/getting-started.md), [examples/README.md](examples/README.md), and the current release-note artifact, [DVault v0.49.0 Release Notes](docs/releases/v0.49.0.md).
+For runnable examples, the optional privacy proof, and fuller workflows, see [Getting Started](docs/getting-started.md), [examples/README.md](examples/README.md), and the current release-note artifact, [DVault v0.50.0 Release Notes](docs/releases/v0.50.0.md).
 
 ## Package Compatibility
 
-The current coordinated package baseline is documented in [Package Compatibility](docs/package-compatibility.md). Release-note cross-references intentionally remain on the current [DVault v0.49.0 Release Notes](docs/releases/v0.49.0.md) until the v0.50.0 release-note and changelog update lands. DVault has nine packable packages, two visible consumer package lines, target-specific dependency pins, a local analyzer package boundary, and an optional privacy proof package.
+The current coordinated package baseline is documented in [Package Compatibility](docs/package-compatibility.md) and [DVault v0.50.0 Release Notes](docs/releases/v0.50.0.md). DVault has nine packable packages, two visible consumer package lines, target-specific dependency pins, a local analyzer package boundary, and an optional privacy proof package.
 
 In short:
 
 - `8.50.0` targets `net8.0` and the EF Core 8 dependency line.
 - `10.50.0` targets `net10.0` and the EF Core 10 dependency line.
-- `v0.50.0` is the documentation release label, not a NuGet package version; release-note and changelog links stay on the current v0.49.0 artifacts until the release-note update lands.
+- `v0.50.0` is the documentation release label, not a NuGet package version; release-note and changelog links point to the current v0.50.0 artifact.
 - `DCoding.Data.DVault.Analyzers` remains a local `PrivateAssets="all"` analyzer reference and currently requires a `.NET 10 SDK` build host for both package lines.
 - `DCoding.Data.DVault.Privacy` remains optional and opt-in; it provides registration and alias-driven encrypted payload conversion seams over ordinary EF Core mapped payload properties only, not compliance, automatic privacy execution, database-at-rest encryption, provider-native encrypted column/cell/row features, provider SQL crypto calls, encrypted DDL, capability probing, or runtime routing based on native encryption availability.
 - Hash-key storage guidance now routes new projects to binary-first setup and existing persisted `HexString` setups to the migration guide, reviewed dry-run manifest export, and manifest validation path.
