@@ -7,6 +7,8 @@ namespace DCoding.Data.DVault;
 /// Structured aggregate Data Vault preflight report with deterministic section status and preserved lane reports.
 /// </summary>
 public sealed class DataVaultPreflightReport {
+  private const string HashKeyStorageMigrationManifestNotProvided =
+      "No hash-key storage migration manifest JSON was provided.";
   private const string IdempotencyLiveSchemaNotProvided = "No idempotency live schema read result was provided.";
 
   /// <summary>
@@ -32,6 +34,11 @@ public sealed class DataVaultPreflightReport {
               DataVaultPreflightSectionStatus.Skipped,
               report: null,
               IdempotencyLiveSchemaNotProvided),
+          new DataVaultPreflightSection<DataVaultHashKeyStorageMigrationValidationResult>(
+              "hash-key-storage-migration-manifest",
+              DataVaultPreflightSectionStatus.Skipped,
+              report: null,
+              HashKeyStorageMigrationManifestNotProvided),
           migrationGuardrail,
           requestDiagnostics) {
   }
@@ -51,11 +58,44 @@ public sealed class DataVaultPreflightReport {
       DataVaultPreflightSection<DataVaultModelDriftPreflightReport> snapshotDrift,
       DataVaultPreflightSection<DataVaultIdempotencyPreflightReport> idempotencySchema,
       DataVaultPreflightSection<DataVaultMigrationGuardrailReport> migrationGuardrail,
+      DataVaultPreflightSection<DataVaultPreflightRequestDiagnosticsReport> requestDiagnostics)
+      : this(
+          validationProvider,
+          artifactDrift,
+          snapshotDrift,
+          idempotencySchema,
+          new DataVaultPreflightSection<DataVaultHashKeyStorageMigrationValidationResult>(
+              "hash-key-storage-migration-manifest",
+              DataVaultPreflightSectionStatus.Skipped,
+              report: null,
+              HashKeyStorageMigrationManifestNotProvided),
+          migrationGuardrail,
+          requestDiagnostics) {
+  }
+
+  /// <summary>
+  /// Initializes a new aggregate preflight report with explicit idempotency and hash-key storage migration manifest sections.
+  /// </summary>
+  /// <param name="validationProvider">The validation and provider-explain diagnostics section.</param>
+  /// <param name="artifactDrift">The artifact-versus-design-time drift section.</param>
+  /// <param name="snapshotDrift">The snapshot-model preflight drift section.</param>
+  /// <param name="idempotencySchema">The explicit idempotency constraint and index schema section.</param>
+  /// <param name="hashKeyStorageMigrationManifest">The explicit hash-key storage migration manifest validation section.</param>
+  /// <param name="migrationGuardrail">The migration operation guardrail section.</param>
+  /// <param name="requestDiagnostics">The representative request-bound diagnostics section.</param>
+  public DataVaultPreflightReport(
+      DataVaultPreflightSection<DataVaultDiagnosticsResult> validationProvider,
+      DataVaultPreflightSection<DataVaultModelDriftReport> artifactDrift,
+      DataVaultPreflightSection<DataVaultModelDriftPreflightReport> snapshotDrift,
+      DataVaultPreflightSection<DataVaultIdempotencyPreflightReport> idempotencySchema,
+      DataVaultPreflightSection<DataVaultHashKeyStorageMigrationValidationResult> hashKeyStorageMigrationManifest,
+      DataVaultPreflightSection<DataVaultMigrationGuardrailReport> migrationGuardrail,
       DataVaultPreflightSection<DataVaultPreflightRequestDiagnosticsReport> requestDiagnostics) {
     ArgumentNullException.ThrowIfNull(validationProvider);
     ArgumentNullException.ThrowIfNull(artifactDrift);
     ArgumentNullException.ThrowIfNull(snapshotDrift);
     ArgumentNullException.ThrowIfNull(idempotencySchema);
+    ArgumentNullException.ThrowIfNull(hashKeyStorageMigrationManifest);
     ArgumentNullException.ThrowIfNull(migrationGuardrail);
     ArgumentNullException.ThrowIfNull(requestDiagnostics);
 
@@ -63,6 +103,7 @@ public sealed class DataVaultPreflightReport {
     ArtifactDrift = artifactDrift;
     SnapshotDrift = snapshotDrift;
     IdempotencySchema = idempotencySchema;
+    HashKeyStorageMigrationManifest = hashKeyStorageMigrationManifest;
     MigrationGuardrail = migrationGuardrail;
     RequestDiagnostics = requestDiagnostics;
   }
@@ -86,6 +127,11 @@ public sealed class DataVaultPreflightReport {
   /// Gets the explicit idempotency constraint and index schema section.
   /// </summary>
   public DataVaultPreflightSection<DataVaultIdempotencyPreflightReport> IdempotencySchema { get; }
+
+  /// <summary>
+  /// Gets the explicit hash-key storage migration manifest validation section.
+  /// </summary>
+  public DataVaultPreflightSection<DataVaultHashKeyStorageMigrationValidationResult> HashKeyStorageMigrationManifest { get; }
 
   /// <summary>
   /// Gets the migration operation guardrail section.
@@ -131,6 +177,7 @@ public sealed class DataVaultPreflightReport {
     AppendSection(builder, ArtifactDrift, report => report.ToDisplayString());
     AppendSection(builder, SnapshotDrift, report => report.ToDisplayString());
     AppendSection(builder, IdempotencySchema, report => report.ToDisplayString());
+    AppendSection(builder, HashKeyStorageMigrationManifest, report => report.ToDisplayString());
     AppendSection(builder, MigrationGuardrail, report => report.ToDisplayString());
     AppendSection(builder, RequestDiagnostics, report => report.ToDisplayString());
 
@@ -142,6 +189,7 @@ public sealed class DataVaultPreflightReport {
     new(ArtifactDrift.Name, ArtifactDrift.Status),
     new(SnapshotDrift.Name, SnapshotDrift.Status),
     new(IdempotencySchema.Name, IdempotencySchema.Status),
+    new(HashKeyStorageMigrationManifest.Name, HashKeyStorageMigrationManifest.Status),
     new(MigrationGuardrail.Name, MigrationGuardrail.Status),
     new(RequestDiagnostics.Name, RequestDiagnostics.Status),
   ];

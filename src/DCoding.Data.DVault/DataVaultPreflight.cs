@@ -8,6 +8,8 @@ namespace DCoding.Data.DVault;
 /// </summary>
 public static class DataVaultPreflight {
   private const string ArtifactDriftNotProvided = "No reviewed model artifact import result was provided.";
+  private const string HashKeyStorageMigrationManifestNotProvided =
+      "No hash-key storage migration manifest JSON was provided.";
   private const string IdempotencyLiveSchemaNotProvided = "No idempotency live schema read result was provided.";
   private const string MigrationOperationsNotProvided = "No migration operations were provided.";
   private const string RequestDiagnosticsNotProvided = "No representative request diagnostics were provided.";
@@ -30,6 +32,7 @@ public static class DataVaultPreflight {
     var artifactDrift = CreateArtifactDriftSection(request);
     var snapshotDrift = CreateSnapshotDriftSection(request);
     var idempotencySchema = CreateIdempotencySchemaSection(request);
+    var hashKeyStorageMigrationManifest = CreateHashKeyStorageMigrationManifestSection(request);
     var migrationGuardrail = CreateMigrationGuardrailSection(validationResult, request.MigrationOperations);
     var requestDiagnostics = CreateRequestDiagnosticsSection(request);
 
@@ -38,6 +41,7 @@ public static class DataVaultPreflight {
         artifactDrift,
         snapshotDrift,
         idempotencySchema,
+        hashKeyStorageMigrationManifest,
         migrationGuardrail,
         requestDiagnostics);
   }
@@ -128,6 +132,27 @@ public static class DataVaultPreflight {
         report.HasBlockingDifferences
             ? DataVaultPreflightSectionStatus.Blocked
             : DataVaultPreflightSectionStatus.Passed,
+        report);
+  }
+
+  private static DataVaultPreflightSection<DataVaultHashKeyStorageMigrationValidationResult>
+      CreateHashKeyStorageMigrationManifestSection(
+          DataVaultPreflightRequest request) {
+    if (request.HashKeyStorageMigrationManifestJson is null) {
+      return new DataVaultPreflightSection<DataVaultHashKeyStorageMigrationValidationResult>(
+          "hash-key-storage-migration-manifest",
+          DataVaultPreflightSectionStatus.Skipped,
+          report: null,
+          HashKeyStorageMigrationManifestNotProvided);
+    }
+
+    var report = DataVaultHashKeyStorageMigrationManifestValidator.ValidateJson(
+        request.HashKeyStorageMigrationManifestJson);
+    return new DataVaultPreflightSection<DataVaultHashKeyStorageMigrationValidationResult>(
+        "hash-key-storage-migration-manifest",
+        report.IsValid
+            ? DataVaultPreflightSectionStatus.Passed
+            : DataVaultPreflightSectionStatus.Blocked,
         report);
   }
 

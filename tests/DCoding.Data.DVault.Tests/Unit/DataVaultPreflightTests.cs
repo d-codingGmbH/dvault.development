@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using DCoding.Data.DVault.Modeling;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -27,14 +29,16 @@ public sealed class DataVaultPreflightTests {
     Assert.Equal(DataVaultPreflightSectionStatus.Skipped, report.ArtifactDrift.Status);
     Assert.Equal(DataVaultPreflightSectionStatus.Skipped, report.SnapshotDrift.Status);
     Assert.Equal(DataVaultPreflightSectionStatus.Skipped, report.IdempotencySchema.Status);
+    Assert.Equal(DataVaultPreflightSectionStatus.Skipped, report.HashKeyStorageMigrationManifest.Status);
     Assert.Equal(DataVaultPreflightSectionStatus.Skipped, report.MigrationGuardrail.Status);
     Assert.Equal(DataVaultPreflightSectionStatus.Skipped, report.RequestDiagnostics.Status);
 
     var display = report.ToDisplayString();
-    Assert.Contains("DVault preflight: passed, passed 1, blocked 0, skipped 5.", display, StringComparison.Ordinal);
+    Assert.Contains("DVault preflight: passed, passed 1, blocked 0, skipped 6.", display, StringComparison.Ordinal);
     Assert.Contains("artifact-drift: skipped", display, StringComparison.Ordinal);
     Assert.Contains("snapshot-drift: skipped", display, StringComparison.Ordinal);
     Assert.Contains("idempotency-schema: skipped", display, StringComparison.Ordinal);
+    Assert.Contains("hash-key-storage-migration-manifest: skipped", display, StringComparison.Ordinal);
     Assert.Contains("migration-guardrail: skipped", display, StringComparison.Ordinal);
     Assert.Contains("request-diagnostics: skipped", display, StringComparison.Ordinal);
   }
@@ -145,6 +149,114 @@ public sealed class DataVaultPreflightTests {
     Assert.Equal("migration/DropTable/HubCustomer", issue.Path);
     Assert.Contains("migration-guardrail: blocked", report.ToDisplayString(), StringComparison.Ordinal);
     Assert.Contains("DVault migration guardrails: invalid", report.ToDisplayString(), StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void RunValidatesHashKeyStorageMigrationManifestAsSeparateOptionalLane() {
+    var metadataModel = CreateCustomerContactMetadataModel();
+    using var context = CreateContext(metadataModel);
+
+    var report = DataVaultPreflight.Run(
+        new StubDiagnosticsService(CreateDiagnosticsResult(isValid: true)),
+        new DataVaultPreflightRequest(context, metadataModel) {
+          HashKeyStorageMigrationManifestJson = CreateValidHashKeyStorageMigrationManifestJson(),
+        });
+
+    Assert.Equal(DataVaultPreflightStatus.Passed, report.Status);
+    Assert.Equal(DataVaultPreflightSectionStatus.Passed, report.HashKeyStorageMigrationManifest.Status);
+    Assert.NotNull(report.HashKeyStorageMigrationManifest.Report);
+    Assert.True(report.HashKeyStorageMigrationManifest.Report.IsValid);
+    Assert.Equal(DataVaultPreflightSectionStatus.Skipped, report.MigrationGuardrail.Status);
+    Assert.Contains("hash-key-storage-migration-manifest: passed", report.ToDisplayString(), StringComparison.Ordinal);
+    Assert.Contains("DVault hash-key storage migration manifest: valid", report.ToDisplayString(), StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void RunBlocksWhenHashKeyStorageMigrationManifestHasErrorFindings() {
+    var metadataModel = CreateCustomerContactMetadataModel();
+    using var context = CreateContext(metadataModel);
+
+    var report = DataVaultPreflight.Run(
+        new StubDiagnosticsService(CreateDiagnosticsResult(isValid: true)),
+        new DataVaultPreflightRequest(context, metadataModel) {
+          HashKeyStorageMigrationManifestJson = MutateHashKeyStorageMigrationManifest(
+              root => root["schemaVersion"] = "dvault.hash-key-storage-migration.v2"),
+          MigrationOperations = [],
+        });
+
+    Assert.Equal(DataVaultPreflightStatus.Blocked, report.Status);
+    Assert.Equal(DataVaultPreflightSectionStatus.Blocked, report.HashKeyStorageMigrationManifest.Status);
+    Assert.Equal(DataVaultPreflightSectionStatus.Passed, report.MigrationGuardrail.Status);
+    Assert.NotNull(report.HashKeyStorageMigrationManifest.Report);
+    Assert.Contains(
+        report.HashKeyStorageMigrationManifest.Report.Findings,
+        finding => finding.Code == "hash-key-migration-schema-version-unsupported");
+    Assert.Contains("hash-key-storage-migration-manifest: blocked", report.ToDisplayString(), StringComparison.Ordinal);
+    Assert.Contains("migration-guardrail: passed", report.ToDisplayString(), StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void RunKeepsHashKeyStorageMigrationManifestWarningsNonBlocking() {
+    var metadataModel = CreateCustomerContactMetadataModel();
+    using var context = CreateContext(metadataModel);
+
+    var report = DataVaultPreflight.Run(
+        new StubDiagnosticsService(CreateDiagnosticsResult(isValid: true)),
+        new DataVaultPreflightRequest(context, metadataModel) {
+          HashKeyStorageMigrationManifestJson = MutateHashKeyStorageMigrationManifest(
+              root => root["source"]!["capabilityProfileDefaulted"] = true),
+        });
+
+    Assert.Equal(DataVaultPreflightStatus.Passed, report.Status);
+    Assert.Equal(DataVaultPreflightSectionStatus.Passed, report.HashKeyStorageMigrationManifest.Status);
+    Assert.NotNull(report.HashKeyStorageMigrationManifest.Report);
+    Assert.Contains(
+        report.HashKeyStorageMigrationManifest.Report.Findings,
+        finding => finding.Severity == DataVaultDiagnosticsIssueSeverity.Warning &&
+            finding.Code == "hash-key-migration-capability-profile-defaulted");
+  }
+
+  [Fact]
+  public void RunSerializesHashKeyStorageMigrationManifestFindingsWithoutRawManifestPayload() {
+    var metadataModel = CreateCustomerContactMetadataModel();
+    using var context = CreateContext(metadataModel);
+
+    var report = DataVaultPreflight.Run(
+        new StubDiagnosticsService(CreateDiagnosticsResult(isValid: true)),
+        new DataVaultPreflightRequest(context, metadataModel) {
+          HashKeyStorageMigrationManifestJson = MutateHashKeyStorageMigrationManifest(
+              root => root["rawHashKey"] = "raw-secret-hash-key"),
+        });
+
+    var json = JsonSerializer.Serialize(report);
+
+    Assert.Contains("hash-key-migration-manifest-compatible", json, StringComparison.Ordinal);
+    Assert.DoesNotContain("raw-secret-hash-key", json, StringComparison.Ordinal);
+    Assert.DoesNotContain("rawHashKey", json, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void RunRedactsHashKeyStorageMigrationManifestStringFindingValues() {
+    var metadataModel = CreateCustomerContactMetadataModel();
+    using var context = CreateContext(metadataModel);
+
+    var report = DataVaultPreflight.Run(
+        new StubDiagnosticsService(CreateDiagnosticsResult(isValid: true)),
+        new DataVaultPreflightRequest(context, metadataModel) {
+          HashKeyStorageMigrationManifestJson = MutateHashKeyStorageMigrationManifest(
+              root => root["target"]!["metadataSourceFingerprint"] = "raw-secret-fingerprint"),
+        });
+
+    var json = JsonSerializer.Serialize(report);
+    var display = report.ToDisplayString();
+
+    Assert.Equal(DataVaultPreflightStatus.Blocked, report.Status);
+    Assert.Contains("hash-key-migration-metadata-source-fingerprint-drift", json, StringComparison.Ordinal);
+    Assert.Contains("redacted:metadata-source-fingerprint", json, StringComparison.Ordinal);
+    Assert.DoesNotContain("raw-secret-fingerprint", json, StringComparison.Ordinal);
+    Assert.Contains("hash-key-migration-metadata-source-fingerprint-drift", display, StringComparison.Ordinal);
+    Assert.Contains("<redacted:metadata-source-fingerprint>", display, StringComparison.Ordinal);
+    Assert.DoesNotContain("raw-secret-fingerprint", display, StringComparison.Ordinal);
   }
 
   [Fact]
@@ -262,6 +374,83 @@ public sealed class DataVaultPreflightTests {
               new DataVaultLiveSchemaPrimaryKey(primaryKey.Name, primaryKey.ColumnNames),
               indexes);
         }));
+  }
+
+  private static string MutateHashKeyStorageMigrationManifest(Action<JsonObject> mutate) {
+    var root = JsonNode.Parse(CreateValidHashKeyStorageMigrationManifestJson())!.AsObject();
+    mutate(root);
+    return root.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+  }
+
+  private static string CreateValidHashKeyStorageMigrationManifestJson() {
+    return """
+        {
+          "schemaVersion": "dvault.hash-key-storage-migration.v1",
+          "dryRun": {
+            "enabled": true,
+            "status": "compatible-review-only",
+            "databaseMutation": "none",
+            "migrationApplication": "not-run",
+            "publicHashKeyBoundary": "lowercase-hex-no-prefix",
+            "targetDiagnosticsSourceKind": "unit-test"
+          },
+          "source": {
+            "metadataSourceKind": "model-metadata",
+            "metadataSourceFingerprint": "source-fingerprint",
+            "providerName": "Microsoft.EntityFrameworkCore.Sqlite",
+            "capabilityProfile": "sqlite-v1",
+            "capabilityProfileDefaulted": false
+          },
+          "target": {
+            "metadataSourceKind": "model-metadata",
+            "metadataSourceFingerprint": "source-fingerprint",
+            "providerName": "Microsoft.EntityFrameworkCore.Sqlite",
+            "capabilityProfile": "sqlite-v1",
+            "capabilityProfileDefaulted": false
+          },
+          "comparison": {
+            "intendedChange": "HexString-to-Binary",
+            "compatibilityStatus": "compatible-storage-profile-flip",
+            "entryCount": 1,
+            "hashKeyColumnCount": 1,
+            "participantReferenceColumnCount": 0,
+            "ordering": "ordinal by tableName then propertyName"
+          },
+          "entries": [
+            {
+              "ordinal": 0,
+              "tableName": "HubCustomer",
+              "tableKind": "Hub",
+              "entityMetadataName": "Customer",
+              "propertyName": "CustomerHashKey",
+              "propertyRole": "HashKey",
+              "technicalRole": "HashKey",
+              "logicalPropertyKind": "HashKey",
+              "propertyMetadataName": "CustomerHashKey",
+              "source": {
+                "storageProfile": "HexString",
+                "providerStoreType": "TEXT",
+                "providerValueFormat": "LowercaseHexText",
+                "efClrModelType": "System.String",
+                "conversionBehavior": "none-string-model",
+                "algorithmId": "sha256-v1",
+                "digestByteLength": 32,
+                "digestEncoding": "lowercase-hex-no-prefix"
+              },
+              "target": {
+                "storageProfile": "Binary",
+                "providerStoreType": "BLOB",
+                "providerValueFormat": "LowercaseHexBinary",
+                "efClrModelType": "System.String",
+                "conversionBehavior": "lowercase-hex-string-to-bytes",
+                "algorithmId": "sha256-v1",
+                "digestByteLength": 32,
+                "digestEncoding": "lowercase-hex-no-prefix"
+              }
+            }
+          ]
+        }
+        """;
   }
 
   private static DataVaultMetadataModel CreateCustomerContactMetadataModel() {

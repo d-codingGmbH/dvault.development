@@ -97,8 +97,8 @@ public sealed class DataVaultHashKeyStorageMigrationManifestValidatorTests {
     Assert.Contains(result.Findings, finding =>
         finding.Code == "hash-key-migration-metadata-source-fingerprint-drift" &&
         finding.Path == "$.target.metadataSourceFingerprint" &&
-        finding.ExpectedValue == "source-fingerprint" &&
-        finding.ActualValue == "target-fingerprint");
+        finding.ExpectedValue == "<redacted:metadata-source-fingerprint>" &&
+        finding.ActualValue == "<redacted:metadata-source-fingerprint>");
   }
 
   [Fact]

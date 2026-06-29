@@ -420,7 +420,7 @@ This step does not promise guardrail output inside `dotnet ef migrations add` or
 
 ## Aggregate Preflight Facade
 
-Consumers that want one application-owned entrypoint can aggregate the explicit lanes through `DataVaultPreflight.Run(...)`. The facade validates the configured model through `IDataVaultDiagnosticsService.Analyze(DbContext)` and evaluates only the optional inputs supplied on `DataVaultPreflightRequest`: reviewed artifact import, consumer-materialized snapshot model, idempotency live-schema read result, migration operations, precomputed representative diagnostics, and representative diagnostics factories.
+Consumers that want one application-owned entrypoint can aggregate the explicit lanes through `DataVaultPreflight.Run(...)`. The facade validates the configured model through `IDataVaultDiagnosticsService.Analyze(DbContext)` and evaluates only the optional inputs supplied on `DataVaultPreflightRequest`: reviewed artifact import, consumer-materialized snapshot model, idempotency live-schema read result, serialized `dvault.hash-key-storage-migration.v1` manifest JSON, migration operations, precomputed representative diagnostics, and representative diagnostics factories.
 
 ```csharp
 using DCoding.Data.DVault;
@@ -447,6 +447,7 @@ public static class SalesVaultDvaultPreflight {
           ReviewedArtifactImport = SalesVaultArtifacts.ImportReviewedModel(),
           SnapshotModel = snapshotModel,
           IdempotencyLiveSchemaReadResult = SalesVaultLiveSchema.ReadIdempotencySnapshot(),
+          HashKeyStorageMigrationManifestJson = SalesVaultArtifacts.ReadHashKeyStorageMigrationManifestJson(),
           MigrationOperations = migration.UpOperations,
           RepresentativeDiagnosticsRequests = [
             new DataVaultPreflightRepresentativeDiagnosticsRequest(
@@ -463,7 +464,7 @@ public static class SalesVaultDvaultPreflight {
 }
 ```
 
-This facade does not change the ownership boundary. The consumer still owns the `DbContext`, factory, reviewed artifact path, snapshot materialization, live-schema access for idempotency preflight, migration resolution, representative request selection, command hosting, and CI failure policy. If an optional lane is not supplied, the aggregate report marks that lane as skipped; DVault does not scan the repository, discover EF snapshot files, discover migrations, invent representative save/read requests, open a live database, execute migrations, or repair schema.
+This facade does not change the ownership boundary. The consumer still owns the `DbContext`, factory, reviewed artifact path, snapshot materialization, live-schema access for idempotency preflight, hash-key storage migration manifest creation and file access, migration resolution, representative request selection, command hosting, and CI failure policy. If an optional lane is not supplied, the aggregate report marks that lane as skipped; DVault does not scan the repository, discover EF snapshot files, discover hash-key storage migration manifests, discover migrations, invent representative save/read requests, open a live database, execute migrations, or repair schema.
 
 ## GitHub Actions Example
 
@@ -571,7 +572,7 @@ If an adopter adds a live-schema drift lane, keep it separate from the default j
 6. Scaffold the migration normally with `dotnet ef migrations add`.
 7. Run `dotnet run --project <consumer-project> -- guardrail --migration <migration-name>` against the proposed migration `MigrationOperation` set.
 8. Print `DataVaultMigrationGuardrailReport.ToDisplayString()` and stop when guardrail findings exist.
-9. Optionally run a consumer-owned aggregate entrypoint backed by `DataVaultPreflight.Run(...)` when the project wants one report that preserves validation, drift, idempotency, migration, and representative diagnostics sections together.
+9. Optionally run a consumer-owned aggregate entrypoint backed by `DataVaultPreflight.Run(...)` when the project wants one report that preserves validation, drift, idempotency, hash-key storage migration manifest validation, migration, and representative diagnostics sections together.
 10. Run `dotnet ef database update` only after the explicit preflight steps pass.
 
 ## Unsupported In V1
@@ -583,7 +584,7 @@ If an adopter adds a live-schema drift lane, keep it separate from the default j
 - Startup-project and target-project split layouts.
 - Live-database validation as a default CI gate, automatic snapshot discovery, or provider-wide live schema drift as a first-class boundary beyond SQLite.
 - Automatic idempotency live-schema discovery, schema repair, index creation, or migration synchronization.
-- Automatic reviewed-artifact discovery, migration discovery, or representative request generation for aggregate preflight.
+- Automatic reviewed-artifact discovery, hash-key storage migration manifest discovery, migration discovery, or representative request generation for aggregate preflight.
 - Provider-specific online migration runners.
 
 The default no-live-database design-time proof remains the existing diagnostics and artifact-versus-design-time-model drift path. Broader command orchestration, broad snapshot-model documentation, and broader provider live schema drift work stay outside this v1 workflow.

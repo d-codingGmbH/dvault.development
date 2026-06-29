@@ -3,21 +3,20 @@
   "ticket-id": "06FGX6B9KQME0NJ8B810239DG0",
   "ticket-type": "task",
   "title": "Task: Wire migration manifest validation into preflight diagnostics",
-  "revision": "06FGX6SAHWC9FM9CGK421E6QVC",
-  "status": "todo",
+  "revision": "06FH5G9A4P634KGJBJ945HTQM0",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
+    "area/diagnostics",
     "area/hashing",
     "area/migrations",
-    "area/diagnostics",
-    "area/tests"
+    "area/tests",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FGX5EEYRY1NNVQC0JZJX7398",
   "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
   "created-at": "2026-06-28T14:19:26.5594681Z",
-  "updated-at": "2026-06-28T14:21:17.8392063Z"
+  "updated-at": "2026-06-29T09:41:16.9656431Z"
 }

@@ -18,6 +18,11 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
   private const string ExpectedEfClrModelType = "System.String";
   private const string ExpectedSourceConversionBehavior = "none-string-model";
   private const string ExpectedTargetConversionBehavior = "lowercase-hex-string-to-bytes";
+  private const string RedactedManifestStringValue = "<redacted:string>";
+  private const string RedactedSourceManifestStringValue = "<redacted:source-string>";
+  private const string RedactedTargetManifestStringValue = "<redacted:target-string>";
+  private const string RedactedMetadataSourceFingerprintValue = "<redacted:metadata-source-fingerprint>";
+  private const string RedactedManifestStringSetValue = "<redacted:string-set>";
 
   private static readonly IReadOnlyDictionary<string, string> ProviderProfilesByProviderName =
       new Dictionary<string, string>(StringComparer.Ordinal) {
@@ -203,7 +208,7 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
           "hash-key-migration-capability-profile-unsupported",
           path + ".capabilityProfile",
           FormatAllowedValues(BuiltInCapabilityProfiles),
-          capabilityProfile,
+          RedactedManifestStringValue,
           "The endpoint capability profile is outside the visible built-in hash-key storage migration baseline.");
     }
 
@@ -214,7 +219,7 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
             "hash-key-migration-provider-unsupported",
             path + ".providerName",
             FormatAllowedValues(ProviderProfilesByProviderName.Keys),
-            providerName,
+            RedactedManifestStringValue,
             "The endpoint provider is outside the visible built-in hash-key storage migration baseline.");
       }
       else if (capabilityProfile is not null &&
@@ -224,7 +229,7 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
             "hash-key-migration-provider-capability-mismatch",
             path + ".capabilityProfile",
             expectedCapabilityProfile,
-            capabilityProfile,
+            RedactedManifestStringValue,
             "The endpoint provider and capability profile do not describe the same built-in provider baseline.");
       }
     }
@@ -263,8 +268,8 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
           findings,
           "hash-key-migration-mixed-capability-profile",
           "$.target.capabilityProfile",
-          source.CapabilityProfile,
-          target.CapabilityProfile,
+          RedactedSourceManifestStringValue,
+          RedactedTargetManifestStringValue,
           "The source and target endpoints must use one provider capability profile for a storage-only migration.");
     }
 
@@ -275,8 +280,8 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
           findings,
           "hash-key-migration-mixed-provider",
           "$.target.providerName",
-          source.ProviderName,
-          target.ProviderName,
+          RedactedSourceManifestStringValue,
+          RedactedTargetManifestStringValue,
           "The source and target endpoints must use one provider for a storage-only migration.");
     }
 
@@ -287,8 +292,8 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
           findings,
           "hash-key-migration-metadata-source-fingerprint-drift",
           "$.target.metadataSourceFingerprint",
-          source.MetadataSourceFingerprint,
-          target.MetadataSourceFingerprint,
+          RedactedMetadataSourceFingerprintValue,
+          RedactedMetadataSourceFingerprintValue,
           "The source and target endpoints must be derived from the same reviewed metadata source.");
     }
   }
@@ -477,7 +482,7 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
             propertyName,
             path + ".storageProfile",
             ExpectedSourceStorageProfile + " or " + ExpectedTargetStorageProfile,
-            storageProfile,
+            RedactedManifestStringValue,
             "The manifest contains a storage profile outside the v1 hash-key migration vocabulary.");
       }
       else if (!string.Equals(storageProfile, expectedStorageProfile, StringComparison.Ordinal)) {
@@ -488,7 +493,7 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
             propertyName,
             path + ".storageProfile",
             expectedStorageProfile,
-            storageProfile,
+            RedactedManifestStringValue,
             "The " + baselineName + " entry does not match the expected HexString-to-Binary storage boundary.");
       }
     }
@@ -503,7 +508,7 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
             propertyName,
             path + ".providerValueFormat",
             ExpectedSourceProviderValueFormat + " or " + ExpectedTargetProviderValueFormat,
-            providerValueFormat,
+            RedactedManifestStringValue,
             "The manifest contains a provider value format outside the v1 hash-key migration vocabulary.");
       }
       else if (!string.Equals(providerValueFormat, expectedProviderValueFormat, StringComparison.Ordinal)) {
@@ -514,7 +519,7 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
             propertyName,
             path + ".providerValueFormat",
             expectedProviderValueFormat,
-            providerValueFormat,
+            RedactedManifestStringValue,
             "The " + baselineName + " entry does not match the expected provider value format.");
       }
     }
@@ -528,7 +533,7 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
           propertyName,
           path + ".efClrModelType",
           ExpectedEfClrModelType,
-          efClrModelType,
+          RedactedManifestStringValue,
           "The EF model boundary must continue to expose hash keys as strings.");
     }
 
@@ -541,7 +546,7 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
           propertyName,
           path + ".conversionBehavior",
           expectedConversionBehavior,
-          conversionBehavior,
+          RedactedManifestStringValue,
           "The conversion behavior does not match the expected storage-profile baseline.");
     }
 
@@ -554,7 +559,7 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
             propertyName,
             path + ".algorithmId",
             FormatAllowedValues(BuiltInStableHashDigestLengths.Keys),
-            algorithmId,
+            RedactedManifestStringValue,
             "The stable-hash algorithm id is outside the visible built-in baseline.");
       }
       else if (digestByteLength is not null && digestByteLength.Value != expectedDigestByteLength) {
@@ -579,7 +584,7 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
           propertyName,
           path + ".digestEncoding",
           ExpectedPublicHashKeyBoundary,
-          digestEncoding,
+          RedactedManifestStringValue,
           "The digest encoding is outside the v1 public hash-key boundary.");
     }
 
@@ -614,8 +619,8 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
           tableName,
           propertyName,
           entryPath + ".target.algorithmId",
-          source.AlgorithmId,
-          target.AlgorithmId,
+          RedactedSourceManifestStringValue,
+          RedactedTargetManifestStringValue,
           "The source and target stable-hash algorithm id must remain unchanged.");
     }
 
@@ -642,8 +647,8 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
           tableName,
           propertyName,
           entryPath + ".target.digestEncoding",
-          source.DigestEncoding,
-          target.DigestEncoding,
+          RedactedSourceManifestStringValue,
+          RedactedTargetManifestStringValue,
           "The source and target digest encoding must remain unchanged.");
     }
 
@@ -656,8 +661,8 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
           tableName,
           propertyName,
           entryPath + ".target.providerStoreType",
-          "different from " + source.ProviderStoreType,
-          target.ProviderStoreType,
+          "different from " + RedactedSourceManifestStringValue,
+          RedactedTargetManifestStringValue,
           "The provider store type must change for the HexString-to-Binary storage-profile flip.");
     }
   }
@@ -719,7 +724,7 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
           "hash-key-migration-mixed-source-storage-profile",
           "$.entries",
           ExpectedSourceStorageProfile,
-          FormatAllowedValues(sourceStorageProfiles),
+          RedactedManifestStringSetValue,
           "The source coverage contains mixed storage profiles.");
     }
 
@@ -729,7 +734,7 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
           "hash-key-migration-mixed-target-storage-profile",
           "$.entries",
           ExpectedTargetStorageProfile,
-          FormatAllowedValues(targetStorageProfiles),
+          RedactedManifestStringSetValue,
           "The target coverage contains mixed storage profiles.");
     }
 
@@ -828,7 +833,7 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
         code,
         path,
         expectedValue,
-        actualValue,
+        RedactedManifestStringValue,
         "The manifest field does not match the v1 hash-key storage migration contract.");
   }
 
@@ -1063,7 +1068,7 @@ public static class DataVaultHashKeyStorageMigrationManifestValidator {
 
   private static string FormatJsonValue(JsonElement value) {
     return value.ValueKind switch {
-      JsonValueKind.String => value.GetString() ?? "<null>",
+      JsonValueKind.String => RedactedManifestStringValue,
       JsonValueKind.Number => value.GetRawText(),
       JsonValueKind.True => "true",
       JsonValueKind.False => "false",

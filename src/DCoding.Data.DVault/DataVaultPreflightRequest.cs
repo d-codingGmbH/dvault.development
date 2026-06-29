@@ -79,6 +79,12 @@ public sealed class DataVaultPreflightRequest {
   public DataVaultLiveSchemaReadResult? IdempotencyLiveSchemaReadResult { get; init; }
 
   /// <summary>
+  /// Gets the optional serialized <c>dvault.hash-key-storage-migration.v1</c> manifest used for structural validation.
+  /// A null value skips the manifest-validation lane; callers own manifest creation and file access.
+  /// </summary>
+  public string? HashKeyStorageMigrationManifestJson { get; init; }
+
+  /// <summary>
   /// Gets optional precomputed representative diagnostics results to preserve in the aggregate report.
   /// </summary>
   public IReadOnlyList<DataVaultPreflightRepresentativeDiagnostics> RepresentativeDiagnostics { get; init; } =
