@@ -472,6 +472,14 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains("advisory metadata", issue.Message, StringComparison.Ordinal);
     Assert.Contains("no automatic encryption", issue.Message, StringComparison.Ordinal);
     Assert.DoesNotContain("column", issue.Message, StringComparison.OrdinalIgnoreCase);
+
+    var coverage = AssertSinglePersonalDataCoverage(result, "proof-missing");
+    Assert.Equal("none", result.Privacy.KeyProviderPosture);
+    Assert.Equal("unmanaged", result.Privacy.ProviderNativeEncryption.BoundaryStatus);
+    Assert.Equal("guidance-only", result.Privacy.ProviderNativeEncryption.GuidanceStatus);
+    Assert.False(result.Privacy.ProviderNativeEncryption.ManagedByDVault);
+    Assert.False(result.Privacy.ProviderNativeEncryption.UsesDatabaseCapabilityProbing);
+    Assert.Contains("advisory metadata", coverage.Message, StringComparison.Ordinal);
   }
 
   [Fact]
@@ -491,6 +499,12 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal(DataVaultDiagnosticsIssueSeverity.Error, issue.Severity);
     Assert.Contains("requires a caller-owned DVault encrypted payload key provider", issue.Message, StringComparison.Ordinal);
     Assert.Empty(result.Explain.Entities);
+
+    AssertSinglePersonalDataCoverage(result, "unusable-key-provider-posture");
+    Assert.Equal("marker-only", result.Privacy.KeyProviderPosture);
+    var aliasCoverage = Assert.Single(result.Privacy.AliasCoverages);
+    Assert.Equal("CustomerProfileEmailEncrypted", aliasCoverage.EncryptedPayloadAlias);
+    Assert.Equal("registered-but-unmapped", aliasCoverage.CoverageStatus);
   }
 
   [Fact]
@@ -511,6 +525,9 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains("CustomerProfileEmailEncrypted", issue.Message, StringComparison.Ordinal);
     Assert.Contains("has not registered encrypted payload alias", issue.Message, StringComparison.Ordinal);
     Assert.Empty(result.Explain.Entities);
+
+    AssertSinglePersonalDataCoverage(result, "alias-unregistered");
+    Assert.Equal("encrypted-payload-capable", result.Privacy.KeyProviderPosture);
   }
 
   [Fact]
@@ -530,6 +547,8 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains("CustomerProfileEmailEncrypted", issue.Message, StringComparison.Ordinal);
     Assert.Contains("returned no evaluation", issue.Message, StringComparison.Ordinal);
     Assert.Empty(result.Explain.Entities);
+
+    AssertSinglePersonalDataCoverage(result, "proof-evaluation-unavailable");
   }
 
   [Fact]
@@ -550,6 +569,8 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains("evaluation failed", issue.Message, StringComparison.Ordinal);
     Assert.Contains("proof-provider-offline", issue.Message, StringComparison.Ordinal);
     Assert.Empty(result.Explain.Entities);
+
+    AssertSinglePersonalDataCoverage(result, "proof-evaluation-unavailable");
   }
 
   [Fact]
@@ -570,6 +591,8 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains("DataVaultEncryptedPayloadValueConverter", issue.Message, StringComparison.Ordinal);
     Assert.Contains("metadata-only analysis", issue.Message, StringComparison.Ordinal);
     Assert.Empty(result.Explain.Entities);
+
+    AssertSinglePersonalDataCoverage(result, "no-observable-converter-wiring");
   }
 
   [Fact]
@@ -593,6 +616,100 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.True(result.Validation.IsValid);
     Assert.DoesNotContain(result.Validation.Issues, issue => issue.Code.StartsWith("personal-data-", StringComparison.Ordinal));
     Assert.Equal(["HubCustomer", "SatCustomerProfile"], result.Explain.Entities.Select(entity => entity.TableName));
+
+    var coverage = AssertSinglePersonalDataCoverage(result, "covered");
+    Assert.Equal("encrypted-payload-capable", result.Privacy.KeyProviderPosture);
+    Assert.Contains("is wired", coverage.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void AnalyzeDbContextSerializesPrivacyFactsThroughSupportBundleDiagnostics() {
+    var services = new ServiceCollection();
+    services.AddDVaultPrivacy(options => options
+        .RegisterEncryptedPayloadAlias("CustomerProfileEmailEncrypted")
+        .RegisterEncryptedPayloadAlias("CustomerProfilePhoneEncrypted")
+        .UseCallerOwnedKeyProvider(new DiagnosticsEncryptedPayloadKeyProvider()));
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    var privacyConfiguration = provider.GetRequiredService<IDataVaultPrivacyConfiguration>();
+    var optionsBuilder = new DbContextOptionsBuilder<PersonalDataPrivacyDiagnosticsContext>()
+        .UseSqlite("Data Source=:memory:");
+    optionsBuilder.UseDataVaultMetadata(CreatePersonalDataMetadataModel());
+
+    using var context = new PersonalDataPrivacyDiagnosticsContext(
+        optionsBuilder.Options,
+        privacyConfiguration);
+    var result = diagnostics.Analyze(context);
+
+    Assert.True(result.Validation.IsValid);
+    Assert.Equal("sqlite-v1", result.Privacy.ProviderNativeEncryption.CapabilityProfileName);
+    Assert.Equal("unmanaged", result.Privacy.ProviderNativeEncryption.BoundaryStatus);
+    Assert.Equal("guidance-only", result.Privacy.ProviderNativeEncryption.GuidanceStatus);
+    Assert.False(result.Privacy.ProviderNativeEncryption.UsesDatabaseCapabilityProbing);
+    Assert.Collection(
+        result.Privacy.AliasCoverages,
+        emailCoverage => {
+          Assert.Equal("CustomerProfileEmailEncrypted", emailCoverage.EncryptedPayloadAlias);
+          Assert.Equal("covered", emailCoverage.CoverageStatus);
+          var property = Assert.Single(emailCoverage.CoveredProperties);
+          Assert.Equal("EmailAddress", property.PropertyName);
+        },
+        phoneCoverage => {
+          Assert.Equal("CustomerProfilePhoneEncrypted", phoneCoverage.EncryptedPayloadAlias);
+          Assert.Equal("registered-but-unmapped", phoneCoverage.CoverageStatus);
+          Assert.Empty(phoneCoverage.CoveredProperties);
+        });
+
+    var supportBundleJson = DataVaultSupportBundleExporter.ExportJson(result);
+    using var document = JsonDocument.Parse(supportBundleJson);
+    var privacy = document.RootElement
+        .GetProperty("diagnostics")
+        .GetProperty("privacy");
+
+    Assert.Equal("dvault.support-bundle.v1", document.RootElement.GetProperty("schemaVersion").GetString());
+    Assert.Equal("encrypted-payload-capable", privacy.GetProperty("keyProviderPosture").GetString());
+    Assert.Equal("guidance-only", privacy
+        .GetProperty("providerNativeEncryption")
+        .GetProperty("guidanceStatus")
+        .GetString());
+    Assert.False(privacy
+        .GetProperty("providerNativeEncryption")
+        .GetProperty("usesDatabaseCapabilityProbing")
+        .GetBoolean());
+    Assert.Equal("covered", privacy
+        .GetProperty("personalDataCoverages")[0]
+        .GetProperty("coverageStatus")
+        .GetString());
+    Assert.Equal("registered-but-unmapped", privacy
+        .GetProperty("aliasCoverages")[1]
+        .GetProperty("coverageStatus")
+        .GetString());
+    Assert.DoesNotContain("Data Source", supportBundleJson, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void AnalyzeDbContextReportsConverterAliasMismatchAsStructuredPrivacyFact() {
+    var services = new ServiceCollection();
+    services.AddDVaultPrivacy(options => options
+        .RegisterEncryptedPayloadAlias("CustomerProfileEmailEncrypted")
+        .RegisterEncryptedPayloadAlias("DifferentEncryptedPayloadAlias")
+        .UseCallerOwnedKeyProvider(new DiagnosticsEncryptedPayloadKeyProvider()));
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    var privacyConfiguration = provider.GetRequiredService<IDataVaultPrivacyConfiguration>();
+    var optionsBuilder = new DbContextOptionsBuilder<MismatchedPersonalDataPrivacyDiagnosticsContext>()
+        .UseSqlite("Data Source=:memory:");
+    optionsBuilder.UseDataVaultMetadata(CreatePersonalDataMetadataModel());
+
+    using var context = new MismatchedPersonalDataPrivacyDiagnosticsContext(
+        optionsBuilder.Options,
+        privacyConfiguration);
+    var result = diagnostics.Analyze(context);
+
+    Assert.False(result.Validation.IsValid);
+    var issue = Assert.Single(result.Validation.Issues);
+    Assert.Contains("DifferentEncryptedPayloadAlias", issue.Message, StringComparison.Ordinal);
+    AssertSinglePersonalDataCoverage(result, "converter-alias-mismatch");
   }
 
   [Fact]
@@ -1907,6 +2024,22 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal(ordinal, participant.GetProperty("ordinal").GetInt32());
   }
 
+  private static DataVaultPrivacyPersonalDataCoverageFact AssertSinglePersonalDataCoverage(
+      DataVaultDiagnosticsResult result,
+      string expectedCoverageStatus) {
+    var coverage = Assert.Single(result.Privacy.PersonalDataCoverages);
+
+    Assert.Equal("Profile", coverage.SatelliteName);
+    Assert.Equal("Hub", coverage.SatelliteParentKind);
+    Assert.Equal("Customer", coverage.SatelliteParentName);
+    Assert.Equal("EmailAddress", coverage.FieldName);
+    Assert.Equal("CustomerProfileEmailEncrypted", coverage.EncryptedPayloadAlias);
+    Assert.Equal(expectedCoverageStatus, coverage.CoverageStatus);
+    Assert.DoesNotContain("Data Source", coverage.Message, StringComparison.Ordinal);
+
+    return coverage;
+  }
+
   private static void AssertBinaryHashKeyStorageDiagnostics(
       DataVaultDiagnosticsResult result,
       string expectedStoreType) {
@@ -2232,6 +2365,20 @@ public sealed class DataVaultDiagnosticsTests {
             .HasConversion(new DataVaultEncryptedPayloadValueConverter(
                 privacyConfiguration,
                 "CustomerProfileEmailEncrypted"));
+      });
+    }
+  }
+
+  private sealed class MismatchedPersonalDataPrivacyDiagnosticsContext(
+      DbContextOptions<MismatchedPersonalDataPrivacyDiagnosticsContext> options,
+      IDataVaultPrivacyConfiguration privacyConfiguration) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(CreatePersonalDataMetadataModel());
+      modelBuilder.SharedTypeEntity<Dictionary<string, object>>("SatCustomerProfile", entityBuilder => {
+        entityBuilder.IndexerProperty<string>("EmailAddress")
+            .HasConversion(new DataVaultEncryptedPayloadValueConverter(
+                privacyConfiguration,
+                "DifferentEncryptedPayloadAlias"));
       });
     }
   }

@@ -3,21 +3,20 @@
   "ticket-id": "06FGX5QAZSAB0M0W8FW807GQQR",
   "ticket-type": "task",
   "title": "Task: Add privacy support-bundle facts for alias coverage boundaries",
-  "revision": "06FGX6QD0TSN7QAB3J08VR1ZVR",
-  "status": "todo",
+  "revision": "06FH2YH63TDT8D4ZFYKQ6GBRGW",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
-    "area/privacy",
     "area/diagnostics",
+    "area/privacy",
+    "area/security",
     "area/tests",
-    "area/security"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FGX5EE4MKZGBRT6N8WDD1MXR",
   "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
   "created-at": "2026-06-28T14:16:40.4731894Z",
-  "updated-at": "2026-06-28T14:21:02.0861071Z"
+  "updated-at": "2026-06-29T03:44:05.6624594Z"
 }

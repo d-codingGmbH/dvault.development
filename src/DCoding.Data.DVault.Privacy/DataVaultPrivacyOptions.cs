@@ -60,6 +60,9 @@ public sealed class DataVaultPrivacyOptions {
     ReplaceDescriptor(
         services,
         ServiceDescriptor.Singleton<IDataVaultPersonalDataCoverageProof, DataVaultPrivacyPersonalDataCoverageProof>());
+    ReplaceDescriptor(
+        services,
+        ServiceDescriptor.Singleton<IDataVaultPrivacyAliasCoverageProvider, DataVaultPrivacyAliasCoverageProvider>());
 
     if (keyProvider is not null) {
       ReplaceDescriptor(services, ServiceDescriptor.Singleton(keyProvider));

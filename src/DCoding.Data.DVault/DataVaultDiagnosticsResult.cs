@@ -38,6 +38,11 @@ public sealed record DataVaultDiagnosticsResult(
   public DataVaultProviderTuningDiagnostics? ProviderTuning { get; init; }
 
   /// <summary>
+  /// Gets additive redaction-safe privacy adoption facts for diagnostics and support bundles.
+  /// </summary>
+  public DataVaultPrivacyDiagnostics Privacy { get; init; } = DataVaultPrivacyDiagnostics.Empty;
+
+  /// <summary>
   /// Produces a concise human-readable rendering of the structured diagnostics payload.
   /// </summary>
   public string ToDisplayString() {

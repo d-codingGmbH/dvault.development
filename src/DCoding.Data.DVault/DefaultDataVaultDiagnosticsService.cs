@@ -12,6 +12,17 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
   private const string EncryptedPayloadValueConverterTypeName =
       "DCoding.Data.DVault.Privacy.DataVaultEncryptedPayloadValueConverter";
   private const string EncryptedPayloadAliasPropertyName = "EncryptedPayloadAlias";
+  private const string PrivacyCoverageStatusAliasUnregistered = "alias-unregistered";
+  private const string PrivacyCoverageStatusConverterAliasMismatch = "converter-alias-mismatch";
+  private const string PrivacyCoverageStatusCovered = "covered";
+  private const string PrivacyCoverageStatusNoObservableConverterWiring = "no-observable-converter-wiring";
+  private const string PrivacyCoverageStatusProofEvaluationUnavailable = "proof-evaluation-unavailable";
+  private const string PrivacyCoverageStatusProofMissing = "proof-missing";
+  private const string PrivacyCoverageStatusRegisteredButUnmapped = "registered-but-unmapped";
+  private const string PrivacyCoverageStatusUnusableKeyProviderPosture = "unusable-key-provider-posture";
+  private const string PrivacyKeyProviderPostureEncryptedPayloadCapable = "encrypted-payload-capable";
+  private const string PrivacyKeyProviderPostureMarkerOnly = "marker-only";
+  private const string PrivacyKeyProviderPostureNone = "none";
 
   private static readonly DataVaultSaveStrategyDiagnostics NotEvaluatedStrategy = new(
       DataVaultSaveStrategyDiagnosticsStatus.NotEvaluated,
@@ -34,6 +45,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
   private readonly IReadOnlyList<IDataVaultProviderReadStrategy> _providerReadStrategies;
   private readonly IReadOnlyList<IDataVaultProviderSaveStrategy> _providerSaveStrategies;
   private readonly IReadOnlyList<IDataVaultPersonalDataCoverageProof> _personalDataCoverageProofs;
+  private readonly IReadOnlyList<IDataVaultPrivacyAliasCoverageProvider> _privacyAliasCoverageProviders;
   private readonly IStableHashService _stableHashService;
 
   public DefaultDataVaultDiagnosticsService(
@@ -42,6 +54,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       IEnumerable<IDataVaultProviderPitReadStrategy> providerPitReadStrategies,
       IEnumerable<IDataVaultProviderBridgeReadStrategy> providerBridgeReadStrategies,
       IEnumerable<IDataVaultPersonalDataCoverageProof> personalDataCoverageProofs,
+      IEnumerable<IDataVaultPrivacyAliasCoverageProvider> privacyAliasCoverageProviders,
       IDataVaultProviderBehaviorSelector providerBehaviorSelector,
       IStableHashService stableHashService) {
     ArgumentNullException.ThrowIfNull(providerSaveStrategies);
@@ -49,6 +62,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     ArgumentNullException.ThrowIfNull(providerPitReadStrategies);
     ArgumentNullException.ThrowIfNull(providerBridgeReadStrategies);
     ArgumentNullException.ThrowIfNull(personalDataCoverageProofs);
+    ArgumentNullException.ThrowIfNull(privacyAliasCoverageProviders);
     ArgumentNullException.ThrowIfNull(providerBehaviorSelector);
     ArgumentNullException.ThrowIfNull(stableHashService);
 
@@ -57,6 +71,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     _providerPitReadStrategies = providerPitReadStrategies.ToArray();
     _providerBridgeReadStrategies = providerBridgeReadStrategies.ToArray();
     _personalDataCoverageProofs = personalDataCoverageProofs.ToArray();
+    _privacyAliasCoverageProviders = privacyAliasCoverageProviders.ToArray();
     _providerBehaviorSelector = providerBehaviorSelector;
     _stableHashService = stableHashService;
   }
@@ -268,7 +283,8 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         .Concat(ValidateProviderMappings(metadataModel, providerCapabilities))
         .Concat(DataVaultEfMetadataTranslator.ValidateProviderIdentifiers(metadataModel, providerCapabilities, providerName))
         .ToArray();
-    var personalDataIssues = ValidatePersonalDataCoverage(metadataModel, efModel: null).ToArray();
+    var personalDataCoverageFacts = EvaluatePersonalDataCoverage(metadataModel, efModel: null).ToArray();
+    var personalDataIssues = CreatePersonalDataCoverageIssues(personalDataCoverageFacts).ToArray();
     var issues = validationIssues.Concat(personalDataIssues).ToList();
 
     ModelBuilder? modelBuilder = null;
@@ -311,7 +327,9 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       issues.AddRange(ValidateLinkParticipantExplain(explain));
     }
 
-    return CreateResult(explain, NotEvaluatedStrategy, NotEvaluatedReadStrategy, issues);
+    var privacy = CreatePrivacyDiagnostics(explain, efModel: null, personalDataCoverageFacts);
+
+    return CreateResult(explain, NotEvaluatedStrategy, NotEvaluatedReadStrategy, issues, privacy: privacy);
   }
 
   private DataVaultDiagnosticsResult AnalyzeDbContext(
@@ -333,6 +351,8 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
             DataVaultProviderBehaviorProfiles.ProviderNeutral.ProfileName,
             StringComparison.Ordinal);
     var issues = new List<DataVaultDiagnosticsIssue>();
+    IReadOnlyList<DataVaultPrivacyPersonalDataCoverageFact> personalDataCoverageFacts =
+        Array.Empty<DataVaultPrivacyPersonalDataCoverageFact>();
 
     if (capabilityProfileDefaulted) {
       issues.Add(new DataVaultDiagnosticsIssue(
@@ -361,7 +381,8 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         var source = DataVaultDbContextMetadataSource.Resolve(dbContext, extension);
         var sourceMetadataModel = DataVaultMetadataSourceAnnotations.CreateMetadataModel(source.MetadataRegistry);
         issues.AddRange(ValidateMetadataModel(sourceMetadataModel));
-        issues.AddRange(ValidatePersonalDataCoverage(sourceMetadataModel, explainModel));
+        personalDataCoverageFacts = EvaluatePersonalDataCoverage(sourceMetadataModel, explainModel).ToArray();
+        issues.AddRange(CreatePersonalDataCoverageIssues(personalDataCoverageFacts));
       }
       catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or NotSupportedException) {
         issues.Add(new DataVaultDiagnosticsIssue(
@@ -394,8 +415,9 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     };
     var readShape = CreateReadShapeDiagnostics(explain, readStrategy, readRequest);
     var providerTuning = CreateProviderTuningDiagnostics(strategy, readStrategy, readShape);
+    var privacy = CreatePrivacyDiagnostics(explain, explainModel, personalDataCoverageFacts);
 
-    return CreateResult(explain, strategy, readStrategy, issues, readShape, providerTuning);
+    return CreateResult(explain, strategy, readStrategy, issues, readShape, providerTuning, privacy);
   }
 
   private DataVaultSaveStrategyDiagnostics EvaluateSaveStrategy(
@@ -999,6 +1021,86 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     };
   }
 
+  private DataVaultPrivacyDiagnostics CreatePrivacyDiagnostics(
+      DataVaultExplainDiagnostics explain,
+      IReadOnlyModel? efModel,
+      IReadOnlyList<DataVaultPrivacyPersonalDataCoverageFact> personalDataCoverageFacts) {
+    var aliasReport = CreatePrivacyAliasCoverageReport(efModel);
+
+    return new DataVaultPrivacyDiagnostics(
+        CreateProviderNativeEncryptionBoundaryFact(explain),
+        aliasReport.KeyProviderPosture,
+        aliasReport.AliasCoverages,
+        personalDataCoverageFacts);
+  }
+
+  private DataVaultPrivacyAliasCoverageReport CreatePrivacyAliasCoverageReport(IReadOnlyModel? efModel) {
+    if (_privacyAliasCoverageProviders.Count == 0) {
+      return new DataVaultPrivacyAliasCoverageReport(
+          PrivacyKeyProviderPostureNone,
+          Array.Empty<DataVaultPrivacyAliasCoverageFact>());
+    }
+
+    var reports = _privacyAliasCoverageProviders
+        .Select(provider => provider.Analyze(efModel))
+        .ToArray();
+    var aliasCoverages = reports
+        .SelectMany(report => report.AliasCoverages)
+        .GroupBy(coverage => coverage.EncryptedPayloadAlias, StringComparer.Ordinal)
+        .OrderBy(group => group.Key, StringComparer.Ordinal)
+        .Select(CreateMergedAliasCoverageFact)
+        .ToArray();
+
+    return new DataVaultPrivacyAliasCoverageReport(
+        SelectKeyProviderPosture(reports.Select(report => report.KeyProviderPosture)),
+        aliasCoverages);
+  }
+
+  private static DataVaultPrivacyAliasCoverageFact CreateMergedAliasCoverageFact(
+      IGrouping<string, DataVaultPrivacyAliasCoverageFact> group) {
+    var coveredProperties = group
+        .SelectMany(coverage => coverage.CoveredProperties)
+        .GroupBy(property => property.EntityTypeName + "\u001f" + property.PropertyName, StringComparer.Ordinal)
+        .Select(propertyGroup => propertyGroup.First())
+        .OrderBy(property => property.EntityTypeName, StringComparer.Ordinal)
+        .ThenBy(property => property.PropertyName, StringComparer.Ordinal)
+        .ToArray();
+    var status = coveredProperties.Length == 0
+        ? PrivacyCoverageStatusRegisteredButUnmapped
+        : PrivacyCoverageStatusCovered;
+
+    return new DataVaultPrivacyAliasCoverageFact(group.Key, status, coveredProperties);
+  }
+
+  private static string SelectKeyProviderPosture(IEnumerable<string> postures) {
+    var postureSet = postures
+        .Where(posture => !string.IsNullOrWhiteSpace(posture))
+        .ToHashSet(StringComparer.Ordinal);
+
+    if (postureSet.Contains(PrivacyKeyProviderPostureEncryptedPayloadCapable)) {
+      return PrivacyKeyProviderPostureEncryptedPayloadCapable;
+    }
+
+    if (postureSet.Contains(PrivacyKeyProviderPostureMarkerOnly)) {
+      return PrivacyKeyProviderPostureMarkerOnly;
+    }
+
+    return PrivacyKeyProviderPostureNone;
+  }
+
+  private static DataVaultProviderNativeEncryptionBoundaryFact CreateProviderNativeEncryptionBoundaryFact(
+      DataVaultExplainDiagnostics explain) {
+    return new DataVaultProviderNativeEncryptionBoundaryFact(
+        explain.ProviderName,
+        explain.CapabilityProfileName,
+        BoundaryStatus: "unmanaged",
+        GuidanceStatus: "guidance-only",
+        ManagedByDVault: false,
+        UsesDatabaseCapabilityProbing: false,
+        Source: "docs/architecture/dvault-v1-optional-privacy-extension-boundary.md",
+        Message: "Provider-native encryption remains unmanaged and guidance-only for DVault; diagnostics do not probe database encryption settings or route runtime behavior based on native encryption availability.");
+  }
+
   private static DataVaultSatelliteReadShapeDiagnostics CreateSatelliteReadShapeDiagnostics(
       DataVaultExplainDiagnostics explain,
       DataVaultLatestSatelliteReadRequest request) {
@@ -1346,7 +1448,8 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       DataVaultReadStrategyDiagnostics readStrategy,
       IReadOnlyList<DataVaultDiagnosticsIssue> issues,
       DataVaultReadShapeDiagnostics? readShape = null,
-      DataVaultProviderTuningDiagnostics? providerTuning = null) {
+      DataVaultProviderTuningDiagnostics? providerTuning = null,
+      DataVaultPrivacyDiagnostics? privacy = null) {
     var issueArray = issues.ToArray();
     var validationIssues = issueArray
         .Where(issue => issue.Severity == DataVaultDiagnosticsIssueSeverity.Error)
@@ -1357,6 +1460,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       ReadStrategy = readStrategy,
       ReadShape = readShape,
       ProviderTuning = providerTuning,
+      Privacy = privacy ?? DataVaultPrivacyDiagnostics.Empty,
     };
   }
 
@@ -1364,18 +1468,24 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       string sourceKind,
       DataVaultProviderCapabilityProfile providerCapabilities,
       DataVaultDiagnosticsIssue issue) {
+    var explain = CreateEmptyExplain(
+        sourceKind,
+        sourceFingerprint: null,
+        providerName: null,
+        providerCapabilities,
+        DataVaultProviderBehaviorProfiles.ProviderNeutral,
+        capabilityProfileDefaulted: false,
+        providerBehaviorDefaulted: false);
+
     return CreateResult(
-        CreateEmptyExplain(
-            sourceKind,
-            sourceFingerprint: null,
-            providerName: null,
-            providerCapabilities,
-            DataVaultProviderBehaviorProfiles.ProviderNeutral,
-            capabilityProfileDefaulted: false,
-            providerBehaviorDefaulted: false),
+        explain,
         NotEvaluatedStrategy,
         NotEvaluatedReadStrategy,
-        [issue]);
+        [issue],
+        privacy: CreatePrivacyDiagnostics(
+            explain,
+            efModel: null,
+            Array.Empty<DataVaultPrivacyPersonalDataCoverageFact>()));
   }
 
   private DataVaultExplainDiagnostics CreateExplain(
@@ -1733,18 +1843,17 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     return entityType.FindAnnotation(DataVaultAnnotationNames.EntityKind)?.Value is DataVaultTableKind;
   }
 
-  private IEnumerable<DataVaultDiagnosticsIssue> ValidatePersonalDataCoverage(
+  private IEnumerable<DataVaultPrivacyPersonalDataCoverageFact> EvaluatePersonalDataCoverage(
       DataVaultMetadataModel metadataModel,
       IReadOnlyModel? efModel) {
     var proofs = _personalDataCoverageProofs;
     foreach (var satellite in metadataModel.Satellites) {
       foreach (var personalData in satellite.PersonalDataFields) {
         if (proofs.Count == 0) {
-          yield return CreatePersonalDataCoverageIssue(
-              DataVaultDiagnosticsIssueSeverity.Warning,
-              "personal-data-privacy-proof-missing",
+          yield return CreatePersonalDataCoverageFact(
               satellite,
               personalData,
+              PrivacyCoverageStatusProofMissing,
               "No opt-in DVault privacy proof is configured. The marker is advisory metadata only and no automatic encryption is implied.");
           continue;
         }
@@ -1757,14 +1866,18 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         if (usableEvaluation is not null) {
           var converterCoverage = EvaluatePersonalDataConverterCoverage(efModel, satellite, personalData);
           if (converterCoverage.IsUsableCoverageAvailable) {
+            yield return CreatePersonalDataCoverageFact(
+                satellite,
+                personalData,
+                PrivacyCoverageStatusCovered,
+                converterCoverage.Message);
             continue;
           }
 
-          yield return CreatePersonalDataCoverageIssue(
-              DataVaultDiagnosticsIssueSeverity.Error,
-              "personal-data-privacy-coverage-unusable",
+          yield return CreatePersonalDataCoverageFact(
               satellite,
               personalData,
+              converterCoverage.CoverageStatus ?? PrivacyCoverageStatusNoObservableConverterWiring,
               converterCoverage.Message);
           continue;
         }
@@ -1775,14 +1888,42 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
             .FirstOrDefault(current => !string.IsNullOrWhiteSpace(current)) ??
             "No usable encrypted-payload alias coverage is available.";
 
-        yield return CreatePersonalDataCoverageIssue(
-            proofConfigured ? DataVaultDiagnosticsIssueSeverity.Error : DataVaultDiagnosticsIssueSeverity.Warning,
-            proofConfigured ? "personal-data-privacy-coverage-unusable" : "personal-data-privacy-proof-missing",
+        yield return CreatePersonalDataCoverageFact(
             satellite,
             personalData,
+            SelectPersonalDataCoverageStatus(evaluations, proofConfigured),
             message);
       }
     }
+  }
+
+  private static IEnumerable<DataVaultDiagnosticsIssue> CreatePersonalDataCoverageIssues(
+      IReadOnlyList<DataVaultPrivacyPersonalDataCoverageFact> facts) {
+    foreach (var fact in facts) {
+      if (string.Equals(fact.CoverageStatus, PrivacyCoverageStatusCovered, StringComparison.Ordinal)) {
+        continue;
+      }
+
+      var isProofMissing = string.Equals(fact.CoverageStatus, PrivacyCoverageStatusProofMissing, StringComparison.Ordinal);
+      yield return new DataVaultDiagnosticsIssue(
+          isProofMissing ? DataVaultDiagnosticsIssueSeverity.Warning : DataVaultDiagnosticsIssueSeverity.Error,
+          isProofMissing ? "personal-data-privacy-proof-missing" : "personal-data-privacy-coverage-unusable",
+          fact.Message,
+          fact.Path);
+    }
+  }
+
+  private static string SelectPersonalDataCoverageStatus(
+      IReadOnlyList<DataVaultPersonalDataCoverageEvaluation> evaluations,
+      bool proofConfigured) {
+    if (!proofConfigured) {
+      return PrivacyCoverageStatusProofMissing;
+    }
+
+    return evaluations
+        .Select(evaluation => evaluation.CoverageStatus)
+        .FirstOrDefault(status => !string.IsNullOrWhiteSpace(status)) ??
+        PrivacyCoverageStatusProofEvaluationUnavailable;
   }
 
   private static DataVaultPersonalDataCoverageEvaluation EvaluatePersonalDataConverterCoverage(
@@ -1799,7 +1940,8 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
           EncryptedPayloadValueConverterTypeName +
           " for alias '" +
           personalData.EncryptedPayloadAlias +
-          "'.");
+          "'.",
+          PrivacyCoverageStatusNoObservableConverterWiring);
     }
 
     var satelliteEntities = efModel
@@ -1812,7 +1954,8 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
           isUsableCoverageAvailable: false,
           "no EF satellite entity was found for metadata satellite '" +
           satellite.Name +
-          "' when checking field-level encrypted payload converter coverage.");
+          "' when checking field-level encrypted payload converter coverage.",
+          PrivacyCoverageStatusNoObservableConverterWiring);
     }
 
     var payloadProperties = satelliteEntities
@@ -1825,7 +1968,8 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
           isUsableCoverageAvailable: false,
           "no EF payload property was found for marked personal-data field '" +
           personalData.FieldName +
-          "' when checking field-level encrypted payload converter coverage.");
+          "' when checking field-level encrypted payload converter coverage.",
+          PrivacyCoverageStatusNoObservableConverterWiring);
     }
 
     var observedAliases = new List<string>();
@@ -1850,7 +1994,8 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
             EncryptedPayloadValueConverterTypeName +
             " for encrypted-payload alias '" +
             personalData.EncryptedPayloadAlias +
-            "'.");
+            "'.",
+            PrivacyCoverageStatusCovered);
       }
 
       observedAliases.Add(string.IsNullOrWhiteSpace(converterAlias) ? "<unreadable>" : converterAlias);
@@ -1869,7 +2014,10 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         detail +
         "; expected encrypted-payload alias '" +
         personalData.EncryptedPayloadAlias +
-        "'.");
+        "'.",
+        observedAliases.Count == 0
+            ? PrivacyCoverageStatusNoObservableConverterWiring
+            : PrivacyCoverageStatusConverterAliasMismatch);
   }
 
   private static bool IsSatelliteEntity(
@@ -1899,34 +2047,42 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
           new DataVaultPersonalDataCoverageEvaluation(
               isPrivacyProofConfigured: true,
               isUsableCoverageAvailable: false,
-              "Personal-data coverage proof returned no evaluation.");
+              "Personal-data coverage proof returned no evaluation.",
+              PrivacyCoverageStatusProofEvaluationUnavailable);
     }
     catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or NotSupportedException) {
       return new DataVaultPersonalDataCoverageEvaluation(
           isPrivacyProofConfigured: true,
           isUsableCoverageAvailable: false,
-          "Personal-data coverage proof evaluation failed: " + exception.Message);
+          "Personal-data coverage proof evaluation failed: " + exception.Message,
+          PrivacyCoverageStatusProofEvaluationUnavailable);
     }
   }
 
-  private static DataVaultDiagnosticsIssue CreatePersonalDataCoverageIssue(
-      DataVaultDiagnosticsIssueSeverity severity,
-      string code,
+  private static DataVaultPrivacyPersonalDataCoverageFact CreatePersonalDataCoverageFact(
       DataVaultSatelliteMetadata satellite,
       DataVaultSatellitePersonalDataMetadata personalData,
+      string coverageStatus,
       string detail) {
-    return new DataVaultDiagnosticsIssue(
-        severity,
-        code,
-        "Satellite '" +
+    var message = "Satellite '" +
         satellite.Name +
         "' payload field '" +
         personalData.FieldName +
         "' is marked with encrypted payload alias '" +
         personalData.EncryptedPayloadAlias +
-        "', but " +
-        detail,
-        "metadata.satellites/" + satellite.Name + "/personalData/" + personalData.FieldName);
+        (string.Equals(coverageStatus, PrivacyCoverageStatusCovered, StringComparison.Ordinal)
+            ? "', and "
+            : "', but ") +
+        detail;
+
+    return new DataVaultPrivacyPersonalDataCoverageFact(
+        satellite.Name,
+        satellite.Parent.Kind.ToString(),
+        satellite.Parent.Name,
+        personalData.FieldName,
+        personalData.EncryptedPayloadAlias,
+        coverageStatus,
+        message);
   }
 
   private static IEnumerable<DataVaultDiagnosticsIssue> ValidateMetadataModel(DataVaultMetadataModel metadataModel) {

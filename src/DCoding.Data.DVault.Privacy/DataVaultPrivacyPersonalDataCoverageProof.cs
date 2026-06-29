@@ -9,7 +9,8 @@ internal sealed class DataVaultPrivacyPersonalDataCoverageProof(
       return new DataVaultPersonalDataCoverageEvaluation(
           isPrivacyProofConfigured: true,
           isUsableCoverageAvailable: false,
-          "The encrypted-payload alias is blank.");
+          "The encrypted-payload alias is blank.",
+          "proof-evaluation-unavailable");
     }
 
     if (!configuration.EncryptedPayloadAliases.Contains(encryptedPayloadAlias, StringComparer.Ordinal)) {
@@ -18,7 +19,8 @@ internal sealed class DataVaultPrivacyPersonalDataCoverageProof(
           isUsableCoverageAvailable: false,
           "the active DVault privacy proof has not registered encrypted payload alias '" +
           encryptedPayloadAlias +
-          "'.");
+          "'.",
+          "alias-unregistered");
     }
 
     if (configuration.KeyProvider is null) {
@@ -27,7 +29,8 @@ internal sealed class DataVaultPrivacyPersonalDataCoverageProof(
           isUsableCoverageAvailable: false,
           "encrypted payload alias '" +
           encryptedPayloadAlias +
-          "' requires a caller-owned DVault privacy key provider.");
+          "' requires a caller-owned DVault privacy key provider.",
+          "unusable-key-provider-posture");
     }
 
     if (configuration.KeyProvider is not IDataVaultEncryptedPayloadKeyProvider) {
@@ -36,12 +39,14 @@ internal sealed class DataVaultPrivacyPersonalDataCoverageProof(
           isUsableCoverageAvailable: false,
           "encrypted payload alias '" +
           encryptedPayloadAlias +
-          "' requires a caller-owned DVault encrypted payload key provider.");
+          "' requires a caller-owned DVault encrypted payload key provider.",
+          "unusable-key-provider-posture");
     }
 
     return new DataVaultPersonalDataCoverageEvaluation(
         isPrivacyProofConfigured: true,
         isUsableCoverageAvailable: true,
-        "encrypted payload alias '" + encryptedPayloadAlias + "' has usable caller-owned converter coverage.");
+        "encrypted payload alias '" + encryptedPayloadAlias + "' has usable caller-owned converter coverage.",
+        "covered");
   }
 }

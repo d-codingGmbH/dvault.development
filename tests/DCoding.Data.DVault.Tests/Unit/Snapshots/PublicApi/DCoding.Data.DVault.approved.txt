@@ -255,6 +255,7 @@ type public enum DCoding.Data.DVault.DataVaultDiagnosticsIssueSeverity
 type public sealed class DCoding.Data.DVault.DataVaultDiagnosticsResult : System.IEquatable<DCoding.Data.DVault.DataVaultDiagnosticsResult>
   ctor public DataVaultDiagnosticsResult(DCoding.Data.DVault.DataVaultValidationDiagnostics Validation, DCoding.Data.DVault.DataVaultExplainDiagnostics Explain, DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics SaveStrategy, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultDiagnosticsIssue> Issues)
   property public DCoding.Data.DVault.DataVaultExplainDiagnostics Explain { get; init; }
+  property public DCoding.Data.DVault.DataVaultPrivacyDiagnostics Privacy { get; init; }
   property public DCoding.Data.DVault.DataVaultProviderTuningDiagnostics? ProviderTuning { get; init; }
   property public DCoding.Data.DVault.DataVaultReadShapeDiagnostics? ReadShape { get; init; }
   property public DCoding.Data.DVault.DataVaultReadStrategyDiagnostics ReadStrategy { get; init; }
@@ -797,9 +798,11 @@ type public enum DCoding.Data.DVault.DataVaultPerformanceProfileCategory
 
 type public sealed class DCoding.Data.DVault.DataVaultPersonalDataCoverageEvaluation
   ctor public DataVaultPersonalDataCoverageEvaluation(bool isPrivacyProofConfigured, bool isUsableCoverageAvailable, string message)
+  ctor public DataVaultPersonalDataCoverageEvaluation(bool isPrivacyProofConfigured, bool isUsableCoverageAvailable, string message, string? coverageStatus)
   property public bool IsPrivacyProofConfigured { get; }
   property public bool IsUsableCoverageAvailable { get; }
   property public string Message { get; }
+  property public string? CoverageStatus { get; }
 
 type public sealed class DCoding.Data.DVault.DataVaultPitAsOfReadRequest
   ctor public DataVaultPitAsOfReadRequest(DCoding.Data.DVault.Modeling.DataVaultPitMetadata pit, System.Collections.Generic.IEnumerable<string> parentHashKeys, System.DateTimeOffset asOf)
@@ -960,6 +963,76 @@ type public enum DCoding.Data.DVault.DataVaultPreflightStatus
   value Passed = 0
   value Blocked = 1
 
+type public sealed class DCoding.Data.DVault.DataVaultPrivacyAliasCoverageFact : System.IEquatable<DCoding.Data.DVault.DataVaultPrivacyAliasCoverageFact>
+  ctor public DataVaultPrivacyAliasCoverageFact(string EncryptedPayloadAlias, string CoverageStatus, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPrivacyCoveredPropertyFact> CoveredProperties)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPrivacyCoveredPropertyFact> CoveredProperties { get; init; }
+  property public string CoverageStatus { get; init; }
+  property public string EncryptedPayloadAlias { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultPrivacyAliasCoverageFact? left, DCoding.Data.DVault.DataVaultPrivacyAliasCoverageFact? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultPrivacyAliasCoverageFact? left, DCoding.Data.DVault.DataVaultPrivacyAliasCoverageFact? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultPrivacyAliasCoverageFact? other)
+  method public void Deconstruct(out string EncryptedPayloadAlias, out string CoverageStatus, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPrivacyCoveredPropertyFact> CoveredProperties)
+
+type public sealed class DCoding.Data.DVault.DataVaultPrivacyAliasCoverageReport : System.IEquatable<DCoding.Data.DVault.DataVaultPrivacyAliasCoverageReport>
+  ctor public DataVaultPrivacyAliasCoverageReport(string KeyProviderPosture, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPrivacyAliasCoverageFact> AliasCoverages)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPrivacyAliasCoverageFact> AliasCoverages { get; init; }
+  property public string KeyProviderPosture { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultPrivacyAliasCoverageReport? left, DCoding.Data.DVault.DataVaultPrivacyAliasCoverageReport? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultPrivacyAliasCoverageReport? left, DCoding.Data.DVault.DataVaultPrivacyAliasCoverageReport? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultPrivacyAliasCoverageReport? other)
+  method public void Deconstruct(out string KeyProviderPosture, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPrivacyAliasCoverageFact> AliasCoverages)
+
+type public sealed class DCoding.Data.DVault.DataVaultPrivacyCoveredPropertyFact : System.IEquatable<DCoding.Data.DVault.DataVaultPrivacyCoveredPropertyFact>
+  ctor public DataVaultPrivacyCoveredPropertyFact(string EntityTypeName, string PropertyName)
+  property public string EntityTypeName { get; init; }
+  property public string PropertyName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultPrivacyCoveredPropertyFact? left, DCoding.Data.DVault.DataVaultPrivacyCoveredPropertyFact? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultPrivacyCoveredPropertyFact? left, DCoding.Data.DVault.DataVaultPrivacyCoveredPropertyFact? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultPrivacyCoveredPropertyFact? other)
+  method public void Deconstruct(out string EntityTypeName, out string PropertyName)
+
+type public sealed class DCoding.Data.DVault.DataVaultPrivacyDiagnostics : System.IEquatable<DCoding.Data.DVault.DataVaultPrivacyDiagnostics>
+  ctor public DataVaultPrivacyDiagnostics(DCoding.Data.DVault.DataVaultProviderNativeEncryptionBoundaryFact ProviderNativeEncryption, string KeyProviderPosture, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPrivacyAliasCoverageFact> AliasCoverages, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPrivacyPersonalDataCoverageFact> PersonalDataCoverages)
+  property public DCoding.Data.DVault.DataVaultProviderNativeEncryptionBoundaryFact ProviderNativeEncryption { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPrivacyAliasCoverageFact> AliasCoverages { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPrivacyPersonalDataCoverageFact> PersonalDataCoverages { get; init; }
+  property public static DCoding.Data.DVault.DataVaultPrivacyDiagnostics Empty { get; }
+  property public string KeyProviderPosture { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultPrivacyDiagnostics? left, DCoding.Data.DVault.DataVaultPrivacyDiagnostics? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultPrivacyDiagnostics? left, DCoding.Data.DVault.DataVaultPrivacyDiagnostics? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultPrivacyDiagnostics? other)
+  method public void Deconstruct(out DCoding.Data.DVault.DataVaultProviderNativeEncryptionBoundaryFact ProviderNativeEncryption, out string KeyProviderPosture, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPrivacyAliasCoverageFact> AliasCoverages, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPrivacyPersonalDataCoverageFact> PersonalDataCoverages)
+
+type public sealed class DCoding.Data.DVault.DataVaultPrivacyPersonalDataCoverageFact : System.IEquatable<DCoding.Data.DVault.DataVaultPrivacyPersonalDataCoverageFact>
+  ctor public DataVaultPrivacyPersonalDataCoverageFact(string SatelliteName, string SatelliteParentKind, string SatelliteParentName, string FieldName, string EncryptedPayloadAlias, string CoverageStatus, string Message)
+  property public string CoverageStatus { get; init; }
+  property public string EncryptedPayloadAlias { get; init; }
+  property public string FieldName { get; init; }
+  property public string Message { get; init; }
+  property public string Path { get; }
+  property public string SatelliteName { get; init; }
+  property public string SatelliteParentKind { get; init; }
+  property public string SatelliteParentName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultPrivacyPersonalDataCoverageFact? left, DCoding.Data.DVault.DataVaultPrivacyPersonalDataCoverageFact? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultPrivacyPersonalDataCoverageFact? left, DCoding.Data.DVault.DataVaultPrivacyPersonalDataCoverageFact? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultPrivacyPersonalDataCoverageFact? other)
+  method public void Deconstruct(out string SatelliteName, out string SatelliteParentKind, out string SatelliteParentName, out string FieldName, out string EncryptedPayloadAlias, out string CoverageStatus, out string Message)
+
 type public sealed class DCoding.Data.DVault.DataVaultPropertyExplain : System.IEquatable<DCoding.Data.DVault.DataVaultPropertyExplain>
   ctor public DataVaultPropertyExplain(string Name, DCoding.Data.DVault.DataVaultPropertyRole Role, DCoding.Data.DVault.TechnicalMetadataColumnRole? TechnicalRole, string MetadataName, int Ordinal, DCoding.Data.DVault.DataVaultLogicalPropertyKind LogicalPropertyKind, string ProviderProfileName, string StoreType, DCoding.Data.DVault.DataVaultProviderValueFormat ValueFormat)
   property public DCoding.Data.DVault.DataVaultHashKeyStorageProfile? HashKeyStorageProfile { get; init; }
@@ -1035,6 +1108,24 @@ type public static class DCoding.Data.DVault.DataVaultProviderCapabilityProfiles
 
 type public enum DCoding.Data.DVault.DataVaultProviderConcurrencySupport
   value NoneInV1Unsupported = 0
+
+type public sealed class DCoding.Data.DVault.DataVaultProviderNativeEncryptionBoundaryFact : System.IEquatable<DCoding.Data.DVault.DataVaultProviderNativeEncryptionBoundaryFact>
+  ctor public DataVaultProviderNativeEncryptionBoundaryFact(string? ProviderName, string CapabilityProfileName, string BoundaryStatus, string GuidanceStatus, bool ManagedByDVault, bool UsesDatabaseCapabilityProbing, string Source, string Message)
+  property public bool ManagedByDVault { get; init; }
+  property public bool UsesDatabaseCapabilityProbing { get; init; }
+  property public string BoundaryStatus { get; init; }
+  property public string CapabilityProfileName { get; init; }
+  property public string GuidanceStatus { get; init; }
+  property public string Message { get; init; }
+  property public string Source { get; init; }
+  property public string? ProviderName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultProviderNativeEncryptionBoundaryFact? left, DCoding.Data.DVault.DataVaultProviderNativeEncryptionBoundaryFact? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultProviderNativeEncryptionBoundaryFact? left, DCoding.Data.DVault.DataVaultProviderNativeEncryptionBoundaryFact? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultProviderNativeEncryptionBoundaryFact? other)
+  method public void Deconstruct(out string? ProviderName, out string CapabilityProfileName, out string BoundaryStatus, out string GuidanceStatus, out bool ManagedByDVault, out bool UsesDatabaseCapabilityProbing, out string Source, out string Message)
 
 type public sealed class DCoding.Data.DVault.DataVaultProviderReadStrategyContext
   ctor public DataVaultProviderReadStrategyContext(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultLatestSatelliteReadRequest request)
@@ -1835,6 +1926,9 @@ type public interface DCoding.Data.DVault.IDataVaultPersonalDataCoverageProof
 type public interface DCoding.Data.DVault.IDataVaultPitMaintenanceService
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultPitMaintenanceResult> MaintainParentsAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultPitParentMaintenanceRequest request, System.Threading.CancellationToken cancellationToken = default)
   method public abstract System.Threading.Tasks.Task<DCoding.Data.DVault.DataVaultPitMaintenanceResult> RebuildAsync(Microsoft.EntityFrameworkCore.DbContext dbContext, DCoding.Data.DVault.DataVaultPitRebuildRequest request, System.Threading.CancellationToken cancellationToken = default)
+
+type public interface DCoding.Data.DVault.IDataVaultPrivacyAliasCoverageProvider
+  method public abstract DCoding.Data.DVault.DataVaultPrivacyAliasCoverageReport Analyze(Microsoft.EntityFrameworkCore.Metadata.IReadOnlyModel? model)
 
 type public interface DCoding.Data.DVault.IDataVaultProviderBehavior
   property public int Priority { get; }
