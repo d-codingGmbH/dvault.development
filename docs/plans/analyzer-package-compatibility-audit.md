@@ -4,7 +4,7 @@ Ticket: `06FGX5GHPS7DEC3EJPWSKJZH28`
 
 ## Decision
 
-Keep `DCoding.Data.DVault.Analyzers` on one `net10.0` analyzer asset for the current v0.49.0 compatibility baseline. Supported analyzer consumption remains a `.NET 10 SDK` build host for both visible package lines, including `net8.0` consumer projects on the `8.50.0` line.
+Keep `DCoding.Data.DVault.Analyzers` on one `net10.0` analyzer asset for the current v0.50.0 documentation compatibility baseline. Supported analyzer consumption remains a `.NET 10 SDK` build host for both visible package lines, including `net8.0` consumer projects on the `8.50.0` line.
 
 Pure `.NET 8 SDK` analyzer consumption is a no-go for the current branch. The repository proves a `net8.0` consumer target compiled with the `net10.0` analyzer asset on the `.NET 10 SDK` host baseline; it does not prove that a `.NET 8 SDK` host can restore, load, or run the analyzer package.
 

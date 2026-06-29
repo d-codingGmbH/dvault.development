@@ -3,21 +3,20 @@
   "ticket-id": "06FGX5KJ6HX8QKBCDK406H7W58",
   "ticket-type": "task",
   "title": "Task: Update analyzer compatibility documentation for v0.50.0",
-  "revision": "06FGX6P5WMH0HR1T25Q3KDP7XG",
-  "status": "todo",
+  "revision": "06FH73GNBV7BV16Z5Y3C067Z4W",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/analyzers",
+    "area/compatibility",
     "area/documentation",
     "area/package",
-    "area/compatibility"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FGX5EDA7K8EDEMAET71J565G",
   "release-id": "06FGX5ECFEE9Q5W7ND3YYV8WSM",
   "created-at": "2026-06-28T14:16:09.0360913Z",
-  "updated-at": "2026-06-28T14:20:52.0693594Z"
+  "updated-at": "2026-06-29T13:25:06.5268336Z"
 }

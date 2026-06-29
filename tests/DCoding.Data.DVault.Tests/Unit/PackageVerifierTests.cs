@@ -300,6 +300,8 @@ public sealed class PackageVerifierTests {
   [InlineData("dotnet add package DCoding.Data.DVault --version 0.47.0\n", "0.47.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 0.48.0\n", "0.48.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 0.49.0\n", "0.49.0")]
+  [InlineData("dotnet add package DCoding.Data.DVault --version 0.50.0\n", "0.50.0")]
+  [InlineData("<PackageReference Include=\"DCoding.Data.DVault\" Version=\"0.50.0\" />\n", "0.50.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 8.37.0\n", "8.37.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 8.38.0\n", "8.38.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 10.38.0\n", "10.38.0")]
@@ -341,6 +343,28 @@ public sealed class PackageVerifierTests {
         result.Issues,
         issue => issue.PackageId == CorePackageId &&
             issue.Message.Contains("must not document stale or planning-release install version fragment", StringComparison.Ordinal) &&
+            issue.Message.Contains(expectedFragment, StringComparison.Ordinal));
+  }
+
+  [Theory]
+  [InlineData("You can mix `8.50.0` and `10.50.0` packages in one project.\n", "You can mix `8.50.0` and `10.50.0`")]
+  [InlineData("Use `8.50.0` runtime packages with `10.50.0` analyzer.\n", "8.50.0")]
+  public void ReadmeMustNotUseMixedLineInstallClaims(
+      string mixedLineInstallClaim,
+      string expectedFragment) {
+    using var packageDirectory = PackageDirectory.Create();
+    var options = CreatePackageOptions();
+    options[CorePackageId].ReadmeText =
+        CreateRuntimePackageReadme() +
+        mixedLineInstallClaim;
+    WritePackageMatrix(packageDirectory.Path, options);
+
+    var result = Verify(packageDirectory.Path);
+
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == CorePackageId &&
+            issue.Message.Contains("must not document mixed-line package installation claim", StringComparison.Ordinal) &&
             issue.Message.Contains(expectedFragment, StringComparison.Ordinal));
   }
 

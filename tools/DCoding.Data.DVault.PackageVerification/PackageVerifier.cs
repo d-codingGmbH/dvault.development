@@ -24,6 +24,17 @@ public sealed class PackageVerifier {
       "without a `.NET 10 SDK` host",
   ];
 
+  private static readonly string[] DisallowedMixedLineInstallClaimFragments = [
+      "You can mix `8.50.0` and `10.50.0`",
+      "you can mix `8.50.0` and `10.50.0`",
+      "Projects may mix `8.50.0` and `10.50.0`",
+      "projects may mix `8.50.0` and `10.50.0`",
+      "Consumers may mix `8.50.0` and `10.50.0`",
+      "consumers may mix `8.50.0` and `10.50.0`",
+      "Use `8.50.0` runtime packages with `10.50.0` analyzer",
+      "Use `10.50.0` runtime packages with `8.50.0` analyzer",
+  ];
+
   private static readonly ExpectedPackageLine[] ExpectedPackageLines = [
       new("8.50.0", Net8TargetFramework, "EF Core 8"),
       new("10.50.0", Net10TargetFramework, "EF Core 10"),
@@ -48,6 +59,7 @@ public sealed class PackageVerifier {
       "--version 0.47.0",
       "--version 0.48.0",
       "--version 0.49.0",
+      "--version 0.50.0",
       "--version 8.37.0",
       "--version 10.37.0",
       "--version 8.38.0",
@@ -92,6 +104,7 @@ public sealed class PackageVerifier {
       "Version=\"0.47.0\"",
       "Version=\"0.48.0\"",
       "Version=\"0.49.0\"",
+      "Version=\"0.50.0\"",
       "Version=\"8.37.0\"",
       "Version=\"10.37.0\"",
       "Version=\"8.38.0\"",
@@ -535,6 +548,7 @@ public sealed class PackageVerifier {
     }
 
     ValidateReadmeDoesNotUseDisallowedInstallVersions(archive, issues);
+    ValidateReadmeDoesNotUseMixedLineInstallClaims(archive, issues);
     ValidateReadmeContainsAnalyzerBuildHostGuidance(archive, issues);
     ValidateReadmeDoesNotContradictAnalyzerBuildHostGuidance(archive, issues);
 
@@ -595,6 +609,18 @@ public sealed class PackageVerifier {
         issues.Add(new PackageVerificationIssue(
             archive.Id,
             "Packaged README.md must not document stale or planning-release install version fragment '" + disallowedFragment + "'; use separate 8.50.0 and 10.50.0 package-line guidance."));
+      }
+    }
+  }
+
+  private static void ValidateReadmeDoesNotUseMixedLineInstallClaims(
+      PackageArchive archive,
+      List<PackageVerificationIssue> issues) {
+    foreach (var disallowedFragment in DisallowedMixedLineInstallClaimFragments) {
+      if (archive.ReadmeText?.Contains(disallowedFragment, StringComparison.Ordinal) == true) {
+        issues.Add(new PackageVerificationIssue(
+            archive.Id,
+            "Packaged README.md must not document mixed-line package installation claim '" + disallowedFragment + "'; use exactly one of the 8.50.0 or 10.50.0 package lines in a consumer project."));
       }
     }
   }

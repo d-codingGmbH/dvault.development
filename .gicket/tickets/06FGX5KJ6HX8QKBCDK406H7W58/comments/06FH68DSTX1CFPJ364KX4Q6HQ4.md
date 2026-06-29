@@ -1,0 +1,1 @@
+﻿[manual-recovery] The dev retry was skipped intentionally. The only durable stop was the external Codex CLI context-window failure, while the previous tester verification succeeded for commit a94d17f5dff1 and explicitly requested integrator handoff. Removed needs-dev and moved the ticket to ready-for-integration.

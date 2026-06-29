@@ -22,20 +22,20 @@ Manual publication must not proceed for only a subset of this family. Each packa
 
 `DCoding.Data.DVault.Privacy` is optional for consumers and opt-in at runtime. It is a provider-neutral registration and alias-driven encrypted payload conversion proof, not a compliance feature, automatic encryption/redaction feature, or provider-native encryption feature.
 
-The current v0.49.0 documentation baseline uses two consumer package-version lines over these package ids:
+The current v0.50.0 documentation baseline uses two consumer package-version lines over these package ids:
 
 | Package version line | Target framework | EF Core line |
 | --- | --- | --- |
 | `8.50.0` | `net8.0` | EF Core 8 |
 | `10.50.0` | `net10.0` | EF Core 10 |
 
-Do not publish or document a consumer-facing `0.49.0` package version from the v0.49.0 release label. Do not combine `8.50.0` and `10.50.0` packages in one consumer install example or one publish approval.
+Do not publish or document a consumer-facing `0.50.0` package version from the v0.50.0 documentation release label. Do not combine `8.50.0` and `10.50.0` packages in one consumer install example or one publish approval.
 
 The `src/DCoding.Data` project is a non-packable source-root build anchor for the namespace family. It is not a NuGet publication artifact and is outside the coordinated publication scope.
 
 ## Current Consumer Guidance
 
-Developer and consumer setup is NuGet-based for published releases. The README installation guidance is the current v0.49.0 baseline and should show separate `8.50.0` / `net8.0` / EF Core 8 and `10.50.0` / `net10.0` / EF Core 10 `dotnet add package` commands for `DCoding.Data.DVault` plus the optional provider package family, including `DCoding.Data.DVault.Db2`, and the optional privacy proof package. Analyzer examples must stay local with `PrivateAssets="all"` and use the same package-version line selected for the runtime and provider packages. Projects that reference `DCoding.Data.DVault.Analyzers` must build on the `.NET 10 SDK` host baseline for both coordinated package lines; this repository does not validate pure `.NET 8 SDK` analyzer consumption.
+Developer and consumer setup is NuGet-based for published releases. The README installation guidance is the current v0.50.0 documentation baseline and should show separate `8.50.0` / `net8.0` / EF Core 8 and `10.50.0` / `net10.0` / EF Core 10 `dotnet add package` commands for `DCoding.Data.DVault` plus the optional provider package family, including `DCoding.Data.DVault.Db2`, and the optional privacy proof package. Analyzer examples must stay local with `PrivateAssets="all"` and use the same package-version line selected for the runtime and provider packages. Projects that reference `DCoding.Data.DVault.Analyzers` must build on the `.NET 10 SDK` host baseline for both coordinated package lines; this repository does not validate pure `.NET 8 SDK` analyzer consumption.
 
 Source or project-reference consumption remains useful for repository development, debugging, and unpublished local changes, but it is no longer the primary consumer installation path for released packages.
 
@@ -50,7 +50,7 @@ Before final publish approval, the maintainer performing the release must confir
 - all required pre-publish validation commands have passed against the same checkout and selected package version
 - package verification confirms each provider package depends on the packed `DCoding.Data.DVault` package version from the same package-version line and carries only that line's target-framework dependency group
 - package verification confirms the packaged README guidance separates `8.50.0` for `net8.0` and EF Core 8 from `10.50.0` for `net10.0` and EF Core 10
-- release notes and README guidance explain that `v0.49.0` is the release tag and release-note label, not a consumer NuGet package version, and keep the dependency-line, analyzer-compatibility, manual-publication, and validation guidance aligned with the published package-version lines
+- release notes and README guidance explain that `v0.50.0` is the documentation release label, not a consumer NuGet package version, and keep the dependency-line, analyzer-compatibility, manual-publication, and validation guidance aligned with the published package-version lines
 - final publish approval has been recorded before the first package push
 
 ## Release Notes Evidence
@@ -82,9 +82,9 @@ bash tools/check-format.sh
 
 Do not replace these commands with an undocumented automation path. Later release automation may wrap them, but the manual release evidence must still show equivalent build, test, pack, package-verification, and formatting results.
 
-## Current v0.47 Dependency Matrix
+## Current v0.50.0 Dependency Matrix
 
-The v0.49.0 baseline is target-specific. `8.50.0` / `net8.0` uses the EF Core 8 dependency line, and `10.50.0` / `net10.0` uses the EF Core 10 dependency line. Patch movement is allowed only within the selected target major line and must be reflected together in the project files, matrix tests, package verifier, release notes, and adopter guidance.
+The v0.50.0 documentation baseline is target-specific. `8.50.0` / `net8.0` uses the EF Core 8 dependency line, and `10.50.0` / `net10.0` uses the EF Core 10 dependency line. Patch movement is allowed only within the selected target major line and must be reflected together in the project files, matrix tests, package verifier, release notes, and adopter guidance.
 
 | Target framework | Provider-neutral EF packages | DB2 | SQLite | MySQL | PostgreSQL | Oracle | SQL Server |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -95,7 +95,7 @@ The analyzer package is a local build-time asset, not a runtime dependency. `DCo
 
 ## Version And Dependency Alignment
 
-Use one aligned package version across all nine packages in the selected package-version line. For the v0.49.0 documentation baseline, validate `8.50.0` and `10.50.0` as separate publish approvals; do not publish `0.49.0` from the release label and do not mix packages from both lines in one consumer example or approval record. The `v0.49.0` Git tag is the release-note tag. Package versions for the visible consumer lines are set explicitly by `bash tools/pack-release-packages.sh` through MinVer version overrides. Before final approval, inspect the package outputs produced by the release pack script through the package verification gate:
+Use one aligned package version across all nine packages in the selected package-version line. For the v0.50.0 documentation baseline, validate `8.50.0` and `10.50.0` as separate publish approvals; do not publish `0.50.0` from the release label and do not mix packages from both lines in one consumer example or approval record. Release-note and changelog cross-references intentionally remain on the current v0.49.0 artifacts until the v0.50.0 release-note and changelog update lands. Package versions for the visible consumer lines are set explicitly by `bash tools/pack-release-packages.sh` through MinVer version overrides. Before final approval, inspect the package outputs produced by the release pack script through the package verification gate:
 
 ```sh
 bash tools/verify-packages.sh

@@ -13,7 +13,7 @@ DVault currently publishes the same coordinated package family on two visible co
 
 Use exactly one line in a consumer project. Do not mix `8.50.0` and `10.50.0` packages in one project, install example, restored target, or publish approval.
 
-The `v0.49.0` release label is a repository release tag and release-note label, not a consumer-facing NuGet package version. Publish or document `8.50.0` and `10.50.0` package versions for this baseline, and do not publish or document a consumer-facing `0.49.0` package version. Future package version movement must update the pack script, package verifier, release notes, and installation guidance together.
+The `v0.50.0` documentation release label is not a consumer-facing NuGet package version. Publish or document `8.50.0` and `10.50.0` package versions for this baseline, and do not publish or document a consumer-facing `0.50.0` package version. Future package version movement must update the pack script, package verifier, release notes, and installation guidance together.
 
 ## Package Family
 
@@ -53,6 +53,8 @@ The `MySql.EntityFrameworkCore` pins are target-specific: `8.0.26` for `net8.0` 
 The analyzer package currently ships one `net10.0` analyzer asset for both coordinated package lines. Supported analyzer consumption for both `8.50.0` and `10.50.0` uses a `.NET 10 SDK` build host, including `net8.0` projects on the `8.50.0` package line. The repository does not validate pure `.NET 8 SDK` analyzer consumption.
 
 ## Related Guidance
+
+Release-note and changelog cross-references intentionally remain on the current v0.49.0 artifacts until the v0.50.0 release-note and changelog update lands.
 
 - [DVault v0.49.0 Release Notes](releases/v0.49.0.md)
 - [Manual NuGet Publication Checklist](manual-nuget-publication.md)

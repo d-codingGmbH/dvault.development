@@ -8,14 +8,14 @@ DVault is a focused .NET library family for Data Vault 2.x-oriented persistence 
 - [Quickstart](#quickstart)
 - [Package Compatibility](#package-compatibility)
 - [Documentation Map](#documentation-map)
-- [Current v0.49.0 Limitations](#current-v0490-limitations)
+- [Current v0.50.0 Limitations](#current-v0500-limitations)
 - [Layout](#layout)
 - [Local Validation](#local-validation)
 - [License](#license)
 
 ## Installation
 
-Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The blocks below list the full coordinated package family so each needed package can be copied from one aligned line. Use exactly one package line for a consumer project: `8.50.0` for `net8.0` and EF Core 8, or `10.50.0` for `net10.0` and EF Core 10. Do not mix package lines, and do not use a consumer-facing `0.49.0` package version from the v0.49.0 release label. This documentation baseline does not by itself confirm package publication.
+Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The blocks below list the full coordinated package family so each needed package can be copied from one aligned line. Use exactly one package line for a consumer project: `8.50.0` for `net8.0` and EF Core 8, or `10.50.0` for `net10.0` and EF Core 10. Do not mix package lines, and do not use a consumer-facing `0.50.0` package version from the v0.50.0 documentation release label. This documentation baseline does not by itself confirm package publication.
 
 For `net8.0` projects on EF Core 8, use the `8.50.0` package line:
 
@@ -184,17 +184,17 @@ var latestProfile = latestProfiles.Single();
 
 Provider packages can add optimized strategies behind the same public service contract. The shared surface also includes chunked/async saves, latest/as-of satellite reads, PIT and bridge maintenance/read services, diagnostics and explain metadata, support-bundle export, model-first governance, Roslyn analyzers, and opt-in typed read-model generation.
 
-For runnable examples, the optional privacy proof, and fuller workflows, see [Getting Started](docs/getting-started.md), [examples/README.md](examples/README.md), and the current [DVault v0.49.0 Release Notes](docs/releases/v0.49.0.md).
+For runnable examples, the optional privacy proof, and fuller workflows, see [Getting Started](docs/getting-started.md), [examples/README.md](examples/README.md), and the current release-note artifact, [DVault v0.49.0 Release Notes](docs/releases/v0.49.0.md).
 
 ## Package Compatibility
 
-The current coordinated package baseline is documented in [Package Compatibility](docs/package-compatibility.md) and [DVault v0.49.0 Release Notes](docs/releases/v0.49.0.md). DVault has nine packable packages, two visible consumer package lines, target-specific dependency pins, a local analyzer package boundary, and an optional privacy proof package.
+The current coordinated package baseline is documented in [Package Compatibility](docs/package-compatibility.md). Release-note cross-references intentionally remain on the current [DVault v0.49.0 Release Notes](docs/releases/v0.49.0.md) until the v0.50.0 release-note and changelog update lands. DVault has nine packable packages, two visible consumer package lines, target-specific dependency pins, a local analyzer package boundary, and an optional privacy proof package.
 
 In short:
 
 - `8.50.0` targets `net8.0` and the EF Core 8 dependency line.
 - `10.50.0` targets `net10.0` and the EF Core 10 dependency line.
-- `v0.49.0` is a repository release tag and release-note label, not a NuGet package version.
+- `v0.50.0` is the documentation release label, not a NuGet package version; release-note and changelog links stay on the current v0.49.0 artifacts until the release-note update lands.
 - `DCoding.Data.DVault.Analyzers` remains a local `PrivateAssets="all"` analyzer reference and currently requires a `.NET 10 SDK` build host for both package lines.
 - `DCoding.Data.DVault.Privacy` remains optional and opt-in; it provides registration and alias-driven encrypted payload conversion seams over ordinary EF Core mapped payload properties only, not compliance, automatic privacy execution, database-at-rest encryption, provider-native encrypted column/cell/row features, provider SQL crypto calls, encrypted DDL, capability probing, or runtime routing based on native encryption availability.
 - Hash-key storage guidance now routes new projects to binary-first setup and existing persisted `HexString` setups to the migration guide, reviewed dry-run manifest export, and manifest validation path.
@@ -219,7 +219,7 @@ In short:
 | Optional privacy proof and boundary | [Getting Started privacy proof](docs/getting-started.md#optional-privacy-proof), [examples privacy notes](examples/README.md#optional-privacy-proof), and [DVault V1 Optional Privacy Extension Boundary](docs/architecture/dvault-v1-optional-privacy-extension-boundary.md) |
 | Hashing and hash-key storage contracts | [Stable Hashing Contract](docs/plans/stable-hashing-contract.md), [Hash-Key Storage Profile Contract](docs/plans/hash-key-storage-profile-contract.md), and [Hash-Key Storage Migration Guide](docs/hash-key-storage-migration.md) |
 
-## Current v0.49.0 Limitations
+## Current v0.50.0 Limitations
 
 - DVault is an EF Core library family, not a platform, scheduler, ingestion service, CLI, or provider provisioning tool.
 - Package publication remains a manual release operation; this repository records package creation and verification, not NuGet publication.

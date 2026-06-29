@@ -1,0 +1,1 @@
+﻿[manual-recovery-correction] Corrected the previous manual recovery route: even though existing tester evidence had succeeded, routing directly from the recovered dev stop to ready-for-integration was too aggressive for the role workflow. The ticket is back on todo with needs-test so the bot tester can perform the formal test gate and then hand off to integrator.
