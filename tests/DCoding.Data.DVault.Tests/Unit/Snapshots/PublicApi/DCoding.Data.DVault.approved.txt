@@ -1008,6 +1008,7 @@ type public sealed class DCoding.Data.DVault.DataVaultPrivacyDiagnostics : Syste
   property public DCoding.Data.DVault.DataVaultProviderNativeEncryptionBoundaryFact ProviderNativeEncryption { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPrivacyAliasCoverageFact> AliasCoverages { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPrivacyPersonalDataCoverageFact> PersonalDataCoverages { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultProviderCryptoCapabilityFact> ProviderCryptoCapabilities { get; init; }
   property public static DCoding.Data.DVault.DataVaultPrivacyDiagnostics Empty { get; }
   property public string KeyProviderPosture { get; init; }
   method public override bool Equals(object? obj)
@@ -1111,6 +1112,23 @@ type public static class DCoding.Data.DVault.DataVaultProviderCapabilityProfiles
 
 type public enum DCoding.Data.DVault.DataVaultProviderConcurrencySupport
   value NoneInV1Unsupported = 0
+
+type public sealed class DCoding.Data.DVault.DataVaultProviderCryptoCapabilityFact : System.IEquatable<DCoding.Data.DVault.DataVaultProviderCryptoCapabilityFact>
+  ctor public DataVaultProviderCryptoCapabilityFact(string? ProviderName, string CapabilityProfileName, string CapabilityFamily, string CapabilityLabel, string CapabilityKind, string Status, string Guidance)
+  property public string CapabilityFamily { get; init; }
+  property public string CapabilityKind { get; init; }
+  property public string CapabilityLabel { get; init; }
+  property public string CapabilityProfileName { get; init; }
+  property public string Guidance { get; init; }
+  property public string Status { get; init; }
+  property public string? ProviderName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultProviderCryptoCapabilityFact? left, DCoding.Data.DVault.DataVaultProviderCryptoCapabilityFact? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultProviderCryptoCapabilityFact? left, DCoding.Data.DVault.DataVaultProviderCryptoCapabilityFact? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultProviderCryptoCapabilityFact? other)
+  method public void Deconstruct(out string? ProviderName, out string CapabilityProfileName, out string CapabilityFamily, out string CapabilityLabel, out string CapabilityKind, out string Status, out string Guidance)
 
 type public sealed class DCoding.Data.DVault.DataVaultProviderNativeEncryptionBoundaryFact : System.IEquatable<DCoding.Data.DVault.DataVaultProviderNativeEncryptionBoundaryFact>
   ctor public DataVaultProviderNativeEncryptionBoundaryFact(string? ProviderName, string CapabilityProfileName, string BoundaryStatus, string GuidanceStatus, bool ManagedByDVault, bool UsesDatabaseCapabilityProbing, string Source, string Message)

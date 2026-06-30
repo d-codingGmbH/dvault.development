@@ -1,82 +1,63 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the ticket to a bounded additive privacy-diagnostics/support-bundle slice: expose a finite static provider crypto capability matrix for the supported provider baseline while keeping the existing unmanaged guidance-only boundary unchanged; no ticket or planning mutations were materialized in this run.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Repository evidence already fixes the shared v1 boundary to DataVaultPrivacyDiagnostics plus DataVaultProviderNativeEncryptionBoundaryFact; this ticket adds additive capability facts and does not reopen the unmanaged guidance-only boundary.
 - The finite provider baseline is ratified from checked-in docs/code: SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2, with one reviewed MySQL capability set covering both MySql.EntityFrameworkCore and Pomelo.EntityFrameworkCore.MySql.
 - Capability facts are static, redaction-safe, and profile-backed; they do not prove that a database instance is configured, enabled, reachable, or compatible at runtime.
 - Architecture predecessor ticket 06FH8RGQZA7D9JZSTSAJEM9B3M is already done, so its shared-boundary blocks relation is historical completion context rather than a fresh PO blocker.
 - No child tickets, relation changes, description updates, attachments, or planning documents were materialized during this refinement run.
 
-### Scope In
+Scope In
 - Add additive privacy diagnostics/support-bundle facts that enumerate reviewed provider-native crypto capability rows for the finite supported-provider baseline.
 - Classify each reviewed capability row as supported, conditional, or unsupported with bounded reason/guidance text when the row is not unconditionally supported.
 - Cover the provider-native capability families already named in checked-in docs, including SQL Server guidance (TDE and Always Encrypted), PostgreSQL guidance (deployment encryption posture and pgcrypto), Oracle guidance (TDE and DBMS_CRYPTO), MySQL guidance (SQL crypto plus file/tablespace encryption), SQLite encrypted-file guidance, and DB2 native encryption guidance.
 - Emit capability facts through the existing DataVaultPrivacyDiagnostics/support-bundle lane with deterministic JSON and no live database probe by default.
 - Add tests for deterministic per-provider fact selection, MySQL dual-provider-name mapping, unknown/unregistered-provider behavior, and redaction safety.
 
-### Scope Out
+Scope Out
 - New provider-native execution behavior, SQL generation, encrypted DDL, key-store integration, or automatic runtime dispatch.
 - Consumer configuration or selection APIs for choosing provider-native crypto behavior; that remains in ticket 06FH8RKDJTS3BB11J6J6QJVVD4.
 - Broad documentation rollout; that remains in ticket 06FH8RMZPSZ7H3AQRP8FX72S08.
 - Live capability probing, connectivity checks, or verification that a concrete database instance has encryption enabled.
 - Compliance, retention, deletion, backup shredding, or DVault-owned key lifecycle claims.
 
-## Acceptance Criteria
-- The diagnostics/support-bundle contract retains DataVaultProviderNativeEncryptionBoundaryFact as the shared unmanaged guidance-only boundary and adds an additive static provider crypto capability section instead of replacing that boundary.
-- For the finite built-in provider baseline, the reported capability rows are deterministic from the selected provider/profile and do not require opening a database connection or probing provider encryption settings by default.
-- Each reported capability row identifies at least the provider or provider-profile, the reviewed capability family or function label, the status, and bounded guidance or reason text; the shape distinguishes deployment/at-rest guidance from SQL-function or driver-mediated capability claims so the output does not mislabel feature types.
-- The MySQL lane uses one reviewed capability set for both repository-supported EF Core provider names, MySql.EntityFrameworkCore and Pomelo.EntityFrameworkCore.MySql, and does not create a separate MariaDB capability profile.
-- Unknown or unregistered provider names do not silently inherit a misleading provider-native crypto fact set; diagnostics keep the existing guidance-only unmanaged boundary and avoid claiming reviewed crypto capabilities for an unknown provider.
-- Serialized diagnostics/support bundles expose only redaction-safe capability facts and do not include plaintext, ciphertext, raw keys, payload values, SQL text, provider secrets, connection strings, or live probe results.
-- Checked-in tests cover every built-in provider baseline row plus support-bundle serialization/redaction and unknown-provider behavior.
-
-## Definition of Done
-- Current repo diagnostics and support-bundle tests prove deterministic capability-fact emission for SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2.
-- If the implementation introduces new public diagnostics records or collections, the public API snapshot and support-bundle contract evidence are updated in the checked-in test baselines.
-- Existing privacy diagnostics behavior for key-provider posture, alias coverage, personal-data coverage, and the guidance-only unmanaged boundary remains intact and non-regressed.
-- No code path in this ticket opens live database connections or changes privacy execution behavior merely to emit capability facts.
-- The resulting contract leaves configuration-selection behavior, docs rollout, and any provider-specific runtime implementation in their existing separate tickets.
-
-## Implementation Notes
-- Use the existing core surfaces as the delivery lane: DataVaultPrivacyDiagnostics, DataVaultProviderNativeEncryptionBoundaryFact, DefaultDataVaultDiagnosticsService, and DataVaultSupportBundleExporter already provide the redaction-safe diagnostics/support-bundle path.
-- Ratify the finite provider baseline and provider/profile mapping already visible in DataVaultProviderCapabilityProfileSelection, KnownProviderNames, DataVaultProviderCapabilityProfiles, docs/getting-started.md, docs/package-compatibility.md, and docs/releases/v0.50.0.md.
-- Keep capability reporting static and reviewed; the facts should come from checked-in provider/profile metadata rather than live probing, extension discovery, or driver-specific connection interrogation.
-- Preserve the current shared contract wording from docs/architecture/dvault-v1-optional-privacy-extension-boundary.md: provider-native encryption remains unmanaged and guidance-only in DVault until a later provider-specific ticket owns one exact runtime behavior.
-- Capability facts should be additive to, not a replacement for, the existing privacy adoption proof, alias coverage, and personal-data coverage diagnostics.
-- Current relation context shows this ticket already blocks story 06FH8RFJYY09BJJK4MD2KT8BF0 and the selection-API task 06FH8RKDJTS3BB11J6J6QJVVD4; keep this slice bounded to discovery/reporting so those downstream tickets can consume a stable fact model.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Which provider-native capability should get the first provider-specific execution ticket after this fact-reporting slice lands: SQL Server Always Encrypted, PostgreSQL pgcrypto, Oracle DBMS_CRYPTO, MySQL SQL crypto, SQLite encrypted-file integration, or DB2 native encryption?
 - After the static fact lane is in place, do we want a separate opt-in probe ticket that can confirm environment-specific prerequisites, or should runtime behavior stay entirely guidance-only?
 - Should the docs task 06FH8RMZPSZ7H3AQRP8FX72S08 publish the exact same reviewed capability matrix verbatim to minimize drift between diagnostics and documentation?
 
-## Risks
+Risks
 - Consumers may misread a supported capability row as DVault runtime support or environment activation unless the fact model and docs keep the unmanaged guidance-only boundary explicit.
 - Generic diagnostics already default unknown providers to the SQLite storage profile for some explain paths; this ticket must avoid reusing that fallback for provider-native crypto facts.
 - Mixing deployment-at-rest features and SQL-function features in one static matrix can create false equivalence unless the reported capability family makes the distinction explicit.
 - Provider docs or package baselines can drift over time; without checked-in tests per provider row, the static matrix could become stale or contradictory.
 
-## Split Recommendations
+Split recommendations
 - Keep provider-native runtime activation or conversion behavior split by one provider and one exact capability per ticket after this discovery/reporting slice.
 - Keep consumer-facing configuration and selection behavior in existing ticket 06FH8RKDJTS3BB11J6J6QJVVD4 rather than expanding this ticket.
 - Keep docs rollout in existing ticket 06FH8RMZPSZ7H3AQRP8FX72S08 rather than widening this diagnostics ticket.
 - If optional live probing is ever desired, split it into a later opt-in diagnostics ticket with its own redaction and secret-handling review.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 7
+- definition-of-done items: 5
+- implementation-notes items: 6
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Add static provider capability reporting for SQL Server, PostgreSQL, MySQL, Oracle, DB2, and SQLite. Record supported, conditional, and unsupported DB-native crypto functions without probing live databases by default. Ensure diagnostics/support bundles expose redacted capability facts and do not leak keys, payload values, SQL secrets, or connection strings.
+Run mode
+- apply: planned updates are applied after this comment

@@ -3,22 +3,21 @@
   "ticket-id": "06FH8RJF2SYBJ8ZM7ZDETDPN78",
   "ticket-type": "task",
   "title": "Task: Expose provider crypto capability facts from supported provider packages",
-  "revision": "06FH8SMPA3TP2KVYZ4TP5A5Z4C",
-  "status": "todo",
+  "revision": "06FHJM26VSKDG0SRJYA8BW06PR",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
+    "area/diagnostics",
     "area/privacy",
     "area/providers",
     "area/security",
-    "area/diagnostics",
-    "area/tests"
+    "area/tests",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FH8QASG77EQRT4J1CSA3GBFW",
   "release-id": "06FH8QAPVPB96WQ8T1NH1R9H14",
   "created-at": "2026-06-29T17:16:56.1905623Z",
-  "updated-at": "2026-06-29T17:21:35.3121788Z"
+  "updated-at": "2026-06-30T16:15:19.2624397Z"
 }

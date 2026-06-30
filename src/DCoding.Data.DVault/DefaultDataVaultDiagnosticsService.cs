@@ -1031,7 +1031,12 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
         CreateProviderNativeEncryptionBoundaryFact(explain),
         aliasReport.KeyProviderPosture,
         aliasReport.AliasCoverages,
-        personalDataCoverageFacts);
+        personalDataCoverageFacts) {
+      ProviderCryptoCapabilities = DataVaultProviderCryptoCapabilityCatalog.SelectReviewedCapabilities(
+          explain.ProviderName,
+          explain.CapabilityProfileName,
+          explain.CapabilityProfileDefaulted),
+    };
   }
 
   private DataVaultPrivacyAliasCoverageReport CreatePrivacyAliasCoverageReport(IReadOnlyModel? efModel) {

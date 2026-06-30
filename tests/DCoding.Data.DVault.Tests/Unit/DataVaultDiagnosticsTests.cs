@@ -646,6 +646,11 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal("unmanaged", result.Privacy.ProviderNativeEncryption.BoundaryStatus);
     Assert.Equal("guidance-only", result.Privacy.ProviderNativeEncryption.GuidanceStatus);
     Assert.False(result.Privacy.ProviderNativeEncryption.UsesDatabaseCapabilityProbing);
+    var providerCryptoCapability = Assert.Single(result.Privacy.ProviderCryptoCapabilities);
+    Assert.Equal(KnownProviderNames.Sqlite, providerCryptoCapability.ProviderName);
+    Assert.Equal("sqlite-v1", providerCryptoCapability.CapabilityProfileName);
+    Assert.Equal("encrypted-file", providerCryptoCapability.CapabilityKind);
+    Assert.Equal("unsupported", providerCryptoCapability.Status);
     Assert.Collection(
         result.Privacy.AliasCoverages,
         emailCoverage => {
@@ -676,6 +681,10 @@ public sealed class DataVaultDiagnosticsTests {
         .GetProperty("providerNativeEncryption")
         .GetProperty("usesDatabaseCapabilityProbing")
         .GetBoolean());
+    var serializedCapability = Assert.Single(privacy.GetProperty("providerCryptoCapabilities").EnumerateArray());
+    Assert.Equal(KnownProviderNames.Sqlite, serializedCapability.GetProperty("providerName").GetString());
+    Assert.Equal("encrypted-file", serializedCapability.GetProperty("capabilityKind").GetString());
+    Assert.Equal("unsupported", serializedCapability.GetProperty("status").GetString());
     Assert.Equal("covered", privacy
         .GetProperty("personalDataCoverages")[0]
         .GetProperty("coverageStatus")
@@ -685,6 +694,146 @@ public sealed class DataVaultDiagnosticsTests {
         .GetProperty("coverageStatus")
         .GetString());
     Assert.DoesNotContain("Data Source", supportBundleJson, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void ProviderCryptoCapabilityCatalogReportsDeterministicBuiltInMatrix() {
+    AssertProviderCryptoCapabilities(
+        KnownProviderNames.Sqlite,
+        "sqlite-v1",
+        [
+            new("encrypted-file", "SQLite encrypted-file build", "encrypted-file", "unsupported"),
+        ]);
+    AssertProviderCryptoCapabilities(
+        KnownProviderNames.Postgres,
+        "postgres-v1",
+        [
+            new("deployment-encryption", "PostgreSQL deployment encryption posture", "deployment-at-rest", "conditional"),
+            new("pgcrypto", "pgcrypto", "sql-function", "conditional"),
+        ]);
+    AssertProviderCryptoCapabilities(
+        KnownProviderNames.SqlServer,
+        "sqlserver-v1",
+        [
+            new("transparent-data-encryption", "Transparent Data Encryption", "deployment-at-rest", "conditional"),
+            new("always-encrypted", "Always Encrypted", "driver-mediated", "conditional"),
+        ]);
+    AssertProviderCryptoCapabilities(
+        KnownProviderNames.MySqlPomelo,
+        "mysql-pomelo-v1",
+        [
+            new("sql-crypto-functions", "MySQL SQL crypto functions", "sql-function", "conditional"),
+            new("file-or-tablespace-encryption", "MySQL file or tablespace encryption", "deployment-at-rest", "conditional"),
+        ]);
+    AssertProviderCryptoCapabilities(
+        KnownProviderNames.Oracle,
+        "oracle-v1",
+        [
+            new("transparent-data-encryption", "Transparent Data Encryption", "deployment-at-rest", "conditional"),
+            new("dbms_crypto", "DBMS_CRYPTO", "sql-function", "conditional"),
+        ]);
+    AssertProviderCryptoCapabilities(
+        KnownProviderNames.Db2,
+        "db2-v1",
+        [
+            new("native-database-encryption", "DB2 native database encryption", "deployment-at-rest", "conditional"),
+        ]);
+  }
+
+  [Fact]
+  public void AnalyzeMetadataModelReportsProfileBackedProviderCryptoCapabilitiesForBuiltInProfiles() {
+    using var provider = CreateServiceProvider();
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    var model = CreateCustomerMetadataModel();
+
+    AssertProviderCryptoCapabilities(
+        diagnostics.Analyze(model, DataVaultProviderCapabilityProfiles.Sqlite),
+        providerName: null,
+        "sqlite-v1",
+        [
+            new("encrypted-file", "SQLite encrypted-file build", "encrypted-file", "unsupported"),
+        ]);
+    AssertProviderCryptoCapabilities(
+        diagnostics.Analyze(model, DataVaultProviderCapabilityProfiles.Postgres),
+        providerName: null,
+        "postgres-v1",
+        [
+            new("deployment-encryption", "PostgreSQL deployment encryption posture", "deployment-at-rest", "conditional"),
+            new("pgcrypto", "pgcrypto", "sql-function", "conditional"),
+        ]);
+    AssertProviderCryptoCapabilities(
+        diagnostics.Analyze(model, DataVaultProviderCapabilityProfiles.SqlServer),
+        providerName: null,
+        "sqlserver-v1",
+        [
+            new("transparent-data-encryption", "Transparent Data Encryption", "deployment-at-rest", "conditional"),
+            new("always-encrypted", "Always Encrypted", "driver-mediated", "conditional"),
+        ]);
+    AssertProviderCryptoCapabilities(
+        diagnostics.Analyze(model, DataVaultProviderCapabilityProfiles.MySql),
+        providerName: null,
+        "mysql-pomelo-v1",
+        [
+            new("sql-crypto-functions", "MySQL SQL crypto functions", "sql-function", "conditional"),
+            new("file-or-tablespace-encryption", "MySQL file or tablespace encryption", "deployment-at-rest", "conditional"),
+        ]);
+    AssertProviderCryptoCapabilities(
+        diagnostics.Analyze(model, DataVaultProviderCapabilityProfiles.Oracle),
+        providerName: null,
+        "oracle-v1",
+        [
+            new("transparent-data-encryption", "Transparent Data Encryption", "deployment-at-rest", "conditional"),
+            new("dbms_crypto", "DBMS_CRYPTO", "sql-function", "conditional"),
+        ]);
+    AssertProviderCryptoCapabilities(
+        diagnostics.Analyze(model, DataVaultProviderCapabilityProfiles.Db2),
+        providerName: null,
+        "db2-v1",
+        [
+            new("native-database-encryption", "DB2 native database encryption", "deployment-at-rest", "conditional"),
+        ]);
+  }
+
+  [Theory]
+  [InlineData(KnownProviderNames.MySqlOracle)]
+  [InlineData(KnownProviderNames.MySqlPomelo)]
+  public void ProviderCryptoCapabilityCatalogMapsBothMySqlProviderNamesToOneReviewedProfile(
+      string providerName) {
+    var facts = DataVaultProviderCryptoCapabilityCatalog.SelectReviewedCapabilities(
+        providerName,
+        "mysql-pomelo-v1",
+        capabilityProfileDefaulted: false);
+
+    Assert.Collection(
+        facts,
+        sqlCrypto => AssertProviderCryptoCapability(
+            sqlCrypto,
+            providerName,
+            "mysql-pomelo-v1",
+            "sql-crypto-functions",
+            "MySQL SQL crypto functions",
+            "sql-function",
+            "conditional"),
+        fileEncryption => AssertProviderCryptoCapability(
+            fileEncryption,
+            providerName,
+            "mysql-pomelo-v1",
+            "file-or-tablespace-encryption",
+            "MySQL file or tablespace encryption",
+            "deployment-at-rest",
+            "conditional"));
+  }
+
+  [Fact]
+  public void ProviderCryptoCapabilityCatalogDoesNotClaimReviewedFactsForUnknownProviderFallbacks() {
+    Assert.Empty(DataVaultProviderCryptoCapabilityCatalog.SelectReviewedCapabilities(
+        "Contoso.UnknownProvider",
+        "sqlite-v1",
+        capabilityProfileDefaulted: true));
+    Assert.Empty(DataVaultProviderCryptoCapabilityCatalog.SelectReviewedCapabilities(
+        "Contoso.UnknownProvider",
+        "sqlite-v1",
+        capabilityProfileDefaulted: false));
   }
 
   [Fact]
@@ -2040,6 +2189,67 @@ public sealed class DataVaultDiagnosticsTests {
     return coverage;
   }
 
+  private static void AssertProviderCryptoCapabilities(
+      string providerName,
+      string capabilityProfileName,
+      IReadOnlyList<ProviderCryptoCapabilityExpectation> expectations) {
+    var facts = DataVaultProviderCryptoCapabilityCatalog.SelectReviewedCapabilities(
+        providerName,
+        capabilityProfileName,
+        capabilityProfileDefaulted: false);
+
+    Assert.Equal(expectations.Count, facts.Count);
+    for (var index = 0; index < expectations.Count; index++) {
+      AssertProviderCryptoCapability(
+          facts[index],
+          providerName,
+          capabilityProfileName,
+          expectations[index].CapabilityFamily,
+          expectations[index].CapabilityLabel,
+          expectations[index].CapabilityKind,
+          expectations[index].Status);
+    }
+  }
+
+  private static void AssertProviderCryptoCapabilities(
+      DataVaultDiagnosticsResult result,
+      string? providerName,
+      string capabilityProfileName,
+      IReadOnlyList<ProviderCryptoCapabilityExpectation> expectations) {
+    Assert.Equal(expectations.Count, result.Privacy.ProviderCryptoCapabilities.Count);
+    for (var index = 0; index < expectations.Count; index++) {
+      AssertProviderCryptoCapability(
+          result.Privacy.ProviderCryptoCapabilities[index],
+          providerName,
+          capabilityProfileName,
+          expectations[index].CapabilityFamily,
+          expectations[index].CapabilityLabel,
+          expectations[index].CapabilityKind,
+          expectations[index].Status);
+    }
+  }
+
+  private static void AssertProviderCryptoCapability(
+      DataVaultProviderCryptoCapabilityFact fact,
+      string? providerName,
+      string capabilityProfileName,
+      string capabilityFamily,
+      string capabilityLabel,
+      string capabilityKind,
+      string status) {
+    Assert.Equal(providerName, fact.ProviderName);
+    Assert.Equal(capabilityProfileName, fact.CapabilityProfileName);
+    Assert.Equal(capabilityFamily, fact.CapabilityFamily);
+    Assert.Equal(capabilityLabel, fact.CapabilityLabel);
+    Assert.Equal(capabilityKind, fact.CapabilityKind);
+    Assert.Equal(status, fact.Status);
+    Assert.False(string.IsNullOrWhiteSpace(fact.Guidance));
+    Assert.DoesNotContain("Data Source", fact.Guidance, StringComparison.Ordinal);
+    Assert.DoesNotContain("Password=", fact.Guidance, StringComparison.OrdinalIgnoreCase);
+    Assert.DoesNotContain("secret=", fact.Guidance, StringComparison.OrdinalIgnoreCase);
+    Assert.DoesNotContain("SELECT ", fact.Guidance, StringComparison.OrdinalIgnoreCase);
+  }
+
   private static void AssertBinaryHashKeyStorageDiagnostics(
       DataVaultDiagnosticsResult result,
       string expectedStoreType) {
@@ -2340,6 +2550,12 @@ public sealed class DataVaultDiagnosticsTests {
       DataVaultPitMetadata Pit,
       DataVaultBridgeMetadata Bridge,
       DataVaultBridgeMetadata HierarchyBridge);
+
+  private sealed record ProviderCryptoCapabilityExpectation(
+      string CapabilityFamily,
+      string CapabilityLabel,
+      string CapabilityKind,
+      string Status);
 
   private sealed class ReadShapeDiagnosticsContext(DbContextOptions<ReadShapeDiagnosticsContext> options) : DbContext(options) {
   }

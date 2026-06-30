@@ -9,6 +9,12 @@ public sealed record DataVaultPrivacyDiagnostics(
     IReadOnlyList<DataVaultPrivacyAliasCoverageFact> AliasCoverages,
     IReadOnlyList<DataVaultPrivacyPersonalDataCoverageFact> PersonalDataCoverages) {
   /// <summary>
+  /// Gets reviewed static provider-native crypto capability facts for the selected provider or provider profile.
+  /// </summary>
+  public IReadOnlyList<DataVaultProviderCryptoCapabilityFact> ProviderCryptoCapabilities { get; init; } =
+      Array.Empty<DataVaultProviderCryptoCapabilityFact>();
+
+  /// <summary>
   /// Creates an empty provider-neutral privacy diagnostics payload.
   /// </summary>
   public static DataVaultPrivacyDiagnostics Empty { get; } = new(
@@ -23,5 +29,7 @@ public sealed record DataVaultPrivacyDiagnostics(
           Message: "Provider-native encryption remains unmanaged and guidance-only for DVault; diagnostics do not probe database encryption settings or route runtime behavior based on native encryption availability."),
       "none",
       Array.Empty<DataVaultPrivacyAliasCoverageFact>(),
-      Array.Empty<DataVaultPrivacyPersonalDataCoverageFact>());
+      Array.Empty<DataVaultPrivacyPersonalDataCoverageFact>()) {
+    ProviderCryptoCapabilities = Array.Empty<DataVaultProviderCryptoCapabilityFact>(),
+  };
 }
