@@ -3,21 +3,20 @@
   "ticket-id": "06FH8RMFZSVNW0KKTZT9HMGM8G",
   "ticket-type": "task",
   "title": "Task: Implement provider-native crypto usage proof and fallback tests",
-  "revision": "06FH8SNFE490Q3W99PPV6G6HC0",
-  "status": "todo",
+  "revision": "06FHMMWKD5AYPCDJBWYYG0TG94",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/privacy",
-    "area/security",
     "area/providers",
-    "area/tests"
+    "area/security",
+    "area/tests",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FH8QASG77EQRT4J1CSA3GBFW",
   "release-id": "06FH8QAPVPB96WQ8T1NH1R9H14",
   "created-at": "2026-06-29T17:17:11.8424020Z",
-  "updated-at": "2026-06-29T17:21:41.7457275Z"
+  "updated-at": "2026-06-30T20:58:32.6814674Z"
 }

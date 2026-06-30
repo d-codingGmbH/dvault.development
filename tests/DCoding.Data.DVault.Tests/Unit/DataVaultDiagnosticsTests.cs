@@ -842,6 +842,137 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Equal("provider-native-rejected-missing-prerequisite", selection.SelectionStatus);
   }
 
+  [Fact]
+  public void AnalyzeMetadataModelFailsClosedForProviderNativeCryptoSelectionWithIncompatibleProfile() {
+    var services = new ServiceCollection();
+    services.AddDVaultPrivacy(options => options.RegisterEncryptedPayloadAlias("CustomerProfileEmailEncrypted"));
+    services.AddDVaultSqlServerAlwaysEncryptedSelection(
+        "CustomerProfileEmailEncrypted",
+        "always-encrypted-column-key");
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    var result = diagnostics.Analyze(CreateCustomerMetadataModel(), DataVaultProviderCapabilityProfiles.Postgres);
+
+    Assert.False(result.Validation.IsValid);
+    var issue = Assert.Single(result.Validation.Issues);
+    Assert.Equal("provider-native-crypto-selection-unavailable", issue.Code);
+    Assert.Equal("privacy/provider-native-crypto/CustomerProfileEmailEncrypted", issue.Path);
+    Assert.Contains("requires capability profile 'sqlserver-v1'", issue.Message, StringComparison.Ordinal);
+    Assert.Contains("active profile is 'postgres-v1'", issue.Message, StringComparison.Ordinal);
+
+    var selection = Assert.Single(result.Privacy.ProviderNativeCryptoSelections);
+    Assert.Null(selection.ProviderName);
+    Assert.Equal("provider-native-rejected-incompatible-profile", selection.SelectionStatus);
+    Assert.Equal("always-encrypted", selection.CapabilityFamily);
+    Assert.Null(selection.CapabilityStatus);
+  }
+
+  [Fact]
+  public void AnalyzeDbContextFailsClosedForSqlServerProviderNativeCryptoSelectionOnUnsupportedProviderPath() {
+    var services = new ServiceCollection();
+    services.AddDVaultPrivacy(options => options.RegisterEncryptedPayloadAlias("CustomerProfileEmailEncrypted"));
+    services.AddDVaultSqlServerAlwaysEncryptedSelection(
+        "CustomerProfileEmailEncrypted",
+        "always-encrypted-column-key");
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+    var options = new DbContextOptionsBuilder<ReadShapeDiagnosticsContext>()
+        .UseSqlite("Data Source=:memory:")
+        .Options;
+
+    using var context = new ReadShapeDiagnosticsContext(options);
+    var result = diagnostics.Analyze(context);
+
+    Assert.False(result.Validation.IsValid);
+    var issue = Assert.Single(result.Validation.Issues);
+    Assert.Equal("provider-native-crypto-selection-unavailable", issue.Code);
+    Assert.Equal("privacy/provider-native-crypto/CustomerProfileEmailEncrypted", issue.Path);
+    Assert.Contains("requires capability profile 'sqlserver-v1'", issue.Message, StringComparison.Ordinal);
+    Assert.Contains("active profile is 'sqlite-v1'", issue.Message, StringComparison.Ordinal);
+
+    var selection = Assert.Single(result.Privacy.ProviderNativeCryptoSelections);
+    Assert.Equal(KnownProviderNames.Sqlite, selection.ProviderName);
+    Assert.Equal("provider-native-rejected-incompatible-profile", selection.SelectionStatus);
+    Assert.Equal("sqlserver-v1", selection.CapabilityProfileName);
+  }
+
+  [Fact]
+  public void SqlServerProviderNativeCryptoSelectionFailsClosedWhenReviewedCapabilityFactsAreUnavailable() {
+    var selectionProvider = new SqlServerAlwaysEncryptedDataVaultProviderNativeCryptoSelectionProvider(
+        "CustomerProfileEmailEncrypted",
+        ["always-encrypted-column-key"]);
+
+    var fact = Assert.Single(selectionProvider.Analyze(
+        new DataVaultProviderNativeCryptoSelectionContext(
+            KnownProviderNames.SqlServer,
+            "sqlserver-v1",
+            true,
+            [])));
+
+    Assert.Equal(KnownProviderNames.SqlServer, fact.ProviderName);
+    Assert.Equal("CustomerProfileEmailEncrypted", fact.EncryptedPayloadAlias);
+    Assert.Equal("always-encrypted", fact.CapabilityFamily);
+    Assert.Null(fact.CapabilityLabel);
+    Assert.Null(fact.CapabilityStatus);
+    Assert.Equal("provider-native-rejected-unavailable", fact.SelectionStatus);
+    Assert.Contains("no static capability fact is available", fact.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void SqlServerProviderNativeCryptoSelectionFailsClosedWhenReviewedCapabilityIsUnsupported() {
+    var selectionProvider = new SqlServerAlwaysEncryptedDataVaultProviderNativeCryptoSelectionProvider(
+        "CustomerProfileEmailEncrypted",
+        ["always-encrypted-column-key"]);
+
+    var fact = Assert.Single(selectionProvider.Analyze(
+        new DataVaultProviderNativeCryptoSelectionContext(
+            KnownProviderNames.SqlServer,
+            "sqlserver-v1",
+            false,
+            [
+                new DataVaultProviderCryptoCapabilityFact(
+                    KnownProviderNames.SqlServer,
+                    "sqlserver-v1",
+                    "always-encrypted",
+                    "Always Encrypted",
+                    "driver-mediated",
+                    "unsupported",
+                    "redacted guidance"),
+            ])));
+
+    Assert.Equal("Always Encrypted", fact.CapabilityLabel);
+    Assert.Equal("driver-mediated", fact.CapabilityKind);
+    Assert.Equal("unsupported", fact.CapabilityStatus);
+    Assert.Equal("provider-native-rejected-unsupported", fact.SelectionStatus);
+    Assert.Contains("marked unsupported", fact.Message, StringComparison.Ordinal);
+  }
+
+  [Fact]
+  public void ProviderNativeCryptoSelectionSupportBundleDoesNotExposeCallerOwnedPrerequisiteDetails() {
+    var services = new ServiceCollection();
+    services.AddDVaultPrivacy(options => options.RegisterEncryptedPayloadAlias("CustomerProfileEmailEncrypted"));
+    services.AddDVaultSqlServerAlwaysEncryptedSelection(
+        "CustomerProfileEmailEncrypted",
+        "Password=column-key-secret",
+        "Data Source=tcp:sql.example.test",
+        "SELECT EncryptByKey(Key_GUID('CustomerProfileEmailKey'), @payload)");
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    var result = diagnostics.Analyze(CreateCustomerMetadataModel(), DataVaultProviderCapabilityProfiles.SqlServer);
+    var supportBundleJson = DataVaultSupportBundleExporter.ExportJson(result);
+
+    Assert.True(result.Validation.IsValid);
+    Assert.Contains("providerNativeCryptoSelections", supportBundleJson, StringComparison.Ordinal);
+    Assert.Contains("provider-native-requested", supportBundleJson, StringComparison.Ordinal);
+    Assert.DoesNotContain("Password=", supportBundleJson, StringComparison.OrdinalIgnoreCase);
+    Assert.DoesNotContain("column-key-secret", supportBundleJson, StringComparison.OrdinalIgnoreCase);
+    Assert.DoesNotContain("Data Source", supportBundleJson, StringComparison.OrdinalIgnoreCase);
+    Assert.DoesNotContain("SELECT ", supportBundleJson, StringComparison.OrdinalIgnoreCase);
+    Assert.DoesNotContain("EncryptByKey", supportBundleJson, StringComparison.OrdinalIgnoreCase);
+  }
+
   [Theory]
   [InlineData(KnownProviderNames.MySqlOracle)]
   [InlineData(KnownProviderNames.MySqlPomelo)]
