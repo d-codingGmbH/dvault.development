@@ -3,7 +3,7 @@
   "ticket-id": "06FH8QRPDP10ZBAF3A5RYQFFQM",
   "ticket-type": "task",
   "title": "Task: Design analyzer asset and dependency strategy for .NET 8 hosts",
-  "revision": "06FH9HXMAAD2JG872VYBHB33XR",
+  "revision": "06FHCDJNCTKZ1GPQ75H6ZC3K64",
   "status": "done",
   "labels": [
     "area/analyzers",
@@ -18,5 +18,5 @@
   "milestone-id": "06FH8QAQV04Z28E5Q4E25060JG",
   "release-id": "06FH8QAPVPB96WQ8T1NH1R9H14",
   "created-at": "2026-06-29T17:13:28.4819457Z",
-  "updated-at": "2026-06-29T19:07:39.9868466Z"
+  "updated-at": "2026-06-30T01:48:07.3984935Z"
 }
