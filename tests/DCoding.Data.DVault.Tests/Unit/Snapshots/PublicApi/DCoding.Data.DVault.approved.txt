@@ -1009,6 +1009,7 @@ type public sealed class DCoding.Data.DVault.DataVaultPrivacyDiagnostics : Syste
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPrivacyAliasCoverageFact> AliasCoverages { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPrivacyPersonalDataCoverageFact> PersonalDataCoverages { get; init; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultProviderCryptoCapabilityFact> ProviderCryptoCapabilities { get; init; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionFact> ProviderNativeCryptoSelections { get; init; }
   property public static DCoding.Data.DVault.DataVaultPrivacyDiagnostics Empty { get; }
   property public string KeyProviderPosture { get; init; }
   method public override bool Equals(object? obj)
@@ -1129,6 +1130,40 @@ type public sealed class DCoding.Data.DVault.DataVaultProviderCryptoCapabilityFa
   method public static bool op_Inequality(DCoding.Data.DVault.DataVaultProviderCryptoCapabilityFact? left, DCoding.Data.DVault.DataVaultProviderCryptoCapabilityFact? right)
   method public virtual bool Equals(DCoding.Data.DVault.DataVaultProviderCryptoCapabilityFact? other)
   method public void Deconstruct(out string? ProviderName, out string CapabilityProfileName, out string CapabilityFamily, out string CapabilityLabel, out string CapabilityKind, out string Status, out string Guidance)
+
+type public sealed class DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionContext : System.IEquatable<DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionContext>
+  ctor public DataVaultProviderNativeCryptoSelectionContext(string? ProviderName, string CapabilityProfileName, bool CapabilityProfileDefaulted, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultProviderCryptoCapabilityFact> ReviewedCapabilities)
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultProviderCryptoCapabilityFact> ReviewedCapabilities { get; init; }
+  property public bool CapabilityProfileDefaulted { get; init; }
+  property public string CapabilityProfileName { get; init; }
+  property public string? ProviderName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionContext? left, DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionContext? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionContext? left, DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionContext? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionContext? other)
+  method public void Deconstruct(out string? ProviderName, out string CapabilityProfileName, out bool CapabilityProfileDefaulted, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultProviderCryptoCapabilityFact> ReviewedCapabilities)
+
+type public sealed class DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionFact : System.IEquatable<DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionFact>
+  ctor public DataVaultProviderNativeCryptoSelectionFact(string? ProviderName, string EncryptedPayloadAlias, string ProviderPackageName, string CapabilityProfileName, string CapabilityFamily, string? CapabilityLabel, string? CapabilityKind, string? CapabilityStatus, string SelectionStatus, string Message)
+  property public string CapabilityFamily { get; init; }
+  property public string CapabilityProfileName { get; init; }
+  property public string EncryptedPayloadAlias { get; init; }
+  property public string Message { get; init; }
+  property public string ProviderPackageName { get; init; }
+  property public string SelectionStatus { get; init; }
+  property public string? CapabilityKind { get; init; }
+  property public string? CapabilityLabel { get; init; }
+  property public string? CapabilityStatus { get; init; }
+  property public string? ProviderName { get; init; }
+  method public override bool Equals(object? obj)
+  method public override int GetHashCode()
+  method public override string ToString()
+  method public static bool op_Equality(DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionFact? left, DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionFact? right)
+  method public static bool op_Inequality(DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionFact? left, DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionFact? right)
+  method public virtual bool Equals(DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionFact? other)
+  method public void Deconstruct(out string? ProviderName, out string EncryptedPayloadAlias, out string ProviderPackageName, out string CapabilityProfileName, out string CapabilityFamily, out string? CapabilityLabel, out string? CapabilityKind, out string? CapabilityStatus, out string SelectionStatus, out string Message)
 
 type public sealed class DCoding.Data.DVault.DataVaultProviderNativeEncryptionBoundaryFact : System.IEquatable<DCoding.Data.DVault.DataVaultProviderNativeEncryptionBoundaryFact>
   ctor public DataVaultProviderNativeEncryptionBoundaryFact(string? ProviderName, string CapabilityProfileName, string BoundaryStatus, string GuidanceStatus, bool ManagedByDVault, bool UsesDatabaseCapabilityProbing, string Source, string Message)
@@ -1959,6 +1994,9 @@ type public interface DCoding.Data.DVault.IDataVaultProviderBehavior
 type public interface DCoding.Data.DVault.IDataVaultProviderBehaviorSelector
   method public abstract DCoding.Data.DVault.DataVaultProviderBehaviorProfile SelectBehavior(DCoding.Data.DVault.DataVaultProviderBehaviorContext context)
   method public abstract DCoding.Data.DVault.DataVaultProviderBehaviorProfile SelectBehavior(Microsoft.EntityFrameworkCore.DbContext dbContext)
+
+type public interface DCoding.Data.DVault.IDataVaultProviderNativeCryptoSelectionProvider
+  method public abstract System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionFact> Analyze(DCoding.Data.DVault.DataVaultProviderNativeCryptoSelectionContext context)
 
 type public interface DCoding.Data.DVault.IDataVaultProviderReadStrategy
   property public int Priority { get; }

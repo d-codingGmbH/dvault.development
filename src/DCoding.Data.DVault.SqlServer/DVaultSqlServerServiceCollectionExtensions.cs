@@ -28,4 +28,44 @@ public static class DVaultSqlServerServiceCollectionExtensions {
 
     return services;
   }
+
+  /// <summary>
+  /// Adds one explicit SQL Server Always Encrypted selection for a provider-owned privacy diagnostics lane.
+  /// </summary>
+  /// <param name="services">The service collection used by the application startup pipeline.</param>
+  /// <param name="encryptedPayloadAlias">The provider-neutral encrypted-payload alias selected by the application.</param>
+  /// <param name="callerOwnedPrerequisiteProofNames">Redaction-safe names for caller-owned Always Encrypted prerequisites.</param>
+  /// <returns>The same service collection so startup configuration can continue fluently.</returns>
+  public static IServiceCollection AddDVaultSqlServerAlwaysEncryptedSelection(
+      this IServiceCollection services,
+      string encryptedPayloadAlias,
+      params string[] callerOwnedPrerequisiteProofNames) {
+    ArgumentNullException.ThrowIfNull(services);
+    ArgumentException.ThrowIfNullOrWhiteSpace(encryptedPayloadAlias);
+    ArgumentNullException.ThrowIfNull(callerOwnedPrerequisiteProofNames);
+
+    if (callerOwnedPrerequisiteProofNames.Any(string.IsNullOrWhiteSpace)) {
+      throw new ArgumentException(
+          "Caller-owned prerequisite proof names must be non-empty when supplied.",
+          nameof(callerOwnedPrerequisiteProofNames));
+    }
+
+    if (services.Any(descriptor =>
+        descriptor.ServiceType == typeof(IDataVaultProviderNativeCryptoSelectionProvider) &&
+        descriptor.ImplementationInstance is SqlServerAlwaysEncryptedDataVaultProviderNativeCryptoSelectionProvider provider &&
+        string.Equals(provider.EncryptedPayloadAlias, encryptedPayloadAlias, StringComparison.Ordinal))) {
+      throw new InvalidOperationException(
+          "SQL Server Always Encrypted selection for encrypted payload alias '" +
+          encryptedPayloadAlias +
+          "' has already been registered.");
+    }
+
+    services.AddDVaultSqlServer();
+    services.AddSingleton<IDataVaultProviderNativeCryptoSelectionProvider>(
+        new SqlServerAlwaysEncryptedDataVaultProviderNativeCryptoSelectionProvider(
+            encryptedPayloadAlias,
+            [.. callerOwnedPrerequisiteProofNames]));
+
+    return services;
+  }
 }

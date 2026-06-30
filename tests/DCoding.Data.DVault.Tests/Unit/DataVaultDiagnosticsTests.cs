@@ -794,6 +794,54 @@ public sealed class DataVaultDiagnosticsTests {
         ]);
   }
 
+  [Fact]
+  public void AnalyzeMetadataModelReportsProviderNativeCryptoSelectionForReviewedCapability() {
+    var services = new ServiceCollection();
+    services.AddDVaultPrivacy(options => options.RegisterEncryptedPayloadAlias("CustomerProfileEmailEncrypted"));
+    services.AddDVaultSqlServerAlwaysEncryptedSelection(
+        "CustomerProfileEmailEncrypted",
+        "always-encrypted-column-key");
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    var result = diagnostics.Analyze(CreateCustomerMetadataModel(), DataVaultProviderCapabilityProfiles.SqlServer);
+
+    Assert.True(result.Validation.IsValid);
+    var selection = Assert.Single(result.Privacy.ProviderNativeCryptoSelections);
+    Assert.Null(selection.ProviderName);
+    Assert.Equal("CustomerProfileEmailEncrypted", selection.EncryptedPayloadAlias);
+    Assert.Equal("DCoding.Data.DVault.SqlServer", selection.ProviderPackageName);
+    Assert.Equal("sqlserver-v1", selection.CapabilityProfileName);
+    Assert.Equal("always-encrypted", selection.CapabilityFamily);
+    Assert.Equal("Always Encrypted", selection.CapabilityLabel);
+    Assert.Equal("driver-mediated", selection.CapabilityKind);
+    Assert.Equal("conditional", selection.CapabilityStatus);
+    Assert.Equal("provider-native-requested", selection.SelectionStatus);
+    Assert.DoesNotContain("Password=", selection.Message, StringComparison.OrdinalIgnoreCase);
+  }
+
+  [Fact]
+  public void AnalyzeMetadataModelFailsClosedForMissingProviderNativeCryptoPrerequisites() {
+    var services = new ServiceCollection();
+    services.AddDVaultPrivacy(options => options.RegisterEncryptedPayloadAlias("CustomerProfileEmailEncrypted"));
+    services.AddDVaultSqlServerAlwaysEncryptedSelection("CustomerProfileEmailEncrypted");
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var diagnostics = provider.GetRequiredService<IDataVaultDiagnosticsService>();
+
+    var result = diagnostics.Analyze(CreateCustomerMetadataModel(), DataVaultProviderCapabilityProfiles.SqlServer);
+
+    Assert.False(result.Validation.IsValid);
+    var issue = Assert.Single(result.Validation.Issues);
+    Assert.Equal("provider-native-crypto-selection-unavailable", issue.Code);
+    Assert.Equal("privacy/provider-native-crypto/CustomerProfileEmailEncrypted", issue.Path);
+    Assert.Contains("caller-owned prerequisite", issue.Message, StringComparison.Ordinal);
+
+    var selection = Assert.Single(result.Privacy.ProviderNativeCryptoSelections);
+    Assert.Equal("always-encrypted", selection.CapabilityFamily);
+    Assert.Null(selection.CapabilityStatus);
+    Assert.Equal("provider-native-rejected-missing-prerequisite", selection.SelectionStatus);
+  }
+
   [Theory]
   [InlineData(KnownProviderNames.MySqlOracle)]
   [InlineData(KnownProviderNames.MySqlPomelo)]

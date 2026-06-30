@@ -15,6 +15,12 @@ public sealed record DataVaultPrivacyDiagnostics(
       Array.Empty<DataVaultProviderCryptoCapabilityFact>();
 
   /// <summary>
+  /// Gets explicit provider-native crypto selection facts after fail-closed validation.
+  /// </summary>
+  public IReadOnlyList<DataVaultProviderNativeCryptoSelectionFact> ProviderNativeCryptoSelections { get; init; } =
+      Array.Empty<DataVaultProviderNativeCryptoSelectionFact>();
+
+  /// <summary>
   /// Creates an empty provider-neutral privacy diagnostics payload.
   /// </summary>
   public static DataVaultPrivacyDiagnostics Empty { get; } = new(
@@ -31,5 +37,6 @@ public sealed record DataVaultPrivacyDiagnostics(
       Array.Empty<DataVaultPrivacyAliasCoverageFact>(),
       Array.Empty<DataVaultPrivacyPersonalDataCoverageFact>()) {
     ProviderCryptoCapabilities = Array.Empty<DataVaultProviderCryptoCapabilityFact>(),
+    ProviderNativeCryptoSelections = Array.Empty<DataVaultProviderNativeCryptoSelectionFact>(),
   };
 }

@@ -23,6 +23,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
   private const string PrivacyKeyProviderPostureEncryptedPayloadCapable = "encrypted-payload-capable";
   private const string PrivacyKeyProviderPostureMarkerOnly = "marker-only";
   private const string PrivacyKeyProviderPostureNone = "none";
+  private const string ProviderNativeCryptoSelectionRejectedPrefix = "provider-native-rejected-";
 
   private static readonly DataVaultSaveStrategyDiagnostics NotEvaluatedStrategy = new(
       DataVaultSaveStrategyDiagnosticsStatus.NotEvaluated,
@@ -46,6 +47,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
   private readonly IReadOnlyList<IDataVaultProviderSaveStrategy> _providerSaveStrategies;
   private readonly IReadOnlyList<IDataVaultPersonalDataCoverageProof> _personalDataCoverageProofs;
   private readonly IReadOnlyList<IDataVaultPrivacyAliasCoverageProvider> _privacyAliasCoverageProviders;
+  private readonly IReadOnlyList<IDataVaultProviderNativeCryptoSelectionProvider> _providerNativeCryptoSelectionProviders;
   private readonly IStableHashService _stableHashService;
 
   public DefaultDataVaultDiagnosticsService(
@@ -55,6 +57,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       IEnumerable<IDataVaultProviderBridgeReadStrategy> providerBridgeReadStrategies,
       IEnumerable<IDataVaultPersonalDataCoverageProof> personalDataCoverageProofs,
       IEnumerable<IDataVaultPrivacyAliasCoverageProvider> privacyAliasCoverageProviders,
+      IEnumerable<IDataVaultProviderNativeCryptoSelectionProvider> providerNativeCryptoSelectionProviders,
       IDataVaultProviderBehaviorSelector providerBehaviorSelector,
       IStableHashService stableHashService) {
     ArgumentNullException.ThrowIfNull(providerSaveStrategies);
@@ -63,6 +66,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     ArgumentNullException.ThrowIfNull(providerBridgeReadStrategies);
     ArgumentNullException.ThrowIfNull(personalDataCoverageProofs);
     ArgumentNullException.ThrowIfNull(privacyAliasCoverageProviders);
+    ArgumentNullException.ThrowIfNull(providerNativeCryptoSelectionProviders);
     ArgumentNullException.ThrowIfNull(providerBehaviorSelector);
     ArgumentNullException.ThrowIfNull(stableHashService);
 
@@ -72,6 +76,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     _providerBridgeReadStrategies = providerBridgeReadStrategies.ToArray();
     _personalDataCoverageProofs = personalDataCoverageProofs.ToArray();
     _privacyAliasCoverageProviders = privacyAliasCoverageProviders.ToArray();
+    _providerNativeCryptoSelectionProviders = providerNativeCryptoSelectionProviders.ToArray();
     _providerBehaviorSelector = providerBehaviorSelector;
     _stableHashService = stableHashService;
   }
@@ -328,6 +333,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     }
 
     var privacy = CreatePrivacyDiagnostics(explain, efModel: null, personalDataCoverageFacts);
+    issues.AddRange(CreateProviderNativeCryptoSelectionIssues(privacy.ProviderNativeCryptoSelections));
 
     return CreateResult(explain, NotEvaluatedStrategy, NotEvaluatedReadStrategy, issues, privacy: privacy);
   }
@@ -416,6 +422,7 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
     var readShape = CreateReadShapeDiagnostics(explain, readStrategy, readRequest);
     var providerTuning = CreateProviderTuningDiagnostics(strategy, readStrategy, readShape);
     var privacy = CreatePrivacyDiagnostics(explain, explainModel, personalDataCoverageFacts);
+    issues.AddRange(CreateProviderNativeCryptoSelectionIssues(privacy.ProviderNativeCryptoSelections));
 
     return CreateResult(explain, strategy, readStrategy, issues, readShape, providerTuning, privacy);
   }
@@ -1026,17 +1033,43 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
       IReadOnlyModel? efModel,
       IReadOnlyList<DataVaultPrivacyPersonalDataCoverageFact> personalDataCoverageFacts) {
     var aliasReport = CreatePrivacyAliasCoverageReport(efModel);
+    var providerCryptoCapabilities = DataVaultProviderCryptoCapabilityCatalog.SelectReviewedCapabilities(
+        explain.ProviderName,
+        explain.CapabilityProfileName,
+        explain.CapabilityProfileDefaulted);
 
     return new DataVaultPrivacyDiagnostics(
         CreateProviderNativeEncryptionBoundaryFact(explain),
         aliasReport.KeyProviderPosture,
         aliasReport.AliasCoverages,
         personalDataCoverageFacts) {
-      ProviderCryptoCapabilities = DataVaultProviderCryptoCapabilityCatalog.SelectReviewedCapabilities(
-          explain.ProviderName,
-          explain.CapabilityProfileName,
-          explain.CapabilityProfileDefaulted),
+      ProviderCryptoCapabilities = providerCryptoCapabilities,
+      ProviderNativeCryptoSelections = CreateProviderNativeCryptoSelections(
+          explain,
+          providerCryptoCapabilities),
     };
+  }
+
+  private IReadOnlyList<DataVaultProviderNativeCryptoSelectionFact> CreateProviderNativeCryptoSelections(
+      DataVaultExplainDiagnostics explain,
+      IReadOnlyList<DataVaultProviderCryptoCapabilityFact> providerCryptoCapabilities) {
+    if (_providerNativeCryptoSelectionProviders.Count == 0) {
+      return Array.Empty<DataVaultProviderNativeCryptoSelectionFact>();
+    }
+
+    var context = new DataVaultProviderNativeCryptoSelectionContext(
+        explain.ProviderName,
+        explain.CapabilityProfileName,
+        explain.CapabilityProfileDefaulted,
+        providerCryptoCapabilities);
+
+    return _providerNativeCryptoSelectionProviders
+        .SelectMany(provider => provider.Analyze(context))
+        .OrderBy(selection => selection.EncryptedPayloadAlias, StringComparer.Ordinal)
+        .ThenBy(selection => selection.ProviderPackageName, StringComparer.Ordinal)
+        .ThenBy(selection => selection.CapabilityProfileName, StringComparer.Ordinal)
+        .ThenBy(selection => selection.CapabilityFamily, StringComparer.Ordinal)
+        .ToArray();
   }
 
   private DataVaultPrivacyAliasCoverageReport CreatePrivacyAliasCoverageReport(IReadOnlyModel? efModel) {
@@ -1915,6 +1948,21 @@ internal sealed class DefaultDataVaultDiagnosticsService : IDataVaultDiagnostics
           isProofMissing ? "personal-data-privacy-proof-missing" : "personal-data-privacy-coverage-unusable",
           fact.Message,
           fact.Path);
+    }
+  }
+
+  private static IEnumerable<DataVaultDiagnosticsIssue> CreateProviderNativeCryptoSelectionIssues(
+      IReadOnlyList<DataVaultProviderNativeCryptoSelectionFact> facts) {
+    foreach (var fact in facts) {
+      if (!fact.SelectionStatus.StartsWith(ProviderNativeCryptoSelectionRejectedPrefix, StringComparison.Ordinal)) {
+        continue;
+      }
+
+      yield return new DataVaultDiagnosticsIssue(
+          DataVaultDiagnosticsIssueSeverity.Error,
+          "provider-native-crypto-selection-unavailable",
+          fact.Message,
+          "privacy/provider-native-crypto/" + fact.EncryptedPayloadAlias);
     }
   }
 

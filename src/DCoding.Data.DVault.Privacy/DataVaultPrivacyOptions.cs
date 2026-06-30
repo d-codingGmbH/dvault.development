@@ -56,7 +56,9 @@ public sealed class DataVaultPrivacyOptions {
     ReplaceDescriptor(
         services,
         ServiceDescriptor.Singleton<IDataVaultPrivacyConfiguration>(
-            new DefaultDataVaultPrivacyConfiguration([.. encryptedPayloadAliases], keyProvider)));
+            new DefaultDataVaultPrivacyConfiguration(
+                [.. encryptedPayloadAliases],
+                keyProvider)));
     ReplaceDescriptor(
         services,
         ServiceDescriptor.Singleton<IDataVaultPersonalDataCoverageProof, DataVaultPrivacyPersonalDataCoverageProof>());

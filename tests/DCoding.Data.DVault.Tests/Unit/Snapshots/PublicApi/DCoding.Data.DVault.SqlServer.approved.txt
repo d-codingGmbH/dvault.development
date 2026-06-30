@@ -6,3 +6,4 @@
 
 type public static class DCoding.Data.DVault.DVaultSqlServerServiceCollectionExtensions
   method public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddDVaultSqlServer(this Microsoft.Extensions.DependencyInjection.IServiceCollection services)
+  method public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddDVaultSqlServerAlwaysEncryptedSelection(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, string encryptedPayloadAlias, string[] callerOwnedPrerequisiteProofNames)
