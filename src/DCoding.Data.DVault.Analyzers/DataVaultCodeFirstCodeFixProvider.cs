@@ -22,11 +22,9 @@ internal sealed class DataVaultCodeFirstCodeFixProvider : CodeFixProvider {
   private const string RemoveDuplicateDeclarationTitle = "Remove duplicate Code-First member declaration";
 
   /// <inheritdoc />
-  public override ImmutableArray<string> FixableDiagnosticIds { get; } =
-  [
+  public override ImmutableArray<string> FixableDiagnosticIds { get; } = ImmutableArray.Create(
       CodeFirstDiagnosticCatalog.UnsupportedSelectorMetadata.Id,
-      CodeFirstDiagnosticCatalog.DuplicateMemberMetadata.Id,
-  ];
+      CodeFirstDiagnosticCatalog.DuplicateMemberMetadata.Id);
 
   /// <inheritdoc />
   public override FixAllProvider? GetFixAllProvider() {
@@ -215,7 +213,7 @@ internal sealed class DataVaultCodeFirstCodeFixProvider : CodeFixProvider {
       LambdaExpressionSyntax lambda,
       CancellationToken cancellationToken,
       out ImmutableArray<MemberAccessExpressionSyntax> memberExpressions) {
-    memberExpressions = [];
+    memberExpressions = ImmutableArray<MemberAccessExpressionSyntax>.Empty;
 
     if (!TryGetSingleLambdaParameter(lambda, out var parameter) ||
         semanticModel.GetDeclaredSymbol(parameter, cancellationToken) is not IParameterSymbol parameterSymbol ||

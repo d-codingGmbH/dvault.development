@@ -1,4 +1,7 @@
 using System.IO.Compression;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
+using System.Text;
 using System.Xml.Linq;
 
 namespace DCoding.Data.DVault.PackageVerification;
@@ -14,14 +17,31 @@ public sealed class PackageVerifier {
   private const string ExpectedRepositoryType = "git";
   private const string ExpectedRepositoryUrl = "https://github.com/d-codingGmbH/dvault.development.git";
   private const string ExpectedReadmeFile = "README.md";
-  private const string ExpectedAnalyzerBuildHostGuidance = "Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.50.0` package line.";
+  private const string ExpectedAnalyzerBuildHostGuidance = "Build projects that reference `DCoding.Data.DVault.Analyzers` with either a `.NET 8 SDK` or `.NET 10 SDK` host. The package ships one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/` for both coordinated package lines.";
+  private const string ExpectedAnalyzerTargetFrameworkMoniker = ".NETStandard,Version=v2.0";
 
   private static readonly string[] DisallowedAnalyzerBuildHostContradictionFragments = [
-      "Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 8 SDK` host",
       "This repository validates pure `.NET 8 SDK` analyzer consumption",
-      "The current analyzer package supports pure `.NET 8 SDK` analyzer consumption",
-      "does not require a `.NET 10 SDK` host",
-      "without a `.NET 10 SDK` host",
+      "requires a `.NET 10 SDK` build host",
+      "uses a `.NET 10 SDK` build host",
+      "Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host",
+      "one `net10.0` analyzer asset",
+      "net10-only analyzer",
+  ];
+
+  private static readonly string[] DisallowedAnalyzerTargetFrameworkFragments = [
+      ".NETCoreApp,Version=v10.0",
+      ".NETCoreApp,Version=v8.0",
+  ];
+
+  private static readonly string[] ExpectedAnalyzerCompanionAssets = [
+      "Microsoft.CodeAnalysis.CSharp.Workspaces.dll",
+      "Microsoft.CodeAnalysis.Workspaces.dll",
+      "System.Composition.AttributedModel.dll",
+      "System.Composition.Hosting.dll",
+      "System.Composition.Runtime.dll",
+      "System.Composition.TypedParts.dll",
+      "System.Text.Json.dll",
   ];
 
   private static readonly string[] DisallowedMixedLineInstallClaimFragments = [
@@ -631,7 +651,7 @@ public sealed class PackageVerifier {
     if (archive.ReadmeText?.Contains(ExpectedAnalyzerBuildHostGuidance, StringComparison.Ordinal) != true) {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
-          "Packaged README.md must state that DCoding.Data.DVault.Analyzers is supported on the .NET 10 SDK build-host baseline, including net8.0 projects using the 8.50.0 package line."));
+          "Packaged README.md must state that DCoding.Data.DVault.Analyzers is supported on both .NET 8 SDK and .NET 10 SDK build-host baselines through one netstandard2.0 analyzer asset under analyzers/dotnet/cs/."));
     }
   }
 
@@ -642,7 +662,7 @@ public sealed class PackageVerifier {
       if (archive.ReadmeText?.Contains(disallowedFragment, StringComparison.Ordinal) == true) {
         issues.Add(new PackageVerificationIssue(
             archive.Id,
-            "Packaged README.md must not contradict the .NET 10 SDK build-host baseline for DCoding.Data.DVault.Analyzers; remove unsupported analyzer-host claim '" + disallowedFragment + "'."));
+            "Packaged README.md must not contradict the dual .NET 8 SDK and .NET 10 SDK analyzer-host baseline for DCoding.Data.DVault.Analyzers; remove stale analyzer-host claim '" + disallowedFragment + "'."));
       }
     }
   }
@@ -675,6 +695,33 @@ public sealed class PackageVerifier {
       issues.Add(new PackageVerificationIssue(
           archive.Id,
           "Analyzer package archive '" + archive.FileName + "' is missing analyzer asset '" + expectedAnalyzerPath + "'."));
+      return;
+    }
+
+    foreach (var expectedCompanionAsset in ExpectedAnalyzerCompanionAssets) {
+      var expectedCompanionPath = "analyzers/dotnet/cs/" + expectedCompanionAsset;
+      if (!archive.Entries.Contains(expectedCompanionPath)) {
+        issues.Add(new PackageVerificationIssue(
+            archive.Id,
+            "Analyzer package archive '" + archive.FileName + "' is missing analyzer companion asset '" + expectedCompanionPath + "'."));
+      }
+    }
+
+    var analyzerBytes = ReadEntryBytes(archive.FilePath, expectedAnalyzerPath, archive.Id, issues);
+    var analyzerTargetFrameworkMoniker = ReadAnalyzerTargetFrameworkMoniker(analyzerBytes);
+    if (!string.Equals(analyzerTargetFrameworkMoniker, ExpectedAnalyzerTargetFrameworkMoniker, StringComparison.Ordinal)) {
+      issues.Add(new PackageVerificationIssue(
+          archive.Id,
+          "Analyzer asset '" + expectedAnalyzerPath + "' must target '" + ExpectedAnalyzerTargetFrameworkMoniker + "' so both .NET 8 SDK and .NET 10 SDK hosts can load the same package asset."));
+    }
+
+    foreach (var disallowedFragment in DisallowedAnalyzerTargetFrameworkFragments) {
+      if (string.Equals(analyzerTargetFrameworkMoniker, disallowedFragment, StringComparison.Ordinal) ||
+          ContainsUtf8Fragment(analyzerBytes, disallowedFragment)) {
+        issues.Add(new PackageVerificationIssue(
+            archive.Id,
+            "Analyzer asset '" + expectedAnalyzerPath + "' must not carry stale target framework marker '" + disallowedFragment + "'; expected '" + ExpectedAnalyzerTargetFrameworkMoniker + "'."));
+      }
     }
   }
 
@@ -918,6 +965,113 @@ public sealed class PackageVerifier {
     using var stream = entry.Open();
     using var reader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
     return reader.ReadToEnd();
+  }
+
+  private static byte[] ReadEntryBytes(
+      string archivePath,
+      string entryName,
+      string packageId,
+      List<PackageVerificationIssue> issues) {
+    try {
+      using var archive = ZipFile.OpenRead(archivePath);
+      var entry = archive
+          .Entries
+          .FirstOrDefault(candidate => string.Equals(candidate.FullName.Replace('\\', '/'), entryName, StringComparison.Ordinal));
+      if (entry is null) {
+        return [];
+      }
+
+      using var stream = entry.Open();
+      using var memory = new MemoryStream();
+      stream.CopyTo(memory);
+      return memory.ToArray();
+    }
+    catch (Exception exception) when (exception is InvalidDataException or IOException or UnauthorizedAccessException) {
+      issues.Add(new PackageVerificationIssue(
+          packageId,
+          "Could not inspect package entry '" + entryName + "': " + exception.Message));
+      return [];
+    }
+  }
+
+  private static bool ContainsUtf8Fragment(byte[] bytes, string fragment) {
+    return Encoding.UTF8.GetString(bytes).Contains(fragment, StringComparison.Ordinal);
+  }
+
+  private static string ReadAnalyzerTargetFrameworkMoniker(byte[] bytes) {
+    try {
+      using var stream = new MemoryStream(bytes, writable: false);
+      using var peReader = new PEReader(stream);
+      if (!peReader.HasMetadata) {
+        return ReadUtf8AnalyzerTargetFrameworkFallback(bytes);
+      }
+
+      var metadataReader = peReader.GetMetadataReader();
+      var assemblyDefinition = metadataReader.GetAssemblyDefinition();
+      foreach (var attributeHandle in assemblyDefinition.GetCustomAttributes()) {
+        var attribute = metadataReader.GetCustomAttribute(attributeHandle);
+        if (!IsTargetFrameworkAttribute(metadataReader, attribute.Constructor)) {
+          continue;
+        }
+
+        var valueReader = metadataReader.GetBlobReader(attribute.Value);
+        if (valueReader.ReadUInt16() != 1) {
+          return string.Empty;
+        }
+
+        return valueReader.ReadSerializedString() ?? string.Empty;
+      }
+    }
+    catch (Exception exception) when (exception is BadImageFormatException or IOException or InvalidOperationException) {
+      return ReadUtf8AnalyzerTargetFrameworkFallback(bytes);
+    }
+
+    return string.Empty;
+  }
+
+  private static string ReadUtf8AnalyzerTargetFrameworkFallback(byte[] bytes) {
+    var text = Encoding.UTF8.GetString(bytes);
+    if (text.Contains(ExpectedAnalyzerTargetFrameworkMoniker, StringComparison.Ordinal)) {
+      return ExpectedAnalyzerTargetFrameworkMoniker;
+    }
+
+    foreach (var disallowedFragment in DisallowedAnalyzerTargetFrameworkFragments) {
+      if (text.Contains(disallowedFragment, StringComparison.Ordinal)) {
+        return disallowedFragment;
+      }
+    }
+
+    return string.Empty;
+  }
+
+  private static bool IsTargetFrameworkAttribute(MetadataReader metadataReader, EntityHandle constructor) {
+    var attributeType = constructor.Kind switch {
+      HandleKind.MemberReference => metadataReader.GetMemberReference((MemberReferenceHandle)constructor).Parent,
+      HandleKind.MethodDefinition => metadataReader.GetMethodDefinition((MethodDefinitionHandle)constructor).GetDeclaringType(),
+      _ => default(EntityHandle),
+    };
+
+    return IsTargetFrameworkAttributeType(metadataReader, attributeType);
+  }
+
+  private static bool IsTargetFrameworkAttributeType(MetadataReader metadataReader, EntityHandle attributeType) {
+    return attributeType.Kind switch {
+      HandleKind.TypeReference => IsTargetFrameworkTypeReference(metadataReader, (TypeReferenceHandle)attributeType),
+      HandleKind.TypeDefinition => IsTargetFrameworkTypeDefinition(metadataReader, (TypeDefinitionHandle)attributeType),
+      _ => false,
+    };
+  }
+
+  private static bool IsTargetFrameworkTypeReference(MetadataReader metadataReader, TypeReferenceHandle typeReferenceHandle) {
+    var typeReference = metadataReader.GetTypeReference(typeReferenceHandle);
+    return metadataReader.StringComparer.Equals(typeReference.Namespace, "System.Runtime.Versioning") &&
+        metadataReader.StringComparer.Equals(typeReference.Name, "TargetFrameworkAttribute");
+  }
+
+  private static bool IsTargetFrameworkTypeDefinition(MetadataReader metadataReader, TypeDefinitionHandle typeDefinitionHandle) {
+    var typeDefinition = metadataReader.GetTypeDefinition(typeDefinitionHandle);
+    return metadataReader.StringComparer.Equals(typeDefinition.Namespace, "System.Runtime.Versioning") &&
+        metadataReader.StringComparer.Equals(typeDefinition.Name, "TargetFrameworkAttribute");
   }
 
   private sealed record ExpectedPackage(

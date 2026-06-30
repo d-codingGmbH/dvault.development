@@ -1,11 +1,13 @@
 # Local Validation
 
-Run validation from the repository root with a .NET 10 SDK checkout. Helper projects may stay on `net10.0`; the packaging lane proves the consumer `net8.0` and `net10.0` package outputs.
+Run validation from the repository root with both .NET 8 and .NET 10 SDKs available. Helper projects may stay on `net10.0`; the packaging lane proves the consumer `net8.0` and `net10.0` package outputs, and the analyzer package smoke lanes prove both supported analyzer build hosts.
 
 ```sh
 dotnet build DVault.slnx --nologo
 dotnet test DVault.slnx --nologo
 bash tools/pack-release-packages.sh
+bash tools/run-analyzer-package-smoke.sh 8
+bash tools/run-analyzer-package-smoke.sh 10
 bash tools/verify-packages.sh
 bash tools/check-format.sh
 ```
@@ -18,7 +20,9 @@ bash tools/check-format.sh
 - nine `10.50.0` `.nupkg` files with `net10.0` assets and EF Core 10 dependency groups
 - matching `.snupkg` files for the runtime, provider, and privacy packages
 
-`bash tools/verify-packages.sh` checks package counts, ids, versions, filenames, metadata, README install guidance, XML documentation, analyzer assets, provider dependencies, DB2 dependency alignment, EF Core dependency lines, symbol packages, and stale package artifacts.
+`bash tools/run-analyzer-package-smoke.sh 8` and `bash tools/run-analyzer-package-smoke.sh 10` create a temporary consumer, restore the packed runtime and analyzer packages from `artifacts/packages/`, build generated mapper output, and run it under the selected SDK host.
+
+`bash tools/verify-packages.sh` checks package counts, ids, versions, filenames, metadata, README install guidance, XML documentation, analyzer assets, analyzer companion assemblies, provider dependencies, DB2 dependency alignment, EF Core dependency lines, symbol packages, and stale package artifacts.
 
 ## Test Categories
 

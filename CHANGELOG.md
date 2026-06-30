@@ -6,11 +6,11 @@ This changelog summarizes the public release-note trail. The detailed release re
 
 - Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.50.0` / `net8.0` / EF Core 8 and `10.50.0` / `net10.0` / EF Core 10.
 - Records that the v0.50.0 release label maps to consumer package versions `8.50.0` and `10.50.0`, not to a `0.50.0` package version.
-- Audits the analyzer package for .NET 8 SDK-host viability and keeps the supported analyzer baseline on a `.NET 10 SDK` host with explicit package-verifier and smoke-test guardrails.
+- Retargets the analyzer package to one `netstandard2.0` asset under `analyzers/dotnet/cs/` and supports `.NET 8 SDK` and `.NET 10 SDK` analyzer hosts with explicit package-verifier and smoke-test guardrails.
 - Adds privacy alias coverage reporting and provider-native encryption boundary facts without claiming compliance automation, key lifecycle ownership, provider probing, or encrypted DDL generation.
 - Adds machine-checkable `dvault.hash-key-storage-migration.v1` manifest validation and wires it into preflight as a review-only migration planning lane.
 - Aligns README, package compatibility, manual publication, local validation, package verification, and shared implementation standards around the v0.50.0 documentation baseline.
-- Keeps provider performance claims, package publication, package signing, pure `.NET 8 SDK` analyzer support, provider-native encryption behavior, and automatic hash-key migration execution outside the current release claim set.
+- Keeps provider performance claims, package publication, package signing, analyzer-host compatibility beyond the `.NET 8 SDK` and `.NET 10 SDK` boundary, provider-native encryption behavior, and automatic hash-key migration execution outside the current release claim set.
 
 See [DVault v0.50.0 Release Notes](docs/releases/v0.50.0.md).
 

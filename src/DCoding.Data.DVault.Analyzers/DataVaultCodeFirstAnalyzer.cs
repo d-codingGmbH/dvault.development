@@ -20,11 +20,9 @@ public sealed class DataVaultCodeFirstAnalyzer : DiagnosticAnalyzer {
   private const string DrivingKeyVerb = "DrivingKey";
 
   /// <inheritdoc />
-  public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
-  [
+  public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(
       CodeFirstDiagnosticCatalog.UnsupportedSelector,
-      CodeFirstDiagnosticCatalog.DuplicateMember,
-  ];
+      CodeFirstDiagnosticCatalog.DuplicateMember);
 
   /// <inheritdoc />
   public override void Initialize(AnalysisContext context) {

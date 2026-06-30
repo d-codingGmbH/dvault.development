@@ -10,19 +10,12 @@ internal sealed class CodeFirstAnalyzerDiagnosticMetadata {
       string message,
       string explanation,
       string remediation) {
-    ArgumentException.ThrowIfNullOrWhiteSpace(id);
-    ArgumentException.ThrowIfNullOrWhiteSpace(category);
-    ArgumentException.ThrowIfNullOrWhiteSpace(title);
-    ArgumentException.ThrowIfNullOrWhiteSpace(message);
-    ArgumentException.ThrowIfNullOrWhiteSpace(explanation);
-    ArgumentException.ThrowIfNullOrWhiteSpace(remediation);
-
-    Id = id;
-    Category = category;
-    Title = title;
-    Message = message;
-    Explanation = explanation;
-    Remediation = remediation;
+    Id = RequireNonWhiteSpace(id, nameof(id));
+    Category = RequireNonWhiteSpace(category, nameof(category));
+    Title = RequireNonWhiteSpace(title, nameof(title));
+    Message = RequireNonWhiteSpace(message, nameof(message));
+    Explanation = RequireNonWhiteSpace(explanation, nameof(explanation));
+    Remediation = RequireNonWhiteSpace(remediation, nameof(remediation));
   }
 
   public string Id { get; }
@@ -46,5 +39,13 @@ internal sealed class CodeFirstAnalyzerDiagnosticMetadata {
         DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: Explanation + " Remediation: " + Remediation);
+  }
+
+  private static string RequireNonWhiteSpace(string value, string parameterName) {
+    if (string.IsNullOrWhiteSpace(value)) {
+      throw new ArgumentException("Value cannot be null or whitespace.", parameterName);
+    }
+
+    return value;
   }
 }

@@ -66,7 +66,7 @@ public sealed class EfCoreProviderVersionMatrixTests {
   }
 
   [Fact]
-  public void IntegrationProjectPinsNet10AnalyzerAssetForNet8ConsumerSmokeLane() {
+  public void IntegrationProjectUsesSharedAnalyzerAssetForConsumerSmokeLanes() {
     var project = LoadProject("tests/DCoding.Data.DVault.Tests/Integration/DCoding.Data.DVault.Tests.Integration.csproj");
     var analyzerReference = GetProjectReference(
         project,
@@ -77,13 +77,41 @@ public sealed class EfCoreProviderVersionMatrixTests {
     Assert.Equal("Analyzer", analyzerReference.Attribute("OutputItemType")?.Value ?? string.Empty);
     Assert.Equal("false", analyzerReference.Attribute("ReferenceOutputAssembly")?.Value ?? string.Empty);
     Assert.Equal("all", analyzerReference.Attribute("PrivateAssets")?.Value ?? string.Empty);
-    Assert.Equal("TargetFramework=net10.0", analyzerReference.Attribute("SetTargetFramework")?.Value ?? string.Empty);
+    Assert.Null(analyzerReference.Attribute("SetTargetFramework"));
     AssertFileContains(
         "tests/DCoding.Data.DVault.Tests/Integration/AnalyzerSdkHostSmokeTests.cs",
-        "Net8ConsumerTargetCompilesGeneratedMapperOutputFromNet10AnalyzerAsset");
+        "Net8ConsumerTargetCompilesGeneratedMapperOutputFromSharedAnalyzerAsset");
+    AssertFileContains(
+        "tests/DCoding.Data.DVault.Tests/Integration/AnalyzerSdkHostSmokeTests.cs",
+        "Net10ConsumerTargetCompilesGeneratedMapperOutputFromSharedAnalyzerAsset");
     AssertFileContains(
         "tests/DCoding.Data.DVault.Tests/Integration/AnalyzerSdkHostSmokeTests.cs",
         "GeneratedCustomerSourceDataVaultHubMapping.CreateMapper()");
+  }
+
+  [Fact]
+  public void AnalyzerProjectBuildsOneNetStandardAssetFromPackageManagedDependencies() {
+    var project = LoadProject("src/DCoding.Data.DVault.Analyzers/DCoding.Data.DVault.Analyzers.csproj");
+
+    AssertPropertyValue(project, "TargetFramework", "netstandard2.0");
+    AssertPropertyValue(project, "LangVersion", "latest");
+    AssertPropertyValue(project, "CopyLocalLockFileAssemblies", "true");
+    AssertPackageReference(project, new("Microsoft.CodeAnalysis.CSharp", "4.8.0"));
+    AssertPackageReference(project, new("Microsoft.CodeAnalysis.CSharp.Workspaces", "4.8.0"));
+    AssertPackageReference(project, new("System.Composition.AttributedModel", "8.0.0"));
+    AssertPackageReference(project, new("System.Composition.Hosting", "8.0.0"));
+    AssertPackageReference(project, new("System.Composition.Runtime", "8.0.0"));
+    AssertPackageReference(project, new("System.Composition.TypedParts", "8.0.0"));
+    AssertPackageReference(project, new("System.Text.Json", "8.0.0"));
+    AssertFileContains(
+        "src/DCoding.Data.DVault.Analyzers/DCoding.Data.DVault.Analyzers.csproj",
+        "<_AnalyzerPackageDependency Include=\"$(TargetDir)Microsoft.CodeAnalysis.CSharp.Workspaces.dll\" />");
+    AssertFileContains(
+        "src/DCoding.Data.DVault.Analyzers/DCoding.Data.DVault.Analyzers.csproj",
+        "<_AnalyzerPackageDependency Include=\"$(TargetDir)System.Text.Json.dll\" />");
+    AssertFileContains(
+        "src/DCoding.Data.DVault.Analyzers/DCoding.Data.DVault.Analyzers.csproj",
+        "<TfmSpecificPackageFile Include=\"@(_AnalyzerPackageDependency)\" PackagePath=\"analyzers/dotnet/cs/\" Condition=\"Exists('%(Identity)')\" />");
   }
 
   [Fact]
@@ -183,6 +211,20 @@ public sealed class EfCoreProviderVersionMatrixTests {
         string.Equals(actualReference.Condition, expectedReference.Condition, StringComparison.Ordinal),
         "PackageReference '" + expectedReference.Include + "' for target framework '" + targetFramework +
         "' expected condition '" + expectedReference.Condition + "' but found '" + actualReference.Condition + "'.");
+  }
+
+  private static void AssertPackageReference(
+      XDocument project,
+      ExpectedPackageReference expectedReference) {
+    var actualReference = project
+        .Root!
+        .Elements("ItemGroup")
+        .Where(group => group.Attribute("Condition") is null)
+        .Elements("PackageReference")
+        .SingleOrDefault(reference => string.Equals(reference.Attribute("Include")?.Value, expectedReference.Include, StringComparison.Ordinal));
+
+    Assert.True(actualReference is not null, "Missing PackageReference '" + expectedReference.Include + "'.");
+    Assert.Equal(expectedReference.Version, actualReference!.Attribute("Version")?.Value ?? string.Empty);
   }
 
   private static void AssertCompileRemoved(XDocument project, string targetFramework, string expectedRemovedFile) {

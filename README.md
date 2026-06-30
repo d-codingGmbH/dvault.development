@@ -47,7 +47,7 @@ Install `DCoding.Data.DVault.Privacy` only when the application explicitly opts 
 
 Privacy provider caveats stay inside the finite repository-backed provider baseline: SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2. MySQL means the repository MySQL profile for `MySql.EntityFrameworkCore` and Pomelo, not a separate MariaDB capability profile. Provider-native features such as SQL Server TDE or Always Encrypted, PostgreSQL deployment encryption or `pgcrypto`, Oracle TDE or `DBMS_CRYPTO`, MySQL SQL crypto or file or tablespace encryption, SQLite encrypted-file builds, and DB2 native database encryption remain guidance-only. DVault does not emit provider-native encrypted DDL, call provider SQL crypto functions, probe provider encryption capabilities, or route runtime behavior based on native encryption availability; future native encryption support needs a separate provider-specific ticket or contract.
 
-Add the analyzer package only to projects that own DVault declarations, compile-time generated row mappings, or generated typed read helpers, and keep it local with `PrivateAssets="all"`. Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.50.0` package line. The current analyzer package carries one `net10.0` analyzer asset for both coordinated package lines; this repository does not validate pure `.NET 8 SDK` analyzer consumption.
+Add the analyzer package only to projects that own DVault declarations, compile-time generated row mappings, or generated typed read helpers, and keep it local with `PrivateAssets="all"`. Build projects that reference `DCoding.Data.DVault.Analyzers` with either a `.NET 8 SDK` or `.NET 10 SDK` host. The package ships one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/` for both coordinated package lines.
 
 ```xml
 <ItemGroup>
@@ -195,7 +195,7 @@ In short:
 - `8.50.0` targets `net8.0` and the EF Core 8 dependency line.
 - `10.50.0` targets `net10.0` and the EF Core 10 dependency line.
 - `v0.50.0` is the documentation release label, not a NuGet package version; release-note and changelog links point to the current v0.50.0 artifact.
-- `DCoding.Data.DVault.Analyzers` remains a local `PrivateAssets="all"` analyzer reference and currently requires a `.NET 10 SDK` build host for both package lines.
+- `DCoding.Data.DVault.Analyzers` remains a local `PrivateAssets="all"` analyzer reference and supports `.NET 8 SDK` and `.NET 10 SDK` build hosts through one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/`.
 - `DCoding.Data.DVault.Privacy` remains optional and opt-in; it provides registration and alias-driven encrypted payload conversion seams over ordinary EF Core mapped payload properties only, not compliance, automatic privacy execution, database-at-rest encryption, provider-native encrypted column/cell/row features, provider SQL crypto calls, encrypted DDL, capability probing, or runtime routing based on native encryption availability.
 - Hash-key storage guidance now routes new projects to binary-first setup and existing persisted `HexString` setups to the migration guide, reviewed dry-run manifest export, and manifest validation path.
 - Generated link mappers support repeated same-hub links only when every binding uses a distinct explicit produced participant name; ambiguous same-hub mappings and dependent child key modeling stay outside the current public surface.
@@ -223,7 +223,7 @@ In short:
 
 - DVault is an EF Core library family, not a platform, scheduler, ingestion service, CLI, or provider provisioning tool.
 - Package publication remains a manual release operation; this repository records package creation and verification, not NuGet publication.
-- The analyzer package is validated against the `.NET 10 SDK` build-host baseline for both coordinated package lines; pure `.NET 8 SDK` analyzer consumption is not a current compatibility claim.
+- The analyzer package is validated against both `.NET 8 SDK` and `.NET 10 SDK` build-host baselines for the coordinated package lines.
 - Stored procedures and provider-specific SQL artifacts are not default write paths. Any artifact lane is explicit, design-time, review-owned, and outside normal persistence.
 - Binary hash-key storage is opt-in physical storage for new schemas. Existing persisted `HexString` storage changes require reviewed source evidence, a validated `dvault.hash-key-storage-migration.v1` dry-run manifest, and a caller-owned migration, reset, or data-move plan; public hash-key values remain lowercase hexadecimal strings.
 - Generated link mappers support repeated same-hub links through explicit produced participant names only. DVault does not infer ambiguous same-hub roles, add model-first same-hub mapper generation, or add dependent child key modeling in this release.
@@ -242,17 +242,19 @@ In short:
 
 ## Local Validation
 
-Run the repository validation lane from a .NET 10 SDK checkout:
+Run the repository validation lane from a checkout with both .NET 8 and .NET 10 SDKs available:
 
 ```sh
 dotnet build DVault.slnx --nologo
 dotnet test DVault.slnx --nologo
 bash tools/pack-release-packages.sh
+bash tools/run-analyzer-package-smoke.sh 8
+bash tools/run-analyzer-package-smoke.sh 10
 bash tools/verify-packages.sh
 bash tools/check-format.sh
 ```
 
-`bash tools/pack-release-packages.sh` creates the two coordinated package lines under `artifacts/packages/`: nine `8.50.0` packages with `net8.0` assets and EF Core 8 dependency groups, and nine `10.50.0` packages with `net10.0` assets and EF Core 10 dependency groups. `bash tools/verify-packages.sh` inspects those artifacts, expects exactly eighteen DVault `.nupkg` files plus sixteen matching symbol packages for the runtime, provider, and privacy packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider and privacy package depends on the packed `DCoding.Data.DVault` version from the same package line.
+`bash tools/pack-release-packages.sh` creates the two coordinated package lines under `artifacts/packages/`: nine `8.50.0` packages with `net8.0` assets and EF Core 8 dependency groups, and nine `10.50.0` packages with `net10.0` assets and EF Core 10 dependency groups. The analyzer package smoke script restores, builds, and runs a generated-mapper consumer against the packed analyzer package on the selected SDK host. `bash tools/verify-packages.sh` inspects those artifacts, expects exactly eighteen DVault `.nupkg` files plus sixteen matching symbol packages for the runtime, provider, and privacy packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider and privacy package depends on the packed `DCoding.Data.DVault` version from the same package line.
 
 For provider-specific filters, environment variables, benchmark commands, and package-verification details, see [Local Validation](docs/local-validation.md).
 

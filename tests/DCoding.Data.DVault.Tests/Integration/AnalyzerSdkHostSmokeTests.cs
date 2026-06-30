@@ -8,14 +8,14 @@ namespace DCoding.Data.DVault.Tests.Integration;
 public sealed class AnalyzerSdkHostSmokeTests {
 #if NET8_0
   [Fact]
-  public void Net8ConsumerTargetCompilesGeneratedMapperOutputFromNet10AnalyzerAsset() {
+  public void Net8ConsumerTargetCompilesGeneratedMapperOutputFromSharedAnalyzerAsset() {
     AssertGeneratedMapperOutput();
   }
 #endif
 
 #if NET10_0
   [Fact]
-  public void Net10ConsumerTargetCompilesGeneratedMapperOutputFromNet10AnalyzerAsset() {
+  public void Net10ConsumerTargetCompilesGeneratedMapperOutputFromSharedAnalyzerAsset() {
     AssertGeneratedMapperOutput();
   }
 #endif

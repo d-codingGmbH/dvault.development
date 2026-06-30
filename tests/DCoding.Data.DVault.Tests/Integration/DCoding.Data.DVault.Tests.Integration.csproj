@@ -43,7 +43,7 @@
   <ItemGroup>
     <ProjectReference Include="../../../benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj" Condition="'$(TargetFramework)' == 'net10.0'" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault/DCoding.Data.DVault.csproj" />
-    <ProjectReference Include="../../../src/DCoding.Data.DVault.Analyzers/DCoding.Data.DVault.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" SetTargetFramework="TargetFramework=net10.0" />
+    <ProjectReference Include="../../../src/DCoding.Data.DVault.Analyzers/DCoding.Data.DVault.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.Db2/DCoding.Data.DVault.Db2.csproj" Condition="'$(DVAULT_TEST_DB2_CONNECTION_STRING)' != ''" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.MySql/DCoding.Data.DVault.MySql.csproj" />
     <ProjectReference Include="../../../src/DCoding.Data.DVault.Oracle/DCoding.Data.DVault.Oracle.csproj" />

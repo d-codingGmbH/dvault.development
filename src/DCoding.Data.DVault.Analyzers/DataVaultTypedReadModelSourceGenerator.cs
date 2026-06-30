@@ -128,11 +128,11 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       }
     }
 
-    var collidingTypeNames = validDeclarations
+    var collidingTypeNames = new HashSet<string>(validDeclarations
         .GroupBy(declaration => declaration.TypeNamePrefix, StringComparer.Ordinal)
         .Where(group => group.Count() > 1)
-        .Select(group => group.Key)
-        .ToHashSet(StringComparer.Ordinal);
+        .Select(group => group.Key),
+        StringComparer.Ordinal);
 
     foreach (var declaration in validDeclarations) {
       context.CancellationToken.ThrowIfCancellationRequested();
@@ -163,7 +163,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     }
 
     var text = sourceText.ToString();
-    if (!text.Contains("\"schemaVersion\"", StringComparison.Ordinal)) {
+    if (!ContainsOrdinal(text, "\"schemaVersion\"")) {
       return [];
     }
 
@@ -313,8 +313,8 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
   }
 
   private static bool IsPotentialDataVaultAdditionalFile(string text) {
-    return text.Contains("dvault.support-bundle", StringComparison.Ordinal) ||
-        text.Contains("dvault.model", StringComparison.Ordinal);
+    return ContainsOrdinal(text, "dvault.support-bundle") ||
+        ContainsOrdinal(text, "dvault.model");
   }
 
   private static bool IsDataVaultSupportBundleSchemaVersion(string schemaVersion) {
@@ -551,9 +551,9 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       return false;
     }
 
-    var participantColumnNames = participantReferences
-        .Select(property => property.ProducedName)
-        .ToHashSet(StringComparer.Ordinal);
+    var participantColumnNames = new HashSet<string>(
+        participantReferences.Select(property => property.ProducedName),
+        StringComparer.Ordinal);
     if (participantColumnNames.Count != 2 ||
         endpoints.Any(endpoint => !participantColumnNames.Contains(endpoint.ColumnName))) {
       ReportUnsupportedReadModelShape(
@@ -759,20 +759,20 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       return false;
     }
 
-    var baseName = columnName[..^"HashKey".Length];
+    var baseName = columnName.Substring(0, columnName.Length - "HashKey".Length);
     if (string.Equals(endpoint, "Ancestor", StringComparison.Ordinal)) {
       if (!baseName.StartsWith("Ancestor", StringComparison.Ordinal)) {
         return false;
       }
 
-      baseName = baseName["Ancestor".Length..];
+      baseName = baseName.Substring("Ancestor".Length);
     }
     else if (string.Equals(endpoint, "Descendant", StringComparison.Ordinal)) {
       if (!baseName.StartsWith("Descendant", StringComparison.Ordinal)) {
         return false;
       }
 
-      baseName = baseName["Descendant".Length..];
+      baseName = baseName.Substring("Descendant".Length);
     }
 
     if (string.IsNullOrWhiteSpace(baseName)) {
@@ -2374,9 +2374,11 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       if (item.ValueKind != JsonValueKind.Object ||
           !TryGetJsonString(item, "role", out var role) ||
           !TryGetOptionalStringArray(item, "columnNames", out var columnNames) ||
-          !result.TryAdd(role, columnNames)) {
+          result.ContainsKey(role)) {
         return false;
       }
+
+      result.Add(role, columnNames);
     }
 
     columnSets = result;
@@ -2405,6 +2407,10 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
     }
 
     return "DVault.GeneratedReadModels";
+  }
+
+  private static bool ContainsOrdinal(string value, string candidate) {
+    return value.IndexOf(candidate, StringComparison.Ordinal) >= 0;
   }
 
   private static bool IsTypedReadModelGenerationEnabled(AnalyzerConfigOptionsProvider optionsProvider) {
@@ -2561,7 +2567,7 @@ public sealed class DataVaultTypedReadModelSourceGenerator : IIncrementalGenerat
       return token.ToUpperInvariant();
     }
 
-    return char.ToUpperInvariant(token[0]) + token[1..].ToLowerInvariant();
+    return char.ToUpperInvariant(token[0]) + token.Substring(1).ToLowerInvariant();
   }
 
   private static bool IsAsciiLetterOrDigit(char value) {

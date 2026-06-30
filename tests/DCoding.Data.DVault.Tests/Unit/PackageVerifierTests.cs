@@ -16,7 +16,17 @@ public sealed class PackageVerifierTests {
   private const string Net10TargetFramework = "net10.0";
   private const string Authors = "d-coding GmbH";
   private const string RepositoryUrl = "https://github.com/d-codingGmbH/dvault.development.git";
-  private const string ExpectedAnalyzerBuildHostGuidance = "Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host, including `net8.0` projects using the `8.50.0` package line.";
+  private const string ExpectedAnalyzerBuildHostGuidance = "Build projects that reference `DCoding.Data.DVault.Analyzers` with either a `.NET 8 SDK` or `.NET 10 SDK` host. The package ships one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/` for both coordinated package lines.";
+  private const string ExpectedAnalyzerTargetFrameworkMoniker = ".NETStandard,Version=v2.0";
+  private static readonly string[] ExpectedAnalyzerCompanionAssets = [
+      "Microsoft.CodeAnalysis.CSharp.Workspaces.dll",
+      "Microsoft.CodeAnalysis.Workspaces.dll",
+      "System.Composition.AttributedModel.dll",
+      "System.Composition.Hosting.dll",
+      "System.Composition.Runtime.dll",
+      "System.Composition.TypedParts.dll",
+      "System.Text.Json.dll",
+  ];
   private static readonly XNamespace NuspecNamespace = "http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd";
   private static readonly PackageLine[] PackageLines = [
       new(Net8PackageLineVersion, Net8TargetFramework, "EF Core 8"),
@@ -218,7 +228,7 @@ public sealed class PackageVerifierTests {
   }
 
   [Fact]
-  public void RuntimeReadmeMustStateAnalyzerBuildHostSdkBaseline() {
+  public void RuntimeReadmeMustStateDualAnalyzerBuildHostSdkBaseline() {
     using var packageDirectory = PackageDirectory.Create();
     var options = CreatePackageOptions();
     options[CorePackageId].ReadmeText =
@@ -230,12 +240,12 @@ public sealed class PackageVerifierTests {
     Assert.Contains(
         result.Issues,
         issue => issue.PackageId == CorePackageId &&
-            issue.Message.Contains(".NET 10 SDK build-host baseline", StringComparison.Ordinal) &&
-            issue.Message.Contains(Net8PackageLineVersion, StringComparison.Ordinal));
+            issue.Message.Contains(".NET 8 SDK and .NET 10 SDK build-host baselines", StringComparison.Ordinal) &&
+            issue.Message.Contains("netstandard2.0", StringComparison.Ordinal));
   }
 
   [Fact]
-  public void AnalyzerReadmeMustStateAnalyzerBuildHostSdkBaseline() {
+  public void AnalyzerReadmeMustStateDualAnalyzerBuildHostSdkBaseline() {
     using var packageDirectory = PackageDirectory.Create();
     var options = CreatePackageOptions();
     options["DCoding.Data.DVault.Analyzers"].ReadmeText =
@@ -248,17 +258,17 @@ public sealed class PackageVerifierTests {
     Assert.Contains(
         result.Issues,
         issue => issue.PackageId == "DCoding.Data.DVault.Analyzers" &&
-            issue.Message.Contains(".NET 10 SDK build-host baseline", StringComparison.Ordinal) &&
-            issue.Message.Contains(Net8PackageLineVersion, StringComparison.Ordinal));
+            issue.Message.Contains(".NET 8 SDK and .NET 10 SDK build-host baselines", StringComparison.Ordinal) &&
+            issue.Message.Contains("netstandard2.0", StringComparison.Ordinal));
   }
 
   [Fact]
-  public void RuntimeReadmeMustNotContradictAnalyzerBuildHostSdkBaseline() {
+  public void RuntimeReadmeMustNotContradictDualAnalyzerBuildHostSdkBaseline() {
     using var packageDirectory = PackageDirectory.Create();
     var options = CreatePackageOptions();
     options[CorePackageId].ReadmeText =
         CreateRuntimePackageReadme() +
-        "Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 8 SDK` host.\n";
+        "Build projects that reference `DCoding.Data.DVault.Analyzers` with a `.NET 10 SDK` host.\n";
     WritePackageMatrix(packageDirectory.Path, options);
 
     var result = Verify(packageDirectory.Path);
@@ -266,17 +276,17 @@ public sealed class PackageVerifierTests {
     Assert.Contains(
         result.Issues,
         issue => issue.PackageId == CorePackageId &&
-            issue.Message.Contains("must not contradict the .NET 10 SDK build-host baseline", StringComparison.Ordinal) &&
-            issue.Message.Contains(".NET 8 SDK", StringComparison.Ordinal));
+            issue.Message.Contains("must not contradict the dual .NET 8 SDK and .NET 10 SDK analyzer-host baseline", StringComparison.Ordinal) &&
+            issue.Message.Contains(".NET 10 SDK", StringComparison.Ordinal));
   }
 
   [Fact]
-  public void AnalyzerReadmeMustNotContradictAnalyzerBuildHostSdkBaseline() {
+  public void AnalyzerReadmeMustNotContradictDualAnalyzerBuildHostSdkBaseline() {
     using var packageDirectory = PackageDirectory.Create();
     var options = CreatePackageOptions();
     options["DCoding.Data.DVault.Analyzers"].ReadmeText =
         CreateAnalyzerPackageReadme("DCoding.Data.DVault.Analyzers") +
-        "The current analyzer package supports pure `.NET 8 SDK` analyzer consumption.\n";
+        "The current analyzer package carries one `net10.0` analyzer asset for both coordinated package lines.\n";
     WritePackageMatrix(packageDirectory.Path, options);
 
     var result = Verify(packageDirectory.Path);
@@ -284,8 +294,8 @@ public sealed class PackageVerifierTests {
     Assert.Contains(
         result.Issues,
         issue => issue.PackageId == "DCoding.Data.DVault.Analyzers" &&
-            issue.Message.Contains("must not contradict the .NET 10 SDK build-host baseline", StringComparison.Ordinal) &&
-            issue.Message.Contains("pure `.NET 8 SDK` analyzer consumption", StringComparison.Ordinal));
+            issue.Message.Contains("must not contradict the dual .NET 8 SDK and .NET 10 SDK analyzer-host baseline", StringComparison.Ordinal) &&
+            issue.Message.Contains("net10.0", StringComparison.Ordinal));
   }
 
   [Theory]
@@ -411,6 +421,52 @@ public sealed class PackageVerifierTests {
         result.Issues,
         issue => issue.PackageId == "DCoding.Data.DVault.Analyzers" &&
             issue.Message.Contains("analyzers/dotnet/cs/DCoding.Data.DVault.Analyzers.dll", StringComparison.Ordinal));
+  }
+
+  [Fact]
+  public void MissingAnalyzerCompanionAssetFailsWithAnalyzerAssetPath() {
+    using var packageDirectory = PackageDirectory.Create();
+    var options = CreatePackageOptions();
+    options["DCoding.Data.DVault.Analyzers"].IncludeAnalyzerCompanionAssets = false;
+    WritePackageMatrix(packageDirectory.Path, options);
+
+    var result = Verify(packageDirectory.Path);
+
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == "DCoding.Data.DVault.Analyzers" &&
+            issue.Message.Contains("analyzers/dotnet/cs/System.Text.Json.dll", StringComparison.Ordinal));
+  }
+
+  [Fact]
+  public void AnalyzerDllMustCarryNetStandardTargetFrameworkMarker() {
+    using var packageDirectory = PackageDirectory.Create();
+    var options = CreatePackageOptions();
+    options["DCoding.Data.DVault.Analyzers"].AnalyzerTargetFrameworkMarker = string.Empty;
+    WritePackageMatrix(packageDirectory.Path, options);
+
+    var result = Verify(packageDirectory.Path);
+
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == "DCoding.Data.DVault.Analyzers" &&
+            issue.Message.Contains(ExpectedAnalyzerTargetFrameworkMoniker, StringComparison.Ordinal));
+  }
+
+  [Fact]
+  public void AnalyzerDllMustNotCarryNet10OnlyTargetFrameworkMarker() {
+    using var packageDirectory = PackageDirectory.Create();
+    var options = CreatePackageOptions();
+    options["DCoding.Data.DVault.Analyzers"].AnalyzerTargetFrameworkMarker = ".NETCoreApp,Version=v10.0";
+    WritePackageMatrix(packageDirectory.Path, options);
+
+    var result = Verify(packageDirectory.Path);
+
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == "DCoding.Data.DVault.Analyzers" &&
+            issue.Message.Contains(".NETCoreApp,Version=v10.0", StringComparison.Ordinal) &&
+            issue.Message.Contains(ExpectedAnalyzerTargetFrameworkMoniker, StringComparison.Ordinal));
   }
 
   [Fact]
@@ -776,7 +832,19 @@ public sealed class PackageVerifierTests {
     }
 
     if (package.IsAnalyzer && options.IncludeAnalyzerDll) {
-      WriteBinaryEntry(archive, "analyzers/dotnet/cs/" + package.Id + ".dll", [1, 2, 3]);
+      WriteBinaryEntry(
+          archive,
+          "analyzers/dotnet/cs/" + package.Id + ".dll",
+          Encoding.UTF8.GetBytes(options.AnalyzerTargetFrameworkMarker));
+    }
+
+    if (package.IsAnalyzer && options.IncludeAnalyzerCompanionAssets) {
+      foreach (var expectedAnalyzerCompanionAsset in ExpectedAnalyzerCompanionAssets) {
+        WriteBinaryEntry(
+            archive,
+            "analyzers/dotnet/cs/" + expectedAnalyzerCompanionAsset,
+            [1, 2, 3]);
+      }
     }
   }
 
@@ -994,9 +1062,13 @@ public sealed class PackageVerifierTests {
 
     public bool IncludeAnalyzerDll { get; set; } = true;
 
+    public bool IncludeAnalyzerCompanionAssets { get; set; } = true;
+
     public bool IncludeSymbolPdb { get; set; } = true;
 
     public string? ReadmeText { get; set; }
+
+    public string AnalyzerTargetFrameworkMarker { get; set; } = PackageVerifierTests.ExpectedAnalyzerTargetFrameworkMoniker;
 
     public string Authors { get; set; } = PackageVerifierTests.Authors;
 

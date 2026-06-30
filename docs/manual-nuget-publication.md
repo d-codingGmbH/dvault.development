@@ -35,7 +35,7 @@ The `src/DCoding.Data` project is a non-packable source-root build anchor for th
 
 ## Current Consumer Guidance
 
-Developer and consumer setup is NuGet-based for published releases. The README installation guidance is the current v0.50.0 documentation baseline and should show separate `8.50.0` / `net8.0` / EF Core 8 and `10.50.0` / `net10.0` / EF Core 10 `dotnet add package` commands for `DCoding.Data.DVault` plus the optional provider package family, including `DCoding.Data.DVault.Db2`, and the optional privacy proof package. Analyzer examples must stay local with `PrivateAssets="all"` and use the same package-version line selected for the runtime and provider packages. Projects that reference `DCoding.Data.DVault.Analyzers` must build on the `.NET 10 SDK` host baseline for both coordinated package lines; this repository does not validate pure `.NET 8 SDK` analyzer consumption.
+Developer and consumer setup is NuGet-based for published releases. The README installation guidance is the current v0.50.0 documentation baseline and should show separate `8.50.0` / `net8.0` / EF Core 8 and `10.50.0` / `net10.0` / EF Core 10 `dotnet add package` commands for `DCoding.Data.DVault` plus the optional provider package family, including `DCoding.Data.DVault.Db2`, and the optional privacy proof package. Analyzer examples must stay local with `PrivateAssets="all"` and use the same package-version line selected for the runtime and provider packages. Projects that reference `DCoding.Data.DVault.Analyzers` may build on either a `.NET 8 SDK` or `.NET 10 SDK` host; both lines use one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/`.
 
 Source or project-reference consumption remains useful for repository development, debugging, and unpublished local changes, but it is no longer the primary consumer installation path for released packages.
 
@@ -70,12 +70,14 @@ Do not push packages until this release-note evidence has been reviewed as part 
 
 ## Required Pre-Publish Evidence
 
-Run the current repository validation baseline from the repository root before any package push. Use a .NET 10 SDK checkout; the helper projects stay `net10.0`, and the pack plus package-verification steps prove the runtime/provider `net8.0` and `net10.0` package dependency groups. These commands are the minimum required evidence for manual publication:
+Run the current repository validation baseline from the repository root before any package push. Use a checkout with both .NET 8 and .NET 10 SDKs available; the helper projects may stay `net10.0`, while the pack, analyzer package smoke, and package-verification steps prove the runtime/provider `net8.0` and `net10.0` package dependency groups and the dual analyzer-host boundary. These commands are the minimum required evidence for manual publication:
 
 ```sh
 dotnet build DVault.slnx --nologo
 dotnet test DVault.slnx --nologo
 bash tools/pack-release-packages.sh
+bash tools/run-analyzer-package-smoke.sh 8
+bash tools/run-analyzer-package-smoke.sh 10
 bash tools/verify-packages.sh
 bash tools/check-format.sh
 ```
@@ -91,7 +93,7 @@ The v0.50.0 documentation baseline is target-specific. `8.50.0` / `net8.0` uses 
 | `net8.0` | `Microsoft.EntityFrameworkCore` `8.0.28`, `Microsoft.EntityFrameworkCore.Relational` `8.0.28`, `Microsoft.Extensions.DependencyInjection.Abstractions` `8.0.2` | `IBM.EntityFrameworkCore` `8.0.0.400` | `Microsoft.EntityFrameworkCore.Sqlite` `8.0.28` | `MySql.EntityFrameworkCore` `8.0.26` | `Npgsql.EntityFrameworkCore.PostgreSQL` `8.0.11` | `Oracle.EntityFrameworkCore` `8.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `8.0.28` |
 | `net10.0` | `Microsoft.EntityFrameworkCore` `10.0.9`, `Microsoft.EntityFrameworkCore.Relational` `10.0.9`, `Microsoft.Extensions.DependencyInjection.Abstractions` `10.0.9` | `IBM.EntityFrameworkCore` `10.0.0.100` | `Microsoft.EntityFrameworkCore.Sqlite` `10.0.9` | `MySql.EntityFrameworkCore` `10.0.7` | `Npgsql.EntityFrameworkCore.PostgreSQL` `10.0.2` | `Oracle.EntityFrameworkCore` `10.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `10.0.9` |
 
-The analyzer package is a local build-time asset, not a runtime dependency. `DCoding.Data.DVault.Analyzers` ships one `net10.0` analyzer asset for both coordinated package lines, analyzer references stay local with `PrivateAssets="all"`, and supported analyzer consumption for both the `8.50.0` and `10.50.0` package lines uses a `.NET 10 SDK` build host.
+The analyzer package is a local build-time asset, not a runtime dependency. `DCoding.Data.DVault.Analyzers` ships one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/` for both coordinated package lines, analyzer references stay local with `PrivateAssets="all"`, and supported analyzer consumption for both the `8.50.0` and `10.50.0` package lines uses either a `.NET 8 SDK` or `.NET 10 SDK` build host.
 
 ## Version And Dependency Alignment
 
@@ -101,7 +103,7 @@ Use one aligned package version across all nine packages in the selected package
 bash tools/verify-packages.sh
 ```
 
-Package verification is the manual dependency-alignment gate. It must confirm the exact eighteen package artifacts across the two package lines, sixteen matching symbol packages for the runtime, provider, and privacy packages, package README and XML metadata, analyzer assets, provider and privacy dependency alignment, and the line-specific `net8.0` or `net10.0` nuspec dependency group for each package version. The core package must expose the expected EF Core, EF Core Relational, and `Microsoft.Extensions.DependencyInjection.Abstractions` versions for its selected target group. Each provider and privacy package must depend on the packed `DCoding.Data.DVault` version from the same package line and use the correct target-specific provider dependency, `Microsoft.EntityFrameworkCore.Relational`, and `Microsoft.Extensions.DependencyInjection.Abstractions` versions when those direct dependencies are present. The DB2 provider package must use `IBM.EntityFrameworkCore` `8.0.0.400` for the `net8.0` line and `10.0.0.100` for the `net10.0` line.
+Package verification is the manual dependency-alignment gate. It must confirm the exact eighteen package artifacts across the two package lines, sixteen matching symbol packages for the runtime, provider, and privacy packages, package README and XML metadata, the single `netstandard2.0` analyzer asset plus approved companion assemblies under `analyzers/dotnet/cs/`, provider and privacy dependency alignment, and the line-specific `net8.0` or `net10.0` nuspec dependency group for each package version. The core package must expose the expected EF Core, EF Core Relational, and `Microsoft.Extensions.DependencyInjection.Abstractions` versions for its selected target group. Each provider and privacy package must depend on the packed `DCoding.Data.DVault` version from the same package line and use the correct target-specific provider dependency, `Microsoft.EntityFrameworkCore.Relational`, and `Microsoft.Extensions.DependencyInjection.Abstractions` versions when those direct dependencies are present. The DB2 provider package must use `IBM.EntityFrameworkCore` `8.0.0.400` for the `net8.0` line and `10.0.0.100` for the `net10.0` line.
 
 If verification reports that a package is missing a target-framework dependency group, a provider package is missing a `DCoding.Data.DVault` dependency or depends on a different core version, one target group mixes EF Core lines, packaged README guidance is stale or mixed-line, XML docs or analyzer assets are missing, or symbols drift, stop the release. Correct the package inputs, rebuild, repack, and rerun the full required pre-publish evidence before requesting approval again.
 
@@ -116,20 +118,22 @@ Follow this sequence exactly for the coordinated manual release:
 5. Run `dotnet build DVault.slnx --nologo`.
 6. Run `dotnet test DVault.slnx --nologo`.
 7. Run `bash tools/pack-release-packages.sh`.
-8. Run `bash tools/verify-packages.sh`.
-9. Run `bash tools/check-format.sh`.
-10. Review the validation evidence, target-framework dependency groups, packaged README guidance, symbols, analyzer assets, XML docs, and provider dependency alignment.
-11. Record final publish approval for the selected package-version line.
-12. Push `DCoding.Data.DVault` first.
-13. Push `DCoding.Data.DVault.Privacy`.
-14. Push `DCoding.Data.DVault.Analyzers`.
-15. Push `DCoding.Data.DVault.Db2`.
-16. Push `DCoding.Data.DVault.MySql`.
-17. Push `DCoding.Data.DVault.Oracle`.
-18. Push `DCoding.Data.DVault.Postgres`.
-19. Push `DCoding.Data.DVault.Sqlite`.
-20. Push `DCoding.Data.DVault.SqlServer`.
-21. Record the completed publication outcome for all nine packages in the selected package-version line.
+8. Run `bash tools/run-analyzer-package-smoke.sh 8`.
+9. Run `bash tools/run-analyzer-package-smoke.sh 10`.
+10. Run `bash tools/verify-packages.sh`.
+11. Run `bash tools/check-format.sh`.
+12. Review the validation evidence, target-framework dependency groups, packaged README guidance, symbols, analyzer assets, XML docs, and provider dependency alignment.
+13. Record final publish approval for the selected package-version line.
+14. Push `DCoding.Data.DVault` first.
+15. Push `DCoding.Data.DVault.Privacy`.
+16. Push `DCoding.Data.DVault.Analyzers`.
+17. Push `DCoding.Data.DVault.Db2`.
+18. Push `DCoding.Data.DVault.MySql`.
+19. Push `DCoding.Data.DVault.Oracle`.
+20. Push `DCoding.Data.DVault.Postgres`.
+21. Push `DCoding.Data.DVault.Sqlite`.
+22. Push `DCoding.Data.DVault.SqlServer`.
+23. Record the completed publication outcome for all nine packages in the selected package-version line.
 
 The provider publish order is policy for this manual release flow: Db2, MySql, Oracle, Postgres, Sqlite, then SqlServer. Do not infer a different order from project layout or provider dependency shape.
 
@@ -149,8 +153,9 @@ Before the first package push, the final approval record must include:
 - selected package-version line and its target framework / EF Core line
 - confirmation that all nine packages are in scope
 - location of the reviewed release notes or changelog content
-- validation evidence for the five required commands
+- validation evidence for the seven required commands
 - confirmation that `bash tools/verify-packages.sh` passed line-specific dependency-group checks, packaged README guidance checks, metadata, XML docs, analyzer assets, symbols, and provider dependency alignment against the packed core version
+- confirmation that `bash tools/run-analyzer-package-smoke.sh 8` and `bash tools/run-analyzer-package-smoke.sh 10` restored, built, and ran the packed analyzer consumer on both SDK hosts
 - approval to publish the core package first and then providers in the documented order
 
 After publication completes, update the release record with the final outcome for each package id.

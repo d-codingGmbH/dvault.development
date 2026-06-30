@@ -1,13 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>DCoding.Data.DVault.Analyzers</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <DevelopmentDependency>true</DevelopmentDependency>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <PackageId>DCoding.Data.DVault.Analyzers</PackageId>
     <Title>DVault Roslyn Analyzers</Title>
     <Authors>d-coding GmbH</Authors>
@@ -34,16 +36,27 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Microsoft.CodeAnalysis" HintPath="$(MSBuildToolsPath)/Microsoft.CodeAnalysis.dll" Private="false" />
-    <Reference Include="Microsoft.CodeAnalysis.CSharp" HintPath="$(MSBuildToolsPath)/Microsoft.CodeAnalysis.CSharp.dll" Private="false" />
-    <Reference Include="Microsoft.CodeAnalysis.Workspaces" HintPath="$(MSBuildToolsPath)/DotnetTools/dotnet-format/Microsoft.CodeAnalysis.Workspaces.dll" Private="false" />
-    <Reference Include="System.Composition.AttributedModel" HintPath="$(MSBuildToolsPath)/DotnetTools/dotnet-format/System.Composition.AttributedModel.dll" Private="false" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0" PrivateAssets="all" />
+    <PackageReference Include="System.Composition.AttributedModel" Version="8.0.0" PrivateAssets="all" />
+    <PackageReference Include="System.Composition.Hosting" Version="8.0.0" PrivateAssets="all" />
+    <PackageReference Include="System.Composition.Runtime" Version="8.0.0" PrivateAssets="all" />
+    <PackageReference Include="System.Composition.TypedParts" Version="8.0.0" PrivateAssets="all" />
+    <PackageReference Include="System.Text.Json" Version="8.0.0" PrivateAssets="all" />
   </ItemGroup>
 
   <Target Name="AddAnalyzerPackageAssets">
     <ItemGroup>
+      <_AnalyzerPackageDependency Include="$(TargetDir)Microsoft.CodeAnalysis.CSharp.Workspaces.dll" />
+      <_AnalyzerPackageDependency Include="$(TargetDir)Microsoft.CodeAnalysis.Workspaces.dll" />
+      <_AnalyzerPackageDependency Include="$(TargetDir)System.Composition.AttributedModel.dll" />
+      <_AnalyzerPackageDependency Include="$(TargetDir)System.Composition.Hosting.dll" />
+      <_AnalyzerPackageDependency Include="$(TargetDir)System.Composition.Runtime.dll" />
+      <_AnalyzerPackageDependency Include="$(TargetDir)System.Composition.TypedParts.dll" />
+      <_AnalyzerPackageDependency Include="$(TargetDir)System.Text.Json.dll" />
       <TfmSpecificPackageFile Include="$(TargetPath)" PackagePath="analyzers/dotnet/cs/" />
       <TfmSpecificPackageFile Include="$(TargetDir)$(AssemblyName).xml" PackagePath="analyzers/dotnet/cs/" Condition="Exists('$(TargetDir)$(AssemblyName).xml')" />
+      <TfmSpecificPackageFile Include="@(_AnalyzerPackageDependency)" PackagePath="analyzers/dotnet/cs/" Condition="Exists('%(Identity)')" />
     </ItemGroup>
   </Target>
 </Project>

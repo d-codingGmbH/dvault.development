@@ -59,24 +59,20 @@ public sealed class DataVaultEfCoreMisuseAnalyzer : DiagnosticAnalyzer {
       "UseSqlite",
       "UseSqlServer");
 
-  private static readonly ImmutableArray<string> GeneratedTableNamePrefixes =
-  [
+  private static readonly ImmutableArray<string> GeneratedTableNamePrefixes = ImmutableArray.Create(
       "Hub",
       "Link",
       "Sat",
       "Pit",
-      "Bridge",
-  ];
+      "Bridge");
 
   /// <inheritdoc />
-  public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
-  [
+  public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(
       EfCoreMisuseDiagnosticCatalog.GeneratedDbSetExposure,
       EfCoreMisuseDiagnosticCatalog.DirectGeneratedTableWrite,
       EfCoreMisuseDiagnosticCatalog.MissingModelCacheDiscriminator,
       EfCoreMisuseDiagnosticCatalog.UnsafeCompiledModelSelection,
-      EfCoreMisuseDiagnosticCatalog.UnsafeDbContextPooling,
-  ];
+      EfCoreMisuseDiagnosticCatalog.UnsafeDbContextPooling);
 
   /// <inheritdoc />
   public override void Initialize(AnalysisContext context) {

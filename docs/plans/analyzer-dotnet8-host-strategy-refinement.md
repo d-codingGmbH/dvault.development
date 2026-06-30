@@ -1,22 +1,22 @@
 # Analyzer .NET 8 Host Strategy Refinement
 
-Status: ticket-bound refinement note
+Status: implemented strategy note
 Ticket: `06FH8QRPDP10ZBAF3A5RYQFFQM`
 
 ## Purpose
 
 Turn the v0.50 analyzer package compatibility audit into one concrete implementation strategy for pure `.NET 8 SDK` analyzer-host support without widening the public package family or silently keeping the current `.NET 10 SDK`-only host baseline.
 
-## Verified Repository Baseline
+## Prior Repository Baseline
 
-- `src/DCoding.Data.DVault.Analyzers/DCoding.Data.DVault.Analyzers.csproj` currently targets only `net10.0`, suppresses dependency groups when packing, and packs exactly the built analyzer DLL plus XML documentation into `analyzers/dotnet/cs/`.
-- The analyzer project still compiles against SDK-local Roslyn binaries from `$(MSBuildToolsPath)` and against `Microsoft.CodeAnalysis.Workspaces` plus `System.Composition.AttributedModel` from `$(MSBuildToolsPath)/DotnetTools/dotnet-format`.
+- Before ticket `06FH8R4EF1QFF2E3ZWS3P1BWHM`, `src/DCoding.Data.DVault.Analyzers/DCoding.Data.DVault.Analyzers.csproj` targeted only `net10.0`, suppressed dependency groups when packing, and packed only the built analyzer DLL plus XML documentation into `analyzers/dotnet/cs/`.
+- The analyzer project compiled against SDK-local Roslyn binaries from `$(MSBuildToolsPath)` and against `Microsoft.CodeAnalysis.Workspaces` plus `System.Composition.AttributedModel` from `$(MSBuildToolsPath)/DotnetTools/dotnet-format`.
 - `src/DCoding.Data.DVault.Analyzers/DataVaultCodeFirstCodeFixProvider.cs` is the only production analyzer source file that consumes Workspaces/code-fix APIs and `System.Composition`.
 - `src/DCoding.Data.DVault.Analyzers/DataVaultMappingSourceGenerator.cs`, `DataVaultCodeFirstAnalyzer.cs`, and `DataVaultEfCoreMisuseAnalyzer.cs` stay on the base Roslyn analyzer and generator surface.
 - `src/DCoding.Data.DVault.Analyzers/DataVaultTypedReadModelSourceGenerator.cs` consumes `System.Text.Json` and several modern BCL calls that are available on the current `net10.0` target but would need explicit dependency or compatibility handling below that baseline.
-- `tools/pack-release-packages.sh` packs the analyzer project once for `8.50.0` and once for `10.50.0`, but both package lines currently receive the same `net10.0` analyzer shape because the analyzer project is not target-overridden.
-- `tools/DCoding.Data.DVault.PackageVerification/PackageVerifier.cs` and `tests/DCoding.Data.DVault.Tests/Unit/PackageVerifierTests.cs` currently assume one analyzer DLL and one XML file under `analyzers/dotnet/cs/`, plus README text that explicitly requires a `.NET 10 SDK` host.
-- `tests/DCoding.Data.DVault.Tests/Integration/DCoding.Data.DVault.Tests.Integration.csproj` forces the analyzer project reference to `TargetFramework=net10.0`, and `tests/DCoding.Data.DVault.Tests/Analyzers/DCoding.Data.DVault.Tests.Analyzers.csproj` still resolves Workspaces and composition assemblies from `dotnet-format`.
+- `tools/pack-release-packages.sh` packed the analyzer project once for `8.50.0` and once for `10.50.0`, but both package lines received the same old analyzer shape because the analyzer project was not target-overridden.
+- `tools/DCoding.Data.DVault.PackageVerification/PackageVerifier.cs` and `tests/DCoding.Data.DVault.Tests/Unit/PackageVerifierTests.cs` assumed one analyzer DLL and one XML file under `analyzers/dotnet/cs/`, plus README text that explicitly required a `.NET 10 SDK` host.
+- `tests/DCoding.Data.DVault.Tests/Integration/DCoding.Data.DVault.Tests.Integration.csproj` forced the analyzer project reference to `TargetFramework=net10.0`, and `tests/DCoding.Data.DVault.Tests/Analyzers/DCoding.Data.DVault.Tests.Analyzers.csproj` resolved Workspaces and composition assemblies from `dotnet-format`.
 
 ## Chosen Strategy
 
@@ -58,5 +58,5 @@ This ticket should not introduce parallel `net8.0` and `net10.0` analyzer assets
 - The implementation plan names one supported analyzer package shape: one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/`.
 - The plan explicitly covers Roslyn, Workspaces, `System.Composition`, `System.Text.Json`, analyzer package paths, and package-verifier expectations.
 - The plan preserves the current nine-package coordinated family and does not invent a second analyzer package id.
-- The plan requires proof on both `.NET 8 SDK` and `.NET 10 SDK` hosts before repository docs may claim pure `.NET 8 SDK` analyzer support.
+- The implemented plan requires proof on both `.NET 8 SDK` and `.NET 10 SDK` hosts before release approval carries the analyzer support claim.
 - The plan keeps the current analyzer/runtime alignment rule: consumers still choose exactly one package-version line, `8.50.0` or `10.50.0`, and keep analyzer references local with `PrivateAssets="all"`.

@@ -50,7 +50,7 @@ The `MySql.EntityFrameworkCore` pins are target-specific: `8.0.26` for `net8.0` 
 
 `DCoding.Data.DVault.Analyzers` is a local build-time package reference, not a runtime dependency. Keep analyzer references local with `PrivateAssets="all"`.
 
-The analyzer package currently ships one `net10.0` analyzer asset for both coordinated package lines. Supported analyzer consumption for both `8.50.0` and `10.50.0` uses a `.NET 10 SDK` build host, including `net8.0` projects on the `8.50.0` package line. The repository does not validate pure `.NET 8 SDK` analyzer consumption.
+The analyzer package ships one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/` for both coordinated package lines. Supported analyzer consumption for both `8.50.0` and `10.50.0` uses either a `.NET 8 SDK` or `.NET 10 SDK` build host.
 
 ## Related Guidance
 
