@@ -1,71 +1,56 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Repository evidence already ratifies a bounded v1 provider-native crypto story: a finite reviewed capability matrix, one explicit SQL Server Always Encrypted selection seam, and a caller-owned converter path that remains the shared runtime default. This ticket is ready for PO-critic as a documentation-alignment task across the named public docs; no child split or planning document is needed.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - The repo-backed capability matrix is already finite and should be documented as the v1 default: SQLite encrypted-file build is `unsupported`; PostgreSQL deployment encryption and `pgcrypto`, SQL Server TDE and Always Encrypted, MySQL SQL crypto functions and file-or-tablespace encryption, Oracle TDE and `DBMS_CRYPTO`, and DB2 native database encryption are `conditional` guidance facts.
 - The only current explicit provider-owned native selection surface in the repository is SQL Server `AddDVaultSqlServerAlwaysEncryptedSelection(...)`; it emits redaction-safe `ProviderNativeCryptoSelections` facts and fails closed when prerequisite proof names, capability facts, or the active capability profile do not line up.
 - The shared runtime privacy lane remains caller-owned alias registration plus `DataVaultEncryptedPayloadValueConverter`; provider-native selection does not replace custom conversion, auto-route provider behavior, or enable provider-native execution by default.
 - This ticket remains the documentation half that supports story `06FH8RFJYY09BJJK4MD2KT8BF0`; the implementation proof ticket `06FH8RMFZSVNW0KKTZT9HMGM8G` is already done and provides the concrete repo evidence the docs should ratify.
 
-### Scope In
+Scope In
 - Document the finite reviewed provider-native crypto capability matrix and clearly distinguish guidance-only capability facts from DVault-managed runtime behavior.
 - Document the current SQL Server Always Encrypted opt-in selection path, including caller-owned prerequisite proof names, redaction-safe diagnostics and support-bundle visibility, and fail-closed rejection behavior.
 - Document coexistence with the existing caller-owned encrypted-payload alias and value-converter path, including that custom implementations remain first-class and are not silently replaced.
 - Document adoption and migration caveats for moving toward or away from provider-native usage proofs: no automatic re-encryption, backfill, dual-write, provider migration, key-store setup, or provider provisioning.
 - Align README, Getting Started, Production Adoption Checklist, Package Compatibility, and current release-note or changelog language around the same ownership boundary, crypto-shredding limit, deletion and backup-purge non-goals, and finite provider baseline.
 
-### Scope Out
+Scope Out
 - Adding new provider-native runtime execution beyond the existing SQL Server proof-level selection seam.
 - Adding cross-provider native crypto dispatch, capability probing, encrypted DDL generation, SQL crypto invocation, or provider-name auto-routing in shared code.
 - Owning compliance, legal erasure, deletion, retention, backup purge or shredding, key lifecycle, KMS or HSM integration, or provider and database provisioning workflows.
 - Documenting MariaDB as a separate capability profile or widening the supported-provider baseline beyond SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2.
 
-## Acceptance Criteria
-- Public docs name the exact reviewed provider capability matrix from the repository and clearly distinguish guidance-only capability facts from DVault-managed runtime behavior.
-- Public docs explain that SQL Server Always Encrypted is the only current explicit provider-owned native selection path, show that it is alias-driven and opt-in, and state that missing prerequisite proof names or incompatible capability or profile facts fail closed.
-- Public docs explain that the caller-owned `DataVaultEncryptedPayloadValueConverter` and key-provider path remains supported and is not silently replaced by provider-native selection.
-- Public docs state that DVault does not emit provider-native encrypted DDL, call provider SQL crypto functions, probe encryption settings, or route runtime behavior based on native encryption availability.
-- Public docs state that key ownership, key rotation, key destruction, deletion, backup purge or shredding, retention, compliance, and provider provisioning stay outside DVault ownership.
-- Public docs state that adopting or changing provider-native crypto usage is caller-owned compatibility work with no automatic re-encryption, backfill, dual-write, or provider migration.
-
-## Definition of Done
-- README, Getting Started, Production Adoption Checklist, Package Compatibility, and the current release-note or changelog surfaces all describe the same bounded provider-native crypto story.
-- At least one user-facing doc tells adopters where to inspect redaction-safe privacy diagnostics or support-bundle facts for provider capability and native-selection review.
-- Documentation language matches the repository-backed capability-profile baseline and does not contradict `DVault V1 Optional Privacy Extension Boundary`.
-- The ticket leaves no blocking PO questions about the provider list, ownership boundary, or the current first provider path.
-
-## Implementation Notes
-- Use `DataVaultProviderCryptoCapabilityCatalog` and `DataVaultDiagnosticsTests` as the authoritative repo-backed source for the v1 capability matrix and status vocabulary.
-- Reference the public diagnostics surfaces `ProviderNativeEncryption`, `ProviderCryptoCapabilities`, and `ProviderNativeCryptoSelections` instead of inventing separate doc-only terminology.
-- Anchor the explicit provider-native example to `AddDVaultSqlServerAlwaysEncryptedSelection(...)`, while keeping the docs clear that shared runtime behavior still depends on caller-owned alias registration and converter or key-provider wiring.
-- Keep migration guidance bounded to caller-owned planning for re-encryption, provider migration, and key-store changes; do not blur this ticket into hash-key storage migration guidance except to avoid confusing the two topics.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - If a later provider-specific ticket adds actual runtime execution for SQL Server Always Encrypted or another provider, should adopter guidance split into provider-specific docs instead of one shared bounded matrix?
 - Should a later release add one dedicated privacy diagnostics page that consolidates alias coverage, provider capability facts, native-selection facts, and support-bundle review workflow for adopters?
 
-## Risks
+Risks
 - If docs overstate `conditional` capabilities as implemented runtime behavior, adopters may infer unsupported DDL, probing, or key-management behavior.
 - If docs omit coexistence and migration caveats, adopters may expect automatic cutover from custom conversion to native crypto and make unsafe rollout assumptions.
 - If docs do not restate non-goals around deletion, backup purge or shredding, and provider provisioning, privacy language could drift into compliance promises the codebase explicitly rejects.
 
-## Split Recommendations
+Split recommendations
 - No split is recommended; the current scope is already bounded to documentation alignment around the existing provider matrix and the single SQL Server proof-level selection seam.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 4
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Update privacy docs, getting started, adoption checklist, provider compatibility docs, and release notes for optional provider-native crypto capabilities. Explain supported and conditional provider functions, custom implementation coexistence, key-ownership boundaries, migration caveats, and non-goals around compliance, deletion, backup shredding, and provider provisioning.
+Run mode
+- apply: planned updates are applied after this comment

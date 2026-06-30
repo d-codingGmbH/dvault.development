@@ -232,7 +232,23 @@ Crypto-shredding remains caller-owned. Withdrawing, losing, or destroying the ca
 
 Provider caveats stay bounded to ordinary EF Core mapping. The proof stores the provider value through a normal mapped payload property and is covered by the SQLite-friendly test path; it is not provider-specific encrypted DDL, transparent database encryption, a special encrypted column type, or a claim that any provider package performs native encryption.
 
-The finite provider baseline for this caveat is SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2. MySQL follows the repository MySQL profile used for `MySql.EntityFrameworkCore` and Pomelo; it does not create a separate MariaDB capability profile. Provider-native encryption features remain guidance-only: SQL Server TDE or Always Encrypted, PostgreSQL deployment encryption or `pgcrypto`, Oracle TDE or `DBMS_CRYPTO`, MySQL SQL crypto or file or tablespace encryption, SQLite encrypted-file builds, and DB2 native database encryption stay outside the shared privacy runtime. DVault does not emit provider-native encrypted-column DDL, call provider SQL crypto functions, probe provider encryption capabilities, or route runtime behavior based on native encryption availability. Any future provider-native encryption support needs a separate provider-specific ticket or contract.
+The finite provider baseline for this caveat is SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2. MySQL follows the repository MySQL profile used for `MySql.EntityFrameworkCore` and Pomelo; it does not create a separate MariaDB capability profile. Provider-native encryption features remain guidance-only: SQLite encrypted-file builds are `unsupported`; PostgreSQL deployment encryption and `pgcrypto`, SQL Server TDE and Always Encrypted, MySQL SQL crypto functions and file or tablespace encryption, Oracle TDE and `DBMS_CRYPTO`, and DB2 native database encryption are `conditional` facts. DVault does not emit provider-native encrypted-column DDL, call provider SQL crypto functions, probe provider encryption capabilities, or route runtime behavior based on native encryption availability.
+
+The current explicit provider-native selection path is SQL Server Always Encrypted diagnostics selection. Use `AddDVaultSqlServerAlwaysEncryptedSelection(...)` only when the application already owns the Always Encrypted driver, column, enclave, key-store, and database setup and can name redaction-safe prerequisite proofs. The alias must be the same stable encrypted-payload alias used by the optional privacy proof.
+
+```csharp
+services.AddDVaultPrivacy(options => options
+    .RegisterEncryptedPayloadAlias("CustomerProfileEmailEncrypted")
+    .UseCallerOwnedKeyProvider(callerOwnedKeyProvider));
+services.AddDVaultSqlServerAlwaysEncryptedSelection(
+    "CustomerProfileEmailEncrypted",
+    "always-encrypted-column-key-reviewed",
+    "driver-column-encryption-setting-reviewed");
+```
+
+This call records provider-owned selection facts; it does not make shared DVault runtime dispatch Always Encrypted operations. Ordinary field-level conversion still depends on caller-owned alias registration, `DataVaultEncryptedPayloadValueConverter`, and the configured `IDataVaultEncryptedPayloadKeyProvider`, or on an equivalent custom implementation owned by the application.
+
+Review redaction-safe privacy diagnostics or support-bundle JSON before adopting or changing provider-native usage proofs. `ProviderNativeEncryption` describes the unmanaged provider-native boundary, `ProviderCryptoCapabilities` lists the finite reviewed capability facts and their `conditional` or `unsupported` status, and `ProviderNativeCryptoSelections` records SQL Server Always Encrypted selection outcomes such as `provider-native-requested`, `provider-native-rejected-missing-prerequisite`, `provider-native-rejected-incompatible-profile`, `provider-native-rejected-unavailable`, or `provider-native-rejected-unsupported`. Missing prerequisite proof names, unavailable or unsupported reviewed capability facts, and non-SQL Server active profiles fail closed. Moving toward or away from provider-native usage proofs is caller-owned compatibility work; DVault does not automatically re-encrypt, backfill, dual-write, migrate providers, create key stores, provision databases, delete rows, purge backups, complete crypto-shredding, or attest retention or compliance.
 
 ## Hashing And Storage
 

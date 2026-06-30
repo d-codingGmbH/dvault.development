@@ -33,7 +33,22 @@ The `src/DCoding.Data` project is a non-packable source-root build anchor and is
 
 `DCoding.Data.DVault.Privacy` is an optional provider-neutral privacy proof package. Consumers install it only when they explicitly opt into the privacy extension seam; it provides registration, options, and alias-driven encrypted payload conversion contracts for ordinary EF Core mapped payload properties. It does not provide compliance guarantees, automatic encryption/redaction, database-at-rest encryption, provider-native encrypted column/cell/row features, provider SQL crypto calls, provider-native encrypted DDL, encryption-capability probing, or runtime routing based on native encryption availability.
 
-The privacy caveat uses the finite repository-backed provider baseline: SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2. MySQL covers the repository MySQL profile for `MySql.EntityFrameworkCore` and Pomelo rather than a separate MariaDB capability profile. Provider-native encryption examples such as SQL Server TDE or Always Encrypted, PostgreSQL deployment encryption or `pgcrypto`, Oracle TDE or `DBMS_CRYPTO`, MySQL SQL crypto or file or tablespace encryption, SQLite encrypted-file builds, and DB2 native database encryption remain guidance-only unless a later provider-specific ticket owns one exact capability.
+The privacy caveat uses the finite repository-backed provider baseline. MySQL covers the repository MySQL profile for `MySql.EntityFrameworkCore` and Pomelo rather than a separate MariaDB capability profile. These facts are guidance-only diagnostics facts unless a later provider-specific ticket owns one exact capability:
+
+| Provider profile | Provider-native crypto capability | Status |
+| --- | --- | --- |
+| SQLite | SQLite encrypted-file build | `unsupported` |
+| PostgreSQL | PostgreSQL deployment encryption posture | `conditional` |
+| PostgreSQL | `pgcrypto` | `conditional` |
+| SQL Server | Transparent Data Encryption | `conditional` |
+| SQL Server | Always Encrypted | `conditional` |
+| MySQL | MySQL SQL crypto functions | `conditional` |
+| MySQL | MySQL file or tablespace encryption | `conditional` |
+| Oracle | Transparent Data Encryption | `conditional` |
+| Oracle | `DBMS_CRYPTO` | `conditional` |
+| DB2 | DB2 native database encryption | `conditional` |
+
+SQL Server `AddDVaultSqlServerAlwaysEncryptedSelection(...)` is the only current explicit provider-owned native crypto selection path. It records an alias-driven, opt-in Always Encrypted selection in redaction-safe diagnostics through `ProviderNativeCryptoSelections` when caller-owned prerequisite proof names and the active SQL Server capability profile line up with the reviewed `conditional` capability facts. It fails closed when prerequisite proof names are missing, capability facts are unavailable or unsupported, or the active capability profile is incompatible. The selection does not replace caller-owned alias registration, `DataVaultEncryptedPayloadValueConverter`, custom conversion, key-store setup, provider provisioning, re-encryption, backfill, dual-write, provider migration, deletion, backup purge, crypto-shredding, retention, or compliance ownership.
 
 ## Dependency Matrix
 
