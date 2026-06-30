@@ -3,7 +3,7 @@
   "ticket-id": "06FH8R4EF1QFF2E3ZWS3P1BWHM",
   "ticket-type": "task",
   "title": "Task: Add .NET 8 SDK analyzer smoke, CI, and package-verifier coverage",
-  "revision": "06FHBZG142GGEZE7FW16BN79KR",
+  "revision": "06FHCDWZG9EZ2J7XJP8NJSKKF4",
   "status": "done",
   "labels": [
     "area/analyzers",
@@ -18,5 +18,5 @@
   "milestone-id": "06FH8QAQV04Z28E5Q4E25060JG",
   "release-id": "06FH8QAPVPB96WQ8T1NH1R9H14",
   "created-at": "2026-06-29T17:15:04.2265440Z",
-  "updated-at": "2026-06-30T00:46:35.8081242Z"
+  "updated-at": "2026-06-30T01:49:31.9064237Z"
 }
