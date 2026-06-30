@@ -3,7 +3,7 @@
   "ticket-id": "06FH8R33YACW00JA0GNVEDP1AM",
   "ticket-type": "task",
   "title": "Task: Implement analyzer .NET 8 host asset layout and Roslyn dependency normalization",
-  "revision": "06FH9R74QQ6P7TRSR5VV7K5374",
+  "revision": "06FHCDR69SW5K1D3FKXMBM20RW",
   "status": "done",
   "labels": [
     "area/analyzers",
@@ -20,5 +20,5 @@
   "milestone-id": "06FH8QAQV04Z28E5Q4E25060JG",
   "release-id": "06FH8QAPVPB96WQ8T1NH1R9H14",
   "created-at": "2026-06-29T17:14:51.1005028Z",
-  "updated-at": "2026-06-29T19:35:10.7810000Z"
+  "updated-at": "2026-06-30T01:48:52.6867722Z"
 }
