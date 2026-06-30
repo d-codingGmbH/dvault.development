@@ -3,21 +3,20 @@
   "ticket-id": "06FH8RGQZA7D9JZSTSAJEM9B3M",
   "ticket-type": "task",
   "title": "Task: Define provider-native crypto capability contract and privacy boundary",
-  "revision": "06FH8SM8N2EAP6HJ3X80KS5K4R",
-  "status": "todo",
+  "revision": "06FHHXFRD6FKYP33MV0G1XH8BW",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/architecture",
     "area/privacy",
+    "area/providers",
     "area/security",
-    "area/providers"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FH8QASG77EQRT4J1CSA3GBFW",
   "release-id": "06FH8QAPVPB96WQ8T1NH1R9H14",
   "created-at": "2026-06-29T17:16:46.2961171Z",
-  "updated-at": "2026-06-29T17:21:31.8163252Z"
+  "updated-at": "2026-06-30T14:36:40.9371325Z"
 }

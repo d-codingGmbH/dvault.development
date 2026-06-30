@@ -104,6 +104,35 @@ Database-native encryption features are guidance-only and are not DVault shared-
 
 The shared core must not probe for provider-native encryption capabilities, branch on provider-native encryption availability, issue provider-specific encryption DDL or SQL functions, configure provider key stores, or negotiate database encryption modes. A future provider-native encryption lane requires a separate provider-specific ticket that names one provider and one exact capability, owns the provider package surface, defines diagnostics and fallback behavior, supplies tests, and records evidence before DVault can expose it.
 
+## Provider-Native Boundary Diagnostics Contract
+
+Provider-native encryption facts are evidence and guidance facts only. The v1 diagnostics surface records the same finite provider baseline as the privacy boundary: SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2. Every provider in that baseline uses the same shared boundary vocabulary until a later provider-specific ticket proves one exact opt-in capability:
+
+| Fact | Required v1 value or behavior | Checked-in evidence |
+| --- | --- | --- |
+| Boundary status | `unmanaged` | `DataVaultProviderNativeEncryptionBoundaryFact.BoundaryStatus`; `DataVaultDiagnosticsTests.AnalyzeReportsPersonalDataMarkersAsAdvisoryWithoutPrivacyProof`; `DataVaultDiagnosticsTests.AnalyzeDbContextSerializesPrivacyFactsThroughSupportBundleDiagnostics` |
+| Guidance status | `guidance-only` | `DataVaultProviderNativeEncryptionBoundaryFact.GuidanceStatus`; support-bundle privacy assertions in `DataVaultDiagnosticsTests` |
+| DVault ownership | `ManagedByDVault == false` | `DataVaultPrivacyDiagnostics.Empty`; provider-native privacy assertions in `DataVaultDiagnosticsTests` |
+| Capability probing | `UsesDatabaseCapabilityProbing == false` | `DefaultDataVaultDiagnosticsService.CreateProviderNativeEncryptionBoundaryFact`; support-bundle privacy assertions in `DataVaultDiagnosticsTests` |
+| Provider baseline | SQLite, PostgreSQL, SQL Server, MySQL, Oracle, DB2 | This architecture contract, `docs/releases/v0.50.0.md`, and the provider capability profile used by diagnostics |
+| Source link | `docs/architecture/dvault-v1-optional-privacy-extension-boundary.md` | `DataVaultPrivacyDiagnostics.Empty` and `DefaultDataVaultDiagnosticsService.CreateProviderNativeEncryptionBoundaryFact` |
+
+The redaction-safe support-bundle contract may expose provider name, capability profile name, boundary status, guidance status, whether DVault manages the feature, whether diagnostics probed provider encryption settings, the source document, encrypted-payload aliases, key-provider posture, and coverage status. It must not expose plaintext, ciphertext, raw keys, derived secrets, connection strings, provider key-store settings, raw payload values, or caller policy internals.
+
+The following fail-closed states are the required v1 coverage boundary for marked personal data:
+
+- missing opt-in privacy proof stays advisory and records `personal-data-privacy-proof-missing`;
+- a marker-only or otherwise unusable key provider records `personal-data-privacy-coverage-unusable`;
+- an unregistered encrypted-payload alias records `personal-data-privacy-coverage-unusable`;
+- a privacy proof that returns no evaluation records `personal-data-privacy-coverage-unusable`;
+- a privacy proof that throws records `personal-data-privacy-coverage-unusable`;
+- missing observable `DataVaultEncryptedPayloadValueConverter` wiring records `personal-data-privacy-coverage-unusable`;
+- converter alias mismatch records `personal-data-privacy-coverage-unusable`.
+
+These states are covered in `tests/DCoding.Data.DVault.Tests/Unit/DataVaultDiagnosticsTests.cs`. The value-converter failure surface is covered in `tests/DCoding.Data.DVault.Tests/Unit/DataVaultEncryptedPayloadValueConverterTests.cs`, and alias summary rendering is covered in `tests/DCoding.Data.DVault.Tests/Unit/DataVaultPrivacyCoverageReporterTests.cs`.
+
+This evidence matrix is intentionally enough for the v1 shared contract. It does not approve provider-native encrypted DDL, SQL crypto functions, provider driver key-store integration, capability probing, runtime dispatch, provider-specific migration manifests, or automatic privacy workflows.
+
 ## Ownership Boundary
 
 DVault-owned responsibilities are limited to library behavior that can be implemented and tested inside the package boundary:
