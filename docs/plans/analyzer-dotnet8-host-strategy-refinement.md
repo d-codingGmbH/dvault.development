@@ -51,7 +51,7 @@ This ticket should not introduce parallel `net8.0` and `net10.0` analyzer assets
 - Remove test and build assumptions that hard-code the analyzer project to `net10.0`, including the integration-project analyzer reference override and analyzer test harness `dotnet-format` assembly paths.
 - Update `tools/DCoding.Data.DVault.PackageVerification/PackageVerifier.cs` and `tests/DCoding.Data.DVault.Tests/Unit/PackageVerifierTests.cs` so the package-verification contract matches the reviewed analyzer asset set for the new strategy.
 - Update README, `src/DCoding.Data.DVault.Analyzers/README.md`, `docs/package-compatibility.md`, `docs/local-validation.md`, `docs/manual-nuget-publication.md`, and the release notes so they describe pure `.NET 8 SDK` and `.NET 10 SDK` analyzer-host support consistently.
-- Keep `tools/pack-release-packages.sh` on the current two visible package-version lines `8.50.0` and `10.50.0`; the analyzer package remains one package id built once per version line, not a target-specific analyzer-package fork.
+- Keep `tools/pack-release-packages.sh` on the current two visible package-version lines `8.51.0` and `10.51.0`; the analyzer package remains one package id built once per version line, not a target-specific analyzer-package fork.
 
 ## Acceptance Boundary
 
@@ -59,4 +59,4 @@ This ticket should not introduce parallel `net8.0` and `net10.0` analyzer assets
 - The plan explicitly covers Roslyn, Workspaces, `System.Composition`, `System.Text.Json`, analyzer package paths, and package-verifier expectations.
 - The plan preserves the current nine-package coordinated family and does not invent a second analyzer package id.
 - The implemented plan requires proof on both `.NET 8 SDK` and `.NET 10 SDK` hosts before release approval carries the analyzer support claim.
-- The plan keeps the current analyzer/runtime alignment rule: consumers still choose exactly one package-version line, `8.50.0` or `10.50.0`, and keep analyzer references local with `PrivateAssets="all"`.
+- The plan keeps the current analyzer/runtime alignment rule: consumers still choose exactly one package-version line, `8.51.0` or `10.51.0`, and keep analyzer references local with `PrivateAssets="all"`.

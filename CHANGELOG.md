@@ -2,6 +2,16 @@
 
 This changelog summarizes the public release-note trail. The detailed release records remain under [docs/releases/](docs/releases/); those files are the source of truth for scope, evidence, non-goals, and validation notes.
 
+## v0.51.0 - Release Notes and Package Validation Baseline
+
+- Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.51.0` / `net8.0` / EF Core 8 and `10.51.0` / `net10.0` / EF Core 10.
+- Records that the v0.51.0 release label maps to consumer package versions `8.51.0` and `10.51.0`, not to a `0.51.0` package version.
+- Carries forward the one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/`, local `PrivateAssets="all"` analyzer references, and `.NET 8 SDK` plus `.NET 10 SDK` analyzer-host support.
+- Updates package creation, analyzer package smoke validation, package verifier expectations, README guidance, package compatibility, manual publication, local validation, production adoption, performance, and shared implementation standards to the v0.51.0 baseline.
+- Keeps provider performance claims, package publication, package signing, analyzer-host compatibility beyond the `.NET 8 SDK` and `.NET 10 SDK` boundary, provider-native encryption behavior, and automatic hash-key migration execution outside the current release claim set.
+
+See [DVault v0.51.0 Release Notes](docs/releases/v0.51.0.md).
+
 ## v0.50.0 - Analyzer Compatibility and Adoption Hardening
 
 - Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.50.0` / `net8.0` / EF Core 8 and `10.50.0` / `net10.0` / EF Core 10.

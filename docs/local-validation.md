@@ -16,8 +16,8 @@ bash tools/check-format.sh
 
 `bash tools/pack-release-packages.sh` clears stale package artifacts and creates the coordinated release package lines under `artifacts/packages/`:
 
-- nine `8.50.0` `.nupkg` files with `net8.0` assets and EF Core 8 dependency groups
-- nine `10.50.0` `.nupkg` files with `net10.0` assets and EF Core 10 dependency groups
+- nine `8.51.0` `.nupkg` files with `net8.0` assets and EF Core 8 dependency groups
+- nine `10.51.0` `.nupkg` files with `net10.0` assets and EF Core 10 dependency groups
 - matching `.snupkg` files for the runtime, provider, and privacy packages
 
 `bash tools/run-analyzer-package-smoke.sh 8` and `bash tools/run-analyzer-package-smoke.sh 10` create a temporary consumer, restore the packed runtime and analyzer packages from `artifacts/packages/`, build generated mapper output, and run it under the selected SDK host.

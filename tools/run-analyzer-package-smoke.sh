@@ -10,11 +10,11 @@ sdk_major="$1"
 case "$sdk_major" in
   8)
     target_framework="net8.0"
-    package_version="8.50.0"
+    package_version="8.51.0"
     ;;
   10)
     target_framework="net10.0"
-    package_version="10.50.0"
+    package_version="10.51.0"
     ;;
   *)
     echo "Unsupported SDK major '$sdk_major'. Expected 8 or 10." >&2

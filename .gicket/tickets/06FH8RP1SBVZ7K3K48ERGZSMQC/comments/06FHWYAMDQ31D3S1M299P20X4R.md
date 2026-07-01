@@ -1,65 +1,53 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refinement stays bounded to the v0.51.0 release-surface roll-forward; repository evidence confirms the current baseline is still 8.50.0 / 10.50.0, the release-note convention currently ends at docs/releases/v0.50.0.md, and live relation state now shows three incoming blockers.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - Repository evidence still hardcodes the active consumer package lines as 8.50.0 for net8.0 / EF Core 8 and 10.50.0 for net10.0 / EF Core 10 across README.md, src/DCoding.Data.DVault.Analyzers/README.md, docs/package-compatibility.md, docs/local-validation.md, docs/manual-nuget-publication.md, CHANGELOG.md, tools/pack-release-packages.sh, tools/run-analyzer-package-smoke.sh, tools/DCoding.Data.DVault.PackageVerification/PackageVerifier.cs, and tests/DCoding.Data.DVault.Tests/Unit/PackageVerifierTests.cs.
 - The analyzer boundary remains fixed for this follow-up: one netstandard2.0 analyzer asset under analyzers/dotnet/cs/, analyzer references stay local with PrivateAssets='all', and supported analyzer build hosts remain .NET 8 SDK and .NET 10 SDK only.
 - The repository release-note baseline currently ends at docs/releases/v0.50.0.md, so the v0.51.0 update should follow that established release-note location and naming pattern alongside the changelog update.
 - Live relation evidence currently shows incoming blocks from 06FH8QAVJFXANVQFXGPYVAFXSR, 06FH8R9DPSKTNYB46HHVJMZ9P8, and 06FH8RFJYY09BJJK4MD2KT8BF0; follow-up comments from the latter two show upstream workflow progress, but the blocking relations still need to be cleared or intentionally updated in live state.
 
-### Scope In
+Scope In
 - Roll forward all current v0.50.0 release-surface guidance that should advance with this baseline, including README.md, src/DCoding.Data.DVault.Analyzers/README.md, docs/package-compatibility.md, docs/local-validation.md, docs/manual-nuget-publication.md, CHANGELOG.md, and the v0.51.0 release-note artifact under docs/releases/.
 - Update packaging and validation baselines in tools/pack-release-packages.sh, tools/run-analyzer-package-smoke.sh, tools/DCoding.Data.DVault.PackageVerification/PackageVerifier.cs, and tests/DCoding.Data.DVault.Tests/Unit/PackageVerifierTests.cs from 8.50.0 / 10.50.0 to 8.51.0 / 10.51.0.
 - Keep the existing coordinated-family rules intact: nine packable packages, one selected package-version line per consumer project, analyzer package alignment with the chosen runtime line, and no consumer-facing 0.51.0 NuGet version.
 
-### Scope Out
+Scope Out
 - Changing analyzer package shape, asset layout, or package ids.
 - Broadening analyzer-host support beyond the reviewed .NET 8 SDK and .NET 10 SDK boundary.
 - Changing dependency-major baselines, provider scope, or the manual-publication workflow beyond the coordinated version-line roll-forward.
 
-## Acceptance Criteria
-- Every v0.51.0 release surface that currently represents the active baseline uses 8.51.0 for net8.0 / EF Core 8 and 10.51.0 for net10.0 / EF Core 10, with no stale 8.50.0 / 10.50.0 guidance left in those updated surfaces.
-- README, analyzer README, package compatibility, manual publication, local validation, changelog, and the v0.51.0 release note all describe the same bounded analyzer story: one netstandard2.0 analyzer asset under analyzers/dotnet/cs/, local PrivateAssets='all' analyzer usage, and .NET 8 SDK / .NET 10 SDK build hosts only.
-- tools/pack-release-packages.sh, tools/run-analyzer-package-smoke.sh, PackageVerifier.cs, and PackageVerifierTests.cs enforce the same 8.51.0 / 10.51.0 lines and continue to reject mixed-line or consumer-facing 0.51.0 guidance.
-- The ticket remains a documentation and validation follow-up only and does not reopen the already-landed analyzer compatibility implementation.
-
-## Definition of Done
-- The repository lands the coordinated 8.51.0 / 10.51.0 release-baseline roll-forward across the scoped docs, scripts, verifier logic, and verifier tests.
-- The v0.51.0 release-note artifact exists under the established docs/releases/ convention and matches the changelog and package-guidance baseline.
-- Any live incoming blocks relation that still targets this ticket from 06FH8QAVJFXANVQFXGPYVAFXSR, 06FH8R9DPSKTNYB46HHVJMZ9P8, or 06FH8RFJYY09BJJK4MD2KT8BF0 is cleared or intentionally updated so relation state matches the ticket's actual dependency posture.
-
-## Implementation Notes
-- PackageVerifier.cs currently hardcodes the expected package lines, README guidance fragments, and mixed-line rejection text for 8.50.0 / 10.50.0, so the verifier implementation itself must move with the documentation baseline rather than relying only on test updates.
-- README.md also carries v0.50.0-specific headings and release-note links, including the current limitations section and links to docs/releases/v0.50.0.md, so the roll-forward should update release-label references as well as package-install examples.
-- Use docs/plans/analyzer-package-compatibility-audit.md and docs/plans/analyzer-dotnet8-host-strategy-refinement.md as the authoritative analyzer-boundary references; this ticket only republishes that settled boundary on the new coordinated version line.
-- Treat analyzers/dotnet/cs/ as a packed-package asset path verified through package outputs, not as a source-tree folder to add or reshape.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - When the three upstream blocker tickets are complete, clear or downgrade any remaining incoming blocks relations so comments and live relation state do not diverge.
 - If any additional release-surface file outside the evidenced set still advertises the active consumer baseline, update it in the same change rather than leaving a partial 8.50.0 / 10.50.0 trail.
 
-## Risks
+Risks
 - Because three live incoming blocks relations currently target this ticket, workflow comments alone are not enough to prove dependency clearance; stale relations can keep the ticket artificially blocked.
 - Partial version bumps across docs, scripts, verifier logic, and verifier tests can leave the release baseline internally inconsistent even though the underlying analyzer implementation is already settled.
 - Any mixed-line guidance or consumer-facing 0.51.0 package claim would publish incorrect installation and approval instructions.
 
-## Split Recommendations
+Split recommendations
 - none
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 4
+- definition-of-done items: 3
+- implementation-notes items: 4
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Finalize v0.51.0 documentation and package validation after analyzer, provider parity, and native crypto work lands. Update release notes, changelog, package compatibility, manual publication, package verifier expectations, README examples, and validation commands for package versions 8.51.0 and 10.51.0.
+Run mode
+- apply: planned updates are applied after this comment

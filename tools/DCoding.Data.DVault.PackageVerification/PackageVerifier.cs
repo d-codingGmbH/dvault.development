@@ -45,19 +45,19 @@ public sealed class PackageVerifier {
   ];
 
   private static readonly string[] DisallowedMixedLineInstallClaimFragments = [
-      "You can mix `8.50.0` and `10.50.0`",
-      "you can mix `8.50.0` and `10.50.0`",
-      "Projects may mix `8.50.0` and `10.50.0`",
-      "projects may mix `8.50.0` and `10.50.0`",
-      "Consumers may mix `8.50.0` and `10.50.0`",
-      "consumers may mix `8.50.0` and `10.50.0`",
-      "Use `8.50.0` runtime packages with `10.50.0` analyzer",
-      "Use `10.50.0` runtime packages with `8.50.0` analyzer",
+      "You can mix `8.51.0` and `10.51.0`",
+      "you can mix `8.51.0` and `10.51.0`",
+      "Projects may mix `8.51.0` and `10.51.0`",
+      "projects may mix `8.51.0` and `10.51.0`",
+      "Consumers may mix `8.51.0` and `10.51.0`",
+      "consumers may mix `8.51.0` and `10.51.0`",
+      "Use `8.51.0` runtime packages with `10.51.0` analyzer",
+      "Use `10.51.0` runtime packages with `8.51.0` analyzer",
   ];
 
   private static readonly ExpectedPackageLine[] ExpectedPackageLines = [
-      new("8.50.0", Net8TargetFramework, "EF Core 8"),
-      new("10.50.0", Net10TargetFramework, "EF Core 10"),
+      new("8.51.0", Net8TargetFramework, "EF Core 8"),
+      new("10.51.0", Net10TargetFramework, "EF Core 10"),
   ];
 
   private static readonly string[] DisallowedInstallVersionFragments = [
@@ -80,6 +80,7 @@ public sealed class PackageVerifier {
       "--version 0.48.0",
       "--version 0.49.0",
       "--version 0.50.0",
+      "--version 0.51.0",
       "--version 8.37.0",
       "--version 10.37.0",
       "--version 8.38.0",
@@ -106,6 +107,8 @@ public sealed class PackageVerifier {
       "--version 10.48.0",
       "--version 8.49.0",
       "--version 10.49.0",
+      "--version 8.50.0",
+      "--version 10.50.0",
       "Version=\"0.32.0\"",
       "Version=\"0.33.0\"",
       "Version=\"0.34.0\"",
@@ -125,6 +128,7 @@ public sealed class PackageVerifier {
       "Version=\"0.48.0\"",
       "Version=\"0.49.0\"",
       "Version=\"0.50.0\"",
+      "Version=\"0.51.0\"",
       "Version=\"8.37.0\"",
       "Version=\"10.37.0\"",
       "Version=\"8.38.0\"",
@@ -151,6 +155,8 @@ public sealed class PackageVerifier {
       "Version=\"10.48.0\"",
       "Version=\"8.49.0\"",
       "Version=\"10.49.0\"",
+      "Version=\"8.50.0\"",
+      "Version=\"10.50.0\"",
   ];
 
   private static readonly IReadOnlyList<ExpectedPackage> ExpectedPackages = [
@@ -628,7 +634,7 @@ public sealed class PackageVerifier {
       if (archive.ReadmeText?.Contains(disallowedFragment, StringComparison.Ordinal) == true) {
         issues.Add(new PackageVerificationIssue(
             archive.Id,
-            "Packaged README.md must not document stale or planning-release install version fragment '" + disallowedFragment + "'; use separate 8.50.0 and 10.50.0 package-line guidance."));
+            "Packaged README.md must not document stale or planning-release install version fragment '" + disallowedFragment + "'; use separate 8.51.0 and 10.51.0 package-line guidance."));
       }
     }
   }
@@ -640,7 +646,7 @@ public sealed class PackageVerifier {
       if (archive.ReadmeText?.Contains(disallowedFragment, StringComparison.Ordinal) == true) {
         issues.Add(new PackageVerificationIssue(
             archive.Id,
-            "Packaged README.md must not document mixed-line package installation claim '" + disallowedFragment + "'; use exactly one of the 8.50.0 or 10.50.0 package lines in a consumer project."));
+            "Packaged README.md must not document mixed-line package installation claim '" + disallowedFragment + "'; use exactly one of the 8.51.0 or 10.51.0 package lines in a consumer project."));
       }
     }
   }

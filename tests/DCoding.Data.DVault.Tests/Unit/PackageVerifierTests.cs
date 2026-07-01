@@ -10,8 +10,8 @@ public sealed class PackageVerifierTests {
   private const string CorePackageId = "DCoding.Data.DVault";
   private const string Db2PackageId = "DCoding.Data.DVault.Db2";
   private const string IbmEntityFrameworkCorePackageId = "IBM.EntityFrameworkCore";
-  private const string Net8PackageLineVersion = "8.50.0";
-  private const string Net10PackageLineVersion = "10.50.0";
+  private const string Net8PackageLineVersion = "8.51.0";
+  private const string Net10PackageLineVersion = "10.51.0";
   private const string Net8TargetFramework = "net8.0";
   private const string Net10TargetFramework = "net10.0";
   private const string Authors = "d-coding GmbH";
@@ -311,7 +311,9 @@ public sealed class PackageVerifierTests {
   [InlineData("dotnet add package DCoding.Data.DVault --version 0.48.0\n", "0.48.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 0.49.0\n", "0.49.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 0.50.0\n", "0.50.0")]
+  [InlineData("dotnet add package DCoding.Data.DVault --version 0.51.0\n", "0.51.0")]
   [InlineData("<PackageReference Include=\"DCoding.Data.DVault\" Version=\"0.50.0\" />\n", "0.50.0")]
+  [InlineData("<PackageReference Include=\"DCoding.Data.DVault\" Version=\"0.51.0\" />\n", "0.51.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 8.37.0\n", "8.37.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 8.38.0\n", "8.38.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 10.38.0\n", "10.38.0")]
@@ -337,6 +339,8 @@ public sealed class PackageVerifierTests {
   [InlineData("dotnet add package DCoding.Data.DVault --version 10.48.0\n", "10.48.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 8.49.0\n", "8.49.0")]
   [InlineData("dotnet add package DCoding.Data.DVault --version 10.49.0\n", "10.49.0")]
+  [InlineData("dotnet add package DCoding.Data.DVault --version 8.50.0\n", "8.50.0")]
+  [InlineData("dotnet add package DCoding.Data.DVault --version 10.50.0\n", "10.50.0")]
   public void ReadmeMustNotUseStaleOrPlanningReleaseInstallVersions(
       string staleInstallGuidance,
       string expectedFragment) {
@@ -357,8 +361,8 @@ public sealed class PackageVerifierTests {
   }
 
   [Theory]
-  [InlineData("You can mix `8.50.0` and `10.50.0` packages in one project.\n", "You can mix `8.50.0` and `10.50.0`")]
-  [InlineData("Use `8.50.0` runtime packages with `10.50.0` analyzer.\n", "8.50.0")]
+  [InlineData("You can mix `8.51.0` and `10.51.0` packages in one project.\n", "You can mix `8.51.0` and `10.51.0`")]
+  [InlineData("Use `8.51.0` runtime packages with `10.51.0` analyzer.\n", "8.51.0")]
   public void ReadmeMustNotUseMixedLineInstallClaims(
       string mixedLineInstallClaim,
       string expectedFragment) {

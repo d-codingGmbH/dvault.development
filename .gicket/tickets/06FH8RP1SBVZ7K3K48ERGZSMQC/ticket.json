@@ -3,21 +3,20 @@
   "ticket-id": "06FH8RP1SBVZ7K3K48ERGZSMQC",
   "ticket-type": "task",
   "title": "Task: Update v0.51.0 release notes and package validation baselines",
-  "revision": "06FH8RR2N39BQF0GRNNX3AH1HG",
-  "status": "todo",
+  "revision": "06FHXB66GVVHX9K98EA8VXVKG4",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
+    "area/compatibility",
     "area/documentation",
     "area/package",
     "area/release",
-    "area/compatibility"
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FH8QATAHEJQJXW4XK6Q74TXM",
   "release-id": "06FH8QAPVPB96WQ8T1NH1R9H14",
   "created-at": "2026-06-29T17:17:31.2262258Z",
-  "updated-at": "2026-06-29T17:17:40.9042621Z"
+  "updated-at": "2026-07-01T17:14:27.3343296Z"
 }
