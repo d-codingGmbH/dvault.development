@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "amendedTicketId": "06FH8RJF2SYBJ8ZM7ZDETDPN78",
+  "amendmentType": "terminal-relation-follow-up-evidence",
+  "supersededClaims": [
+    "Historical relation follow-up targeted owner branch \u0027develop\u0027 after base branch \u0027develop\u0027 already recorded terminal status \u0027done\u0027.",
+    "The original follow-up evidence is preserved append-only instead of reopening the terminal ticket or recreating its owner branch."
+  ],
+  "landedEvidence": [
+    "Relation follow-up from ticket \u002706FH8RFJYY09BJJK4MD2KT8BF0\u0027 via flow \u0027child-follow-up-comment\u0027 and action \u0027child-follow-up-target\u0027 became available after the target ticket was terminal.",
+    "Base branch \u0027develop\u0027 records target status \u0027done\u0027.",
+    "Original follow-up comment: [gicket-bot] relation follow-up\n\nSummary\n- Source ticket \u006006FH8RFJYY09BJJK4MD2KT8BF0\u0060 completed a bot run for role \u0060po-critic\u0060 with outcome \u0060po-critic-non-blocking-apply\u0060.\n- Source run summary: PO-critic review completed with a non-blocking assessment for ticket \u002706FH8RFJYY09BJJK4MD2KT8BF0\u0027.\n- Selected flow \u0060child-follow-up-comment\u0060 reached this ticket via \u0060parentOf\u0060 path \u006006FH8RFJYY09BJJK4MD2KT8BF0 -\u003E 06FH8RJF2SYBJ8ZM7ZDETDPN78\u0060.\n\nRun metadata\n- run-id: \u006018ea545600c043709a4c1dac78e58b21\u0060\n- sour..."
+  ],
+  "baseBranch": "develop",
+  "sourceTicketId": "06FH8RFJYY09BJJK4MD2KT8BF0",
+  "sourceRunId": "18ea545600c043709a4c1dac78e58b21",
+  "sourceRoleToken": "po-critic",
+  "sourceKind": "relation-follow-up",
+  "createdAtUtc": "2026-07-01T03:59:05.055709+00:00",
+  "semanticIdempotencyKey": "closure-evidence-amendment-ledger:06fh8rjf2sybj8zm7zdetdpn78:terminal-relation-follow-up-evidence:develop:06fh8rfjyy09bjjk4md2kt8bf0:relation-follow-up:39411647fae70852"
+}
