@@ -3,21 +3,20 @@
   "ticket-id": "06FH8R9DPSKTNYB46HHVJMZ9P8",
   "ticket-type": "story",
   "title": "Story: Close provider optimization parity gaps from benchmark evidence",
-  "revision": "06FH8SNT89A302VAKEEKQNVX58",
-  "status": "todo",
+  "revision": "06FHR1Q8RBS3EKJVV5NM7HYPT8",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
+    "area/benchmarks",
+    "area/ef-core",
     "area/performance",
     "area/providers",
-    "area/ef-core",
-    "area/benchmarks"
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FH8QARP5K0W063RVZ92X2YK0",
   "release-id": "06FH8QAPVPB96WQ8T1NH1R9H14",
   "created-at": "2026-06-29T17:15:42.8865510Z",
-  "updated-at": "2026-06-29T17:21:44.5142188Z"
+  "updated-at": "2026-07-01T04:54:02.6904507Z"
 }
