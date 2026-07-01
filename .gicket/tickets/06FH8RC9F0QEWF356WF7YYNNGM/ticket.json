@@ -3,21 +3,20 @@
   "ticket-id": "06FH8RC9F0QEWF356WF7YYNNGM",
   "ticket-type": "task",
   "title": "Task: Close selected provider save-strategy parity gaps",
-  "revision": "06FH8SFE0NKZ55DDHF2J0D0RE8",
-  "status": "todo",
+  "revision": "06FHPYG0CJXWWD5Z2WCC2PGXS4",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/task",
     "area/performance",
     "area/providers",
     "area/save-pipeline",
-    "area/tests"
+    "area/tests",
+    "automation/bot-ready",
+    "type/task"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FH8QARP5K0W063RVZ92X2YK0",
   "release-id": "06FH8QAPVPB96WQ8T1NH1R9H14",
   "created-at": "2026-06-29T17:16:07.5477054Z",
-  "updated-at": "2026-06-29T17:20:52.2291244Z"
+  "updated-at": "2026-07-01T02:20:08.1643624Z"
 }
