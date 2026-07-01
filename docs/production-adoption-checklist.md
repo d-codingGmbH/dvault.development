@@ -1,4 +1,4 @@
-﻿# Production Adoption Checklist
+# Production Adoption Checklist
 
 Use this checklist when preparing a DVault-consuming application for production. It is a routing document for adopter readiness; follow the linked source documents for setup examples, governance details, migration guardrails, release evidence, and current limitations.
 

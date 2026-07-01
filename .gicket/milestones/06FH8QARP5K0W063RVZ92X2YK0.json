@@ -3,6 +3,6 @@
   "milestone-id": "06FH8QARP5K0W063RVZ92X2YK0",
   "name": "v0.51.0 - Provider optimization parity closure",
   "description": "Use comparable benchmark evidence to identify and close meaningful save/read/PIT/bridge optimization gaps across supported provider packages without losing provider-neutral fallback.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-29T17:11:29.7132381Z"
 }

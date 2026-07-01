@@ -114,7 +114,7 @@ Provider-native encryption facts are evidence and guidance facts only. The v1 di
 | Guidance status | `guidance-only` | `DataVaultProviderNativeEncryptionBoundaryFact.GuidanceStatus`; support-bundle privacy assertions in `DataVaultDiagnosticsTests` |
 | DVault ownership | `ManagedByDVault == false` | `DataVaultPrivacyDiagnostics.Empty`; provider-native privacy assertions in `DataVaultDiagnosticsTests` |
 | Capability probing | `UsesDatabaseCapabilityProbing == false` | `DefaultDataVaultDiagnosticsService.CreateProviderNativeEncryptionBoundaryFact`; support-bundle privacy assertions in `DataVaultDiagnosticsTests` |
-| Provider baseline | SQLite, PostgreSQL, SQL Server, MySQL, Oracle, DB2 | This architecture contract, `docs/releases/v0.50.0.md`, and the provider capability profile used by diagnostics |
+| Provider baseline | SQLite, PostgreSQL, SQL Server, MySQL, Oracle, DB2 | This architecture contract, `docs/releases/v0.51.0.md`, and the provider capability profile used by diagnostics |
 | Source link | `docs/architecture/dvault-v1-optional-privacy-extension-boundary.md` | `DataVaultPrivacyDiagnostics.Empty` and `DefaultDataVaultDiagnosticsService.CreateProviderNativeEncryptionBoundaryFact` |
 
 The redaction-safe support-bundle contract may expose provider name, capability profile name, boundary status, guidance status, whether DVault manages the feature, whether diagnostics probed provider encryption settings, the source document, encrypted-payload aliases, key-provider posture, and coverage status. It must not expose plaintext, ciphertext, raw keys, derived secrets, connection strings, provider key-store settings, raw payload values, or caller policy internals.

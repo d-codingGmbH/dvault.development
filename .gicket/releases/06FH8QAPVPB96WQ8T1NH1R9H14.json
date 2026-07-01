@@ -3,6 +3,6 @@
   "release-id": "06FH8QAPVPB96WQ8T1NH1R9H14",
   "name": "v0.51.0 - Analyzer Host, Provider Parity, and Native Crypto Capabilities",
   "description": "Focused EF Core library release after v0.50.0. Scope: implement real .NET 8 SDK analyzer-host support in parallel to the existing .NET 10 path, close provider optimization parity gaps with benchmark evidence, and add optional provider-native crypto capability reporting and opt-in privacy integration while preserving custom implementations. Planning release v0.51.0 maps to package versions 8.51.0 and 10.51.0.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-29T17:11:29.2456881Z"
 }

@@ -3,6 +3,6 @@
   "milestone-id": "06FH8QAQV04Z28E5Q4E25060JG",
   "name": "v0.51.0 - Analyzer .NET 8 and .NET 10 host support",
   "description": "Deliver a tested analyzer package layout that works on pure .NET 8 SDK hosts while preserving the existing .NET 10 SDK host path and local PrivateAssets analyzer semantics.",
-  "status": "active",
+  "status": "done",
   "created-at": "2026-06-29T17:11:29.4961630Z"
 }
