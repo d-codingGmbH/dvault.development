@@ -3,21 +3,20 @@
   "ticket-id": "06FH8RFJYY09BJJK4MD2KT8BF0",
   "ticket-type": "story",
   "title": "Story: Add optional provider-native crypto capabilities for privacy payloads",
-  "revision": "06FH8SP3QW50WTFWH6XYGE0VFC",
-  "status": "todo",
+  "revision": "06FHWWBDW1R62A5RFQ0ABKDA1W",
+  "status": "done",
   "labels": [
-    "needs-po",
-    "automation/bot-ready",
-    "type/story",
+    "area/ef-core",
     "area/privacy",
-    "area/security",
     "area/providers",
-    "area/ef-core"
+    "area/security",
+    "automation/bot-ready",
+    "type/story"
   ],
   "assignees": [],
   "is-blocked": false,
   "milestone-id": "06FH8QASG77EQRT4J1CSA3GBFW",
   "release-id": "06FH8QAPVPB96WQ8T1NH1R9H14",
   "created-at": "2026-06-29T17:16:32.6209550Z",
-  "updated-at": "2026-06-29T17:21:46.9433735Z"
+  "updated-at": "2026-07-01T16:09:38.0163771Z"
 }

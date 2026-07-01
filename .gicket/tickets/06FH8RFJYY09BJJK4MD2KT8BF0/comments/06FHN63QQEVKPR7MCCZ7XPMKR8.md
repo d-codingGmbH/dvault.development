@@ -1,77 +1,60 @@
-﻿<!-- gicket-bot:human-ticket-refinement-contract:v1:start -->
-## Delivery Contract
+﻿[gicket-bot] PO refinement contract
 
-### PO Summary
+Summary
 - Refined the story to a bounded v1 contract: the optional privacy package stays provider-neutral, privacy diagnostics expose a finite provider-native crypto guidance matrix, and SQL Server Always Encrypted is the only explicit provider-owned native-selection path. No blocking PO questions remain, and no child tickets, relation changes, description updates, attachments, or planning documents were materialized in this run.
 
-### PO Handoff
+PO handoff
 - decision: `ready_for_po_critic`
 - meaning: ticket can move to PO-critic review
 
-### Clarifications
+Clarifications
 - V1 scope is additive to the optional privacy extension boundary: callers must explicitly opt into AddDVaultPrivacy(...), keep encrypted-payload aliases stable, and keep key-provider or converter ownership in the application.
 - Provider-native crypto remains diagnostics and review evidence only. DVault does not emit encrypted DDL, call provider SQL crypto functions, probe live database encryption state, or route shared runtime behavior based on provider-native capability availability.
 - The reviewed provider baseline is finite and repository-backed: SQLite encrypted-file build is unsupported; PostgreSQL deployment encryption and pgcrypto, SQL Server TDE and Always Encrypted, MySQL SQL crypto functions and file or tablespace encryption, Oracle TDE and DBMS_CRYPTO, and DB2 native database encryption are conditional guidance facts.
 - AddDVaultSqlServerAlwaysEncryptedSelection(...) is the only v1 explicit provider-owned native crypto selection API. It is alias-driven, opt-in, and must fail closed when prerequisite proof names are missing, reviewed capability facts are unavailable or unsupported, or the active capability profile is not SQL Server.
 - No bounded ticket writes were applied or queued in this run.
 
-### Scope In
+Scope In
 - Privacy diagnostics expose ProviderNativeEncryption and a finite ProviderCryptoCapabilities matrix for the visible provider capability profiles.
 - The optional privacy package remains the opt-in entry point for encrypted-payload alias registration and caller-owned key-provider posture.
 - SQL Server can register one explicit Always Encrypted selection per encrypted-payload alias through a provider package extension that contributes redaction-safe ProviderNativeCryptoSelections facts.
 - Fail-closed validation issues are produced for incompatible profiles, missing prerequisite proof names, unavailable reviewed capability facts, and unsupported reviewed capability facts.
 - Documentation, public API, and test coverage keep provider-native selection bounded to provider packages and preserve the existing provider-neutral runtime conversion path.
 
-### Scope Out
+Scope Out
 - Automatic encryption, pseudonymization, redaction, deletion, retention, or GDPR/DSGVO compliance execution.
 - Provider-native encrypted DDL generation or provider SQL crypto execution such as pgcrypto, MySQL crypto functions, or DBMS_CRYPTO.
 - Live database capability probing, key-store provisioning, driver or enclave setup, or runtime dispatch that switches behavior based on provider-native capability availability.
 - Re-encryption, backfill, dual-write, provider migration, historical rewrite, backup purge, crypto-shredding, or key lifecycle ownership.
 - New non-SQL Server provider-specific native selection APIs or managed native crypto execution behavior.
 
-## Acceptance Criteria
-- When privacy diagnostics run for SQLite, PostgreSQL, SQL Server, MySQL, Oracle, or DB2 capability profiles, the result reports ProviderNativeEncryption as unmanaged guidance-only behavior and returns the finite reviewed ProviderCryptoCapabilities facts for that profile without probing a live database.
-- When an application uses the optional privacy package without a provider-native selection, privacy behavior remains provider-neutral and no provider-native selection fact is required.
-- When an application registers AddDVaultSqlServerAlwaysEncryptedSelection(alias, proofNames...) and diagnostics evaluate against the SQL Server capability profile with reviewed Always Encrypted capability available, diagnostics emit one redaction-safe ProviderNativeCryptoSelections fact for that alias with provider-native-requested.
-- When prerequisite proof names are missing, the reviewed capability fact is unavailable or unsupported, or the active capability profile is not SQL Server, diagnostics fail closed with a provider-native-crypto-selection-unavailable validation issue and a rejected provider-native selection status for the alias.
-- Support-bundle or diagnostics serialization for provider-native selections does not expose caller secrets, connection strings, raw SQL, or other prerequisite details.
-- README, getting-started, package compatibility, and release-note guidance describe this story as optional privacy-proof diagnostics plus SQL Server selection evidence, not as managed provider-native encryption behavior.
-
-## Definition of Done
-- The provider-neutral privacy diagnostics surface includes provider-native encryption boundary facts, reviewed capability facts, and explicit provider-native selection facts.
-- The SQL Server provider package exposes the bounded Always Encrypted selection registration API and rejects duplicate alias registrations.
-- Automated tests cover the reviewed capability matrix, successful SQL Server selection reporting, fail-closed rejection paths, and redaction-safe support-bundle serialization.
-- Public API snapshots and documentation are updated consistently across the privacy, SQL Server, README, getting-started, package-compatibility, and release-note surfaces.
-- The shared DVault core and AddDVault() default path do not introduce implicit provider-native crypto behavior or background processing.
-
-## Implementation Notes
-- Follow docs/architecture/dvault-v1-optional-privacy-extension-boundary.md: keep provider-neutral opt-in registration in DCoding.Data.DVault.Privacy and keep provider-specific native selection providers in provider packages.
-- Use DataVaultProviderCryptoCapabilityCatalog plus DataVaultProviderCapabilityProfiles as the static reviewed capability matrix; do not add live capability probing or shared runtime dispatch.
-- Populate DataVaultPrivacyDiagnostics.ProviderCryptoCapabilities and ProviderNativeCryptoSelections from DefaultDataVaultDiagnosticsService, and emit rejected selections as validation issues at privacy/provider-native-crypto/<alias>.
-- Keep SQL Server Always Encrypted selection alias-driven and redaction-safe in DVaultSqlServerServiceCollectionExtensions and SqlServerAlwaysEncryptedDataVaultProviderNativeCryptoSelectionProvider.
-- Preserve the actual runtime encryption seam as caller-owned alias registration plus DataVaultEncryptedPayloadValueConverter, IDataVaultEncryptedPayloadKeyProvider, or equivalent custom conversion.
-
-## Open Questions
+Open questions
 - none
 
-## Follow-Up Questions
+Follow-up questions
 - Which provider, if any, should own the next explicit provider-native crypto selection ticket after SQL Server, and what exact capability family would that ticket claim?
 - Should future provider-specific work stay diagnostics-only like the current SQL Server selection surface, or is there appetite for a separately governed runtime integration design later?
 - Does product want a follow-up adopter guide or sample focused on reviewing ProviderNativeEncryption, ProviderCryptoCapabilities, and ProviderNativeCryptoSelections during privacy adoption?
 
-## Risks
+Risks
 - The current story title can be read as multi-provider native crypto implementation work; without the bounded v1 clarification, delivery could drift into unapproved provider-runtime behavior.
 - Consumers may overread reviewed capability facts or SQL Server selection diagnostics as compliance or managed encryption automation unless the non-goals remain explicit in docs and validation output.
 - Any future provider profile additions or status changes must update the capability catalog, docs, and tests together or the finite reviewed baseline will become inconsistent.
 
-## Split Recommendations
+Split recommendations
 - No mandatory split is needed if this story is explicitly bounded to diagnostics guidance plus the SQL Server Always Encrypted selection surface.
 - If broader provider-native behavior is later desired, create separate provider-owned follow-up tickets per capability family, such as PostgreSQL pgcrypto, Oracle DBMS_CRYPTO, MySQL SQL crypto functions, deployment-at-rest guidance hardening, or any managed runtime integration design.
 
-<!-- gicket-bot:human-ticket-refinement-contract:v1:end -->
+Persisted contract coverage
+- acceptance-criteria items: 6
+- definition-of-done items: 5
+- implementation-notes items: 5
 
-## Original Ticket Draft (legacy context)
+Planned ticket updates
+- Refresh the durable refinement contract block in the ticket description.
+- Update labels (added [critic-needed]; removed [needs-po]).
+- Keep assignees unchanged.
+- Keep status unchanged.
 
-The delivery contract above is authoritative. Use the legacy draft below only as background when it does not conflict with the contract block.
-
-Enable privacy adopters to discover and opt into provider-native database crypto capabilities where a provider package can support them, while keeping caller-owned custom encryption/key-provider implementations first-class and preserving DVault privacy non-goals.
+Run mode
+- apply: planned updates are applied after this comment
