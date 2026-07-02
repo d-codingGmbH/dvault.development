@@ -382,7 +382,7 @@ public sealed class MySqlProviderCapabilityTests {
   }
 
   [Fact]
-  public void MySqlReadStrategyBuildsWindowFunctionForLatestSatelliteRows() {
+  public void MySqlReadStrategyBuildsGroupedJoinForLatestSatelliteRows() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var profile = new DataVaultSatelliteMetadata(
         "Profile",
@@ -400,11 +400,14 @@ public sealed class MySqlProviderCapabilityTests {
         hasAsOf: true);
 
     Assert.Equal(
-        "SELECT `CustomerHashKey`, `HashDiff`, `LoadTimestamp`, `RecordSource`, `Name` FROM " +
-        "(SELECT `CustomerHashKey`, `HashDiff`, `LoadTimestamp`, `RecordSource`, `Name`, " +
-        "ROW_NUMBER() OVER (PARTITION BY `CustomerHashKey` ORDER BY `LoadTimestamp` DESC) AS `__dvault_row_number` " +
-        "FROM `SatCustomerProfile` WHERE `CustomerHashKey` IN (@p0, @p1) AND `LoadTimestamp` <= @p2) " +
-        "AS `__dvault_latest` WHERE `__dvault_row_number` = 1 ORDER BY `CustomerHashKey`",
+        "SELECT `__dvault_source`.`CustomerHashKey`, `__dvault_source`.`HashDiff`, `__dvault_source`.`LoadTimestamp`, `__dvault_source`.`RecordSource`, `__dvault_source`.`Name` " +
+        "FROM `SatCustomerProfile` AS `__dvault_source` " +
+        "INNER JOIN (SELECT `CustomerHashKey`, MAX(`LoadTimestamp`) AS `__dvault_latest_load_timestamp` " +
+        "FROM `SatCustomerProfile` WHERE `CustomerHashKey` IN (@p0, @p1) AND `LoadTimestamp` <= @p2 " +
+        "GROUP BY `CustomerHashKey`) AS `__dvault_latest` " +
+        "ON `__dvault_source`.`CustomerHashKey` = `__dvault_latest`.`CustomerHashKey` " +
+        "AND `__dvault_source`.`LoadTimestamp` = `__dvault_latest`.`__dvault_latest_load_timestamp` " +
+        "ORDER BY `__dvault_source`.`CustomerHashKey`",
         commandText);
   }
 

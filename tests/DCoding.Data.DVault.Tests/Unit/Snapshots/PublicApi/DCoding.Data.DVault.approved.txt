@@ -10,6 +10,7 @@ type public static class DCoding.Data.DVault.DVaultServiceCollectionExtensions
 
 type public static class DCoding.Data.DVault.DataVaultAnnotationNames
   field public const string Conventions = "DCoding.Data.DVault:Conventions"
+  field public const string EffectivityRole = "DCoding.Data.DVault:EffectivityRole"
   field public const string EntityKind = "DCoding.Data.DVault:EntityKind"
   field public const string HashKeyConversionBehavior = "DCoding.Data.DVault:HashKeyConversionBehavior"
   field public const string HashKeyStorageProfile = "DCoding.Data.DVault:HashKeyStorageProfile"
@@ -173,6 +174,7 @@ type public sealed class DCoding.Data.DVault.DataVaultCodeFirstHubBuilder where 
   method public DCoding.Data.DVault.DataVaultCodeFirstHubBuilder<TEntity> Satellite(string satelliteName, System.Action<DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TEntity>>? configure = null)
 
 type public sealed class DCoding.Data.DVault.DataVaultCodeFirstLinkBuilder
+  method public DCoding.Data.DVault.DataVaultCodeFirstLinkBuilder DependentChildKey(string name)
   method public DCoding.Data.DVault.DataVaultCodeFirstLinkBuilder Participant<TEntity>() where TEntity : class
   method public DCoding.Data.DVault.DataVaultCodeFirstLinkBuilder Participant<TEntity>(string role) where TEntity : class
   method public DCoding.Data.DVault.DataVaultCodeFirstLinkBuilder Satellite<TSatellite>(string satelliteName, System.Action<DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TSatellite>>? configure = null) where TSatellite : class
@@ -186,9 +188,13 @@ type public static class DCoding.Data.DVault.DataVaultCodeFirstModelBuilderExten
   method public static Microsoft.EntityFrameworkCore.ModelBuilder ApplyDataVaultMetadata(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, System.Action<DCoding.Data.DVault.DataVaultCodeFirstModelBuilder> configureModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities, DCoding.Data.DVault.DataVaultLoadTimestampStorage loadTimestampStorage)
   method public static Microsoft.EntityFrameworkCore.ModelBuilder ApplyDataVaultMetadata(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, System.Action<DCoding.Data.DVault.DataVaultCodeFirstModelBuilder> configureModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile? providerCapabilities = null)
   method public static Microsoft.EntityFrameworkCore.ModelBuilder ApplyDataVaultMetadataWithBinaryFirstProfile(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, System.Action<DCoding.Data.DVault.DataVaultCodeFirstModelBuilder> configureModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile? providerCapabilities = null)
+  method public static Microsoft.EntityFrameworkCore.ModelBuilder ApplyDataVaultMetadataWithHexStringStorageProfile(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, System.Action<DCoding.Data.DVault.DataVaultCodeFirstModelBuilder> configureModel, DCoding.Data.DVault.DataVaultProviderCapabilityProfile? providerCapabilities = null)
 
 type public sealed class DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder
+  method public DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TEntity?> CurrentFlag<TProperty>(System.Linq.Expressions.Expression<System.Func<TEntity?, TProperty?>> selector)
   method public DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TEntity?> DrivingKey<TProperty>(System.Linq.Expressions.Expression<System.Func<TEntity?, TProperty?>> selector)
+  method public DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TEntity?> EffectiveFrom<TProperty>(System.Linq.Expressions.Expression<System.Func<TEntity?, TProperty?>> selector)
+  method public DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TEntity?> EffectiveTo<TProperty>(System.Linq.Expressions.Expression<System.Func<TEntity?, TProperty?>> selector)
   method public DCoding.Data.DVault.DataVaultCodeFirstSatelliteBuilder<TEntity?> Payload<TProperty>(System.Linq.Expressions.Expression<System.Func<TEntity?, TProperty?>> selector)
 
 type public sealed class DCoding.Data.DVault.DataVaultConstraintExplain : System.IEquatable<DCoding.Data.DVault.DataVaultConstraintExplain>
@@ -270,6 +276,11 @@ type public sealed class DCoding.Data.DVault.DataVaultDiagnosticsResult : System
   method public string ToDisplayString()
   method public virtual bool Equals(DCoding.Data.DVault.DataVaultDiagnosticsResult? other)
   method public void Deconstruct(out DCoding.Data.DVault.DataVaultValidationDiagnostics Validation, out DCoding.Data.DVault.DataVaultExplainDiagnostics Explain, out DCoding.Data.DVault.DataVaultSaveStrategyDiagnostics SaveStrategy, out System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultDiagnosticsIssue> Issues)
+
+type public enum DCoding.Data.DVault.DataVaultEffectivityRole
+  value EffectiveFrom = 0
+  value EffectiveTo = 1
+  value CurrentFlag = 2
 
 type public sealed class DCoding.Data.DVault.DataVaultEntityExplain : System.IEquatable<DCoding.Data.DVault.DataVaultEntityExplain>
   ctor public DataVaultEntityExplain(string TableName, DCoding.Data.DVault.Modeling.DataVaultTableKind TableKind, string MetadataName, DCoding.Data.DVault.DataVaultParentReferenceExplain? ParentReference, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultPropertyExplain> Properties, DCoding.Data.DVault.DataVaultKeyExplain PrimaryKey, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultIndexExplain> Indexes, System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.DataVaultConstraintExplain> Constraints)
@@ -469,6 +480,12 @@ type public sealed class DCoding.Data.DVault.DataVaultLatestSatelliteReadRequest
   property public System.Collections.Generic.IReadOnlyList<string> ParentHashKeys { get; }
   property public System.DateTimeOffset? AsOf { get; }
 
+type public sealed class DCoding.Data.DVault.DataVaultLinkDependentChildKeyBindingAttribute : System.Attribute
+  ctor public DataVaultLinkDependentChildKeyBindingAttribute(int order, string dependentChildKeyName, string sourceMemberName)
+  property public int Order { get; }
+  property public string DependentChildKeyName { get; }
+  property public string SourceMemberName { get; }
+
 type public sealed class DCoding.Data.DVault.DataVaultLinkMappingAttribute : System.Attribute
   ctor public DataVaultLinkMappingAttribute(string linkName)
   property public string LinkName { get; }
@@ -497,7 +514,9 @@ type public sealed class DCoding.Data.DVault.DataVaultLinkParticipantExplain : S
 
 type public sealed class DCoding.Data.DVault.DataVaultLinkSaveOperation
   ctor public DataVaultLinkSaveOperation(DCoding.Data.DVault.Modeling.DataVaultLinkMetadata metadata, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> participantHashKeyValues)
+  ctor public DataVaultLinkSaveOperation(DCoding.Data.DVault.Modeling.DataVaultLinkMetadata metadata, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> participantHashKeyValues, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> dependentChildKeyValues)
   property public DCoding.Data.DVault.Modeling.DataVaultLinkMetadata Metadata { get; }
+  property public System.Collections.Generic.IReadOnlyDictionary<string, string> DependentChildKeyValues { get; }
   property public System.Collections.Generic.IReadOnlyDictionary<string, string> ParticipantHashKeyValues { get; }
 
 type public sealed class DCoding.Data.DVault.DataVaultLiveSchemaColumn : System.IEquatable<DCoding.Data.DVault.DataVaultLiveSchemaColumn>
@@ -587,6 +606,7 @@ type public enum DCoding.Data.DVault.DataVaultLogicalPropertyKind
   value SatelliteSnapshotReference = 7
   value BridgeDepth = 8
   value DrivingKey = 9
+  value DependentChildKey = 10
 
 type public sealed class DCoding.Data.DVault.DataVaultMeterTelemetryObserver : DCoding.Data.DVault.IDataVaultTelemetryObserver, System.IDisposable
   ctor public DataVaultMeterTelemetryObserver()
@@ -675,6 +695,8 @@ type public static class DCoding.Data.DVault.DataVaultModelBuilderExtensions
   method public static Microsoft.EntityFrameworkCore.ModelBuilder UseDataVault(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities, DCoding.Data.DVault.DataVaultLoadTimestampStorage loadTimestampStorage)
   method public static Microsoft.EntityFrameworkCore.ModelBuilder UseDataVaultBinaryFirstProfile(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder)
   method public static Microsoft.EntityFrameworkCore.ModelBuilder UseDataVaultBinaryFirstProfile(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
+  method public static Microsoft.EntityFrameworkCore.ModelBuilder UseDataVaultHexStringStorageProfile(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder)
+  method public static Microsoft.EntityFrameworkCore.ModelBuilder UseDataVaultHexStringStorageProfile(this Microsoft.EntityFrameworkCore.ModelBuilder modelBuilder, DCoding.Data.DVault.DataVaultProviderCapabilityProfile providerCapabilities)
 
 type public sealed class DCoding.Data.DVault.DataVaultModelDriftDifference : System.IEquatable<DCoding.Data.DVault.DataVaultModelDriftDifference>
   ctor public DataVaultModelDriftDifference(DCoding.Data.DVault.DataVaultModelDriftSeverity Severity, string Code, DCoding.Data.DVault.DataVaultModelDriftElementKind ElementKind, string LogicalName, string? ProducedName, string PropertyPath, string? ExpectedValue, string? ActualValue, string Message)
@@ -767,6 +789,7 @@ type public sealed class DCoding.Data.DVault.DataVaultModelImportResult
 type public sealed class DCoding.Data.DVault.DataVaultOptions
   ctor public DataVaultOptions()
   method public DCoding.Data.DVault.DataVaultOptions UseBinaryFirstProfile()
+  method public DCoding.Data.DVault.DataVaultOptions UseHexStringStorageProfile()
   method public DCoding.Data.DVault.DataVaultOptions UseLoadTimestampResolver(DCoding.Data.DVault.IDataVaultLoadTimestampResolver resolver)
   method public DCoding.Data.DVault.DataVaultOptions UseLoadTimestampResolver<TResolver>() where TResolver : class, DCoding.Data.DVault.IDataVaultLoadTimestampResolver
   method public DCoding.Data.DVault.DataVaultOptions UseMetadataModel(DCoding.Data.DVault.DataVaultModelImportResult importResult)
@@ -1073,6 +1096,7 @@ type public enum DCoding.Data.DVault.DataVaultPropertyRole
   value SnapshotReference = 4
   value BridgeDepth = 5
   value DrivingKey = 6
+  value DependentChildKey = 7
 
 type public sealed class DCoding.Data.DVault.DataVaultProviderBehaviorContext
   ctor public DataVaultProviderBehaviorContext(Microsoft.EntityFrameworkCore.DbContext dbContext)
@@ -1534,6 +1558,8 @@ type public sealed class DCoding.Data.DVault.DataVaultRegistryLatestSatelliteRea
 
 type public sealed class DCoding.Data.DVault.DataVaultRegistryLinkSaveOperation
   ctor public DataVaultRegistryLinkSaveOperation(string linkName, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> participantHashKeyValues)
+  ctor public DataVaultRegistryLinkSaveOperation(string linkName, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> participantHashKeyValues, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> dependentChildKeyValues)
+  property public System.Collections.Generic.IReadOnlyDictionary<string, string> DependentChildKeyValues { get; }
   property public System.Collections.Generic.IReadOnlyDictionary<string, string> ParticipantHashKeyValues { get; }
   property public string LinkName { get; }
 
@@ -1863,7 +1889,9 @@ type public sealed class DCoding.Data.DVault.DataVaultSaveTelemetrySummary
 type public sealed class DCoding.Data.DVault.DataVaultSavedRecord
   ctor public DataVaultSavedRecord(DCoding.Data.DVault.Modeling.DataVaultTableKind kind, string metadataName, string tableName, string hashKey)
   ctor public DataVaultSavedRecord(DCoding.Data.DVault.Modeling.DataVaultTableKind kind, string metadataName, string tableName, string hashKey, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> drivingKeyValues)
+  ctor public DataVaultSavedRecord(DCoding.Data.DVault.Modeling.DataVaultTableKind kind, string metadataName, string tableName, string hashKey, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> drivingKeyValues, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> dependentChildKeyValues)
   property public DCoding.Data.DVault.Modeling.DataVaultTableKind Kind { get; }
+  property public System.Collections.Generic.IReadOnlyDictionary<string, string> DependentChildKeyValues { get; }
   property public System.Collections.Generic.IReadOnlyDictionary<string, string> DrivingKeyValues { get; }
   property public string HashKey { get; }
   property public string MetadataName { get; }
@@ -2087,6 +2115,7 @@ type public enum DCoding.Data.DVault.Modeling.DataVaultColumnKind
   value Payload = 2
   value PointInTime = 3
   value DrivingKey = 4
+  value DependentChildKey = 5
 
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultConstraint : System.IEquatable<DCoding.Data.DVault.Modeling.DataVaultConstraint>
   ctor public DataVaultConstraint(string Name, DCoding.Data.DVault.Modeling.DataVaultConstraintKind Kind, System.Collections.Generic.IReadOnlyList<string> ColumnNames)
@@ -2190,14 +2219,21 @@ type public sealed class DCoding.Data.DVault.Modeling.DataVaultIndexNameContext 
   method public virtual bool Equals(DCoding.Data.DVault.Modeling.DataVaultIndexNameContext? other)
   method public void Deconstruct(out DCoding.Data.DVault.Modeling.DataVaultIndexKind Kind, out string TableName, out System.Collections.Generic.IReadOnlyList<string> ColumnNames, out bool IsUnique)
 
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultLinkDependentChildKeyMetadata
+  ctor public DataVaultLinkDependentChildKeyMetadata(string columnName)
+  property public string ColumnName { get; }
+
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultLinkMetadata
   ctor public DataVaultLinkMetadata(string name, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultMetadataReference> endpoints)
+  ctor public DataVaultLinkMetadata(string name, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultMetadataReference> endpoints, System.Collections.Generic.IEnumerable<string> dependentChildKeyNames)
   property public DCoding.Data.DVault.TechnicalMetadataColumnContract HashKeyMetadata { get; }
   property public DCoding.Data.DVault.TechnicalMetadataColumnContract LoadTimestampMetadata { get; }
   property public DCoding.Data.DVault.TechnicalMetadataColumnContract RecordSourceMetadata { get; }
+  property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultLinkDependentChildKeyMetadata> DependentChildKeys { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultLinkParticipantMetadata> Participants { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.Modeling.DataVaultMetadataReference> Endpoints { get; }
   property public System.Collections.Generic.IReadOnlyList<DCoding.Data.DVault.TechnicalMetadataColumnContract> TechnicalMetadataColumns { get; }
+  property public System.Collections.Generic.IReadOnlyList<string> DependentChildKeyNames { get; }
   property public string Name { get; }
   method public DCoding.Data.DVault.Modeling.DataVaultMetadataReference ToReference()
 
@@ -2321,7 +2357,9 @@ type public sealed class DCoding.Data.DVault.Modeling.DataVaultModelBuilder
   method public DCoding.Data.DVault.Modeling.DataVaultHubBuilder Hub(string entityName, System.Action<DCoding.Data.DVault.Modeling.DataVaultHubBuilder>? configure = null)
   method public DCoding.Data.DVault.Modeling.DataVaultModel Build()
   method public DCoding.Data.DVault.Modeling.DataVaultModelBuilder Link(System.Collections.Generic.IEnumerable<string> participantNames)
+  method public DCoding.Data.DVault.Modeling.DataVaultModelBuilder Link(System.Collections.Generic.IEnumerable<string> participantNames, System.Collections.Generic.IEnumerable<string> dependentChildKeyNames)
   method public DCoding.Data.DVault.Modeling.DataVaultModelBuilder Link(string? relationshipName, System.Collections.Generic.IEnumerable<string> participantNames)
+  method public DCoding.Data.DVault.Modeling.DataVaultModelBuilder Link(string? relationshipName, System.Collections.Generic.IEnumerable<string> participantNames, System.Collections.Generic.IEnumerable<string> dependentChildKeyNames)
   method public DCoding.Data.DVault.Modeling.DataVaultModelBuilder PointInTime(string pointInTimeName, string hubName, System.Collections.Generic.IEnumerable<string> satelliteNames)
   method public DCoding.Data.DVault.Modeling.DataVaultPointInTimeBuilder PointInTime(string pointInTimeName, string hubName, System.Action<DCoding.Data.DVault.Modeling.DataVaultPointInTimeBuilder>? configure = null)
 
@@ -2418,11 +2456,21 @@ type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatelliteBuilder
   method public DCoding.Data.DVault.Modeling.DataVaultSatelliteBuilder DrivingKey(string propertyName)
   method public DCoding.Data.DVault.Modeling.DataVaultSatelliteBuilder Payload(string propertyName)
 
+type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatelliteEffectivityMetadata
+  ctor public DataVaultSatelliteEffectivityMetadata(string effectiveFromFieldName, string? effectiveToFieldName = null, string? currentFlagFieldName = null)
+  property public string EffectiveFromFieldName { get; }
+  property public string? CurrentFlagFieldName { get; }
+  property public string? EffectiveToFieldName { get; }
+
 type public sealed class DCoding.Data.DVault.Modeling.DataVaultSatelliteMetadata
   ctor public DataVaultSatelliteMetadata(string name, DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, System.Collections.Generic.IEnumerable<string> descriptiveAttributeNames)
+  ctor public DataVaultSatelliteMetadata(string name, DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, System.Collections.Generic.IEnumerable<string> descriptiveAttributeNames, DCoding.Data.DVault.Modeling.DataVaultSatelliteEffectivityMetadata effectivity)
   ctor public DataVaultSatelliteMetadata(string name, DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, System.Collections.Generic.IEnumerable<string> descriptiveAttributeNames, System.Collections.Generic.IEnumerable<string> drivingKeyNames)
+  ctor public DataVaultSatelliteMetadata(string name, DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, System.Collections.Generic.IEnumerable<string> descriptiveAttributeNames, System.Collections.Generic.IEnumerable<string> drivingKeyNames, DCoding.Data.DVault.Modeling.DataVaultSatelliteEffectivityMetadata effectivity)
   ctor public DataVaultSatelliteMetadata(string name, DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, System.Collections.Generic.IEnumerable<string> descriptiveAttributeNames, System.Collections.Generic.IEnumerable<string> drivingKeyNames, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatellitePersonalDataMetadata> personalDataFields)
+  ctor public DataVaultSatelliteMetadata(string name, DCoding.Data.DVault.Modeling.DataVaultMetadataReference parent, System.Collections.Generic.IEnumerable<string> descriptiveAttributeNames, System.Collections.Generic.IEnumerable<string> drivingKeyNames, System.Collections.Generic.IEnumerable<DCoding.Data.DVault.Modeling.DataVaultSatellitePersonalDataMetadata> personalDataFields, DCoding.Data.DVault.Modeling.DataVaultSatelliteEffectivityMetadata? effectivity)
   property public DCoding.Data.DVault.Modeling.DataVaultMetadataReference Parent { get; }
+  property public DCoding.Data.DVault.Modeling.DataVaultSatelliteEffectivityMetadata? Effectivity { get; }
   property public DCoding.Data.DVault.TechnicalMetadataColumnContract HashDiffMetadata { get; }
   property public DCoding.Data.DVault.TechnicalMetadataColumnContract LoadTimestampMetadata { get; }
   property public DCoding.Data.DVault.TechnicalMetadataColumnContract RecordSourceMetadata { get; }

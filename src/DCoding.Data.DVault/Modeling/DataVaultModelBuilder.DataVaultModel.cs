@@ -45,14 +45,34 @@ public sealed partial class DataVaultModelBuilder {
   /// Adds a link declaration whose table name is based on participant names in declaration order.
   /// </summary>
   public DataVaultModelBuilder Link(IEnumerable<string> participantNames) {
-    return Link(null, participantNames);
+    return Link((string?)null, participantNames);
+  }
+
+  /// <summary>
+  /// Adds a link declaration with dependent child keys whose table name is based on participant names in declaration order.
+  /// </summary>
+  public DataVaultModelBuilder Link(
+      IEnumerable<string> participantNames,
+      IEnumerable<string> dependentChildKeyNames) {
+    return Link(null, participantNames, dependentChildKeyNames);
   }
 
   /// <summary>
   /// Adds a link declaration to the model, using the relationship name when one is supplied.
   /// </summary>
   public DataVaultModelBuilder Link(string? relationshipName, IEnumerable<string> participantNames) {
+    return Link(relationshipName, participantNames, []);
+  }
+
+  /// <summary>
+  /// Adds a link declaration with dependent child keys to the model, using the relationship name when one is supplied.
+  /// </summary>
+  public DataVaultModelBuilder Link(
+      string? relationshipName,
+      IEnumerable<string> participantNames,
+      IEnumerable<string> dependentChildKeyNames) {
     ArgumentNullException.ThrowIfNull(participantNames);
+    ArgumentNullException.ThrowIfNull(dependentChildKeyNames);
 
     var participants = participantNames.ToArray();
     if (participants.Length < 2) {
@@ -63,7 +83,10 @@ public sealed partial class DataVaultModelBuilder {
       ArgumentException.ThrowIfNullOrWhiteSpace(participantName);
     }
 
-    _links.Add(new LinkDeclaration(NormalizeOptionalRelationshipName(relationshipName), participants));
+    var dependentChildKeys = dependentChildKeyNames.ToArray();
+    ValidateLinkDependentChildKeys(participants, dependentChildKeys);
+
+    _links.Add(new LinkDeclaration(NormalizeOptionalRelationshipName(relationshipName), participants, dependentChildKeys));
     return this;
   }
 
@@ -284,6 +307,9 @@ public sealed partial class DataVaultModelBuilder {
         .Select(participantName => namingPolicy.GetTechnicalColumnName(
             new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, participantName, tableName)))
         .ToArray();
+    var dependentChildKeyColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        link.DependentChildKeyNames,
+        [linkHashKeyColumnName, loadTimestampColumnName, recordSourceColumnName, .. participantHashKeyColumnNames]);
 
     var columns = new List<DataVaultColumn>
     {
@@ -292,6 +318,10 @@ public sealed partial class DataVaultModelBuilder {
             new(recordSourceColumnName, DataVaultColumnKind.Technical),
         };
     columns.AddRange(participantHashKeyColumnNames.Select(columnName => new DataVaultColumn(columnName, DataVaultColumnKind.Technical)));
+    columns.AddRange(dependentChildKeyColumnNames.Select(columnName => new DataVaultColumn(columnName, DataVaultColumnKind.DependentChildKey)));
+    var relationshipIndexColumnNames = participantHashKeyColumnNames
+        .Concat(dependentChildKeyColumnNames)
+        .ToArray();
 
     var indexes = new[]
     {
@@ -300,9 +330,9 @@ public sealed partial class DataVaultModelBuilder {
                     new DataVaultIndexNameContext(
                         DataVaultIndexKind.Relationship,
                         tableName,
-                        participantHashKeyColumnNames,
+                        relationshipIndexColumnNames,
                         IsUnique: false)),
-                participantHashKeyColumnNames,
+                relationshipIndexColumnNames,
                 IsUnique: false),
         };
 
@@ -479,6 +509,32 @@ public sealed partial class DataVaultModelBuilder {
     }
   }
 
+  private static void ValidateLinkDependentChildKeys(
+      IReadOnlyList<string> participantNames,
+      IReadOnlyList<string> dependentChildKeyNames) {
+    var dependentChildKeys = new HashSet<string>(StringComparer.Ordinal);
+    foreach (var dependentChildKeyName in dependentChildKeyNames) {
+      if (string.IsNullOrWhiteSpace(dependentChildKeyName)) {
+        throw new ArgumentException("A link dependent child key name must not be empty.", nameof(dependentChildKeyNames));
+      }
+
+      if (!dependentChildKeys.Add(dependentChildKeyName)) {
+        throw new ArgumentException(
+            "Link dependent child key names must be unique by ordinal comparison.",
+            nameof(dependentChildKeyNames));
+      }
+    }
+
+    var participants = participantNames.ToHashSet(StringComparer.Ordinal);
+    foreach (var dependentChildKeyName in dependentChildKeyNames) {
+      if (participants.Contains(dependentChildKeyName)) {
+        throw new ArgumentException(
+            "Link dependent child key names must not overlap participant names.",
+            nameof(dependentChildKeyNames));
+      }
+    }
+  }
+
   private static InvalidOperationException SatelliteDrivingKeyValidationException(
       SatelliteDeclaration satellite,
       string message) {
@@ -502,10 +558,15 @@ public sealed partial class DataVaultModelBuilder {
     public List<string> PayloadProperties { get; } = [];
   }
 
-  internal sealed class LinkDeclaration(string? relationshipName, IReadOnlyList<string> participantNames) {
+  internal sealed class LinkDeclaration(
+      string? relationshipName,
+      IReadOnlyList<string> participantNames,
+      IReadOnlyList<string> dependentChildKeyNames) {
     public string? RelationshipName { get; } = relationshipName;
 
     public IReadOnlyList<string> ParticipantNames { get; } = participantNames;
+
+    public IReadOnlyList<string> DependentChildKeyNames { get; } = dependentChildKeyNames;
   }
 
   internal sealed class PointInTimeDeclaration(string pointInTimeName, string hubName) {

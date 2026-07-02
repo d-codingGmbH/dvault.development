@@ -17,6 +17,7 @@ public sealed class Db2DataVaultSmokeTests {
   private const string OrderId = "O-DB2-200";
   private const string SaveRecordSource = "db2-smoke";
   private const string ReadRecordSource = "db2-read-smoke";
+  private const string MissingCustomerHashKey = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
   private static readonly DateTimeOffset HubLoadTimestamp = new(2026, 6, 1, 9, 0, 0, TimeSpan.Zero);
   private static readonly DateTimeOffset LinkLoadTimestamp = new(2026, 6, 1, 9, 5, 0, TimeSpan.Zero);
   private static readonly DateTimeOffset SatelliteLoadTimestamp = new(2026, 6, 1, 9, 10, 0, TimeSpan.Zero);
@@ -212,7 +213,7 @@ public sealed class Db2DataVaultSmokeTests {
     var asOfRequest = new DataVaultLatestSatelliteReadRequest(metadata.Contact, [customerHashKey], FirstReadTimestamp);
     var pitRequest = new DataVaultPitAsOfReadRequest(
         metadata.Pit,
-        [customerHashKey, "missing-db2-customer"],
+        [customerHashKey, MissingCustomerHashKey],
         SelectedPitTimestamp.AddMinutes(30));
     var bridgeRequest = new DataVaultBridgeReadRequest(
         metadata.Bridge,

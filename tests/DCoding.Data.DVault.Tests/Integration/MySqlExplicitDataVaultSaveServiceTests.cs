@@ -20,6 +20,12 @@ public sealed class MySqlExplicitDataVaultSaveServiceTests {
   private const string FallbackSatelliteTableName = "SatDVaultMySqlFallbackSmokeFallbackProfile";
   private const string FallbackPayloadName = "Profile Status";
   private const string FallbackPayloadColumnName = "ProfileStatus";
+  private const string ReadHubName = "DVaultMySqlReadSmoke";
+  private const string ReadHubTableName = "HubDVaultMySqlReadSmoke";
+  private const string ReadSatelliteName = "ReadProfile";
+  private const string ReadSatelliteTableName = "SatDVaultMySqlReadSmokeReadProfile";
+  private const string ReadPayloadName = "Read Profile Status";
+  private const string ReadPayloadColumnName = "ReadProfileStatus";
 
   [Fact]
   public async Task AddDVaultMySqlBulkStrategyPersistsOrderedHubLinkAndSatelliteBatchWhenConfigured() {
@@ -174,7 +180,7 @@ public sealed class MySqlExplicitDataVaultSaveServiceTests {
       Assert.Skip(MySqlIntegrationTestConfiguration.MissingConfigurationSkipMessage);
     }
 
-    var options = CreateMySqlFallbackOptions(configuration.ConnectionString!);
+    var options = CreateMySqlReadOptions(configuration.ConnectionString!);
     var services = new ServiceCollection();
     services.AddDVaultMySql();
 
@@ -183,17 +189,17 @@ public sealed class MySqlExplicitDataVaultSaveServiceTests {
     var readService = provider.GetRequiredService<IDataVaultReadService>();
     var readDiagnostics = provider.GetRequiredService<IDataVaultReadDiagnosticsService>();
 
-    await using var context = new MySqlFallbackSaveServiceContext(options);
-    await DropFallbackTablesIfExistsAsync(context);
+    await using var context = new MySqlReadSaveServiceContext(options);
+    await DropReadTablesIfExistsAsync(context);
 
     try {
       await context.Database.ExecuteSqlRawAsync(context.Database.GenerateCreateScript());
 
-      var hub = new DataVaultHubMetadata(FallbackHubName, [BusinessKeyName]);
+      var hub = new DataVaultHubMetadata(ReadHubName, [BusinessKeyName]);
       var satellite = new DataVaultSatelliteMetadata(
-          FallbackSatelliteName,
+          ReadSatelliteName,
           hub.ToReference(),
-          [FallbackPayloadName]);
+          [ReadPayloadName]);
       var hubResult = await saveService.SaveAsync(
           context,
           new DataVaultSaveRequest(
@@ -216,7 +222,7 @@ public sealed class MySqlExplicitDataVaultSaveServiceTests {
                   new DataVaultSatelliteSaveOperation(
                       satellite,
                       parentHashKey,
-                      [new(FallbackPayloadName, "Pending")],
+                      [new(ReadPayloadName, "Pending")],
                       "mysql-profile-pending"),
               ]));
       await saveService.SaveAsync(
@@ -230,7 +236,7 @@ public sealed class MySqlExplicitDataVaultSaveServiceTests {
                   new DataVaultSatelliteSaveOperation(
                       satellite,
                       parentHashKey,
-                      [new(FallbackPayloadName, "Active")],
+                      [new(ReadPayloadName, "Active")],
                       "mysql-profile-active"),
               ]));
 
@@ -238,7 +244,7 @@ public sealed class MySqlExplicitDataVaultSaveServiceTests {
 
       var latestRequest = new DataVaultLatestSatelliteReadRequest(
           satellite,
-          [parentHashKey, "missing-mysql-parent"]);
+          [parentHashKey, new string('0', 64)]);
       var readDiagnosticResult = readDiagnostics.Analyze(context, latestRequest);
 
       Assert.Equal(DataVaultReadStrategyDiagnosticsStatus.ProviderStrategySelected, readDiagnosticResult.ReadStrategy.Status);
@@ -247,13 +253,13 @@ public sealed class MySqlExplicitDataVaultSaveServiceTests {
       var latestRows = await readService.ReadLatestSatelliteRowsAsync(context, latestRequest);
       var latestRow = Assert.Single(latestRows);
 
-      Assert.Equal(FallbackSatelliteName, latestRow.MetadataName);
-      Assert.Equal(FallbackSatelliteTableName, latestRow.TableName);
+      Assert.Equal(ReadSatelliteName, latestRow.MetadataName);
+      Assert.Equal(ReadSatelliteTableName, latestRow.TableName);
       Assert.Equal(parentHashKey, latestRow.ParentHashKey);
       Assert.Equal("mysql-profile-active", latestRow.HashDiff);
       Assert.Equal(secondLoadTimestamp, latestRow.LoadTimestamp);
       Assert.Equal(RecordSource, latestRow.RecordSource);
-      Assert.Equal("Active", latestRow.PayloadValues[FallbackPayloadName]);
+      Assert.Equal("Active", latestRow.PayloadValues[ReadPayloadName]);
 
       var asOfRows = await readService.ReadLatestSatelliteRowsAsync(
           context,
@@ -262,10 +268,10 @@ public sealed class MySqlExplicitDataVaultSaveServiceTests {
 
       Assert.Equal("mysql-profile-pending", asOfRow.HashDiff);
       Assert.Equal(firstLoadTimestamp, asOfRow.LoadTimestamp);
-      Assert.Equal("Pending", asOfRow.PayloadValues[FallbackPayloadName]);
+      Assert.Equal("Pending", asOfRow.PayloadValues[ReadPayloadName]);
     }
     finally {
-      await DropFallbackTablesIfExistsAsync(context);
+      await DropReadTablesIfExistsAsync(context);
     }
   }
 
@@ -285,6 +291,14 @@ public sealed class MySqlExplicitDataVaultSaveServiceTests {
     return optionsBuilder.Options;
   }
 
+  private static DbContextOptions<MySqlReadSaveServiceContext> CreateMySqlReadOptions(string connectionString) {
+    var optionsBuilder = new DbContextOptionsBuilder<MySqlReadSaveServiceContext>();
+
+    MySqlProviderReflection.UseMySql(optionsBuilder, connectionString);
+
+    return optionsBuilder.Options;
+  }
+
   private static async Task DropSmokeTableIfExistsAsync(DbContext context) {
     await context.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS " + QuoteIdentifier(HubTableName) + ";");
   }
@@ -292,6 +306,11 @@ public sealed class MySqlExplicitDataVaultSaveServiceTests {
   private static async Task DropFallbackTablesIfExistsAsync(DbContext context) {
     await context.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS " + QuoteIdentifier(FallbackSatelliteTableName) + ";");
     await context.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS " + QuoteIdentifier(FallbackHubTableName) + ";");
+  }
+
+  private static async Task DropReadTablesIfExistsAsync(DbContext context) {
+    await context.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS " + QuoteIdentifier(ReadSatelliteTableName) + ";");
+    await context.Database.ExecuteSqlRawAsync("DROP TABLE IF EXISTS " + QuoteIdentifier(ReadHubTableName) + ";");
   }
 
   private static string QuoteIdentifier(string value) {
@@ -319,6 +338,19 @@ public sealed class MySqlExplicitDataVaultSaveServiceTests {
               [hub],
               [],
               [new DataVaultSatelliteMetadata(FallbackSatelliteName, hub.ToReference(), [FallbackPayloadName])]),
+          DataVaultProviderCapabilityProfiles.MySql);
+    }
+  }
+
+  private sealed class MySqlReadSaveServiceContext(
+      DbContextOptions<MySqlReadSaveServiceContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      var hub = new DataVaultHubMetadata(ReadHubName, [BusinessKeyName]);
+      modelBuilder.ApplyDataVaultMetadata(
+          new DataVaultMetadataModel(
+              [hub],
+              [],
+              [new DataVaultSatelliteMetadata(ReadSatelliteName, hub.ToReference(), [ReadPayloadName])]),
           DataVaultProviderCapabilityProfiles.MySql);
     }
   }

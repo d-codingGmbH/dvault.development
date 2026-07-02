@@ -6,4 +6,5 @@ namespace DCoding.Data.DVault;
 internal sealed record DataVaultModelLinkDeclaration(
     string Name,
     IReadOnlyList<DataVaultModelLinkParticipantDeclaration> Participants,
+    IReadOnlyList<string> DependentChildKeys,
     string Path);

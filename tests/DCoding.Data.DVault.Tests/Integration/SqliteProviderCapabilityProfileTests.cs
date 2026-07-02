@@ -8,7 +8,10 @@ namespace DCoding.Data.DVault.Tests.Integration;
 public sealed class SqliteProviderCapabilityProfileTests {
   [Fact]
   public void SqliteProfileHexStringStorageDeclarationsWorkWithRawSqliteTextValues() {
-    var profile = DataVaultProviderCapabilityProfiles.Sqlite;
+    var profile = DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+        DataVaultHashKeyStorageProfile.HexString,
+        "sha256-v1",
+        32);
     var timestampMapping = profile.GetRequiredTypeMapping(DataVaultLogicalPropertyKind.LoadTimestamp);
     var hashKeyMapping = profile.GetRequiredTypeMapping(DataVaultLogicalPropertyKind.HashKey);
 

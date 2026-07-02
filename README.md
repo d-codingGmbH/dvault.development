@@ -8,39 +8,39 @@ DVault is a focused .NET library family for Data Vault 2.x-oriented persistence 
 - [Quickstart](#quickstart)
 - [Package Compatibility](#package-compatibility)
 - [Documentation Map](#documentation-map)
-- [Current v0.51.0 Limitations](#current-v0510-limitations)
+- [Current v0.100.0 Limitations](#current-v01000-limitations)
 - [Layout](#layout)
 - [Local Validation](#local-validation)
 - [License](#license)
 
 ## Installation
 
-Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The blocks below list the full coordinated package family so each needed package can be copied from one aligned line. Use exactly one package line for a consumer project: `8.51.0` for `net8.0` and EF Core 8, or `10.51.0` for `net10.0` and EF Core 10. Do not mix package lines, and do not use a consumer-facing `0.51.0` package version from the v0.51.0 documentation release label. This documentation baseline does not by itself confirm package publication.
+Install the provider-neutral DVault package from NuGet and add the provider package that matches the database used by the application. The blocks below list the full coordinated package family so each needed package can be copied from one aligned line. Use exactly one package line for a consumer project: `8.100.0` for `net8.0` and EF Core 8, or `10.100.0` for `net10.0` and EF Core 10. Do not mix package lines, and do not use a consumer-facing `0.100.0` package version from the v0.100.0 documentation release label. This documentation baseline does not by itself confirm package publication.
 
-For `net8.0` projects on EF Core 8, use the `8.51.0` package line:
+For `net8.0` projects on EF Core 8, use the `8.100.0` package line:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 8.51.0
-dotnet add package DCoding.Data.DVault.Db2 --version 8.51.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 8.51.0
-dotnet add package DCoding.Data.DVault.Postgres --version 8.51.0
-dotnet add package DCoding.Data.DVault.MySql --version 8.51.0
-dotnet add package DCoding.Data.DVault.Oracle --version 8.51.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 8.51.0
-dotnet add package DCoding.Data.DVault.Privacy --version 8.51.0
+dotnet add package DCoding.Data.DVault --version 8.100.0
+dotnet add package DCoding.Data.DVault.Db2 --version 8.100.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 8.100.0
+dotnet add package DCoding.Data.DVault.Postgres --version 8.100.0
+dotnet add package DCoding.Data.DVault.MySql --version 8.100.0
+dotnet add package DCoding.Data.DVault.Oracle --version 8.100.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 8.100.0
+dotnet add package DCoding.Data.DVault.Privacy --version 8.100.0
 ```
 
-For `net10.0` projects on EF Core 10, use the `10.51.0` package line:
+For `net10.0` projects on EF Core 10, use the `10.100.0` package line:
 
 ```sh
-dotnet add package DCoding.Data.DVault --version 10.51.0
-dotnet add package DCoding.Data.DVault.Db2 --version 10.51.0
-dotnet add package DCoding.Data.DVault.Sqlite --version 10.51.0
-dotnet add package DCoding.Data.DVault.Postgres --version 10.51.0
-dotnet add package DCoding.Data.DVault.MySql --version 10.51.0
-dotnet add package DCoding.Data.DVault.Oracle --version 10.51.0
-dotnet add package DCoding.Data.DVault.SqlServer --version 10.51.0
-dotnet add package DCoding.Data.DVault.Privacy --version 10.51.0
+dotnet add package DCoding.Data.DVault --version 10.100.0
+dotnet add package DCoding.Data.DVault.Db2 --version 10.100.0
+dotnet add package DCoding.Data.DVault.Sqlite --version 10.100.0
+dotnet add package DCoding.Data.DVault.Postgres --version 10.100.0
+dotnet add package DCoding.Data.DVault.MySql --version 10.100.0
+dotnet add package DCoding.Data.DVault.Oracle --version 10.100.0
+dotnet add package DCoding.Data.DVault.SqlServer --version 10.100.0
+dotnet add package DCoding.Data.DVault.Privacy --version 10.100.0
 ```
 
 Install `DCoding.Data.DVault.Privacy` only when the application explicitly opts into the privacy extension seam. The package is a provider-neutral proof for registration, options, and alias-driven encrypted payload conversion over ordinary EF Core mapped payload properties; it does not make an application compliant, enable automatic encryption or redaction, provide database-at-rest encryption, or use provider-native encrypted column/cell/row features.
@@ -53,13 +53,13 @@ Add the analyzer package only to projects that own DVault declarations, compile-
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="8.51.0" PrivateAssets="all" />
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="8.100.0" PrivateAssets="all" />
 </ItemGroup>
 ```
 
 ```xml
 <ItemGroup>
-  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="10.51.0" PrivateAssets="all" />
+  <PackageReference Include="DCoding.Data.DVault.Analyzers" Version="10.100.0" PrivateAssets="all" />
 </ItemGroup>
 ```
 
@@ -67,9 +67,9 @@ Applications still need their normal Entity Framework Core provider package, suc
 
 ## Quickstart
 
-The shortest new-project path is SQLite-first and binary-first. Use `AddDVault(options => options.UseBinaryFirstProfile())` plus `AddDVaultSqlite()` alongside the application's ordinary `UseSqlite(...)` `DbContext` configuration. For direct Code-First model projection, call `ApplyDataVaultMetadataWithBinaryFirstProfile(...)` when declaring the fluent model for a new binary-first schema. The existing `UseDataVaultBinaryFirstProfile()` plus `ApplyDataVaultMetadata(...)` setup remains supported. DVault persistence stays explicit: generated hub, link, and satellite rows are written through `IDataVaultSaveService`; ordinary EF entity tracking remains under the application's control.
+The shortest new-project path is SQLite-first and binary-default. Use `AddDVault()` plus `AddDVaultSqlite()` alongside the application's ordinary `UseSqlite(...)` `DbContext` configuration. For direct Code-First model projection, call `ApplyDataVaultMetadata(...)`; `ApplyDataVaultMetadataWithBinaryFirstProfile(...)` remains available as an explicit alias for the same v0.100.0 default. DVault persistence stays explicit: generated hub, link, and satellite rows are written through `IDataVaultSaveService`; ordinary EF entity tracking remains under the application's control.
 
-The binary-first profile is the recommended physical storage profile for new projects. Existing databases and configurations are not migrated automatically; `HexString`-compatible setups remain valid until the application owner intentionally plans and executes a separate reviewed migration, reset, or data-move change. Before changing persisted hash-key storage, use the [Hash-Key Storage Migration Guide](docs/hash-key-storage-migration.md) to capture reviewed source evidence, export the `dvault.hash-key-storage-migration.v1` dry-run manifest, and validate it through `DataVaultHashKeyStorageMigrationManifestValidator.ValidateJson(...)` or the `DataVaultPreflight.Run(...)` manifest lane. Logical and public hash-key values remain lowercase hexadecimal strings even when new projects choose binary physical storage.
+Binary physical hash-key storage is the default for new v0.100.0 schemas. Existing databases and configurations are not migrated automatically; `HexString`-compatible setups remain valid when the application opts into `UseHexStringStorageProfile()` or `UseDataVaultHexStringStorageProfile(...)` until the owner intentionally plans and executes a separate reviewed migration, reset, or data-move change. Before changing persisted hash-key storage, use the [Hash-Key Storage Migration Guide](docs/hash-key-storage-migration.md) to capture reviewed source evidence, export the `dvault.hash-key-storage-migration.v1` dry-run manifest, and validate it through `DataVaultHashKeyStorageMigrationManifestValidator.ValidateJson(...)` or the `DataVaultPreflight.Run(...)` manifest lane. Logical and public hash-key values remain lowercase hexadecimal strings even when the physical storage is binary.
 
 ```csharp
 using DCoding.Data.DVault;
@@ -79,17 +79,17 @@ using Microsoft.Extensions.DependencyInjection;
 
 var services = new ServiceCollection();
 
-services.AddDVault(options => options.UseBinaryFirstProfile());
+services.AddDVault();
 services.AddDVaultSqlite();
 
 services.AddDbContext<SalesVaultContext>(options =>
     options.UseSqlite("Data Source=sales-vault.db"));
 ```
 
-For PostgreSQL, install `DCoding.Data.DVault.Postgres` with the matching DVault package line and the normal EF Core provider package `Npgsql.EntityFrameworkCore.PostgreSQL`, then use the same binary-first posture with `AddDVaultPostgres()` and `UseNpgsql(connectionString)`:
+For PostgreSQL, install `DCoding.Data.DVault.Postgres` with the matching DVault package line and the normal EF Core provider package `Npgsql.EntityFrameworkCore.PostgreSQL`, then use the same binary-default posture with `AddDVaultPostgres()` and `UseNpgsql(connectionString)`:
 
 ```csharp
-services.AddDVault(options => options.UseBinaryFirstProfile());
+services.AddDVault();
 services.AddDVaultPostgres();
 
 services.AddDbContext<SalesVaultContext>(options =>
@@ -103,7 +103,7 @@ Declare Data Vault metadata in `OnModelCreating` with Code-First metadata, or pr
 ```csharp
 public sealed class SalesVaultContext(DbContextOptions<SalesVaultContext> options) : DbContext(options) {
   protected override void OnModelCreating(ModelBuilder modelBuilder) {
-    modelBuilder.ApplyDataVaultMetadataWithBinaryFirstProfile(vault => {
+    modelBuilder.ApplyDataVaultMetadata(vault => {
       vault.Hub<Customer>(hub => {
         hub.BusinessKey(customer => customer.CustomerId);
         hub.Satellite("Profile", satellite => {
@@ -186,21 +186,22 @@ var latestProfile = latestProfiles.Single();
 
 Provider packages can add optimized strategies behind the same public service contract. The shared surface also includes chunked/async saves, latest/as-of satellite reads, PIT and bridge maintenance/read services, diagnostics and explain metadata, support-bundle export, model-first governance, Roslyn analyzers, and opt-in typed read-model generation.
 
-For runnable examples, the optional privacy proof, and fuller workflows, see [Getting Started](docs/getting-started.md), [examples/README.md](examples/README.md), and the current release-note artifact, [DVault v0.51.0 Release Notes](docs/releases/v0.51.0.md).
+For runnable examples, the optional privacy proof, and fuller workflows, see [Getting Started](docs/getting-started.md), [examples/README.md](examples/README.md), and the current release-note artifact, [DVault v0.100.0 Release Notes](docs/releases/v0.100.0.md).
 
 ## Package Compatibility
 
-The current coordinated package baseline is documented in [Package Compatibility](docs/package-compatibility.md) and [DVault v0.51.0 Release Notes](docs/releases/v0.51.0.md). DVault has nine packable packages, two visible consumer package lines, target-specific dependency pins, a local analyzer package boundary, and an optional privacy proof package.
+The current coordinated package baseline is documented in [Package Compatibility](docs/package-compatibility.md) and [DVault v0.100.0 Release Notes](docs/releases/v0.100.0.md). DVault has nine packable packages, two visible consumer package lines, target-specific dependency pins, a local analyzer package boundary, and an optional privacy proof package.
 
 In short:
 
-- `8.51.0` targets `net8.0` and the EF Core 8 dependency line.
-- `10.51.0` targets `net10.0` and the EF Core 10 dependency line.
-- `v0.51.0` is the documentation release label, not a NuGet package version; release-note and changelog links point to the current v0.51.0 artifact.
+- `8.100.0` targets `net8.0` and the EF Core 8 dependency line.
+- `10.100.0` targets `net10.0` and the EF Core 10 dependency line.
+- `v0.100.0` is the documentation release label, not a NuGet package version; release-note and changelog links point to the current v0.100.0 artifact.
 - `DCoding.Data.DVault.Analyzers` remains a local `PrivateAssets="all"` analyzer reference and supports `.NET 8 SDK` and `.NET 10 SDK` build hosts through one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/`.
 - `DCoding.Data.DVault.Privacy` remains optional and opt-in; it provides registration and alias-driven encrypted payload conversion seams over ordinary EF Core mapped payload properties only, not compliance, automatic privacy execution, database-at-rest encryption, provider-native encrypted column/cell/row features, provider SQL crypto calls, encrypted DDL, capability probing, or runtime routing based on native encryption availability. SQL Server `AddDVaultSqlServerAlwaysEncryptedSelection(...)` is the one current provider-owned native selection surface and reports redaction-safe diagnostics only; shared runtime conversion still depends on caller-owned aliases, key providers, and `DataVaultEncryptedPayloadValueConverter` or a custom implementation.
-- Hash-key storage guidance now routes new projects to binary-first setup and existing persisted `HexString` setups to the migration guide, reviewed dry-run manifest export, and manifest validation path.
-- Generated link mappers support repeated same-hub links only when every binding uses a distinct explicit produced participant name; ambiguous same-hub mappings and dependent child key modeling stay outside the current public surface.
+- Hash-key storage is binary by default for generated hash-key and participant-reference columns; existing persisted `HexString` setups should opt into the compatibility profile and use the migration guide, reviewed dry-run manifest export, and manifest validation path before changing physical storage.
+- Link metadata, code-first declarations, save operations, and generated link mappers support dependent child keys. Repeated same-hub links are supported when every repeated participant has a distinct explicit role/produced participant name.
+- Satellite metadata and code-first declarations support effectivity payload roles through `EffectiveFrom`, optional `EffectiveTo`, and optional `CurrentFlag` markers.
 
 ## Documentation Map
 
@@ -221,14 +222,14 @@ In short:
 | Optional privacy proof and boundary | [Getting Started privacy proof](docs/getting-started.md#optional-privacy-proof), [examples privacy notes](examples/README.md#optional-privacy-proof), and [DVault V1 Optional Privacy Extension Boundary](docs/architecture/dvault-v1-optional-privacy-extension-boundary.md) |
 | Hashing and hash-key storage contracts | [Stable Hashing Contract](docs/plans/stable-hashing-contract.md), [Hash-Key Storage Profile Contract](docs/plans/hash-key-storage-profile-contract.md), and [Hash-Key Storage Migration Guide](docs/hash-key-storage-migration.md) |
 
-## Current v0.51.0 Limitations
+## Current v0.100.0 Limitations
 
 - DVault is an EF Core library family, not a platform, scheduler, ingestion service, CLI, or provider provisioning tool.
 - Package publication remains a manual release operation; this repository records package creation and verification, not NuGet publication.
 - The analyzer package is validated against both `.NET 8 SDK` and `.NET 10 SDK` build-host baselines for the coordinated package lines.
 - Stored procedures and provider-specific SQL artifacts are not default write paths. Any artifact lane is explicit, design-time, review-owned, and outside normal persistence.
-- Binary hash-key storage is opt-in physical storage for new schemas. Existing persisted `HexString` storage changes require reviewed source evidence, a validated `dvault.hash-key-storage-migration.v1` dry-run manifest, and a caller-owned migration, reset, or data-move plan; public hash-key values remain lowercase hexadecimal strings.
-- Generated link mappers support repeated same-hub links through explicit produced participant names only. DVault does not infer ambiguous same-hub roles, add model-first same-hub mapper generation, or add dependent child key modeling in this release.
+- Binary hash-key storage is the v0.100.0 default physical storage for generated hash-key and participant-reference columns. Existing persisted `HexString` storage changes require reviewed source evidence, a validated `dvault.hash-key-storage-migration.v1` dry-run manifest, and a caller-owned migration, reset, or data-move plan; public hash-key values remain lowercase hexadecimal strings.
+- Generated link mappers support repeated same-hub links through explicit produced participant names and dependent child key bindings. DVault still does not guess same-hub roles when a mapping is ambiguous.
 - DB2 live-schema reading is available as external opt-in evidence through `IBM.EntityFrameworkCore`; DB2 databases, credentials, lifecycle cleanup, and CI isolation remain consumer-owned.
 - Live PostgreSQL, SQL Server, Oracle, MySQL, and DB2 integration tests are opt-in behind local `DVAULT_TEST_*` connection strings. Default validation does not require external databases or containers.
 - Provider-native crypto capability facts are diagnostics guidance, not managed encryption behavior. DVault does not provision providers or key stores, re-encrypt existing values, backfill or dual-write payloads, migrate providers, delete rows, purge backups, perform crypto-shredding, complete retention, or attest compliance.
@@ -257,7 +258,7 @@ bash tools/verify-packages.sh
 bash tools/check-format.sh
 ```
 
-`bash tools/pack-release-packages.sh` creates the two coordinated package lines under `artifacts/packages/`: nine `8.51.0` packages with `net8.0` assets and EF Core 8 dependency groups, and nine `10.51.0` packages with `net10.0` assets and EF Core 10 dependency groups. The analyzer package smoke script restores, builds, and runs a generated-mapper consumer against the packed analyzer package on the selected SDK host. `bash tools/verify-packages.sh` inspects those artifacts, expects exactly eighteen DVault `.nupkg` files plus sixteen matching symbol packages for the runtime, provider, and privacy packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider and privacy package depends on the packed `DCoding.Data.DVault` version from the same package line.
+`bash tools/pack-release-packages.sh` creates the two coordinated package lines under `artifacts/packages/`: nine `8.100.0` packages with `net8.0` assets and EF Core 8 dependency groups, and nine `10.100.0` packages with `net10.0` assets and EF Core 10 dependency groups. The analyzer package smoke script restores, builds, and runs a generated-mapper consumer against the packed analyzer package on the selected SDK host. `bash tools/verify-packages.sh` inspects those artifacts, expects exactly eighteen DVault `.nupkg` files plus sixteen matching symbol packages for the runtime, provider, and privacy packages, checks README, XML documentation, analyzer assets, declared NuGet metadata, and confirms each provider and privacy package depends on the packed `DCoding.Data.DVault` version from the same package line.
 
 For provider-specific filters, environment variables, benchmark commands, and package-verification details, see [Local Validation](docs/local-validation.md).
 

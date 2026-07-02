@@ -1,5 +1,6 @@
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -166,6 +167,7 @@ internal sealed class ExternalProviderLiveSchemaFixture : IAsyncDisposable {
 
   private static DbContextOptionsBuilder<ExternalProviderLiveSchemaContext> CreateOptionsBuilder() {
     var optionsBuilder = new DbContextOptionsBuilder<ExternalProviderLiveSchemaContext>();
+    optionsBuilder.ConfigureWarnings(warnings => warnings.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning));
     optionsBuilder.ReplaceService<IModelCacheKeyFactory, ExternalProviderLiveSchemaModelCacheKeyFactory>();
 
     return optionsBuilder;

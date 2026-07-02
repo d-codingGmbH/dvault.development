@@ -226,12 +226,12 @@ public sealed class DataVaultDiagnosticsTests {
         .ToArray();
     Assert.NotEmpty(hashKeyProperties);
     Assert.All(hashKeyProperties, property => {
-      Assert.Equal(DataVaultHashKeyStorageProfile.HexString, property.HashKeyStorageProfile);
+      Assert.Equal(DataVaultHashKeyStorageProfile.Binary, property.HashKeyStorageProfile);
       Assert.Equal(algorithmId, property.StableHashAlgorithmId);
       Assert.Equal(digestByteLength, property.DigestByteLength);
       Assert.Equal("lowercase-hex-no-prefix", property.DigestEncoding);
-      Assert.Equal("none-string-model", property.ConversionBehavior);
-      Assert.Equal(DataVaultProviderValueFormat.LowercaseHexText, property.ValueFormat);
+      Assert.Equal("lowercase-hex-string-to-bytes", property.ConversionBehavior);
+      Assert.Equal(DataVaultProviderValueFormat.LowercaseHexBinary, property.ValueFormat);
     });
 
     var display = result.ToDisplayString();
@@ -239,7 +239,7 @@ public sealed class DataVaultDiagnosticsTests {
         "stable hash " + algorithmId + "/" + digestByteLength + " bytes/lowercase-hex-no-prefix",
         display,
         StringComparison.Ordinal);
-    Assert.Contains("hash-key storage HexString/TEXT/none-string-model", display, StringComparison.Ordinal);
+    Assert.Contains("hash-key storage Binary/BLOB/lowercase-hex-string-to-bytes", display, StringComparison.Ordinal);
 
     var supportBundleJson = DataVaultSupportBundleExporter.ExportJson(result);
     using var document = JsonDocument.Parse(supportBundleJson);
@@ -259,11 +259,11 @@ public sealed class DataVaultDiagnosticsTests {
         .GetProperty("typeMappings")
         .EnumerateArray()
         .Single(mapping => mapping.GetProperty("logicalPropertyKind").GetString() == "HashKey");
-    Assert.Equal("HexString", supportHashKeyMapping.GetProperty("hashKeyStorageProfile").GetString());
+    Assert.Equal("Binary", supportHashKeyMapping.GetProperty("hashKeyStorageProfile").GetString());
     Assert.Equal(algorithmId, supportHashKeyMapping.GetProperty("stableHashAlgorithmId").GetString());
     Assert.Equal(digestByteLength, supportHashKeyMapping.GetProperty("digestByteLength").GetInt32());
     Assert.Equal("lowercase-hex-no-prefix", supportHashKeyMapping.GetProperty("digestEncoding").GetString());
-    Assert.Equal("none-string-model", supportHashKeyMapping.GetProperty("conversionBehavior").GetString());
+    Assert.Equal("lowercase-hex-string-to-bytes", supportHashKeyMapping.GetProperty("conversionBehavior").GetString());
     var supportHashReferenceMapping = document
         .RootElement
         .GetProperty("diagnostics")
@@ -271,11 +271,11 @@ public sealed class DataVaultDiagnosticsTests {
         .GetProperty("typeMappings")
         .EnumerateArray()
         .Single(mapping => mapping.GetProperty("logicalPropertyKind").GetString() == "ParticipantReference");
-    Assert.Equal("HexString", supportHashReferenceMapping.GetProperty("hashKeyStorageProfile").GetString());
+    Assert.Equal("Binary", supportHashReferenceMapping.GetProperty("hashKeyStorageProfile").GetString());
     Assert.Equal(algorithmId, supportHashReferenceMapping.GetProperty("stableHashAlgorithmId").GetString());
     Assert.Equal(digestByteLength, supportHashReferenceMapping.GetProperty("digestByteLength").GetInt32());
     Assert.Equal("lowercase-hex-no-prefix", supportHashReferenceMapping.GetProperty("digestEncoding").GetString());
-    Assert.Equal("none-string-model", supportHashReferenceMapping.GetProperty("conversionBehavior").GetString());
+    Assert.Equal("lowercase-hex-string-to-bytes", supportHashReferenceMapping.GetProperty("conversionBehavior").GetString());
 
     var forbiddenDigest = provider
         .GetRequiredService<IStableHashService>()
@@ -1503,14 +1503,7 @@ public sealed class DataVaultDiagnosticsTests {
             fact.Kind == DataVaultProviderThresholdFactKind.MinimumTotalOperationCount &&
             fact.GateKind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold &&
             fact.ProviderName == KnownProviderNames.SqlServer &&
-            fact.MinimumTotalOperationCount == 100);
-    Assert.Contains(
-        result.ProviderTuning.Save.ThresholdFacts!,
-        fact =>
-            fact.Kind == DataVaultProviderThresholdFactKind.MinimumTotalOperationCount &&
-            fact.GateKind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold &&
-            fact.ProviderName == KnownProviderNames.SqlServer &&
-            fact.MinimumTotalOperationCount == 900);
+            fact.MinimumTotalOperationCount == 50);
     Assert.Contains(
         result.ProviderTuning.Save.ThresholdFacts!,
         fact =>
@@ -1523,8 +1516,7 @@ public sealed class DataVaultDiagnosticsTests {
 
     Assert.Contains("\"providerTuning\"", json, StringComparison.Ordinal);
     Assert.Contains("\"thresholdFacts\"", json, StringComparison.Ordinal);
-    Assert.Contains("\"minimumTotalOperationCount\": 100", json, StringComparison.Ordinal);
-    Assert.Contains("\"minimumTotalOperationCount\": 900", json, StringComparison.Ordinal);
+    Assert.Contains("\"minimumTotalOperationCount\": 50", json, StringComparison.Ordinal);
     Assert.Contains("\"maximumSatelliteOperationCount\": 500", json, StringComparison.Ordinal);
     Assert.DoesNotContain("unit-test", json, StringComparison.Ordinal);
 
@@ -1910,10 +1902,6 @@ public sealed class DataVaultDiagnosticsTests {
         KnownProviderNames.SqlServer,
         hasPendingTrackedChanges: false,
         smallBatch);
-    var sqlServerMixedTooSmall = DataVaultProviderSaveStrategyGateEvaluator.EvaluateSqlServer(
-        KnownProviderNames.SqlServer,
-        hasPendingTrackedChanges: false,
-        CreateRequests(totalOperationCount: 303, satelliteOperationCount: 3));
     var sqlServerPureSatelliteSupported = DataVaultProviderSaveStrategyGateEvaluator.EvaluateSqlServer(
         KnownProviderNames.SqlServer,
         hasPendingTrackedChanges: false,
@@ -1921,7 +1909,7 @@ public sealed class DataVaultDiagnosticsTests {
     var sqlServerMixedSupported = DataVaultProviderSaveStrategyGateEvaluator.EvaluateSqlServer(
         KnownProviderNames.SqlServer,
         hasPendingTrackedChanges: false,
-        CreateRequests(totalOperationCount: 903, satelliteOperationCount: 3));
+        CreateRequests(totalOperationCount: 64, satelliteOperationCount: 3));
     var mySqlTooSmall = DataVaultProviderSaveStrategyGateEvaluator.EvaluateMySql(
         KnownProviderNames.MySqlPomelo,
         hasPendingTrackedChanges: false,
@@ -1982,10 +1970,6 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains(
         sqlServerTooSmall.FallbackCauses,
         cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold);
-    Assert.Contains(
-        sqlServerMixedTooSmall.FallbackCauses,
-        cause => cause.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold &&
-            cause.Message.Contains("900 total operations", StringComparison.Ordinal));
     Assert.True(sqlServerPureSatelliteSupported.CanSave);
     Assert.Empty(sqlServerPureSatelliteSupported.FallbackCauses);
     Assert.True(sqlServerMixedSupported.CanSave);
@@ -2042,11 +2026,7 @@ public sealed class DataVaultDiagnosticsTests {
     Assert.Contains(
         DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(saveStrategy),
         requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold &&
-            requirement.MinimumTotalOperationCount == 100);
-    Assert.Contains(
-        DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(saveStrategy),
-        requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold &&
-            requirement.MinimumTotalOperationCount == 900);
+            requirement.MinimumTotalOperationCount == 50);
     Assert.Contains(
         DataVaultProviderSaveStrategyGateEvaluator.GetKnownStrategyGateRequirements(saveStrategy),
         requirement => requirement.Kind == DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold &&
@@ -2272,12 +2252,12 @@ public sealed class DataVaultDiagnosticsTests {
       int expectedDigestByteLength) {
     AssertHashKeyStorageFacts(
         mapping,
-        "TEXT",
-        DataVaultHashKeyStorageProfile.HexString,
-        DataVaultProviderValueFormat.LowercaseHexText,
+        "BLOB",
+        DataVaultHashKeyStorageProfile.Binary,
+        DataVaultProviderValueFormat.LowercaseHexBinary,
         expectedAlgorithmId,
         expectedDigestByteLength,
-        "none-string-model");
+        "lowercase-hex-string-to-bytes");
   }
 
   private static void AssertHashKeyStorageFacts(

@@ -508,16 +508,24 @@ public sealed class SqlServerDataVaultPitMaintenanceServiceTests {
     public DataVaultMetadataModel MetadataModel { get; } = metadataModel;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(MetadataModel);
+      modelBuilder.ApplyDataVaultMetadata(MetadataModel, HexStringSqliteProfile);
     }
   }
 
   private sealed class MultiActivePitMaintenanceCommandContext(
       DbContextOptions<MultiActivePitMaintenanceCommandContext> options) : DbContext(options) {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(CreateCustomerContactProfileMultiActiveMetadata().Model);
+      modelBuilder.ApplyDataVaultMetadata(
+          CreateCustomerContactProfileMultiActiveMetadata().Model,
+          HexStringSqliteProfile);
     }
   }
+
+  private static DataVaultProviderCapabilityProfile HexStringSqliteProfile =>
+      DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+          DataVaultHashKeyStorageProfile.HexString,
+          "sha256-v1",
+          32);
 
   private sealed record PitMaintenanceMetadata(
       DataVaultPitMetadata Pit,

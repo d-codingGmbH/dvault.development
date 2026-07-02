@@ -11,29 +11,29 @@ internal sealed record BenchmarkHashKeyVariant(
     int DigestByteLength,
     DataVaultHashKeyStorageProfile StorageProfile) {
   public static BenchmarkHashKeyVariant Default { get; } = new(
-      "sha256-v1-hex",
+      "sha256-v1-binary",
       "sha256-v1",
       32,
-      DataVaultHashKeyStorageProfile.HexString);
+      DataVaultHashKeyStorageProfile.Binary);
 
   public static IReadOnlyList<BenchmarkHashKeyVariant> BoundedStorageMatrix { get; } =
   [
       Default,
       new(
-          "sha256-v1-binary",
+          "sha256-v1-hex",
           "sha256-v1",
           32,
-          DataVaultHashKeyStorageProfile.Binary),
-      new(
-          "sha256-128-v1-hex",
-          "sha256-128-v1",
-          16,
           DataVaultHashKeyStorageProfile.HexString),
       new(
           "sha256-128-v1-binary",
           "sha256-128-v1",
           16,
           DataVaultHashKeyStorageProfile.Binary),
+      new(
+          "sha256-128-v1-hex",
+          "sha256-128-v1",
+          16,
+          DataVaultHashKeyStorageProfile.HexString),
   ];
 
   public int HexCharacterLength => DigestByteLength * 2;

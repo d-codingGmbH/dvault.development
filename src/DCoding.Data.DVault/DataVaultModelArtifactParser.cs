@@ -35,6 +35,7 @@ internal static class DataVaultModelArtifactParser {
   private static readonly HashSet<string> LinkProperties = new(StringComparer.Ordinal) {
       "name",
       "participants",
+      "dependentChildKeys",
   };
 
   private static readonly HashSet<string> LinkParticipantProperties = new(StringComparer.Ordinal) {
@@ -48,6 +49,13 @@ internal static class DataVaultModelArtifactParser {
       "payload",
       "drivingKeys",
       "personalData",
+      "effectivity",
+  };
+
+  private static readonly HashSet<string> EffectivityProperties = new(StringComparer.Ordinal) {
+      "effectiveFrom",
+      "effectiveTo",
+      "currentFlag",
   };
 
   private static readonly HashSet<string> PersonalDataProperties = new(StringComparer.Ordinal) {
@@ -330,6 +338,7 @@ internal static class DataVaultModelArtifactParser {
       values.Add(new DataVaultModelLinkDeclaration(
           ReadRequiredString(link, "name", path, "Link name", diagnostics),
           ReadLinkParticipants(link, path, diagnostics),
+          ReadOptionalStringArray(link, "dependentChildKeys", path, "DMV1202", diagnostics),
           path));
     }
 
@@ -397,6 +406,7 @@ internal static class DataVaultModelArtifactParser {
           payload,
           drivingKeys,
           ReadPersonalData(satellite, path, diagnostics),
+          ReadEffectivity(satellite, path, diagnostics),
           path));
     }
 
@@ -428,6 +438,28 @@ internal static class DataVaultModelArtifactParser {
     }
 
     return values;
+  }
+
+  private static DataVaultModelEffectivityDeclaration? ReadEffectivity(
+      JsonElement satellite,
+      string satellitePath,
+      ICollection<DataVaultModelArtifactDiagnostic> diagnostics) {
+    if (!satellite.TryGetProperty("effectivity", out var effectivity)) {
+      return null;
+    }
+
+    var path = PropertyPath(satellitePath, "effectivity");
+    if (effectivity.ValueKind != JsonValueKind.Object) {
+      AddIssue(diagnostics, "DMV1102", "The satellite effectivity value must be an object.", path);
+      return null;
+    }
+
+    ValidateKnownProperties(effectivity, EffectivityProperties, path, diagnostics);
+    return new DataVaultModelEffectivityDeclaration(
+        ReadRequiredString(effectivity, "effectiveFrom", path, "Effectivity effectiveFrom field", diagnostics),
+        ReadOptionalString(effectivity, "effectiveTo", path, diagnostics),
+        ReadOptionalString(effectivity, "currentFlag", path, diagnostics),
+        path);
   }
 
   private static DataVaultModelParentReferenceDeclaration ReadParentReference(
@@ -613,6 +645,30 @@ internal static class DataVaultModelArtifactParser {
               PropertyPath(link.Path, "participants"));
         }
       }
+
+      var dependentChildKeys = new HashSet<string>(StringComparer.Ordinal);
+      foreach (var dependentChildKey in link.DependentChildKeys) {
+        if (!dependentChildKeys.Add(dependentChildKey)) {
+          AddIssue(
+              diagnostics,
+              "DMV1202",
+              "Link '" + link.Name + "' declares dependent child key '" + dependentChildKey + "' more than once.",
+              PropertyPath(link.Path, "dependentChildKeys"));
+        }
+      }
+
+      var producedParticipantNames = link.Participants
+          .Select(GetParticipantProducedBaseName)
+          .ToHashSet(StringComparer.Ordinal);
+      foreach (var dependentChildKey in link.DependentChildKeys) {
+        if (producedParticipantNames.Contains(dependentChildKey)) {
+          AddIssue(
+              diagnostics,
+              "DMV1202",
+              "Link '" + link.Name + "' declares dependent child key '" + dependentChildKey + "' that overlaps a produced participant name.",
+              PropertyPath(link.Path, "dependentChildKeys"));
+        }
+      }
     }
   }
 
@@ -665,6 +721,7 @@ internal static class DataVaultModelArtifactParser {
       }
 
       ValidatePersonalDataDeclarations(satellite, diagnostics);
+      ValidateEffectivityDeclaration(satellite, diagnostics);
     }
   }
 
@@ -712,6 +769,63 @@ internal static class DataVaultModelArtifactParser {
           "DMV1803",
           "Satellite '" + satellite.Name + "' personal-data field '" + personalData.Field + "' does not match a declared payload field.",
           PropertyPath(personalData.Path, "field"));
+    }
+  }
+
+  private static void ValidateEffectivityDeclaration(
+      DataVaultModelSatelliteDeclaration satellite,
+      ICollection<DataVaultModelArtifactDiagnostic> diagnostics) {
+    if (satellite.Effectivity is null) {
+      return;
+    }
+
+    var payloadNames = satellite.Payload.ToHashSet(StringComparer.Ordinal);
+    var drivingKeyNames = satellite.DrivingKeys.ToHashSet(StringComparer.Ordinal);
+    var fields = new HashSet<string>(StringComparer.Ordinal);
+    foreach (var field in EnumerateEffectivityFields(satellite.Effectivity)) {
+      if (string.IsNullOrWhiteSpace(field.Name)) {
+        continue;
+      }
+
+      if (!fields.Add(field.Name)) {
+        AddIssue(
+            diagnostics,
+            "DMV1804",
+            "Satellite '" + satellite.Name + "' declares effectivity field '" + field.Name + "' more than once.",
+            PropertyPath(satellite.Effectivity.Path, field.PropertyName));
+      }
+
+      if (payloadNames.Contains(field.Name)) {
+        continue;
+      }
+
+      if (drivingKeyNames.Contains(field.Name)) {
+        AddIssue(
+            diagnostics,
+            "DMV1804",
+            "Satellite '" + satellite.Name + "' effectivity field '" + field.Name + "' references a driving key instead of a payload field.",
+            PropertyPath(satellite.Effectivity.Path, field.PropertyName));
+        continue;
+      }
+
+      AddIssue(
+          diagnostics,
+          "DMV1804",
+          "Satellite '" + satellite.Name + "' effectivity field '" + field.Name + "' does not match a declared payload field.",
+          PropertyPath(satellite.Effectivity.Path, field.PropertyName));
+    }
+  }
+
+  private static IEnumerable<(string Name, string PropertyName)> EnumerateEffectivityFields(
+      DataVaultModelEffectivityDeclaration effectivity) {
+    yield return (effectivity.EffectiveFrom, "effectiveFrom");
+
+    if (effectivity.EffectiveTo is not null) {
+      yield return (effectivity.EffectiveTo, "effectiveTo");
+    }
+
+    if (effectivity.CurrentFlag is not null) {
+      yield return (effectivity.CurrentFlag, "currentFlag");
     }
   }
 
@@ -996,6 +1110,18 @@ internal static class DataVaultModelArtifactParser {
           participant.Path,
           diagnostics);
     }
+
+    var dependentChildKeyColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        link.DependentChildKeys,
+        columnNames.Keys);
+    for (var index = 0; index < dependentChildKeyColumnNames.Count; index++) {
+      TrackProducedName(
+          columnNames,
+          dependentChildKeyColumnNames[index],
+          "link dependent child key '" + link.DependentChildKeys[index] + "' on table '" + tableName + "'",
+          PropertyPath(link.Path, "dependentChildKeys"),
+          diagnostics);
+    }
   }
 
   private static string GetParticipantProducedBaseName(DataVaultModelLinkParticipantDeclaration participant) {
@@ -1095,7 +1221,8 @@ internal static class DataVaultModelArtifactParser {
             link.Name,
             link.Participants.Select(participant => new DataVaultLinkParticipantMetadata(
                 DataVaultMetadataReference.Hub(participant.Hub),
-                GetParticipantProducedBaseName(participant)))))
+                GetParticipantProducedBaseName(participant))),
+            link.DependentChildKeys))
         .ToArray();
     var satellites = artifact.Satellites
         .Select(CreateSatelliteMetadata)
@@ -1130,7 +1257,18 @@ internal static class DataVaultModelArtifactParser {
             current.Field,
             current.EncryptedPayloadAlias))
         .ToArray();
-    return new DataVaultSatelliteMetadata(satellite.Name, parent, satellite.Payload, satellite.DrivingKeys, personalData);
+    return new DataVaultSatelliteMetadata(
+        satellite.Name,
+        parent,
+        satellite.Payload,
+        satellite.DrivingKeys,
+        personalData,
+        satellite.Effectivity is null
+            ? null
+            : new DataVaultSatelliteEffectivityMetadata(
+                satellite.Effectivity.EffectiveFrom,
+                satellite.Effectivity.EffectiveTo,
+                satellite.Effectivity.CurrentFlag));
   }
 
   private static DataVaultBridgeMetadata CreateBridgeMetadata(DataVaultModelBridgeDeclaration bridge) {

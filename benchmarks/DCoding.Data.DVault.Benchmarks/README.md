@@ -64,7 +64,7 @@ dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVau
 
 This mode seeds 100 customers with 20 existing profile satellite states each, then compares unchanged replay and changed replay saves across the current model index and explicit index variants. It is intended for tuning the satellite parent/load-timestamp/hash-diff index shape independently from the broader scenario benchmarks.
 
-Use `--allocation-hotspots` to profile DVault-owned allocation hotspots on the default SQLite `sha256-v1`/`HexString` baseline:
+Use `--allocation-hotspots` to profile DVault-owned allocation hotspots on the default SQLite `sha256-v1`/`Binary` baseline:
 
 ```sh
 dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --provider sqlite --allocation-hotspots --iterations 3 --warmup 1 --output artifacts/benchmarks/sqlite-allocation-hotspots
@@ -81,7 +81,7 @@ DVAULT_TEST_POSTGRES_CONNECTION_STRING="Host=localhost;Database=dvault_benchmark
 DB2 example:
 
 ```sh
-DVAULT_TEST_DB2_CONNECTION_STRING="Server=localhost:50000;Database=dvault;UID=dvault;PWD=local-secret" dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --provider db2 --iterations 1 --warmup 0 --output artifacts/benchmarks/db2
+DVAULT_TEST_DB2_CONNECTION_STRING="Server=localhost:50000;Database=dvault;UID=db2inst1;PWD=local-secret" dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --provider db2 --iterations 1 --warmup 0 --output artifacts/benchmarks/db2
 ```
 
 To emit documentation-ready artifacts from the same benchmark execution, pass an output directory:

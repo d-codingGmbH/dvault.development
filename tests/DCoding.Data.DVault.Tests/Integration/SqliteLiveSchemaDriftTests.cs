@@ -127,12 +127,21 @@ public sealed class SqliteLiveSchemaDriftTests {
 
     var report = DataVaultLiveSchemaDriftReporter.Compare(CreateCustomerOnlyMetadataModel(), liveSchema);
 
-    var difference = Assert.Single(report.Differences);
     Assert.True(report.HasBlockingDifferences);
-    Assert.Equal("live-table-name-mismatch", difference.Code);
-    Assert.Equal(DataVaultModelDriftSeverity.Blocking, difference.Severity);
-    Assert.Equal("HubCustomer", difference.ExpectedValue);
-    Assert.Equal("HubCustomerArchive", difference.ActualValue);
+    Assert.Collection(
+        report.Differences.OrderBy(difference => difference.Code, StringComparer.Ordinal),
+        difference => {
+          Assert.Equal("missing-live-table", difference.Code);
+          Assert.Equal(DataVaultModelDriftSeverity.Blocking, difference.Severity);
+          Assert.Equal("Hub", difference.ExpectedValue);
+          Assert.Equal("<missing>", difference.ActualValue);
+        },
+        difference => {
+          Assert.Equal("unexpected-live-table", difference.Code);
+          Assert.Equal(DataVaultModelDriftSeverity.Informational, difference.Severity);
+          Assert.Equal("<missing>", difference.ExpectedValue);
+          Assert.Equal("live-table", difference.ActualValue);
+        });
   }
 
   [Fact]

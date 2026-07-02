@@ -84,6 +84,83 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
   }
 
   [Fact]
+  public async Task DefaultSaveServicePersistsDependentChildKeyLinkRowsThroughSqlite() {
+    var metadataModel = CreateDependentChildKeyMetadataModel();
+    var customer = metadataModel.Hubs.Single(hub => hub.Name == "Customer");
+    var order = metadataModel.Hubs.Single(hub => hub.Name == "Order");
+    var customerOrderLine = Assert.Single(metadataModel.Links);
+    var loadTimestamp = new DateTimeOffset(2026, 7, 2, 9, 0, 0, TimeSpan.Zero);
+    using var database = SqliteTestDatabase.CreateTemporaryFile();
+    var options = new DbContextOptionsBuilder<DependentChildKeySaveServiceContext>()
+        .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
+        .Options;
+    var services = new ServiceCollection();
+    services.AddDVault();
+
+    using var provider = services.BuildServiceProvider(validateScopes: true);
+    var saveService = provider.GetRequiredService<IDataVaultSaveService>();
+
+    await using (var context = new DependentChildKeySaveServiceContext(options)) {
+      await context.Database.EnsureCreatedAsync();
+
+      var hubResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              loadTimestamp,
+              "order-import",
+              [
+                  new(customer, [new("Customer Id", "C-100")]),
+                  new(order, [new("Order Id", "O-200")]),
+              ],
+              []));
+      var customerHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Customer");
+      var orderHashKey = GetHashKey(hubResult, DataVaultTableKind.Hub, "Order");
+
+      var linkResult = await saveService.SaveAsync(
+          context,
+          new DataVaultSaveRequest(
+              loadTimestamp,
+              "order-import",
+              [],
+              [
+                  new(
+                      customerOrderLine,
+                      [new("Customer", customerHashKey), new("Order", orderHashKey)],
+                      [new("Line Number", "1")]),
+                  new(
+                      customerOrderLine,
+                      [new("Customer", customerHashKey), new("Order", orderHashKey)],
+                      [new("Line Number", "2")]),
+              ]));
+
+      Assert.Equal(2, linkResult.RowsWritten);
+      Assert.All(linkResult.SavedRecords, record => {
+        Assert.Equal(DataVaultTableKind.Link, record.Kind);
+        Assert.Equal("CustomerOrderLine", record.MetadataName);
+        Assert.True(record.DependentChildKeyValues.ContainsKey("Line Number"));
+      });
+      Assert.Equal(["1", "2"], linkResult.SavedRecords
+          .Select(record => record.DependentChildKeyValues["Line Number"])
+          .Order(StringComparer.Ordinal));
+    }
+
+    await using (var context = new DependentChildKeySaveServiceContext(options)) {
+      var linkRows = await context.Set<Dictionary<string, object>>("LinkCustomerOrderLine")
+          .AsNoTracking()
+          .OrderBy(row => row["LineNumber"])
+          .ToListAsync();
+
+      Assert.Collection(
+          linkRows,
+          row => Assert.Equal("1", row["LineNumber"]),
+          row => Assert.Equal("2", row["LineNumber"]));
+      Assert.NotEqual(linkRows[0]["CustomerOrderLineHashKey"], linkRows[1]["CustomerOrderLineHashKey"]);
+      Assert.Equal(linkRows[0]["CustomerHashKey"], linkRows[1]["CustomerHashKey"]);
+      Assert.Equal(linkRows[0]["OrderHashKey"], linkRows[1]["OrderHashKey"]);
+    }
+  }
+
+  [Fact]
   public async Task DefaultSaveServiceBatchesUniqueRowExistenceChecksPerTable() {
     var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
     var loadTimestamp = new DateTimeOffset(2026, 5, 22, 10, 0, 0, TimeSpan.Zero);
@@ -2733,12 +2810,10 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
   }
 
   private static DataVaultProviderCapabilityProfile CreateSqliteProfile(DataVaultHashKeyStorageProfile storageProfile) {
-    return storageProfile == DataVaultHashKeyStorageProfile.HexString
-        ? DataVaultProviderCapabilityProfiles.Sqlite
-        : DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
-            storageProfile,
-            StableHashAlgorithmId,
-            StableHashDigestByteLength);
+    return DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+        storageProfile,
+        StableHashAlgorithmId,
+        StableHashDigestByteLength);
   }
 
   private static void AssertSqliteHashStorage(
@@ -3028,6 +3103,17 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
         ]);
   }
 
+  private static DataVaultMetadataModel CreateDependentChildKeyMetadataModel() {
+    var customer = new DataVaultHubMetadata("Customer", ["Customer Id"]);
+    var order = new DataVaultHubMetadata("Order", ["Order Id"]);
+    var customerOrderLine = new DataVaultLinkMetadata(
+        "CustomerOrderLine",
+        [customer.ToReference(), order.ToReference()],
+        ["Line Number"]);
+
+    return new DataVaultMetadataModel([customer, order], [customerOrderLine], []);
+  }
+
   private static DataVaultMetadataModel CreateCustomerOnlyMetadataModel() {
     return new DataVaultMetadataModel(
         [new DataVaultHubMetadata("Customer", ["Customer Id"])],
@@ -3069,6 +3155,15 @@ public sealed class ExplicitDataVaultSaveServiceSqliteTests {
             });
           },
           DataVaultProviderCapabilityProfiles.Sqlite);
+    }
+  }
+
+  private sealed class DependentChildKeySaveServiceContext(
+      DbContextOptions<DependentChildKeySaveServiceContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(
+          CreateDependentChildKeyMetadataModel(),
+          CreateSqliteProfile(DataVaultHashKeyStorageProfile.HexString));
     }
   }
 

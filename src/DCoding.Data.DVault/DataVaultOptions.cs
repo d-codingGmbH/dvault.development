@@ -81,12 +81,23 @@ public sealed class DataVaultOptions {
   }
 
   /// <summary>
-  /// Selects DVault's named binary-first profile for generated hash-key storage while preserving lowercase hexadecimal public values.
+  /// Selects DVault's binary hash-key storage profile for generated hash-key storage while preserving lowercase hexadecimal public values.
   /// </summary>
   /// <returns>The current options instance.</returns>
   public DataVaultOptions UseBinaryFirstProfile() {
     _hashKeyStorageProfile = DataVaultHashKeyStorageProfile.Binary;
     _conventionsProfileName = DataVaultConventions.BinaryFirstProfileName;
+    RefreshConventionsDescriptor();
+    return this;
+  }
+
+  /// <summary>
+  /// Selects DVault's legacy hexadecimal text hash-key storage profile for existing schemas.
+  /// </summary>
+  /// <returns>The current options instance.</returns>
+  public DataVaultOptions UseHexStringStorageProfile() {
+    _hashKeyStorageProfile = DataVaultHashKeyStorageProfile.HexString;
+    _conventionsProfileName = DataVaultConventions.HexStringCompatibilityProfileName;
     RefreshConventionsDescriptor();
     return this;
   }

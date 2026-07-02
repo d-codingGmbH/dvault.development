@@ -261,7 +261,11 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
         .ToArray();
     var hashKey = ComputeHash(context, businessKeyFields);
     var row = new Dictionary<string, object> {
-      [projection.HashKeyColumnName] = hashKey,
+      [projection.HashKeyColumnName] = ToProviderHashKeyValue(
+          context.DbContext,
+          projection.TableName,
+          projection.HashKeyColumnName,
+          hashKey),
       [projection.LoadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
           context.DbContext,
           projection.TableName,
@@ -296,9 +300,18 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
             participantName,
             GetRequiredValue(operation.ParticipantHashKeyValues, participantName, nameof(operation.ParticipantHashKeyValues))))
         .ToArray();
-    var linkHashKey = ComputeHash(context, participantHashKeyFields);
+    var dependentChildKeyFields = link.DependentChildKeys
+        .Select(column => new KeyValuePair<string, string>(
+            column.ColumnName,
+            GetRequiredValue(operation.DependentChildKeyValues, column.ColumnName, nameof(operation.DependentChildKeyValues))))
+        .ToArray();
+    var linkHashKey = ComputeHash(context, participantHashKeyFields.Concat(dependentChildKeyFields));
     var row = new Dictionary<string, object> {
-      [projection.LinkHashKeyColumnName] = linkHashKey,
+      [projection.LinkHashKeyColumnName] = ToProviderHashKeyValue(
+          context.DbContext,
+          projection.TableName,
+          projection.LinkHashKeyColumnName,
+          linkHashKey),
       [projection.LoadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
           context.DbContext,
           projection.TableName,
@@ -308,14 +321,24 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     };
 
     for (var index = 0; index < participantHashKeyFields.Length; index++) {
-      row.Add(projection.ParticipantHashKeyColumnNames[index], participantHashKeyFields[index].Value);
+      row.Add(
+          projection.ParticipantHashKeyColumnNames[index],
+          ToProviderHashKeyValue(
+              context.DbContext,
+              projection.TableName,
+              projection.ParticipantHashKeyColumnNames[index],
+              participantHashKeyFields[index].Value));
+    }
+
+    for (var index = 0; index < dependentChildKeyFields.Length; index++) {
+      row.Add(projection.DependentChildKeyColumnNames[index], dependentChildKeyFields[index].Value);
     }
 
     return new UniqueRowSavePlan(
         new UniqueTableProjection(projection.TableName, projection.LinkHashKeyColumnName),
         linkHashKey,
         row,
-        new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, projection.TableName, linkHashKey),
+        new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, projection.TableName, linkHashKey, [], dependentChildKeyFields),
         Ordinal: -1);
   }
 
@@ -345,7 +368,11 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
             GetRequiredValue(operation.PayloadValues, column.ColumnName, nameof(operation.PayloadValues))))
         .ToArray();
     var row = new Dictionary<string, object> {
-      [projection.ParentHashKeyColumnName] = operation.ParentHashKey,
+      [projection.ParentHashKeyColumnName] = ToProviderHashKeyValue(
+          dbContext,
+          projection.TableName,
+          projection.ParentHashKeyColumnName,
+          operation.ParentHashKey),
       [projection.HashDiffColumnName] = operation.HashDiff,
       [projection.LoadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
           dbContext,
@@ -448,13 +475,17 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
         .Select(participantName => NamingPolicy.GetTechnicalColumnName(
             new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, participantName, tableName)))
         .ToArray();
+    var dependentChildKeyColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        link.DependentChildKeys.Select(column => column.ColumnName),
+        [linkHashKeyColumnName, loadTimestampColumnName, recordSourceColumnName, .. participantHashKeyColumnNames]);
 
     return new LinkProjection(
         tableName,
         linkHashKeyColumnName,
         loadTimestampColumnName,
         recordSourceColumnName,
-        participantHashKeyColumnNames);
+        participantHashKeyColumnNames,
+        dependentChildKeyColumnNames);
   }
 
   private static SatelliteProjection CreateSatelliteProjection(DataVaultSatelliteMetadata satellite) {
@@ -526,13 +557,13 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
       await using var command = connection.CreateCommand();
       command.Transaction = transaction;
 
-      var parameterNames = AddCommandParameters(command, parentHashKeyBatch);
+      var parameterNames = AddHashKeyCommandParameters(command, dbContext, table, parentHashKeyBatch);
       command.CommandText = CreateLatestSatelliteHashDiffsCommandText(dbContext, table, parameterNames);
 
       await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
       while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
         latestRows.Add(new LatestSatelliteHashDiff(
-            reader.GetString(0),
+            ReadHashKeyProviderValue(dbContext, table.TableName, table.ParentHashKeyColumnName, reader.GetValue(0)),
             reader.GetString(1),
             ReadDateTimeOffset(reader, ordinal: 2)));
       }
@@ -1027,6 +1058,29 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     return parameterNames;
   }
 
+  private static IReadOnlyList<string> AddHashKeyCommandParameters(
+      DbCommand command,
+      DbContext dbContext,
+      SatelliteTableProjection table,
+      IEnumerable<string> values) {
+    var parameterNames = new List<string>();
+
+    foreach (var value in values) {
+      var parameterName = CreatePostgresParameterName(command.Parameters.Count);
+      var parameter = command.CreateParameter();
+      parameter.ParameterName = parameterName;
+      parameter.Value = ToProviderHashKeyValue(
+          dbContext,
+          table.TableName,
+          table.ParentHashKeyColumnName,
+          value);
+      command.Parameters.Add(parameter);
+      parameterNames.Add(parameterName);
+    }
+
+    return parameterNames;
+  }
+
   private static async Task<int> ExecutePostgresNonQueryAsync(
       DbConnection connection,
       DbTransaction transaction,
@@ -1145,6 +1199,7 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
     }
 
     var formattedValue = value switch {
+      byte[] bytes => "\\x" + Convert.ToHexString(bytes).ToLowerInvariant(),
       DateTimeOffset dateTimeOffset => dateTimeOffset.ToString("O", CultureInfo.InvariantCulture),
       DateTime dateTime => dateTime.ToString("O", CultureInfo.InvariantCulture),
       IFormattable formattable => formattable.ToString(null, CultureInfo.InvariantCulture),
@@ -1203,6 +1258,7 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
 
     return firstValue switch {
       string => rows.Select(row => (string)row[columnName]).ToArray(),
+      byte[] => rows.Select(row => (byte[])row[columnName]).ToArray(),
       DateTimeOffset => rows.Select(row => (DateTimeOffset)row[columnName]).ToArray(),
       long => rows.Select(row => (long)row[columnName]).ToArray(),
       int => rows.Select(row => (int)row[columnName]).ToArray(),
@@ -1218,6 +1274,10 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
         ?.GetProperties()
         .FirstOrDefault(candidate => string.Equals(candidate.GetColumnName(), columnName, StringComparison.Ordinal));
     var valueFormat = property?.FindAnnotation(DataVaultAnnotationNames.ProviderValueFormat)?.Value;
+
+    if (valueFormat is DataVaultProviderValueFormat.LowercaseHexBinary) {
+      return "bytea";
+    }
 
     if (valueFormat is DataVaultProviderValueFormat.UtcTicks ||
         property?.ClrType == typeof(long)) {
@@ -1239,6 +1299,22 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
 
   private static DateTimeOffset ReadDateTimeOffset(DbDataReader reader, int ordinal) {
     return DataVaultLoadTimestampValueConverter.ReadProviderValue(reader.GetValue(ordinal));
+  }
+
+  private static object ToProviderHashKeyValue(
+      DbContext dbContext,
+      string tableName,
+      string columnName,
+      string value) {
+    return DataVaultHashKeyProviderValueConverter.ToProviderParameterValue(dbContext, tableName, columnName, value);
+  }
+
+  private static string ReadHashKeyProviderValue(
+      DbContext dbContext,
+      string tableName,
+      string columnName,
+      object value) {
+    return (string)DataVaultHashKeyProviderValueConverter.ReadProviderValue(dbContext, tableName, columnName, value);
   }
 
   private static string CreatePostgresParameterName(int index) {
@@ -1310,7 +1386,8 @@ internal sealed class PostgresDataVaultSaveStrategy : IDataVaultProviderSaveStra
       string LinkHashKeyColumnName,
       string LoadTimestampColumnName,
       string RecordSourceColumnName,
-      IReadOnlyList<string> ParticipantHashKeyColumnNames);
+      IReadOnlyList<string> ParticipantHashKeyColumnNames,
+      IReadOnlyList<string> DependentChildKeyColumnNames);
 
   private sealed record SatelliteProjection(
       string TableName,

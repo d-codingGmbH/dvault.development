@@ -188,7 +188,12 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
             participantName,
             GetRequiredValue(operation.ParticipantHashKeyValues, participantName, nameof(operation.ParticipantHashKeyValues))))
         .ToArray();
-    var linkHashKey = ComputeHash(context, participantHashKeyFields);
+    var dependentChildKeyFields = link.DependentChildKeys
+        .Select(column => new KeyValuePair<string, string>(
+            column.ColumnName,
+            GetRequiredValue(operation.DependentChildKeyValues, column.ColumnName, nameof(operation.DependentChildKeyValues))))
+        .ToArray();
+    var linkHashKey = ComputeHash(context, participantHashKeyFields.Concat(dependentChildKeyFields));
     var row = new Dictionary<string, object> {
       [projection.LinkHashKeyColumnName] = linkHashKey,
       [projection.LoadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
@@ -203,11 +208,15 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
       row.Add(projection.ParticipantHashKeyColumnNames[index], participantHashKeyFields[index].Value);
     }
 
+    for (var index = 0; index < dependentChildKeyFields.Length; index++) {
+      row.Add(projection.DependentChildKeyColumnNames[index], dependentChildKeyFields[index].Value);
+    }
+
     return new UniqueRowSavePlan(
         new UniqueTableProjection(projection.TableName, projection.LinkHashKeyColumnName),
         linkHashKey,
         row,
-        new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, projection.TableName, linkHashKey));
+        new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, projection.TableName, linkHashKey, [], dependentChildKeyFields));
   }
 
   private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(DataVaultProviderSaveStrategyContext context) {
@@ -339,13 +348,17 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
         .Select(participantName => NamingPolicy.GetTechnicalColumnName(
             new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, participantName, tableName)))
         .ToArray();
+    var dependentChildKeyColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        link.DependentChildKeys.Select(column => column.ColumnName),
+        [linkHashKeyColumnName, loadTimestampColumnName, recordSourceColumnName, .. participantHashKeyColumnNames]);
 
     return new LinkProjection(
         tableName,
         linkHashKeyColumnName,
         loadTimestampColumnName,
         recordSourceColumnName,
-        participantHashKeyColumnNames);
+        participantHashKeyColumnNames,
+        dependentChildKeyColumnNames);
   }
 
   private static SatelliteProjection CreateSatelliteProjection(DataVaultSatelliteMetadata satellite) {
@@ -1074,7 +1087,8 @@ internal sealed class OracleDataVaultSaveStrategy : IDataVaultProviderSaveStrate
       string LinkHashKeyColumnName,
       string LoadTimestampColumnName,
       string RecordSourceColumnName,
-      IReadOnlyList<string> ParticipantHashKeyColumnNames);
+      IReadOnlyList<string> ParticipantHashKeyColumnNames,
+      IReadOnlyList<string> DependentChildKeyColumnNames);
 
   private sealed record SatelliteProjection(
       string TableName,

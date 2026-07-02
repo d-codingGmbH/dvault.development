@@ -42,7 +42,7 @@
     <PackageReference Include="System.Composition.Hosting" Version="8.0.0" PrivateAssets="all" />
     <PackageReference Include="System.Composition.Runtime" Version="8.0.0" PrivateAssets="all" />
     <PackageReference Include="System.Composition.TypedParts" Version="8.0.0" PrivateAssets="all" />
-    <PackageReference Include="System.Text.Json" Version="8.0.0" PrivateAssets="all" />
+    <PackageReference Include="System.Text.Json" Version="8.0.6" PrivateAssets="all" />
   </ItemGroup>
 
   <Target Name="AddAnalyzerPackageAssets">

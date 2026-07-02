@@ -194,7 +194,7 @@ public sealed class DataVaultDesignTimeCommandTests {
       Assert.Equal(1, workload.GetProperty("unchangedReplayCount").GetInt32());
       Assert.Equal(903, workload.GetProperty("totalOperationCount").GetInt32());
       Assert.Equal("SqlBulkCopy", workload.GetProperty("transfer").GetString());
-      Assert.Equal("100-plus-operations; mixedBatchBoundary=900-plus-operations", workload.GetProperty("nativeBulkBoundary").GetString());
+      Assert.Equal("50-plus-operations", workload.GetProperty("nativeBulkBoundary").GetString());
       Assert.Equal("temporary-staging-table", workload.GetProperty("cleanupBoundary").GetString());
 
       var evidence = root.GetProperty("evidence");
@@ -827,10 +827,7 @@ public sealed class DataVaultDesignTimeCommandTests {
                   GateRequirements = [
                       new DataVaultSaveStrategyGateRequirement(
                           DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
-                          MinimumTotalOperationCount: 100),
-                      new DataVaultSaveStrategyGateRequirement(
-                          DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
-                          MinimumTotalOperationCount: 900),
+                          MinimumTotalOperationCount: 50),
                       new DataVaultSaveStrategyGateRequirement(
                           DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold,
                           MaximumSatelliteOperationCount: 500),

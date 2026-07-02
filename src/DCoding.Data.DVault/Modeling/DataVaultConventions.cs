@@ -12,6 +12,7 @@ public sealed class DataVaultConventions {
   private const string DefaultPersistenceConventionVersion = "dvault.persistence-conventions.v1";
   internal const string DefaultProfileName = "default";
   internal const string BinaryFirstProfileName = "binary-first";
+  internal const string HexStringCompatibilityProfileName = "hex-string-compatibility";
   internal const string ExplicitProviderProfileName = "explicit-provider";
 
   private static readonly DataVaultModelConcept[] DefaultModelConcepts =
@@ -62,7 +63,7 @@ public sealed class DataVaultConventions {
       new ReadOnlyCollection<DataVaultModelConcept>(DefaultModelConcepts),
       DefaultStableHashAlgorithmId,
       DefaultStableHashDigestByteLength,
-      DataVaultHashKeyStorageProfile.HexString,
+      DataVaultHashKeyStorageProfile.Binary,
       DefaultProfileName,
       DefaultPersistenceContentHashAlgorithm,
       DefaultPersistenceConventionVersion,
@@ -74,10 +75,16 @@ public sealed class DataVaultConventions {
       DataVaultHashKeyStorageProfile.Binary,
       BinaryFirstProfileName);
 
+  internal static DataVaultConventions HexStringCompatibility { get; } = CreateWithStableHashAlgorithm(
+      DefaultStableHashAlgorithmId,
+      DefaultStableHashDigestByteLength,
+      DataVaultHashKeyStorageProfile.HexString,
+      HexStringCompatibilityProfileName);
+
   internal static DataVaultConventions CreateWithStableHashAlgorithm(
       string stableHashAlgorithmId,
       int stableHashDigestByteLength,
-      DataVaultHashKeyStorageProfile hashKeyStorageProfile = DataVaultHashKeyStorageProfile.HexString,
+      DataVaultHashKeyStorageProfile hashKeyStorageProfile = DataVaultHashKeyStorageProfile.Binary,
       string profileName = DefaultProfileName) {
     ArgumentNullException.ThrowIfNull(stableHashAlgorithmId);
     ArgumentException.ThrowIfNullOrWhiteSpace(profileName);
@@ -91,7 +98,7 @@ public sealed class DataVaultConventions {
 
     if (stableHashAlgorithmId == DefaultStableHashAlgorithmId &&
         stableHashDigestByteLength == DefaultStableHashDigestByteLength &&
-        hashKeyStorageProfile == DataVaultHashKeyStorageProfile.HexString &&
+        hashKeyStorageProfile == DataVaultHashKeyStorageProfile.Binary &&
         string.Equals(profileName, DefaultProfileName, StringComparison.Ordinal)) {
       return Default;
     }

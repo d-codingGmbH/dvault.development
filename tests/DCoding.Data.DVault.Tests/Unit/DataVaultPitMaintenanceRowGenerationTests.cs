@@ -309,7 +309,10 @@ public sealed class DataVaultPitMaintenanceRowGenerationTests {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
       modelBuilder.ApplyDataVaultMetadata(
           CreateTuplePitMetadata().Model,
-          DataVaultProviderCapabilityProfiles.Sqlite);
+          DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+              DataVaultHashKeyStorageProfile.HexString,
+              "sha256-v1",
+              32));
     }
   }
 

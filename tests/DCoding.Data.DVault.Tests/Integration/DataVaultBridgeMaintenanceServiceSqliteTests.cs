@@ -344,7 +344,9 @@ public sealed class DataVaultBridgeMaintenanceServiceSqliteTests {
     var link = ManyToManyMetadataModel.Links.Single();
     using var database = SqliteTestDatabase.CreateTemporaryFile();
     var services = new ServiceCollection();
-    services.AddDVault(options => options.UseMetadataModel(ManyToManyMetadataModel));
+    services.AddDVault(options => options
+        .UseHexStringStorageProfile()
+        .UseMetadataModel(ManyToManyMetadataModel));
     services.AddDVaultSqlite();
     services.AddDbContext<RegistryBridgeMaintenanceContext>(options => options
         .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
@@ -380,7 +382,9 @@ public sealed class DataVaultBridgeMaintenanceServiceSqliteTests {
     var metadataModel = new DataVaultMetadataModel([customer], [], []);
     using var database = SqliteTestDatabase.CreateTemporaryFile();
     var services = new ServiceCollection();
-    services.AddDVault(options => options.UseMetadataModel(metadataModel));
+    services.AddDVault(options => options
+        .UseHexStringStorageProfile()
+        .UseMetadataModel(metadataModel));
     services.AddDVaultSqlite();
     services.AddDbContext<RegistryBridgeMaintenanceContext>(options => options
         .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
@@ -426,6 +430,12 @@ public sealed class DataVaultBridgeMaintenanceServiceSqliteTests {
   private static DataVaultMetadataModel ManyToManyMetadataModel { get; } = CreateManyToManyMetadataModel();
 
   private static DataVaultMetadataModel HierarchyMetadataModel { get; } = CreateHierarchyMetadataModel();
+
+  private static DataVaultProviderCapabilityProfile HexStringSqliteProfile =>
+      DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+          DataVaultHashKeyStorageProfile.HexString,
+          "sha256-v1",
+          32);
 
   private static Task<DataVaultSaveResult> SaveCustomerOrderLinkAsync(
       DbContext context,
@@ -590,14 +600,14 @@ public sealed class DataVaultBridgeMaintenanceServiceSqliteTests {
   private sealed class ManyToManyBridgeMaintenanceContext(DbContextOptions<ManyToManyBridgeMaintenanceContext> options)
       : DbContext(options) {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(ManyToManyMetadataModel);
+      modelBuilder.ApplyDataVaultMetadata(ManyToManyMetadataModel, HexStringSqliteProfile);
     }
   }
 
   private sealed class HierarchyBridgeMaintenanceContext(DbContextOptions<HierarchyBridgeMaintenanceContext> options)
       : DbContext(options) {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(HierarchyMetadataModel);
+      modelBuilder.ApplyDataVaultMetadata(HierarchyMetadataModel, HexStringSqliteProfile);
     }
   }
 

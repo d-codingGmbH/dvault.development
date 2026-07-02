@@ -576,6 +576,12 @@ public sealed class DataVaultTypedSatelliteReadServiceSqliteTests {
     return new DataVaultMetadataModel([customer], [], [contact]);
   }
 
+  private static DataVaultProviderCapabilityProfile HexStringSqliteProfile =>
+      DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+          DataVaultHashKeyStorageProfile.HexString,
+          "sha256-v1",
+          32);
+
   private sealed class TypedRegistryReadContext(
       DbContextOptions<TypedRegistryReadContext> options) : DbContext(options) {
   }
@@ -588,7 +594,7 @@ public sealed class DataVaultTypedSatelliteReadServiceSqliteTests {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
       modelBuilder.ApplyDataVaultMetadata(
           CreateExplicitMetadataModel(),
-          DataVaultProviderCapabilityProfiles.Sqlite,
+          HexStringSqliteProfile,
           LoadTimestampStorage);
     }
   }

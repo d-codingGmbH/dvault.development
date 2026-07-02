@@ -13,7 +13,7 @@ public sealed class DataVaultSatelliteMetadata {
       string name,
       DataVaultMetadataReference parent,
       IEnumerable<string> descriptiveAttributeNames)
-      : this(name, parent, descriptiveAttributeNames, [], requireDrivingKeyNames: false, []) {
+      : this(name, parent, descriptiveAttributeNames, [], requireDrivingKeyNames: false, [], effectivity: null) {
   }
 
   /// <summary>
@@ -24,7 +24,30 @@ public sealed class DataVaultSatelliteMetadata {
       DataVaultMetadataReference parent,
       IEnumerable<string> descriptiveAttributeNames,
       IEnumerable<string> drivingKeyNames)
-      : this(name, parent, descriptiveAttributeNames, drivingKeyNames, requireDrivingKeyNames: true, []) {
+      : this(name, parent, descriptiveAttributeNames, drivingKeyNames, requireDrivingKeyNames: true, [], effectivity: null) {
+  }
+
+  /// <summary>
+  /// Initializes a new satellite metadata declaration with effectivity payload fields.
+  /// </summary>
+  public DataVaultSatelliteMetadata(
+      string name,
+      DataVaultMetadataReference parent,
+      IEnumerable<string> descriptiveAttributeNames,
+      DataVaultSatelliteEffectivityMetadata effectivity)
+      : this(name, parent, descriptiveAttributeNames, [], requireDrivingKeyNames: false, [], effectivity) {
+  }
+
+  /// <summary>
+  /// Initializes a new multi-active satellite metadata declaration with effectivity payload fields.
+  /// </summary>
+  public DataVaultSatelliteMetadata(
+      string name,
+      DataVaultMetadataReference parent,
+      IEnumerable<string> descriptiveAttributeNames,
+      IEnumerable<string> drivingKeyNames,
+      DataVaultSatelliteEffectivityMetadata effectivity)
+      : this(name, parent, descriptiveAttributeNames, drivingKeyNames, requireDrivingKeyNames: true, [], effectivity) {
   }
 
   /// <summary>
@@ -36,7 +59,34 @@ public sealed class DataVaultSatelliteMetadata {
       IEnumerable<string> descriptiveAttributeNames,
       IEnumerable<string> drivingKeyNames,
       IEnumerable<DataVaultSatellitePersonalDataMetadata> personalDataFields)
-      : this(name, parent, descriptiveAttributeNames, drivingKeyNames, requireDrivingKeyNames: false, personalDataFields) {
+      : this(
+          name,
+          parent,
+          descriptiveAttributeNames,
+          drivingKeyNames,
+          requireDrivingKeyNames: false,
+          personalDataFields,
+          effectivity: null) {
+  }
+
+  /// <summary>
+  /// Initializes a new satellite declaration with optional driving keys, marked personal-data payload fields, and effectivity fields.
+  /// </summary>
+  public DataVaultSatelliteMetadata(
+      string name,
+      DataVaultMetadataReference parent,
+      IEnumerable<string> descriptiveAttributeNames,
+      IEnumerable<string> drivingKeyNames,
+      IEnumerable<DataVaultSatellitePersonalDataMetadata> personalDataFields,
+      DataVaultSatelliteEffectivityMetadata? effectivity)
+      : this(
+          name,
+          parent,
+          descriptiveAttributeNames,
+          drivingKeyNames,
+          requireDrivingKeyNames: false,
+          personalDataFields,
+          effectivity) {
   }
 
   private DataVaultSatelliteMetadata(
@@ -45,7 +95,8 @@ public sealed class DataVaultSatelliteMetadata {
       IEnumerable<string> descriptiveAttributeNames,
       IEnumerable<string> drivingKeyNames,
       bool requireDrivingKeyNames,
-      IEnumerable<DataVaultSatellitePersonalDataMetadata> personalDataFields) {
+      IEnumerable<DataVaultSatellitePersonalDataMetadata> personalDataFields,
+      DataVaultSatelliteEffectivityMetadata? effectivity) {
     Name = DataVaultMetadataValidation.RequireName(name, nameof(name));
     ArgumentNullException.ThrowIfNull(parent);
 
@@ -57,6 +108,10 @@ public sealed class DataVaultSatelliteMetadata {
     DrivingKeyNames = ReadDrivingKeyNames(drivingKeyNames, DescriptiveAttributeNames, requireDrivingKeyNames);
     PersonalDataFields = RequirePersonalDataFields(
         personalDataFields,
+        DescriptiveAttributeNames,
+        DrivingKeyNames);
+    Effectivity = RequireEffectivity(
+        effectivity,
         DescriptiveAttributeNames,
         DrivingKeyNames);
     PayloadColumns = DescriptiveAttributeNames
@@ -97,6 +152,11 @@ public sealed class DataVaultSatelliteMetadata {
   /// Gets marked personal-data payload fields in canonical declaration order.
   /// </summary>
   public IReadOnlyList<DataVaultSatellitePersonalDataMetadata> PersonalDataFields { get; }
+
+  /// <summary>
+  /// Gets the optional effectivity payload-field declaration.
+  /// </summary>
+  public DataVaultSatelliteEffectivityMetadata? Effectivity { get; }
 
   /// <summary>
   /// Gets the payload column metadata carried by the satellite.
@@ -214,5 +274,46 @@ public sealed class DataVaultSatelliteMetadata {
     }
 
     return values;
+  }
+
+  private static DataVaultSatelliteEffectivityMetadata? RequireEffectivity(
+      DataVaultSatelliteEffectivityMetadata? effectivity,
+      IReadOnlyList<string> payloadNames,
+      IReadOnlyList<string> drivingKeyNames) {
+    if (effectivity is null) {
+      return null;
+    }
+
+    var payloadNameSet = payloadNames.ToHashSet(StringComparer.Ordinal);
+    var drivingKeyNameSet = drivingKeyNames.ToHashSet(StringComparer.Ordinal);
+    foreach (var fieldName in EnumerateEffectivityFieldNames(effectivity)) {
+      if (payloadNameSet.Contains(fieldName)) {
+        continue;
+      }
+
+      if (drivingKeyNameSet.Contains(fieldName)) {
+        throw new ArgumentException(
+            "Satellite effectivity field '" + fieldName + "' references a driving key instead of a payload field.",
+            nameof(effectivity));
+      }
+
+      throw new ArgumentException(
+          "Satellite effectivity field '" + fieldName + "' does not match a declared payload field.",
+          nameof(effectivity));
+    }
+
+    return effectivity;
+  }
+
+  private static IEnumerable<string> EnumerateEffectivityFieldNames(DataVaultSatelliteEffectivityMetadata effectivity) {
+    yield return effectivity.EffectiveFromFieldName;
+
+    if (effectivity.EffectiveToFieldName is not null) {
+      yield return effectivity.EffectiveToFieldName;
+    }
+
+    if (effectivity.CurrentFlagFieldName is not null) {
+      yield return effectivity.CurrentFlagFieldName;
+    }
   }
 }

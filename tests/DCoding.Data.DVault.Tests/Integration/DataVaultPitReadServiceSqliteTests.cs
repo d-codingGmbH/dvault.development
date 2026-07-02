@@ -322,12 +322,10 @@ public sealed class DataVaultPitReadServiceSqliteTests {
   }
 
   private static DataVaultProviderCapabilityProfile CreateSqliteProfile(DataVaultHashKeyStorageProfile storageProfile) {
-    return storageProfile == DataVaultHashKeyStorageProfile.HexString
-        ? DataVaultProviderCapabilityProfiles.Sqlite
-        : DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
-            storageProfile,
-            StableHashAlgorithmId,
-            StableHashDigestByteLength);
+    return DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+        storageProfile,
+        StableHashAlgorithmId,
+        StableHashDigestByteLength);
   }
 
   private static void AssertSqliteHashStorage(

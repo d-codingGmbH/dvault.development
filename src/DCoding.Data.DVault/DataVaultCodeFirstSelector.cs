@@ -9,8 +9,25 @@ internal static class DataVaultCodeFirstSelector {
       Expression<Func<TEntity, TProperty>> selector,
       string verb,
       IEnumerable<string> existingMemberNames) {
+    var memberName = RequireMemberName(selector, verb);
+    if (existingMemberNames.Contains(memberName, StringComparer.Ordinal)) {
+      throw new ArgumentException(
+          verb +
+          " member '" +
+          memberName +
+          "' is already declared. Use each logical member name at most once for " +
+          verb +
+          "(...) declarations.",
+          nameof(selector));
+    }
+
+    return memberName;
+  }
+
+  public static string RequireMemberName<TEntity, TProperty>(
+      Expression<Func<TEntity, TProperty>> selector,
+      string verb) {
     ArgumentNullException.ThrowIfNull(selector);
-    ArgumentNullException.ThrowIfNull(existingMemberNames);
 
     if (selector.Body is MemberExpression memberExpression &&
         memberExpression.Expression is ParameterExpression parameterExpression &&
@@ -24,17 +41,6 @@ internal static class DataVaultCodeFirstSelector {
             "Use repeated " +
             verb +
             "(x => x.Member) calls for each scalar member instead of collection, anonymous-object, computed, nested, or method-call selectors.",
-            nameof(selector));
-      }
-
-      if (existingMemberNames.Contains(memberName, StringComparer.Ordinal)) {
-        throw new ArgumentException(
-            verb +
-            " member '" +
-            memberName +
-            "' is already declared. Use each logical member name at most once for " +
-            verb +
-            "(...) declarations.",
             nameof(selector));
       }
 

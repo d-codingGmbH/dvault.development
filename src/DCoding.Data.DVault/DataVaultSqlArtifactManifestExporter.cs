@@ -116,7 +116,7 @@ internal static class DataVaultSqlArtifactManifestExporter {
             TotalOperationCount: 903,
             SelectedStrategy: SqlServerSelectedStrategyName,
             Transfer: "SqlBulkCopy",
-            NativeBulkBoundary: "100-plus-operations; mixedBatchBoundary=900-plus-operations",
+            NativeBulkBoundary: "50-plus-operations",
             CleanupBoundary: "temporary-staging-table"),
         new DataVaultSqlArtifactDiagnosticsReference(
             diagnosticsSourceKind,

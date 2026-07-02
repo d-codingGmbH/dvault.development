@@ -16,8 +16,8 @@ bash tools/check-format.sh
 
 `bash tools/pack-release-packages.sh` clears stale package artifacts and creates the coordinated release package lines under `artifacts/packages/`:
 
-- nine `8.51.0` `.nupkg` files with `net8.0` assets and EF Core 8 dependency groups
-- nine `10.51.0` `.nupkg` files with `net10.0` assets and EF Core 10 dependency groups
+- nine `8.100.0` `.nupkg` files with `net8.0` assets and EF Core 8 dependency groups
+- nine `10.100.0` `.nupkg` files with `net10.0` assets and EF Core 10 dependency groups
 - matching `.snupkg` files for the runtime, provider, and privacy packages
 
 `bash tools/run-analyzer-package-smoke.sh 8` and `bash tools/run-analyzer-package-smoke.sh 10` create a temporary consumer, restore the packed runtime and analyzer packages from `artifacts/packages/`, build generated mapper output, and run it under the selected SDK host.
@@ -69,7 +69,7 @@ DVAULT_TEST_MYSQL_CONNECTION_STRING='Server=localhost;Port=3306;Database=dvault_
 ### DB2
 
 ```sh
-DVAULT_TEST_DB2_CONNECTION_STRING='Server=localhost:50000;Database=dvault;UID=dvault;PWD=local-secret' dotnet test DVault.slnx --nologo --filter "Category=ProviderIntegration.ExternalOptIn&Provider=DB2" -p:DVAULT_TEST_DB2_CONNECTION_STRING=Configured
+DVAULT_TEST_DB2_CONNECTION_STRING='Server=localhost:50000;Database=dvault;UID=db2inst1;PWD=local-secret' dotnet test DVault.slnx --nologo --filter "Category=ProviderIntegration.ExternalOptIn&Provider=DB2" -p:DVAULT_TEST_DB2_CONNECTION_STRING=Configured
 ```
 
 DVault does not provision external databases, users, schemas, credentials, Docker containers, or Podman containers for these tests. The configured principal must be allowed to create and drop the temporary objects used by the integration lane.
@@ -85,13 +85,13 @@ dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVau
 DB2 benchmark rows use the same optional-provider contract as the other external providers. Set the DB2 connection string before restore/build/run, keep provisioning outside the repository, and select `--provider db2` when isolating the lane:
 
 ```sh
-DVAULT_TEST_DB2_CONNECTION_STRING='Server=localhost:50000;Database=dvault;UID=dvault;PWD=local-secret' dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --provider db2 --iterations 1 --warmup 0 --output artifacts/benchmarks/db2
+DVAULT_TEST_DB2_CONNECTION_STRING='Server=localhost:50000;Database=dvault;UID=db2inst1;PWD=local-secret' dotnet run --project benchmarks/DCoding.Data.DVault.Benchmarks/DCoding.Data.DVault.Benchmarks.csproj --configuration Release -- --provider db2 --iterations 1 --warmup 0 --output artifacts/benchmarks/db2
 ```
 
 When DB2 is unset, unavailable, or unreachable, the root benchmark artifact triplet still preserves DB2 rows in the optional-provider matrix with `executionStatus=skipped`, `iterations=0`, blank/null metrics, normalized skip reasons, and planned execution details for the DB2 clean-context save and PIT/bridge read boundaries.
 
 Pass `--output <directory>` to emit `benchmark-summary.md`, `benchmark-summary.csv`, and `benchmark-summary.json`. Increase `--iterations` and `--warmup` locally when collecting steadier timing numbers.
 
-Use `--hash-key-storage-matrix` to emit the bounded `sha256-v1` hex, `sha256-v1` binary, `sha256-128-v1` hex, and `sha256-128-v1` binary comparison rows. With the default provider filter, SQLite always runs locally and configured PostgreSQL, SQL Server, MySQL, Oracle, and DB2 lanes run, stay visible as skipped placeholders, or preserve failed rows when the selected physical storage profile exposes a provider-specific incompatibility. Set the relevant `DVAULT_TEST_*` values before restore/build/run so conditional provider package references are present in the asset graph.
+Use `--hash-key-storage-matrix` to emit the bounded `sha256-v1` binary, `sha256-v1` hex, `sha256-128-v1` binary, and `sha256-128-v1` hex comparison rows. With the default provider filter, SQLite always runs locally and configured PostgreSQL, SQL Server, MySQL, Oracle, and DB2 lanes run or stay visible as skipped placeholders. Set the relevant `DVAULT_TEST_*` values before restore/build/run so conditional provider package references are present in the asset graph.
 
 Use `--allocation-hotspots` for the focused DVault-owned allocation hotspot lane. The emitted `allocation-hotspots.md`, `allocation-hotspots.csv`, and `allocation-hotspots.json` sidecars rank save preparation, latest-hash-diff replay filtering, stable-hash canonicalization, and digest generation while keeping caller-owned `HashDiff` generation and database setup/write work outside the ranked boundary.

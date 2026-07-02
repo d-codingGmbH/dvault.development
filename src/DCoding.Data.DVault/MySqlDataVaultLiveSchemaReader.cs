@@ -122,9 +122,10 @@ internal sealed class MySqlDataVaultLiveSchemaReader : CatalogDataVaultLiveSchem
         ("@table", tableIdentifier.TableName));
 
     var indexHeaders = new List<IndexHeader>();
-    await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-    while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
-      indexHeaders.Add(new IndexHeader(reader.GetString(0), ConvertToInt32(reader.GetValue(1)) != 0));
+    await using (var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false)) {
+      while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
+        indexHeaders.Add(new IndexHeader(reader.GetString(0), ConvertToInt32(reader.GetValue(1)) != 0));
+      }
     }
 
     var indexes = new List<DataVaultLiveSchemaIndex>();

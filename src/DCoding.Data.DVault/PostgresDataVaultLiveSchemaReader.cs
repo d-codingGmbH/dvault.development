@@ -125,9 +125,10 @@ internal sealed class PostgresDataVaultLiveSchemaReader : CatalogDataVaultLiveSc
         ("@table", tableIdentifier.TableName));
 
     var indexHeaders = new List<IndexHeader>();
-    await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-    while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
-      indexHeaders.Add(new IndexHeader(reader.GetString(0), reader.GetBoolean(1)));
+    await using (var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false)) {
+      while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
+        indexHeaders.Add(new IndexHeader(reader.GetString(0), reader.GetBoolean(1)));
+      }
     }
 
     var indexes = new List<DataVaultLiveSchemaIndex>();

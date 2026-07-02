@@ -592,12 +592,20 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
         .Select(participantName => NamingPolicy.GetTechnicalColumnName(
             new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, participantName, tableName)))
         .ToArray();
+    var dependentChildKeyColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        link.DependentChildKeys.Select(column => column.ColumnName),
+        [linkHashKeyColumnName, loadTimestampColumnName, recordSourceColumnName, .. participantHashKeyColumnNames]);
     var participantHashKeyFields = participantNames
         .Select(participantName => new KeyValuePair<string, string>(
             participantName,
             GetRequiredValue(operation.ParticipantHashKeyValues, participantName, nameof(operation.ParticipantHashKeyValues))))
         .ToArray();
-    var linkHashKey = ComputeHash(participantHashKeyFields);
+    var dependentChildKeyFields = link.DependentChildKeys
+        .Select(column => new KeyValuePair<string, string>(
+            column.ColumnName,
+            GetRequiredValue(operation.DependentChildKeyValues, column.ColumnName, nameof(operation.DependentChildKeyValues))))
+        .ToArray();
+    var linkHashKey = ComputeHash(participantHashKeyFields.Concat(dependentChildKeyFields));
     var row = new Dictionary<string, object> {
       [linkHashKeyColumnName] = linkHashKey,
       [loadTimestampColumnName] = request.LoadTimestamp,
@@ -608,11 +616,15 @@ internal sealed class DefaultDataVaultSaveService : IDataVaultSaveService {
       row.Add(participantHashKeyColumnNames[index], participantHashKeyFields[index].Value);
     }
 
+    for (var index = 0; index < dependentChildKeyFields.Length; index++) {
+      row.Add(dependentChildKeyColumnNames[index], dependentChildKeyFields[index].Value);
+    }
+
     return new UniqueRowSavePlan(
         new UniqueTableProjection(tableName, linkHashKeyColumnName),
         linkHashKey,
         row,
-        new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, tableName, linkHashKey),
+        new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, tableName, linkHashKey, [], dependentChildKeyFields),
         Ordinal: -1);
   }
 

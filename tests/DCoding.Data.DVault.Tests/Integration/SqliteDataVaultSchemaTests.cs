@@ -220,7 +220,7 @@ public sealed class SqliteDataVaultSchemaTests {
   }
 
   [Fact]
-  public void DefaultApplyDataVaultMetadataKeepsSqliteHashColumnsHexStringCompatible() {
+  public void DefaultApplyDataVaultMetadataUsesSqliteBinaryHashColumns() {
     using var database = SqliteTestDatabase.CreateTemporaryFile();
 
     var options = new DbContextOptionsBuilder<DefaultTranslatedDataVaultSchemaContext>()
@@ -234,10 +234,10 @@ public sealed class SqliteDataVaultSchemaTests {
         "HubCustomer",
         "CustomerHashKey",
         DataVaultLogicalPropertyKind.HashKey,
-        DataVaultHashKeyStorageProfile.HexString,
-        "TEXT",
-        DataVaultProviderValueFormat.LowercaseHexText,
-        "none-string-model",
+        DataVaultHashKeyStorageProfile.Binary,
+        "BLOB",
+        DataVaultProviderValueFormat.LowercaseHexBinary,
+        "lowercase-hex-string-to-bytes",
         expectedStableHashAlgorithmId: "sha256-v1",
         expectedStableHashDigestByteLength: 32);
     AssertHashProperty(
@@ -245,10 +245,10 @@ public sealed class SqliteDataVaultSchemaTests {
         "LinkCustomerOrder",
         "CustomerHashKey",
         DataVaultLogicalPropertyKind.ParticipantReference,
-        DataVaultHashKeyStorageProfile.HexString,
-        "TEXT",
-        DataVaultProviderValueFormat.LowercaseHexText,
-        "none-string-model",
+        DataVaultHashKeyStorageProfile.Binary,
+        "BLOB",
+        DataVaultProviderValueFormat.LowercaseHexBinary,
+        "lowercase-hex-string-to-bytes",
         expectedStableHashAlgorithmId: "sha256-v1",
         expectedStableHashDigestByteLength: 32);
     AssertHashProperty(
@@ -256,10 +256,10 @@ public sealed class SqliteDataVaultSchemaTests {
         "BridgeCustomerOrder",
         "OrderHashKey",
         DataVaultLogicalPropertyKind.ParticipantReference,
-        DataVaultHashKeyStorageProfile.HexString,
-        "TEXT",
-        DataVaultProviderValueFormat.LowercaseHexText,
-        "none-string-model",
+        DataVaultHashKeyStorageProfile.Binary,
+        "BLOB",
+        DataVaultProviderValueFormat.LowercaseHexBinary,
+        "lowercase-hex-string-to-bytes",
         expectedStableHashAlgorithmId: "sha256-v1",
         expectedStableHashDigestByteLength: 32);
   }

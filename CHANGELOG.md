@@ -2,6 +2,17 @@
 
 This changelog summarizes the public release-note trail. The detailed release records remain under [docs/releases/](docs/releases/); those files are the source of truth for scope, evidence, non-goals, and validation notes.
 
+## v0.100.0 - Binary Hash-Key Default And Provider Parity
+
+- Defines the breaking coordinated package baseline for the visible consumer package lines: `8.100.0` / `net8.0` / EF Core 8 and `10.100.0` / `net10.0` / EF Core 10.
+- Changes generated hash-key and participant-reference columns to binary physical storage by default while keeping public hash-key values as lowercase hexadecimal strings. Existing persisted `HexString` schemas must opt into the compatibility profile or stay on the previous package line until a reviewed migration, reset, or data-move plan is complete.
+- Adds zero-allocation-oriented stable hashing internals with stack/pooled byte buffers for UTF-8 digest input handling.
+- Adds dependent child key metadata/save/generator support, explicit same-hub role mapping support, and satellite effectivity metadata through `EffectiveFrom`, `EffectiveTo`, and `CurrentFlag` roles.
+- Closes binary-default provider parity for SQLite, PostgreSQL, SQL Server, MySQL, Oracle, and DB2 with live provider benchmarks under `artifacts/benchmarks/v0.100.0-provider-binary-closure-20260702/`.
+- Updates package creation, package verification, analyzer smoke validation, README guidance, package compatibility, manual publication, local validation, performance, and adoption documentation to the v0.100.0 baseline.
+
+See [DVault v0.100.0 Release Notes](docs/releases/v0.100.0.md).
+
 ## v0.51.0 - Analyzer Host, Provider Parity, and Native Crypto Capabilities
 
 - Defines the current coordinated package and documentation baseline for the visible consumer package lines: `8.51.0` / `net8.0` / EF Core 8 and `10.51.0` / `net10.0` / EF Core 10.

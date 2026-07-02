@@ -8,7 +8,7 @@ using Xunit;
 namespace DCoding.Data.DVault.Tests.Integration;
 
 internal static class ExternalProviderBulkSaveAssertions {
-  private const int PairCount = 20;
+  private const int PairCount = 40;
   private const int ExpectedRowsWritten = PairCount * 3 + 3;
   private const int ExpectedSavedRecordCount = PairCount * 3 + 4;
 

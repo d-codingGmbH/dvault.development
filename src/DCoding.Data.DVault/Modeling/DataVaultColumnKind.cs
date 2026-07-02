@@ -28,4 +28,9 @@ public enum DataVaultColumnKind {
   /// Satellite driving-key column.
   /// </summary>
   DrivingKey,
+
+  /// <summary>
+  /// Link dependent child key column.
+  /// </summary>
+  DependentChildKey,
 }

@@ -38,6 +38,25 @@ public sealed class DataVaultCodeFirstLinkBuilder {
   }
 
   /// <summary>
+  /// Adds one dependent child key name to the link identity in declaration order.
+  /// </summary>
+  /// <param name="name">The provider-neutral dependent child key name.</param>
+  /// <returns>The same link builder so additional participants, dependent child keys, or satellites can be configured fluently.</returns>
+  public DataVaultCodeFirstLinkBuilder DependentChildKey(string name) {
+    ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+    if (_declaration.DependentChildKeyNames.Contains(name, StringComparer.Ordinal)) {
+      throw new ArgumentException(
+          "Code-first Data Vault link declares dependent child key '" + name + "' more than once.",
+          nameof(name));
+    }
+
+    _declaration.DependentChildKeyNames.Add(name);
+
+    return this;
+  }
+
+  /// <summary>
   /// Adds a link-parent satellite declaration with an explicit satellite name.
   /// </summary>
   /// <typeparam name="TSatellite">The CLR type used by the satellite configuration selectors.</typeparam>

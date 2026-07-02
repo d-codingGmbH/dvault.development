@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 namespace DCoding.Data.DVault;
 
 internal static class DataVaultProviderSaveStrategyGateEvaluator {
-  private const int MinimumSqlServerOptimizedBatchOperationCount = 100;
-  private const int MinimumSqlServerMixedBatchOperationCount = 900;
+  private const int MinimumSqlServerOptimizedBatchOperationCount = 50;
+  private const int MinimumSqlServerMixedBatchOperationCount = 50;
   private const int MaximumSqlServerOptimizedSatelliteOperationCount = 500;
   private const int MinimumMySqlOptimizedBatchOperationCount = 50;
   private const int MaximumMySqlOptimizedMixedBatchOperationCount = 303;
@@ -239,9 +239,6 @@ internal static class DataVaultProviderSaveStrategyGateEvaluator {
               new DataVaultSaveStrategyGateRequirement(
                   DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
                   MinimumTotalOperationCount: MinimumSqlServerOptimizedBatchOperationCount),
-              new DataVaultSaveStrategyGateRequirement(
-                  DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
-                  MinimumTotalOperationCount: MinimumSqlServerMixedBatchOperationCount),
               new DataVaultSaveStrategyGateRequirement(
                   DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold,
                   MaximumSatelliteOperationCount: MaximumSqlServerOptimizedSatelliteOperationCount),

@@ -30,23 +30,23 @@ public sealed class LiveSchemaReaderContractFixtureTests {
     Assert.Equal(
         [
             "table:HubCustomer",
-            "columns:HubCustomer:0:CustomerHashKey:TEXT|1:LoadTimestamp:TEXT|2:RecordSource:TEXT|3:CustomerId:TEXT",
+            "columns:HubCustomer:0:CustomerHashKey:BLOB|1:LoadTimestamp:TEXT|2:RecordSource:TEXT|3:CustomerId:TEXT",
             "primary-key:HubCustomer:PkHubCustomerCustomerHashKey:CustomerHashKey",
             "index:HubCustomer:IxHubCustomerBusinessKeyCustomerId:True:CustomerId",
             "table:HubOrder",
-            "columns:HubOrder:0:OrderHashKey:TEXT|1:LoadTimestamp:TEXT|2:RecordSource:TEXT|3:OrderId:TEXT",
+            "columns:HubOrder:0:OrderHashKey:BLOB|1:LoadTimestamp:TEXT|2:RecordSource:TEXT|3:OrderId:TEXT",
             "primary-key:HubOrder:PkHubOrderOrderHashKey:OrderHashKey",
             "index:HubOrder:IxHubOrderBusinessKeyOrderId:True:OrderId",
             "table:LinkCustomerOrder",
-            "columns:LinkCustomerOrder:0:CustomerOrderHashKey:TEXT|1:LoadTimestamp:TEXT|2:RecordSource:TEXT|3:CustomerHashKey:TEXT|4:OrderHashKey:TEXT",
+            "columns:LinkCustomerOrder:0:CustomerOrderHashKey:BLOB|1:LoadTimestamp:TEXT|2:RecordSource:TEXT|3:CustomerHashKey:BLOB|4:OrderHashKey:BLOB",
             "primary-key:LinkCustomerOrder:PkLinkCustomerOrderCustomerOrderHashKey:CustomerOrderHashKey",
             "index:LinkCustomerOrder:IxLinkCustomerOrderRelationshipCustomerHashKeyOrderHashKey:False:CustomerHashKey|OrderHashKey",
             "table:SatCustomerContact",
-            "columns:SatCustomerContact:0:CustomerHashKey:TEXT|1:HashDiff:TEXT|2:LoadTimestamp:TEXT|3:RecordSource:TEXT|4:EmailAddress:TEXT",
+            "columns:SatCustomerContact:0:CustomerHashKey:BLOB|1:HashDiff:TEXT|2:LoadTimestamp:TEXT|3:RecordSource:TEXT|4:EmailAddress:TEXT",
             "primary-key:SatCustomerContact:PkSatCustomerContactCustomerHashKeyLoadTimestamp:CustomerHashKey|LoadTimestamp",
             "index:SatCustomerContact:IxSatCustomerContactSatelliteParentCustomerHashKeyLoadTimestamp:False:CustomerHashKey|LoadTimestamp|HashDiff",
             "table:SatCustomerOrderState",
-            "columns:SatCustomerOrderState:0:CustomerOrderHashKey:TEXT|1:HashDiff:TEXT|2:LoadTimestamp:TEXT|3:RecordSource:TEXT|4:StateCode:TEXT",
+            "columns:SatCustomerOrderState:0:CustomerOrderHashKey:BLOB|1:HashDiff:TEXT|2:LoadTimestamp:TEXT|3:RecordSource:TEXT|4:StateCode:TEXT",
             "primary-key:SatCustomerOrderState:PkSatCustomerOrderStateCustomerOrderHashKeyLoadTimestamp:CustomerOrderHashKey|LoadTimestamp",
             "index:SatCustomerOrderState:IxSatCustomerOrderStateSatelliteParentCustomerOrderHashKeyLoadTimestamp:False:CustomerOrderHashKey|LoadTimestamp|HashDiff",
         ],
@@ -75,12 +75,12 @@ public sealed class LiveSchemaReaderContractFixtureTests {
         "HubCustomer");
 
     Assert.Equal(["CustomerHashKey", "LoadTimestamp", "RecordSource", "CustomerId"], sqlite.Columns.Select(column => column.ColumnName));
-    Assert.Equal(["TEXT", "TEXT", "TEXT", "TEXT"], sqlite.Columns.Select(column => column.ProviderStorageType));
-    Assert.Equal(["varchar(64)", "timestamp with time zone", "varchar(255)", "varchar(255)"], postgres.Columns.Select(column => column.ProviderStorageType));
-    Assert.Equal(["nvarchar(64)", "datetimeoffset", "nvarchar(255)", "nvarchar(255)"], sqlServer.Columns.Select(column => column.ProviderStorageType));
-    Assert.Equal(["VARCHAR2(64 CHAR)", "VARCHAR2(33 CHAR)", "VARCHAR2(255 CHAR)", "VARCHAR2(255 CHAR)"], oracle.Columns.Select(column => column.ProviderStorageType));
-    Assert.Equal(["VARCHAR(64)", "VARCHAR(33)", "VARCHAR(255)", "VARCHAR(255)"], db2.Columns.Select(column => column.ProviderStorageType));
-    Assert.Equal(["varchar(64)", "varchar(33)", "varchar(255)", "varchar(255)"], mySql.Columns.Select(column => column.ProviderStorageType));
+    Assert.Equal(["BLOB", "TEXT", "TEXT", "TEXT"], sqlite.Columns.Select(column => column.ProviderStorageType));
+    Assert.Equal(["bytea", "timestamp with time zone", "varchar(255)", "varchar(255)"], postgres.Columns.Select(column => column.ProviderStorageType));
+    Assert.Equal(["varbinary(32)", "datetimeoffset", "nvarchar(255)", "nvarchar(255)"], sqlServer.Columns.Select(column => column.ProviderStorageType));
+    Assert.Equal(["RAW(32)", "VARCHAR2(33 CHAR)", "VARCHAR2(255 CHAR)", "VARCHAR2(255 CHAR)"], oracle.Columns.Select(column => column.ProviderStorageType));
+    Assert.Equal(["VARBINARY(32)", "VARCHAR(33)", "VARCHAR(255)", "VARCHAR(255)"], db2.Columns.Select(column => column.ProviderStorageType));
+    Assert.Equal(["varbinary(32)", "varchar(33)", "varchar(255)", "varchar(255)"], mySql.Columns.Select(column => column.ProviderStorageType));
   }
 
   [Theory]
