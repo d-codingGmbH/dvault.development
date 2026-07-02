@@ -8,12 +8,16 @@ DVault currently publishes the same coordinated package family on two visible co
 
 | Package version line | Target framework | EF Core line |
 | --- | --- | --- |
-| `8.51.0` | `net8.0` | EF Core 8 |
-| `10.51.0` | `net10.0` | EF Core 10 |
+| `8.100.0` | `net8.0` | EF Core 8 |
+| `10.100.0` | `net10.0` | EF Core 10 |
 
-Use exactly one line in a consumer project. Do not mix `8.51.0` and `10.51.0` packages in one project, install example, restored target, or publish approval.
+Use exactly one line in a consumer project. Do not mix `8.100.0` and `10.100.0` packages in one project, install example, restored target, or publish approval.
 
-The `v0.51.0` documentation release label is not a consumer-facing NuGet package version. Publish or document `8.51.0` and `10.51.0` package versions for this baseline, and do not publish or document a consumer-facing `0.51.0` package version. Future package version movement must update the pack script, package verifier, release notes, and installation guidance together.
+The `v0.100.0` documentation release label is not a consumer-facing NuGet package version. Publish or document `8.100.0` and `10.100.0` package versions for this baseline, and do not publish or document a consumer-facing `0.100.0` package version. Mark both NuGet package lines with release notes that call out the breaking default storage change from `HexString` to `Binary`. Existing persisted `HexString` schemas should either remain on the previous package line or opt into the compatibility profile before upgrading. Future package version movement must update the pack script, package verifier, release notes, and installation guidance together.
+
+Recommended NuGet wording for both package lines:
+
+> Breaking release. DVault v0.100.0 publishes package versions 8.100.0 for net8.0/EF Core 8 and 10.100.0 for net10.0/EF Core 10. Generated hash-key and participant-reference columns now default to binary physical storage. Public hash-key values remain lowercase hex strings. Existing persisted HexString schemas are not migrated automatically; keep the previous package line or configure the HexString compatibility profile until a reviewed migration/reset/data-move plan is complete.
 
 ## Package Family
 
@@ -65,13 +69,13 @@ The `MySql.EntityFrameworkCore` pins are target-specific: `8.0.26` for `net8.0` 
 
 `DCoding.Data.DVault.Analyzers` is a local build-time package reference, not a runtime dependency. Keep analyzer references local with `PrivateAssets="all"`.
 
-The analyzer package ships one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/` for both coordinated package lines. Supported analyzer consumption for both `8.51.0` and `10.51.0` uses either a `.NET 8 SDK` or `.NET 10 SDK` build host.
+The analyzer package ships one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/` for both coordinated package lines. Supported analyzer consumption for both `8.100.0` and `10.100.0` uses either a `.NET 8 SDK` or `.NET 10 SDK` build host.
 
 ## Related Guidance
 
-Release-note and changelog cross-references point to the current v0.51.0 release-note artifact for this package baseline.
+Release-note and changelog cross-references point to the current v0.100.0 release-note artifact for this package baseline.
 
-- [DVault v0.51.0 Release Notes](releases/v0.51.0.md)
+- [DVault v0.100.0 Release Notes](releases/v0.100.0.md)
 - [Manual NuGet Publication Checklist](manual-nuget-publication.md)
 - [Local Validation](local-validation.md)
 - [Analyzer Package Compatibility Audit](plans/analyzer-package-compatibility-audit.md)

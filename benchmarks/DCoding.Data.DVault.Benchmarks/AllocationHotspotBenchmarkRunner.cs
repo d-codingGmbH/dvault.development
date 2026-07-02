@@ -37,7 +37,7 @@ internal static class AllocationHotspotBenchmarkRunner {
 
     if (options.EffectiveHashKeyVariants.Count != 1 ||
         options.EffectiveHashKeyVariants[0] != BenchmarkHashKeyVariant.Default) {
-      throw new ArgumentException("--allocation-hotspots must run on the default sha256-v1 HexString hash-key baseline.");
+      throw new ArgumentException("--allocation-hotspots must run on the default sha256-v1 Binary hash-key baseline.");
     }
 
     Console.WriteLine("DVault allocation hotspot profile");
@@ -106,8 +106,8 @@ internal static class AllocationHotspotBenchmarkRunner {
             CanonicalizationWorkloadName,
             "dvault-allocation-hotspots/stable-hash-canonicalization",
             CanonicalizationInputCount.ToString(CultureInfo.InvariantCulture) + " structured customer profile field sets",
-            "sha256-v1 HexString canonical text only",
-            "scenario=stable-hash-canonicalization; provider=SQLite local temporary files; baseline=sha256-v1-hex; surface=DefaultStableHashNormalizer",
+            "sha256-v1 Binary canonical text only",
+            "scenario=stable-hash-canonicalization; provider=SQLite local temporary files; baseline=sha256-v1-binary; surface=DefaultStableHashNormalizer",
             (iteration, collectSamples, token) => ExecuteCanonicalizationWorkloadAsync(
                 canonicalizationFields,
                 iteration,
@@ -117,8 +117,8 @@ internal static class AllocationHotspotBenchmarkRunner {
             DigestWorkloadName,
             "dvault-allocation-hotspots/stable-hash-digest-generation",
             DigestInputCount.ToString(CultureInfo.InvariantCulture) + " pre-normalized customer profile payloads",
-            "sha256-v1 HexString digest generation only",
-            "scenario=stable-hash-digest-generation; provider=SQLite local temporary files; baseline=sha256-v1-hex; surface=BuiltInStableHashService",
+            "sha256-v1 Binary digest generation only",
+            "scenario=stable-hash-digest-generation; provider=SQLite local temporary files; baseline=sha256-v1-binary; surface=BuiltInStableHashService",
             (iteration, collectSamples, token) => ExecuteDigestWorkloadAsync(
                 digestInputs,
                 iteration,
@@ -129,7 +129,7 @@ internal static class AllocationHotspotBenchmarkRunner {
             "dvault-allocation-hotspots/customer-profile-hub-only",
             CustomerHubCount.ToString(CultureInfo.InvariantCulture) + " customer hub save operations",
             "hub-only customer-profile save shape",
-            "scenario=customer-profile-hub-only-save-prep; provider=SQLite local temporary files; baseline=provider-neutral-dvault-fallback; hashKeyVariant=sha256-v1-hex; storageProfile=HexString",
+            "scenario=customer-profile-hub-only-save-prep; provider=SQLite local temporary files; baseline=provider-neutral-dvault-fallback; hashKeyVariant=sha256-v1-binary; storageProfile=Binary",
             (iteration, collectSamples, token) => ExecuteCustomerHubOnlySaveWorkloadAsync(
                 options.LoadTimestampStorage,
                 iteration,
@@ -140,7 +140,7 @@ internal static class AllocationHotspotBenchmarkRunner {
             "dvault-allocation-hotspots/order-product-link-bearing",
             OrderProductPairCount.ToString(CultureInfo.InvariantCulture) + " order/product hub pairs and order-product links",
             "link-bearing order-product save shape",
-            "scenario=order-product-link-bearing-save-prep; provider=SQLite local temporary files; baseline=provider-neutral-dvault-fallback; hashKeyVariant=sha256-v1-hex; storageProfile=HexString",
+            "scenario=order-product-link-bearing-save-prep; provider=SQLite local temporary files; baseline=provider-neutral-dvault-fallback; hashKeyVariant=sha256-v1-binary; storageProfile=Binary",
             (iteration, collectSamples, token) => ExecuteOrderProductLinkSaveWorkloadAsync(
                 options.LoadTimestampStorage,
                 iteration,
@@ -151,7 +151,7 @@ internal static class AllocationHotspotBenchmarkRunner {
             "dvault-allocation-hotspots/satellite-unchanged-replay",
             ReplayCustomerCount.ToString(CultureInfo.InvariantCulture) + " customers, " + ReplaySeededHistoryStateCount.ToString(CultureInfo.InvariantCulture) + " existing profile states each",
             "unchanged satellite replay across " + (ReplayCustomerCount / ReplayChunkSize).ToString(CultureInfo.InvariantCulture) + " retained-state chunks",
-            "scenario=satellite-unchanged-replay-filter; provider=SQLite local temporary files; baseline=provider-neutral-dvault-fallback; hashKeyVariant=sha256-v1-hex; storageProfile=HexString; callerHashDiffGeneration=outside-profile",
+            "scenario=satellite-unchanged-replay-filter; provider=SQLite local temporary files; baseline=provider-neutral-dvault-fallback; hashKeyVariant=sha256-v1-binary; storageProfile=Binary; callerHashDiffGeneration=outside-profile",
             (iteration, collectSamples, token) => ExecuteSatelliteReplayWorkloadAsync(
                 options.LoadTimestampStorage,
                 changedReplay: false,
@@ -163,7 +163,7 @@ internal static class AllocationHotspotBenchmarkRunner {
             "dvault-allocation-hotspots/satellite-changed-replay",
             ReplayCustomerCount.ToString(CultureInfo.InvariantCulture) + " customers, " + ReplaySeededHistoryStateCount.ToString(CultureInfo.InvariantCulture) + " existing profile states each",
             "changed satellite replay across " + (ReplayCustomerCount / ReplayChunkSize).ToString(CultureInfo.InvariantCulture) + " retained-state chunks",
-            "scenario=satellite-changed-replay-filter; provider=SQLite local temporary files; baseline=provider-neutral-dvault-fallback; hashKeyVariant=sha256-v1-hex; storageProfile=HexString; callerHashDiffGeneration=outside-profile",
+            "scenario=satellite-changed-replay-filter; provider=SQLite local temporary files; baseline=provider-neutral-dvault-fallback; hashKeyVariant=sha256-v1-binary; storageProfile=Binary; callerHashDiffGeneration=outside-profile",
             (iteration, collectSamples, token) => ExecuteSatelliteReplayWorkloadAsync(
                 options.LoadTimestampStorage,
                 changedReplay: true,

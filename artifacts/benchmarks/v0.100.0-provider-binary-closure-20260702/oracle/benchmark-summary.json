@@ -1,0 +1,133 @@
+{
+  "context": {
+    "provider": "SQLite local temporary files",
+    "optionalPostgresProvider": "PostgreSQL external provider",
+    "postgresExecutionStatus": "skipped",
+    "postgresSkipReason": "not configured: DVAULT_TEST_POSTGRES_CONNECTION_STRING is not set or empty.",
+    "iterations": 1,
+    "warmupIterations": 0,
+    "loadTimestampStorage": "ProviderDefault",
+    "providerFilter": "oracle",
+    "osDescription": "Microsoft Windows 10.0.26200",
+    "osArchitecture": "X64",
+    "processArchitecture": "X64",
+    "processorCount": 32,
+    "dotNetRuntimeDescription": ".NET 10.0.9",
+    "dotNetRuntimeVersion": "10.0.9",
+    "hashKeyVariants": [
+      {
+        "label": "sha256-v1-binary",
+        "stableHashAlgorithmId": "sha256-v1",
+        "digestByteLength": 32,
+        "hexCharacterLength": 64,
+        "storageProfile": "Binary",
+        "hashKeyPayloadBytes": 32
+      }
+    ],
+    "optionalProviders": [
+      {
+        "providerName": "Oracle external provider",
+        "connectionStringEnvironmentVariable": "DVAULT_TEST_ORACLE_CONNECTION_STRING",
+        "executionStatus": "completed",
+        "skipReason": ""
+      }
+    ]
+  },
+  "results": [
+    {
+      "scenarioName": "provider-native-bulk-ingestion",
+      "provider": "Oracle external provider",
+      "baselineName": "dvault-adddvault-fallback",
+      "strategyFamily": "provider-neutral-dvault-fallback",
+      "datasetSize": "300 order-product pairs, 3 fulfillment satellite operations",
+      "changeRatio": "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
+      "executionStatus": "completed",
+      "skipReason": "",
+      "iterations": 1,
+      "meanMilliseconds": 642.1579,
+      "minMilliseconds": 642.1579,
+      "maxMilliseconds": 642.1579,
+      "meanAllocatedBytes": 29012088,
+      "minAllocatedBytes": 29012088,
+      "maxAllocatedBytes": 29012088,
+      "executionDetail": "scenario=provider-native-bulk-ingestion; provider=Oracle external provider; baseline=dvault-adddvault-fallback; strategyFamily=provider-neutral-dvault-fallback; executionPath=DVault provider-neutral fallback path; selectedStrategy=\u003Cnone\u003E; comparisonBoundary=staged-eligible-903-operations; hashKeyVariant=sha256-v1-binary; stableHashAlgorithm=sha256-v1; digestBytes=32; hashKeyStorage=Binary; hashKeyPayloadBytes=32; saveStrategyStatus=ProviderNeutralFallback; provider=Oracle.EntityFrameworkCore; selectedStrategy=\u003Cnone\u003E; candidateStrategies=none; candidates=0; fallbackCauses=NoProviderSpecificStrategyRegistered; requestCount=5; hubOperations=600; linkOperations=300; satelliteOperations=3; nativeBulkGate=clean-context,no-multi-active-satellites,provider-eligible-bulk-request",
+      "persistedOutcome": "300 order hubs, 300 product hubs, 300 order-product links, and 2 fulfillment satellite rows"
+    },
+    {
+      "scenarioName": "provider-native-bulk-ingestion",
+      "provider": "Oracle external provider",
+      "baselineName": "dvault-adddvaultoracle-optimized",
+      "strategyFamily": "oracle-optimized-dvault",
+      "datasetSize": "300 order-product pairs, 3 fulfillment satellite operations",
+      "changeRatio": "provider-eligible mixed hub/link/satellite bulk batch with one unchanged replay",
+      "executionStatus": "completed",
+      "skipReason": "",
+      "iterations": 1,
+      "meanMilliseconds": 162.3351,
+      "minMilliseconds": 162.3351,
+      "maxMilliseconds": 162.3351,
+      "meanAllocatedBytes": 3910320,
+      "minAllocatedBytes": 3910320,
+      "maxAllocatedBytes": 3910320,
+      "executionDetail": "scenario=provider-native-bulk-ingestion; provider=Oracle external provider; baseline=dvault-adddvaultoracle-optimized; strategyFamily=oracle-optimized-dvault; executionPath=DVault Oracle direct optimized save path; selectedStrategy=OracleDataVaultSaveStrategy; oracleBulkBoundary=direct-oracle-batching; stagedOracleBulk=not-selected-no-measured-win; cleanupBoundary=direct-provider-transaction; hashKeyVariant=sha256-v1-binary; stableHashAlgorithm=sha256-v1; digestBytes=32; hashKeyStorage=Binary; hashKeyPayloadBytes=32; saveStrategyStatus=ProviderStrategySelected; provider=Oracle.EntityFrameworkCore; selectedStrategy=OracleDataVaultSaveStrategy; candidateStrategies=OracleDataVaultSaveStrategy; candidates=1; fallbackCauses=none; requestCount=5; hubOperations=600; linkOperations=300; satelliteOperations=3; nativeBulkGate=clean-context,no-multi-active-satellites,provider-eligible-bulk-request",
+      "persistedOutcome": "300 order hubs, 300 product hubs, 300 order-product links, and 2 fulfillment satellite rows"
+    },
+    {
+      "scenarioName": "latest-satellite-read",
+      "provider": "Oracle external provider",
+      "baselineName": "dvault-adddvaultoracle-optimized",
+      "strategyFamily": "oracle-optimized-dvault",
+      "datasetSize": "100 customers, 10 profile states each",
+      "changeRatio": "90% repeat-change history latest read",
+      "executionStatus": "completed",
+      "skipReason": "",
+      "iterations": 1,
+      "meanMilliseconds": 34.0693,
+      "minMilliseconds": 34.0693,
+      "maxMilliseconds": 34.0693,
+      "meanAllocatedBytes": 715152,
+      "minAllocatedBytes": 715152,
+      "maxAllocatedBytes": 715152,
+      "executionDetail": "scenario=latest-satellite-read; provider=Oracle external provider; baseline=dvault-adddvaultoracle-optimized; strategyFamily=oracle-optimized-dvault; executionPath=DVault Oracle optimized latest satellite read path; selectedStrategy=OracleDataVaultReadStrategy; plannedReadStrategy=OracleDataVaultReadStrategy; readShape=LatestSatellite; hashKeyVariant=sha256-v1-binary; stableHashAlgorithm=sha256-v1; digestBytes=32; hashKeyStorage=Binary; hashKeyPayloadBytes=32; readStrategyStatus=ProviderStrategySelected; provider=Oracle.EntityFrameworkCore; selectedStrategy=OracleDataVaultReadStrategy; candidates=1; fallbackCauses=none; readShape=LatestSatellite; readShapeProviderStatus=ProviderStrategySelected; readShapeFallbackCauses=none",
+      "persistedOutcome": "100 latest profile satellite rows read from 1000 seeded profile states"
+    },
+    {
+      "scenarioName": "pit-as-of-read",
+      "provider": "Oracle external provider",
+      "baselineName": "dvault-adddvaultoracle-optimized",
+      "strategyFamily": "oracle-optimized-dvault",
+      "datasetSize": "100 customers, 100 PIT rows, 2 satellite segments",
+      "changeRatio": "as-of read after latest profile/status snapshots",
+      "executionStatus": "completed",
+      "skipReason": "",
+      "iterations": 1,
+      "meanMilliseconds": 64.0133,
+      "minMilliseconds": 64.0133,
+      "maxMilliseconds": 64.0133,
+      "meanAllocatedBytes": 1909216,
+      "minAllocatedBytes": 1909216,
+      "maxAllocatedBytes": 1909216,
+      "executionDetail": "scenario=pit-as-of-read; provider=Oracle external provider; baseline=dvault-adddvaultoracle-optimized; strategyFamily=oracle-optimized-dvault; executionPath=DVault Oracle optimized PIT read path; selectedStrategy=OracleDataVaultReadStrategy; plannedReadStrategy=OracleDataVaultReadStrategy; readShape=PitAsOf; hashKeyVariant=sha256-v1-binary; stableHashAlgorithm=sha256-v1; digestBytes=32; hashKeyStorage=Binary; hashKeyPayloadBytes=32; readStrategyStatus=ProviderStrategySelected; provider=Oracle.EntityFrameworkCore; selectedStrategy=OracleDataVaultReadStrategy; candidates=1; fallbackCauses=none; readShape=PitAsOf; readShapeProviderStatus=ProviderStrategySelected; readShapeFallbackCauses=none",
+      "persistedOutcome": "100 PIT as-of rows read across profile and status satellite snapshots"
+    },
+    {
+      "scenarioName": "bridge-traversal-read",
+      "provider": "Oracle external provider",
+      "baselineName": "dvault-adddvaultoracle-optimized",
+      "strategyFamily": "oracle-optimized-dvault",
+      "datasetSize": "1 hierarchy ancestor with 100 descendant bridge rows",
+      "changeRatio": "maximum depth 3 of 5",
+      "executionStatus": "completed",
+      "skipReason": "",
+      "iterations": 1,
+      "meanMilliseconds": 15.5555,
+      "minMilliseconds": 15.5555,
+      "maxMilliseconds": 15.5555,
+      "meanAllocatedBytes": 223280,
+      "minAllocatedBytes": 223280,
+      "maxAllocatedBytes": 223280,
+      "executionDetail": "scenario=bridge-traversal-read; provider=Oracle external provider; baseline=dvault-adddvaultoracle-optimized; strategyFamily=oracle-optimized-dvault; executionPath=DVault Oracle optimized bridge read path; selectedStrategy=OracleDataVaultReadStrategy; plannedReadStrategy=OracleDataVaultReadStrategy; readShape=Bridge; hashKeyVariant=sha256-v1-binary; stableHashAlgorithm=sha256-v1; digestBytes=32; hashKeyStorage=Binary; hashKeyPayloadBytes=32; readStrategyStatus=ProviderStrategySelected; provider=Oracle.EntityFrameworkCore; selectedStrategy=OracleDataVaultReadStrategy; candidates=1; fallbackCauses=none; readShape=Bridge; readShapeProviderStatus=ProviderStrategySelected; readShapeFallbackCauses=none",
+      "persistedOutcome": "60 bridge traversal rows read from 100 seeded hierarchy rows"
+    }
+  ]
+}

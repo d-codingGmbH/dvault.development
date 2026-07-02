@@ -215,6 +215,9 @@ internal static class DataVaultEfMetadataTranslator {
         .Select(participantName => NamingPolicy.GetTechnicalColumnName(
             new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, participantName, tableName)))
         .ToArray();
+    var dependentChildKeyColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        link.DependentChildKeys.Select(column => column.ColumnName),
+        [linkHashKeyColumnName, loadTimestampColumnName, recordSourceColumnName, .. participantHashKeyColumnNames]);
 
     var properties = new List<PropertyProjection>
     {
@@ -239,15 +242,27 @@ internal static class DataVaultEfMetadataTranslator {
       });
     }
 
+    for (var index = 0; index < dependentChildKeyColumnNames.Count; index++) {
+      properties.Add(new PropertyProjection(
+          dependentChildKeyColumnNames[index],
+          DataVaultPropertyRole.DependentChildKey,
+          TechnicalRole: null,
+          link.DependentChildKeys[index].ColumnName));
+    }
+
+    var relationshipIndexColumnNames = participantHashKeyColumnNames
+        .Concat(dependentChildKeyColumnNames)
+        .ToArray();
+
     var indexes = new[]
     {
         new IndexProjection(
             NamingPolicy.GetIndexName(new DataVaultIndexNameContext(
                 DataVaultIndexKind.Relationship,
                 tableName,
-                participantHashKeyColumnNames,
+                relationshipIndexColumnNames,
                 IsUnique: false)),
-            participantHashKeyColumnNames,
+            relationshipIndexColumnNames,
             IsUnique: false),
     };
     var primaryKey = new KeyProjection(
@@ -314,7 +329,9 @@ internal static class DataVaultEfMetadataTranslator {
           payloadColumnNames[index],
           DataVaultPropertyRole.Payload,
           TechnicalRole: null,
-          satellite.PayloadColumns[index].ColumnName));
+          satellite.PayloadColumns[index].ColumnName) {
+        EffectivityRole = satellite.Effectivity?.GetRole(satellite.PayloadColumns[index].ColumnName),
+      });
     }
 
     var satelliteParentIndexColumnNames = new[]
@@ -959,6 +976,10 @@ internal static class DataVaultEfMetadataTranslator {
     if (property.TechnicalRole is not null) {
       propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.TechnicalColumnRole, property.TechnicalRole);
     }
+
+    if (property.EffectivityRole is not null) {
+      propertyBuilder.Metadata.SetAnnotation(DataVaultAnnotationNames.EffectivityRole, property.EffectivityRole.Value);
+    }
   }
 
   private static PropertyBuilder CreateIndexerProperty(
@@ -1010,6 +1031,7 @@ internal static class DataVaultEfMetadataTranslator {
     return property.Role switch {
       DataVaultPropertyRole.BusinessKey => DataVaultLogicalPropertyKind.BusinessKey,
       DataVaultPropertyRole.ParticipantReference => DataVaultLogicalPropertyKind.ParticipantReference,
+      DataVaultPropertyRole.DependentChildKey => DataVaultLogicalPropertyKind.DependentChildKey,
       DataVaultPropertyRole.DrivingKey => DataVaultLogicalPropertyKind.DrivingKey,
       DataVaultPropertyRole.Payload => DataVaultLogicalPropertyKind.PayloadText,
       DataVaultPropertyRole.SnapshotReference => DataVaultLogicalPropertyKind.SatelliteSnapshotReference,
@@ -1048,6 +1070,8 @@ internal static class DataVaultEfMetadataTranslator {
       TechnicalMetadataColumnRole? TechnicalRole,
       string MetadataName) {
     public string? LinkParticipantHubName { get; init; }
+
+    public DataVaultEffectivityRole? EffectivityRole { get; init; }
   }
 
   private sealed record KeyProjection(string Name, IReadOnlyList<string> PropertyNames);

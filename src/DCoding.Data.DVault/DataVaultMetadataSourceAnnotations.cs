@@ -116,6 +116,9 @@ internal static class DataVaultMetadataSourceAnnotations {
         AppendReference(builder, participant.HubReference);
         AppendValue(builder, participant.SourceEndpointName);
       }
+
+      AppendValue(builder, "dependent-child-keys");
+      AppendValues(builder, link.DependentChildKeyNames);
     }
 
     AppendValue(builder, "satellites");
@@ -128,6 +131,13 @@ internal static class DataVaultMetadataSourceAnnotations {
       foreach (var personalData in satellite.PersonalDataFields) {
         AppendValue(builder, personalData.FieldName);
         AppendValue(builder, personalData.EncryptedPayloadAlias);
+      }
+
+      AppendValue(builder, "effectivity");
+      if (satellite.Effectivity is not null) {
+        AppendValue(builder, satellite.Effectivity.EffectiveFromFieldName);
+        AppendValue(builder, satellite.Effectivity.EffectiveToFieldName ?? string.Empty);
+        AppendValue(builder, satellite.Effectivity.CurrentFlagFieldName ?? string.Empty);
       }
     }
 
@@ -178,6 +188,10 @@ internal static class DataVaultMetadataSourceAnnotations {
       AppendValue(builder, typeMapping.ModelClrType.AssemblyQualifiedName ?? typeMapping.ModelClrType.FullName ?? typeMapping.ModelClrType.Name);
       AppendValue(builder, typeMapping.NativeStoreType);
       AppendValue(builder, typeMapping.ValueFormat.ToString());
+      AppendValue(builder, typeMapping.HashKeyStorageProfile?.ToString() ?? string.Empty);
+      AppendValue(builder, typeMapping.StableHashAlgorithmId ?? string.Empty);
+      AppendValue(builder, typeMapping.DigestByteLength?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty);
+      AppendValue(builder, typeMapping.ConversionBehavior ?? string.Empty);
     }
   }
 

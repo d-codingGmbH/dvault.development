@@ -2,6 +2,7 @@ using System.Globalization;
 using DCoding.Data.DVault.Modeling;
 using DCoding.Data.DVault.Tests.Shared;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -18,7 +19,7 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
   public async Task ManyToManyBridgeReadUsesEndpointFilterAndDeterministicOrderingThroughSqlite() {
     var bridge = ManyToManyMetadataModel.Bridges.Single();
     using var database = SqliteTestDatabase.CreateTemporaryFile();
-    var options = new DbContextOptionsBuilder<ManyToManyBridgeReadContext>()
+    var options = CreateOptionsBuilder<ManyToManyBridgeReadContext>()
         .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
         .Options;
     using var provider = CreateProvider();
@@ -106,7 +107,7 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
     var bridge = ManyToManyMetadataModel.Bridges.Single();
     var loadTimestamp = new DateTimeOffset(2026, 6, 1, 8, 0, 0, TimeSpan.Zero);
     using var database = SqliteTestDatabase.CreateTemporaryFile();
-    var options = new DbContextOptionsBuilder<ManyToManyBridgeReadContext>()
+    var options = CreateOptionsBuilder<ManyToManyBridgeReadContext>()
         .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
         .ReplaceService<IModelCacheKeyFactory, BridgeReadModelCacheKeyFactory>()
         .Options;
@@ -184,7 +185,7 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
     var customerHashKey = CreateCanonicalHexDigest(StableHashDigestByteLength, seed: 16);
     var orderHashKey = CreateCanonicalHexDigest(StableHashDigestByteLength, seed: 48);
     using var database = SqliteTestDatabase.CreateTemporaryFile();
-    var options = new DbContextOptionsBuilder<ManyToManyBridgeReadContext>()
+    var options = CreateOptionsBuilder<ManyToManyBridgeReadContext>()
         .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
         .ReplaceService<IModelCacheKeyFactory, BridgeReadModelCacheKeyFactory>()
         .Options;
@@ -223,7 +224,9 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
     var bridge = ManyToManyMetadataModel.Bridges.Single();
     using var database = SqliteTestDatabase.CreateTemporaryFile();
     var services = new ServiceCollection();
-    services.AddDVault(options => options.UseMetadataModel(ManyToManyMetadataModel));
+    services.AddDVault(options => options
+        .UseHexStringStorageProfile()
+        .UseMetadataModel(ManyToManyMetadataModel));
     services.AddDVaultSqlite();
     services.AddDbContext<RegistryBridgeReadContext>(
         options => options
@@ -262,7 +265,7 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
   public async Task BridgeReadReturnsEmptyRowsForEmptyBridgeTablesThroughSqlite() {
     var bridge = ManyToManyMetadataModel.Bridges.Single();
     using var database = SqliteTestDatabase.CreateTemporaryFile();
-    var options = new DbContextOptionsBuilder<ManyToManyBridgeReadContext>()
+    var options = CreateOptionsBuilder<ManyToManyBridgeReadContext>()
         .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
         .Options;
     using var provider = CreateProvider();
@@ -285,7 +288,7 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
   public async Task HierarchyBridgeReadHonorsBoundedDepthAndDirectionThroughSqlite() {
     var bridge = HierarchyMetadataModel.Bridges.Single();
     using var database = SqliteTestDatabase.CreateTemporaryFile();
-    var options = new DbContextOptionsBuilder<HierarchyBridgeReadContext>()
+    var options = CreateOptionsBuilder<HierarchyBridgeReadContext>()
         .UseSqlite("Data Source=" + Assert.IsType<string>(database.DatabasePath) + ";Pooling=False")
         .Options;
     using var provider = CreateProvider();
@@ -338,7 +341,9 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
     var metadataModel = new DataVaultMetadataModel([customer], [], []);
     using var database = SqliteTestDatabase.CreateTemporaryFile();
     var services = new ServiceCollection();
-    services.AddDVault(options => options.UseMetadataModel(metadataModel));
+    services.AddDVault(options => options
+        .UseHexStringStorageProfile()
+        .UseMetadataModel(metadataModel));
     services.AddDVaultSqlite();
     services.AddDbContext<RegistryBridgeReadContext>(
         options => options
@@ -381,6 +386,12 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
 
   private static DataVaultMetadataModel HierarchyMetadataModel { get; } = CreateHierarchyMetadataModel();
 
+  private static DataVaultProviderCapabilityProfile HexStringSqliteProfile =>
+      DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+          DataVaultHashKeyStorageProfile.HexString,
+          "sha256-v1",
+          32);
+
   private static Task SeedManyToManyBridgeRowAsync(
       DbContext context,
       string customerHashKey,
@@ -412,12 +423,10 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
   }
 
   private static DataVaultProviderCapabilityProfile CreateSqliteProfile(DataVaultHashKeyStorageProfile storageProfile) {
-    return storageProfile == DataVaultHashKeyStorageProfile.HexString
-        ? DataVaultProviderCapabilityProfiles.Sqlite
-        : DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
-            storageProfile,
-            StableHashAlgorithmId,
-            StableHashDigestByteLength);
+    return DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+        storageProfile,
+        StableHashAlgorithmId,
+        StableHashDigestByteLength);
   }
 
   private static void AssertSqliteHashStorage(
@@ -531,6 +540,13 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
         });
   }
 
+  private static DbContextOptionsBuilder<TContext> CreateOptionsBuilder<TContext>()
+      where TContext : DbContext {
+    var optionsBuilder = new DbContextOptionsBuilder<TContext>();
+    optionsBuilder.ConfigureWarnings(warnings => warnings.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning));
+    return optionsBuilder;
+  }
+
   private sealed class ManyToManyBridgeReadContext(
       DbContextOptions<ManyToManyBridgeReadContext> options,
       DataVaultHashKeyStorageProfile storageProfile = DataVaultHashKeyStorageProfile.HexString) : DbContext(options) {
@@ -543,7 +559,7 @@ public sealed class DataVaultBridgeReadServiceSqliteTests {
 
   private sealed class HierarchyBridgeReadContext(DbContextOptions<HierarchyBridgeReadContext> options) : DbContext(options) {
     protected override void OnModelCreating(ModelBuilder modelBuilder) {
-      modelBuilder.ApplyDataVaultMetadata(HierarchyMetadataModel);
+      modelBuilder.ApplyDataVaultMetadata(HierarchyMetadataModel, HexStringSqliteProfile);
     }
   }
 

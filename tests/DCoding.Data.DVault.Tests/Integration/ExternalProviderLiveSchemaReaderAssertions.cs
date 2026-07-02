@@ -11,7 +11,9 @@ internal static class ExternalProviderLiveSchemaReaderAssertions {
 
     var readResult = await DataVaultLiveSchemaReader.ReadAsync(context).ConfigureAwait(false);
 
-    Assert.Equal(DataVaultLiveSchemaReadStatus.Succeeded, readResult.Status);
+    Assert.True(
+        readResult.Status == DataVaultLiveSchemaReadStatus.Succeeded,
+        readResult.Message);
     Assert.NotNull(readResult.Snapshot);
     Assert.Equal(
         LiveSchemaReaderContractFixture.CreateSnapshotSignatures(fixture.ExpectedSnapshot),

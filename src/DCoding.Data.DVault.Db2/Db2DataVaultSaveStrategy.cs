@@ -157,8 +157,9 @@ internal sealed class Db2DataVaultSaveStrategy : IDataVaultProviderSaveStrategy 
             GetRequiredValue(operation.BusinessKeyValues, column.ColumnName, nameof(operation.BusinessKeyValues))))
         .ToArray();
     var hashKey = ComputeHash(context, businessKeyFields);
+    var hashKeyProperty = FindProperty(context.DbContext, projection.TableName, projection.HashKeyColumnName);
     var row = new Dictionary<string, object> {
-      [projection.HashKeyColumnName] = hashKey,
+      [projection.HashKeyColumnName] = ToProviderHashKeyValue(hashKeyProperty, hashKey),
       [projection.LoadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
           context.DbContext,
           projection.TableName,
@@ -193,9 +194,15 @@ internal sealed class Db2DataVaultSaveStrategy : IDataVaultProviderSaveStrategy 
             participantName,
             GetRequiredValue(operation.ParticipantHashKeyValues, participantName, nameof(operation.ParticipantHashKeyValues))))
         .ToArray();
-    var linkHashKey = ComputeHash(context, participantHashKeyFields);
+    var dependentChildKeyFields = link.DependentChildKeys
+        .Select(column => new KeyValuePair<string, string>(
+            column.ColumnName,
+            GetRequiredValue(operation.DependentChildKeyValues, column.ColumnName, nameof(operation.DependentChildKeyValues))))
+        .ToArray();
+    var linkHashKey = ComputeHash(context, participantHashKeyFields.Concat(dependentChildKeyFields));
+    var linkHashKeyProperty = FindProperty(context.DbContext, projection.TableName, projection.LinkHashKeyColumnName);
     var row = new Dictionary<string, object> {
-      [projection.LinkHashKeyColumnName] = linkHashKey,
+      [projection.LinkHashKeyColumnName] = ToProviderHashKeyValue(linkHashKeyProperty, linkHashKey),
       [projection.LoadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
           context.DbContext,
           projection.TableName,
@@ -205,14 +212,23 @@ internal sealed class Db2DataVaultSaveStrategy : IDataVaultProviderSaveStrategy 
     };
 
     for (var index = 0; index < participantHashKeyFields.Length; index++) {
-      row.Add(projection.ParticipantHashKeyColumnNames[index], participantHashKeyFields[index].Value);
+      var participantHashKeyColumnName = projection.ParticipantHashKeyColumnNames[index];
+      row.Add(
+          participantHashKeyColumnName,
+          ToProviderHashKeyValue(
+              FindProperty(context.DbContext, projection.TableName, participantHashKeyColumnName),
+              participantHashKeyFields[index].Value));
+    }
+
+    for (var index = 0; index < dependentChildKeyFields.Length; index++) {
+      row.Add(projection.DependentChildKeyColumnNames[index], dependentChildKeyFields[index].Value);
     }
 
     return new UniqueRowSavePlan(
         new UniqueTableProjection(projection.TableName, projection.LinkHashKeyColumnName),
         linkHashKey,
         row,
-        new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, projection.TableName, linkHashKey),
+        new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, projection.TableName, linkHashKey, [], dependentChildKeyFields),
         Ordinal: -1);
   }
 
@@ -241,8 +257,9 @@ internal sealed class Db2DataVaultSaveStrategy : IDataVaultProviderSaveStrategy 
             column.ColumnName,
             GetRequiredValue(operation.PayloadValues, column.ColumnName, nameof(operation.PayloadValues))))
         .ToArray();
+    var parentHashKeyProperty = FindProperty(dbContext, projection.TableName, projection.ParentHashKeyColumnName);
     var row = new Dictionary<string, object> {
-      [projection.ParentHashKeyColumnName] = operation.ParentHashKey,
+      [projection.ParentHashKeyColumnName] = ToProviderHashKeyValue(parentHashKeyProperty, operation.ParentHashKey),
       [projection.HashDiffColumnName] = operation.HashDiff,
       [projection.LoadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
           dbContext,
@@ -345,13 +362,17 @@ internal sealed class Db2DataVaultSaveStrategy : IDataVaultProviderSaveStrategy 
         .Select(participantName => NamingPolicy.GetTechnicalColumnName(
             new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, participantName, tableName)))
         .ToArray();
+    var dependentChildKeyColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        link.DependentChildKeys.Select(column => column.ColumnName),
+        [linkHashKeyColumnName, loadTimestampColumnName, recordSourceColumnName, .. participantHashKeyColumnNames]);
 
     return new LinkProjection(
         tableName,
         linkHashKeyColumnName,
         loadTimestampColumnName,
         recordSourceColumnName,
-        participantHashKeyColumnNames);
+        participantHashKeyColumnNames,
+        dependentChildKeyColumnNames);
   }
 
   private static SatelliteProjection CreateSatelliteProjection(DataVaultSatelliteMetadata satellite) {
@@ -425,12 +446,13 @@ internal sealed class Db2DataVaultSaveStrategy : IDataVaultProviderSaveStrategy 
       await using var command = connection.CreateCommand();
       command.Transaction = transaction;
 
-      var parameterNames = AddCommandParameters(command, parentHashKeyBatch);
+      var parentHashKeyProperty = FindProperty(dbContext, table.TableName, table.ParentHashKeyColumnName);
+      var parameterNames = AddHashKeyCommandParameters(command, parentHashKeyProperty, parentHashKeyBatch);
       command.CommandText = CreateLatestSatelliteHashDiffsCommandText(dbContext, table, parameterNames);
 
       await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
       while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
-        var parentHashKey = GetRequiredString(reader, ordinal: 0);
+        var parentHashKey = ReadHashKeyProviderValue(parentHashKeyProperty, reader.GetValue(0));
         latestRows[parentHashKey] = new LatestSatelliteHashDiff(
             parentHashKey,
             GetRequiredString(reader, ordinal: 1),
@@ -771,14 +793,15 @@ internal sealed class Db2DataVaultSaveStrategy : IDataVaultProviderSaveStrategy 
     return builder.ToString();
   }
 
-  private static IReadOnlyList<string> AddCommandParameters(
+  private static IReadOnlyList<string> AddHashKeyCommandParameters(
       DbCommand command,
+      IProperty? property,
       IEnumerable<string> values) {
     var parameterNames = new List<string>();
 
     foreach (var value in values) {
       var parameterName = CreateDb2ParameterName(command.Parameters.Count);
-      AddParameter(command, value);
+      AddParameter(command, ToProviderHashKeyValue(property, value));
       parameterNames.Add(parameterName);
     }
 
@@ -794,6 +817,7 @@ internal sealed class Db2DataVaultSaveStrategy : IDataVaultProviderSaveStrategy 
       long => DbType.Int64,
       DateTime => DbType.DateTime,
       DateTimeOffset => DbType.DateTimeOffset,
+      byte[] => DbType.Binary,
       _ => DbType.String,
     };
     command.Parameters.Add(parameter);
@@ -897,6 +921,27 @@ internal sealed class Db2DataVaultSaveStrategy : IDataVaultProviderSaveStrategy 
     return null;
   }
 
+  private static IProperty? FindProperty(
+      DbContext dbContext,
+      string producedTableName,
+      string columnName) {
+    var entityType = FindEntityType(dbContext, producedTableName);
+    return entityType?.GetProperties().FirstOrDefault(property =>
+        string.Equals(property.GetColumnName(), columnName, StringComparison.Ordinal) ||
+        string.Equals(property.Name, columnName, StringComparison.Ordinal));
+  }
+
+  private static object ToProviderHashKeyValue(IProperty? property, string hashKey) {
+    return DataVaultHashKeyProviderValueConverter.ToProviderParameterValue(property, hashKey);
+  }
+
+  private static string ReadHashKeyProviderValue(IProperty? property, object value) {
+    var converted = DataVaultHashKeyProviderValueConverter.ReadProviderValue(property, value);
+    return converted as string ??
+        Convert.ToString(converted, CultureInfo.InvariantCulture) ??
+        throw new InvalidOperationException("DB2 Data Vault latest satellite lookup returned a null hash key.");
+  }
+
   private static string QuoteDb2TableIdentifier(Db2TableIdentifier identifier) {
     return string.IsNullOrWhiteSpace(identifier.SchemaName)
         ? QuoteDb2Identifier(identifier.TableName)
@@ -984,7 +1029,8 @@ internal sealed class Db2DataVaultSaveStrategy : IDataVaultProviderSaveStrategy 
       string LinkHashKeyColumnName,
       string LoadTimestampColumnName,
       string RecordSourceColumnName,
-      IReadOnlyList<string> ParticipantHashKeyColumnNames);
+      IReadOnlyList<string> ParticipantHashKeyColumnNames,
+      IReadOnlyList<string> DependentChildKeyColumnNames);
 
   private sealed record SatelliteProjection(
       string TableName,

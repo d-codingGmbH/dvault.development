@@ -35,6 +35,10 @@ internal static class DataVaultHashKeyProviderValueConverter {
       object value) {
     var property = FindProperty(dbContext, tableName, columnName);
 
+    return ReadProviderValue(property, value);
+  }
+
+  public static object ReadProviderValue(IProperty? property, object value) {
     if (!UsesBinaryHashKeyStorage(property)) {
       return value;
     }
@@ -70,7 +74,12 @@ internal static class DataVaultHashKeyProviderValueConverter {
       }
     }
 
-    return Convert.FromHexString(value);
+    var bytes = new byte[digestByteLength];
+    for (var index = 0; index < bytes.Length; index++) {
+      bytes[index] = (byte)((ReadLowerHexNibble(value[index * 2]) << 4) | ReadLowerHexNibble(value[(index * 2) + 1]));
+    }
+
+    return bytes;
   }
 
   public static string ConvertBytesToCanonicalHex(byte[] value, int digestByteLength) {
@@ -83,7 +92,31 @@ internal static class DataVaultHashKeyProviderValueConverter {
           " provider bytes for the active stable hash digest.");
     }
 
-    return Convert.ToHexString(value).ToLowerInvariant();
+    return string.Create(
+        digestByteLength * 2,
+        value,
+        static (chars, bytes) => {
+          const string LowerHexDigits = "0123456789abcdef";
+
+          for (var index = 0; index < bytes.Length; index++) {
+            var current = bytes[index];
+            chars[index * 2] = LowerHexDigits[current >> 4];
+            chars[(index * 2) + 1] = LowerHexDigits[current & 0x0f];
+          }
+        });
+  }
+
+  private static int ReadLowerHexNibble(char character) {
+    if (character is >= '0' and <= '9') {
+      return character - '0';
+    }
+
+    if (character is >= 'a' and <= 'f') {
+      return character - 'a' + 10;
+    }
+
+    throw new FormatException(
+        "Data Vault binary hash-key conversion requires canonical lowercase hexadecimal values without prefixes.");
   }
 
   private static bool UsesBinaryHashKeyStorage(IProperty? property) {

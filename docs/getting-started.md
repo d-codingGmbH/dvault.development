@@ -14,20 +14,20 @@ Pick one authoritative path per model boundary. The other paths are alternatives
 
 ## Register Services
 
-Use the provider-neutral registration plus the provider extension package that matches the EF Core database provider configured for the `DbContext`. New projects should select the binary-first profile explicitly while keeping DVault persistence caller-driven.
+Use the provider-neutral registration plus the provider extension package that matches the EF Core database provider configured for the `DbContext`. New v0.100.0 projects use binary physical hash-key storage by default while keeping DVault persistence caller-driven.
 
 ```csharp
-services.AddDVault(options => options.UseBinaryFirstProfile());
+services.AddDVault();
 services.AddDVaultSqlite();
 
 services.AddDbContext<SalesVaultContext>(options =>
     options.UseSqlite(connectionString));
 ```
 
-For PostgreSQL, install `DCoding.Data.DVault.Postgres` and the ordinary EF Core provider package `Npgsql.EntityFrameworkCore.PostgreSQL`, then keep the same binary-first DVault registration while switching the provider extension and DbContext configuration:
+For PostgreSQL, install `DCoding.Data.DVault.Postgres` and the ordinary EF Core provider package `Npgsql.EntityFrameworkCore.PostgreSQL`, then keep the same binary-default DVault registration while switching the provider extension and DbContext configuration:
 
 ```csharp
-services.AddDVault(options => options.UseBinaryFirstProfile());
+services.AddDVault();
 services.AddDVaultPostgres();
 
 services.AddDbContext<SalesVaultContext>(options =>
@@ -36,7 +36,7 @@ services.AddDbContext<SalesVaultContext>(options =>
 
 The checked-in PostgreSQL quickstart and live PostgreSQL provider tests are optional local flows gated by `DVAULT_TEST_POSTGRES_CONNECTION_STRING`. Use the existing [PostgreSQL quickstart fixture](../examples/DCoding.Data.DVault.PostgresQuickstart/README.md) and [local validation](local-validation.md#postgresql) notes when you want to run them. DVault does not create PostgreSQL containers, databases, users, credentials, or deployment infrastructure.
 
-The binary-first profile changes the recommended physical hash-key storage for new generated schemas; it does not migrate existing databases or configurations automatically. Existing `HexString`-compatible setups remain valid until the application owner intentionally plans and executes a separate reviewed migration, reset, or data-move change. Logical and public hash-key values stay lowercase hexadecimal strings even when binary physical storage is selected for new projects.
+The v0.100.0 default changes generated hash-key and participant-reference columns to binary physical storage; it does not migrate existing databases or configurations automatically. Existing `HexString`-compatible setups remain valid when the application opts into `UseHexStringStorageProfile()` or `UseDataVaultHexStringStorageProfile(...)` until the owner intentionally plans and executes a separate reviewed migration, reset, or data-move change. Logical and public hash-key values stay lowercase hexadecimal strings even when binary physical storage is selected for new projects.
 
 Provider packages can register provider capability profiles, behavior, diagnostics, read strategies, or save strategies behind the shared `IDataVaultSaveService` and `IDataVaultReadService` boundaries. They do not replace the application's normal EF Core provider configuration.
 
@@ -45,7 +45,7 @@ Provider packages can register provider capability profiles, behavior, diagnosti
 Code-First declarations are additive over EF Core model building. Business keys, participants, driving keys, and payloads use direct scalar member selectors. Composite keys use repeated calls in canonical order.
 
 ```csharp
-modelBuilder.ApplyDataVaultMetadataWithBinaryFirstProfile(vault => {
+modelBuilder.ApplyDataVaultMetadata(vault => {
   vault.Hub<Customer>(hub => {
     hub.BusinessKey(customer => customer.CustomerId);
     hub.Satellite("Profile", satellite => {
@@ -56,7 +56,34 @@ modelBuilder.ApplyDataVaultMetadataWithBinaryFirstProfile(vault => {
 });
 ```
 
-`UseDataVaultBinaryFirstProfile()` followed by `ApplyDataVaultMetadata(...)` remains supported for existing callers that already use the separate prelude. Plain `ApplyDataVaultMetadata(...)` without an explicit binary-first opt-in keeps the compatible `HexString` default.
+`UseDataVaultBinaryFirstProfile()` and `ApplyDataVaultMetadataWithBinaryFirstProfile(...)` remain supported as explicit aliases for the v0.100.0 binary default. Existing persisted `HexString` schemas should use `UseHexStringStorageProfile()` for service registration or `UseDataVaultHexStringStorageProfile(...)` for EF model projection until a reviewed migration plan is executed.
+
+Links can include dependent child keys, and repeated same-hub participants can be modeled through explicit roles:
+
+```csharp
+modelBuilder.ApplyDataVaultMetadata(vault => {
+  vault.Link("CustomerRelationship", link => {
+    link.Participant<Customer>("ParentCustomer");
+    link.Participant<Customer>("ChildCustomer");
+    link.DependentChildKey("RelationshipSequence");
+  });
+});
+```
+
+Satellites can mark effectivity payload fields without changing the explicit save/read contract:
+
+```csharp
+modelBuilder.ApplyDataVaultMetadata(vault => {
+  vault.Hub<Customer>(hub => {
+    hub.BusinessKey(customer => customer.CustomerId);
+    hub.Satellite("Status", satellite => {
+      satellite.EffectiveFrom(customer => customer.StatusEffectiveFrom);
+      satellite.EffectiveTo(customer => customer.StatusEffectiveTo);
+      satellite.CurrentFlag(customer => customer.StatusIsCurrent);
+    });
+  });
+});
+```
 
 For shared metadata, build or import a `DataVaultMetadataModel` and register it with EF options through the documented metadata APIs. For reviewed JSON artifacts, use the model-first workflow in [Model-First Governance](model-first-governance.md).
 
@@ -254,9 +281,9 @@ Review redaction-safe privacy diagnostics or support-bundle JSON before adopting
 
 The default stable hash algorithm id is `sha256-v1`. Built-in non-default ids such as `sha1-v1`, `sha256-128-v1`, and `sha256-160-v1` are explicit opt-in choices for non-adversarial Data Vault identity hashing only.
 
-Hash-key values stay logical lowercase hexadecimal strings in public APIs. `HexString` is the default compatible physical storage profile. `Binary` is an opt-in physical storage profile for generated hash-key columns when the application has planned migration, index, and provider evidence.
+Hash-key values stay logical lowercase hexadecimal strings in public APIs. `Binary` is the v0.100.0 default physical storage profile for generated hash-key and participant-reference columns. `HexString` remains available as a compatibility profile for existing persisted schemas.
 
-For existing persisted databases, use the [Hash-Key Storage Migration Guide](hash-key-storage-migration.md) and review the generated `dvault.hash-key-storage-migration.v1` dry-run manifest before changing hash-key storage profile. Binary-first setup for new schemas is not an automatic migration path for existing `HexString` storage.
+For existing persisted databases, use the [Hash-Key Storage Migration Guide](hash-key-storage-migration.md) and review the generated `dvault.hash-key-storage-migration.v1` dry-run manifest before changing hash-key storage profile. The v0.100.0 binary default is not an automatic migration path for existing `HexString` storage.
 
 ## Next Documents
 

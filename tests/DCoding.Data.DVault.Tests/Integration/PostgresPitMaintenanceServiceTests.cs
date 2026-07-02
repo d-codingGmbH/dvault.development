@@ -139,7 +139,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
     AddProfileRow(context, customerHashKey, profileTimestamp, "Alice Adams", "Gold", "profile-1");
     AddStatusRow(context, customerHashKey, statusTimestamp, "Active", "status-1");
     AddStatusRow(context, customerHashKey, secondStatusTimestamp, "Preferred", "status-2");
-    context.Set<Dictionary<string, object>>("PitCustomerProfileStatus").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
+    SetSharedRows(context, "PitCustomerProfileStatus").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
       ["CustomerHashKey"] = customerHashKey,
       ["LoadTimestamp"] = Utc(2026, 5, 11, 8, 30),
       ["ProfileLoadTimestamp"] = null!,
@@ -188,7 +188,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
 
     AddProfileRow(context, customerHashKey, profileTimestamp, "Ambra Allen", "Silver", "profile-ambient");
     AddStatusRow(context, customerHashKey, statusTimestamp, "Active", "status-ambient");
-    context.Set<Dictionary<string, object>>("PitCustomerProfileStatus").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
+    SetSharedRows(context, "PitCustomerProfileStatus").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
       ["CustomerHashKey"] = customerHashKey,
       ["LoadTimestamp"] = staleTimestamp,
       ["ProfileLoadTimestamp"] = null!,
@@ -281,7 +281,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
     AddLinkStateRow(context, linkHashKey, stateTimestamp, "Packed", "state-1");
     AddLinkFulfillmentRow(context, linkHashKey, fulfillmentTimestamp, "Dock 12", "fulfillment-1");
     AddLinkStateRow(context, linkHashKey, secondStateTimestamp, "Shipped", "state-2");
-    context.Set<Dictionary<string, object>>("PitCustomerOrderStateFulfillment").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
+    SetSharedRows(context, "PitCustomerOrderStateFulfillment").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
       ["CustomerOrderHashKey"] = linkHashKey,
       ["LoadTimestamp"] = Utc(2026, 5, 11, 8, 30),
       ["StateLoadTimestamp"] = null!,
@@ -446,7 +446,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
       string customerName,
       string customerTier,
       string hashDiff) {
-    context.Set<Dictionary<string, object>>("SatCustomerProfile").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
+    SetSharedRows(context, "SatCustomerProfile").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
       ["CustomerHashKey"] = parentHashKey,
       ["HashDiff"] = hashDiff,
       ["LoadTimestamp"] = loadTimestamp,
@@ -462,7 +462,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
       DateTimeOffset loadTimestamp,
       string statusCode,
       string hashDiff) {
-    context.Set<Dictionary<string, object>>("SatCustomerStatus").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
+    SetSharedRows(context, "SatCustomerStatu").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
       ["CustomerHashKey"] = parentHashKey,
       ["HashDiff"] = hashDiff,
       ["LoadTimestamp"] = loadTimestamp,
@@ -478,7 +478,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
       string contactType,
       string emailAddress,
       string hashDiff) {
-    context.Set<Dictionary<string, object>>("SatCustomerContact").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
+    SetSharedRows(context, "SatCustomerContact").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
       ["CustomerHashKey"] = parentHashKey,
       ["ContactType"] = contactType,
       ["HashDiff"] = hashDiff,
@@ -494,7 +494,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
       DateTimeOffset loadTimestamp,
       string stateCode,
       string hashDiff) {
-    context.Set<Dictionary<string, object>>("SatCustomerOrderState").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
+    SetSharedRows(context, "SatCustomerOrderState").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
       ["CustomerOrderHashKey"] = linkHashKey,
       ["HashDiff"] = hashDiff,
       ["LoadTimestamp"] = loadTimestamp,
@@ -509,7 +509,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
       DateTimeOffset loadTimestamp,
       string location,
       string hashDiff) {
-    context.Set<Dictionary<string, object>>("SatCustomerOrderFulfillment").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
+    SetSharedRows(context, "SatCustomerOrderFulfillment").Add(new Dictionary<string, object>(StringComparer.Ordinal) {
       ["CustomerOrderHashKey"] = linkHashKey,
       ["HashDiff"] = hashDiff,
       ["LoadTimestamp"] = loadTimestamp,
@@ -520,7 +520,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
 
   private static async Task<IReadOnlyList<OrdinaryPitRow>> ReadOrdinaryPitRowsAsync(DbContext context) {
     var rows = await context
-        .Set<Dictionary<string, object>>("PitCustomerProfileStatus")
+        .Set<Dictionary<string, object>>(ResolveSharedEntityName(context, "PitCustomerProfileStatus"))
         .AsNoTracking()
         .ToListAsync();
 
@@ -536,7 +536,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
 
   private static async Task<IReadOnlyList<MultiActivePitRow>> ReadMultiActivePitRowsAsync(DbContext context) {
     var rows = await context
-        .Set<Dictionary<string, object>>("PitCustomerContactProfile")
+        .Set<Dictionary<string, object>>(ResolveSharedEntityName(context, "PitCustomerContactProfile"))
         .AsNoTracking()
         .ToListAsync();
 
@@ -554,7 +554,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
 
   private static async Task<IReadOnlyList<LinkParentPitRow>> ReadLinkParentPitRowsAsync(DbContext context) {
     var rows = await context
-        .Set<Dictionary<string, object>>("PitCustomerOrderStateFulfillment")
+        .Set<Dictionary<string, object>>(ResolveSharedEntityName(context, "PitCustomerOrderStateFulfillment"))
         .AsNoTracking()
         .ToListAsync();
 
@@ -570,6 +570,37 @@ public sealed class PostgresPitMaintenanceServiceTests {
 
   private static DateTimeOffset ReadTimestamp(object value) {
     return DataVaultLoadTimestampValueConverter.ReadProviderValue(value);
+  }
+
+  private static DbSet<Dictionary<string, object>> SetSharedRows(DbContext context, string producedName) {
+    return context.Set<Dictionary<string, object>>(ResolveSharedEntityName(context, producedName));
+  }
+
+  private static string ResolveSharedEntityName(DbContext context, string producedName) {
+    var entity = context.Model
+        .GetEntityTypes()
+        .SingleOrDefault(entity =>
+            string.Equals(entity.FindAnnotation(DataVaultAnnotationNames.ProducedName)?.Value as string, producedName, StringComparison.Ordinal) ||
+            string.Equals(entity.GetTableName(), producedName, StringComparison.Ordinal) ||
+            string.Equals(entity.Name, producedName, StringComparison.Ordinal));
+
+    if (entity is not null) {
+      return entity.Name;
+    }
+
+    var candidates = string.Join(
+        ", ",
+        context.Model
+            .GetEntityTypes()
+            .Select(current =>
+                current.Name +
+                " table=" +
+                (current.GetTableName() ?? "<none>") +
+                " produced=" +
+                (current.FindAnnotation(DataVaultAnnotationNames.ProducedName)?.Value as string ?? "<none>"))
+            .Order(StringComparer.Ordinal));
+    throw new InvalidOperationException(
+        "No DVault shared-type entity matched produced table '" + producedName + "'. Candidates: " + candidates);
   }
 
   private static DateTimeOffset? ReadOptionalTimestamp(
@@ -691,6 +722,12 @@ public sealed class PostgresPitMaintenanceServiceTests {
     return "\"" + value.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
   }
 
+  private static DataVaultProviderCapabilityProfile HexStringPostgresProfile =>
+      DataVaultProviderCapabilityProfiles.Postgres.WithHashKeyStorageProfile(
+          DataVaultHashKeyStorageProfile.HexString,
+          "sha256-v1",
+          32);
+
   private sealed class PostgresPitMaintenanceContext(
       DbContextOptions<PostgresPitMaintenanceContext> options,
       string schemaName,
@@ -703,7 +740,7 @@ public sealed class PostgresPitMaintenanceServiceTests {
       modelBuilder.HasDefaultSchema(SchemaName);
       modelBuilder.ApplyDataVaultMetadata(
           CreateModel(ModelKind),
-          DataVaultProviderCapabilityProfiles.Postgres);
+          HexStringPostgresProfile);
     }
   }
 

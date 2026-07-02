@@ -9,4 +9,5 @@ internal sealed record DataVaultModelSatelliteDeclaration(
     IReadOnlyList<string> Payload,
     IReadOnlyList<string> DrivingKeys,
     IReadOnlyList<DataVaultModelPersonalDataDeclaration> PersonalData,
+    DataVaultModelEffectivityDeclaration? Effectivity,
     string Path);

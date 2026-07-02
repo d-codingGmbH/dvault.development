@@ -95,6 +95,11 @@ public static class DataVaultAnnotationNames {
   public const string HashKeyConversionBehavior = "DCoding.Data.DVault:HashKeyConversionBehavior";
 
   /// <summary>
+  /// Identifies the annotation that stores the effectivity role for a satellite payload property.
+  /// </summary>
+  public const string EffectivityRole = "DCoding.Data.DVault:EffectivityRole";
+
+  /// <summary>
   /// Identifies the annotation that stores the authoritative Data Vault metadata source kind for an Entity Framework model.
   /// </summary>
   public const string MetadataSourceKind = "DCoding.Data.DVault:MetadataSourceKind";

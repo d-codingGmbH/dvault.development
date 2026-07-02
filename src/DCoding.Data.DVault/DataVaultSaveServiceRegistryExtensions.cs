@@ -93,7 +93,8 @@ public static class DataVaultSaveServiceRegistryExtensions {
     var linkOperations = request.LinkOperations
         .Select(operation => new DataVaultLinkSaveOperation(
             DataVaultRegistryMetadataResolver.GetRequiredLink(registry, operation.LinkName),
-            operation.ParticipantHashKeyValues))
+            operation.ParticipantHashKeyValues,
+            operation.DependentChildKeyValues))
         .ToArray();
     var satelliteOperations = request.SatelliteOperations
         .Select(operation => new DataVaultSatelliteSaveOperation(

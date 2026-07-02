@@ -172,6 +172,14 @@ internal abstract class CatalogDataVaultLiveSchemaReader : IDataVaultLiveSchemaR
 
       var schemaName = entityType.GetSchema() ?? dbContext.Model.GetDefaultSchema();
       var storeObject = StoreObjectIdentifier.Table(tableName, schemaName);
+      var indexes = entityType.GetIndexes()
+          .Select(index => new LiveSchemaExpectedIndex(
+              GetIndexName(index, storeObject),
+              index.Properties
+                  .Select(property => GetColumnName(property, storeObject))
+                  .ToArray(),
+              GetDescendingColumnNames(index, storeObject).ToArray()))
+          .ToArray();
       var identifier = new LiveSchemaTableIdentifier(
           tableName,
           schemaName);
@@ -181,12 +189,10 @@ internal abstract class CatalogDataVaultLiveSchemaReader : IDataVaultLiveSchemaR
               identifier,
               entityType.FindPrimaryKey()?.GetName(),
               entityType.GetProperties()
-                  .Select(property => property.GetColumnName(storeObject) ?? property.Name)
+                  .Select(property => GetColumnName(property, storeObject))
                   .ToArray(),
-              entityType.GetIndexes()
-                  .Select(index => index.GetDatabaseName() ?? string.Join("_", index.Properties.Select(property =>
-                      property.GetColumnName(storeObject) ?? property.Name)))
-                  .ToArray()));
+              indexes.Select(index => index.IndexName).ToArray(),
+              indexes));
     }
 
     return expectedTablesByIdentifier.Values
@@ -197,6 +203,37 @@ internal abstract class CatalogDataVaultLiveSchemaReader : IDataVaultLiveSchemaR
 
   private static bool IsDataVaultEntity(IReadOnlyEntityType entityType) {
     return entityType.FindAnnotation(DataVaultAnnotationNames.EntityKind)?.Value is DataVaultTableKind;
+  }
+
+  private static string GetIndexName(IReadOnlyIndex index, StoreObjectIdentifier storeObject) {
+    return index.GetDatabaseName() ?? string.Join("_", index.Properties.Select(property =>
+        GetColumnName(property, storeObject)));
+  }
+
+  private static string GetColumnName(IReadOnlyProperty property, StoreObjectIdentifier storeObject) {
+    return property.GetColumnName(storeObject) ?? property.Name;
+  }
+
+  private static IEnumerable<string> GetDescendingColumnNames(
+      IReadOnlyIndex index,
+      StoreObjectIdentifier storeObject) {
+    IReadOnlyList<bool>? isDescending;
+    try {
+      isDescending = index.IsDescending;
+    }
+    catch (InvalidOperationException) {
+      yield break;
+    }
+
+    if (isDescending is null) {
+      yield break;
+    }
+
+    for (var ordinal = 0; ordinal < index.Properties.Count && ordinal < isDescending.Count; ordinal++) {
+      if (isDescending[ordinal]) {
+        yield return GetColumnName(index.Properties[ordinal], storeObject);
+      }
+    }
   }
 
   private static bool IsSchemaUnavailableException(Exception exception) {

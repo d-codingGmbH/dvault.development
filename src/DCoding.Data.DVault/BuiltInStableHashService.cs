@@ -5,6 +5,7 @@ using System.Text;
 namespace DCoding.Data.DVault;
 
 internal sealed class BuiltInStableHashService : IStableHashService {
+  private const int StackInputByteThreshold = 512;
   private static readonly UTF8Encoding Utf8NoBom = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
   public static IStableHashService Sha256 { get; } = new BuiltInStableHashService(
@@ -66,18 +67,29 @@ internal sealed class BuiltInStableHashService : IStableHashService {
     ArgumentNullException.ThrowIfNull(normalizedInput);
 
     var byteCount = Utf8NoBom.GetByteCount(normalizedInput);
-    var inputBytes = ArrayPool<byte>.Shared.Rent(byteCount);
-    try {
-      var writtenBytes = Utf8NoBom.GetBytes(normalizedInput.AsSpan(), inputBytes);
-      Span<byte> digestBytes = stackalloc byte[32];
-      ComputeDigest(inputBytes.AsSpan(0, writtenBytes), digestBytes);
-      var digestValue = CreateLowerHexString(digestBytes[.._digestByteLength]);
+    if (byteCount <= StackInputByteThreshold) {
+      Span<byte> stackInputBytes = stackalloc byte[byteCount];
+      var writtenBytes = Utf8NoBom.GetBytes(normalizedInput.AsSpan(), stackInputBytes);
 
-      return new StableHashDigest(AlgorithmId, digestValue);
+      return ComputeHashFromUtf8(stackInputBytes[..writtenBytes]);
+    }
+
+    var rentedInputBytes = ArrayPool<byte>.Shared.Rent(byteCount);
+    try {
+      var writtenBytes = Utf8NoBom.GetBytes(normalizedInput.AsSpan(), rentedInputBytes);
+      return ComputeHashFromUtf8(rentedInputBytes.AsSpan(0, writtenBytes));
     }
     finally {
-      ArrayPool<byte>.Shared.Return(inputBytes, clearArray: true);
+      ArrayPool<byte>.Shared.Return(rentedInputBytes, clearArray: true);
     }
+  }
+
+  private StableHashDigest ComputeHashFromUtf8(ReadOnlySpan<byte> inputBytes) {
+    Span<byte> digestBytes = stackalloc byte[32];
+    ComputeDigest(inputBytes, digestBytes);
+    var digestValue = CreateLowerHexString(digestBytes[.._digestByteLength]);
+
+    return new StableHashDigest(AlgorithmId, digestValue);
   }
 
   private void ComputeDigest(ReadOnlySpan<byte> inputBytes, Span<byte> digestBytes) {

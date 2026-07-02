@@ -281,6 +281,11 @@ public sealed class DataVaultMappingSourceGeneratorTests {
           public DataVaultLinkParticipantBindingAttribute(int order, string participantHubName, string sourceMemberName) { }
         }
 
+        [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+        public sealed class DataVaultLinkDependentChildKeyBindingAttribute : Attribute {
+          public DataVaultLinkDependentChildKeyBindingAttribute(int order, string dependentChildKeyName, string sourceMemberName) { }
+        }
+
         [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, AllowMultiple = false, Inherited = false)]
         public sealed class DataVaultSatelliteParentHashKeyBindingAttribute : Attribute {
           public DataVaultSatelliteParentHashKeyBindingAttribute(string sourceMemberName) { }
@@ -322,6 +327,11 @@ public sealed class DataVaultMappingSourceGeneratorTests {
 
         public sealed class DataVaultRegistryLinkSaveOperation {
           public DataVaultRegistryLinkSaveOperation(string linkName, IEnumerable<KeyValuePair<string, string>> participantHashKeyValues) { }
+
+          public DataVaultRegistryLinkSaveOperation(
+              string linkName,
+              IEnumerable<KeyValuePair<string, string>> participantHashKeyValues,
+              IEnumerable<KeyValuePair<string, string>> dependentChildKeyValues) { }
         }
 
         public sealed class DataVaultRegistrySatelliteSaveOperation {

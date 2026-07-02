@@ -38,4 +38,9 @@ public enum DataVaultPropertyRole {
   /// Property carries a multi-active satellite driving-key value.
   /// </summary>
   DrivingKey,
+
+  /// <summary>
+  /// Property carries a link dependent child key value.
+  /// </summary>
+  DependentChildKey,
 }

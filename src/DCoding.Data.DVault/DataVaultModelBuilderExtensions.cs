@@ -28,6 +28,15 @@ public static class DataVaultModelBuilderExtensions {
   }
 
   /// <summary>
+  /// Records DVault's legacy hexadecimal text hash-key storage profile on the Entity Framework model.
+  /// </summary>
+  /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
+  /// <returns>The same model builder so Entity Framework model configuration can continue fluently.</returns>
+  public static ModelBuilder UseDataVaultHexStringStorageProfile(this ModelBuilder modelBuilder) {
+    return modelBuilder.UseDataVaultHexStringStorageProfile(DefaultProviderCapabilities);
+  }
+
+  /// <summary>
   /// Records the provider-neutral DVault default conventions and selected provider capability profile on the Entity Framework model.
   /// </summary>
   /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
@@ -60,6 +69,26 @@ public static class DataVaultModelBuilderExtensions {
         modelBuilder,
         providerCapabilities,
         CreateBinaryFirstConventions(modelBuilder, providerCapabilities));
+
+    return modelBuilder;
+  }
+
+  /// <summary>
+  /// Records DVault's legacy hexadecimal text hash-key storage profile and selected provider capability profile on the Entity Framework model.
+  /// </summary>
+  /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
+  /// <param name="providerCapabilities">The provider capability profile used when projecting Data Vault metadata.</param>
+  /// <returns>The same model builder so Entity Framework model configuration can continue fluently.</returns>
+  public static ModelBuilder UseDataVaultHexStringStorageProfile(
+      this ModelBuilder modelBuilder,
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    ArgumentNullException.ThrowIfNull(modelBuilder);
+    ArgumentNullException.ThrowIfNull(providerCapabilities);
+
+    UseDataVaultCore(
+        modelBuilder,
+        providerCapabilities,
+        CreateHexStringCompatibilityConventions(modelBuilder, providerCapabilities));
 
     return modelBuilder;
   }
@@ -308,6 +337,23 @@ public static class DataVaultModelBuilderExtensions {
             DataVaultConventions.Default.StableHashDigestByteLength,
         DataVaultHashKeyStorageProfile.Binary,
         DataVaultConventions.BinaryFirstProfileName);
+  }
+
+  private static DataVaultConventions CreateHexStringCompatibilityConventions(
+      ModelBuilder modelBuilder,
+      DataVaultProviderCapabilityProfile providerCapabilities) {
+    var currentHashKeyMapping = providerCapabilities.GetRequiredTypeMapping(DataVaultLogicalPropertyKind.HashKey);
+    var annotatedConventions = modelBuilder.Model.FindAnnotation(DataVaultAnnotationNames.Conventions)?.Value as DataVaultConventions;
+
+    return DataVaultConventions.CreateWithStableHashAlgorithm(
+        annotatedConventions?.StableHashAlgorithmId ??
+            currentHashKeyMapping.StableHashAlgorithmId ??
+            DataVaultConventions.Default.StableHashAlgorithmId,
+        annotatedConventions?.StableHashDigestByteLength ??
+            currentHashKeyMapping.DigestByteLength ??
+            DataVaultConventions.Default.StableHashDigestByteLength,
+        DataVaultHashKeyStorageProfile.HexString,
+        DataVaultConventions.HexStringCompatibilityProfileName);
   }
 
   private static bool HasNonDefaultHashKeyShape(DataVaultProviderTypeMapping mapping) {

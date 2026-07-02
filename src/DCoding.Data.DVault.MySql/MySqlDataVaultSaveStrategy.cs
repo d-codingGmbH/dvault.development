@@ -387,7 +387,11 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
         .ToArray();
     var hashKey = ComputeHash(context, businessKeyFields);
     var row = new Dictionary<string, object> {
-      [projection.HashKeyColumnName] = hashKey,
+      [projection.HashKeyColumnName] = ToProviderHashKeyValue(
+          context.DbContext,
+          projection.TableName,
+          projection.HashKeyColumnName,
+          hashKey),
       [projection.LoadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
           context.DbContext,
           projection.TableName,
@@ -421,9 +425,18 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
             participantName,
             GetRequiredValue(operation.ParticipantHashKeyValues, participantName, nameof(operation.ParticipantHashKeyValues))))
         .ToArray();
-    var linkHashKey = ComputeHash(context, participantHashKeyFields);
+    var dependentChildKeyFields = link.DependentChildKeys
+        .Select(column => new KeyValuePair<string, string>(
+            column.ColumnName,
+            GetRequiredValue(operation.DependentChildKeyValues, column.ColumnName, nameof(operation.DependentChildKeyValues))))
+        .ToArray();
+    var linkHashKey = ComputeHash(context, participantHashKeyFields.Concat(dependentChildKeyFields));
     var row = new Dictionary<string, object> {
-      [projection.LinkHashKeyColumnName] = linkHashKey,
+      [projection.LinkHashKeyColumnName] = ToProviderHashKeyValue(
+          context.DbContext,
+          projection.TableName,
+          projection.LinkHashKeyColumnName,
+          linkHashKey),
       [projection.LoadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
           context.DbContext,
           projection.TableName,
@@ -433,14 +446,24 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     };
 
     for (var index = 0; index < participantHashKeyFields.Length; index++) {
-      row.Add(projection.ParticipantHashKeyColumnNames[index], participantHashKeyFields[index].Value);
+      row.Add(
+          projection.ParticipantHashKeyColumnNames[index],
+          ToProviderHashKeyValue(
+              context.DbContext,
+              projection.TableName,
+              projection.ParticipantHashKeyColumnNames[index],
+              participantHashKeyFields[index].Value));
+    }
+
+    for (var index = 0; index < dependentChildKeyFields.Length; index++) {
+      row.Add(projection.DependentChildKeyColumnNames[index], dependentChildKeyFields[index].Value);
     }
 
     return new UniqueRowSavePlan(
         new UniqueTableProjection(projection.TableName, projection.LinkHashKeyColumnName),
         linkHashKey,
         row,
-        new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, projection.TableName, linkHashKey));
+        new DataVaultSavedRecord(DataVaultTableKind.Link, link.Name, projection.TableName, linkHashKey, [], dependentChildKeyFields));
   }
 
   private static IReadOnlyList<SatelliteSavePlan> CreateSatelliteSavePlans(DataVaultProviderSaveStrategyContext context) {
@@ -469,7 +492,11 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
             GetRequiredValue(operation.PayloadValues, column.ColumnName, nameof(operation.PayloadValues))))
         .ToArray();
     var row = new Dictionary<string, object> {
-      [projection.ParentHashKeyColumnName] = operation.ParentHashKey,
+      [projection.ParentHashKeyColumnName] = ToProviderHashKeyValue(
+          dbContext,
+          projection.TableName,
+          projection.ParentHashKeyColumnName,
+          operation.ParentHashKey),
       [projection.HashDiffColumnName] = operation.HashDiff,
       [projection.LoadTimestampColumnName] = DataVaultLoadTimestampValueConverter.ToProviderValue(
           dbContext,
@@ -572,13 +599,17 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
         .Select(participantName => NamingPolicy.GetTechnicalColumnName(
             new DataVaultTechnicalColumnNameContext(DataVaultTechnicalColumnKind.HashKey, participantName, tableName)))
         .ToArray();
+    var dependentChildKeyColumnNames = DefaultDataVaultNamingPolicy.GetColumnNames(
+        link.DependentChildKeys.Select(column => column.ColumnName),
+        [linkHashKeyColumnName, loadTimestampColumnName, recordSourceColumnName, .. participantHashKeyColumnNames]);
 
     return new LinkProjection(
         tableName,
         linkHashKeyColumnName,
         loadTimestampColumnName,
         recordSourceColumnName,
-        participantHashKeyColumnNames);
+        participantHashKeyColumnNames,
+        dependentChildKeyColumnNames);
   }
 
   private static SatelliteProjection CreateSatelliteProjection(DataVaultSatelliteMetadata satellite) {
@@ -652,12 +683,21 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
       await using var command = connection.CreateCommand();
       command.Transaction = transaction;
 
-      var parameterNames = AddCommandParameters(command, parentHashKeyBatch);
+      var parameterNames = AddHashKeyCommandParameters(
+          dbContext,
+          command,
+          table.TableName,
+          table.ParentHashKeyColumnName,
+          parentHashKeyBatch);
       command.CommandText = CreateLatestSatelliteHashDiffsCommandText(dbContext, table, parameterNames);
 
       await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
       while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
-        var parentHashKey = GetRequiredString(reader, ordinal: 0);
+        var parentHashKey = ReadHashKeyProviderValue(
+            dbContext,
+            table.TableName,
+            table.ParentHashKeyColumnName,
+            reader.GetValue(0));
         latestRows[parentHashKey] = new LatestSatelliteHashDiff(
             parentHashKey,
             GetRequiredString(reader, ordinal: 1),
@@ -908,8 +948,11 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     return builder.ToString();
   }
 
-  private static IReadOnlyList<string> AddCommandParameters(
+  private static IReadOnlyList<string> AddHashKeyCommandParameters(
+      DbContext dbContext,
       DbCommand command,
+      string producedTableName,
+      string columnName,
       IEnumerable<string> values) {
     var parameterNames = new List<string>();
 
@@ -917,12 +960,33 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
       var parameterName = CreateMySqlParameterName(command.Parameters.Count);
       var parameter = command.CreateParameter();
       parameter.ParameterName = parameterName;
-      parameter.Value = value;
+      parameter.Value = ToProviderHashKeyValue(dbContext, producedTableName, columnName, value);
       command.Parameters.Add(parameter);
       parameterNames.Add(parameterName);
     }
 
     return parameterNames;
+  }
+
+  private static object ToProviderHashKeyValue(
+      DbContext dbContext,
+      string producedTableName,
+      string columnName,
+      string hashKey) {
+    return DataVaultHashKeyProviderValueConverter.ToProviderParameterValue(
+        FindProperty(dbContext, producedTableName, columnName),
+        hashKey);
+  }
+
+  private static string ReadHashKeyProviderValue(
+      DbContext dbContext,
+      string producedTableName,
+      string columnName,
+      object value) {
+    return DataVaultHashKeyProviderValueConverter.ReadProviderValue(
+        FindProperty(dbContext, producedTableName, columnName),
+        value) as string ??
+        throw new InvalidOperationException("MySQL Data Vault latest satellite lookup returned an invalid hash key value.");
   }
 
   private static string GetRequiredString(DbDataReader reader, int ordinal) {
@@ -957,6 +1021,13 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
     }
 
     return null;
+  }
+
+  private static IProperty? FindProperty(DbContext dbContext, string producedTableName, string columnName) {
+    return FindEntityType(dbContext, producedTableName)?
+        .GetProperties()
+        .FirstOrDefault(property => string.Equals(property.GetColumnName(), columnName, StringComparison.Ordinal) ||
+            string.Equals(property.Name, columnName, StringComparison.Ordinal));
   }
 
   private static string QuoteMySqlIdentifier(string identifier) {
@@ -1011,7 +1082,8 @@ internal sealed class MySqlDataVaultSaveStrategy : IDataVaultProviderSaveStrateg
       string LinkHashKeyColumnName,
       string LoadTimestampColumnName,
       string RecordSourceColumnName,
-      IReadOnlyList<string> ParticipantHashKeyColumnNames);
+      IReadOnlyList<string> ParticipantHashKeyColumnNames,
+      IReadOnlyList<string> DependentChildKeyColumnNames);
 
   private sealed record SatelliteProjection(
       string TableName,

@@ -482,7 +482,7 @@ public sealed class BenchmarkScenarioExecutionTests {
   [
       new(PostgresProviderName, "dvault-adddvaultpostgres-direct-or-unnest", ["stagedBulkBoundary=below-60-operations", "cleanupBoundary=no-staging-table"]),
       new(PostgresProviderName, "dvault-adddvaultpostgres-optimized", ["transfer=COPY", "stagedBulkBoundary=60-plus-operations", "smallBatchBoundary=direct-or-UNNEST"]),
-      new(SqlServerProviderName, "dvault-adddvaultsqlserver-optimized", ["transfer=SqlBulkCopy", "nativeBulkBoundary=100-plus-operations", "mixedBatchBoundary=900-plus-operations"]),
+      new(SqlServerProviderName, "dvault-adddvaultsqlserver-optimized", ["transfer=SqlBulkCopy", "nativeBulkBoundary=50-plus-operations"]),
       new(MySqlProviderName, "dvault-adddvaultmysql-multi-row", ["selectedStrategy=MySqlDataVaultSaveStrategy", "stagedBulkBoundary=below-100-operations"]),
       new(MySqlProviderName, "dvault-adddvaultmysql-staged", ["selectedStrategy=MySqlStagedDataVaultSaveStrategy", "stagedBulkBoundary=100-plus-satellite-only-or-100-to-303-mixed-operations", "cleanupBoundary=temporary-staging-tables"]),
       new(MySqlProviderName, "dvault-adddvaultmysql-optimized", ["selectedStrategy=<none>", "mysqlMixedBatchBoundary=above-303-provider-neutral"]),
@@ -595,7 +595,7 @@ public sealed class BenchmarkScenarioExecutionTests {
       Assert.Contains("- Warmup iterations: 0", markdown);
       Assert.Contains("- Load timestamp storage: ProviderDefault", markdown);
       Assert.Contains("- Provider filter: all", markdown);
-      Assert.Contains("- Hash key variants: sha256-v1-hex", markdown);
+      Assert.Contains("- Hash key variants: sha256-v1-binary", markdown);
       Assert.Contains("- OS description: ", markdown);
       Assert.Contains("- OS architecture: ", markdown);
       Assert.Contains("- Process architecture: ", markdown);
@@ -1796,10 +1796,7 @@ public sealed class BenchmarkScenarioExecutionTests {
                   [
                       new DataVaultSaveStrategyGateRequirement(
                           DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
-                          MinimumTotalOperationCount: 100),
-                      new DataVaultSaveStrategyGateRequirement(
-                          DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold,
-                          MinimumTotalOperationCount: 900),
+                          MinimumTotalOperationCount: 50),
                       new DataVaultSaveStrategyGateRequirement(
                           DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold,
                           MaximumSatelliteOperationCount: 500),
@@ -1942,10 +1939,10 @@ public sealed class BenchmarkScenarioExecutionTests {
     var options = BenchmarkOptions.Parse(["--hash-key-storage-matrix"]);
 
     Assert.Equal(
-        ["sha256-v1-hex", "sha256-v1-binary", "sha256-128-v1-hex", "sha256-128-v1-binary"],
+        ["sha256-v1-binary", "sha256-v1-hex", "sha256-128-v1-binary", "sha256-128-v1-hex"],
         options.EffectiveHashKeyVariants.Select(variant => variant.Label));
     Assert.Equal(
-        [DataVaultHashKeyStorageProfile.HexString, DataVaultHashKeyStorageProfile.Binary, DataVaultHashKeyStorageProfile.HexString, DataVaultHashKeyStorageProfile.Binary],
+        [DataVaultHashKeyStorageProfile.Binary, DataVaultHashKeyStorageProfile.HexString, DataVaultHashKeyStorageProfile.Binary, DataVaultHashKeyStorageProfile.HexString],
         options.EffectiveHashKeyVariants.Select(variant => variant.StorageProfile));
     Assert.Equal([32, 32, 16, 16], options.EffectiveHashKeyVariants.Select(variant => variant.DigestByteLength));
   }
@@ -1956,7 +1953,7 @@ public sealed class BenchmarkScenarioExecutionTests {
 
     Assert.True(options.AllocationHotspots);
     Assert.Equal(BenchmarkProviderFilters.Sqlite, options.ProviderFilter);
-    Assert.Equal(["sha256-v1-hex"], options.EffectiveHashKeyVariants.Select(variant => variant.Label));
+    Assert.Equal(["sha256-v1-binary"], options.EffectiveHashKeyVariants.Select(variant => variant.Label));
   }
 
   [Fact]
@@ -2703,11 +2700,11 @@ public sealed class BenchmarkScenarioExecutionTests {
             : "; plannedPitMaintenanceStrategy=" + selectedStrategy) +
         "; fallbackCauses=" + fallbackCauses +
         "; pitShapeBoundary=ordinary-hub-parent|shared-driving-key-multi-active-hub-parent|link-parent-non-multi-active" +
-        "; hashKeyVariant=sha256-v1-hex" +
+        "; hashKeyVariant=sha256-v1-binary" +
         "; stableHashAlgorithm=sha256-v1" +
         "; digestBytes=32" +
-        "; hashKeyStorage=HexString" +
-        "; hashKeyPayloadBytes=64" +
+        "; hashKeyStorage=Binary" +
+        "; hashKeyPayloadBytes=32" +
         "; pitMaintenanceStrategyStatus=" + strategyStatus +
         "; provider=" + KnownProviderNames.Postgres +
         "; selectedStrategy=" + selectedStrategy +

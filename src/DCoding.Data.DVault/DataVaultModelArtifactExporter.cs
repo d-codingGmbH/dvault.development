@@ -176,6 +176,9 @@ public static class DataVaultModelArtifactExporter {
       }
 
       writer.WriteEndArray();
+      if (link.DependentChildKeyNames.Count > 0) {
+        WriteStringArray(writer, "dependentChildKeys", link.DependentChildKeyNames);
+      }
       writer.WriteEndObject();
     }
 
@@ -201,6 +204,10 @@ public static class DataVaultModelArtifactExporter {
         WritePersonalData(writer, satellite.PersonalDataFields);
       }
 
+      if (satellite.Effectivity is not null) {
+        WriteEffectivity(writer, satellite.Effectivity);
+      }
+
       writer.WriteEndObject();
     }
 
@@ -220,6 +227,23 @@ public static class DataVaultModelArtifactExporter {
     }
 
     writer.WriteEndArray();
+  }
+
+  private static void WriteEffectivity(
+      Utf8JsonWriter writer,
+      DataVaultSatelliteEffectivityMetadata effectivity) {
+    writer.WritePropertyName("effectivity");
+    writer.WriteStartObject();
+    writer.WriteString("effectiveFrom", effectivity.EffectiveFromFieldName);
+    if (effectivity.EffectiveToFieldName is not null) {
+      writer.WriteString("effectiveTo", effectivity.EffectiveToFieldName);
+    }
+
+    if (effectivity.CurrentFlagFieldName is not null) {
+      writer.WriteString("currentFlag", effectivity.CurrentFlagFieldName);
+    }
+
+    writer.WriteEndObject();
   }
 
   private static void WritePits(

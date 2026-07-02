@@ -55,4 +55,9 @@ public enum DataVaultLogicalPropertyKind {
   /// Multi-active satellite driving-key value.
   /// </summary>
   DrivingKey,
+
+  /// <summary>
+  /// Link dependent child key value.
+  /// </summary>
+  DependentChildKey,
 }

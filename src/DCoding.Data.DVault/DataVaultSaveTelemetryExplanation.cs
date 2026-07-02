@@ -68,8 +68,8 @@ internal static class DataVaultSaveTelemetryExplanationCatalog {
           "Route this shape through provider-neutral fallback, or split unsupported multi-active satellite work from provider-native eligible hub, link, and ordinary satellite batches."),
       DataVaultSaveStrategyFallbackCauseKind.SqlServerMinimumOperationThreshold => new(
           kind,
-          "SQL Server provider-native save dispatch is only selected for batches with at least 100 total operations; mixed hub/link batches require at least 900 total operations.",
-          "Increase the request or chunk size to meet the SQL Server threshold for the request shape, or accept provider-neutral fallback for smaller mixed batches."),
+          "SQL Server provider-native save dispatch is only selected for batches with at least 50 total operations.",
+          "Increase the request or chunk size to meet the SQL Server threshold for the request shape, or accept provider-neutral fallback for smaller batches."),
       DataVaultSaveStrategyFallbackCauseKind.SqlServerMaximumSatelliteOperationThreshold => new(
           kind,
           "SQL Server provider-native save dispatch accepts at most 500 satellite operations in one request batch.",

@@ -11,4 +11,5 @@ internal sealed record LiveSchemaExpectedTable(
     LiveSchemaTableIdentifier Identifier,
     string? PrimaryKeyName,
     IReadOnlyList<string> ColumnNames,
-    IReadOnlyList<string> IndexNames);
+    IReadOnlyList<string> IndexNames,
+    IReadOnlyList<LiveSchemaExpectedIndex> Indexes);

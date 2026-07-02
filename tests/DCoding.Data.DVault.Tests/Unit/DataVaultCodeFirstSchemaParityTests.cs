@@ -61,7 +61,7 @@ public sealed class DataVaultCodeFirstSchemaParityTests {
             "postgres-v1|load=DateTimeOffset:timestamp with time zone:NativeDateTimeOffset|payload=String:text:Text|driving=String:varchar(255):Text|multi-index=CustomerHashKey,ContactType,RegionCode,LoadTimestamp",
             "sqlserver-v1|load=DateTimeOffset:datetimeoffset:NativeDateTimeOffset|payload=String:nvarchar(max):Text|driving=String:nvarchar(255):Text|multi-index=CustomerHashKey,ContactType,RegionCode,LoadTimestamp",
             "db2-v1|load=String:VARCHAR(33):Iso8601UtcText|payload=String:CLOB:Text|driving=String:VARCHAR(255):Text|multi-index=CustomerHashKey,ContactType,RegionCode,LoadTimestamp,HashDiff",
-            "mysql-pomelo-v1|load=DateTimeOffset:varchar(33):Iso8601UtcText|payload=String:longtext:Text|driving=String:varchar(255):Text|multi-index=CustomerHashKey,ContactType,RegionCode,LoadTimestamp",
+            "mysql-pomelo-v1|load=String:varchar(33):Iso8601UtcText|payload=String:longtext:Text|driving=String:varchar(255):Text|multi-index=CustomerHashKey,ContactType,RegionCode,LoadTimestamp",
         ],
         BuiltInProfiles().Select(profile => ProviderProfileSummary(TranslateCodeFirst(ConfigureCoveredCodeFirstModel, profile))));
   }
@@ -100,6 +100,11 @@ public sealed class DataVaultCodeFirstSchemaParityTests {
   [Fact]
   public void ApplyDataVaultMetadataCodeFirstMatchesMetadataFirstWhenMySqlTruncatesLongIdentifiers() {
     AssertLongIdentifierProjectionParity(DataVaultProviderCapabilityProfiles.MySql, maximumIdentifierLength: 64);
+  }
+
+  [Fact]
+  public void ApplyDataVaultMetadataCodeFirstMatchesMetadataFirstWhenPostgresTruncatesLongIdentifiers() {
+    AssertLongIdentifierProjectionParity(DataVaultProviderCapabilityProfiles.Postgres, maximumIdentifierLength: 63);
   }
 
   [Fact]

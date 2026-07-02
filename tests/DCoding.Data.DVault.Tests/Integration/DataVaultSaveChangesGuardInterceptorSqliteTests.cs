@@ -282,7 +282,6 @@ public sealed class DataVaultSaveChangesGuardInterceptorSqliteTests {
   private static DbContextOptionsBuilder<GeneratedMetadataContext> CreateGeneratedOptionsBuilder(SqliteTestDatabase database) {
     var optionsBuilder = new DbContextOptionsBuilder<GeneratedMetadataContext>()
         .UseSqlite(CreateConnectionString(database));
-    optionsBuilder.UseDataVaultMetadata(CreateMetadataModel());
 
     return optionsBuilder;
   }
@@ -344,7 +343,16 @@ public sealed class DataVaultSaveChangesGuardInterceptorSqliteTests {
     }
   }
 
+  private static DataVaultProviderCapabilityProfile HexStringSqliteProfile =>
+      DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+          DataVaultHashKeyStorageProfile.HexString,
+          "sha256-v1",
+          32);
+
   private sealed class GeneratedMetadataContext(DbContextOptions<GeneratedMetadataContext> options) : DbContext(options) {
+    protected override void OnModelCreating(ModelBuilder modelBuilder) {
+      modelBuilder.ApplyDataVaultMetadata(CreateMetadataModel(), HexStringSqliteProfile);
+    }
   }
 
   private sealed class AnnotatedGuardContext(DbContextOptions<AnnotatedGuardContext> options) : DbContext(options) {

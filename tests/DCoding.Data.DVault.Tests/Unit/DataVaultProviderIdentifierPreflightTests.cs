@@ -32,7 +32,7 @@ public sealed class DataVaultProviderIdentifierPreflightTests {
 
     Assert.Null(DataVaultProviderIdentifierPreflight.GetRules(DataVaultProviderCapabilityProfiles.Sqlite).MaximumIdentifierLength);
     Assert.Null(DataVaultProviderIdentifierPreflight.GetRules(DataVaultProviderCapabilityProfiles.Oracle).MaximumIdentifierLength);
-    Assert.Null(DataVaultProviderIdentifierPreflight.GetRules(DataVaultProviderCapabilityProfiles.Postgres).MaximumIdentifierLength);
+    Assert.Equal(63, DataVaultProviderIdentifierPreflight.GetRules(DataVaultProviderCapabilityProfiles.Postgres).MaximumIdentifierLength);
     Assert.Null(DataVaultProviderIdentifierPreflight.GetRules(DataVaultProviderCapabilityProfiles.SqlServer).MaximumIdentifierLength);
     Assert.Equal(128, DataVaultProviderIdentifierPreflight.GetRules(DataVaultProviderCapabilityProfiles.Db2).MaximumIdentifierLength);
     Assert.Equal(64, DataVaultProviderIdentifierPreflight.GetRules(DataVaultProviderCapabilityProfiles.MySql).MaximumIdentifierLength);

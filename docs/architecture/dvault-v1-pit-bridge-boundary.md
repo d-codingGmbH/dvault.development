@@ -2,7 +2,7 @@
 
 Status: v1 implementation note
 Ticket: 06F5Q91M0PM17RP43ZQRPBDXP0
-Current package/adoption baseline: [DVault v0.51.0 Release Notes](../releases/v0.51.0.md)
+Current package/adoption baseline: [DVault v0.100.0 Release Notes](../releases/v0.100.0.md)
 Provider maintenance baseline: [DVault v0.47.0 Release Notes](../releases/v0.47.0.md)
 DB2 provider package baseline: [DVault v0.34.0 Release Notes](../releases/v0.34.0.md)
 Read-optimization expansion baseline: [DVault v0.28.0 Release Notes](../releases/v0.28.0.md)

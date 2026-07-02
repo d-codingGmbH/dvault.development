@@ -44,4 +44,60 @@ public sealed class DataVaultCodeFirstSatelliteBuilder<TEntity> {
 
     return this;
   }
+
+  /// <summary>
+  /// Marks one payload member as the lower effectivity boundary.
+  /// </summary>
+  /// <typeparam name="TProperty">The selected member type.</typeparam>
+  /// <param name="selector">A direct single-member selector, such as <c>x =&gt; x.EffectiveFrom</c>.</param>
+  /// <returns>The same satellite builder so additional members can be configured fluently.</returns>
+  public DataVaultCodeFirstSatelliteBuilder<TEntity> EffectiveFrom<TProperty>(
+      Expression<Func<TEntity, TProperty>> selector) {
+    _declaration.EffectiveFromName = AddEffectivityPayload(selector, "EffectiveFrom");
+
+    return this;
+  }
+
+  /// <summary>
+  /// Marks one payload member as the optional upper effectivity boundary.
+  /// </summary>
+  /// <typeparam name="TProperty">The selected member type.</typeparam>
+  /// <param name="selector">A direct single-member selector, such as <c>x =&gt; x.EffectiveTo</c>.</param>
+  /// <returns>The same satellite builder so additional members can be configured fluently.</returns>
+  public DataVaultCodeFirstSatelliteBuilder<TEntity> EffectiveTo<TProperty>(
+      Expression<Func<TEntity, TProperty>> selector) {
+    _declaration.EffectiveToName = AddEffectivityPayload(selector, "EffectiveTo");
+
+    return this;
+  }
+
+  /// <summary>
+  /// Marks one payload member as an optional current-row marker or status value.
+  /// </summary>
+  /// <typeparam name="TProperty">The selected member type.</typeparam>
+  /// <param name="selector">A direct single-member selector, such as <c>x =&gt; x.IsCurrent</c>.</param>
+  /// <returns>The same satellite builder so additional members can be configured fluently.</returns>
+  public DataVaultCodeFirstSatelliteBuilder<TEntity> CurrentFlag<TProperty>(
+      Expression<Func<TEntity, TProperty>> selector) {
+    _declaration.CurrentFlagName = AddEffectivityPayload(selector, "CurrentFlag");
+
+    return this;
+  }
+
+  private string AddEffectivityPayload<TProperty>(
+      Expression<Func<TEntity, TProperty>> selector,
+      string verb) {
+    var memberName = DataVaultCodeFirstSelector.RequireMemberName(selector, verb);
+    if (_declaration.DrivingKeyNames.Contains(memberName, StringComparer.Ordinal)) {
+      throw new ArgumentException(
+          verb + " member '" + memberName + "' is already declared as a driving key.",
+          nameof(selector));
+    }
+
+    if (!_declaration.PayloadNames.Contains(memberName, StringComparer.Ordinal)) {
+      _declaration.PayloadNames.Add(memberName);
+    }
+
+    return memberName;
+  }
 }

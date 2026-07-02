@@ -353,7 +353,7 @@ public sealed class DataVaultModelDriftReporterTests {
         report.Differences,
         difference => difference.Code == "property-value-format-unsupported-gap" &&
             difference.LogicalName == "Hub:Customer.HashKey" &&
-            difference.ExpectedValue == DataVaultProviderValueFormat.LowercaseHexText.ToString() &&
+            difference.ExpectedValue == DataVaultProviderValueFormat.LowercaseHexBinary.ToString() &&
             difference.ActualValue == "<none>");
   }
 

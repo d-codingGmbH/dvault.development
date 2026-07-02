@@ -103,7 +103,7 @@ internal sealed record BenchmarkOptions(
             : [
                 CreateHashKeyVariant(
                     stableHashAlgorithmId ?? DefaultStableHashAlgorithmId,
-                    hashKeyStorageProfile ?? DataVaultHashKeyStorageProfile.HexString),
+                    hashKeyStorageProfile ?? DataVaultHashKeyStorageProfile.Binary),
             ],
         allocationHotspots);
   }

@@ -102,7 +102,7 @@ public sealed class EfCoreProviderVersionMatrixTests {
     AssertPackageReference(project, new("System.Composition.Hosting", "8.0.0"));
     AssertPackageReference(project, new("System.Composition.Runtime", "8.0.0"));
     AssertPackageReference(project, new("System.Composition.TypedParts", "8.0.0"));
-    AssertPackageReference(project, new("System.Text.Json", "8.0.0"));
+    AssertPackageReference(project, new("System.Text.Json", "8.0.6"));
     AssertFileContains(
         "src/DCoding.Data.DVault.Analyzers/DCoding.Data.DVault.Analyzers.csproj",
         "<_AnalyzerPackageDependency Include=\"$(TargetDir)Microsoft.CodeAnalysis.CSharp.Workspaces.dll\" />");

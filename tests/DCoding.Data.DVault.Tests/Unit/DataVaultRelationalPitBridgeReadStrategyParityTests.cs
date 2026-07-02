@@ -747,12 +747,10 @@ public sealed class DataVaultRelationalPitBridgeReadStrategyParityTests {
 
   private static DataVaultProviderCapabilityProfile CreateSqliteProfile(
       DataVaultHashKeyStorageProfile storageProfile) {
-    return storageProfile == DataVaultHashKeyStorageProfile.HexString
-        ? DataVaultProviderCapabilityProfiles.Sqlite
-        : DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
-            storageProfile,
-            StableHashAlgorithmId,
-            StableHashDigestByteLength);
+    return DataVaultProviderCapabilityProfiles.Sqlite.WithHashKeyStorageProfile(
+        storageProfile,
+        StableHashAlgorithmId,
+        StableHashDigestByteLength);
   }
 
   private static string CreateCanonicalHexDigest(int seed) {

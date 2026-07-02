@@ -51,6 +51,28 @@ public static class DataVaultCodeFirstModelBuilderExtensions {
   }
 
   /// <summary>
+  /// Builds fluent Code-First Data Vault metadata, records the legacy hexadecimal hash-key storage profile, and translates it into Entity Framework metadata.
+  /// </summary>
+  /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>
+  /// <param name="configureModel">The fluent Code-First Data Vault metadata declarations to project.</param>
+  /// <param name="providerCapabilities">The optional provider capability profile used to project storage metadata.</param>
+  /// <returns>The same model builder so Entity Framework model configuration can continue fluently.</returns>
+  public static ModelBuilder ApplyDataVaultMetadataWithHexStringStorageProfile(
+      this ModelBuilder modelBuilder,
+      Action<DataVaultCodeFirstModelBuilder> configureModel,
+      DataVaultProviderCapabilityProfile? providerCapabilities = null) {
+    ArgumentNullException.ThrowIfNull(modelBuilder);
+    ArgumentNullException.ThrowIfNull(configureModel);
+
+    providerCapabilities ??= DataVaultProviderCapabilityProfileSelection.Select(modelBuilder);
+    var metadataModel = BuildMetadataModel(configureModel);
+
+    modelBuilder.UseDataVaultHexStringStorageProfile(providerCapabilities);
+
+    return modelBuilder.ApplyDataVaultMetadata(metadataModel, providerCapabilities);
+  }
+
+  /// <summary>
   /// Builds provider-neutral Data Vault metadata from fluent CLR entity declarations and translates it for one provider profile and timestamp storage shape.
   /// </summary>
   /// <param name="modelBuilder">The Entity Framework model builder to configure.</param>

@@ -22,20 +22,20 @@ Manual publication must not proceed for only a subset of this family. Each packa
 
 `DCoding.Data.DVault.Privacy` is optional for consumers and opt-in at runtime. It is a provider-neutral registration and alias-driven encrypted payload conversion proof, not a compliance feature, automatic encryption/redaction feature, or provider-native encryption feature.
 
-The current v0.51.0 documentation baseline uses two consumer package-version lines over these package ids:
+The current v0.100.0 documentation baseline uses two consumer package-version lines over these package ids:
 
 | Package version line | Target framework | EF Core line |
 | --- | --- | --- |
-| `8.51.0` | `net8.0` | EF Core 8 |
-| `10.51.0` | `net10.0` | EF Core 10 |
+| `8.100.0` | `net8.0` | EF Core 8 |
+| `10.100.0` | `net10.0` | EF Core 10 |
 
-Do not publish or document a consumer-facing `0.51.0` package version from the v0.51.0 documentation release label. Do not combine `8.51.0` and `10.51.0` packages in one consumer install example or one publish approval.
+Do not publish or document a consumer-facing `0.100.0` package version from the v0.100.0 documentation release label. Do not combine `8.100.0` and `10.100.0` packages in one consumer install example or one publish approval. Mark both package lines as a breaking release in NuGet release notes because generated hash-key and participant-reference columns now default to binary physical storage. Existing persisted `HexString` schemas are not migrated automatically and must either stay on the previous package line or opt into the `HexString` compatibility profile until a reviewed migration, reset, or data-move plan is complete.
 
 The `src/DCoding.Data` project is a non-packable source-root build anchor for the namespace family. It is not a NuGet publication artifact and is outside the coordinated publication scope.
 
 ## Current Consumer Guidance
 
-Developer and consumer setup is NuGet-based for published releases. The README installation guidance is the current v0.51.0 documentation baseline and should show separate `8.51.0` / `net8.0` / EF Core 8 and `10.51.0` / `net10.0` / EF Core 10 `dotnet add package` commands for `DCoding.Data.DVault` plus the optional provider package family, including `DCoding.Data.DVault.Db2`, and the optional privacy proof package. Analyzer examples must stay local with `PrivateAssets="all"` and use the same package-version line selected for the runtime and provider packages. Projects that reference `DCoding.Data.DVault.Analyzers` may build on either a `.NET 8 SDK` or `.NET 10 SDK` host; both lines use one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/`.
+Developer and consumer setup is NuGet-based for published releases. The README installation guidance is the current v0.100.0 documentation baseline and should show separate `8.100.0` / `net8.0` / EF Core 8 and `10.100.0` / `net10.0` / EF Core 10 `dotnet add package` commands for `DCoding.Data.DVault` plus the optional provider package family, including `DCoding.Data.DVault.Db2`, and the optional privacy proof package. Analyzer examples must stay local with `PrivateAssets="all"` and use the same package-version line selected for the runtime and provider packages. Projects that reference `DCoding.Data.DVault.Analyzers` may build on either a `.NET 8 SDK` or `.NET 10 SDK` host; both lines use one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/`.
 
 Source or project-reference consumption remains useful for repository development, debugging, and unpublished local changes, but it is no longer the primary consumer installation path for released packages.
 
@@ -49,8 +49,9 @@ Before final publish approval, the maintainer performing the release must confir
 - release notes or changelog content has been prepared and reviewed for the coordinated release
 - all required pre-publish validation commands have passed against the same checkout and selected package version
 - package verification confirms each provider package depends on the packed `DCoding.Data.DVault` package version from the same package-version line and carries only that line's target-framework dependency group
-- package verification confirms the packaged README guidance separates `8.51.0` for `net8.0` and EF Core 8 from `10.51.0` for `net10.0` and EF Core 10
-- release notes and README guidance explain that `v0.51.0` is the documentation release label, not a consumer NuGet package version, and keep the dependency-line, analyzer-compatibility, manual-publication, and validation guidance aligned with the published package-version lines
+- package verification confirms the packaged README guidance separates `8.100.0` for `net8.0` and EF Core 8 from `10.100.0` for `net10.0` and EF Core 10
+- release notes and README guidance explain that `v0.100.0` is the documentation release label, not a consumer NuGet package version, and keep the dependency-line, analyzer-compatibility, manual-publication, and validation guidance aligned with the published package-version lines
+- NuGet release notes for both package lines identify the binary physical hash-key default as a breaking change and point existing `HexString` schemas to the compatibility profile and migration guide
 - final publish approval has been recorded before the first package push
 
 ## Release Notes Evidence
@@ -84,20 +85,20 @@ bash tools/check-format.sh
 
 Do not replace these commands with an undocumented automation path. Later release automation may wrap them, but the manual release evidence must still show equivalent build, test, pack, package-verification, and formatting results.
 
-## Current v0.51.0 Dependency Matrix
+## Current v0.100.0 Dependency Matrix
 
-The v0.51.0 documentation baseline is target-specific. `8.51.0` / `net8.0` uses the EF Core 8 dependency line, and `10.51.0` / `net10.0` uses the EF Core 10 dependency line. Patch movement is allowed only within the selected target major line and must be reflected together in the project files, matrix tests, package verifier, release notes, and adopter guidance.
+The v0.100.0 documentation baseline is target-specific. `8.100.0` / `net8.0` uses the EF Core 8 dependency line, and `10.100.0` / `net10.0` uses the EF Core 10 dependency line. Patch movement is allowed only within the selected target major line and must be reflected together in the project files, matrix tests, package verifier, release notes, and adopter guidance.
 
 | Target framework | Provider-neutral EF packages | DB2 | SQLite | MySQL | PostgreSQL | Oracle | SQL Server |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `net8.0` | `Microsoft.EntityFrameworkCore` `8.0.28`, `Microsoft.EntityFrameworkCore.Relational` `8.0.28`, `Microsoft.Extensions.DependencyInjection.Abstractions` `8.0.2` | `IBM.EntityFrameworkCore` `8.0.0.400` | `Microsoft.EntityFrameworkCore.Sqlite` `8.0.28` | `MySql.EntityFrameworkCore` `8.0.26` | `Npgsql.EntityFrameworkCore.PostgreSQL` `8.0.11` | `Oracle.EntityFrameworkCore` `8.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `8.0.28` |
 | `net10.0` | `Microsoft.EntityFrameworkCore` `10.0.9`, `Microsoft.EntityFrameworkCore.Relational` `10.0.9`, `Microsoft.Extensions.DependencyInjection.Abstractions` `10.0.9` | `IBM.EntityFrameworkCore` `10.0.0.100` | `Microsoft.EntityFrameworkCore.Sqlite` `10.0.9` | `MySql.EntityFrameworkCore` `10.0.7` | `Npgsql.EntityFrameworkCore.PostgreSQL` `10.0.2` | `Oracle.EntityFrameworkCore` `10.23.26200` | `Microsoft.EntityFrameworkCore.SqlServer` `10.0.9` |
 
-The analyzer package is a local build-time asset, not a runtime dependency. `DCoding.Data.DVault.Analyzers` ships one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/` for both coordinated package lines, analyzer references stay local with `PrivateAssets="all"`, and supported analyzer consumption for both the `8.51.0` and `10.51.0` package lines uses either a `.NET 8 SDK` or `.NET 10 SDK` build host.
+The analyzer package is a local build-time asset, not a runtime dependency. `DCoding.Data.DVault.Analyzers` ships one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/` for both coordinated package lines, analyzer references stay local with `PrivateAssets="all"`, and supported analyzer consumption for both the `8.100.0` and `10.100.0` package lines uses either a `.NET 8 SDK` or `.NET 10 SDK` build host.
 
 ## Version And Dependency Alignment
 
-Use one aligned package version across all nine packages in the selected package-version line. For the v0.51.0 documentation baseline, validate `8.51.0` and `10.51.0` as separate publish approvals; do not publish `0.51.0` from the release label and do not mix packages from both lines in one consumer example or approval record. Release-note and changelog cross-references point to the current v0.51.0 release-note artifact for this package baseline. Package versions for the visible consumer lines are set explicitly by `bash tools/pack-release-packages.sh` through MinVer version overrides. Before final approval, inspect the package outputs produced by the release pack script through the package verification gate:
+Use one aligned package version across all nine packages in the selected package-version line. For the v0.100.0 documentation baseline, validate `8.100.0` and `10.100.0` as separate publish approvals; do not publish `0.100.0` from the release label and do not mix packages from both lines in one consumer example or approval record. Release-note and changelog cross-references point to the current v0.100.0 release-note artifact for this package baseline. Package versions for the visible consumer lines are set explicitly by `bash tools/pack-release-packages.sh` through MinVer version overrides. Before final approval, inspect the package outputs produced by the release pack script through the package verification gate:
 
 ```sh
 bash tools/verify-packages.sh
@@ -112,7 +113,7 @@ If verification reports that a package is missing a target-framework dependency 
 Follow this sequence exactly for the coordinated manual release:
 
 1. Confirm the release scope is the full nine-package family.
-2. Select one package-version line for this approval: `8.51.0` for `net8.0` and EF Core 8, or `10.51.0` for `net10.0` and EF Core 10.
+2. Select one package-version line for this approval: `8.100.0` for `net8.0` and EF Core 8, or `10.100.0` for `net10.0` and EF Core 10.
 3. Set or confirm that selected aligned package version for all nine packages.
 4. Prepare and review release notes or changelog content for the coordinated release.
 5. Run `dotnet build DVault.slnx --nologo`.

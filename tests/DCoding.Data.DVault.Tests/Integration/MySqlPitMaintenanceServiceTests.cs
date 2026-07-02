@@ -13,7 +13,7 @@ public sealed class MySqlPitMaintenanceServiceTests {
   private const string ParentHashKeyColumnName = "MySqlPitCustomerHashKey";
   private const string PitTableName = "PitMySqlPitCustomerProfileStatus";
   private const string ProfileTableName = "SatMySqlPitCustomerProfile";
-  private const string StatusTableName = "SatMySqlPitCustomerStatus";
+  private const string StatusTableName = "SatMySqlPitCustomerStatu";
   private const string HubTableName = "HubMySqlPitCustomer";
   private const string MySqlStrategyRegistrationDiagnostic =
       "MySQL PIT maintenance expected AddDVaultMySql to register a compatible provider strategy for a clean official-provider ordinary hub-parent full rebuild request.";
@@ -31,7 +31,7 @@ public sealed class MySqlPitMaintenanceServiceTests {
     var maintenanceService = provider.GetRequiredService<IDataVaultPitMaintenanceService>();
     var options = CreateMySqlOptions(configuration.ConnectionString!);
     var metadata = CreateMetadata();
-    var parentHashKey = "mysql-pit-customer-100";
+    var parentHashKey = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     var statusTimestamp = Utc(2026, 6, 24, 9, 0);
     var profileTimestamp = Utc(2026, 6, 24, 10, 0);
     var secondStatusTimestamp = Utc(2026, 6, 24, 11, 0);
@@ -81,7 +81,7 @@ public sealed class MySqlPitMaintenanceServiceTests {
     var maintenanceService = provider.GetRequiredService<IDataVaultPitMaintenanceService>();
     var options = CreateMySqlOptions(configuration.ConnectionString!);
     var metadata = CreateMetadata();
-    var parentHashKey = "mysql-pit-customer-fault";
+    var parentHashKey = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     var staleTimestamp = Utc(2026, 6, 24, 12, 30);
 
     await using var context = new MySqlPitMaintenanceContext(options);
@@ -121,7 +121,7 @@ public sealed class MySqlPitMaintenanceServiceTests {
     var maintenanceService = provider.GetRequiredService<IDataVaultPitMaintenanceService>();
     var options = CreateMySqlOptions(configuration.ConnectionString!);
     var metadata = CreateMetadata();
-    var parentHashKey = "mysql-pit-customer-cancel";
+    var parentHashKey = "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc";
     var staleTimestamp = Utc(2026, 6, 24, 14, 30);
     using var cancellation = new CancellationTokenSource();
 
@@ -211,7 +211,7 @@ public sealed class MySqlPitMaintenanceServiceTests {
     context.Set<Dictionary<string, object>>(ProfileTableName).Add(new Dictionary<string, object>(StringComparer.Ordinal) {
       [ParentHashKeyColumnName] = parentHashKey,
       ["HashDiff"] = hashDiff,
-      ["LoadTimestamp"] = loadTimestamp,
+      ["LoadTimestamp"] = DataVaultLoadTimestampValueConverter.FormatIso8601UtcText(loadTimestamp),
       ["RecordSource"] = "mysql-profile",
       ["CustomerName"] = customerName,
       ["CustomerTier"] = customerTier,
@@ -227,7 +227,7 @@ public sealed class MySqlPitMaintenanceServiceTests {
     context.Set<Dictionary<string, object>>(StatusTableName).Add(new Dictionary<string, object>(StringComparer.Ordinal) {
       [ParentHashKeyColumnName] = parentHashKey,
       ["HashDiff"] = hashDiff,
-      ["LoadTimestamp"] = loadTimestamp,
+      ["LoadTimestamp"] = DataVaultLoadTimestampValueConverter.FormatIso8601UtcText(loadTimestamp),
       ["RecordSource"] = "mysql-status",
       ["StatusCode"] = statusCode,
     });
@@ -241,12 +241,12 @@ public sealed class MySqlPitMaintenanceServiceTests {
       DateTimeOffset? statusTimestamp) {
     context.Set<Dictionary<string, object>>(PitTableName).Add(new Dictionary<string, object>(StringComparer.Ordinal) {
       [ParentHashKeyColumnName] = parentHashKey,
-      ["LoadTimestamp"] = loadTimestamp,
+      ["LoadTimestamp"] = DataVaultLoadTimestampValueConverter.FormatIso8601UtcText(loadTimestamp),
       ["ProfileLoadTimestamp"] = profileTimestamp is { } currentProfileTimestamp
-          ? currentProfileTimestamp
+          ? DataVaultLoadTimestampValueConverter.FormatIso8601UtcText(currentProfileTimestamp)
           : null!,
       ["StatusLoadTimestamp"] = statusTimestamp is { } currentStatusTimestamp
-          ? currentStatusTimestamp
+          ? DataVaultLoadTimestampValueConverter.FormatIso8601UtcText(currentStatusTimestamp)
           : null!,
     });
   }

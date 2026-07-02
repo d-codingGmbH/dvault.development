@@ -117,13 +117,45 @@ public sealed class DataVaultCodeFirstModelBuilder {
   private static DataVaultSatelliteMetadata CreateSatelliteMetadata(
       DataVaultMetadataReference parentReference,
       SatelliteDeclaration satellite) {
-    return satellite.DrivingKeyNames.Count == 0
-        ? new DataVaultSatelliteMetadata(satellite.Name, parentReference, satellite.PayloadNames)
+    var effectivity = CreateEffectivityMetadata(satellite);
+
+    if (satellite.DrivingKeyNames.Count == 0) {
+      return effectivity is null
+          ? new DataVaultSatelliteMetadata(satellite.Name, parentReference, satellite.PayloadNames)
+          : new DataVaultSatelliteMetadata(satellite.Name, parentReference, satellite.PayloadNames, effectivity);
+    }
+
+    return effectivity is null
+        ? new DataVaultSatelliteMetadata(
+            satellite.Name,
+            parentReference,
+            satellite.PayloadNames,
+            satellite.DrivingKeyNames)
         : new DataVaultSatelliteMetadata(
             satellite.Name,
             parentReference,
             satellite.PayloadNames,
-            satellite.DrivingKeyNames);
+            satellite.DrivingKeyNames,
+            effectivity);
+  }
+
+  private static DataVaultSatelliteEffectivityMetadata? CreateEffectivityMetadata(SatelliteDeclaration satellite) {
+    if (satellite.EffectiveFromName is null &&
+        satellite.EffectiveToName is null &&
+        satellite.CurrentFlagName is null) {
+      return null;
+    }
+
+    if (satellite.EffectiveFromName is null) {
+      throw new ArgumentException(
+          "Code-first satellite '" + satellite.Name + "' declares effectivity metadata without an EffectiveFrom member.",
+          "configureModel");
+    }
+
+    return new DataVaultSatelliteEffectivityMetadata(
+        satellite.EffectiveFromName,
+        satellite.EffectiveToName,
+        satellite.CurrentFlagName);
   }
 
   private DataVaultLinkMetadata BuildLinkMetadata(LinkDeclaration link) {
@@ -132,10 +164,15 @@ public sealed class DataVaultCodeFirstModelBuilder {
     }
 
     var participantDeclarations = link.Participants
-        .Select(participant => new ParticipantHub(participant, ResolveParticipantHub(link, participant.ClrType)))
+        .Select((participant, ordinal) => new ParticipantHub(
+            participant,
+            ResolveParticipantHub(link, participant.ClrType),
+            ordinal))
         .ToArray();
     ValidateRepeatedParticipantRoles(link, participantDeclarations);
-    ValidateProducedParticipantNames(link, participantDeclarations);
+    var producedParticipantNames = CreateProducedParticipantNames(participantDeclarations);
+    ValidateProducedParticipantNames(link, producedParticipantNames);
+    ValidateLinkDependentChildKeys(link, producedParticipantNames);
 
     var participantHubs = participantDeclarations
         .Select(participant => participant.Hub)
@@ -144,9 +181,10 @@ public sealed class DataVaultCodeFirstModelBuilder {
 
     return new DataVaultLinkMetadata(
         linkName,
-        participantDeclarations.Select(participant => new DataVaultLinkParticipantMetadata(
+        participantDeclarations.Select((participant, index) => new DataVaultLinkParticipantMetadata(
             DataVaultMetadataReference.Hub(participant.Hub.Name),
-            GetProducedParticipantName(participant))));
+            producedParticipantNames[index])),
+        link.DependentChildKeyNames);
   }
 
   private static void ValidateRepeatedParticipantRoles(
@@ -168,16 +206,8 @@ public sealed class DataVaultCodeFirstModelBuilder {
     }
 
     foreach (var group in repeatedHubGroups) {
-      if (group.Any(participant => string.IsNullOrWhiteSpace(participant.Participant.Role))) {
-        throw LinkValidationException(
-            link,
-            "declares hub '" +
-            group.Key +
-            "' more than once. Every repeated same-hub participant must declare a distinct non-blank role.");
-      }
-
       var roles = new HashSet<string>(StringComparer.Ordinal);
-      foreach (var participant in group) {
+      foreach (var participant in group.Where(participant => !string.IsNullOrWhiteSpace(participant.Participant.Role))) {
         if (!roles.Add(participant.Participant.Role!)) {
           throw LinkValidationException(
               link,
@@ -193,10 +223,9 @@ public sealed class DataVaultCodeFirstModelBuilder {
 
   private static void ValidateProducedParticipantNames(
       LinkDeclaration link,
-      IEnumerable<ParticipantHub> participants) {
+      IEnumerable<string> producedParticipantNames) {
     var participantNames = new HashSet<string>(StringComparer.Ordinal);
-    foreach (var participant in participants) {
-      var participantName = GetProducedParticipantName(participant);
+    foreach (var participantName in producedParticipantNames) {
       if (!participantNames.Add(participantName)) {
         throw LinkValidationException(
             link,
@@ -207,10 +236,54 @@ public sealed class DataVaultCodeFirstModelBuilder {
     }
   }
 
-  private static string GetProducedParticipantName(ParticipantHub participant) {
-    return string.IsNullOrWhiteSpace(participant.Participant.Role)
-        ? participant.Hub.Name
-        : participant.Participant.Role!;
+  private static IReadOnlyList<string> CreateProducedParticipantNames(IReadOnlyList<ParticipantHub> participants) {
+    var hubCounts = participants
+        .GroupBy(participant => participant.Hub.Name, StringComparer.Ordinal)
+        .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
+    var hubOrdinals = new Dictionary<string, int>(StringComparer.Ordinal);
+    var producedNames = new List<string>(participants.Count);
+
+    foreach (var participant in participants.OrderBy(participant => participant.Ordinal)) {
+      if (!string.IsNullOrWhiteSpace(participant.Participant.Role)) {
+        producedNames.Add(participant.Participant.Role!);
+        continue;
+      }
+
+      if (hubCounts[participant.Hub.Name] == 1) {
+        producedNames.Add(participant.Hub.Name);
+        continue;
+      }
+
+      var ordinal = hubOrdinals.TryGetValue(participant.Hub.Name, out var current)
+          ? current + 1
+          : 1;
+      hubOrdinals[participant.Hub.Name] = ordinal;
+      producedNames.Add(participant.Hub.Name + ordinal.ToString(System.Globalization.CultureInfo.InvariantCulture));
+    }
+
+    return producedNames;
+  }
+
+  private static void ValidateLinkDependentChildKeys(
+      LinkDeclaration link,
+      IReadOnlyList<string> producedParticipantNames) {
+    var dependentChildKeys = new HashSet<string>(StringComparer.Ordinal);
+    foreach (var name in link.DependentChildKeyNames) {
+      if (!dependentChildKeys.Add(name)) {
+        throw LinkValidationException(
+            link,
+            "declares dependent child key '" + name + "' more than once.");
+      }
+    }
+
+    var participantNames = producedParticipantNames.ToHashSet(StringComparer.Ordinal);
+    foreach (var name in link.DependentChildKeyNames) {
+      if (participantNames.Contains(name)) {
+        throw LinkValidationException(
+            link,
+            "declares dependent child key '" + name + "' that overlaps a produced participant name.");
+      }
+    }
   }
 
   private HubDeclaration ResolveParticipantHub(LinkDeclaration link, Type participantClrType) {
@@ -273,6 +346,8 @@ public sealed class DataVaultCodeFirstModelBuilder {
 
     public List<ParticipantDeclaration> Participants { get; } = [];
 
+    public List<string> DependentChildKeyNames { get; } = [];
+
     public List<SatelliteDeclaration> Satellites { get; } = [];
   }
 
@@ -282,7 +357,7 @@ public sealed class DataVaultCodeFirstModelBuilder {
     public string? Role { get; } = role;
   }
 
-  private sealed record ParticipantHub(ParticipantDeclaration Participant, HubDeclaration Hub);
+  private sealed record ParticipantHub(ParticipantDeclaration Participant, HubDeclaration Hub, int Ordinal);
 
   internal sealed class SatelliteDeclaration(string name) {
     public string Name { get; } = name;
@@ -290,5 +365,11 @@ public sealed class DataVaultCodeFirstModelBuilder {
     public List<string> DrivingKeyNames { get; } = [];
 
     public List<string> PayloadNames { get; } = [];
+
+    public string? EffectiveFromName { get; set; }
+
+    public string? EffectiveToName { get; set; }
+
+    public string? CurrentFlagName { get; set; }
   }
 }

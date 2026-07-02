@@ -18,6 +18,7 @@ public sealed class DataVaultMappingSourceGenerator : IIncrementalGenerator {
   private const string HubSatelliteMappingAttributeName = AttributeNamespace + ".DataVaultHubSatelliteMappingAttribute";
   private const string BusinessKeyBindingAttributeName = AttributeNamespace + ".DataVaultBusinessKeyBindingAttribute";
   private const string LinkParticipantBindingAttributeName = AttributeNamespace + ".DataVaultLinkParticipantBindingAttribute";
+  private const string LinkDependentChildKeyBindingAttributeName = AttributeNamespace + ".DataVaultLinkDependentChildKeyBindingAttribute";
   private const string SatelliteParentHashKeyBindingAttributeName = AttributeNamespace + ".DataVaultSatelliteParentHashKeyBindingAttribute";
   private const string SatelliteDrivingKeyBindingAttributeName = AttributeNamespace + ".DataVaultSatelliteDrivingKeyBindingAttribute";
   private const string SatellitePayloadBindingAttributeName = AttributeNamespace + ".DataVaultSatellitePayloadBindingAttribute";
@@ -140,6 +141,21 @@ public sealed class DataVaultMappingSourceGenerator : IIncrementalGenerator {
       return null;
     }
 
+    var rawDependentChildKeyBindings = GetOrderedBindings(
+        attributes,
+        LinkDependentChildKeyBindingAttributeName,
+        "link dependent child key");
+    if (!TryResolveOrderedBindings(
+        sourceType,
+        rawDependentChildKeyBindings,
+        "link dependent child key",
+        requireAtLeast: 0,
+        checkDuplicateNames: true,
+        context,
+        out var dependentChildKeyBindings)) {
+      return null;
+    }
+
     var repeatedParticipant = bindings
         .GroupBy(binding => binding.LogicalName, StringComparer.Ordinal)
         .FirstOrDefault(group => group.Count() > 1);
@@ -154,7 +170,20 @@ public sealed class DataVaultMappingSourceGenerator : IIncrementalGenerator {
       return null;
     }
 
-    return MappingDeclaration.Link(sourceType, linkName, bindings);
+    var overlappingDependentChildKey = dependentChildKeyBindings
+        .FirstOrDefault(binding => bindings.Any(participant =>
+            string.Equals(participant.LogicalName, binding.LogicalName, StringComparison.Ordinal)));
+    if (overlappingDependentChildKey is not null) {
+      Report(
+          context,
+          DataVaultMappingDiagnosticCatalog.DuplicateBindingName,
+          sourceType,
+          overlappingDependentChildKey.Attribute,
+          "Generated link mapping '" + linkName + "' declares dependent child key name '" + overlappingDependentChildKey.LogicalName + "' that overlaps a produced participant name.");
+      return null;
+    }
+
+    return MappingDeclaration.Link(sourceType, linkName, bindings, dependentChildKeyBindings);
   }
 
   private static MappingDeclaration? CreateSatelliteDeclaration(
@@ -484,6 +513,7 @@ public sealed class DataVaultMappingSourceGenerator : IIncrementalGenerator {
     builder.AppendLine(declaration.HelperTypeName + " {");
     AppendMetadataConstant(builder, "LinkName", declaration.PrimaryName);
     AppendNameArray(builder, "ProducedParticipantNames", declaration.OrderedBindings.Select(binding => binding.LogicalName));
+    AppendNameArray(builder, "DependentChildKeyNames", declaration.DependentChildKeyBindings.Select(binding => binding.LogicalName));
     builder.AppendLine("  public static global::System.Collections.Generic.IReadOnlyList<string> ParticipantHubNames => ProducedParticipantNames;");
     builder.Append("  public static global::DCoding.Data.DVault.IDataVaultLinkMapper<");
     builder.Append(GetSourceTypeDisplayName(declaration.SourceType));
@@ -508,7 +538,9 @@ public sealed class DataVaultMappingSourceGenerator : IIncrementalGenerator {
     builder.Append("        ");
     builder.Append(ToLiteral(declaration.PrimaryName));
     builder.AppendLine(",");
-    AppendKeyValuePairArray(builder, declaration.OrderedBindings, closeWithSemicolon: true);
+    AppendKeyValuePairArray(builder, declaration.OrderedBindings, closeWithSemicolon: false);
+    builder.AppendLine(",");
+    AppendKeyValuePairArray(builder, declaration.DependentChildKeyBindings, closeWithSemicolon: true);
     builder.AppendLine("  }");
     builder.AppendLine("}");
   }
@@ -727,6 +759,7 @@ public sealed class DataVaultMappingSourceGenerator : IIncrementalGenerator {
   private static bool IsGeneratedMappingBindingAttribute(AttributeData attribute) {
     return IsAttribute(attribute, BusinessKeyBindingAttributeName) ||
         IsAttribute(attribute, LinkParticipantBindingAttributeName) ||
+        IsAttribute(attribute, LinkDependentChildKeyBindingAttributeName) ||
         IsAttribute(attribute, SatelliteParentHashKeyBindingAttributeName) ||
         IsAttribute(attribute, SatelliteDrivingKeyBindingAttributeName) ||
         IsAttribute(attribute, SatellitePayloadBindingAttributeName) ||
@@ -753,6 +786,7 @@ public sealed class DataVaultMappingSourceGenerator : IIncrementalGenerator {
       ResolvedSingleBinding ParentHashKeyBinding,
       IReadOnlyList<ResolvedOrderedBinding> DrivingKeyBindings,
       IReadOnlyList<ResolvedOrderedBinding> OrderedBindings,
+      IReadOnlyList<ResolvedOrderedBinding> DependentChildKeyBindings,
       ResolvedSingleBinding HashDiffBinding) {
     public string HelperTypeName { get; } = CreateHelperTypeName(SourceType, Kind switch {
       MappingKind.Hub => "DataVaultHubMapping",
@@ -784,13 +818,15 @@ public sealed class DataVaultMappingSourceGenerator : IIncrementalGenerator {
           default,
           [],
           businessKeyBindings,
+          [],
           default);
     }
 
     public static MappingDeclaration Link(
         INamedTypeSymbol sourceType,
         string linkName,
-        IReadOnlyList<ResolvedOrderedBinding> participantBindings) {
+        IReadOnlyList<ResolvedOrderedBinding> participantBindings,
+        IReadOnlyList<ResolvedOrderedBinding> dependentChildKeyBindings) {
       return new MappingDeclaration(
           MappingKind.Link,
           sourceType,
@@ -799,6 +835,7 @@ public sealed class DataVaultMappingSourceGenerator : IIncrementalGenerator {
           default,
           [],
           participantBindings,
+          dependentChildKeyBindings,
           default);
     }
 
@@ -818,6 +855,7 @@ public sealed class DataVaultMappingSourceGenerator : IIncrementalGenerator {
           parentHashKeyBinding,
           drivingKeyBindings,
           payloadBindings,
+          [],
           hashDiffBinding);
     }
   }

@@ -39,6 +39,54 @@ public sealed class DataVaultCodeFirstLinkTests {
   }
 
   [Fact]
+  public void ApplyDataVaultMetadataProjectsDependentChildKeyLinkColumnsAndRelationshipIndex() {
+    void Configure(DataVaultCodeFirstModelBuilder vault) {
+      vault.Hub<Customer>(hub => hub.BusinessKey(customer => customer.CustomerId));
+      vault.Hub<Order>(hub => hub.BusinessKey(order => order.OrderId));
+
+      vault.Link("CustomerOrderLine", link => {
+        link.Participant<Customer>();
+        link.Participant<Order>();
+        link.DependentChildKey("Line Number");
+      });
+    }
+
+    var metadata = CreateCodeFirstMetadata(Configure);
+    var model = TranslateCodeFirst(Configure);
+    var link = FindEntity(model, "LinkCustomerOrderLine");
+
+    AssertLinkMetadata(
+        metadata,
+        "CustomerOrderLine",
+        ["Customer", "Order"],
+        expectedDependentChildKeyNames: ["Line Number"]);
+    AssertRelationalEntity(
+        link,
+        "LinkCustomerOrderLine",
+        [
+            "CustomerOrderLineHashKey",
+            "LoadTimestamp",
+            "RecordSource",
+            "CustomerHashKey",
+            "OrderHashKey",
+            "LineNumber",
+        ],
+        "PkLinkCustomerOrderLineCustomerOrderLineHashKey",
+        "IxLinkCustomerOrderLineRelationshipCustomerHashKeyOrderHashKeyLineNumber",
+        ["CustomerHashKey", "OrderHashKey", "LineNumber"]);
+
+    var dependentChildKey = link.FindProperty("LineNumber");
+
+    Assert.NotNull(dependentChildKey);
+    Assert.Equal(
+        DataVaultPropertyRole.DependentChildKey,
+        AnnotationValue<DataVaultPropertyRole>(dependentChildKey!, DataVaultAnnotationNames.PropertyRole));
+    Assert.Equal(
+        DataVaultLogicalPropertyKind.DependentChildKey,
+        AnnotationValue<DataVaultLogicalPropertyKind>(dependentChildKey, DataVaultAnnotationNames.ProviderLogicalPropertyKind));
+  }
+
+  [Fact]
   public void ApplyDataVaultMetadataProjectsRoleBearingSameHubLinkThroughMetadataTranslator() {
     void Configure(DataVaultCodeFirstModelBuilder vault) {
       vault.Hub<Customer>(hub => hub.BusinessKey(customer => customer.CustomerId));
@@ -244,20 +292,20 @@ public sealed class DataVaultCodeFirstLinkTests {
   }
 
   [Fact]
-  public void ApplyDataVaultMetadataRejectsRepeatedSameHubParticipantsWithoutRoles() {
-    var exception = Assert.Throws<ArgumentException>(() =>
-        CreateCodeFirstMetadata(vault => {
-          vault.Hub<Customer>(hub => hub.BusinessKey(customer => customer.CustomerId));
-          vault.Link("CustomerHierarchy", link => {
-            link.Participant<Customer>();
-            link.Participant<Customer>();
-          });
-        }));
+  public void ApplyDataVaultMetadataDerivesStableRolesForRepeatedSameHubParticipantsWithoutRoles() {
+    var metadata = CreateCodeFirstMetadata(vault => {
+      vault.Hub<Customer>(hub => hub.BusinessKey(customer => customer.CustomerId));
+      vault.Link("CustomerHierarchy", link => {
+        link.Participant<Customer>();
+        link.Participant<Customer>();
+      });
+    });
 
-    Assert.Equal("configureModel", exception.ParamName);
-    Assert.Contains("CustomerHierarchy", exception.Message, StringComparison.Ordinal);
-    Assert.Contains("declares hub 'Customer' more than once", exception.Message, StringComparison.Ordinal);
-    Assert.Contains("Every repeated same-hub participant must declare a distinct non-blank role", exception.Message, StringComparison.Ordinal);
+    AssertLinkMetadata(
+        metadata,
+        "CustomerHierarchy",
+        ["Customer", "Customer"],
+        ["Customer1", "Customer2"]);
   }
 
   [Fact]
@@ -394,7 +442,8 @@ public sealed class DataVaultCodeFirstLinkTests {
       DataVaultMetadataModel metadataModel,
       string expectedName,
       string[] expectedParticipantHubNames,
-      string[]? expectedProducedParticipantNames = null) {
+      string[]? expectedProducedParticipantNames = null,
+      string[]? expectedDependentChildKeyNames = null) {
     var link = Assert.Single(metadataModel.Links);
 
     Assert.Equal(expectedName, link.Name);
@@ -402,6 +451,7 @@ public sealed class DataVaultCodeFirstLinkTests {
     Assert.Equal(
         expectedProducedParticipantNames ?? expectedParticipantHubNames,
         link.Participants.Select(participant => participant.SourceEndpointName));
+    Assert.Equal(expectedDependentChildKeyNames ?? [], link.DependentChildKeyNames);
   }
 
   private static void AssertRelationalEntity(

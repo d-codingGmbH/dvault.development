@@ -10,8 +10,8 @@ public sealed class PackageVerifierTests {
   private const string CorePackageId = "DCoding.Data.DVault";
   private const string Db2PackageId = "DCoding.Data.DVault.Db2";
   private const string IbmEntityFrameworkCorePackageId = "IBM.EntityFrameworkCore";
-  private const string Net8PackageLineVersion = "8.51.0";
-  private const string Net10PackageLineVersion = "10.51.0";
+  private const string Net8PackageLineVersion = "8.100.0";
+  private const string Net10PackageLineVersion = "10.100.0";
   private const string Net8TargetFramework = "net8.0";
   private const string Net10TargetFramework = "net10.0";
   private const string Authors = "d-coding GmbH";
@@ -361,8 +361,8 @@ public sealed class PackageVerifierTests {
   }
 
   [Theory]
-  [InlineData("You can mix `8.51.0` and `10.51.0` packages in one project.\n", "You can mix `8.51.0` and `10.51.0`")]
-  [InlineData("Use `8.51.0` runtime packages with `10.51.0` analyzer.\n", "8.51.0")]
+  [InlineData("You can mix `8.100.0` and `10.100.0` packages in one project.\n", "You can mix `8.100.0` and `10.100.0`")]
+  [InlineData("Use `8.100.0` runtime packages with `10.100.0` analyzer.\n", "8.100.0")]
   public void ReadmeMustNotUseMixedLineInstallClaims(
       string mixedLineInstallClaim,
       string expectedFragment) {

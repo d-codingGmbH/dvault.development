@@ -127,14 +127,15 @@ internal sealed class Db2DataVaultLiveSchemaReader : CatalogDataVaultLiveSchemaR
         ("@table", NormalizeCatalogIdentifierValue(tableIdentifier.TableName)));
 
     var indexHeaders = new List<Db2IndexHeader>();
-    await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-    while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
-      var indexName = NormalizeExpectedCatalogName(reader.GetString(1), expectedIndexNames);
-      indexHeaders.Add(new Db2IndexHeader(
-          reader.GetString(0),
-          reader.GetString(1),
-          indexName,
-          !string.Equals(reader.GetString(2), "D", StringComparison.Ordinal)));
+    await using (var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false)) {
+      while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false)) {
+        var indexName = NormalizeExpectedCatalogName(reader.GetString(1), expectedIndexNames);
+        indexHeaders.Add(new Db2IndexHeader(
+            reader.GetString(0),
+            reader.GetString(1),
+            indexName,
+            !string.Equals(reader.GetString(2), "D", StringComparison.Ordinal)));
+      }
     }
 
     var indexes = new List<DataVaultLiveSchemaIndex>();

@@ -143,7 +143,7 @@ public sealed class DataVaultProviderCapabilityProfile {
       string algorithmId,
       int digestByteLength) {
     return WithHashKeyStorageProfile(
-        DataVaultHashKeyStorageProfile.HexString,
+        DataVaultHashKeyStorageProfile.Binary,
         algorithmId,
         digestByteLength);
   }
