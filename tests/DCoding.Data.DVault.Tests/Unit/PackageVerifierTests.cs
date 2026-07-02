@@ -16,6 +16,9 @@ public sealed class PackageVerifierTests {
   private const string Net10TargetFramework = "net10.0";
   private const string Authors = "d-coding GmbH";
   private const string RepositoryUrl = "https://github.com/d-codingGmbH/dvault.development.git";
+  private const string ProjectUrl = "https://github.com/d-codingGmbH/dvault.development";
+  private const string Copyright = "Copyright (c) d-coding GmbH";
+  private const string ReleaseNotes = "DVault v0.100.0 breaking release: publish package versions 8.100.0 for net8.0/EF Core 8 and 10.100.0 for net10.0/EF Core 10; generated hash-key and participant-reference columns now default to binary physical storage; existing HexString schemas should stay on the previous package line or opt into the HexString compatibility profile until migration is reviewed.";
   private const string ExpectedAnalyzerBuildHostGuidance = "Build projects that reference `DCoding.Data.DVault.Analyzers` with either a `.NET 8 SDK` or `.NET 10 SDK` host. The package ships one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/` for both coordinated package lines.";
   private const string ExpectedAnalyzerTargetFrameworkMoniker = ".NETStandard,Version=v2.0";
   private static readonly string[] ExpectedAnalyzerCompanionAssets = [
@@ -493,6 +496,9 @@ public sealed class PackageVerifierTests {
     using var packageDirectory = PackageDirectory.Create();
     var options = CreatePackageOptions();
     options["DCoding.Data.DVault.Oracle"].Authors = "Wrong Author";
+    options["DCoding.Data.DVault.Oracle"].ProjectUrl = "https://example.invalid/dvault";
+    options["DCoding.Data.DVault.Oracle"].ReleaseNotes = string.Empty;
+    options["DCoding.Data.DVault.Oracle"].Copyright = "Wrong Copyright";
     WritePackageMatrix(packageDirectory.Path, options);
 
     var result = Verify(packageDirectory.Path);
@@ -502,6 +508,21 @@ public sealed class PackageVerifierTests {
         issue => issue.PackageId == "DCoding.Data.DVault.Oracle" &&
             issue.Message.Contains("Nuspec metadata 'authors'", StringComparison.Ordinal) &&
             issue.Message.Contains("d-coding GmbH", StringComparison.Ordinal));
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == "DCoding.Data.DVault.Oracle" &&
+            issue.Message.Contains("Nuspec metadata 'projectUrl'", StringComparison.Ordinal) &&
+            issue.Message.Contains(ProjectUrl, StringComparison.Ordinal));
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == "DCoding.Data.DVault.Oracle" &&
+            issue.Message.Contains("Nuspec metadata 'releaseNotes'", StringComparison.Ordinal) &&
+            issue.Message.Contains("binary physical storage", StringComparison.Ordinal));
+    Assert.Contains(
+        result.Issues,
+        issue => issue.PackageId == "DCoding.Data.DVault.Oracle" &&
+            issue.Message.Contains("Nuspec metadata 'copyright'", StringComparison.Ordinal) &&
+            issue.Message.Contains(Copyright, StringComparison.Ordinal));
   }
 
   [Fact]
@@ -899,6 +920,9 @@ public sealed class PackageVerifierTests {
             "Apache-2.0"),
         new XElement(NuspecNamespace + "readme", "README.md"),
         new XElement(NuspecNamespace + "description", package.Description),
+        new XElement(NuspecNamespace + "projectUrl", options.ProjectUrl),
+        new XElement(NuspecNamespace + "releaseNotes", options.ReleaseNotes),
+        new XElement(NuspecNamespace + "copyright", options.Copyright),
         new XElement(NuspecNamespace + "tags", string.Join(" ", package.Tags)),
         new XElement(
             NuspecNamespace + "repository",
@@ -1075,6 +1099,12 @@ public sealed class PackageVerifierTests {
     public string AnalyzerTargetFrameworkMarker { get; set; } = PackageVerifierTests.ExpectedAnalyzerTargetFrameworkMoniker;
 
     public string Authors { get; set; } = PackageVerifierTests.Authors;
+
+    public string ProjectUrl { get; set; } = PackageVerifierTests.ProjectUrl;
+
+    public string ReleaseNotes { get; set; } = PackageVerifierTests.ReleaseNotes;
+
+    public string Copyright { get; set; } = PackageVerifierTests.Copyright;
 
     public string? CoreDependencyVersion { get; set; }
 

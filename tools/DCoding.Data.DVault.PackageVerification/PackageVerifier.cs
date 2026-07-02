@@ -16,6 +16,9 @@ public sealed class PackageVerifier {
   private const string ExpectedLicenseExpression = "Apache-2.0";
   private const string ExpectedRepositoryType = "git";
   private const string ExpectedRepositoryUrl = "https://github.com/d-codingGmbH/dvault.development.git";
+  private const string ExpectedProjectUrl = "https://github.com/d-codingGmbH/dvault.development";
+  private const string ExpectedCopyright = "Copyright (c) d-coding GmbH";
+  private const string ExpectedReleaseNotes = "DVault v0.100.0 breaking release: publish package versions 8.100.0 for net8.0/EF Core 8 and 10.100.0 for net10.0/EF Core 10; generated hash-key and participant-reference columns now default to binary physical storage; existing HexString schemas should stay on the previous package line or opt into the HexString compatibility profile until migration is reviewed.";
   private const string ExpectedReadmeFile = "README.md";
   private const string ExpectedAnalyzerBuildHostGuidance = "Build projects that reference `DCoding.Data.DVault.Analyzers` with either a `.NET 8 SDK` or `.NET 10 SDK` host. The package ships one `netstandard2.0` analyzer asset under `analyzers/dotnet/cs/` for both coordinated package lines.";
   private const string ExpectedAnalyzerTargetFrameworkMoniker = ".NETStandard,Version=v2.0";
@@ -464,6 +467,9 @@ public sealed class PackageVerifier {
     AssertMetadataValue(archive, metadata, "title", expectedPackage.Title, issues);
     AssertMetadataValue(archive, metadata, "authors", ExpectedAuthors, issues);
     AssertMetadataValue(archive, metadata, "description", expectedPackage.Description, issues);
+    AssertMetadataValue(archive, metadata, "projectUrl", ExpectedProjectUrl, issues);
+    AssertMetadataValue(archive, metadata, "releaseNotes", ExpectedReleaseNotes, issues);
+    AssertMetadataValue(archive, metadata, "copyright", ExpectedCopyright, issues);
     AssertMetadataValue(archive, metadata, "readme", ExpectedReadmeFile, issues);
     ValidateTags(archive, metadata, expectedPackage, issues);
     ValidateLicense(archive, metadata, issues);

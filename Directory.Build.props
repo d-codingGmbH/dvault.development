@@ -16,6 +16,9 @@
   <PropertyGroup Condition="'$(MSBuildProjectName)' == 'DCoding.Data.DVault' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Analyzers' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Db2' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.MySql' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Oracle' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Postgres' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Privacy' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.Sqlite' or '$(MSBuildProjectName)' == 'DCoding.Data.DVault.SqlServer'">
     <DVaultPackablePackage>true</DVaultPackablePackage>
     <MinVerTagPrefix>v</MinVerTagPrefix>
+    <PackageProjectUrl>https://github.com/d-codingGmbH/dvault.development</PackageProjectUrl>
+    <Copyright>Copyright (c) d-coding GmbH</Copyright>
+    <PackageReleaseNotes>DVault v0.100.0 breaking release: publish package versions 8.100.0 for net8.0/EF Core 8 and 10.100.0 for net10.0/EF Core 10; generated hash-key and participant-reference columns now default to binary physical storage; existing HexString schemas should stay on the previous package line or opt into the HexString compatibility profile until migration is reviewed.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(DVaultPackablePackage)' == 'true'">
